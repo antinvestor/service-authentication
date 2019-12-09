@@ -1,0 +1,26 @@
+{{define "content"}}
+
+    <div class="form-style-8">
+
+        <br/>
+        <h2>Forgot </h2>
+
+        <br/>
+
+        <form method="post">
+            {{ .csrfField }}
+
+            <div class="field">
+                <label class="label"></label>
+                <div class="control">
+                    <input class="input" type="text" name="contact" placeholder="email or phonenumber"/>
+                </div>
+
+            </div>
+
+            <button class="button is-blue" type="submit"> get reset code </button>
+
+        </form>
+    </div>
+
+{{end}}

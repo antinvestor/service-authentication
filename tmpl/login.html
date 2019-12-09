@@ -1,0 +1,35 @@
+{{define "content"}}
+
+    <div class="form-style-8">
+        <h2>Login </h2>
+        <form method="post">
+            {{ .csrfField }}
+
+            <div class="field">
+                <label class="label"></label>
+                <div class="control">
+                    <input type="text" name="contact" placeholder="email or phonenumber"/>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label"></label>
+                <div class="control">
+                    <input type="password" name="password" placeholder="password"/>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Remember me</label>
+                <div class="control">
+                    <input id="rememberme" name="rememberme" value="remember" type="checkbox"/>
+                </div>
+            </div>
+
+            <button class="button" type="submit"> Login </button>
+
+        </form>
+    </div>
+
+{{end}}
+

@@ -1,0 +1,20 @@
+
+{{define "content"}}
+
+<div class="form-style-8">
+    <h2>Login to your account</h2>
+    <form method="post">
+
+        <p>
+            By logging in, you consent to grant these scopes:
+        <ul>
+            {{range .Scopes}} <li><input type="checkbox" name="scopes" value="{{.}}">{{.}}</li> {{end}}
+        </ul>
+        </p>
+
+        <input type="submit">
+
+    </form>
+</div>
+
+{{end}}
