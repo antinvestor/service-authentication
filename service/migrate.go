@@ -28,7 +28,7 @@ func PerformMigration(logger *logrus.Entry, db *gorm.DB) {
 	migrationsDirPath := "./migrations/0001"
 
 	// Migrate the schema
-	db.AutoMigrate(&models.AntMigration{}, &models.Login{}, &models.LoginEvent{},)
+	db.AutoMigrate(&models.Migration{}, &models.Login{}, &models.LoginEvent{},)
 
 	if err := scanForNewMigrations(logger, db, migrationsDirPath); err != nil {
 		logger.Warnf("Error scanning for new migrations : %v ", err)
@@ -51,7 +51,7 @@ func scanForNewMigrations(logger *logrus.Entry, db *gorm.DB, migrationsDirPath s
 
 	for _, file := range files {
 
-		var migration models.AntMigration
+		var migration models.Migration
 
 		filename := filepath.Base(file)
 		filename = strings.Replace(filename, ".sql", "", 1)
@@ -83,7 +83,7 @@ func scanForNewMigrations(logger *logrus.Entry, db *gorm.DB, migrationsDirPath s
 
 func applyNewMigrations(logger *logrus.Entry, db *gorm.DB) error {
 
-	var unAppliedMigrations []models.AntMigration
+	var unAppliedMigrations []models.Migration
 	if err := db.Where("applied_at IS NULL").Find(&unAppliedMigrations).Error; err != nil {
 		return err
 	}

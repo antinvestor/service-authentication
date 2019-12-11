@@ -1,9 +1,14 @@
+
+{{ define "title"}}<title>Login</title>{{ end }}
+
 {{define "content"}}
 
     <div class="form-style-8">
         <h2>Login </h2>
-        <form method="post">
+        <form method="post" action="/login/post">
+
             {{ .csrfField }}
+            <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
 
             <div class="field">
                 <label class="label"></label>

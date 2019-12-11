@@ -29,7 +29,7 @@ func Logger(inner http.Handler, name string, logger *logrus.Entry) http.Handler 
 }
 
 func addHandler(env *utils.Env, router *mux.Router,
-	f func(env *utils.Env, w http.ResponseWriter, r *http.Request) error, path string, name string) {
+	f func(env *utils.Env, w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -51,7 +51,8 @@ func addHandler(env *utils.Env, router *mux.Router,
 
 	router.Path(path).
 		Name(name).
-		Handler(loggedHandler)
+		Handler(loggedHandler).
+		Methods(method)
 
 }
 
@@ -59,14 +60,16 @@ func addHandler(env *utils.Env, router *mux.Router,
 func NewAuthRouterV1(env *utils.Env) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
-	addHandler(env, router, handlers.IndexEndpoint, "/", "IndexEndpoint")
-	addHandler(env, router, handlers.HealthCheckEndpoint, "/healthz", "HealthCheckEndpoint")
-	addHandler(env, router, handlers.LoginEndpoint, "/login", "LoginEndpoint")
-	addHandler(env, router, handlers.LogoutEndpoint, "/logout", "LogoutEndpoint")
-	addHandler(env, router, handlers.ConsentEndpoint, "/consent", "ConsentEndpoint")
-	addHandler(env, router, handlers.RegisterEndpoint, "/register", "RegisterEndpoint")
-	addHandler(env, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint")
-	addHandler(env, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint")
+	addHandler(env, router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
+	addHandler(env, router, handlers.HealthCheckEndpoint, "/healthz", "HealthCheckEndpoint", "GET")
+	addHandler(env, router, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
+	addHandler(env, router, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
+	addHandler(env, router, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
+	addHandler(env, router, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
+	addHandler(env, router, handlers.ShowRegisterEndpoint, "/register", "RegisterEndpoint", "GET")
+	addHandler(env, router, handlers.SubmitRegisterEndpoint, "/register/post", "RegisterEndpoint", "GET")
+	addHandler(env, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
+	addHandler(env, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
 	return router
 }

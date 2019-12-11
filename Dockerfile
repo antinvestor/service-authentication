@@ -15,8 +15,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflag
 
 FROM scratch
 COPY --from=builder /auth_binary /auth
-COPY --from=builder /tmpl /
-COPY --from=builder /migrations /
+COPY --from=builder /tmpl /tmpl
+COPY --from=builder /migrations /migrations
 WORKDIR /
 
 # Run the service command by default when the container starts.

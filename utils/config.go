@@ -1,5 +1,9 @@
 package utils
 
+const ConfigServerPort = "SERVER_PORT"
+
+const ConfigOnlyMigrate = "ONLY_DO_MIGRATION"
+
 const ConfigDatabaseDriver = "DATABASE_DRIVER"
 const ConfigDatabaseUrl = "DATABASE_URL"
 const ConfigReplicaDatabaseUrl = "REPLICA_DATABASE_URL"

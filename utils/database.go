@@ -9,6 +9,7 @@ import (
 	"github.com/smacker/opentracing-gorm"
 )
 
+
 // ConfigureDatabase Database Access for environment is configured here
 func ConfigureDatabase(log *logrus.Entry, replica bool) (*gorm.DB, error) {
 

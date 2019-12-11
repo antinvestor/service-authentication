@@ -36,33 +36,33 @@ func (se StatusError) Status() int {
 	return se.Code
 }
 
-
-
 //RunServer Starts a server and waits on it
 func RunServer(env *utils.Env) {
 
 	waitDuration := time.Second * 15
 
 	csrfSecret := utils.GetEnv(utils.ConfigCsrfSecret, "")
+	serverPort := utils.GetEnv(utils.ConfigServerPort, "7000")
 	router := NewAuthRouterV1(env)
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf("0.0.0.0:%s", env.ServerPort),
+		Addr: fmt.Sprintf("0.0.0.0:%s", serverPort),
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
 
-		Handler: csrf.Protect(
-			[]byte(csrfSecret),
-			csrf.Secure(false),
-		)(handlers.RecoveryHandler()(router)),
+		Handler: handlers.RecoveryHandler()(
+			csrf.Protect(
+				[]byte(csrfSecret),
+				csrf.Secure(false),
+			)(router)),
 	}
 
-	// Run our server in a goroutine so that it doesn't block.
+	// Run server in a goroutine so that it doesn't block.
 	go func() {
 
-		env.Logger.Infof("Service running on port : %v", env.ServerPort)
+		env.Logger.Infof("Service running on port : %v", serverPort)
 
 		if err := srv.ListenAndServe(); err != nil {
 			env.Logger.Fatalf("Service stopping due to error : %v", err)
@@ -79,7 +79,17 @@ func RunServer(env *utils.Env) {
 
 	// Create a deadline to wait for.
 	env2, cancel := context.WithTimeout(context.Background(), waitDuration)
-	defer cancel()
+
+	defer func() {
+
+		profileServiceConn := env.GetProfileServiceConn()
+		if profileServiceConn != nil {
+			profileServiceConn.Close()
+		}
+
+		// extra handling here
+		cancel()
+	}()
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
 	srv.Shutdown(env2)

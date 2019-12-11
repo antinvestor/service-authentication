@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	serviceName := "Auth"
+	serviceName := "auth"
 
 	logger, err := utils.ConfigureLogging(serviceName)
 	if err != nil {
@@ -35,8 +35,9 @@ func main() {
 		logger.Warnf("Configuring read only database has error: %v", err)
 	}
 
+	isMigration := utils.GetEnv(utils.ConfigOnlyMigrate, "")
 	stdArgs := os.Args[1:]
-	if len(stdArgs) > 0 && stdArgs[0] == "migrate" {
+	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration == "true" {
 		logger.Info("Initiating migrations")
 
 		service.PerformMigration(logger, database)
@@ -44,23 +45,14 @@ func main() {
 	} else {
 		logger.Infof("Initiating the service at %v", time.Now())
 
-		profileServiceConnection, err := utils.ConfigureProfileServiceConn(logger)
-		if err != nil {
-			logger.Errorf("Could not configure profile service connection: %v", err)
-		}
-
-		defer profileServiceConnection.Close()
-
 		healthChecker, err := utils.ConfigureHealthChecker(logger, database, replicaDatabase)
 		if err != nil {
 			logger.Warnf("Error configuring health checks: %v", err)
 		}
 
-		env := service.Env{
+		env := utils.Env{
 			Logger:             logger,
 			Health:             healthChecker,
-			ProfileServiceConn: profileServiceConnection,
-			ServerPort:         utils.GetEnv("SERVER_PORT", "7000"),
 		}
 		env.SetWriteDb(database)
 		env.SetReadDb(replicaDatabase)

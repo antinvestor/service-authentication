@@ -14,48 +14,49 @@ import (
 
 var registerTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/registration.html"))
 
-func RegisterEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
+func ShowRegisterEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
 
-	span, ctx := opentracing.StartSpanFromContext(req.Context(), "RegisterEndpoint")
+	span, _ := opentracing.StartSpanFromContext(req.Context(), "ShowRegisterEndpoint")
 	defer span.Finish()
 
-	if req.Method == "GET" {
+	err := registerTmpl.Execute(rw, map[string]interface{}{
+		"error":          "",
+		csrf.TemplateTag: csrf.TemplateField(req),
+	})
+	return err
+	return nil
 
-		err := registerTmpl.Execute(rw, map[string]interface{}{
-			"error":          "",
-			csrf.TemplateTag: csrf.TemplateField(req),
-		})
+}
+
+
+func SubmitRegisterEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
+	span, ctx := opentracing.StartSpanFromContext(req.Context(), "SubmitRegisterEndpoint")
+	defer span.Finish()
+
+	contact := req.PostForm.Get("contact")
+	existingProfile, err := getProfileByContact(env, ctx, contact)
+	if err != nil {
 		return err
 	}
 
-	if req.Method == "POST" {
+	if existingProfile != nil {
+		// don't have this profile in existence so we create it
 
-		contact := req.PostForm.Get("contact")
-		existingProfile, err := getProfileByContact(env, ctx, contact)
+		name := req.PostForm.Get("name")
+		existingProfile, err = createProfileByContactAndName(env, ctx, contact, name)
 		if err != nil {
 			return err
 		}
-
-		if existingProfile != nil {
-			// don't have this profile in existence so we create it
-
-			name := req.PostForm.Get("name")
-			existingProfile, err = createProfileByContactAndName(env, ctx, contact, name)
-			if err != nil {
-				return err
-			}
-		}
-
-		profileId := existingProfile.GetID()
-		password := req.PostForm.Get("password")
-		redirectUri, err := createAuthEntry(env, ctx, profileId, password)
-		if err != nil {
-			return err
-		}
-
-		http.Redirect(rw, req, redirectUri, http.StatusSeeOther)
-
 	}
+
+	profileId := existingProfile.GetID()
+	password := req.PostForm.Get("password")
+	redirectUri, err := createAuthEntry(env, ctx, profileId, password)
+	if err != nil {
+		return err
+	}
+
+	http.Redirect(rw, req, redirectUri, http.StatusSeeOther)
 
 	return nil
 }
@@ -65,7 +66,7 @@ func getProfileByContact(env *utils.Env, ctx context.Context, contact string) (*
 	profileCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	profileService := profile.NewProfileServiceClient(env.ProfileServiceConn)
+	profileService := profile.NewProfileServiceClient(env.GetProfileServiceConn())
 
 	contactRequest := profile.ProfileContactRequest{
 		Contact: contact,
@@ -79,7 +80,7 @@ func createProfileByContactAndName(env *utils.Env, ctx context.Context, contact 
 	profileCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	profileService := profile.NewProfileServiceClient(env.ProfileServiceConn)
+	profileService := profile.NewProfileServiceClient(env.GetProfileServiceConn())
 
 	createProfileRequest := profile.ProfileCreateRequest{
 		Contact: contact,

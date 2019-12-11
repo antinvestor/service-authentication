@@ -8,7 +8,7 @@ import (
 	"github.com/rs/xid"
 )
 
-// AntMigration Our simple table holding all the migration data
+// Migration Our simple table holding all the migration data
 type AntBaseModel struct {
 	CreatedAt      time.Time
 	ModifiedAt     time.Time
@@ -39,21 +39,21 @@ func (model *AntBaseModel) BeforeUpdate(scope *gorm.Scope) error {
 	return scope.SetColumn("ModifiedAt", time.Now())
 }
 
-// AntMigration Our simple table holding all the migration data
-type AntMigration struct {
+// Migration Our simple table holding all the migration data
+type Migration struct {
 	AntBaseModel
 
-	AntMigrationID string `gorm:"type:varchar(50);primary_key"`
-	Name           string `gorm:"type:varchar(50);unique_index"`
-	Patch          string `gorm:"type:text"`
-	AppliedAt      *time.Time
+	MigrationID string `gorm:"type:varchar(50);primary_key"`
+	Name        string `gorm:"type:varchar(50);unique_index"`
+	Patch       string `gorm:"type:text"`
+	AppliedAt   *time.Time
 }
 
-func (model *AntMigration) BeforeCreate(scope *gorm.Scope) error {
+func (model *Migration) BeforeCreate(scope *gorm.Scope) error {
 
 	if err := model.AntBaseModel.BeforeCreate(scope); err != nil{
 		return err
 	}
-	return scope.SetColumn("AntMigrationID", model.IDGen("mg"))
+	return scope.SetColumn("MigrationID", model.IDGen("mg"))
 }
 
