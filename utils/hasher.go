@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
@@ -42,8 +43,9 @@ func (b *BCrypt) Compare(ctx context.Context, hash, data []byte) error {
 //
 // The system secret is being hashed to always match exactly the 32 bytes required by AEAD, even if the secret is long or
 // shorter.
-func HashStringSecret(secret string) []byte {
-	return HashByteSecret([]byte(secret))
+func HashStringSecret(secret string) string {
+	hashedSecret := HashByteSecret([]byte(secret))
+	return hex.EncodeToString(hashedSecret)
 }
 
 // HashByteSecret hashes the secret for consumption by the AEAD encryption algorithm which expects exactly 32 bytes.
@@ -51,7 +53,8 @@ func HashStringSecret(secret string) []byte {
 // The system secret is being hashed to always match exactly the 32 bytes required by AEAD, even if the secret is long or
 // shorter.
 func HashByteSecret(secret []byte) []byte {
-	var r [32]byte
-	r = sha256.Sum256([]byte(secret))
-	return r[:]
+
+	algorithm := sha256.New()
+	algorithm.Write(secret)
+	return algorithm.Sum(nil)
 }

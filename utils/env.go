@@ -35,7 +35,7 @@ func (env *Env) GetRDb(ctx context.Context) *gorm.DB {
 	return otgorm.SetSpanToGorm(ctx, env.rDb)
 }
 
-// ConfigureProfileService creates required connection to the profile service
+// GetProfileServiceConn creates required connection to the profile service
 func (env *Env) GetProfileServiceConn() *grpc.ClientConn {
 
 	if env.profileServiceConn != nil{
@@ -60,7 +60,7 @@ func (env *Env) GetProfileServiceConn() *grpc.ClientConn {
 	//dialOption = grpc.WithTransportCredentials(creds)
 	//
 
-	profileServiceUri := GetEnv(ConfigProfileServiceUri, "")
+	profileServiceUri := GetEnv(EnvProfileServiceUri, "")
 	profileServiceConnection, err := grpc.Dial(
 		profileServiceUri,
 		dialOption,

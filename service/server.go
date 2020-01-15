@@ -41,8 +41,8 @@ func RunServer(env *utils.Env) {
 
 	waitDuration := time.Second * 15
 
-	csrfSecret := utils.GetEnv(utils.ConfigCsrfSecret, "")
-	serverPort := utils.GetEnv(utils.ConfigServerPort, "7000")
+	csrfSecret := utils.GetEnv(utils.EnvCsrfSecret, "")
+	serverPort := utils.GetEnv(utils.EnvServerPort, "7000")
 	router := NewAuthRouterV1(env)
 
 	srv := &http.Server{

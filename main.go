@@ -27,15 +27,17 @@ func main() {
 
 	database, err := utils.ConfigureDatabase(logger, false)
 	if err != nil {
-		logger.Warnf("Configuring write database has error: %v", err)
+		logger.WithError(err).Fatal("Could not Configure write database")
 	}
+	defer database.Close()
 
 	replicaDatabase, err := utils.ConfigureDatabase(logger, true)
 	if err != nil {
-		logger.Warnf("Configuring read only database has error: %v", err)
+		logger.WithError(err).Fatal("Could not Configure read database")
 	}
+	defer replicaDatabase.Close()
 
-	isMigration := utils.GetEnv(utils.ConfigOnlyMigrate, "")
+	isMigration := utils.GetEnv(utils.EnvOnlyMigrate, "")
 	stdArgs := os.Args[1:]
 	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration == "true" {
 		logger.Info("Initiating migrations")

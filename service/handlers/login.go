@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"antinvestor.com/service/auth/grpc/profile"
 	"antinvestor.com/service/auth/models"
-	"antinvestor.com/service/auth/service/profile"
 	"antinvestor.com/service/auth/utils"
 	"context"
 	"html/template"
@@ -18,13 +18,14 @@ var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/l
 
 func ShowLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
 
-	span, ctx := opentracing.StartSpanFromContext(req.Context(), "SubmitLoginEndpoint")
+	span, ctx := opentracing.StartSpanFromContext(req.Context(), "ShowLoginEndpoint")
 	defer span.Finish()
 
 	loginchallenge := req.FormValue("login_challenge")
 
 	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
 	if err != nil {
+		env.Logger.WithError(err).WithField("challenge", loginchallenge).Info("couldn't get a valid login challenge")
 		return err
 	}
 
@@ -67,6 +68,7 @@ func SubmitLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Reque
 	password := req.PostForm.Get("password")
 
 	profileObj, login, err := getLoginCredentials(env, ctx, contact, password)
+
 	err = postLoginChecks(env, ctx, profileObj, login, err, req)
 	if err != nil {
 		env.Logger.Info("Could not login user because :%v", err)
@@ -117,6 +119,7 @@ func postLoginChecks(env *utils.Env, ctx context.Context, object *profile.Profil
 func getLoginCredentials(env *utils.Env, ctx context.Context, contact string, password string) (*profile.ProfileObject, *models.Login, error) {
 
 	profileObj, err := getProfileByContact(env, ctx, contact)
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -124,17 +127,14 @@ func getLoginCredentials(env *utils.Env, ctx context.Context, contact string, pa
 	login := models.Login{}
 	profileHash := utils.HashStringSecret(profileObj.GetID())
 
-	if err := env.GetRDb(ctx).First(login, "ProfileHash = ?", profileHash).Error; err != nil {
+
+	if err := env.GetRDb(ctx).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
 		return profileObj, nil, err
 	}
 
 	crypt := utils.NewBCrypt()
-	passwordHash, err := crypt.Hash(ctx, []byte(password))
-	if err != nil {
-		return profileObj, &login, err
-	}
 
-	err = crypt.Compare(ctx, []byte(login.PasswordHash), passwordHash)
+	err = crypt.Compare(ctx, []byte(login.PasswordHash), []byte(password))
 	if err != nil {
 		return profileObj, &login, err
 	}

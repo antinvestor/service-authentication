@@ -1,15 +1,15 @@
 package utils
 
-const ConfigServerPort = "SERVER_PORT"
+const EnvServerPort = "SERVER_PORT"
 
-const ConfigOnlyMigrate = "ONLY_DO_MIGRATION"
+const EnvOnlyMigrate = "ONLY_DO_MIGRATION"
 
-const ConfigDatabaseDriver = "DATABASE_DRIVER"
-const ConfigDatabaseUrl = "DATABASE_URL"
-const ConfigReplicaDatabaseUrl = "REPLICA_DATABASE_URL"
+const EnvDatabaseDriver = "DATABASE_DRIVER"
+const EnvDatabaseUrl = "DATABASE_URL"
+const EnvReplicaDatabaseUrl = "REPLICA_DATABASE_URL"
 
-const ConfigCsrfSecret = "CSRF_SECRET"
+const EnvCsrfSecret = "CSRF_SECRET"
 
-const ConfigHydraAdminUri = "HYDR_ADMIN_URI"
+const EnvHydraAdminUri = "HYDR_ADMIN_URI"
 
-const ConfigProfileServiceUri = "PROFILE_SERVICE_URI"
+const EnvProfileServiceUri = "PROFILE_SERVICE_URI"

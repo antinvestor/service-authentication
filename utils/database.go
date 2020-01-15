@@ -13,11 +13,11 @@ import (
 // ConfigureDatabase Database Access for environment is configured here
 func ConfigureDatabase(log *logrus.Entry, replica bool) (*gorm.DB, error) {
 
-	driver := GetEnv(ConfigDatabaseDriver, "postgres")
+	driver := GetEnv(EnvDatabaseDriver, "postgres")
 
-	datasource := GetEnv(ConfigDatabaseUrl, "")
+	datasource := GetEnv(EnvDatabaseUrl, "")
 	if replica {
-		datasource = GetEnv(ConfigReplicaDatabaseUrl, datasource)
+		datasource = GetEnv(EnvReplicaDatabaseUrl, datasource)
 	}
 
 	log.Debugf("Connecting using driver %v and source %v ", driver, datasource)

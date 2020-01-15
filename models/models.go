@@ -7,8 +7,8 @@ import (
 
 type Login struct {
 	LoginID      string `gorm:"type:varchar(50);primary_key"`
-	ProfileHash  string `gorm:"type:text"`
-	PasswordHash string `gorm:"type:text"`
+	ProfileHash  string `gorm:"type:varchar(255)"`
+	PasswordHash []byte
 	Locked       *time.Time
 	AntBaseModel
 }
@@ -20,7 +20,6 @@ func (model *Login) BeforeCreate(scope *gorm.Scope) error {
 	}
 	return scope.SetColumn("LoginID", model.IDGen("lg"))
 }
-
 
 
 type LoginEvent struct {

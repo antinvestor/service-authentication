@@ -9,7 +9,7 @@ Development:
 
 To update the profile api one needs to run the following grpc update command.
 
-```protoc -I ../api/service/profile/v1/ ../api/service/profile/v1/profile.proto --go_out=plugins=grpc:service/profile```
+```protoc -I ../api/service/profile/v1/ ../api/service/profile/v1/profile.proto --go_out=plugins=grpc:grpc/profile```
 
 
 

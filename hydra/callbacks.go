@@ -45,7 +45,7 @@ func get(flow string, challenge string) (objx.Map, error) {
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := utils.GetEnv(utils.ConfigHydraAdminUri, "http://localhost:4445")
+	hydraAdminUrl := utils.GetEnv(utils.EnvHydraAdminUri, "http://localhost:4445")
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminUrl, flow)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -69,7 +69,7 @@ func put(flow string, action string, challenge string, data map[string]interface
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := utils.GetEnv(utils.ConfigHydraAdminUri, "http://localhost:4445")
+	hydraAdminUrl := utils.GetEnv(utils.EnvHydraAdminUri, "http://localhost:4445")
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {

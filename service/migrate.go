@@ -42,12 +42,15 @@ func PerformMigration(logger *logrus.Entry, db *gorm.DB) {
 
 func scanForNewMigrations(logger *logrus.Entry, db *gorm.DB, migrationsDirPath string) error {
 
+	logger.Info("scanning for new migrations")
 	// Get a list of migration files
 	files, err := filepath.Glob(migrationsDirPath + "/*.sql")
 	if err != nil {
 		logger.Printf("Error running restore %s", err)
 		return err
 	}
+
+	logger.Infof("found %d migrations to process", len(files))
 
 	for _, file := range files {
 
@@ -65,14 +68,23 @@ func scanForNewMigrations(logger *logrus.Entry, db *gorm.DB, migrationsDirPath s
 				logger.Warnf("Problem reading migration file content : %v", err)
 				continue
 			}
+			logger.Infof("migration %s is unapplied", file)
 			migration.Patch = string(migrationPatch)
-			db.Create(&migration)
+
+			err = db.Create(&migration).Error
+			if err != nil {
+				logger.WithError(err).Warnf("There is an error adding migration :%s", file)
+			}
 		} else {
 
 			if migration.AppliedAt == nil {
 
 				if migration.Patch != string(migrationPatch) {
-					db.Model(&migration).Update("patch", string(migrationPatch))
+					err = db.Model(&migration).Update("patch", string(migrationPatch)).Error
+
+					if err != nil {
+						logger.WithError(err).Warnf("There is an error updating migration :%s", file)
+					}
 				}
 			}
 
@@ -83,7 +95,7 @@ func scanForNewMigrations(logger *logrus.Entry, db *gorm.DB, migrationsDirPath s
 
 func applyNewMigrations(logger *logrus.Entry, db *gorm.DB) error {
 
-	var unAppliedMigrations []models.Migration
+	unAppliedMigrations := []models.Migration{}
 	if err := db.Where("applied_at IS NULL").Find(&unAppliedMigrations).Error; err != nil {
 		return err
 	}

@@ -66,8 +66,8 @@ func NewAuthRouterV1(env *utils.Env) *mux.Router {
 	addHandler(env, router, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
 	addHandler(env, router, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
 	addHandler(env, router, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
-	addHandler(env, router, handlers.ShowRegisterEndpoint, "/register", "RegisterEndpoint", "GET")
-	addHandler(env, router, handlers.SubmitRegisterEndpoint, "/register/post", "RegisterEndpoint", "GET")
+	addHandler(env, router, handlers.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
+	addHandler(env, router, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
 	addHandler(env, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	addHandler(env, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
