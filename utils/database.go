@@ -15,7 +15,7 @@ func ConfigureDatabase(log *logrus.Entry, replica bool) (*gorm.DB, error) {
 
 	driver := GetEnv(EnvDatabaseDriver, "postgres")
 
-	datasource := GetEnv(EnvDatabaseUrl, "")
+	datasource := GetEnv(EnvDatabaseUrl, "postgres://ant:@nt@localhost:5432/service_auth")
 	if replica {
 		datasource = GetEnv(EnvReplicaDatabaseUrl, datasource)
 	}

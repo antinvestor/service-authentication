@@ -60,7 +60,7 @@ func (env *Env) GetProfileServiceConn() *grpc.ClientConn {
 	//dialOption = grpc.WithTransportCredentials(creds)
 	//
 
-	profileServiceUri := GetEnv(EnvProfileServiceUri, "")
+	profileServiceUri := GetEnv(EnvProfileServiceUri, "127.0.0.1:7005")
 	profileServiceConnection, err := grpc.Dial(
 		profileServiceUri,
 		dialOption,
