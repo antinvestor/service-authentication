@@ -4,16 +4,11 @@ FROM golang:1.14 as builder
 LABEL maintainer="Bwire Peter <bwire517@gmail.com>"
 
 WORKDIR /
-
-ADD go.mod ./
-
-RUN go mod download
-
 ADD . .
-
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o auth_binary .
 
 FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /auth_binary /auth
 COPY --from=builder /tmpl /tmpl
 COPY --from=builder /migrations /migrations
