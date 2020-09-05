@@ -37,29 +37,35 @@ func main() {
 	}
 	defer replicaDatabase.Close()
 
-	isMigration := utils.GetEnv(utils.EnvOnlyMigrate, "")
+	onlyMigrate := utils.GetEnv(utils.EnvOnlyMigrate, "")
+	isMigration := utils.GetEnv(utils.EnvMigrate, onlyMigrate)
 	stdArgs := os.Args[1:]
 	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration == "true" {
+
 		logger.Info("Initiating migrations")
 
 		service.PerformMigration(logger, database)
 
-	} else {
-		logger.Infof("Initiating the service at %v", time.Now())
-
-		healthChecker, err := utils.ConfigureHealthChecker(logger, database, replicaDatabase)
-		if err != nil {
-			logger.Warnf("Error configuring health checks: %v", err)
+		if onlyMigrate == "true" {
+			return
 		}
 
-		env := utils.Env{
-			Logger:             logger,
-			Health:             healthChecker,
-		}
-		env.SetWriteDb(database)
-		env.SetReadDb(replicaDatabase)
-
-		service.RunServer(&env)
 	}
+
+	logger.Infof("Initiating the service at %v", time.Now())
+
+	healthChecker, err := utils.ConfigureHealthChecker(logger, database, replicaDatabase)
+	if err != nil {
+		logger.Warnf("Error configuring health checks: %v", err)
+	}
+
+	env := utils.Env{
+		Logger: logger,
+		Health: healthChecker,
+	}
+	env.SetWriteDb(database)
+	env.SetReadDb(replicaDatabase)
+
+	service.RunServer(&env)
 
 }
