@@ -1,8 +1,8 @@
 package service
 
 import (
-	"antinvestor.com/service/auth/service/handlers"
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/service/handlers"
+	"github.com/antinvestor/service-authentication/utils"
 	"net/http"
 	"time"
 

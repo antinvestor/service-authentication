@@ -1,7 +1,7 @@
 package service
 
 import (
-	"antinvestor.com/service/auth/models"
+	"github.com/antinvestor/service-authentication/models"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"

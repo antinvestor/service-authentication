@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"antinvestor.com/service/auth/grpc/profile"
-	"antinvestor.com/service/auth/models"
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/grpc/profile"
+	"github.com/antinvestor/service-authentication/models"
+	"github.com/antinvestor/service-authentication/utils"
 	"context"
 	"html/template"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/opentracing/opentracing-go"
 
-	"antinvestor.com/service/auth/hydra"
+	"github.com/antinvestor/service-authentication/hydra"
 )
 
 var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))

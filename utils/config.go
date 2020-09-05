@@ -1,6 +1,6 @@
 package utils
 
-const EnvServerPort = "SERVER_PORT"
+const EnvServerPort = "PORT"
 
 const EnvMigrate = "DO_MIGRATION"
 const EnvOnlyMigrate = "ONLY_DO_MIGRATION"

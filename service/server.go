@@ -1,7 +1,7 @@
 package service
 
 import (
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/utils"
 	"context"
 	"fmt"
 	"github.com/gorilla/csrf"

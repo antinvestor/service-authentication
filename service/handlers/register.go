@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"antinvestor.com/service/auth/grpc/profile"
-	"antinvestor.com/service/auth/models"
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/grpc/profile"
+	"github.com/antinvestor/service-authentication/models"
+	"github.com/antinvestor/service-authentication/utils"
 	"context"
 	"fmt"
 	"google.golang.org/grpc/codes"

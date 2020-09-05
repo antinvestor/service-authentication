@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/utils"
 	"net/http"
 
 	"github.com/opentracing/opentracing-go"
 
-	"antinvestor.com/service/auth/hydra"
+	"github.com/antinvestor/service-authentication/hydra"
 )
 
 func ShowLogoutEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {

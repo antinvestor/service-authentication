@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"antinvestor.com/service/auth/service"
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/service"
+	"github.com/antinvestor/service-authentication/utils"
 )
 
 func main() {

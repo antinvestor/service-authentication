@@ -6,7 +6,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/utils"
 )
 
 func HealthCheckEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {

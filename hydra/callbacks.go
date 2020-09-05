@@ -1,7 +1,7 @@
 package hydra
 
 import (
-	"antinvestor.com/service/auth/utils"
+	"github.com/antinvestor/service-authentication/utils"
 	"bytes"
 	"context"
 	"encoding/json"
