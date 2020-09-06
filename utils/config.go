@@ -3,7 +3,6 @@ package utils
 const EnvServerPort = "PORT"
 
 const EnvMigrate = "DO_MIGRATION"
-const EnvOnlyMigrate = "ONLY_DO_MIGRATION"
 
 const EnvDatabaseDriver = "DATABASE_DRIVER"
 const EnvDatabaseUrl = "DATABASE_URL"

@@ -37,18 +37,14 @@ func main() {
 	}
 	defer replicaDatabase.Close()
 
-	onlyMigrate := utils.GetEnv(utils.EnvOnlyMigrate, "")
-	isMigration := utils.GetEnv(utils.EnvMigrate, onlyMigrate)
+	isMigration := utils.GetEnv(utils.EnvMigrate, "")
 	stdArgs := os.Args[1:]
 	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration == "true" {
 
 		logger.Info("Initiating migrations")
 
 		service.PerformMigration(logger, database)
-
-		if onlyMigrate == "true" {
-			return
-		}
+		return
 
 	}
 
