@@ -1,31 +1,31 @@
 package handlers
 
 import (
-	"github.com/antinvestor/service-authentication/grpc/profile"
+	"context"
 	"github.com/antinvestor/service-authentication/models"
 	"github.com/antinvestor/service-authentication/utils"
-	"context"
+	papi "github.com/antinvestor/service-profile-api"
+	"github.com/pitabwire/frame"
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/csrf"
-	"github.com/opentracing/opentracing-go"
 
 	"github.com/antinvestor/service-authentication/hydra"
 )
 
 var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))
 
-func ShowLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
+func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	span, ctx := opentracing.StartSpanFromContext(req.Context(), "ShowLoginEndpoint")
-	defer span.Finish()
+	ctx := req.Context()
 
 	loginchallenge := req.FormValue("login_challenge")
 
 	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
 	if err != nil {
-		env.Logger.WithError(err).WithField("challenge", loginchallenge).Info("couldn't get a valid login challenge")
+		log.Printf( " ShowLoginEndpoint -- couldn't get a valid login challenge %s : %v", loginchallenge, err)
 		return err
 	}
 
@@ -43,8 +43,6 @@ func ShowLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request
 
 	} else {
 
-		env.Logger.Infof("CSRF DATA : %v", req.Context().Value("gorilla.csrf.Form"))
-
 		err := loginTmpl.Execute(rw, map[string]interface{}{
 			"error":          "",
 			"loginChallenge": loginchallenge,
@@ -58,20 +56,19 @@ func ShowLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request
 
 }
 
-func SubmitLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
+func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	span, ctx := opentracing.StartSpanFromContext(req.Context(), "SubmitLoginEndpoint")
-	defer span.Finish()
+	ctx := req.Context()
 
 	loginchallenge := req.PostForm.Get("login_challenge")
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
 
-	profileObj, login, err := getLoginCredentials(env, ctx, contact, password)
+	profileObj, login, err := getLoginCredentials(ctx, contact, password)
 
-	err = postLoginChecks(env, ctx, profileObj, login, err, req)
+	err = postLoginChecks(ctx, profileObj, login, err, req)
 	if err != nil {
-		env.Logger.Info("Could not login user because :%v", err)
+		log.Printf(" SubmitLoginEndpoint -- Could not login user because :%v", err)
 
 		//TODO: In the event the user can't pass tests for long enough remember to use
 		//hydra.RejectLoginRequest()
@@ -107,7 +104,7 @@ func SubmitLoginEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-func postLoginChecks(env *utils.Env, ctx context.Context, object *profile.ProfileObject, login *models.Login, err error, request *http.Request) error {
+func postLoginChecks(ctx context.Context, object *papi.ProfileObject, login *models.Login, err error, request *http.Request) error {
 
 	if err != nil{
 		return err
@@ -116,9 +113,12 @@ func postLoginChecks(env *utils.Env, ctx context.Context, object *profile.Profil
 	return nil
 }
 
-func getLoginCredentials(env *utils.Env, ctx context.Context, contact string, password string) (*profile.ProfileObject, *models.Login, error) {
+func getLoginCredentials(ctx context.Context, contact string, password string) (*papi.ProfileObject, *models.Login, error) {
 
-	profileObj, err := getProfileByContact(env, ctx, contact)
+	service := frame.FromContext(ctx)
+	profileCli := papi.FromContext(ctx)
+
+	profileObj, err :=profileCli.GetProfileByContact(ctx, contact)
 
 	if err != nil {
 		return nil, nil, err
@@ -127,8 +127,7 @@ func getLoginCredentials(env *utils.Env, ctx context.Context, contact string, pa
 	login := models.Login{}
 	profileHash := utils.HashStringSecret(profileObj.GetID())
 
-
-	if err := env.GetRDb(ctx).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
+	if err := service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
 		return profileObj, nil, err
 	}
 

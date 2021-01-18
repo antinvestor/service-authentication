@@ -1,13 +1,13 @@
 package hydra
 
 import (
-	"github.com/antinvestor/service-authentication/utils"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/opentracing/opentracing-go"
+	"github.com/antinvestor/service-authentication/config"
+	"github.com/pitabwire/frame"
 	"github.com/stretchr/objx"
 	"io/ioutil"
 	"net/http"
@@ -45,7 +45,7 @@ func get(flow string, challenge string) (objx.Map, error) {
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := utils.GetEnv(utils.EnvHydraAdminUri, "http://localhost:4445")
+	hydraAdminUrl := frame.GetEnv(config.EnvHydraAdminUri, "http://localhost:4445")
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminUrl, flow)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -69,7 +69,7 @@ func put(flow string, action string, challenge string, data map[string]interface
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := utils.GetEnv(utils.EnvHydraAdminUri, "http://localhost:4445")
+	hydraAdminUrl := frame.GetEnv(config.EnvHydraAdminUri, "http://localhost:4445")
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -100,17 +100,10 @@ func put(flow string, action string, challenge string, data map[string]interface
 
 func GetLoginRequest(ctx context.Context, loginchallenge string) (objx.Map, error) {
 
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> GetLoginRequest")
-	defer span.Finish()
-
 	return get("login", loginchallenge)
 }
 
 func AcceptLoginRequest(ctx context.Context, loginchallenge string, data map[string]interface{}) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> AcceptLoginRequest")
-	defer span.Finish()
-
 
 	return put("login", "accept", loginchallenge, data)
 
@@ -118,26 +111,15 @@ func AcceptLoginRequest(ctx context.Context, loginchallenge string, data map[str
 
 func RejectLoginRequest(ctx context.Context, loginchallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> RejectLoginRequest")
-	defer span.Finish()
-
 	return put("login", "reject", loginchallenge, data)
 
 }
 
 func GetConsentRequest(ctx context.Context, consentChallenge string) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> GetConsentRequest")
-	defer span.Finish()
-
 	return get("consent", consentChallenge)
 }
 
 func AcceptConsentRequest(ctx context.Context, consentChallenge string, data map[string]interface{}) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> AcceptConsentRequest")
-	defer span.Finish()
-
 
 	return put("consent", "accept", consentChallenge, data)
 
@@ -145,35 +127,21 @@ func AcceptConsentRequest(ctx context.Context, consentChallenge string, data map
 
 func RejectConsentRequest(ctx context.Context, consentChallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> RejectConsentRequest")
-	defer span.Finish()
-
 	return put("consent", "reject", consentChallenge, data)
 
 }
 
 func GetLogoutRequest(ctx context.Context, logoutChallenge string) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> GetLogoutRequest")
-	defer span.Finish()
-
 	return get("logout", logoutChallenge)
 }
 
 func AcceptLogoutRequest(ctx context.Context, logoutChallenge string) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> AcceptLogoutRequest")
-	defer span.Finish()
-
 
 	return put("logout", "accept", logoutChallenge, map[string]interface{}{})
 
 }
 
 func RejectLogoutRequest(ctx context.Context, logoutChallenge string, data map[string]interface{}) (objx.Map, error) {
-
-	span, _ := opentracing.StartSpanFromContext(ctx, "Hydra -> RejectLogoutRequest")
-	defer span.Finish()
 
 	return put("logout", "reject", logoutChallenge, data)
 

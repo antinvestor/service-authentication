@@ -1,10 +1,10 @@
-package utils
+package config
 
 const EnvServerPort = "PORT"
 
 const EnvMigrate = "DO_MIGRATION"
+const EnvMigrationPath = "MIGRATION_PATH"
 
-const EnvDatabaseDriver = "DATABASE_DRIVER"
 const EnvDatabaseUrl = "DATABASE_URL"
 const EnvReplicaDatabaseUrl = "REPLICA_DATABASE_URL"
 

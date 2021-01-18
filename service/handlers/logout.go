@@ -1,17 +1,12 @@
 package handlers
 
 import (
-	"github.com/antinvestor/service-authentication/utils"
 	"net/http"
-
-	"github.com/opentracing/opentracing-go"
 
 	"github.com/antinvestor/service-authentication/hydra"
 )
 
-func ShowLogoutEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
-	span, _ := opentracing.StartSpanFromContext(req.Context(), "ShowLogoutEndpoint")
-	defer span.Finish()
+func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	logoutChallenge := req.FormValue("logout_challenge")
 

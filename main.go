@@ -1,8 +1,18 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"github.com/antinvestor/apis"
+	"github.com/antinvestor/service-authentication/config"
+	"github.com/antinvestor/service-authentication/models"
+	"github.com/gorilla/csrf"
+	"github.com/pitabwire/frame"
+	"gocloud.dev/server"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/antinvestor/service-authentication/service"
@@ -12,56 +22,67 @@ import (
 func main() {
 
 	serviceName := "auth"
+	ctx := context.Background()
 
-	logger, err := utils.ConfigureLogging(serviceName)
-	if err != nil {
-		log.Fatal("Failed to configure logging: " + err.Error())
+	var serviceOptions []frame.Option
+
+	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_profile")
+	mainDb := frame.Datastore(ctx, datasource, false)
+	serviceOptions = append(serviceOptions, mainDb)
+
+	readOnlydatasource := frame.GetEnv(config.EnvReplicaDatabaseUrl, datasource)
+	readDb := frame.Datastore(ctx, readOnlydatasource, true)
+	serviceOptions = append(serviceOptions, readDb)
+
+
+	waitDuration := time.Second * 15
+
+	csrfSecret := frame.GetEnv(config.EnvCsrfSecret,
+		"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b")
+	serverPort := frame.GetEnv(config.EnvServerPort, "7000")
+	router := service.NewAuthRouterV1(env)
+
+	handlers.RecoveryHandler()(
+		csrf.Protect(
+			[]byte(csrfSecret),
+			csrf.Secure(false),
+		)(router))
+
+
+	httpOptions := &server.Options{
+
 	}
 
-	closer, err := utils.ConfigureJuegler(serviceName)
+	defaultServer := frame.HttpServer(httpOptions)
+	serviceOptions = append(serviceOptions, defaultServer)
+
+	sysService := frame.NewService(serviceName, serviceOptions...)
+
+	isMigration, err := strconv.ParseBool(frame.GetEnv(config.EnvMigrate, "false"))
 	if err != nil {
-		logger.Fatal("Failed to configure Juegler: " + err.Error())
+		isMigration = false
 	}
 
-	defer closer.Close()
-
-	database, err := utils.ConfigureDatabase(logger, false)
-	if err != nil {
-		logger.WithError(err).Fatal("Could not Configure write database")
-	}
-	defer database.Close()
-
-	replicaDatabase, err := utils.ConfigureDatabase(logger, true)
-	if err != nil {
-		logger.WithError(err).Fatal("Could not Configure read database")
-	}
-	defer replicaDatabase.Close()
-
-	isMigration := utils.GetEnv(utils.EnvMigrate, "")
 	stdArgs := os.Args[1:]
-	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration == "true" {
+	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration {
 
-		logger.Info("Initiating migrations")
+		migrationPath := frame.GetEnv(config.EnvMigrationPath, "./migrations/0001")
+		err := sysService.MigrateDatastore(ctx, migrationPath,
+			&models.Login{}, &models.LoginEvent{})
 
-		service.PerformMigration(logger, database)
-		return
+		if err != nil {
+			log.Printf("main -- Could not migrate successfully because : %v", err)
+		}
+
+	} else {
+
+		serverPort := frame.GetEnv(config.EnvServerPort, "7005")
+
+		log.Printf(" main -- Initiating server operations on : %s", serverPort)
+		err := sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
+		if err != nil {
+			log.Printf("main -- Could not run Server : %v", err)
+		}
 
 	}
-
-	logger.Infof("Initiating the service at %v", time.Now())
-
-	healthChecker, err := utils.ConfigureHealthChecker(logger, database, replicaDatabase)
-	if err != nil {
-		logger.Warnf("Error configuring health checks: %v", err)
-	}
-
-	env := utils.Env{
-		Logger: logger,
-		Health: healthChecker,
-	}
-	env.SetWriteDb(database)
-	env.SetReadDb(replicaDatabase)
-
-	service.RunServer(&env)
-
 }

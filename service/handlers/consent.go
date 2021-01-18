@@ -1,17 +1,12 @@
 package handlers
 
 import (
-	"github.com/antinvestor/service-authentication/utils"
 	"net/http"
-
-	"github.com/opentracing/opentracing-go"
 
 	"github.com/antinvestor/service-authentication/hydra"
 )
 
-func ShowConsentEndpoint(env *utils.Env, rw http.ResponseWriter, req *http.Request) error {
-	span, _ := opentracing.StartSpanFromContext(req.Context(), "ShowConsentEndpoint")
-	defer span.Finish()
+func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	consentChallenge := req.FormValue("consent_challenge")
 
