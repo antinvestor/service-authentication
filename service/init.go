@@ -15,7 +15,8 @@ func addHandler(service *frame.Service, profileCli *papi.ProfileClient, router *
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		r.WithContext(frame.ToContext(r.Context(), service))
+		r = r.WithContext(frame.ToContext(r.Context(), service))
+		r = r.WithContext(papi.ToContext(r.Context(), profileCli))
 
 		err := f(w, r)
 		if err != nil {

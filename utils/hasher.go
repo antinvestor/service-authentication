@@ -3,7 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/hex"
-	"github.com/pkg/errors"
+	"github.com/go-errors/errors"
 	"golang.org/x/crypto/bcrypt"
 
 	"crypto/sha256"
@@ -27,14 +27,14 @@ func (b *BCrypt) Hash(ctx context.Context, data []byte) ([]byte, error) {
 	cf := b.bCryptWorkFactor
 	s, err := bcrypt.GenerateFromPassword(data, cf)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, 1)
 	}
 	return s, nil
 }
 
 func (b *BCrypt) Compare(ctx context.Context, hash, data []byte) error {
 	if err := bcrypt.CompareHashAndPassword(hash, data); err != nil {
-		return errors.WithStack(err)
+		return errors.Wrap(err, 1)
 	}
 	return nil
 }

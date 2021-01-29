@@ -3,9 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/antinvestor/service-authentication/models"
+	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
+	"github.com/go-errors/errors"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
@@ -26,7 +27,7 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		"loginChallenge": loginChallenge,
 		csrf.TemplateTag:  csrf.TemplateField(req),
 	})
-	return err
+	return errors.Wrap(err, 1)
 }
 
 
@@ -45,7 +46,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf( " SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact,err)
 		st, ok := status.FromError(err)
 		if !ok ||  st.Code() != codes.NotFound{
-			return err
+			return errors.Wrap(err, 1)
 		}
 	}
 
@@ -55,8 +56,8 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		name := req.PostForm.Get("name")
 		existingProfile, err = profileCli.CreateProfileByContactAndName( ctx, contact, name)
 		if err != nil {
-			log.Printf( " SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact,err)
-			return err
+			log.Printf( " SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact,err.(*errors.Error).ErrorStack())
+			return errors.Wrap(err, 1)
 		}
 	}
 
@@ -64,8 +65,8 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	password := req.PostForm.Get("password")
 	redirectUri, err := createAuthEntry(ctx, profileId, password, loginChallenge)
 	if err != nil {
-		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %v", profileId,err)
-		return err
+		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %v", profileId,err.(*errors.Error).ErrorStack())
+		return errors.Wrap(err, 1)
 	}
 
 	http.Redirect(rw, req, redirectUri, http.StatusSeeOther)

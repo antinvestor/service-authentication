@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/hydra"
+	"github.com/go-errors/errors"
 )
 
 func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -12,7 +13,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	getConseReq, err := hydra.GetConsentRequest(req.Context(), consentChallenge)
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	//if getConseReq.Get("skip").Bool() {
@@ -30,7 +31,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	})
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
@@ -45,7 +46,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	//	csrf.TemplateTag: csrf.TemplateField(req),
 	//})
 
-	//return err
+	//return errors.Wrap(err, 1)
 	//}
 
 	return nil

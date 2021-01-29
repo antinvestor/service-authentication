@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/models"
+	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
+	"github.com/go-errors/errors"
 	"github.com/pitabwire/frame"
 	"html/template"
 	"log"
@@ -26,7 +27,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
 	if err != nil {
 		log.Printf( " ShowLoginEndpoint -- couldn't get a valid login challenge %s : %v", loginchallenge, err)
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	if getLogReq.Get("skip").Bool() {
@@ -36,7 +37,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		})
 
 		if err != nil {
-			return err
+			return errors.Wrap(err, 1)
 		}
 
 		http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
@@ -49,7 +50,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	return nil
@@ -79,7 +80,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	remember := req.PostForm.Get("rememberme") == "remember"
@@ -96,7 +97,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	})
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
@@ -107,7 +108,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 func postLoginChecks(ctx context.Context, object *papi.ProfileObject, login *models.Login, err error, request *http.Request) error {
 
 	if err != nil{
-		return err
+		return errors.Wrap(err, 1)
 	}
 
 	return nil

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/antinvestor/service-authentication/config"
+	"github.com/go-errors/errors"
 	"github.com/pitabwire/frame"
 	"github.com/stretchr/objx"
 	"io/ioutil"
@@ -19,7 +19,7 @@ func processResp(response *http.Response) (objx.Map, error) {
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 
 	if response.StatusCode != http.StatusOK &&
@@ -28,7 +28,7 @@ func processResp(response *http.Response) (objx.Map, error) {
 
 		resp, err := objx.FromJSON(string(body))
 		if err != nil{
-			return nil, err
+			return nil, errors.Wrap(err, 1)
 		}
 
 		return resp, errors.New(response.Status)
@@ -49,13 +49,13 @@ func get(flow string, challenge string) (objx.Map, error) {
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminUrl, flow)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 	baseUrl.RawQuery = params.Encode()
 
 	response, err := http.Get(baseUrl.String())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 
 	return processResp(response)
@@ -73,25 +73,25 @@ func put(flow string, action string, challenge string, data map[string]interface
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 	baseUrl.RawQuery = params.Encode()
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodPut, baseUrl.String(), bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	response, err := client.Do(request)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 1)
 	}
 
 	return processResp(response)

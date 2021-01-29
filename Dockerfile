@@ -4,7 +4,13 @@ FROM golang:1.14 as builder
 LABEL maintainer="Bwire Peter <bwire517@gmail.com>"
 
 WORKDIR /
-ADD . .
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+# Copy the local package files to the container's workspace.
+COPY . .
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o auth_binary .
 
 FROM scratch

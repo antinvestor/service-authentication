@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/go-errors/errors"
 	"github.com/gorilla/csrf"
 )
 
@@ -16,5 +17,5 @@ func SetPasswordEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		csrf.TemplateTag: csrf.TemplateField(req),
 	})
 
-	return err
+	return errors.Wrap(err, 1)
 }

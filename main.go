@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"github.com/antinvestor/apis"
 	"github.com/antinvestor/service-authentication/config"
-	"github.com/antinvestor/service-authentication/models"
+	"github.com/antinvestor/service-authentication/service"
+	"github.com/antinvestor/service-authentication/service/models"
+	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
-	"gocloud.dev/server"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
-	"time"
-
-	"github.com/antinvestor/service-authentication/service"
-	"github.com/antinvestor/service-authentication/utils"
 )
 
 func main() {
@@ -24,7 +21,10 @@ func main() {
 	serviceName := "auth"
 	ctx := context.Background()
 
+	var sysService *frame.Service
+	var profileCli *papi.ProfileClient
 	var serviceOptions []frame.Option
+	var err error
 
 	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_profile")
 	mainDb := frame.Datastore(ctx, datasource, false)
@@ -35,28 +35,27 @@ func main() {
 	serviceOptions = append(serviceOptions, readDb)
 
 
-	waitDuration := time.Second * 15
+	profileServiceUrl := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
+	profileCli, err = papi.NewProfileClient(ctx, apis.WithEndpoint(profileServiceUrl))
+	if err != nil {
+		log.Printf("main -- Could not setup profile service : %v", err)
+	}
+
+
 
 	csrfSecret := frame.GetEnv(config.EnvCsrfSecret,
 		"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b")
-	serverPort := frame.GetEnv(config.EnvServerPort, "7000")
-	router := service.NewAuthRouterV1(env)
 
-	handlers.RecoveryHandler()(
+	authServiceHandlers := handlers.RecoveryHandler()(
 		csrf.Protect(
 			[]byte(csrfSecret),
 			csrf.Secure(false),
-		)(router))
+		)(service.NewAuthRouterV1(sysService, profileCli)))
 
-
-	httpOptions := &server.Options{
-
-	}
-
-	defaultServer := frame.HttpServer(httpOptions)
+	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)
 
-	sysService := frame.NewService(serviceName, serviceOptions...)
+	sysService = frame.NewService(serviceName, serviceOptions...)
 
 	isMigration, err := strconv.ParseBool(frame.GetEnv(config.EnvMigrate, "false"))
 	if err != nil {
@@ -76,7 +75,7 @@ func main() {
 
 	} else {
 
-		serverPort := frame.GetEnv(config.EnvServerPort, "7005")
+		serverPort := frame.GetEnv(config.EnvServerPort, "7000")
 
 		log.Printf(" main -- Initiating server operations on : %s", serverPort)
 		err := sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
