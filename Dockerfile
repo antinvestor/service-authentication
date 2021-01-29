@@ -17,6 +17,7 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /auth_binary /auth
 COPY --from=builder /tmpl /tmpl
+COPY --from=builder /localization /localization
 COPY --from=builder /migrations /migrations
 WORKDIR /
 

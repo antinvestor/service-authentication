@@ -21,12 +21,13 @@ func main() {
 	serviceName := "auth"
 	ctx := context.Background()
 
-	var sysService *frame.Service
+	var err error
 	var profileCli *papi.ProfileClient
 	var serviceOptions []frame.Option
-	var err error
 
-	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_profile")
+	sysService := frame.NewService(serviceName)
+
+	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_auth")
 	mainDb := frame.Datastore(ctx, datasource, false)
 	serviceOptions = append(serviceOptions, mainDb)
 
@@ -34,19 +35,16 @@ func main() {
 	readDb := frame.Datastore(ctx, readOnlydatasource, true)
 	serviceOptions = append(serviceOptions, readDb)
 
-
 	profileServiceUrl := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
 	profileCli, err = papi.NewProfileClient(ctx, apis.WithEndpoint(profileServiceUrl))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
-
-
 	csrfSecret := frame.GetEnv(config.EnvCsrfSecret,
 		"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b")
 
-	authServiceHandlers := handlers.RecoveryHandler()(
+	authServiceHandlers := handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(
 		csrf.Protect(
 			[]byte(csrfSecret),
 			csrf.Secure(false),
@@ -55,7 +53,7 @@ func main() {
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)
 
-	sysService = frame.NewService(serviceName, serviceOptions...)
+	sysService.Init(serviceOptions...)
 
 	isMigration, err := strconv.ParseBool(frame.GetEnv(config.EnvMigrate, "false"))
 	if err != nil {

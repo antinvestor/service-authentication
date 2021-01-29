@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/antinvestor/service-authentication/config"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"html/template"
 	"net/http"
 
@@ -18,4 +20,14 @@ func IndexEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	err := indexTmpl.Execute(rw, map[string]interface{}{})
 
 	return errors.Wrap(err, 1)
+}
+
+func getLocalizer(req *http.Request) *i18n.Localizer {
+
+	bundle, _ := req.Context().Value(config.CtxBundleKey).(*i18n.Bundle)
+
+	lang := req.FormValue("lang")
+	accept := req.Header.Get("Accept-Language")
+	return i18n.NewLocalizer(bundle, lang, accept)
+
 }

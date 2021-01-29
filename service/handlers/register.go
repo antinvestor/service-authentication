@@ -8,6 +8,7 @@ import (
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/go-errors/errors"
 	"github.com/gorilla/csrf"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,8 +36,10 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 
 	profileCli := papi.FromContext(ctx)
+	localizer := getLocalizer(req)
 
 	contact := req.PostForm.Get("contact")
+	name := req.PostForm.Get("name")
 	loginChallenge := req.PostForm.Get("login_challenge")
 
 
@@ -46,6 +49,22 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf( " SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact,err)
 		st, ok := status.FromError(err)
 		if !ok ||  st.Code() != codes.NotFound{
+
+			err2 := registerTmpl.Execute(rw, map[string]interface{}{
+				"error": localizer.MustLocalize(&i18n.LocalizeConfig{
+					DefaultMessage: &i18n.Message{
+						ID:    "CouldNotCheckContactExists",
+					},
+				}) ,
+				"contact": contact,
+				"name": name,
+				"loginChallenge": loginChallenge,
+				csrf.TemplateTag:  csrf.TemplateField(req),
+			})
+			if err2 != nil {
+				return errors.Wrap(err2, 1)
+			}
+
 			return errors.Wrap(err, 1)
 		}
 	}
@@ -53,10 +72,28 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if existingProfile == nil {
 		// don't have this profile in existence so we create it
 
-		name := req.PostForm.Get("name")
+
 		existingProfile, err = profileCli.CreateProfileByContactAndName( ctx, contact, name)
 		if err != nil {
-			log.Printf( " SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact,err.(*errors.Error).ErrorStack())
+			log.Printf( " SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact,err)
+
+
+			err2 := registerTmpl.Execute(rw, map[string]interface{}{
+				"error": localizer.MustLocalize(&i18n.LocalizeConfig{
+					DefaultMessage: &i18n.Message{
+						ID:    "CouldNotCreateProfileByContact",
+					},
+				}) ,
+				"contact": contact,
+				"name": name,
+				"loginChallenge": loginChallenge,
+				csrf.TemplateTag:  csrf.TemplateField(req),
+			})
+			if err2 != nil {
+				return errors.Wrap(err2, 1)
+			}
+
+
 			return errors.Wrap(err, 1)
 		}
 	}
@@ -66,6 +103,24 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	redirectUri, err := createAuthEntry(ctx, profileId, password, loginChallenge)
 	if err != nil {
 		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %v", profileId,err.(*errors.Error).ErrorStack())
+
+
+		err2 := registerTmpl.Execute(rw, map[string]interface{}{
+			"error": localizer.MustLocalize(&i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "CouldNotCreateLoginDetails",
+				},
+			}) ,
+			"contact": contact,
+			"name": name,
+			"loginChallenge": loginChallenge,
+			csrf.TemplateTag:  csrf.TemplateField(req),
+		})
+		if err2 != nil {
+			return errors.Wrap(err2, 1)
+		}
+
+
 		return errors.Wrap(err, 1)
 	}
 
@@ -84,15 +139,15 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 	crypt := utils.NewBCrypt()
 	passwordHash, err := crypt.Hash(ctx, []byte(password))
 	if err != nil {
-		return "/register", err
+		return "/register", errors.Wrap(err, 1)
 	}
 
-	login := models.Login{
+	login := &models.Login{
 		ProfileHash: profileHash,
 		PasswordHash: passwordHash,
 	}
-	if err := service.DB(ctx, true).Create(&login).Error; err != nil {
-		return "/register", err
+	if err := service.DB(ctx, false).Create(login).Error; err != nil {
+		return "/register", errors.Wrap(err, 1)
 	}
 
 	return fmt.Sprintf("/login?login_challenge=%s", loginChallenge), nil

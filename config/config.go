@@ -13,3 +13,5 @@ const EnvCsrfSecret = "CSRF_SECRET"
 const EnvHydraAdminUri = "HYDR_ADMIN_URI"
 
 const EnvProfileServiceUri = "PROFILE_SERVICE_URI"
+
+const CtxBundleKey = "bundle"

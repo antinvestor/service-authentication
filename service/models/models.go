@@ -2,18 +2,22 @@ package models
 
 import (
 	"github.com/pitabwire/frame"
+	"gorm.io/datatypes"
 	"time"
 )
 
 type Login struct {
+
+	frame.BaseModel
 	ProfileHash  string `gorm:"type:varchar(255)"`
 	PasswordHash []byte
-	Locked       *time.Time
-	frame.BaseModel
+	Locked       datatypes.Date
 }
 
 
 type LoginEvent struct {
+
+	frame.BaseModel
 	LoginID      string `gorm:"type:varchar(50)"`
 	AccessID     string `gorm:"type:varchar(50)"`
 	IPAddress    string
@@ -21,7 +25,6 @@ type LoginEvent struct {
 	Client       string
 	Status       int
 	Context      string `gorm:"type:text"`
-	frame.BaseModel
 }
 
 type Session struct {
