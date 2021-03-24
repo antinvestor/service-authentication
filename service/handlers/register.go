@@ -48,7 +48,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if err != nil{
 		log.Printf( " SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact,err)
 		st, ok := status.FromError(err)
-		if !ok ||  st.Code() != codes.NotFound{
+		if !ok &&  st.Code() != codes.NotFound{
 
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
 				"error": localizer.MustLocalize(&i18n.LocalizeConfig{
