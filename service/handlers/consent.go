@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/hydra"
@@ -16,8 +17,10 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return errors.Wrap(err, 1)
 	}
 
-	//if getConseReq.Get("skip").Bool() {
-
+	log.Printf(" ShowConsentEndpoint -- consent map has the following data : ")
+	for key, val := range getConseReq {
+		log.Printf(" ShowConsentEndpoint --  %s : %v", key, val)
+	}
 	grantedScope := getConseReq.Get("requested_scope").StringSlice()
 	grantedAudience := getConseReq.Get("requested_access_token_audience").StringSlice()
 
