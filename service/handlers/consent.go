@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"reflect"
 
 	"github.com/antinvestor/service-authentication/hydra"
 	"github.com/go-errors/errors"
@@ -20,12 +21,9 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	grantedScope := getConseReq.Get("requested_scope").StringSlice()
 	grantedAudience := getConseReq.Get("requested_access_token_audience").StringSlice()
 
-	log.Printf(" ShowConsentEndpoint -- scopes has the following data : ")
-	if getConseReq.Get("requested_scope").IsStrSlice() {
-		log.Print(" ShowConsentEndpoint -- requested_scope is Slice")
-	}else if getConseReq.Get("requested_scope").IsStr() {
-		log.Print(" ShowConsentEndpoint -- requested_scope is String")
-	}
+	log.Print(" ShowConsentEndpoint -- scopes has the following data : ")
+	log.Printf(" ShowConsentEndpoint -- requested_scope is of type %s", reflect.TypeOf(getConseReq.Get("requested_scope")))
+
 	for  _, val := range grantedScope {
 		log.Printf(" ShowConsentEndpoint --  %v", val)
 	}
