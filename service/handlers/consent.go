@@ -17,12 +17,13 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return errors.Wrap(err, 1)
 	}
 
-	log.Printf(" ShowConsentEndpoint -- consent map has the following data : ")
-	for key, val := range getConseReq {
-		log.Printf(" ShowConsentEndpoint --  %s : %v", key, val)
-	}
 	grantedScope := getConseReq.Get("requested_scope").StringSlice()
 	grantedAudience := getConseReq.Get("requested_access_token_audience").StringSlice()
+
+	log.Printf(" ShowConsentEndpoint -- scopes has the following data : ")
+	for  _, val := range grantedScope {
+		log.Printf(" ShowConsentEndpoint --  %v", val)
+	}
 
 	accLogReq, err := hydra.AcceptConsentRequest(req.Context(), consentChallenge, map[string]interface{}{
 		"grant_scope":                 grantedScope,
