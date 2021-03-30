@@ -10,7 +10,6 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/stretchr/objx"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -26,9 +25,6 @@ func processResp(response *http.Response) (objx.Map, error) {
 	if response.StatusCode != http.StatusOK &&
 		response.StatusCode != http.StatusAccepted &&
 		response.StatusCode != http.StatusCreated {
-
-		log.Printf(" processResp --  +++++++++++++++++++++++++ ")
-		log.Printf(" processResp -- %v", body)
 
 		resp, err := objx.FromJSON(string(body))
 		if err != nil{

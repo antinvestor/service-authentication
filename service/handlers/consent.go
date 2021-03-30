@@ -21,6 +21,11 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	grantedAudience := getConseReq.Get("requested_access_token_audience").StringSlice()
 
 	log.Printf(" ShowConsentEndpoint -- scopes has the following data : ")
+	if getConseReq.Get("requested_scope").IsStrSlice() {
+		log.Print(" ShowConsentEndpoint -- requested_scope is Slice")
+	}else if getConseReq.Get("requested_scope").IsStr() {
+		log.Print(" ShowConsentEndpoint -- requested_scope is String")
+	}
 	for  _, val := range grantedScope {
 		log.Printf(" ShowConsentEndpoint --  %v", val)
 	}
