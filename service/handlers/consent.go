@@ -17,11 +17,9 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	//if getConseReq.Get("skip").Bool() {
-	grantedScope := []string{}
-	getConseReq.Get("requested_scope").StringSlice(grantedScope)
 
-	grantedAudience := []string{}
-	getConseReq.Get("requested_access_token_audience").StringSlice(grantedAudience)
+	grantedScope := getConseReq.Get("requested_scope").StringSlice()
+	grantedAudience := getConseReq.Get("requested_access_token_audience").StringSlice()
 
 	accLogReq, err := hydra.AcceptConsentRequest(req.Context(), consentChallenge, map[string]interface{}{
 		"grant_scope":                 grantedScope,
