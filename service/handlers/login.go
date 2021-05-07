@@ -30,6 +30,8 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return errors.Wrap(err, 1)
 	}
 
+	log.Printf(" ShowLoginEndpoint -- %v", getLogReq)
+
 	if getLogReq.Get("skip").Bool() {
 
 		accLogReq, err := hydra.AcceptLoginRequest(ctx, loginchallenge, map[string]interface{}{
@@ -134,7 +136,7 @@ func getLoginCredentials(ctx context.Context, contact string, password string) (
 
 	crypt := utils.NewBCrypt()
 
-	err = crypt.Compare(ctx, []byte(login.PasswordHash), []byte(password))
+	err = crypt.Compare(ctx, login.PasswordHash, []byte(password))
 	if err != nil {
 		return profileObj, &login, err
 	}

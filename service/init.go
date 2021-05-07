@@ -2,24 +2,19 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"github.com/BurntSushi/toml"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/pitabwire/frame"
-	"golang.org/x/text/language"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type holder struct {
 	service    *frame.Service
 	profileCli *papi.ProfileClient
-	bundle     *i18n.Bundle
 }
 
 func addHandler(holder *holder, router *mux.Router,
@@ -29,7 +24,7 @@ func addHandler(holder *holder, router *mux.Router,
 
 		r = r.WithContext(frame.ToContext(r.Context(), holder.service))
 		r = r.WithContext(papi.ToContext(r.Context(), holder.profileCli))
-		r = r.WithContext(context.WithValue(r.Context(), config.CtxBundleKey, holder.bundle))
+		r = r.WithContext(context.WithValue(r.Context(), config.CtxBundleKey, holder.service.Bundle()))
 
 		err := f(w, r)
 		if err != nil {
@@ -44,14 +39,13 @@ func addHandler(holder *holder, router *mux.Router,
 
 }
 
-// NewRouterV1 -
+// NewAuthRouterV1 NewRouterV1 -
 func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	holder := &holder{
 		service:    service,
 		profileCli: profileCli,
-		bundle:     LoadTranslations(),
 	}
 
 	addHandler(holder, router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
@@ -65,15 +59,4 @@ func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient) *mu
 	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
 	return router
-}
-
-func LoadTranslations() *i18n.Bundle {
-
-	bundle := i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
-	for _, lang := range []string{"en"} {
-		bundle.MustLoadMessageFile(fmt.Sprintf("localization/messages.%v.toml", lang))
-	}
-
-	return bundle
 }

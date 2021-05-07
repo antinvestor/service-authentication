@@ -41,6 +41,9 @@ func main() {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
+	serviceTranslations := frame.Translations("en")
+	serviceOptions = append(serviceOptions, serviceTranslations)
+
 	csrfSecret := frame.GetEnv(config.EnvCsrfSecret,
 		"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b")
 
