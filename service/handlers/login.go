@@ -5,7 +5,6 @@ import (
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
-	"github.com/go-errors/errors"
 	"github.com/pitabwire/frame"
 	"html/template"
 	"log"
@@ -26,8 +25,8 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
 	if err != nil {
-		log.Printf( " ShowLoginEndpoint -- couldn't get a valid login challenge %s : %v", loginchallenge, err)
-		return errors.Wrap(err, 1)
+		log.Printf(" ShowLoginEndpoint -- couldn't get a valid login challenge %s : %v", loginchallenge, err)
+		return err
 	}
 
 	log.Printf(" ShowLoginEndpoint -- %v", getLogReq)
@@ -39,7 +38,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		})
 
 		if err != nil {
-			return errors.Wrap(err, 1)
+			return err
 		}
 
 		http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
@@ -52,7 +51,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	return nil
@@ -82,7 +81,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	remember := req.PostForm.Get("rememberme") == "remember"
@@ -92,14 +91,16 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		rememberDuration = 0
 	}
 
-	accLogReq, err := hydra.AcceptLoginRequest(req.Context(), loginchallenge, map[string]interface{}{
-		"subject":      profileObj.GetID(),
-		"remember":     remember,
-		"remember_for": rememberDuration,
-	})
+	accLogReq, err := hydra.AcceptLoginRequest(
+		req.Context(), loginchallenge,
+		map[string]interface{}{
+			"subject":      profileObj.GetID(),
+			"remember":     remember,
+			"remember_for": rememberDuration,
+		})
 
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
@@ -109,8 +110,8 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 func postLoginChecks(ctx context.Context, object *papi.ProfileObject, login *models.Login, err error, request *http.Request) error {
 
-	if err != nil{
-		return errors.Wrap(err, 1)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -121,7 +122,7 @@ func getLoginCredentials(ctx context.Context, contact string, password string) (
 	service := frame.FromContext(ctx)
 	profileCli := papi.FromContext(ctx)
 
-	profileObj, err :=profileCli.GetProfileByContact(ctx, contact)
+	profileObj, err := profileCli.GetProfileByContact(ctx, contact)
 
 	if err != nil {
 		return nil, nil, err

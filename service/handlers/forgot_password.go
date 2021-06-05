@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/go-errors/errors"
 	"github.com/gorilla/csrf"
 )
 
@@ -21,5 +20,5 @@ func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	}
 
-	return errors.Wrap(err, 1)
+	return err
 }

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/hydra"
-	"github.com/go-errors/errors"
 )
 
 func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -13,13 +12,13 @@ func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	_, err := hydra.GetLogoutRequest(req.Context(), logoutChallenge)
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	accLogReq, err := hydra.AcceptLogoutRequest(req.Context(), logoutChallenge)
 
 	if err != nil {
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)

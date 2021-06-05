@@ -7,6 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service"
 	"github.com/antinvestor/service-authentication/service/models"
+	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
@@ -18,11 +19,12 @@ import (
 
 func main() {
 
-	serviceName := "auth"
+	serviceName := "service.authentication"
 	ctx := context.Background()
 
 	var err error
 	var profileCli *papi.ProfileClient
+	var partitionCli *prtapi.PartitionClient
 	var serviceOptions []frame.Option
 
 	sysService := frame.NewService(serviceName)
@@ -36,9 +38,28 @@ func main() {
 	serviceOptions = append(serviceOptions, readDb)
 
 	profileServiceUrl := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
-	profileCli, err = papi.NewProfileClient(ctx, apis.WithEndpoint(profileServiceUrl))
+
+	oauth2ServiceHost := frame.GetEnv(config.EnvOauth2ServiceUri, "")
+	oauth2ServiceUrl := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
+	oauth2ServiceSecret := frame.GetEnv(config.EnvOauth2ServiceClientSecret, "")
+
+	profileCli, err = papi.NewProfileClient(ctx,
+		apis.WithEndpoint(profileServiceUrl),
+		apis.WithTokenEndpoint(oauth2ServiceUrl),
+		apis.WithTokenUsername(serviceName),
+		apis.WithTokenPassword(oauth2ServiceSecret))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
+	}
+
+	partitionServiceUrl := frame.GetEnv(config.EnvPartitionServiceUri, "127.0.0.1:7003")
+	partitionCli, err = prtapi.NewPartitionsClient(ctx,
+		apis.WithEndpoint(partitionServiceUrl),
+		apis.WithTokenEndpoint(oauth2ServiceUrl),
+		apis.WithTokenUsername(serviceName),
+		apis.WithTokenPassword(oauth2ServiceSecret))
+	if err != nil {
+		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
 
 	serviceTranslations := frame.Translations("en")
@@ -51,7 +72,7 @@ func main() {
 		csrf.Protect(
 			[]byte(csrfSecret),
 			csrf.Secure(false),
-		)(service.NewAuthRouterV1(sysService, profileCli)))
+		)(service.NewAuthRouterV1(sysService, profileCli, partitionCli)))
 
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)

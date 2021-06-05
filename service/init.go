@@ -1,10 +1,10 @@
 package service
 
 import (
-	"context"
-	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
+	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
+
 	"github.com/pitabwire/frame"
 	"log"
 	"net/http"
@@ -13,8 +13,9 @@ import (
 )
 
 type holder struct {
-	service    *frame.Service
-	profileCli *papi.ProfileClient
+	service      *frame.Service
+	profileCli   *papi.ProfileClient
+	partitionCli *prtapi.PartitionClient
 }
 
 func addHandler(holder *holder, router *mux.Router,
@@ -24,7 +25,7 @@ func addHandler(holder *holder, router *mux.Router,
 
 		r = r.WithContext(frame.ToContext(r.Context(), holder.service))
 		r = r.WithContext(papi.ToContext(r.Context(), holder.profileCli))
-		r = r.WithContext(context.WithValue(r.Context(), config.CtxBundleKey, holder.service.Bundle()))
+		r = r.WithContext(prtapi.ToContext(r.Context(), holder.partitionCli))
 
 		err := f(w, r)
 		if err != nil {
@@ -40,12 +41,13 @@ func addHandler(holder *holder, router *mux.Router,
 }
 
 // NewAuthRouterV1 NewRouterV1 -
-func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient) *mux.Router {
+func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient, partitionCli *prtapi.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	holder := &holder{
-		service:    service,
-		profileCli: profileCli,
+		service:      service,
+		profileCli:   profileCli,
+		partitionCli: partitionCli,
 	}
 
 	addHandler(holder, router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")

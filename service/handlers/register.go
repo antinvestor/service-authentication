@@ -6,9 +6,7 @@ import (
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
-	"github.com/go-errors/errors"
 	"github.com/gorilla/csrf"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,7 +26,7 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		"loginChallenge": loginChallenge,
 		csrf.TemplateTag:  csrf.TemplateField(req),
 	})
-	return errors.Wrap(err, 1)
+	return err
 }
 
 
@@ -36,7 +34,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 
 	profileCli := papi.FromContext(ctx)
-	localizer := getLocalizer(req)
+	service := frame.FromContext(ctx)
 
 	contact := req.PostForm.Get("contact")
 	name := req.PostForm.Get("name")
@@ -51,21 +49,17 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		if !ok ||  st.Code() != codes.NotFound{
 
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
-				"error": localizer.MustLocalize(&i18n.LocalizeConfig{
-					DefaultMessage: &i18n.Message{
-						ID:    "CouldNotCheckContactExists",
-					},
-				}) ,
+				"error": service.Translate(req, "CouldNotCheckContactExists") ,
 				"contact": contact,
 				"name": name,
 				"loginChallenge": loginChallenge,
 				csrf.TemplateTag:  csrf.TemplateField(req),
 			})
 			if err2 != nil {
-				return errors.Wrap(err2, 1)
+				return err2
 			}
 
-			return errors.Wrap(err, 1)
+			return err
 		}
 	}
 
@@ -79,22 +73,18 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
-				"error": localizer.MustLocalize(&i18n.LocalizeConfig{
-					DefaultMessage: &i18n.Message{
-						ID:    "CouldNotCreateProfileByContact",
-					},
-				}) ,
+				"error": service.Translate(req, "CouldNotCreateProfileByContact") ,
 				"contact": contact,
 				"name": name,
 				"loginChallenge": loginChallenge,
 				csrf.TemplateTag:  csrf.TemplateField(req),
 			})
 			if err2 != nil {
-				return errors.Wrap(err2, 1)
+				return err2
 			}
 
 
-			return errors.Wrap(err, 1)
+			return err
 		}
 	}
 
@@ -102,26 +92,22 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	password := req.PostForm.Get("password")
 	redirectUri, err := createAuthEntry(ctx, profileId, password, loginChallenge)
 	if err != nil {
-		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %v", profileId,err.(*errors.Error).ErrorStack())
+		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId,err)
 
 
 		err2 := registerTmpl.Execute(rw, map[string]interface{}{
-			"error": localizer.MustLocalize(&i18n.LocalizeConfig{
-				DefaultMessage: &i18n.Message{
-					ID:    "CouldNotCreateLoginDetails",
-				},
-			}) ,
+			"error": service.Translate(req, "CouldNotCreateLoginDetails") ,
 			"contact": contact,
 			"name": name,
 			"loginChallenge": loginChallenge,
 			csrf.TemplateTag:  csrf.TemplateField(req),
 		})
 		if err2 != nil {
-			return errors.Wrap(err2, 1)
+			return err2
 		}
 
 
-		return errors.Wrap(err, 1)
+		return err
 	}
 
 	http.Redirect(rw, req, redirectUri, http.StatusSeeOther)
@@ -139,7 +125,7 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 	crypt := utils.NewBCrypt()
 	passwordHash, err := crypt.Hash(ctx, []byte(password))
 	if err != nil {
-		return "/register", errors.Wrap(err, 1)
+		return "/register", err
 	}
 
 	login := &models.Login{
@@ -147,7 +133,7 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 		PasswordHash: passwordHash,
 	}
 	if err := service.DB(ctx, false).Create(login).Error; err != nil {
-		return "/register", errors.Wrap(err, 1)
+		return "/register", err
 	}
 
 	return fmt.Sprintf("/login?login_challenge=%s", loginChallenge), nil
