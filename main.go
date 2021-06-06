@@ -37,15 +37,15 @@ func main() {
 	readDb := frame.Datastore(ctx, readOnlydatasource, true)
 	serviceOptions = append(serviceOptions, readDb)
 
-	profileServiceUrl := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
+	profileServiceURL := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
 
 	oauth2ServiceHost := frame.GetEnv(config.EnvOauth2ServiceUri, "")
-	oauth2ServiceUrl := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
+	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
 	oauth2ServiceSecret := frame.GetEnv(config.EnvOauth2ServiceClientSecret, "")
 
 	profileCli, err = papi.NewProfileClient(ctx,
-		apis.WithEndpoint(profileServiceUrl),
-		apis.WithTokenEndpoint(oauth2ServiceUrl),
+		apis.WithEndpoint(profileServiceURL),
+		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
 		apis.WithTokenPassword(oauth2ServiceSecret))
 	if err != nil {
@@ -55,7 +55,7 @@ func main() {
 	partitionServiceUrl := frame.GetEnv(config.EnvPartitionServiceUri, "127.0.0.1:7003")
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
 		apis.WithEndpoint(partitionServiceUrl),
-		apis.WithTokenEndpoint(oauth2ServiceUrl),
+		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
 		apis.WithTokenPassword(oauth2ServiceSecret))
 	if err != nil {
