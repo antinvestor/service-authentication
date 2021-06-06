@@ -52,9 +52,9 @@ func main() {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
-	partitionServiceUrl := frame.GetEnv(config.EnvPartitionServiceUri, "127.0.0.1:7003")
+	partitionServiceURL := frame.GetEnv(config.EnvPartitionServiceUri, "127.0.0.1:7003")
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
-		apis.WithEndpoint(partitionServiceUrl),
+		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceUrl),
 		apis.WithTokenUsername(serviceName),
 		apis.WithTokenPassword(oauth2ServiceSecret))
