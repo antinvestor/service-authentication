@@ -21,9 +21,6 @@ jobs:
           go version
           go get -u golang.org/x/lint/golint
 
-      - name: Print out logs to help with debugging
-        run: docker-compose -f ./tests_runner/docker-compose.yml logs
-
       - name: Test partition service
         run: go test  ./...
 
