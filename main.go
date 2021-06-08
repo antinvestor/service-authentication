@@ -19,7 +19,7 @@ import (
 
 func main() {
 
-	serviceName := "service.authentication"
+	serviceName := "service_authentication"
 	ctx := context.Background()
 
 	var err error
