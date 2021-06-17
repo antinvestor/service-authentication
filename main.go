@@ -88,8 +88,7 @@ func main() {
 	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration {
 
 		migrationPath := frame.GetEnv(config.EnvMigrationPath, "./migrations/0001")
-		err := sysService.MigrateDatastore(ctx, migrationPath,
-			&models.Login{}, &models.LoginEvent{})
+		err := sysService.MigrateDatastore(ctx, migrationPath, &models.Login{}, &models.LoginEvent{})
 
 		if err != nil {
 			log.Printf("main -- Could not migrate successfully because : %v", err)

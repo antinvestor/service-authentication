@@ -387,6 +387,8 @@ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWb
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/pitabwire/frame v1.2.7 h1:FGTDiS9TVltieH0YcUvvaIQMASuyax4DDsUEF7oMshM=
 github.com/pitabwire/frame v1.2.7/go.mod h1:NMIUzgw/sFtce8UeiZA2wVt1njI2I/3zE0qxRAEu3NQ=
+github.com/pitabwire/frame v1.2.15 h1:Aetio244Ho6PtIwZMea+dZ5VmtSKwPRz6ZmPJg+OUXI=
+github.com/pitabwire/frame v1.2.15/go.mod h1:NMIUzgw/sFtce8UeiZA2wVt1njI2I/3zE0qxRAEu3NQ=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
