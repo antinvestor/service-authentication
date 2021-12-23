@@ -2,76 +2,49 @@
 
 {{define "content"}}
 
-    <div class="form-style-8">
 
-        <div class="card">
-            <div class="card-content">
+<h1>Login </h1>
+<form method="post" action="/login/post">
 
-                <h2>Login </h2>
-                <form method="post" action="/login/post">
+    {{ .csrfField }}
+    <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
 
-                    {{ .csrfField }}
-                    <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
+    {{if .error}}
+    <div class="message error">{{ .error }}</div>
+    {{end}}
 
+    <label>
+        <input type="text" name="contact" placeholder="email or phonenumber" class="field"/>
+    </label>
 
-                    <p class="help is-danger">{{ .error }}</p>
+    <label>
+        <input type="password" name="password" placeholder="password" class="field"/>
+    </label>
 
-                    <div class="field">
-                        <label class="label"></label>
-                        <div class="control">
-                            <input type="text" name="contact" placeholder="email or phonenumber"/>
-                        </div>
-                    </div>
+    <label>
+        <input id="rememberme" name="rememberme" value="remember" type="checkbox"/>
+        Remember me
+    </label>
 
-                    <div class="field">
-                        <label class="label"></label>
-                        <div class="control">
-                            <input type="password" name="password" placeholder="password"/>
-                        </div>
-                    </div>
-
-                    <div class="field is-horizontal">
-                        <div class="field-body">
-                            <div class="field is-narrow">
-                                <div class="control">
-                                    <label class="radio">
-                                        <input id="rememberme" name="rememberme" value="remember" type="checkbox"/>
-                                        Remember me
-                                    </label>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field is-grouped is-grouped-centered">
-
-                        <p class="control">
-                            <a class="is-outlined" href="/forgot">
-                                Forgot password
-                            </a>
-                        </p>
-
-                        <p class="control">
-                            <button class="button is-link" type="submit"> Login</button>
-                        </p>
+    <br/>
+    <input class="btn" type="submit" value="Login"/>
 
 
-                    </div>
+</form>
 
 
-                </form>
+<div class="pass-link">
+    <a class="is-outlined" href="/forgot">
+        Forgot password
+    </a>
+</div>
 
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-content">
-                Not registered already? <a href="/register?login_challenge={{ .loginChallenge }}">signup</a>
-
-            </div>
-        </div>
-    </div>
+<br/>
+<hr/>
+<br/>
+<div class="pass-link">
+    Not registered already? <a href="/register?login_challenge={{ .loginChallenge }}">signup</a>
+</div>
 
 {{end}}
 

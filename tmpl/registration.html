@@ -3,48 +3,29 @@
 {{define "content"}}
 
 
-    <div>
+<h1>Registration </h1>
 
+<br/>
 
-        <div class="card">
-            <div class="card-content">
+<form method="post" action="/register/post">
+    {{ .csrfField }}
+    <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
 
-                <h2>Registration </h2>
+    <label>
+        <input class="field" type="text" name="contact" placeholder="Email or Phonenumber"/>
+    </label>
 
-                <br/>
+    <label>
+        <input class="field" type="text" name="name" placeholder="Name"/>
+    </label>
 
-                <form method="post" action="/register/post">
-                    {{ .csrfField }}
-                    <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
+    <label>
+        <input class="field" type="password" name="password" placeholder="password"/>
+    </label>
 
-                    <div class="field">
-                        <label class="label">email or phonenumber</label>
-                        <div class="control">
-                            <input class="input" type="text" name="contact"/>
-                        </div>
-                    </div>
+    <br/>
 
-                    <div class="field">
-                        <label class="label">name</label>
-                        <div class="control">
-                            <input class="input" type="text" name="name"/>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">password</label>
-                        <div class="control">
-                            <input class="input" type="password" name="password"/>
-                        </div>
-                    </div>
-
-                    <br/>
-
-                    <button class="button" type="submit"> Register</button>
-
-                </form>
-            </div>
-        </div>
-    </div>
+    <input class="btn" type="submit" value="Register"/>
+</form>
 
 {{end}}
