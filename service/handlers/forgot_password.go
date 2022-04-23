@@ -16,9 +16,7 @@ func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		csrf.TemplateTag: csrf.TemplateField(req),
 	})
 
-	if req.Method == "POST" {
-
-	}
+	//if req.Method == "POST" {}
 
 	return err
 }

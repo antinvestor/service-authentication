@@ -47,8 +47,7 @@ func main() {
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret),
-		apis.WithAudiences("service_profile"))
+		apis.WithTokenPassword(oauth2ServiceSecret))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
@@ -58,8 +57,7 @@ func main() {
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret),
-		apis.WithAudiences("service_partition"))
+		apis.WithTokenPassword(oauth2ServiceSecret))
 	if err != nil {
 		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
