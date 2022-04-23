@@ -21,7 +21,7 @@ jobs:
           go version
           go get -u golang.org/x/lint/golint
 
-      - name: Test partition service
+      - name: Test authentication service
         run: go test  ./...
 
       - name: Run Vet & Lint
