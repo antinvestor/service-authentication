@@ -12,7 +12,7 @@ import (
 func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	partitionApi := partapi.FromContext(ctx)
+	partitionAPI := partapi.FromContext(ctx)
 
 	consentChallenge := req.FormValue("consent_challenge")
 
@@ -22,18 +22,17 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	grantedScope := getConseReq.Get("requested_scope").Data().([]interface{})
-	profileId := getConseReq.Get("subject").Str()
+	profileID := getConseReq.Get("subject").Str()
 
 	client := getConseReq.Get("client").MSI()
-	clientId := client["client_id"].(string)
+	clientID := client["client_id"].(string)
 	grantedAudience := client["audience"].([]interface{})
 
-	access, err := partitionApi.GetAccess(ctx, clientId, profileId)
+	access, err := partitionAPI.GetAccess(ctx, clientID, profileID)
 	if err != nil {
-
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
-			access, err = partitionApi.CreateAccess(ctx, clientId, profileId)
+			access, err = partitionAPI.CreateAccess(ctx, clientID, profileID)
 		}
 
 		if err != nil {
@@ -68,16 +67,16 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
 
 	// For the foreseeable future we will always skip the consent page
-	//if getConseReq.Get("skip").Bool() {
+	// if getConseReq.Get("skip").Bool() {
 	//
-	//} else {
+	// } else {
 	//
 	//err := env.Template.ExecuteTemplate(rw, "login.html", map[string]interface{}{
 	//	"error":          "",
 	//	csrf.TemplateTag: csrf.TemplateField(req),
 	//})
 
-	//return err
+	// return err
 	//}
 
 	return nil

@@ -30,12 +30,12 @@ func main() {
 	sysService := frame.NewService(serviceName)
 
 	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_auth")
-	mainDb := frame.Datastore(ctx, datasource, false)
-	serviceOptions = append(serviceOptions, mainDb)
+	mainDB := frame.Datastore(ctx, datasource, false)
+	serviceOptions = append(serviceOptions, mainDB)
 
 	readOnlydatasource := frame.GetEnv(config.EnvReplicaDatabaseUrl, datasource)
-	readDb := frame.Datastore(ctx, readOnlydatasource, true)
-	serviceOptions = append(serviceOptions, readDb)
+	readDB := frame.Datastore(ctx, readOnlydatasource, true)
+	serviceOptions = append(serviceOptions, readDB)
 
 	profileServiceURL := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
 
@@ -47,7 +47,8 @@ func main() {
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret))
+		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithAudiences("service_profile"))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
@@ -57,7 +58,8 @@ func main() {
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret))
+		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithAudiences("service_partition"))
 	if err != nil {
 		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
@@ -86,23 +88,18 @@ func main() {
 
 	stdArgs := os.Args[1:]
 	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration {
-
 		migrationPath := frame.GetEnv(config.EnvMigrationPath, "./migrations/0001")
 		err := sysService.MigrateDatastore(ctx, migrationPath, &models.Login{}, &models.LoginEvent{})
 
 		if err != nil {
 			log.Printf("main -- Could not migrate successfully because : %v", err)
 		}
-
 	} else {
-
 		serverPort := frame.GetEnv(config.EnvServerPort, "7000")
-
 		log.Printf(" main -- Initiating server operations on : %s", serverPort)
 		err := sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
 		if err != nil {
 			log.Printf("main -- Could not run Server : %v", err)
 		}
-
 	}
 }
