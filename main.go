@@ -44,13 +44,12 @@ func main() {
 	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
 	oauth2ServiceSecret := frame.GetEnv(config.EnvOauth2ServiceClientSecret, "")
 
-	audienceList := make([]string, 0)
+	var audienceList []string
 	oauth2ServiceAudience := frame.GetEnv(config.EnvOauth2ServiceAudience, "")
 	if oauth2ServiceAudience != "" {
 		audienceList = strings.Split(oauth2ServiceAudience, "")
 	}
 	profileCli, err = papi.NewProfileClient(ctx,
-
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
