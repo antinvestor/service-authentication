@@ -15,7 +15,6 @@ import (
 )
 
 func processResp(response *http.Response) (objx.Map, error) {
-
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -25,7 +24,6 @@ func processResp(response *http.Response) (objx.Map, error) {
 	if response.StatusCode != http.StatusOK &&
 		response.StatusCode != http.StatusAccepted &&
 		response.StatusCode != http.StatusCreated {
-
 		resp, err := objx.FromJSON(string(body))
 		if err != nil {
 			return nil, err
@@ -41,19 +39,18 @@ func processResp(response *http.Response) (objx.Map, error) {
 // A little helper that takes type (can be "login" or "consent")
 // and a challenge and returns the response from ORY Hydra.
 func get(flow string, challenge string) (objx.Map, error) {
-
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := frame.GetEnv(config.EnvOauth2ServiceAdminUri, "http://localhost:4445")
-	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminUrl, flow)
-	baseUrl, err := url.Parse(formatedUrl)
+	hydraAdminURL := frame.GetEnv(config.EnvOauth2ServiceAdminURI, "http://localhost:4445")
+	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminURL, flow)
+	baseURL, err := url.Parse(formatedUrl)
 	if err != nil {
 		return nil, err
 	}
-	baseUrl.RawQuery = params.Encode()
+	baseURL.RawQuery = params.Encode()
 
-	response, err := http.Get(baseUrl.String())
+	response, err := http.Get(baseURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +66,7 @@ func put(flow string, action string, challenge string, data map[string]interface
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := frame.GetEnv(config.EnvOauth2ServiceAdminUri, "http://localhost:4445")
+	hydraAdminUrl := frame.GetEnv(config.EnvOauth2ServiceAdminURI, "http://localhost:4445")
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {

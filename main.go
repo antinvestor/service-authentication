@@ -15,6 +15,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -29,21 +30,27 @@ func main() {
 
 	sysService := frame.NewService(serviceName)
 
-	datasource := frame.GetEnv(config.EnvDatabaseUrl, "postgres://ant:@nt@localhost/service_auth")
+	datasource := frame.GetEnv(config.EnvDatabaseURL, "postgres://ant:@nt@localhost/service_auth")
 	mainDB := frame.Datastore(ctx, datasource, false)
 	serviceOptions = append(serviceOptions, mainDB)
 
-	readOnlydatasource := frame.GetEnv(config.EnvReplicaDatabaseUrl, datasource)
+	readOnlydatasource := frame.GetEnv(config.EnvReplicaDatabaseURL, datasource)
 	readDB := frame.Datastore(ctx, readOnlydatasource, true)
 	serviceOptions = append(serviceOptions, readDB)
 
-	profileServiceURL := frame.GetEnv(config.EnvProfileServiceUri, "127.0.0.1:7005")
+	profileServiceURL := frame.GetEnv(config.EnvProfileServiceURI, "127.0.0.1:7005")
 
-	oauth2ServiceHost := frame.GetEnv(config.EnvOauth2ServiceUri, "")
+	oauth2ServiceHost := frame.GetEnv(config.EnvOauth2ServiceURI, "")
 	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
 	oauth2ServiceSecret := frame.GetEnv(config.EnvOauth2ServiceClientSecret, "")
 
+	audienceList := make([]string, 0)
+	oauth2ServiceAudience := frame.GetEnv(config.EnvOauth2ServiceAudience, "")
+	if oauth2ServiceAudience != "" {
+		audienceList = strings.Split(oauth2ServiceAudience, "")
+	}
 	profileCli, err = papi.NewProfileClient(ctx,
+		apis.WithAudiences(audienceList...),
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
@@ -52,8 +59,9 @@ func main() {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
-	partitionServiceURL := frame.GetEnv(config.EnvPartitionServiceUri, "127.0.0.1:7003")
+	partitionServiceURL := frame.GetEnv(config.EnvPartitionServiceURI, "127.0.0.1:7003")
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
+		apis.WithAudiences(audienceList...),
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
