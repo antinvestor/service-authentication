@@ -50,22 +50,23 @@ func main() {
 		audienceList = strings.Split(oauth2ServiceAudience, "")
 	}
 	profileCli, err = papi.NewProfileClient(ctx,
-		apis.WithAudiences(audienceList...),
+
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret))
+		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
 	partitionServiceURL := frame.GetEnv(config.EnvPartitionServiceURI, "127.0.0.1:7003")
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
-		apis.WithAudiences(audienceList...),
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret))
+		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
