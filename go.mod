@@ -3,13 +3,13 @@ module github.com/antinvestor/service-authentication
 go 1.17
 
 require (
-	github.com/antinvestor/apis v1.1.5
-	github.com/antinvestor/service-partition-api v1.0.12
-	github.com/antinvestor/service-profile-api v1.0.6
+	github.com/antinvestor/apis v1.1.6
+	github.com/antinvestor/service-partition-api v1.0.13
+	github.com/antinvestor/service-profile-api v1.0.7
 	github.com/gorilla/csrf v1.7.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/pitabwire/frame v1.7.11
+	github.com/pitabwire/frame v1.7.12
 	github.com/stretchr/objx v0.2.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
