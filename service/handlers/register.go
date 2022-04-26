@@ -22,13 +22,12 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	loginChallenge := req.FormValue("login_challenge")
 
 	err := registerTmpl.Execute(rw, map[string]interface{}{
-		"error":           "",
+		"error":          "",
 		"loginChallenge": loginChallenge,
-		csrf.TemplateTag:  csrf.TemplateField(req),
+		csrf.TemplateTag: csrf.TemplateField(req),
 	})
 	return err
 }
-
 
 func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
@@ -40,20 +39,19 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	name := req.PostForm.Get("name")
 	loginChallenge := req.PostForm.Get("login_challenge")
 
-
 	existingProfile, err := profileCli.GetProfileByContact(ctx, contact)
 
-	if err != nil{
-		log.Printf( " SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact,err)
+	if err != nil {
+		log.Printf(" SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact, err)
 		st, ok := status.FromError(err)
-		if !ok ||  st.Code() != codes.NotFound{
+		if !ok || st.Code() != codes.NotFound {
 
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
-				"error": service.Translate(req, "CouldNotCheckContactExists") ,
-				"contact": contact,
-				"name": name,
+				"error":          service.Translate(req, "CouldNotCheckContactExists"),
+				"contact":        contact,
+				"name":           name,
 				"loginChallenge": loginChallenge,
-				csrf.TemplateTag:  csrf.TemplateField(req),
+				csrf.TemplateTag: csrf.TemplateField(req),
 			})
 			if err2 != nil {
 				return err2
@@ -66,23 +64,20 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if existingProfile == nil {
 		// don't have this profile in existence so we create it
 
-
-		existingProfile, err = profileCli.CreateProfileByContactAndName( ctx, contact, name)
+		existingProfile, err = profileCli.CreateProfileByContactAndName(ctx, contact, name)
 		if err != nil {
-			log.Printf( " SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact,err)
-
+			log.Printf(" SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact, err)
 
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
-				"error": service.Translate(req, "CouldNotCreateProfileByContact") ,
-				"contact": contact,
-				"name": name,
+				"error":          service.Translate(req, "CouldNotCreateProfileByContact"),
+				"contact":        contact,
+				"name":           name,
 				"loginChallenge": loginChallenge,
-				csrf.TemplateTag:  csrf.TemplateField(req),
+				csrf.TemplateTag: csrf.TemplateField(req),
 			})
 			if err2 != nil {
 				return err2
 			}
-
 
 			return err
 		}
@@ -92,20 +87,18 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	password := req.PostForm.Get("password")
 	redirectUri, err := createAuthEntry(ctx, profileId, password, loginChallenge)
 	if err != nil {
-		log.Printf( " SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId,err)
-
+		log.Printf(" SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId, err)
 
 		err2 := registerTmpl.Execute(rw, map[string]interface{}{
-			"error": service.Translate(req, "CouldNotCreateLoginDetails") ,
-			"contact": contact,
-			"name": name,
+			"error":          service.Translate(req, "CouldNotCreateLoginDetails"),
+			"contact":        contact,
+			"name":           name,
 			"loginChallenge": loginChallenge,
-			csrf.TemplateTag:  csrf.TemplateField(req),
+			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 		if err2 != nil {
 			return err2
 		}
-
 
 		return err
 	}
@@ -114,7 +107,6 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	return nil
 }
-
 
 func createAuthEntry(ctx context.Context, profileId string, password string, loginChallenge string) (string, error) {
 
@@ -129,7 +121,7 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 	}
 
 	login := &models.Login{
-		ProfileHash: profileHash,
+		ProfileHash:  profileHash,
 		PasswordHash: passwordHash,
 	}
 	if err := service.DB(ctx, false).Create(login).Error; err != nil {

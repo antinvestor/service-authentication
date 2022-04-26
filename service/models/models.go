@@ -7,24 +7,21 @@ import (
 )
 
 type Login struct {
-
 	frame.BaseModel
 	ProfileHash  string `gorm:"type:varchar(255)"`
 	PasswordHash []byte
 	Locked       datatypes.Date
 }
 
-
 type LoginEvent struct {
-
 	frame.BaseModel
-	LoginID      string `gorm:"type:varchar(50)"`
-	AccessID     string `gorm:"type:varchar(50)"`
-	IPAddress    string
-	UserAgent    string
-	Client       string
-	Status       int
-	Context      string `gorm:"type:text"`
+	LoginID   string `gorm:"type:varchar(50)"`
+	AccessID  string `gorm:"type:varchar(50)"`
+	IPAddress string
+	UserAgent string
+	Client    string
+	Status    int
+	Context   string `gorm:"type:text"`
 }
 
 type Session struct {
