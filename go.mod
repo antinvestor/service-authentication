@@ -12,7 +12,7 @@ require (
 	github.com/pitabwire/frame v1.7.12
 	github.com/stretchr/objx v0.3.0
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122
 	google.golang.org/grpc v1.46.0
 	gorm.io/datatypes v1.0.6
 )
