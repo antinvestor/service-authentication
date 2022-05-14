@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/objx v0.4.0
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9
-	google.golang.org/grpc v1.46.0
+	google.golang.org/grpc v1.46.2
 	gorm.io/datatypes v1.0.6
 )
 
