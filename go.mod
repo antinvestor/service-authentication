@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/pitabwire/frame v1.7.13
+	github.com/pitabwire/frame v1.7.20
 	github.com/stretchr/objx v0.4.0
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
