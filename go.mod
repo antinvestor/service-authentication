@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/pitabwire/frame v1.7.21
-	github.com/stretchr/objx v0.4.0
+	github.com/stretchr/objx v0.5.0
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	google.golang.org/grpc v1.50.1
