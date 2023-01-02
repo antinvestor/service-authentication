@@ -41,7 +41,7 @@ func processResp(response *http.Response) (objx.Map, error) {
 func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 
 	service := frame.FromContext(ctx)
-	cfg := service.Config().(config.AuthenticationConfig)
+	cfg := service.Config().(*config.AuthenticationConfig)
 
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
@@ -68,7 +68,7 @@ func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 func put(ctx context.Context, flow string, action string, challenge string, data map[string]interface{}) (objx.Map, error) {
 
 	service := frame.FromContext(ctx)
-	cfg := service.Config().(config.AuthenticationConfig)
+	cfg := service.Config().(*config.AuthenticationConfig)
 
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
