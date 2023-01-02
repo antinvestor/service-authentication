@@ -73,13 +73,13 @@ func put(ctx context.Context, flow string, action string, challenge string, data
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := cfg.Oauth2ServiceAdminURI
-	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
-	baseUrl, err := url.Parse(formatedUrl)
+	hydraAdminURL := cfg.Oauth2ServiceAdminURI
+	formattedURL := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminURL, flow, action)
+	baseURL, err := url.Parse(formattedURL)
 	if err != nil {
 		return nil, err
 	}
-	baseUrl.RawQuery = params.Encode()
+	baseURL.RawQuery = params.Encode()
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -87,7 +87,7 @@ func put(ctx context.Context, flow string, action string, challenge string, data
 	}
 
 	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodPut, baseUrl.String(), bytes.NewBuffer(jsonData))
+	request, err := http.NewRequest(http.MethodPut, baseURL.String(), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
