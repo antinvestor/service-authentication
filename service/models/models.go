@@ -32,3 +32,12 @@ type Session struct {
 	ProfileID    string `gorm:"type:varchar(50)"`
 	frame.BaseModel
 }
+
+type APIKey struct {
+	frame.BaseModel
+	Name     string `gorm:"type:varchar(255)"`
+	ClientID string `gorm:"type:varchar(50)"`
+	Key      string `gorm:"type:varchar(255)"`
+	Hash     string `gorm:"type:varchar(255)"`
+	Scope    string `gorm:"type:text"`
+}

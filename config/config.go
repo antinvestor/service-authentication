@@ -1,19 +1,14 @@
 package config
 
-const EnvServerPort = "PORT"
+import "github.com/pitabwire/frame"
 
-const EnvMigrate = "DO_MIGRATION"
-const EnvMigrationPath = "MIGRATION_PATH"
+type AuthenticationConfig struct {
+	frame.ConfigurationDefault
 
-const EnvDatabaseURL = "DATABASE_URL"
-const EnvReplicaDatabaseURL = "REPLICA_DATABASE_URL"
+	Oauth2ServiceAdminURI string `envconfig:"OAUTH2_SERVICE_ADMIN_URI" default:"http://localhost:4445"`
 
-const EnvCsrfSecret = "CSRF_SECRET"
+	PartitionServiceURI string `default:"127.0.0.1:7003" envconfig:"PARTITION_SERVICE_URI"`
+	ProfileServiceURI   string `default:"127.0.0.1:7020" envconfig:"PROFILE_SERVICE_URI"`
 
-const EnvOauth2ServiceURI = "OAUTH2_SERVICE_URI"
-const EnvOauth2ServiceAdminURI = "OAUTH2_SERVICE_ADMIN_URI"
-const EnvOauth2ServiceClientSecret = "OAUTH2_SERVICE_CLIENT_SECRET" //nolint:gosec
-const EnvOauth2ServiceAudience = "OAUTH2_SERVICE_AUDIENCE"
-
-const EnvProfileServiceURI = "PROFILE_SERVICE_URI"
-const EnvPartitionServiceURI = "PARTITION_SERVICE_URI"
+	CsrfSecret string `default:"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b" envconfig:"CSRF_SECRET"`
+}

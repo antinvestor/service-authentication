@@ -9,14 +9,14 @@ import (
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/pitabwire/frame"
 	"github.com/stretchr/objx"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 )
 
 func processResp(response *http.Response) (objx.Map, error) {
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +38,15 @@ func processResp(response *http.Response) (objx.Map, error) {
 
 // A little helper that takes type (can be "login" or "consent")
 // and a challenge and returns the response from ORY Hydra.
-func get(flow string, challenge string) (objx.Map, error) {
+func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
+
+	service := frame.FromContext(ctx)
+	cfg := service.Config().(config.AuthenticationConfig)
+
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminURL := frame.GetEnv(config.EnvOauth2ServiceAdminURI, "http://localhost:4445")
+	hydraAdminURL := cfg.Oauth2ServiceAdminURI
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminURL, flow)
 	baseURL, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -61,12 +65,15 @@ func get(flow string, challenge string) (objx.Map, error) {
 // A little helper that takes type (can be "login" or "consent"),
 // the action (can be "accept" or "reject") and a challenge
 // and returns the response from ORY Hydra.
-func put(flow string, action string, challenge string, data map[string]interface{}) (objx.Map, error) {
+func put(ctx context.Context, flow string, action string, challenge string, data map[string]interface{}) (objx.Map, error) {
+
+	service := frame.FromContext(ctx)
+	cfg := service.Config().(config.AuthenticationConfig)
 
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminUrl := frame.GetEnv(config.EnvOauth2ServiceAdminURI, "http://localhost:4445")
+	hydraAdminUrl := cfg.Oauth2ServiceAdminURI
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminUrl, flow, action)
 	baseUrl, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -97,49 +104,49 @@ func put(flow string, action string, challenge string, data map[string]interface
 
 func GetLoginRequest(ctx context.Context, loginchallenge string) (objx.Map, error) {
 
-	return get("login", loginchallenge)
+	return get(ctx, "login", loginchallenge)
 }
 
 func AcceptLoginRequest(ctx context.Context, loginchallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	return put("login", "accept", loginchallenge, data)
+	return put(ctx, "login", "accept", loginchallenge, data)
 
 }
 
 func RejectLoginRequest(ctx context.Context, loginchallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	return put("login", "reject", loginchallenge, data)
+	return put(ctx, "login", "reject", loginchallenge, data)
 
 }
 
 func GetConsentRequest(ctx context.Context, consentChallenge string) (objx.Map, error) {
-	return get("consent", consentChallenge)
+	return get(ctx, "consent", consentChallenge)
 }
 
 func AcceptConsentRequest(ctx context.Context, consentChallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	return put("consent", "accept", consentChallenge, data)
+	return put(ctx, "consent", "accept", consentChallenge, data)
 
 }
 
 func RejectConsentRequest(ctx context.Context, consentChallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	return put("consent", "reject", consentChallenge, data)
+	return put(ctx, "consent", "reject", consentChallenge, data)
 
 }
 
 func GetLogoutRequest(ctx context.Context, logoutChallenge string) (objx.Map, error) {
-	return get("logout", logoutChallenge)
+	return get(ctx, "logout", logoutChallenge)
 }
 
 func AcceptLogoutRequest(ctx context.Context, logoutChallenge string) (objx.Map, error) {
 
-	return put("logout", "accept", logoutChallenge, map[string]interface{}{})
+	return put(ctx, "logout", "accept", logoutChallenge, map[string]interface{}{})
 
 }
 
 func RejectLogoutRequest(ctx context.Context, logoutChallenge string, data map[string]interface{}) (objx.Map, error) {
 
-	return put("logout", "reject", logoutChallenge, data)
+	return put(ctx, "logout", "reject", logoutChallenge, data)
 
 }

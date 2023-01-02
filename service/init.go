@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
@@ -14,6 +15,7 @@ import (
 
 type holder struct {
 	service      *frame.Service
+	config       *config.AuthenticationConfig
 	profileCli   *papi.ProfileClient
 	partitionCli *prtapi.PartitionClient
 }
@@ -41,11 +43,13 @@ func addHandler(holder *holder, router *mux.Router,
 }
 
 // NewAuthRouterV1 NewRouterV1 -
-func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient, partitionCli *prtapi.PartitionClient) *mux.Router {
+func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *papi.ProfileClient, partitionCli *prtapi.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
+	authenticatedRouter := mux.NewRouter().StrictSlash(true)
 
 	holder := &holder{
 		service:      service,
+		config:       authConfig,
 		profileCli:   profileCli,
 		partitionCli: partitionCli,
 	}
@@ -59,6 +63,15 @@ func NewAuthRouterV1(service *frame.Service, profileCli *papi.ProfileClient, par
 	addHandler(holder, router, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
 	addHandler(holder, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+
+	addHandler(holder, authenticatedRouter, handlers.CreateApiKeyEndpoint, "/key", "CreateApiKeyEndpoint", "PUT")
+	addHandler(holder, authenticatedRouter, handlers.DeleteApiKeyEndpoint, "/key", "DeleteApiKeyEndpoint", "DELETE")
+	addHandler(holder, authenticatedRouter, handlers.ListApiKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
+
+	authenticatedHandler := holder.service.AuthenticationMiddleware(authenticatedRouter,
+		holder.config.Oauth2JwtVerifyAudience, holder.config.Oauth2JwtVerifyIssuer)
+
+	router.Handle("/api", authenticatedHandler)
 
 	return router
 }

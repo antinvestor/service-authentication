@@ -12,9 +12,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
-	"log"
-	"os"
-	"strconv"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -23,29 +21,43 @@ func main() {
 	serviceName := "service_authentication"
 	ctx := context.Background()
 
-	var err error
-	var profileCli *papi.ProfileClient
-	var partitionCli *prtapi.PartitionClient
+	var authenticationConfig config.AuthenticationConfig
+	err := frame.ConfigProcess("", &authenticationConfig)
+	if err != nil {
+		logrus.WithError(err).Fatal("could not process configs")
+		return
+	}
+
+	sysService := frame.NewService(serviceName, frame.Config(&authenticationConfig), frame.Datastore(ctx))
+	log := sysService.L()
+
 	var serviceOptions []frame.Option
 
-	sysService := frame.NewService(serviceName)
+	if authenticationConfig.DoDatabaseMigrate() {
 
-	datasource := frame.GetEnv(config.EnvDatabaseURL, "postgres://ant:@nt@localhost/service_auth")
-	mainDB := frame.Datastore(ctx, datasource, false)
-	serviceOptions = append(serviceOptions, mainDB)
+		sysService.Init(serviceOptions...)
 
-	readOnlydatasource := frame.GetEnv(config.EnvReplicaDatabaseURL, datasource)
-	readDB := frame.Datastore(ctx, readOnlydatasource, true)
-	serviceOptions = append(serviceOptions, readDB)
+		err := sysService.MigrateDatastore(ctx, authenticationConfig.GetDatabaseMigrationPath(),
+			&models.Login{}, &models.LoginEvent{}, &models.APIKey{}, &models.Session{})
 
-	profileServiceURL := frame.GetEnv(config.EnvProfileServiceURI, "127.0.0.1:7005")
+		if err != nil {
+			log.Fatalf("main -- Could not migrate successfully because : %+v", err)
+		}
 
-	oauth2ServiceHost := frame.GetEnv(config.EnvOauth2ServiceURI, "")
+		return
+
+	}
+
+	var profileCli *papi.ProfileClient
+	var partitionCli *prtapi.PartitionClient
+
+	profileServiceURL := authenticationConfig.ProfileServiceURI
+
+	oauth2ServiceHost := authenticationConfig.GetOauth2ServiceURI()
 	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
-	oauth2ServiceSecret := frame.GetEnv(config.EnvOauth2ServiceClientSecret, "")
 
-	var audienceList []string
-	oauth2ServiceAudience := frame.GetEnv(config.EnvOauth2ServiceAudience, "")
+	audienceList := make([]string, 0)
+	oauth2ServiceAudience := authenticationConfig.Oauth2ServiceAudience
 	if oauth2ServiceAudience != "" {
 		audienceList = strings.Split(oauth2ServiceAudience, ",")
 	}
@@ -53,18 +65,18 @@ func main() {
 		apis.WithEndpoint(profileServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithTokenPassword(authenticationConfig.Oauth2ServiceClientSecret),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
 
-	partitionServiceURL := frame.GetEnv(config.EnvPartitionServiceURI, "127.0.0.1:7003")
+	partitionServiceURL := authenticationConfig.PartitionServiceURI
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
-		apis.WithTokenPassword(oauth2ServiceSecret),
+		apis.WithTokenPassword(authenticationConfig.Oauth2ServiceClientSecret),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup partition service client: %v", err)
@@ -73,39 +85,24 @@ func main() {
 	serviceTranslations := frame.Translations("en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
-	csrfSecret := frame.GetEnv(config.EnvCsrfSecret,
-		"\\xf80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b")
+	csrfSecret := authenticationConfig.CsrfSecret
 
 	authServiceHandlers := handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(
 		csrf.Protect(
 			[]byte(csrfSecret),
 			csrf.Secure(false),
-		)(service.NewAuthRouterV1(sysService, profileCli, partitionCli)))
+		)(service.NewAuthRouterV1(sysService, &authenticationConfig, profileCli, partitionCli)))
 
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)
 
 	sysService.Init(serviceOptions...)
 
-	isMigration, err := strconv.ParseBool(frame.GetEnv(config.EnvMigrate, "false"))
+	serverPort := authenticationConfig.ServerPort
+	log.Printf(" main -- Initiating server operations on : %s", serverPort)
+	err = sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
 	if err != nil {
-		isMigration = false
+		log.Printf("main -- Could not run Server : %v", err)
 	}
 
-	stdArgs := os.Args[1:]
-	if (len(stdArgs) > 0 && stdArgs[0] == "migrate") || isMigration {
-		migrationPath := frame.GetEnv(config.EnvMigrationPath, "./migrations/0001")
-		err := sysService.MigrateDatastore(ctx, migrationPath, &models.Login{}, &models.LoginEvent{})
-
-		if err != nil {
-			log.Printf("main -- Could not migrate successfully because : %v", err)
-		}
-	} else {
-		serverPort := frame.GetEnv(config.EnvServerPort, "7000")
-		log.Printf(" main -- Initiating server operations on : %s", serverPort)
-		err := sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
-		if err != nil {
-			log.Printf("main -- Could not run Server : %v", err)
-		}
-	}
 }
