@@ -1,4 +1,4 @@
-name: Testing Service
+name: Service testing action
 
 on: [push]
 
@@ -16,15 +16,5 @@ jobs:
         with:
           go-version: '1.19'
 
-      - name: Install dependencies
-        run: |
-          go version
-          go get -u golang.org/x/lint/golint
-
-      - name: Test authentication service
-        run: go test  ./...
-
-      - name: Run Vet & Lint
-        run: |
-          go vet .
-          golint -set_exit_status=1 .
+      - name: Run all required system tests
+        run: make build
