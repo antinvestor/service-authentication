@@ -5,7 +5,7 @@ import (
 	"github.com/antinvestor/service-authentication/service/handlers"
 	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
-
+	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"log"
 	"net/http"
@@ -46,6 +46,15 @@ func NewAuthRouterV1(service *frame.Service,
 	profileCli *papi.ProfileClient,
 	partitionCli *prtapi.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
+
+	csrfMiddleware := csrf.Protect(
+		[]byte(authConfig.CsrfSecret),
+		csrf.Secure(false),
+	)
+
+	sRouter := router.PathPrefix("/s").Subrouter()
+	sRouter.Use(csrfMiddleware)
+
 	authRouter := router.PathPrefix("/api").Subrouter()
 
 	authRouter.Use(func(handler http.Handler) http.Handler {
@@ -60,14 +69,14 @@ func NewAuthRouterV1(service *frame.Service,
 	}
 
 	holder.addHandler(router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
-	holder.addHandler(router, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
-	holder.addHandler(router, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
-	holder.addHandler(router, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
-	holder.addHandler(router, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
-	holder.addHandler(router, handlers.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
-	holder.addHandler(router, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
-	holder.addHandler(router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
-	holder.addHandler(router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
+	holder.addHandler(sRouter, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
+	holder.addHandler(sRouter, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
+	holder.addHandler(sRouter, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
 	holder.addHandler(authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
 	holder.addHandler(authRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")

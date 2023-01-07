@@ -4,7 +4,7 @@
 
 
 <h1>Login </h1>
-<form method="post" action="/login/post">
+<form method="post" action="/s/login/post">
 
     {{ .csrfField }}
     <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
@@ -35,7 +35,7 @@
 
 
 <div class="pass-link">
-    <a class="is-outlined" href="/forgot">
+    <a class="is-outlined" href="/s/forgot">
         Forgot password
     </a>
 </div>
@@ -44,7 +44,7 @@
 <hr/>
 <br/>
 <div class="pass-link">
-    Not registered already? <a href="/register?login_challenge={{ .loginChallenge }}">signup</a>
+    Not registered already? <a href="/s/register?login_challenge={{ .loginChallenge }}">signup</a>
 </div>
 
 {{end}}

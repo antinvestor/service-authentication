@@ -9,7 +9,6 @@ import (
 	"github.com/antinvestor/service-authentication/service/models"
 	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
-	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
 	"github.com/sirupsen/logrus"
@@ -85,13 +84,9 @@ func main() {
 	serviceTranslations := frame.Translations("en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
-	csrfSecret := authenticationConfig.CsrfSecret
-
-	authServiceHandlers := handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(
-		csrf.Protect(
-			[]byte(csrfSecret),
-			csrf.Secure(false),
-		)(service.NewAuthRouterV1(sysService, &authenticationConfig, profileCli, partitionCli)))
+	authServiceHandlers := handlers.RecoveryHandler(
+		handlers.PrintRecoveryStack(true))(
+		service.NewAuthRouterV1(sysService, &authenticationConfig, profileCli, partitionCli))
 
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)

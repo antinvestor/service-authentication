@@ -117,7 +117,7 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 	crypt := utils.NewBCrypt()
 	passwordHash, err := crypt.Hash(ctx, []byte(password))
 	if err != nil {
-		return "/register", err
+		return "/s/register", err
 	}
 
 	login := &models.Login{
@@ -125,8 +125,8 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 		PasswordHash: passwordHash,
 	}
 	if err := service.DB(ctx, false).Create(login).Error; err != nil {
-		return "/register", err
+		return "/s/register", err
 	}
 
-	return fmt.Sprintf("/login?login_challenge=%s", loginChallenge), nil
+	return fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge), nil
 }
