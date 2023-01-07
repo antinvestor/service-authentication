@@ -31,37 +31,31 @@ func main() {
 	log := sysService.L()
 
 	var serviceOptions []frame.Option
-
 	if authenticationConfig.DoDatabaseMigrate() {
-
 		sysService.Init(serviceOptions...)
 
-		err := sysService.MigrateDatastore(ctx, authenticationConfig.GetDatabaseMigrationPath(),
-			&models.Login{}, &models.LoginEvent{}, &models.APIKey{}, &models.Session{})
+		err := sysService.MigrateDatastore(ctx,
+			authenticationConfig.GetDatabaseMigrationPath(),
+			&models.APIKey{}, &models.Session{},
+			&models.Login{}, &models.LoginEvent{})
 
 		if err != nil {
 			log.Fatalf("main -- Could not migrate successfully because : %+v", err)
 		}
-
 		return
-
 	}
-
 	var profileCli *papi.ProfileClient
 	var partitionCli *prtapi.PartitionClient
 
-	profileServiceURL := authenticationConfig.ProfileServiceURI
-
 	oauth2ServiceHost := authenticationConfig.GetOauth2ServiceURI()
 	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
-
 	audienceList := make([]string, 0)
 	oauth2ServiceAudience := authenticationConfig.Oauth2ServiceAudience
 	if oauth2ServiceAudience != "" {
 		audienceList = strings.Split(oauth2ServiceAudience, ",")
 	}
 	profileCli, err = papi.NewProfileClient(ctx,
-		apis.WithEndpoint(profileServiceURL),
+		apis.WithEndpoint(authenticationConfig.ProfileServiceURI),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(serviceName),
 		apis.WithTokenPassword(authenticationConfig.Oauth2ServiceClientSecret),
