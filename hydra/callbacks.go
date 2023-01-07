@@ -46,7 +46,7 @@ func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminURL := cfg.Oauth2ServiceAdminURI
+	hydraAdminURL := cfg.GetOauth2ServiceAdminURI()
 	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminURL, flow)
 	baseURL, err := url.Parse(formatedUrl)
 	if err != nil {
@@ -73,7 +73,7 @@ func put(ctx context.Context, flow string, action string, challenge string, data
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
-	hydraAdminURL := cfg.Oauth2ServiceAdminURI
+	hydraAdminURL := cfg.GetOauth2ServiceAdminURI()
 	formattedURL := fmt.Sprintf("%s/oauth2/auth/requests/%s/%s", hydraAdminURL, flow, action)
 	baseURL, err := url.Parse(formattedURL)
 	if err != nil {

@@ -23,7 +23,6 @@ type holder struct {
 func (h *holder) addHandler(router *mux.Router,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		r = r.WithContext(frame.ToContext(r.Context(), h.service))
 		r = r.WithContext(papi.ToContext(r.Context(), h.profileCli))
 		r = r.WithContext(prtapi.ToContext(r.Context(), h.partitionCli))
