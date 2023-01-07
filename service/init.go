@@ -44,7 +44,7 @@ func addHandler(holder *holder, router *mux.Router,
 // NewAuthRouterV1 NewRouterV1 -
 func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *papi.ProfileClient, partitionCli *prtapi.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
-	authenticatedRouter := mux.NewRouter().StrictSlash(true)
+	authRouter := mux.NewRouter().StrictSlash(true)
 
 	holder := &holder{
 		service:      service,
@@ -63,12 +63,12 @@ func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationCo
 	addHandler(holder, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
-	addHandler(holder, authenticatedRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
-	addHandler(holder, authenticatedRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
-	addHandler(holder, authenticatedRouter, handlers.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
-	addHandler(holder, authenticatedRouter, handlers.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
+	addHandler(holder, authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
+	addHandler(holder, authRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
+	addHandler(holder, authRouter, handlers.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
+	addHandler(holder, authRouter, handlers.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
-	authenticatedHandler := holder.service.AuthenticationMiddleware(authenticatedRouter,
+	authenticatedHandler := holder.service.AuthenticationMiddleware(authRouter,
 		holder.config.Oauth2JwtVerifyAudience, holder.config.Oauth2JwtVerifyIssuer)
 
 	router.Handle("/api", authenticatedHandler)
