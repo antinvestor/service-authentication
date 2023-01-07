@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
+	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
 	"net/http"
 )
@@ -34,6 +35,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	service := frame.FromContext(ctx)
+	claims := frame.ClaimsFromContext(ctx)
 
 	apiKeyValue, err := utils.GenerateRandomString(apiKeyLength)
 	if err != nil {
@@ -54,11 +56,12 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	apiky := models.APIKey{
-		Name:     akey.Name,
-		ClientID: akey.ClientID,
-		Key:      hashedAPIKeyValue,
-		Hash:     apiKeySecret,
-		Scope:    akey.Scope,
+		Name:      akey.Name,
+		ClientID:  akey.ClientID,
+		ProfileID: claims.ProfileID,
+		Key:       hashedAPIKeyValue,
+		Hash:      apiKeySecret,
+		Scope:     akey.Scope,
 	}
 
 	audBytes, err := json.Marshal(akey.Audience)
@@ -91,24 +94,26 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
-
-	clientID := req.FormValue("client_id")
+	claims := frame.ClaimsFromContext(ctx)
 
 	var apiKeyList []models.APIKey
-	err := service.DB(ctx, true).Find(&apiKeyList, "client_id = ?", clientID).Error
+	err := service.DB(ctx, true).Find(&apiKeyList, "profile_id = ?", claims.ProfileID).Error
 
 	if err != nil {
 		return err
 	}
 
-	var apiObjects []apiKey
+	apiObjects := []apiKey{}
 	for _, apiobj := range apiKeyList {
-		apiObjects = append(apiObjects, apiKey{
+
+		aky := apiKey{
 			ID:       apiobj.ID,
 			Name:     apiobj.Name,
 			ClientID: apiobj.ClientID,
 			Scope:    apiobj.Scope,
-		})
+		}
+
+		apiObjects = append(apiObjects, aky)
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
@@ -116,19 +121,40 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return json.NewEncoder(rw).Encode(apiObjects)
 }
 
-func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
+	claims := frame.ClaimsFromContext(ctx)
 
-	apiKeyID := req.FormValue("api_key_id")
+	params := mux.Vars(req)
+	apiKeyID := params["ApiKeyId"]
 
 	var apiKeyModel models.APIKey
-	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ?", apiKeyID).Error
+	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
 	if err != nil {
 		return err
 	}
 
-	err = service.DB(ctx, false).Delete(&apiKeyModel, "id = ?", apiKeyID).Error
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusAccepted)
+	return nil
+}
+
+func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
+	service := frame.FromContext(ctx)
+	claims := frame.ClaimsFromContext(ctx)
+
+	params := mux.Vars(req)
+	apiKeyID := params["ApiKeyId"]
+
+	var apiKeyModel models.APIKey
+	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
+	if err != nil {
+		return err
+	}
+
+	err = service.DB(ctx, false).Delete(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
 	if err != nil {
 		return err
 	}

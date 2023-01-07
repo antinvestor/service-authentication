@@ -22,7 +22,6 @@ type holder struct {
 
 func addHandler(holder *holder, router *mux.Router,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		r = r.WithContext(frame.ToContext(r.Context(), holder.service))
@@ -65,8 +64,9 @@ func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationCo
 	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
 	addHandler(holder, authenticatedRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
-	addHandler(holder, authenticatedRouter, handlers.DeleteAPIKeyEndpoint, "/key", "DeleteApiKeyEndpoint", "DELETE")
 	addHandler(holder, authenticatedRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
+	addHandler(holder, authenticatedRouter, handlers.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
+	addHandler(holder, authenticatedRouter, handlers.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	authenticatedHandler := holder.service.AuthenticationMiddleware(authenticatedRouter,
 		holder.config.Oauth2JwtVerifyAudience, holder.config.Oauth2JwtVerifyIssuer)
