@@ -20,13 +20,13 @@ type holder struct {
 	partitionCli *prtapi.PartitionClient
 }
 
-func addHandler(holder *holder, router *mux.Router,
+func (h *holder) addHandler(router *mux.Router,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		r = r.WithContext(frame.ToContext(r.Context(), holder.service))
-		r = r.WithContext(papi.ToContext(r.Context(), holder.profileCli))
-		r = r.WithContext(prtapi.ToContext(r.Context(), holder.partitionCli))
+		r = r.WithContext(frame.ToContext(r.Context(), h.service))
+		r = r.WithContext(papi.ToContext(r.Context(), h.profileCli))
+		r = r.WithContext(prtapi.ToContext(r.Context(), h.partitionCli))
 
 		err := f(w, r)
 		if err != nil {
@@ -38,13 +38,19 @@ func addHandler(holder *holder, router *mux.Router,
 		Name(name).
 		Handler(handler).
 		Methods(method)
-
 }
 
 // NewAuthRouterV1 NewRouterV1 -
-func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *papi.ProfileClient, partitionCli *prtapi.PartitionClient) *mux.Router {
+func NewAuthRouterV1(service *frame.Service,
+	authConfig *config.AuthenticationConfig,
+	profileCli *papi.ProfileClient,
+	partitionCli *prtapi.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
-	authRouter := mux.NewRouter().StrictSlash(true)
+	authRouter := router.PathPrefix("/api").Subrouter()
+
+	authRouter.Use(func(handler http.Handler) http.Handler {
+		return service.AuthenticationMiddleware(handler, authConfig.Oauth2JwtVerifyAudience, authConfig.Oauth2JwtVerifyIssuer)
+	})
 
 	holder := &holder{
 		service:      service,
@@ -53,25 +59,20 @@ func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationCo
 		partitionCli: partitionCli,
 	}
 
-	addHandler(holder, router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
-	addHandler(holder, router, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
-	addHandler(holder, router, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
-	addHandler(holder, router, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
-	addHandler(holder, router, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
-	addHandler(holder, router, handlers.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
-	addHandler(holder, router, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
-	addHandler(holder, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
-	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+	holder.addHandler(router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
+	holder.addHandler(router, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
+	holder.addHandler(router, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
+	holder.addHandler(router, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
+	holder.addHandler(router, handlers.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
+	holder.addHandler(router, handlers.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
+	holder.addHandler(router, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
+	holder.addHandler(router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
+	holder.addHandler(router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
-	addHandler(holder, authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
-	addHandler(holder, authRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
-	addHandler(holder, authRouter, handlers.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
-	addHandler(holder, authRouter, handlers.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
-
-	authenticatedHandler := holder.service.AuthenticationMiddleware(authRouter,
-		holder.config.Oauth2JwtVerifyAudience, holder.config.Oauth2JwtVerifyIssuer)
-
-	router.Handle("/api", authenticatedHandler)
+	holder.addHandler(authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
+	holder.addHandler(authRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
+	holder.addHandler(authRouter, handlers.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
+	holder.addHandler(authRouter, handlers.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	return router
 }
