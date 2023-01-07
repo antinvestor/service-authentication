@@ -40,4 +40,6 @@ type APIKey struct {
 	Key      string `gorm:"type:varchar(255)"`
 	Hash     string `gorm:"type:varchar(255)"`
 	Scope    string `gorm:"type:text"`
+	Audience string `gorm:"type:text"`
+	Metadata string `gorm:"type:text"`
 }

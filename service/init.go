@@ -64,9 +64,9 @@ func NewAuthRouterV1(service *frame.Service, authConfig *config.AuthenticationCo
 	addHandler(holder, router, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	addHandler(holder, router, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
-	addHandler(holder, authenticatedRouter, handlers.CreateApiKeyEndpoint, "/key", "CreateApiKeyEndpoint", "PUT")
-	addHandler(holder, authenticatedRouter, handlers.DeleteApiKeyEndpoint, "/key", "DeleteApiKeyEndpoint", "DELETE")
-	addHandler(holder, authenticatedRouter, handlers.ListApiKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
+	addHandler(holder, authenticatedRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
+	addHandler(holder, authenticatedRouter, handlers.DeleteAPIKeyEndpoint, "/key", "DeleteApiKeyEndpoint", "DELETE")
+	addHandler(holder, authenticatedRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
 
 	authenticatedHandler := holder.service.AuthenticationMiddleware(authenticatedRouter,
 		holder.config.Oauth2JwtVerifyAudience, holder.config.Oauth2JwtVerifyIssuer)

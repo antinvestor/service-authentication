@@ -6,40 +6,31 @@ import (
 	"github.com/antinvestor/service-authentication/utils"
 	"github.com/pitabwire/frame"
 	"net/http"
-	"strings"
 )
 
 type apiKey struct {
-	ID       string
-	Name     string
-	ClientID string
-	Scope    string
+	ID       string            `json:"id"`
+	Name     string            `json:"name"`
+	ClientID string            `json:"clientId"`
+	Scope    string            `json:"scope"`
+	Audience []string          `json:"audience"`
+	Metadata map[string]string `json:"metadata"`
+
+	Key       string `json:"apiKey"`
+	KeySecret string `json:"apiKeySecret"`
 }
 
-func CreateApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	//TODO: secure api key
 	ctx := req.Context()
 	apiKeyLength := 16
 	apiKeySecretLength := 16
 
-	apiKeyClient := req.FormValue("api_key_client")
-	apiKeyName := req.FormValue("api_key_name")
-	apiKeyScope := req.FormValue("api_key_scope")
-	apiKeyAudience := req.FormValue("api_key_audience")
-	var apiKeyAudienceList []string
-	if apiKeyAudience != "" {
-		apiKeyAudienceList = strings.Split(apiKeyAudience, ",")
-	}
-
-	apiKeyMetadataJson := req.FormValue("api_key_metadata")
-	var metadata map[string]string
-	if apiKeyMetadataJson != "" {
-
-		err := json.Unmarshal([]byte(apiKeyMetadataJson), &metadata)
-		if err != nil {
-			return err
-		}
+	decoder := json.NewDecoder(req.Body)
+	var akey apiKey
+	err := decoder.Decode(&akey)
+	if err != nil {
+		return err
 	}
 
 	service := frame.FromContext(ctx)
@@ -48,44 +39,55 @@ func CreateApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	hashedApiKeyValue := utils.HashStringSecret(apiKeyValue)
+	hashedAPIKeyValue := utils.HashStringSecret(apiKeyValue)
 
 	apiKeySecret, err := utils.GenerateRandomString(apiKeySecretLength)
 	if err != nil {
 		return err
 	}
 
-	err = service.RegisterForJwtWithParams(ctx, apiKeyName, apiKeyValue, apiKeySecret, apiKeyScope, apiKeyAudienceList, metadata)
+	err = service.RegisterForJwtWithParams(ctx,
+		akey.Name, apiKeyValue, apiKeySecret,
+		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
 		return err
 	}
 
 	apiky := models.APIKey{
-		Name:     apiKeyName,
-		ClientID: apiKeyClient,
-		Key:      hashedApiKeyValue,
+		Name:     akey.Name,
+		ClientID: akey.ClientID,
+		Key:      hashedAPIKeyValue,
 		Hash:     apiKeySecret,
-		Scope:    apiKeyScope,
+		Scope:    akey.Scope,
 	}
+
+	audBytes, err := json.Marshal(akey.Audience)
+	if err != nil {
+		return err
+	}
+
+	apiky.Metadata = string(audBytes)
+	metadataBytes, err := json.Marshal(akey.Metadata)
+	if err != nil {
+		return err
+	}
+	apiky.Metadata = string(metadataBytes)
 
 	err = service.DB(ctx, true).Create(&apiky).Error
 	if err != nil {
 		return err
 	}
 
-	apiObj := apiKey{
-		ID:       apiky.ID,
-		Name:     apiky.Name,
-		ClientID: apiky.ClientID,
-		Scope:    apiky.Scope,
-	}
+	akey.ID = apiky.ID
+	akey.Key = hashedAPIKeyValue
+	akey.KeySecret = apiKeySecret
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusCreated)
-	return json.NewEncoder(rw).Encode(apiObj)
+	return json.NewEncoder(rw).Encode(akey)
 }
 
-func ListApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
@@ -101,7 +103,6 @@ func ListApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	var apiObjects []apiKey
 	for _, apiobj := range apiKeyList {
-
 		apiObjects = append(apiObjects, apiKey{
 			ID:       apiobj.ID,
 			Name:     apiobj.Name,
@@ -115,7 +116,7 @@ func ListApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return json.NewEncoder(rw).Encode(apiObjects)
 }
 
-func DeleteApiKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
 
