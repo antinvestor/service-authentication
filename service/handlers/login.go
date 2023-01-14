@@ -18,7 +18,6 @@ import (
 var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))
 
 func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
-
 	ctx := req.Context()
 
 	loginchallenge := req.FormValue("login_challenge")
