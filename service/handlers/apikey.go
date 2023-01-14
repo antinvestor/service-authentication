@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	"github.com/gorilla/mux"
@@ -48,8 +49,12 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
+	cfg := service.Config().(*config.AuthenticationConfig)
+
+	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
+
 	err = service.RegisterForJwtWithParams(ctx,
-		akey.Name, apiKeyValue, apiKeySecret,
+		jwtServerURL, akey.Name, apiKeyValue, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
 		return err
@@ -91,7 +96,6 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 }
 
 func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
-
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
 	claims := frame.ClaimsFromContext(ctx)

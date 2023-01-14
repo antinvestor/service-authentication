@@ -19,3 +19,13 @@ services:
       - DO_MIGRATION=true
       - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
     restart: on-failure
+
+  authentication_svc:
+    build: ./
+    depends_on:
+      - authentication_db
+    environment:
+      - LOG_LEVEL=debug
+      - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - OAUTH2_SERVICE_ADMIN_URI=http://service-hydra.core.svc.cluster.local:4445
+    restart: unless-stopped

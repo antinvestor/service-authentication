@@ -88,6 +88,7 @@ func main() {
 	sysService.Init(serviceOptions...)
 
 	serverPort := authenticationConfig.ServerPort
+
 	log.Printf(" main -- Initiating server operations on : %s", serverPort)
 	err = sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
 	if err != nil {

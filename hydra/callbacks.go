@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/antinvestor/service-authentication/config"
 	"github.com/pitabwire/frame"
 	"github.com/stretchr/objx"
 	"io"
@@ -41,8 +40,10 @@ func processResp(response *http.Response) (objx.Map, error) {
 func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 
 	service := frame.FromContext(ctx)
-	cfg := service.Config().(*config.AuthenticationConfig)
-
+	cfg, ok := service.Config().(frame.ConfigurationOAUTH2)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast configuration to ConfigurationOAUTH2 ")
+	}
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
@@ -68,7 +69,10 @@ func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 func put(ctx context.Context, flow string, action string, challenge string, data map[string]interface{}) (objx.Map, error) {
 
 	service := frame.FromContext(ctx)
-	cfg := service.Config().(*config.AuthenticationConfig)
+	cfg, ok := service.Config().(frame.ConfigurationOAUTH2)
+	if !ok {
+		return nil, fmt.Errorf("Could not cast configuration to ConfigurationOAUTH2 ")
+	}
 
 	params := url.Values{}
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
