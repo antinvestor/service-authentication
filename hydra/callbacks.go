@@ -48,8 +48,8 @@ func get(ctx context.Context, flow string, challenge string) (objx.Map, error) {
 	params.Add(fmt.Sprintf("%s_challenge", flow), challenge)
 
 	hydraAdminURL := cfg.GetOauth2ServiceAdminURI()
-	formatedUrl := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminURL, flow)
-	baseURL, err := url.Parse(formatedUrl)
+	formatedURL := fmt.Sprintf("%s/oauth2/auth/requests/%s", hydraAdminURL, flow)
+	baseURL, err := url.Parse(formatedURL)
 	if err != nil {
 		return nil, err
 	}
