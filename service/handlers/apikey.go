@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/models"
@@ -44,10 +45,12 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 	hashedAPIKeyValue := utils.HashStringSecret(apiKeyValue)
 
-	apiKeySecret, err := utils.GenerateRandomString(apiKeySecretLength)
+	apiKeySecretBytes, err := utils.GenerateRandomBytes(apiKeySecretLength)
 	if err != nil {
 		return err
 	}
+
+	apiKeySecret := base64.StdEncoding.EncodeToString(apiKeySecretBytes)
 
 	cfg := service.Config().(*config.AuthenticationConfig)
 
@@ -110,7 +113,6 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	apiObjects := []apiKey{}
 	for _, apiobj := range apiKeyList {
-
 		aky := apiKey{
 			ID:       apiobj.ID,
 			Name:     apiobj.Name,
