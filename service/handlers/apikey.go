@@ -74,7 +74,8 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	apiky.Metadata = string(audBytes)
+	apiky.Audience = string(audBytes)
+
 	metadataBytes, err := json.Marshal(akey.Metadata)
 	if err != nil {
 		return err
