@@ -39,12 +39,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.FromContext(ctx)
 	claims := frame.ClaimsFromContext(ctx)
 
-	apiKeyValue, err := utils.GenerateRandomString(apiKeyLength)
-	if err != nil {
-		return err
-	}
-	hashedAPIKeyValue := utils.HashStringSecret(apiKeyValue)
-
+	apiKeyValue := utils.GenerateRandomStringEfficient(apiKeyLength)
 	apiKeySecretBytes, err := utils.GenerateRandomBytes(apiKeySecretLength)
 	if err != nil {
 		return err
@@ -65,9 +60,8 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	apiky := models.APIKey{
 		Name:      akey.Name,
-		ClientID:  akey.ClientID,
 		ProfileID: claims.ProfileID,
-		Key:       hashedAPIKeyValue,
+		Key:       apiKeyValue,
 		Hash:      apiKeySecret,
 		Scope:     akey.Scope,
 	}
@@ -91,7 +85,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	akey.ID = apiky.ID
-	akey.Key = hashedAPIKeyValue
+	akey.Key = apiKeyValue
 	akey.KeySecret = apiKeySecret
 
 	rw.Header().Set("Content-Type", "application/json")
@@ -111,16 +105,13 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	apiObjects := []apiKey{}
-	for _, apiobj := range apiKeyList {
-		aky := apiKey{
-			ID:       apiobj.ID,
-			Name:     apiobj.Name,
-			ClientID: apiobj.ClientID,
-			Scope:    apiobj.Scope,
-		}
-
-		apiObjects = append(apiObjects, aky)
+	var apiObjects []apiKey
+	for _, apiobject := range apiKeyList {
+		apiObjects = append(apiObjects, apiKey{
+			ID:    apiobject.ID,
+			Name:  apiobject.Name,
+			Scope: apiobject.Scope,
+		})
 	}
 
 	rw.Header().Set("Content-Type", "application/json")

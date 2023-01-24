@@ -36,7 +36,6 @@ type Session struct {
 type APIKey struct {
 	frame.BaseModel
 	Name      string `gorm:"type:varchar(255)"`
-	ClientID  string `gorm:"type:varchar(50)"`
 	ProfileID string `gorm:"type:varchar(50)"`
 	Key       string `gorm:"type:varchar(255)"`
 	Hash      string `gorm:"type:varchar(255)"`

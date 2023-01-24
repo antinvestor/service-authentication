@@ -45,7 +45,6 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf(" SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact, err)
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
-
 			err2 := registerTmpl.Execute(rw, map[string]interface{}{
 				"error":          service.Translate(req, "CouldNotCheckContactExists"),
 				"contact":        contact,
