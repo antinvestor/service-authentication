@@ -2,8 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	prtapi "github.com/antinvestor/service-partition-api"
@@ -11,6 +9,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"net/http"
+	"runtime"
 
 	"github.com/gorilla/mux"
 )
@@ -26,11 +25,20 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-func (h *holder) writeError(w http.ResponseWriter, code int, msg string) {
+func (h *holder) writeError(w http.ResponseWriter, err error, code int, msg string) {
+
+	buf := make([]byte, 1<<16)
+	runtime.Stack(buf, true)
+
 	w.Header().Set("Content-Type", "application/json")
-	h.service.L().WithField("code", code).WithError(errors.New(msg)).Error("internal service error")
+
+	h.service.L().
+		WithField("code", code).
+		WithField("message", msg).
+		WithField("stacktrace", string(buf)).WithError(err).Error("internal service error")
 	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(&ErrorResponse{
+
+	err = json.NewEncoder(w).Encode(&ErrorResponse{
 		Code:    code,
 		Message: msg,
 	})
@@ -48,7 +56,7 @@ func (h *holder) addHandler(router *mux.Router,
 
 		err := f(w, r)
 		if err != nil {
-			h.writeError(w, 500, fmt.Sprintf("could not process request : %s ", err))
+			h.writeError(w, err, 500, "could not process request")
 		}
 	})
 
