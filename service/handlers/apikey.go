@@ -150,7 +150,7 @@ func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
 
-	err = service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyID)
+	err = service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyModel.Key)
 	if err != nil {
 		return err
 	}
