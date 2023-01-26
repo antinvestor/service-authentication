@@ -2,16 +2,15 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
 	"net/http"
-	"runtime"
-
-	"github.com/gorilla/mux"
 )
 
 type holder struct {
@@ -27,20 +26,16 @@ type ErrorResponse struct {
 
 func (h *holder) writeError(w http.ResponseWriter, err error, code int, msg string) {
 
-	buf := make([]byte, 1<<16)
-	runtime.Stack(buf, true)
-
 	w.Header().Set("Content-Type", "application/json")
 
 	h.service.L().
 		WithField("code", code).
-		WithField("message", msg).
-		WithField("stacktrace", string(buf)).WithError(err).Error("internal service error")
+		WithField("message", msg).WithError(err).Error("internal service error")
 	w.WriteHeader(code)
 
 	err = json.NewEncoder(w).Encode(&ErrorResponse{
 		Code:    code,
-		Message: msg,
+		Message: fmt.Sprintf(" internal processing err message: %s %s", msg, err),
 	})
 	if err != nil {
 		h.service.L().WithError(err).Error("could not write error to response")
