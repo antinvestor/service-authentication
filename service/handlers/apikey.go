@@ -97,13 +97,13 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	var apiObjects []apiKey //nolint:prealloc
-	for _, apiobject := range apiKeyList {
-		apiObjects = append(apiObjects, apiKey{
+	apiObjects := make([]apiKey, len(apiKeyList))
+	for i, apiobject := range apiKeyList {
+		apiObjects[i] = apiKey{
 			ID:    apiobject.ID,
 			Name:  apiobject.Name,
 			Scope: apiobject.Scope,
-		})
+		}
 	}
 
 	rw.Header().Set("Content-Type", "application/json")

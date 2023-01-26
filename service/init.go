@@ -1,13 +1,15 @@
 package service
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	prtapi "github.com/antinvestor/service-partition-api"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,6 +21,23 @@ type holder struct {
 	profileCli   *papi.ProfileClient
 	partitionCli *prtapi.PartitionClient
 }
+type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (h *holder) writeError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	h.service.L().WithField("code", code).WithError(errors.New(msg)).Error("internal service error")
+	w.WriteHeader(code)
+	err := json.NewEncoder(w).Encode(&ErrorResponse{
+		Code:    code,
+		Message: msg,
+	})
+	if err != nil {
+		h.service.L().WithError(err).Error("could not write error to response")
+	}
+}
 
 func (h *holder) addHandler(router *mux.Router,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
@@ -29,7 +48,7 @@ func (h *holder) addHandler(router *mux.Router,
 
 		err := f(w, r)
 		if err != nil {
-			log.Printf(" handler %s on %s has the error %v", name, path, err)
+			h.writeError(w, 500, fmt.Sprintf("could not process request : %s ", err))
 		}
 	})
 
