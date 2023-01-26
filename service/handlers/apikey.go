@@ -25,8 +25,7 @@ type apiKey struct {
 func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	apiKeyLength := 32
-	apiKeySecretLength := 16
+	apiKeySecretLength := 32
 
 	decoder := json.NewDecoder(req.Body)
 	var akey apiKey
@@ -38,15 +37,14 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.FromContext(ctx)
 	claims := frame.ClaimsFromContext(ctx)
 
-	apiKeyValue := utils.GenerateRandomStringEfficient(apiKeyLength)
 	apiKeySecret := utils.GenerateRandomStringEfficient(apiKeySecretLength)
 
 	cfg := service.Config().(*config.AuthenticationConfig)
 
 	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
 
-	err = service.RegisterForJwtWithParams(ctx,
-		jwtServerURL, akey.Name, apiKeyValue, apiKeySecret,
+	apiKeyValue, err := service.RegisterForJwtWithParams(ctx,
+		jwtServerURL, akey.Name, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
 		return err
@@ -99,7 +97,7 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	var apiObjects []apiKey
+	var apiObjects []apiKey //nolint:prealloc
 	for _, apiobject := range apiKeyList {
 		apiObjects = append(apiObjects, apiKey{
 			ID:    apiobject.ID,
