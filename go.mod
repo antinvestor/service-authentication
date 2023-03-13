@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/antinvestor/apis v1.1.14
 	github.com/antinvestor/service-partition-api v1.0.22
-	github.com/antinvestor/service-profile-api v1.0.14
+	github.com/antinvestor/service-profile-api v1.0.15
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
