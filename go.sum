@@ -187,6 +187,8 @@ github.com/antinvestor/apis v1.1.14 h1:svFlkgaU8d6Qv225W5qH6UV073H8J95rJBoWE5jme
 github.com/antinvestor/apis v1.1.14/go.mod h1:Qm1BjaE6n1/cFPSq/pE7bhtg0qqNX6oRFLrPhHz+xcI=
 github.com/antinvestor/service-partition-api v1.0.21 h1:xQdmUnEukhG8U2ohCb2GRnTHHCLUrkMQV/kbE4AJ2rM=
 github.com/antinvestor/service-partition-api v1.0.21/go.mod h1:jIHVVcEPUglS7MpF7CK8jKYsCqVRMJImYyV1a20QlgI=
+github.com/antinvestor/service-partition-api v1.0.22 h1:YJjIALcNOSLJNY9H4G3huQxAlVebpB1eCcRg+HGBGJM=
+github.com/antinvestor/service-partition-api v1.0.22/go.mod h1:hgCPRE1KKZAgcwTM20NHj8ncMhULsnMn7yUUPKh4Vok=
 github.com/antinvestor/service-profile-api v1.0.14 h1:tjHXhPnRuweNOJQs6BAsFtfQ3BTmeubnPHWTv/9tyUQ=
 github.com/antinvestor/service-profile-api v1.0.14/go.mod h1:38hYLTJrDPX8rgFHVTBJpjz3XRDqiMAt8dWZqEflbNQ=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
