@@ -14,7 +14,7 @@ require (
 	github.com/stretchr/objx v0.5.0
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/crypto v0.8.0
-	google.golang.org/grpc v1.53.0
+	google.golang.org/grpc v1.54.0
 	gorm.io/datatypes v1.1.1
 )
 
