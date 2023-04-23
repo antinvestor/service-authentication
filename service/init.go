@@ -78,6 +78,8 @@ func NewAuthRouterV1(service *frame.Service,
 
 	authRouter := router.PathPrefix("/api").Subrouter()
 
+	webhookRouter := router.PathPrefix("/webhook").Subrouter()
+
 	authRouter.Use(func(handler http.Handler) http.Handler {
 		return service.AuthenticationMiddleware(handler, authConfig.Oauth2JwtVerifyAudience, authConfig.Oauth2JwtVerifyIssuer)
 	})
@@ -98,6 +100,7 @@ func NewAuthRouterV1(service *frame.Service,
 	holder.addHandler(sRouter, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
 	holder.addHandler(sRouter, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	holder.addHandler(sRouter, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+	holder.addHandler(webhookRouter, handlers.TokenEnrichmentEndpoint, "/enrich/token", "WebhookTokenEnrichmentEndpoint", "POST")
 
 	holder.addHandler(authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
 	holder.addHandler(authRouter, handlers.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")

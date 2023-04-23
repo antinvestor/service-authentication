@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/antinvestor/apis"
 	"github.com/antinvestor/service-authentication/config"
@@ -18,7 +17,6 @@ import (
 func main() {
 
 	serviceName := "service_authentication"
-	ctx := context.Background()
 
 	var authenticationConfig config.AuthenticationConfig
 	err := frame.ConfigProcess("", &authenticationConfig)
@@ -27,14 +25,14 @@ func main() {
 		return
 	}
 
-	sysService := frame.NewService(serviceName, frame.Config(&authenticationConfig), frame.Datastore(ctx))
-	log := sysService.L()
+	ctx, srv := frame.NewService(serviceName, frame.Config(&authenticationConfig))
+	log := srv.L()
 
-	var serviceOptions []frame.Option
+	serviceOptions := []frame.Option{frame.Datastore(ctx)}
 	if authenticationConfig.DoDatabaseMigrate() {
-		sysService.Init(serviceOptions...)
+		srv.Init(serviceOptions...)
 
-		err := sysService.MigrateDatastore(ctx,
+		err = srv.MigrateDatastore(ctx,
 			authenticationConfig.GetDatabaseMigrationPath(),
 			&models.APIKey{}, &models.Session{},
 			&models.Login{}, &models.LoginEvent{})
@@ -80,17 +78,17 @@ func main() {
 
 	authServiceHandlers := handlers.RecoveryHandler(
 		handlers.PrintRecoveryStack(true))(
-		service.NewAuthRouterV1(sysService, &authenticationConfig, profileCli, partitionCli))
+		service.NewAuthRouterV1(srv, &authenticationConfig, profileCli, partitionCli))
 
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)
 
-	sysService.Init(serviceOptions...)
+	srv.Init(serviceOptions...)
 
 	serverPort := authenticationConfig.ServerPort
 
 	log.Printf(" main -- Initiating server operations on : %s", serverPort)
-	err = sysService.Run(ctx, fmt.Sprintf(":%v", serverPort))
+	err = srv.Run(ctx, fmt.Sprintf(":%v", serverPort))
 	if err != nil {
 		log.Printf("main -- Could not run Server : %v", err)
 	}
