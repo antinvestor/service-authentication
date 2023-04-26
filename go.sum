@@ -521,6 +521,8 @@ github.com/alexflint/go-filemutex v1.1.0/go.mod h1:7P4iRhttt/nUvUOrYIhcpMzv2G6CY
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antinvestor/apis v1.1.14 h1:svFlkgaU8d6Qv225W5qH6UV073H8J95rJBoWE5jmegU=
 github.com/antinvestor/apis v1.1.14/go.mod h1:Qm1BjaE6n1/cFPSq/pE7bhtg0qqNX6oRFLrPhHz+xcI=
+github.com/antinvestor/apis v1.1.16 h1:BD5cxlwqY7ohRqIkU84rhwGjHtKYbVAA9wALlOVr+S0=
+github.com/antinvestor/apis v1.1.16/go.mod h1:47UeRdm/DNnxuKmsWZJLud/ek9slREuFcTw43u/89No=
 github.com/antinvestor/service-partition-api v1.0.22 h1:YJjIALcNOSLJNY9H4G3huQxAlVebpB1eCcRg+HGBGJM=
 github.com/antinvestor/service-partition-api v1.0.22/go.mod h1:hgCPRE1KKZAgcwTM20NHj8ncMhULsnMn7yUUPKh4Vok=
 github.com/antinvestor/service-profile-api v1.0.15 h1:Mhy3RRXJXLNDtLV/dRPfFzvGmD4ZPe6MxkgdGbN4qkI=
