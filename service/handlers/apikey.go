@@ -44,7 +44,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
 
-	apiKeyValue, err := service.RegisterForJwtWithParams(ctx,
+	jwtClient, err := service.RegisterForJwtWithParams(ctx,
 		jwtServerURL, akey.Name, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
@@ -52,10 +52,12 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
+	jwtClientID := jwtClient["client_id"].(string)
+
 	apiky := models.APIKey{
 		Name:      akey.Name,
 		ProfileID: claims.ProfileID,
-		Key:       apiKeyValue,
+		Key:       jwtClientID,
 		Hash:      apiKeySecret,
 		Scope:     akey.Scope,
 	}
@@ -82,7 +84,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	akey.ID = apiky.ID
-	akey.Key = apiKeyValue
+	akey.Key = jwtClientID
 	akey.KeySecret = apiKeySecret
 
 	rw.Header().Set("Content-Type", "application/json")
