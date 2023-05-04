@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/pitabwire/frame"
+	"io"
 	"net/http"
 )
 
@@ -13,15 +14,21 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	logger := service.L()
 
-	decoder := json.NewDecoder(req.Body)
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		logger.WithError(err).Error("could not read request body")
+		return err
+	}
+
+	logger.WithField("token_data", string(body)).Info("received a request to update id token")
+
 	var tokenObject map[string]interface{}
-	err := decoder.Decode(&tokenObject)
+	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
 		logger.WithError(err).Error("could not decode request body")
 		return err
 	}
 
-	logger.Info("received a request to update id token")
 	response := map[string]map[string]map[string]string{
 		"session": {
 			"access_token": {
