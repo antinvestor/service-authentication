@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// CentrifugoProxySubscribeEndpoint implementation is based on : https://centrifugal.dev/docs/server/proxy#subscribe-proxy
 func CentrifugoProxySubscribeEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
