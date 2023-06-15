@@ -1334,6 +1334,8 @@ github.com/jackc/pgx/v4 v4.17.2/go.mod h1:lcxIZN44yMIrWI78a5CpucdD14hX0SBDbNRvjD
 github.com/jackc/pgx/v5 v5.3.0/go.mod h1:t3JDKnCBlYIc0ewLF0Q7B8MXmoIaBOZj/ic7iHozM/8=
 github.com/jackc/pgx/v5 v5.3.1 h1:Fcr8QJ1ZeLi5zsPZqQeUZhNhxfkkKBOgJuYkJHoBOtU=
 github.com/jackc/pgx/v5 v5.3.1/go.mod h1:t3JDKnCBlYIc0ewLF0Q7B8MXmoIaBOZj/ic7iHozM/8=
+github.com/jackc/pgx/v5 v5.4.0 h1:BSr+GCm4N6QcgIwv0DyTFHK9ugfEFF9DzSbbzxOiXU0=
+github.com/jackc/pgx/v5 v5.4.0/go.mod h1:q6iHT8uDNXWiFNOlRqJzBTaSH3+2xCXkokxHZC5qWFY=
 github.com/jackc/puddle v0.0.0-20190413234325-e4ced69a3a2b/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v0.0.0-20190608224051-11cab39313c9/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v1.1.3/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
@@ -1650,6 +1652,8 @@ github.com/pitabwire/frame v1.12.2 h1:VwbaoU9gDbe9e+a5471WTjRDB7LVJLVH0Hy8dxkdHi
 github.com/pitabwire/frame v1.12.2/go.mod h1:1DGossU+9Q7Gq40r5BMDFPU+O6JPi02cRwsMmRlGaqU=
 github.com/pitabwire/frame v1.12.3 h1:R6BNnt4nxr3Elx/lb+NjH+d4VRbqUM3DpjD+0vAC33s=
 github.com/pitabwire/frame v1.12.3/go.mod h1:GXecQ49+jzo+Ery7/B/j9+Dh4sFLUaJV0u4TnOyAfdc=
+github.com/pitabwire/frame v1.12.6 h1:GcKzArbVMq8vTNqFxLaJjHjfEybXEDFZvG7hY+vJSEs=
+github.com/pitabwire/frame v1.12.6/go.mod h1:MY/kYyUlMTe/qkv50rjH81P763ufaKVj3XOLmhDEViI=
 github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4/go.mod h1:N6UoU20jOqggOuDwUaBQpluzLNDqif3kq9z2wpdYEfQ=
 github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8/go.mod h1:HKlIX3XHQyzLZPlr7++PzdhaXEj94dEiJgZDTsxEqUI=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
