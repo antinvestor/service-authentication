@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/pitabwire/frame v1.13.6
+	github.com/pitabwire/frame v1.15.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/objx v0.5.0
 	github.com/stretchr/testify v1.8.4
@@ -70,7 +70,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.4.7 // indirect
 	gorm.io/driver/postgres v1.5.2 // indirect
-	gorm.io/gorm v1.25.1 // indirect
+	gorm.io/gorm v1.25.2 // indirect
 	gorm.io/plugin/opentelemetry v0.1.2 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
