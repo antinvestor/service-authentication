@@ -11,7 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/pitabwire/frame v1.15.7
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/objx v0.5.0
+	github.com/stretchr/objx v0.5.1
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.12.0
 	google.golang.org/grpc v1.57.0
