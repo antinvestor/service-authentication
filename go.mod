@@ -1,6 +1,6 @@
 module github.com/antinvestor/service-authentication
 
-go 1.19
+go 1.20
 
 require (
 	github.com/antinvestor/apis v1.1.16
