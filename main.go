@@ -85,10 +85,10 @@ func main() {
 
 	srv.Init(serviceOptions...)
 
-	serverPort := authenticationConfig.ServerPort
-
-	log.Printf(" main -- Initiating server operations on : %s", serverPort)
-	err = srv.Run(ctx, fmt.Sprintf(":%v", serverPort))
+	log.WithField("server http port", authenticationConfig.HttpServerPort).
+		WithField("server grpc port", authenticationConfig.GrpcServerPort).
+		Info(" Initiating server operations")
+	err = srv.Run(ctx, "")
 	if err != nil {
 		log.Printf("main -- Could not run Server : %v", err)
 	}
