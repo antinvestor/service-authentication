@@ -92,6 +92,8 @@ func NewAuthRouterV1(service *frame.Service,
 	}
 
 	holder.addHandler(router, handlers.IndexEndpoint, "/", "IndexEndpoint", "GET")
+	holder.addHandler(router, handlers.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
+
 	holder.addHandler(sRouter, handlers.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
 	holder.addHandler(sRouter, handlers.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
 	holder.addHandler(sRouter, handlers.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
@@ -100,6 +102,7 @@ func NewAuthRouterV1(service *frame.Service,
 	holder.addHandler(sRouter, handlers.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
 	holder.addHandler(sRouter, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	holder.addHandler(sRouter, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+
 	holder.addHandler(webhookRouter, handlers.TokenEnrichmentEndpoint, "/enrich/token", "WebhookTokenEnrichmentEndpoint", "POST")
 	holder.addHandler(webhookRouter, handlers.CentrifugoProxySubscribeEndpoint, "/proxy/subscription", "CentrifugoProxySubscribeEndpoint", "POST")
 
