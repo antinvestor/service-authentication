@@ -42,6 +42,12 @@ func main() {
 		}
 		return
 	}
+
+	err = srv.RegisterForJwt(ctx)
+	if err != nil {
+		log.WithError(err).Fatal("main -- could not register fo jwt")
+	}
+
 	var profileCli *papi.ProfileClient
 	var partitionCli *prtapi.PartitionClient
 
@@ -55,7 +61,7 @@ func main() {
 	profileCli, err = papi.NewProfileClient(ctx,
 		apis.WithEndpoint(authenticationConfig.ProfileServiceURI),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
-		apis.WithTokenUsername(serviceName),
+		apis.WithTokenUsername(srv.JwtClientID()),
 		apis.WithTokenPassword(authenticationConfig.Oauth2ServiceClientSecret),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
@@ -66,7 +72,7 @@ func main() {
 	partitionCli, err = prtapi.NewPartitionsClient(ctx,
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
-		apis.WithTokenUsername(serviceName),
+		apis.WithTokenUsername(srv.JwtClientID()),
 		apis.WithTokenPassword(authenticationConfig.Oauth2ServiceClientSecret),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
