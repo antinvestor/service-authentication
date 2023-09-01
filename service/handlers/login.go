@@ -6,6 +6,7 @@ import (
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/pitabwire/frame"
+	"github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
 
@@ -70,11 +71,10 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	log := service.L().
 		WithField("endpoint", "SubmitLoginEndpoint").
-		WithField("login_challange", loginChallenge).
 		WithField("contact", contact)
 
 	log.Info("obtaining login credentials")
-	profileObj, login, err := getLoginCredentials(ctx, contact, password)
+	profileObj, login, err := getLoginCredentials(ctx, log, contact, password)
 
 	log.Info("handling post login credentials")
 	err = postLoginChecks(ctx, profileObj, login, err, req)
@@ -128,29 +128,36 @@ func postLoginChecks(ctx context.Context, object *papi.ProfileObject,
 	return nil
 }
 
-func getLoginCredentials(ctx context.Context, contact string, password string) (
-	*papi.ProfileObject, *models.Login, error) {
+func getLoginCredentials(ctx context.Context, log *logrus.Entry, contact string, password string) (*papi.ProfileObject, *models.Login, error) {
 
 	service := frame.FromContext(ctx)
 	profileCli := papi.FromContext(ctx)
 
+	log.Info("obtaining profile by contact")
+
 	profileObj, err := profileCli.GetProfileByContact(ctx, contact)
 
 	if err != nil {
+		log.WithError(err).Warn("could not get profile")
 		return nil, nil, err
 	}
 
+	log.WithField("profile_id", profileObj.GetID()).Info("found a profile")
 	login := models.Login{}
 	profileHash := utils.HashStringSecret(profileObj.GetID())
 
-	if err := service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
+	log.WithField("profile_id", profileObj.GetID()).WithField("profile_hash", profileHash).Info("Obtaining login by hash")
+
+	if err = service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
 		return profileObj, nil, err
 	}
+	log.WithField("profile_id", profileObj.GetID()).WithField("login", login.GetID()).Info("Found a login")
 
 	crypt := utils.NewBCrypt()
 
 	err = crypt.Compare(ctx, login.PasswordHash, []byte(password))
 	if err != nil {
+		log.WithField("profile_id", profileObj.GetID()).WithField("login", login.GetID()).Info("Login does not match")
 		return profileObj, &login, err
 	}
 
