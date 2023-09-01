@@ -7,7 +7,6 @@ import (
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/pitabwire/frame"
 	"html/template"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/csrf"
@@ -19,16 +18,19 @@ var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/l
 
 func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
+	service := frame.FromContext(ctx)
 
 	loginchallenge := req.FormValue("login_challenge")
 
+	logger := service.L().WithField("endpoint", "ShowLoginEndpoint").WithField("login_challange", loginchallenge)
+
 	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
 	if err != nil {
-		log.Printf(" ShowLoginEndpoint -- couldn't get a valid login challenge %s : %v", loginchallenge, err)
+		logger.WithError(err).Info(" couldn't get a valid login challenge")
 		return err
 	}
 
-	log.Printf(" ShowLoginEndpoint -- %v", getLogReq)
+	logger.Printf(" ShowLoginEndpoint -- %v", getLogReq)
 
 	if getLogReq.Get("skip").Bool() {
 
@@ -60,23 +62,31 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
+	service := frame.FromContext(ctx)
 
-	loginchallenge := req.PostForm.Get("login_challenge")
+	loginChallenge := req.PostForm.Get("login_challenge")
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
 
+	log := service.L().
+		WithField("endpoint", "SubmitLoginEndpoint").
+		WithField("login_challange", loginChallenge).
+		WithField("contact", contact)
+
+	log.Info("obtaining login credentials")
 	profileObj, login, err := getLoginCredentials(ctx, contact, password)
 
+	log.Info("handling post login credentials")
 	err = postLoginChecks(ctx, profileObj, login, err, req)
 	if err != nil {
-		log.Printf(" SubmitLoginEndpoint -- Could not login user because :%v", err)
+		log.WithError(err).Info(" Could not login user")
 
 		//TODO: In the event the user can't pass tests for long enough remember to use
 		//hydra.RejectLoginRequest()
 
 		err := loginTmpl.Execute(rw, map[string]interface{}{
 			"error":          "unable to log you in ",
-			"loginChallenge": loginchallenge,
+			"loginChallenge": loginChallenge,
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
@@ -90,8 +100,9 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		rememberDuration = 0
 	}
 
+	log.Info("accepting login request")
 	accLogReq, err := hydra.AcceptLoginRequest(
-		req.Context(), loginchallenge,
+		req.Context(), loginChallenge,
 		map[string]interface{}{
 			"subject":      profileObj.GetID(),
 			"remember":     remember,
@@ -107,7 +118,8 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func postLoginChecks(ctx context.Context, object *papi.ProfileObject, login *models.Login, err error, request *http.Request) error {
+func postLoginChecks(ctx context.Context, object *papi.ProfileObject,
+	login *models.Login, err error, request *http.Request) error {
 
 	if err != nil {
 		return err
@@ -116,7 +128,8 @@ func postLoginChecks(ctx context.Context, object *papi.ProfileObject, login *mod
 	return nil
 }
 
-func getLoginCredentials(ctx context.Context, contact string, password string) (*papi.ProfileObject, *models.Login, error) {
+func getLoginCredentials(ctx context.Context, contact string, password string) (
+	*papi.ProfileObject, *models.Login, error) {
 
 	service := frame.FromContext(ctx)
 	profileCli := papi.FromContext(ctx)
