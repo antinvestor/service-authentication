@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
 	"github.com/pitabwire/frame"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/csrf"
 
@@ -20,33 +23,45 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
 
-	loginchallenge := req.FormValue("login_challenge")
+	cfg, ok := service.Config().(*config.AuthenticationConfig)
+	if !ok {
+		return fmt.Errorf("could not convert configuration correctly")
+	}
 
-	getLogReq, err := hydra.GetLoginRequest(ctx, loginchallenge)
+	logger := service.L().WithField("endpoint", "ShowLoginEndpoint")
+
+	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+
+	loginChallenge, err := hydra.GetLoginChallengeID(req)
 	if err != nil {
-		logger := service.L().WithField("endpoint", "ShowLoginEndpoint").WithField("login_challange", loginchallenge)
+		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		return err
+	}
+
+	getLogReq, err := defaultHydra.GetLoginRequest(ctx, loginChallenge)
+	if err != nil {
+		logger = logger.WithField("login_challange", loginChallenge)
 
 		logger.WithError(err).Info(" couldn't get a valid login challenge")
 		return err
 	}
 
-	if getLogReq.Get("skip").Bool() {
-
-		accLogReq, err := hydra.AcceptLoginRequest(ctx, loginchallenge, map[string]interface{}{
-			"subject": getLogReq.Get("subject").String(),
-		})
+	if getLogReq.Skip {
+		redirectUrl := ""
+		params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, IdentityID: getLogReq.GetSubject()}
+		redirectUrl, err = defaultHydra.AcceptLoginRequest(ctx, params)
 
 		if err != nil {
 			return err
 		}
 
-		http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
+		http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 
 	} else {
 
-		err := loginTmpl.Execute(rw, map[string]interface{}{
+		err = loginTmpl.Execute(rw, map[string]interface{}{
 			"error":          "",
-			"loginChallenge": loginchallenge,
+			"loginChallenge": loginChallenge,
 			csrf.TemplateTag: csrf.TemplateField(req),
 		})
 
@@ -62,7 +77,21 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
 
-	loginChallenge := req.PostForm.Get("login_challenge")
+	cfg, ok := service.Config().(*config.AuthenticationConfig)
+	if !ok {
+		return fmt.Errorf("could not convert configuration correctly")
+	}
+
+	logger := service.L().WithField("endpoint", "ShowLoginEndpoint")
+
+	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+
+	loginChallenge, err := hydra.GetLoginChallengeID(req)
+	if err != nil {
+		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		return err
+	}
+
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
 
@@ -90,24 +119,21 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	remember := req.PostForm.Get("rememberme") == "remember"
 
-	rememberDuration := 3600
+	rememberDuration := int64(7 * 24 * time.Hour / time.Second)
 	if remember {
 		rememberDuration = 0
 	}
 
-	accLogReq, err := hydra.AcceptLoginRequest(
-		req.Context(), loginChallenge,
-		map[string]interface{}{
-			"subject":      profileObj.GetID(),
-			"remember":     remember,
-			"remember_for": rememberDuration,
-		})
+	params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, IdentityID: profileObj.GetID(), Remember: &remember, RememberDuration: &rememberDuration}
+
+	redirectUrl, err := defaultHydra.AcceptLoginRequest(
+		req.Context(), params)
 
 	if err != nil {
 		return err
 	}
 
-	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
+	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 
 	return nil
 }

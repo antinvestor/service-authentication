@@ -9,9 +9,10 @@ require (
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
+	github.com/ory/hydra-client-go/v2 v2.2.0-rc.3
 	github.com/pitabwire/frame v1.15.7
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/objx v0.5.1
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.12.0
 	google.golang.org/grpc v1.57.0
@@ -45,7 +46,6 @@ require (
 	github.com/klauspost/compress v1.15.14 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.2.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect

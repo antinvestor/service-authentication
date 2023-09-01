@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/hydra"
 	partapi "github.com/antinvestor/service-partition-api"
+	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"log"
@@ -12,21 +15,36 @@ import (
 func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
+
 	partitionAPI := partapi.FromContext(ctx)
+	service := frame.FromContext(ctx)
 
-	consentChallenge := req.FormValue("consent_challenge")
+	cfg, ok := service.Config().(*config.AuthenticationConfig)
+	if !ok {
+		return fmt.Errorf("could not convert configuration correctly")
+	}
 
-	getConseReq, err := hydra.GetConsentRequest(req.Context(), consentChallenge)
+	logger := service.L().WithField("endpoint", "ShowConsentEndpoint")
+
+	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+
+	consentChallenge, err := hydra.GetConsentChallengeID(req)
+	if err != nil {
+		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		return err
+	}
+
+	getConseReq, err := defaultHydra.GetConsentRequest(req.Context(), consentChallenge)
 	if err != nil {
 		return err
 	}
 
-	grantedScope := getConseReq.Get("requested_scope").Data().([]interface{})
-	profileID := getConseReq.Get("subject").Str()
+	requestedScope := getConseReq.GetRequestedScope()
+	profileID := getConseReq.GetSubject()
 
-	client := getConseReq.Get("client").MSI()
-	clientID := client["client_id"].(string)
-	grantedAudience := client["audience"].([]interface{})
+	client := getConseReq.GetClient()
+	clientID := client.GetClientId()
+	grantedAudience := client.GetAudience()
 
 	access, err := partitionAPI.GetAccess(ctx, clientID, profileID)
 	if err != nil {
@@ -53,18 +71,15 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		},
 	}
 
-	accLogReq, err := hydra.AcceptConsentRequest(req.Context(), consentChallenge, map[string]interface{}{
-		"grant_scope":                 grantedScope,
-		"grant_access_token_audience": grantedAudience,
-		// The session allows us to set session data for id and access tokens can have more data like name and such
-		"session": sessionMap,
-	})
+	params := hydra.AcceptConsentRequestParams{ConsentChallenge: consentChallenge, GrantScope: requestedScope, GrantAudience: grantedAudience, AdditionalParams: sessionMap}
+
+	redirectUrl, err := defaultHydra.AcceptConsentRequest(req.Context(), params)
 
 	if err != nil {
 		return err
 	}
 
-	http.Redirect(rw, req, accLogReq.Get("redirect_to").String(), http.StatusSeeOther)
+	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 
 	// For the foreseeable future we will always skip the consent page
 	// if getConseReq.Get("skip").Bool() {
