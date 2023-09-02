@@ -97,10 +97,13 @@ func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAu
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params AcceptLoginRequestParams) (string, error) {
 
+	extendSession := true
+
 	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.IdentityID)
 	alr.IdentityProviderSessionId = &params.SessionID
 	alr.Remember = params.Remember
 	alr.RememberFor = params.RememberDuration
+	alr.ExtendSessionLifespan = &extendSession
 	alr.Amr = []string{}
 
 	aa, err := h.getAdminAPIClient(ctx)
