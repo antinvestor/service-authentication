@@ -3,7 +3,6 @@ package hydra
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"time"
 )
 
 import (
@@ -18,17 +17,23 @@ type (
 	}
 	AcceptLoginRequestParams struct {
 		LoginChallenge string
-		IdentityID     string
+		SubjectID      string
 		SessionID      string
 
-		Remember         *bool
-		RememberDuration *int64
+		ExtendSession    bool
+		Remember         bool
+		RememberDuration int64
 	}
 	AcceptConsentRequestParams struct {
 		ConsentChallenge string
 		GrantScope       []string
 		GrantAudience    []string
-		AdditionalParams map[string]interface{}
+
+		Remember         bool
+		RememberDuration int64
+
+		AccessTokenExtras map[string]interface{}
+		IdTokenExtras     map[string]interface{}
 	}
 
 	AcceptLogoutRequestParams struct {
@@ -97,13 +102,12 @@ func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAu
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params AcceptLoginRequestParams) (string, error) {
 
-	extendSession := true
+	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.SubjectID)
 
-	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.IdentityID)
-	alr.IdentityProviderSessionId = &params.SessionID
-	alr.Remember = params.Remember
-	alr.RememberFor = params.RememberDuration
-	alr.ExtendSessionLifespan = &extendSession
+	alr.SetSubject(params.SubjectID)
+	alr.SetRemember(params.Remember)
+	alr.SetRememberFor(params.RememberDuration)
+	alr.SetExtendSessionLifespan(params.ExtendSession)
 	alr.Amr = []string{}
 
 	aa, err := h.getAdminAPIClient(ctx)
@@ -140,15 +144,16 @@ func (h *DefaultHydra) GetLoginRequest(ctx context.Context, loginChallenge strin
 func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params AcceptConsentRequestParams) (string, error) {
 
 	// By default we enable session rememberance for a week
-	remember := true
-	rememberFor := int64(7 * 24 * time.Hour / time.Second)
-
+	sessionData := hydraclientgo.AcceptOAuth2ConsentRequestSession{
+		AccessToken: params.AccessTokenExtras,
+		IdToken:     params.IdTokenExtras,
+	}
 	alr := hydraclientgo.NewAcceptOAuth2ConsentRequest()
-	alr.GrantScope = params.GrantScope
-	alr.GrantAccessTokenAudience = params.GrantAudience
-	alr.Remember = &remember
-	alr.RememberFor = &rememberFor
-	alr.AdditionalProperties = params.AdditionalParams
+	alr.SetGrantScope(params.GrantScope)
+	alr.SetGrantAccessTokenAudience(params.GrantAudience)
+	alr.SetRemember(params.Remember)
+	alr.SetRememberFor(params.RememberDuration)
+	alr.SetSession(sessionData)
 
 	aa, err := h.getAdminAPIClient(ctx)
 	if err != nil {

@@ -7,12 +7,10 @@ import (
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
 	papi "github.com/antinvestor/service-profile-api"
+	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"html/template"
 	"net/http"
-	"time"
-
-	"github.com/gorilla/csrf"
 
 	"github.com/antinvestor/service-authentication/hydra"
 )
@@ -34,7 +32,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	loginChallenge, err := hydra.GetLoginChallengeID(req)
 	if err != nil {
-		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		logger.WithError(err).Warn(" couldn't get a valid login challenge")
 		return err
 	}
 
@@ -48,7 +46,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	if getLogReq.Skip {
 		redirectUrl := ""
-		params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, IdentityID: getLogReq.GetSubject()}
+		params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: getLogReq.GetSubject()}
 		redirectUrl, err = defaultHydra.AcceptLoginRequest(ctx, params)
 
 		if err != nil {
@@ -108,7 +106,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		//TODO: In the event the user can't pass tests for long enough remember to use
 		//hydra.RejectLoginRequest()
 
-		err := loginTmpl.Execute(rw, map[string]interface{}{
+		err = loginTmpl.Execute(rw, map[string]interface{}{
 			"error":          "unable to log you in ",
 			"loginChallenge": loginChallenge,
 			csrf.TemplateTag: csrf.TemplateField(req),
@@ -119,12 +117,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	remember := req.PostForm.Get("rememberme") == "remember"
 
-	rememberDuration := int64(7 * 24 * time.Hour / time.Second)
-	if remember {
-		rememberDuration = 0
-	}
-
-	params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, IdentityID: profileObj.GetID(), Remember: &remember, RememberDuration: &rememberDuration}
+	params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetID(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
 
 	redirectUrl, err := defaultHydra.AcceptLoginRequest(
 		req.Context(), params)

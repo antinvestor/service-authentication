@@ -61,17 +61,23 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	partition := access.GetPartition()
 
-	sessionMap := map[string]interface{}{
-		"id_token": map[string]string{
-			"tenant_id":       partition.GetTenantId(),
-			"partition_id":    partition.GetPartitionId(),
-			"partition_state": partition.GetState().String(),
-			"access_id":       access.GetAccessId(),
-			"access_state":    access.GetState().String(),
-		},
+	tokenMap := map[string]interface{}{
+		"tenant_id":       partition.GetTenantId(),
+		"partition_id":    partition.GetPartitionId(),
+		"partition_state": partition.GetState().String(),
+		"access_id":       access.GetAccessId(),
+		"access_state":    access.GetState().String(),
 	}
 
-	params := hydra.AcceptConsentRequestParams{ConsentChallenge: consentChallenge, GrantScope: requestedScope, GrantAudience: grantedAudience, AdditionalParams: sessionMap}
+	params := hydra.AcceptConsentRequestParams{
+		ConsentChallenge:  consentChallenge,
+		GrantScope:        requestedScope,
+		GrantAudience:     grantedAudience,
+		Remember:          true,
+		RememberDuration:  0,
+		AccessTokenExtras: tokenMap,
+		IdTokenExtras:     tokenMap,
+	}
 
 	redirectUrl, err := defaultHydra.AcceptConsentRequest(req.Context(), params)
 
