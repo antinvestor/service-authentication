@@ -46,7 +46,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	if getLogReq.Skip {
 		redirectUrl := ""
-		params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: getLogReq.GetSubject()}
+		params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: getLogReq.GetSubject()}
 		redirectUrl, err = defaultHydra.AcceptLoginRequest(ctx, params)
 
 		if err != nil {
@@ -117,7 +117,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	remember := req.PostForm.Get("rememberme") == "remember"
 
-	params := hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetID(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
+	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetID(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
 
 	redirectUrl, err := defaultHydra.AcceptLoginRequest(
 		req.Context(), params)

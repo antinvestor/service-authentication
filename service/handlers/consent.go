@@ -69,7 +69,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		"access_state":    access.GetState().String(),
 	}
 
-	params := hydra.AcceptConsentRequestParams{
+	params := &hydra.AcceptConsentRequestParams{
 		ConsentChallenge:  consentChallenge,
 		GrantScope:        requestedScope,
 		GrantAudience:     grantedAudience,

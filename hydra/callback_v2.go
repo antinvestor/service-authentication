@@ -100,10 +100,9 @@ func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAu
 	return hydraclientgo.NewAPIClient(configuration).OAuth2Api, nil
 }
 
-func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params AcceptLoginRequestParams) (string, error) {
+func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error) {
 
 	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.SubjectID)
-
 	alr.SetSubject(params.SubjectID)
 	alr.SetRemember(params.Remember)
 	alr.SetRememberFor(params.RememberDuration)
@@ -141,7 +140,7 @@ func (h *DefaultHydra) GetLoginRequest(ctx context.Context, loginChallenge strin
 	return hlr, nil
 }
 
-func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params AcceptConsentRequestParams) (string, error) {
+func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params *AcceptConsentRequestParams) (string, error) {
 
 	// By default we enable session rememberance for a week
 	sessionData := hydraclientgo.AcceptOAuth2ConsentRequestSession{
@@ -187,7 +186,7 @@ func (h *DefaultHydra) GetConsentRequest(ctx context.Context, consentChallenge s
 	return hlr, nil
 }
 
-func (h *DefaultHydra) AcceptLogoutRequest(ctx context.Context, params AcceptLogoutRequestParams) (string, error) {
+func (h *DefaultHydra) AcceptLogoutRequest(ctx context.Context, params *AcceptLogoutRequestParams) (string, error) {
 
 	aa, err := h.getAdminAPIClient(ctx)
 	if err != nil {

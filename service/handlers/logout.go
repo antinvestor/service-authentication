@@ -35,7 +35,7 @@ func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	redirectUrl, err := defaultHydra.AcceptLogoutRequest(req.Context(), hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
+	redirectUrl, err := defaultHydra.AcceptLogoutRequest(req.Context(), &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
 
 	if err != nil {
 		return err
