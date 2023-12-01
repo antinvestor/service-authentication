@@ -3,10 +3,10 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	partitionv1 "github.com/antinvestor/apis/partition/v1"
+	profilev1 "github.com/antinvestor/apis/profile/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
-	prtapi "github.com/antinvestor/service-partition-api"
-	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
@@ -16,8 +16,8 @@ import (
 type holder struct {
 	service      *frame.Service
 	config       *config.AuthenticationConfig
-	profileCli   *papi.ProfileClient
-	partitionCli *prtapi.PartitionClient
+	profileCli   *profilev1.ProfileClient
+	partitionCli *partitionv1.PartitionClient
 }
 type ErrorResponse struct {
 	Code    int    `json:"code"`
@@ -46,8 +46,8 @@ func (h *holder) addHandler(router *mux.Router,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(frame.ToContext(r.Context(), h.service))
-		r = r.WithContext(papi.ToContext(r.Context(), h.profileCli))
-		r = r.WithContext(prtapi.ToContext(r.Context(), h.partitionCli))
+		r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
+		r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
 		err := f(w, r)
 		if err != nil {
@@ -64,8 +64,8 @@ func (h *holder) addHandler(router *mux.Router,
 // NewAuthRouterV1 NewRouterV1 -
 func NewAuthRouterV1(service *frame.Service,
 	authConfig *config.AuthenticationConfig,
-	profileCli *papi.ProfileClient,
-	partitionCli *prtapi.PartitionClient) *mux.Router {
+	profileCli *profilev1.ProfileClient,
+	partitionCli *partitionv1.PartitionClient) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	csrfMiddleware := csrf.Protect(

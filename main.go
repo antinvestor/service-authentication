@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/antinvestor/apis"
+	partitionv1 "github.com/antinvestor/apis/partition/v1"
+	profilev1 "github.com/antinvestor/apis/profile/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service"
 	"github.com/antinvestor/service-authentication/service/models"
-	prtapi "github.com/antinvestor/service-partition-api"
-	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
 	"github.com/sirupsen/logrus"
@@ -45,11 +45,11 @@ func main() {
 
 	err = srv.RegisterForJwt(ctx)
 	if err != nil {
-		log.WithError(err).Fatal("main -- could not register fo jwt")
+		log.WithError(err).Fatal("main -- could not register for jwt")
 	}
 
-	var profileCli *papi.ProfileClient
-	var partitionCli *prtapi.PartitionClient
+	var profileCli *profilev1.ProfileClient
+	var partitionCli *partitionv1.PartitionClient
 
 	oauth2ServiceHost := authenticationConfig.GetOauth2ServiceURI()
 	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
@@ -58,7 +58,7 @@ func main() {
 	if oauth2ServiceAudience != "" {
 		audienceList = strings.Split(oauth2ServiceAudience, ",")
 	}
-	profileCli, err = papi.NewProfileClient(ctx,
+	profileCli, err = profilev1.NewProfileClient(ctx,
 		apis.WithEndpoint(authenticationConfig.ProfileServiceURI),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(srv.JwtClientID()),
@@ -69,7 +69,7 @@ func main() {
 	}
 
 	partitionServiceURL := authenticationConfig.PartitionServiceURI
-	partitionCli, err = prtapi.NewPartitionsClient(ctx,
+	partitionCli, err = partitionv1.NewPartitionsClient(ctx,
 		apis.WithEndpoint(partitionServiceURL),
 		apis.WithTokenEndpoint(oauth2ServiceURL),
 		apis.WithTokenUsername(srv.JwtClientID()),

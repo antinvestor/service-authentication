@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
+	profilev1 "github.com/antinvestor/apis/profile/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
-	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"html/template"
@@ -117,7 +117,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	remember := req.PostForm.Get("rememberme") == "remember"
 
-	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetID(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
+	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
 
 	redirectUrl, err := defaultHydra.AcceptLoginRequest(
 		req.Context(), params)
@@ -131,7 +131,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func postLoginChecks(ctx context.Context, object *papi.ProfileObject,
+func postLoginChecks(ctx context.Context, object *profilev1.ProfileObject,
 	login *models.Login, err error, request *http.Request) error {
 
 	if err != nil {
@@ -141,10 +141,10 @@ func postLoginChecks(ctx context.Context, object *papi.ProfileObject,
 	return nil
 }
 
-func getLoginCredentials(ctx context.Context, contact string, password string) (*papi.ProfileObject, *models.Login, error) {
+func getLoginCredentials(ctx context.Context, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
 
 	service := frame.FromContext(ctx)
-	profileCli := papi.FromContext(ctx)
+	profileCli := profilev1.FromContext(ctx)
 
 	profileObj, err := profileCli.GetProfileByContact(ctx, contact)
 
@@ -153,7 +153,7 @@ func getLoginCredentials(ctx context.Context, contact string, password string) (
 	}
 
 	login := models.Login{}
-	profileHash := utils.HashStringSecret(profileObj.GetID())
+	profileHash := utils.HashStringSecret(profileObj.GetId())
 
 	if err = service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
 		return profileObj, nil, err

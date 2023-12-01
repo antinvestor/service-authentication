@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	partitionv1 "github.com/antinvestor/apis/partition/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/hydra"
-	partapi "github.com/antinvestor/service-partition-api"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,7 +16,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 
-	partitionAPI := partapi.FromContext(ctx)
+	partitionAPI := partitionv1.FromContext(ctx)
 	service := frame.FromContext(ctx)
 
 	cfg, ok := service.Config().(*config.AuthenticationConfig)
@@ -63,7 +63,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	tokenMap := map[string]interface{}{
 		"tenant_id":       partition.GetTenantId(),
-		"partition_id":    partition.GetPartitionId(),
+		"partition_id":    partition.GetId(),
 		"partition_state": partition.GetState().String(),
 		"access_id":       access.GetAccessId(),
 		"access_state":    access.GetState().String(),

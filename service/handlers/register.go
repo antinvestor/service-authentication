@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"fmt"
+	profilev1 "github.com/antinvestor/apis/profile/v1"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"
-	papi "github.com/antinvestor/service-profile-api"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
@@ -32,7 +32,7 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 
-	profileCli := papi.FromContext(ctx)
+	profileCli := profilev1.FromContext(ctx)
 	service := frame.FromContext(ctx)
 
 	contact := req.PostForm.Get("contact")
@@ -82,7 +82,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		}
 	}
 
-	profileId := existingProfile.GetID()
+	profileId := existingProfile.GetId()
 	password := req.PostForm.Get("password")
 	redirectUri, err := createAuthEntry(ctx, profileId, password, loginChallenge)
 	if err != nil {
