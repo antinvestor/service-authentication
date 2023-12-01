@@ -8,7 +8,7 @@ require (
 	github.com/antinvestor/service-profile-api v1.0.17
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/handlers v1.5.1
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/ory/hydra-client-go/v2 v2.1.1
 	github.com/pitabwire/frame v1.15.10
 	github.com/pkg/errors v0.9.1
