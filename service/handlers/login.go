@@ -80,28 +80,22 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return fmt.Errorf("could not convert configuration correctly")
 	}
 
-	logger := service.L().WithField("endpoint", "ShowLoginEndpoint")
+	logger := service.L().WithField("endpoint", "SubmitLoginEndpoint")
 
 	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
 
-	loginChallenge, err := hydra.GetLoginChallengeID(req)
-	if err != nil {
-		logger.WithError(err).Info(" couldn't get a valid login challenge")
-		return err
-	}
-
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
+	loginChallenge := req.PostForm.Get("login_challenge")
+
+	logger = logger.WithField("contact", contact)
 
 	profileObj, login, err := getLoginCredentials(ctx, contact, password)
 
 	err = postLoginChecks(ctx, profileObj, login, err, req)
 	if err != nil {
-		log := service.L().
-			WithField("endpoint", "SubmitLoginEndpoint").
-			WithField("contact", contact)
 
-		log.WithError(err).Info(" Could not login user")
+		logger.WithError(err).Info(" Could not login user")
 
 		//TODO: In the event the user can't pass tests for long enough remember to use
 		//hydra.RejectLoginRequest()
@@ -123,6 +117,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		req.Context(), params)
 
 	if err != nil {
+		logger.WithError(err).Error("critical issue")
 		return err
 	}
 
