@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/antinvestor/apis v1.4.5
-	github.com/antinvestor/apis/partition v0.0.0-20231202031032-e240a0a6ba31
+	github.com/antinvestor/apis/partition v1.4.7
 	github.com/antinvestor/apis/profile v0.0.0-20231202031032-e240a0a6ba31
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2

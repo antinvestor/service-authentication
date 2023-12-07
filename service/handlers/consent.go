@@ -39,14 +39,17 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
+	logger.WithField("consent_request", getConseReq).Info("authenticated client payload")
+
 	requestedScope := getConseReq.GetRequestedScope()
 	profileID := getConseReq.GetSubject()
 
 	client := getConseReq.GetClient()
+
 	clientID := client.GetClientId()
 	grantedAudience := client.GetAudience()
 
-	access, err := partitionAPI.GetAccess(ctx, clientID, profileID)
+	access, err := partitionAPI.GetAccessByClientIdProfileId(ctx, clientID, profileID)
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
