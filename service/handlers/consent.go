@@ -53,7 +53,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
-			access, err = partitionAPI.CreateAccess(ctx, clientID, profileID)
+			access, err = partitionAPI.CreateAccessByClientID(ctx, clientID, profileID)
 		}
 
 		if err != nil {
