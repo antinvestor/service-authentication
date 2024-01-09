@@ -103,7 +103,7 @@ func NewAuthRouterV1(service *frame.Service,
 	holder.addHandler(sRouter, handlers.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
 	holder.addHandler(sRouter, handlers.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
 
-	holder.addHandler(webhookRouter, handlers.TokenEnrichmentEndpoint, "/enrich/token", "WebhookTokenEnrichmentEndpoint", "POST")
+	holder.addHandler(webhookRouter, handlers.TokenEnrichmentEndpoint, "/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 	holder.addHandler(webhookRouter, handlers.CentrifugoProxySubscribeEndpoint, "/proxy/subscription", "CentrifugoProxySubscribeEndpoint", "POST")
 
 	holder.addHandler(authRouter, handlers.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
