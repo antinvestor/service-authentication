@@ -3,8 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	partitionv1 "github.com/antinvestor/apis/partition/v1"
-	profilev1 "github.com/antinvestor/apis/profile/v1"
+	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/handlers"
 	"github.com/gorilla/csrf"

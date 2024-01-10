@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
-	profilev1 "github.com/antinvestor/apis/profile/v1"
+	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/antinvestor/service-authentication/utils"

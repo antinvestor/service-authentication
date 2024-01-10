@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	partitionv1 "github.com/antinvestor/apis/partition/v1"
+	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/hydra"
 	"github.com/pitabwire/frame"
