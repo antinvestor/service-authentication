@@ -40,6 +40,8 @@ github.com/antinvestor/apis/go/partition v1.7.18 h1:y6G3GrtPapwpDwJVQaV5BNa1XYrV
 github.com/antinvestor/apis/go/partition v1.7.18/go.mod h1:jciJgZbqGelvuBMJZn8jhOzbarzGoPLGCtpFDEDVi9Y=
 github.com/antinvestor/apis/go/profile v1.7.13 h1:P68voE3QZ5dLSDQfFIKTHjLTS4xcq+aCoiciTRQqcNc=
 github.com/antinvestor/apis/go/profile v1.7.13/go.mod h1:BXpsMon7XrG4/PPiyggmDmxNU9/YnpeIlEYU4vmrCzU=
+github.com/antinvestor/apis/go/profile v1.7.18 h1:hVVMNjP0XQ9fJ5qMWLmACDyGDrEKHi8kLti1vpdEEJ4=
+github.com/antinvestor/apis/go/profile v1.7.18/go.mod h1:cT0OxzGUuDFoHr6xjvAOEXkmHxbSmdcykORoQPZLfxY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
