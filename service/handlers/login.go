@@ -109,9 +109,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	remember := req.PostForm.Get("rememberme") == "remember"
-
-	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: remember, RememberDuration: cfg.SessionRememberDuration}
+	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: true, RememberDuration: cfg.SessionRememberDuration}
 
 	redirectUrl, err := defaultHydra.AcceptLoginRequest(
 		req.Context(), params)
