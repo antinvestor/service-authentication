@@ -64,7 +64,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	partition := access.GetPartition()
 
-	tokenMap := map[string]interface{}{
+	tokenMap := map[string]any{
 		"tenant_id":       partition.GetTenantId(),
 		"partition_id":    partition.GetId(),
 		"partition_state": partition.GetState().String(),
@@ -96,7 +96,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	//
 	// } else {
 	//
-	//err := env.Template.ExecuteTemplate(rw, "login.html", map[string]interface{}{
+	//err := env.Template.ExecuteTemplate(rw, "login.html", map[string]any{
 	//	"error":          "",
 	//	csrf.TemplateTag: csrf.TemplateField(req),
 	//})

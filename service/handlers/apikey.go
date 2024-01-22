@@ -53,10 +53,10 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	jwtClientID := jwtClient["client_id"].(string)
-
+	subject, _ := claims.GetSubject()
 	apiky := models.APIKey{
 		Name:      akey.Name,
-		ProfileID: claims.ProfileID,
+		ProfileID: subject,
 		Key:       jwtClientID,
 		Hash:      apiKeySecret,
 		Scope:     akey.Scope,
@@ -98,7 +98,9 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	claims := frame.ClaimsFromContext(ctx)
 
 	var apiKeyList []models.APIKey
-	err := service.DB(ctx, true).Find(&apiKeyList, "profile_id = ?", claims.ProfileID).Error
+	subject, _ := claims.GetSubject()
+
+	err := service.DB(ctx, true).Find(&apiKeyList, "profile_id = ?", subject).Error
 
 	if err != nil {
 		return err
@@ -127,7 +129,8 @@ func GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	apiKeyID := params["ApiKeyId"]
 
 	var apiKeyModel models.APIKey
-	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
+	subject, _ := claims.GetSubject()
+	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
 	if err != nil {
 		return err
 	}
@@ -146,7 +149,8 @@ func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	apiKeyID := params["ApiKeyId"]
 
 	var apiKeyModel models.APIKey
-	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
+	subject, _ := claims.GetSubject()
+	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
 	if err != nil {
 		return err
 	}
@@ -160,7 +164,7 @@ func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	err = service.DB(ctx, false).Delete(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, claims.ProfileID).Error
+	err = service.DB(ctx, false).Delete(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	loginChallenge := req.FormValue("login_challenge")
 
-	err := registerTmpl.Execute(rw, map[string]interface{}{
+	err := registerTmpl.Execute(rw, map[string]any{
 		"error":          "",
 		"loginChallenge": loginChallenge,
 		csrf.TemplateTag: csrf.TemplateField(req),
@@ -45,7 +45,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf(" SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact, err)
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
-			err2 := registerTmpl.Execute(rw, map[string]interface{}{
+			err2 := registerTmpl.Execute(rw, map[string]any{
 				"error":          service.Translate(req, "CouldNotCheckContactExists"),
 				"contact":        contact,
 				"name":           name,
@@ -67,7 +67,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		if err != nil {
 			log.Printf(" SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact, err)
 
-			err2 := registerTmpl.Execute(rw, map[string]interface{}{
+			err2 := registerTmpl.Execute(rw, map[string]any{
 				"error":          service.Translate(req, "CouldNotCreateProfileByContact"),
 				"contact":        contact,
 				"name":           name,
@@ -88,7 +88,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		log.Printf(" SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId, err)
 
-		err2 := registerTmpl.Execute(rw, map[string]interface{}{
+		err2 := registerTmpl.Execute(rw, map[string]any{
 			"error":          service.Translate(req, "CouldNotCreateLoginDetails"),
 			"contact":        contact,
 			"name":           name,

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/pitabwire/frame"
@@ -12,6 +14,21 @@ import (
 	"net/http"
 	"strings"
 )
+
+// GetOauth2ClientById obtains a client id
+func GetOauth2ClientById(ctx context.Context,
+	oauth2ServiceAdminHost string, clientID string) (int, []byte, error) {
+
+	service := frame.FromContext(ctx)
+
+	oauth2AdminURI := fmt.Sprintf("%s%s/%s", oauth2ServiceAdminHost, "/admin/clients", clientID)
+
+	resultStatus, resultBody, err := service.InvokeRestService(ctx, http.MethodGet, oauth2AdminURI, nil, nil)
+	if err != nil {
+		return 0, nil, err
+	}
+	return resultStatus, resultBody, err
+}
 
 func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
@@ -29,7 +46,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	logger.WithField("token_data", string(body)).Info("received a request to update id token")
 
-	var tokenObject map[string]interface{}
+	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
 		logger.WithError(err).Error("could not decode request body")
@@ -64,17 +81,38 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 					var roles []string
 					entityName := ""
 
+					oauth2Config, ok := service.Config().(frame.ConfigurationOAUTH2)
+					if ok {
+						oauth2ServiceAdminHost := oauth2Config.GetOauth2ServiceAdminURI()
+
+						_, cBody, err0 := GetOauth2ClientById(ctx, oauth2ServiceAdminHost, clientID)
+						if err0 != nil {
+							return err0
+						}
+
+						var clientObject map[string]any
+						err = json.Unmarshal(cBody, &clientObject)
+						if err != nil {
+							logger.WithError(err).Error("could not decode client object")
+							return err
+						}
+						entityName = clientObject["client_name"].(string)
+					}
+
 					if clientID == profileID {
 
 						var apiKeyModel models.APIKey
 						err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
 						if err != nil {
-							return err
+							if !frame.DBErrorIsRecordNotFound(err) {
+								return err
+							}
+
 						}
 
 						profileID = apiKeyModel.ProfileID
-						entityName = apiKeyModel.Name
-						roles = append(roles, "system_product")
+
+						roles = append(roles, "system_external")
 
 					} else {
 						roles = append(roles, "user")
@@ -102,7 +140,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 						"access_id":       access.GetAccessId(),
 						"access_state":    access.GetState().String(),
 						"roles":           strings.Join(roles, ","),
-						"name":            entityName,
+						"service_name":    entityName,
 					}
 
 					response["session"]["access_token"] = tokenMap

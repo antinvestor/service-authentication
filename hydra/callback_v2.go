@@ -32,8 +32,8 @@ type (
 		Remember         bool
 		RememberDuration int64
 
-		AccessTokenExtras map[string]interface{}
-		IdTokenExtras     map[string]interface{}
+		AccessTokenExtras map[string]any
+		IdTokenExtras     map[string]any
 	}
 
 	AcceptLogoutRequestParams struct {

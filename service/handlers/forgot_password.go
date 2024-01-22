@@ -11,7 +11,7 @@ var forgotTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/
 
 func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	err := forgotTmpl.Execute(rw, map[string]interface{}{
+	err := forgotTmpl.Execute(rw, map[string]any{
 		"error":          "",
 		csrf.TemplateTag: csrf.TemplateField(req),
 	})

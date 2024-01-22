@@ -23,7 +23,7 @@ func CentrifugoProxySubscribeEndpoint(rw http.ResponseWriter, req *http.Request)
 
 	logger.WithField("subscription_data", string(body)).Info("received a subscription request")
 
-	var subscriptionReq map[string]interface{}
+	var subscriptionReq map[string]any
 	err = json.Unmarshal(body, &subscriptionReq)
 	if err != nil {
 		logger.WithError(err).Error("could not decode subscription request")

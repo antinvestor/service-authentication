@@ -12,7 +12,7 @@ func IndexEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		http.Redirect(rw, req, req.Referer(), http.StatusSeeOther)
 	}
 
-	err := indexTmpl.Execute(rw, map[string]interface{}{})
+	err := indexTmpl.Execute(rw, map[string]any{})
 
 	return err
 }
