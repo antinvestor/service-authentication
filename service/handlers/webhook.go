@@ -36,7 +36,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.FromContext(ctx)
 	partitionAPI := partitionv1.FromContext(ctx)
 
-	logger := service.L()
+	logger := service.L().WithField("method", "TokenEnrichmentEndpoint")
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -108,11 +108,25 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 								return err
 							}
 
+							// These represent the core services that work generally on all entities
+							roles = append(roles, "system_internal")
+
+							tokenMap := map[string]string{
+								"roles":        strings.Join(roles, ","),
+								"service_name": entityName,
+							}
+
+							response["session"]["access_token"] = tokenMap
+							response["session"]["id_token"] = tokenMap
+
+							rw.Header().Set("Content-Type", "application/json")
+							rw.WriteHeader(http.StatusOK)
+							return json.NewEncoder(rw).Encode(response)
+
+						} else {
+							profileID = apiKeyModel.ProfileID
+							roles = append(roles, "system_external")
 						}
-
-						profileID = apiKeyModel.ProfileID
-
-						roles = append(roles, "system_external")
 
 					} else {
 						roles = append(roles, "user")
@@ -145,11 +159,9 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 					response["session"]["access_token"] = tokenMap
 					response["session"]["id_token"] = tokenMap
-
 				}
 			}
 		}
-
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
