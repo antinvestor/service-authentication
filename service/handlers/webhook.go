@@ -64,110 +64,163 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	sessionObject, ok := tokenObject["session"]
+	if !ok {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+	}
+
+	session, ok1 := sessionObject.(map[string]any)
+	if !ok1 {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+	}
+
+	idTokenObject, ok2 := session["id_token"]
+	if !ok2 {
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+	}
+
+	idToken, ok3 := idTokenObject.(map[string]any)
+	if !ok3 {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+	}
+
+	clientID := session["client_id"].(string)
+	profileID := idToken["subject"].(string)
+	var roles []string
+	entityName := ""
+
+	oauth2Config, ok := service.Config().(frame.ConfigurationOAUTH2)
 	if ok {
+		oauth2ServiceAdminHost := oauth2Config.GetOauth2ServiceAdminURI()
 
-		session, ok1 := sessionObject.(map[string]any)
-		if ok1 {
+		_, cBody, err0 := GetOauth2ClientById(ctx, oauth2ServiceAdminHost, clientID)
+		if err0 != nil {
+			return err0
+		}
 
-			idTokenObject, ok2 := session["id_token"]
-			if ok2 {
+		var clientObject map[string]any
+		err = json.Unmarshal(cBody, &clientObject)
+		if err != nil {
+			logger.WithError(err).Error("could not decode client object")
+			return err
+		}
+		entityName = clientObject["client_name"].(string)
+	}
 
-				idToken, ok3 := idTokenObject.(map[string]any)
-				if ok3 {
+	if clientID == profileID || profileID == "" {
 
-					clientID := session["client_id"].(string)
-					profileID := idToken["subject"].(string)
-					var roles []string
-					entityName := ""
+		var apiKeyModel models.APIKey
+		err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
+		if err != nil {
+			if !frame.DBErrorIsRecordNotFound(err) {
+				return err
+			}
 
-					oauth2Config, ok := service.Config().(frame.ConfigurationOAUTH2)
-					if ok {
-						oauth2ServiceAdminHost := oauth2Config.GetOauth2ServiceAdminURI()
+			// These represent the core services that work generally on all entities
+			roles = append(roles, "system_internal")
 
-						_, cBody, err0 := GetOauth2ClientById(ctx, oauth2ServiceAdminHost, clientID)
-						if err0 != nil {
-							return err0
-						}
+			tokenMap := map[string]string{
+				"roles":        strings.Join(roles, ","),
+				"service_name": entityName,
+			}
 
-						var clientObject map[string]any
-						err = json.Unmarshal(cBody, &clientObject)
-						if err != nil {
-							logger.WithError(err).Error("could not decode client object")
-							return err
-						}
-						entityName = clientObject["client_name"].(string)
-					}
+			response["session"]["access_token"] = tokenMap
+			response["session"]["id_token"] = tokenMap
 
-					if clientID == profileID || profileID == "" {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			return json.NewEncoder(rw).Encode(response)
 
-						var apiKeyModel models.APIKey
-						err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
-						if err != nil {
-							if !frame.DBErrorIsRecordNotFound(err) {
-								return err
-							}
+		}
 
-							// These represent the core services that work generally on all entities
-							roles = append(roles, "system_internal")
+		// These are mostly external services with limited tenancy
 
-							tokenMap := map[string]string{
-								"roles":        strings.Join(roles, ","),
-								"service_name": entityName,
-							}
+		profileID = apiKeyModel.ProfileID
+		partitionID := apiKeyModel.PartitionID
+		roles = append(roles, "system_external")
 
-							response["session"]["access_token"] = tokenMap
-							response["session"]["id_token"] = tokenMap
+		var access *partitionv1.AccessObject
+		access, err = partitionAPI.GetAccessByPartitionIdProfileId(ctx, partitionID, profileID)
+		if err != nil {
+			st, ok := status.FromError(err)
+			if !ok || st.Code() != codes.NotFound {
+				access, err = partitionAPI.CreateAccessByPartitionID(ctx, partitionID, profileID)
+			}
 
-							rw.Header().Set("Content-Type", "application/json")
-							rw.WriteHeader(http.StatusOK)
-							return json.NewEncoder(rw).Encode(response)
-
-						} else {
-							profileID = apiKeyModel.ProfileID
-							roles = append(roles, "system_external")
-						}
-
-					} else {
-						roles = append(roles, "user")
-					}
-
-					var access *partitionv1.AccessObject
-					access, err = partitionAPI.GetAccessByClientIdProfileId(ctx, clientID, profileID)
-					if err != nil {
-						st, ok := status.FromError(err)
-						if !ok || st.Code() != codes.NotFound {
-							access, err = partitionAPI.CreateAccessByClientID(ctx, clientID, profileID)
-						}
-
-						if err != nil {
-							logger.WithError(err).
-								WithField("client_id", clientID).
-								WithField("profile_id", profileID).
-								Error(" there was an error getting access")
-							return err
-						}
-					}
-
-					partition := access.GetPartition()
-
-					tokenMap := map[string]string{
-						"tenant_id":       partition.GetTenantId(),
-						"partition_id":    partition.GetId(),
-						"partition_state": partition.GetState().String(),
-						"access_id":       access.GetAccessId(),
-						"access_state":    access.GetState().String(),
-						"roles":           strings.Join(roles, ","),
-						"service_name":    entityName,
-					}
-
-					response["session"]["access_token"] = tokenMap
-					response["session"]["id_token"] = tokenMap
-				}
+			if err != nil {
+				logger.WithError(err).
+					WithField("partition_id", partitionID).
+					WithField("profile_id", profileID).
+					Error(" there was an error getting access")
+				return err
 			}
 		}
+
+		partition := access.GetPartition()
+
+		tokenMap := map[string]string{
+			"tenant_id":       partition.GetTenantId(),
+			"partition_id":    partition.GetId(),
+			"partition_state": partition.GetState().String(),
+			"access_id":       access.GetAccessId(),
+			"access_state":    access.GetState().String(),
+			"roles":           strings.Join(roles, ","),
+			"service_name":    entityName,
+		}
+
+		response["session"]["access_token"] = tokenMap
+		response["session"]["id_token"] = tokenMap
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+
 	}
+
+	roles = append(roles, "user")
+
+	var access *partitionv1.AccessObject
+	access, err = partitionAPI.GetAccessByClientIdProfileId(ctx, clientID, profileID)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok || st.Code() != codes.NotFound {
+			access, err = partitionAPI.CreateAccessByClientID(ctx, clientID, profileID)
+		}
+
+		if err != nil {
+			logger.WithError(err).
+				WithField("client_id", clientID).
+				WithField("profile_id", profileID).
+				Error(" there was an error getting access")
+			return err
+		}
+	}
+
+	partition := access.GetPartition()
+
+	tokenMap := map[string]string{
+		"tenant_id":       partition.GetTenantId(),
+		"partition_id":    partition.GetId(),
+		"partition_state": partition.GetState().String(),
+		"access_id":       access.GetAccessId(),
+		"access_state":    access.GetState().String(),
+		"roles":           strings.Join(roles, ","),
+		"service_name":    entityName,
+	}
+
+	response["session"]["access_token"] = tokenMap
+	response["session"]["id_token"] = tokenMap
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(response)
+
 }
