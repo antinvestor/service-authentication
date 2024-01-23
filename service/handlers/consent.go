@@ -8,7 +8,6 @@ import (
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
 	"net/http"
 )
 
@@ -57,7 +56,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		}
 
 		if err != nil {
-			log.Printf(" ShowConsentEndpoint -- there was an error getting access %+v", err)
+			logger.WithError(err).Info("there was an error getting access")
 			return err
 		}
 	}
