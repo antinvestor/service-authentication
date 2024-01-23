@@ -98,7 +98,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 						entityName = clientObject["client_name"].(string)
 					}
 
-					if clientID == profileID {
+					if clientID == profileID || profileID == "" {
 
 						var apiKeyModel models.APIKey
 						err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
