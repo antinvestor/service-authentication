@@ -185,35 +185,12 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	}
 
+	// For end users only add roles and service names
 	roles = append(roles, "user")
 
-	var access *partitionv1.AccessObject
-	access, err = partitionAPI.GetAccessByClientIdProfileId(ctx, clientID, profileID)
-	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok || st.Code() != codes.NotFound {
-			access, err = partitionAPI.CreateAccessByClientID(ctx, clientID, profileID)
-		}
-
-		if err != nil {
-			logger.WithError(err).
-				WithField("client_id", clientID).
-				WithField("profile_id", profileID).
-				Error(" there was an error getting access")
-			return err
-		}
-	}
-
-	partition := access.GetPartition()
-
 	tokenMap := map[string]string{
-		"tenant_id":       partition.GetTenantId(),
-		"partition_id":    partition.GetId(),
-		"partition_state": partition.GetState().String(),
-		"access_id":       access.GetAccessId(),
-		"access_state":    access.GetState().String(),
-		"roles":           strings.Join(roles, ","),
-		"service_name":    entityName,
+		"roles":        strings.Join(roles, ","),
+		"service_name": entityName,
 	}
 
 	response["session"]["access_token"] = tokenMap
