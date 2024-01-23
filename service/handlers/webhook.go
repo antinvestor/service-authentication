@@ -35,7 +35,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.FromContext(ctx)
 	partitionAPI := partitionv1.FromContext(ctx)
 
-	logger := service.L().WithField("method", "TokenEnrichmentEndpoint")
+	logger := service.L()
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -140,7 +140,10 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 						}
 
 						if err != nil {
-							logger.WithError(err).Error(" there was an error getting access")
+							logger.WithError(err).
+								WithField("client_id", clientID).
+								WithField("profile_id", profileID).
+								Error(" there was an error getting access")
 							return err
 						}
 					}
