@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/service/models"
 	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"net/http"
 	"strings"
@@ -34,7 +31,6 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 	service := frame.FromContext(ctx)
-	partitionAPI := partitionv1.FromContext(ctx)
 
 	params := mux.Vars(req)
 	tokenType := params["tokenType"]
@@ -82,23 +78,8 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return json.NewEncoder(rw).Encode(response)
 	}
 
-	idTokenObject, ok2 := session["id_token"]
-	if !ok2 {
-
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
-	}
-
-	idToken, ok3 := idTokenObject.(map[string]any)
-	if !ok3 {
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
-	}
-
 	clientID := session["client_id"].(string)
-	profileID := idToken["subject"].(string)
+	isSystemToken := false
 	var roles []string
 	entityName := ""
 
@@ -118,73 +99,21 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			return err
 		}
 		entityName = clientObject["client_name"].(string)
-		logger = logger.WithField("client_object", clientObject)
+
+		grantTypes := clientObject["grant_types"].([]string)
+		if len(grantTypes) == 1 && grantTypes[0] == "client_credentials" {
+			isSystemToken = true
+		}
 	}
 
-	logger.Info("*** decision point for request")
+	if !isSystemToken {
 
-	if clientID == profileID || profileID == "" {
-
-		var apiKeyModel models.APIKey
-		err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
-		if err != nil {
-
-			logger.WithError(err).Info("could not get api key for client id")
-
-			if !frame.DBErrorIsRecordNotFound(err) {
-				return err
-			}
-
-			// These represent the core services that work generally on all entities
-			roles = append(roles, "system_internal")
-
-			tokenMap := map[string]string{
-				"roles":        strings.Join(roles, ","),
-				"service_name": entityName,
-			}
-
-			response["session"]["access_token"] = tokenMap
-			response["session"]["id_token"] = tokenMap
-
-			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusOK)
-			return json.NewEncoder(rw).Encode(response)
-
-		}
-
-		// These are mostly external services with limited tenancy
-
-		profileID = apiKeyModel.ProfileID
-		partitionID := apiKeyModel.PartitionID
-		roles = append(roles, "system_external")
-
-		var access *partitionv1.AccessObject
-		access, err = partitionAPI.GetAccessByPartitionIdProfileId(ctx, partitionID, profileID)
-		if err != nil {
-			st, ok := status.FromError(err)
-			if !ok || st.Code() != codes.NotFound {
-				access, err = partitionAPI.CreateAccessByPartitionID(ctx, partitionID, profileID)
-			}
-
-			if err != nil {
-				logger.WithError(err).
-					WithField("partition_id", partitionID).
-					WithField("profile_id", profileID).
-					Error(" there was an error getting access")
-				return err
-			}
-		}
-
-		partition := access.GetPartition()
+		// For end users only add roles and service names
+		roles = append(roles, "user")
 
 		tokenMap := map[string]string{
-			"tenant_id":       partition.GetTenantId(),
-			"partition_id":    partition.GetId(),
-			"partition_state": partition.GetState().String(),
-			"access_id":       access.GetAccessId(),
-			"access_state":    access.GetState().String(),
-			"roles":           strings.Join(roles, ","),
-			"service_name":    entityName,
+			"roles":        strings.Join(roles, ","),
+			"service_name": entityName,
 		}
 
 		response["session"]["access_token"] = tokenMap
@@ -196,10 +125,39 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	}
 
-	// For end users only add roles and service names
-	roles = append(roles, "user")
+	var apiKeyModel models.APIKey
+	err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
+	if err != nil {
+
+		logger.WithError(err).Info("could not get api key for client id")
+
+		if !frame.DBErrorIsRecordNotFound(err) {
+			return err
+		}
+
+		// These represent the core services that work generally on all entities
+		roles = append(roles, "system_internal")
+
+		tokenMap := map[string]string{
+			"roles":        strings.Join(roles, ","),
+			"service_name": entityName,
+		}
+
+		response["session"]["access_token"] = tokenMap
+		response["session"]["id_token"] = tokenMap
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+
+	}
+
+	// These are mostly external services with limited tenancy
+	roles = append(roles, "system_external")
 
 	tokenMap := map[string]string{
+		"tenant_id":    apiKeyModel.TenantID,
+		"partition_id": apiKeyModel.PartitionID,
 		"roles":        strings.Join(roles, ","),
 		"service_name": entityName,
 	}
@@ -210,5 +168,4 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(response)
-
 }
