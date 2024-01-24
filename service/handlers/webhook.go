@@ -100,9 +100,15 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		}
 		entityName = clientObject["client_name"].(string)
 
-		grantTypes := clientObject["grant_types"].([]string)
-		if len(grantTypes) == 1 && grantTypes[0] == "client_credentials" {
-			isSystemToken = true
+		grantTypes, ok0 := clientObject["grant_types"].([]any)
+		if ok0 {
+
+			if len(grantTypes) == 1 {
+				grantType, ok6 := grantTypes[0].(string)
+				if ok6 && grantType == "client_credentials" {
+					isSystemToken = true
+				}
+			}
 		}
 	}
 
