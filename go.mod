@@ -10,12 +10,12 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/ory/hydra-client-go/v2 v2.1.1
-	github.com/pitabwire/frame v1.17.5
+	github.com/pitabwire/frame v1.17.6
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.18.0
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 	gorm.io/datatypes v1.2.0
 )
 
@@ -35,6 +35,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect

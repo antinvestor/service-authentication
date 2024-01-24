@@ -6,6 +6,7 @@ import (
 	"fmt"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/service/models"
+	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,6 +36,9 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.FromContext(ctx)
 	partitionAPI := partitionv1.FromContext(ctx)
 
+	params := mux.Vars(req)
+	tokenType := params["tokenType"]
+
 	logger := service.L()
 
 	body, err := io.ReadAll(req.Body)
@@ -43,7 +47,8 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	logger.WithField("token_data", string(body)).Info("received a request to update id token")
+	logger = logger.WithField("tokenType", tokenType).WithField("token_data", string(body))
+	logger.Info("received a request to update id token")
 
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
@@ -113,13 +118,19 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			return err
 		}
 		entityName = clientObject["client_name"].(string)
+		logger = logger.WithField("client_object", clientObject)
 	}
+
+	logger.Info("*** decision point for request")
 
 	if clientID == profileID || profileID == "" {
 
 		var apiKeyModel models.APIKey
 		err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
 		if err != nil {
+
+			logger.WithError(err).Info("could not get api key for client id")
+
 			if !frame.DBErrorIsRecordNotFound(err) {
 				return err
 			}
