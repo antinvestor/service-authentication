@@ -3,7 +3,7 @@ module github.com/antinvestor/service-authentication
 go 1.21
 
 require (
-	github.com/antinvestor/apis/go/common v1.9.5
+	github.com/antinvestor/apis/go/common v1.9.6
 	github.com/antinvestor/apis/go/partition v1.9.5
 	github.com/antinvestor/apis/go/profile v1.9.5
 	github.com/gorilla/csrf v1.7.2
@@ -62,8 +62,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	gocloud.dev v0.36.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/oauth2 v0.16.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
