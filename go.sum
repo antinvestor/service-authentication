@@ -36,6 +36,8 @@ github.com/antinvestor/apis/go/common v1.16.0 h1:FDul5KQccbn1S2CXkGf2keUMwfLQAiF
 github.com/antinvestor/apis/go/common v1.16.0/go.mod h1:/4hq5jX8UfyWJXvua0Ra2jZzKx/uavWCWzFdY1Os7DM=
 github.com/antinvestor/apis/go/common v1.16.1 h1:exGoGV6aDuKfnpfqJ2ASkaKpktLVWGppbfPnpDFuJZk=
 github.com/antinvestor/apis/go/common v1.16.1/go.mod h1:/4hq5jX8UfyWJXvua0Ra2jZzKx/uavWCWzFdY1Os7DM=
+github.com/antinvestor/apis/go/common v1.16.2 h1:6O6gm0UFe9nu7ow1vemV8XRzywobD6pwf2bRzs+z1GA=
+github.com/antinvestor/apis/go/common v1.16.2/go.mod h1:dcA2qZtGh2lr8PcgcIlNeC9YA61XSLq6gr4QT4cowJI=
 github.com/antinvestor/apis/go/partition v1.15.2 h1:5WMpF1JNYwRtqVco2QEjc10J6VjJii7DZGRkU0zdlf4=
 github.com/antinvestor/apis/go/partition v1.15.2/go.mod h1:9iiRq/V567MNQbmWMh2qdZsrP78nCmL2XH+vE6d+kuA=
 github.com/antinvestor/apis/go/partition v1.16.1 h1:e2c/OP/TeACwvm31pc0Zfn86aJPLFsqIFXj6qAH9o5Q=
