@@ -3,9 +3,9 @@ module github.com/antinvestor/service-authentication
 go 1.21
 
 require (
-	github.com/antinvestor/apis/go/common v1.15.2
-	github.com/antinvestor/apis/go/partition v1.15.2
-	github.com/antinvestor/apis/go/profile v1.15.2
+	github.com/antinvestor/apis/go/common v1.16.2
+	github.com/antinvestor/apis/go/partition v1.16.1
+	github.com/antinvestor/apis/go/profile v1.16.1
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
@@ -15,7 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.22.0
-	google.golang.org/grpc v1.63.0
+	google.golang.org/grpc v1.63.2
 	gorm.io/datatypes v1.2.0
 )
 
