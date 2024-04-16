@@ -87,7 +87,7 @@ func (h *DefaultHydra) getAdminURL(_ context.Context) (string, error) {
 	return h.adminUrl, nil
 }
 
-func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAuth2Api, error) {
+func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAuth2API, error) {
 	url, err := h.getAdminURL(ctx)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAu
 	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: url}}
 
 	configuration.HTTPClient = &http.Client{}
-	return hydraclientgo.NewAPIClient(configuration).OAuth2Api, nil
+	return hydraclientgo.NewAPIClient(configuration).OAuth2API, nil
 }
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error) {
