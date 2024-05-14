@@ -92,7 +92,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	profileObj, login, err := getLoginCredentials(ctx, contact, password)
 
-	err = postLoginChecks(ctx, profileObj, login, err, req)
+	err = postLoginChecks(ctx, profileObj, contact, login, err, req)
 	if err != nil {
 
 		logger.WithError(err).Info(" Could not login user")
@@ -124,12 +124,16 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func postLoginChecks(ctx context.Context, object *profilev1.ProfileObject,
+func postLoginChecks(ctx context.Context,
+	profile *profilev1.ProfileObject, contact string,
 	login *models.Login, err error, request *http.Request) error {
 
 	if err != nil {
 		return err
 	}
+
+	//TODO: In the event the user can't pass tests for long enough remember to use
+	//hydra.RejectLoginRequest()
 
 	return nil
 }
