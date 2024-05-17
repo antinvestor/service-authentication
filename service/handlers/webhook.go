@@ -56,10 +56,10 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	response := map[string]map[string]map[string]string{
 		"session": {
 			"access_token": {
-				"role": "unknown",
+				"roles": "unknown",
 			},
 			"id_token": {
-				"role": "unknown",
+				"roles": "unknown",
 			},
 		},
 	}

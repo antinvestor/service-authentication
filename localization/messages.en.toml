@@ -1,5 +1,7 @@
 
-
-CouldNotCheckContactExists="Could not check contact exists"
-CouldNotCreateProfileByContact="Could not create profile by contact provided"
-CouldNotCreateLoginDetails="Could not create login details"
+[CouldNotCheckContactExists]
+one="Could not check contact exists"
+[CouldNotCreateProfileByContact]
+one="Could not create profile by contact provided"
+[CouldNotCreateLoginDetails]
+one="Could not create login details"
