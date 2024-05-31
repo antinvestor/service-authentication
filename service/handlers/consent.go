@@ -69,7 +69,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		"partition_state": partition.GetState().String(),
 		"access_id":       access.GetAccessId(),
 		"access_state":    access.GetState().String(),
-		"roles":           "user",
+		"roles":           []string{"user"},
 	}
 
 	params := &hydra.AcceptConsentRequestParams{
