@@ -9,7 +9,6 @@ import (
 	"github.com/pitabwire/frame"
 	"io"
 	"net/http"
-	"strings"
 )
 
 // GetOauth2ClientById obtains a client id
@@ -53,13 +52,13 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	response := map[string]map[string]map[string]string{
+	response := map[string]map[string]map[string]any{
 		"session": {
 			"access_token": {
-				"roles": "unknown",
+				"roles": []string{"unknown"},
 			},
 			"id_token": {
-				"roles": "unknown",
+				"roles": []string{"unknown"},
 			},
 		},
 	}
@@ -117,8 +116,8 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		// For end users only add roles and service names
 		roles = append(roles, "user")
 
-		tokenMap := map[string]string{
-			"roles":        strings.Join(roles, ","),
+		tokenMap := map[string]any{
+			"roles":        roles,
 			"service_name": entityName,
 		}
 
@@ -144,8 +143,8 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		// These represent the core services that work generally on all entities
 		roles = append(roles, "system_internal")
 
-		tokenMap := map[string]string{
-			"roles":        strings.Join(roles, ","),
+		tokenMap := map[string]any{
+			"roles":        roles,
 			"service_name": entityName,
 		}
 
@@ -161,10 +160,10 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	// These are mostly external services with limited tenancy
 	roles = append(roles, "system_external")
 
-	tokenMap := map[string]string{
+	tokenMap := map[string]any{
 		"tenant_id":    apiKeyModel.TenantID,
 		"partition_id": apiKeyModel.PartitionID,
-		"roles":        strings.Join(roles, ","),
+		"roles":        roles,
 		"service_name": entityName,
 	}
 
