@@ -1,5 +1,7 @@
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240401165935-b983156c5e99.1 h1:2IGhRovxlsOIQgx2ekZWo4wTPAYpck41+18ICxs37is=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240401165935-b983156c5e99.1/go.mod h1:Tgn5bgL220vkFOI0KPStlcClPeOJzAv4uT+V8JXGUnw=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.1-20240508200655-46a4cf4ba109.1 h1:LEXWFH/xZ5oOWrC3oOtHbUyBdzRWMCPpAQmKC9v05mA=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.1-20240508200655-46a4cf4ba109.1/go.mod h1:XF+P8+RmfdufmIYpGUC+6bF7S+IlmHDEnCrO3OXaUAQ=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.113.0 h1:g3C70mn3lWfckKBiCVsAshabrDg01pQ0pnX1MNtnMkA=
@@ -35,6 +37,8 @@ github.com/alitto/pond v1.8.3 h1:ydIqygCLVPqIX/USe5EaV/aSRXTRXDEI9JwuDdu+/xs=
 github.com/alitto/pond v1.8.3/go.mod h1:CmvIIGd5jKLasGI3D87qDkQxjzChdKMmnXMg3fG6M6Q=
 github.com/antinvestor/apis/go/common v1.16.6 h1:bGRld1clk2EnxbI9LdXq+oiYA+EIm+kMV/HIjNR1A9s=
 github.com/antinvestor/apis/go/common v1.16.6/go.mod h1:dcA2qZtGh2lr8PcgcIlNeC9YA61XSLq6gr4QT4cowJI=
+github.com/antinvestor/apis/go/common v1.17.0 h1:tU+p/JxZcasZqM1+L4fHuXqgSUdur+d6Q/AgNmpbSfo=
+github.com/antinvestor/apis/go/common v1.17.0/go.mod h1:dsicS5X9CB63hdTnMtFpg/1uPYqbTIC0eBJeyrg8y4Q=
 github.com/antinvestor/apis/go/partition v1.16.6 h1:Medsf5wH6tnpL/X5pFNjElZidcDU1Jl66xYYhx4BZBU=
 github.com/antinvestor/apis/go/partition v1.16.6/go.mod h1:7loOgdanaVlbUJZ++re+NbzI4N9JNUGepkXM3yn86EE=
 github.com/antinvestor/apis/go/profile v1.16.6 h1:j4Qu+mHGHVa/2HNlDQ2nyvMMONwt2/UEWx8InMusFJw=
