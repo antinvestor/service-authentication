@@ -39,6 +39,8 @@ github.com/antinvestor/apis/go/common v1.16.6 h1:bGRld1clk2EnxbI9LdXq+oiYA+EIm+k
 github.com/antinvestor/apis/go/common v1.16.6/go.mod h1:dcA2qZtGh2lr8PcgcIlNeC9YA61XSLq6gr4QT4cowJI=
 github.com/antinvestor/apis/go/common v1.17.0 h1:tU+p/JxZcasZqM1+L4fHuXqgSUdur+d6Q/AgNmpbSfo=
 github.com/antinvestor/apis/go/common v1.17.0/go.mod h1:dsicS5X9CB63hdTnMtFpg/1uPYqbTIC0eBJeyrg8y4Q=
+github.com/antinvestor/apis/go/common v1.17.3 h1:UcdjjbnKaAEi2pmEjFXAxb0uHKT+BwulYPiTekNDnSM=
+github.com/antinvestor/apis/go/common v1.17.3/go.mod h1:dsicS5X9CB63hdTnMtFpg/1uPYqbTIC0eBJeyrg8y4Q=
 github.com/antinvestor/apis/go/partition v1.16.6 h1:Medsf5wH6tnpL/X5pFNjElZidcDU1Jl66xYYhx4BZBU=
 github.com/antinvestor/apis/go/partition v1.16.6/go.mod h1:7loOgdanaVlbUJZ++re+NbzI4N9JNUGepkXM3yn86EE=
 github.com/antinvestor/apis/go/partition v1.17.0 h1:zlAj4pfG+/Rf39c1vHlWpkbRh1aukI7nas8bfzB8+N4=
@@ -47,6 +49,8 @@ github.com/antinvestor/apis/go/profile v1.16.6 h1:j4Qu+mHGHVa/2HNlDQ2nyvMMONwt2/
 github.com/antinvestor/apis/go/profile v1.16.6/go.mod h1:9+72QhE5DwbQB7cH29RR5j8vDMN0xbzFrHK6TAJVbpk=
 github.com/antinvestor/apis/go/profile v1.17.0 h1:QbgLeW7/EDg37+cRjEVsMPKrT7f4yuw6GGn+bwOwNPY=
 github.com/antinvestor/apis/go/profile v1.17.0/go.mod h1:xIWPObv24/LYm8/rRHk4wjksbxtzKdtCl8cLwe+J4rw=
+github.com/antinvestor/apis/go/profile v1.17.4 h1:xdyI5ZrvGX5jSGzJwEnjZb8CJPeamr84usGVX3q2CZI=
+github.com/antinvestor/apis/go/profile v1.17.4/go.mod h1:XnrOL6LanEIxH5ARRMh8qog6T71gf9G+xsNePIgM6kI=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
