@@ -41,6 +41,8 @@ github.com/antinvestor/apis/go/common v1.17.0 h1:tU+p/JxZcasZqM1+L4fHuXqgSUdur+d
 github.com/antinvestor/apis/go/common v1.17.0/go.mod h1:dsicS5X9CB63hdTnMtFpg/1uPYqbTIC0eBJeyrg8y4Q=
 github.com/antinvestor/apis/go/common v1.17.3 h1:UcdjjbnKaAEi2pmEjFXAxb0uHKT+BwulYPiTekNDnSM=
 github.com/antinvestor/apis/go/common v1.17.3/go.mod h1:dsicS5X9CB63hdTnMtFpg/1uPYqbTIC0eBJeyrg8y4Q=
+github.com/antinvestor/apis/go/common v1.17.6 h1:khYG+JxLTwQN5OkkXNad2tABq9/pvh9bCJAjQUgwlKM=
+github.com/antinvestor/apis/go/common v1.17.6/go.mod h1:q5MZFvDMgLlm93G+A7SdJ6+4aJR7UefalMKrZWcUWZI=
 github.com/antinvestor/apis/go/partition v1.16.6 h1:Medsf5wH6tnpL/X5pFNjElZidcDU1Jl66xYYhx4BZBU=
 github.com/antinvestor/apis/go/partition v1.16.6/go.mod h1:7loOgdanaVlbUJZ++re+NbzI4N9JNUGepkXM3yn86EE=
 github.com/antinvestor/apis/go/partition v1.17.0 h1:zlAj4pfG+/Rf39c1vHlWpkbRh1aukI7nas8bfzB8+N4=
@@ -53,6 +55,8 @@ github.com/antinvestor/apis/go/profile v1.17.0 h1:QbgLeW7/EDg37+cRjEVsMPKrT7f4yu
 github.com/antinvestor/apis/go/profile v1.17.0/go.mod h1:xIWPObv24/LYm8/rRHk4wjksbxtzKdtCl8cLwe+J4rw=
 github.com/antinvestor/apis/go/profile v1.17.4 h1:xdyI5ZrvGX5jSGzJwEnjZb8CJPeamr84usGVX3q2CZI=
 github.com/antinvestor/apis/go/profile v1.17.4/go.mod h1:XnrOL6LanEIxH5ARRMh8qog6T71gf9G+xsNePIgM6kI=
+github.com/antinvestor/apis/go/profile v1.17.10 h1:tHLuRQD2kOOYn1pm8KSzzNU94WM8XuUJIUGmFYj1Tss=
+github.com/antinvestor/apis/go/profile v1.17.10/go.mod h1:/q+EKzIwW9bqq2JEu3lXABRJDJ68Xs65MzXO6U8dDmI=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
@@ -536,6 +540,8 @@ golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAG
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.20.0 h1:4mQdhULixXKP1rwYBW0vAijoXnkTG0BLCDRzfe1idMo=
 golang.org/x/oauth2 v0.20.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
+golang.org/x/oauth2 v0.21.0 h1:tsimM75w1tF/uws5rbeHzIWxEqElMehnc+iW793zsZs=
+golang.org/x/oauth2 v0.21.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
