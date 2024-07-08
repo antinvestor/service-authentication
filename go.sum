@@ -366,6 +366,8 @@ github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnh
 github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
 github.com/ory/hydra-client-go/v2 v2.2.0 h1:g8hw0YQD5Us1aAgZj7OyBmBGSDwlnY9/2Pb/pQQq8YE=
 github.com/ory/hydra-client-go/v2 v2.2.0/go.mod h1:h0DSI2kQA3S2fN7HyD8DNWcvbgDmYRSxfhwu/mSBhH8=
+github.com/ory/hydra-client-go/v2 v2.2.1 h1:m1821pIX6ybG/3oSAn2wtrbBKNwe9q5A8fLljYuLpBk=
+github.com/ory/hydra-client-go/v2 v2.2.1/go.mod h1:K83R+iK40+5uF2uQ34yRUrf9izRvFsza9pG2Se5qMmk=
 github.com/pact-foundation/pact-go v1.0.4/go.mod h1:uExwJY4kCzNPcHRj+hCR/HBbOOIwwtUjcrb0b5/5kLM=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
