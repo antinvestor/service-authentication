@@ -3,7 +3,7 @@ module github.com/antinvestor/service-authentication
 go 1.21
 
 require (
-	github.com/antinvestor/apis/go/common v1.18.0
+	github.com/antinvestor/apis/go/common v1.18.4
 	github.com/antinvestor/apis/go/partition v1.18.1
 	github.com/antinvestor/apis/go/profile v1.18.1
 	github.com/gorilla/csrf v1.7.2
