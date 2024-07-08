@@ -51,6 +51,8 @@ github.com/antinvestor/apis/go/profile v1.17.10 h1:tHLuRQD2kOOYn1pm8KSzzNU94WM8X
 github.com/antinvestor/apis/go/profile v1.17.10/go.mod h1:/q+EKzIwW9bqq2JEu3lXABRJDJ68Xs65MzXO6U8dDmI=
 github.com/antinvestor/apis/go/profile v1.18.1 h1:mzRzLVnA0pLfet7d7ba9eJEPxZyzK0+qx87GYIvuH7U=
 github.com/antinvestor/apis/go/profile v1.18.1/go.mod h1:8y8nPdJemsluxDzk7VhcsmwcIB6khS960L1SWIYXxWc=
+github.com/antinvestor/apis/go/profile v1.18.4 h1:VMPyTe4GYzzS7ApIoSKdt6wH0++AZMCDPIDw81dSq18=
+github.com/antinvestor/apis/go/profile v1.18.4/go.mod h1:PGHRPUgVRxFZC3KzDL+S2950AZYWIWUlt6lloKKMmQU=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
