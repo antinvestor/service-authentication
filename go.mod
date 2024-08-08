@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/antinvestor/apis/go/common v1.20.5
 	github.com/antinvestor/apis/go/partition v1.20.5
-	github.com/antinvestor/apis/go/profile v1.20.4
+	github.com/antinvestor/apis/go/profile v1.20.5
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
