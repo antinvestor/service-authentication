@@ -3,7 +3,7 @@ module github.com/antinvestor/service-authentication
 go 1.21
 
 require (
-	github.com/antinvestor/apis/go/common v1.23.5
+	github.com/antinvestor/apis/go/common v1.25.2
 	github.com/antinvestor/apis/go/partition v1.23.5
 	github.com/antinvestor/apis/go/profile v1.23.5
 	github.com/gorilla/csrf v1.7.2
@@ -15,12 +15,12 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.27.0
-	google.golang.org/grpc v1.66.2
+	google.golang.org/grpc v1.67.0
 	gorm.io/datatypes v1.2.2
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240920164238-5a7b106cbb87.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/alitto/pond v1.9.1 // indirect
@@ -65,7 +65,7 @@ require (
 	go.uber.org/mock v0.4.0 // indirect
 	gocloud.dev v0.37.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
