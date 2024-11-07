@@ -2,7 +2,7 @@ module github.com/antinvestor/service-authentication
 
 go 1.23
 
-toolchain go1.23.2
+toolchain go1.23.3
 
 require (
 	github.com/antinvestor/apis/go/common v1.29.0
