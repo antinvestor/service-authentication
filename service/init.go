@@ -28,7 +28,7 @@ func (h *holder) writeError(w http.ResponseWriter, err error, code int, msg stri
 
 	w.Header().Set("Content-Type", "application/json")
 
-	h.service.L().
+	h.service.L(ctx).
 		WithField("code", code).
 		WithField("message", msg).WithError(err).Error("internal service error")
 	w.WriteHeader(code)
@@ -38,7 +38,7 @@ func (h *holder) writeError(w http.ResponseWriter, err error, code int, msg stri
 		Message: fmt.Sprintf(" internal processing err message: %s %s", msg, err),
 	})
 	if err != nil {
-		h.service.L().WithError(err).Error("could not write error to response")
+		h.service.L(ctx).WithError(err).Error("could not write error to response")
 	}
 }
 

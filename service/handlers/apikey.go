@@ -34,7 +34,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	var akey apiKey
 	err := decoder.Decode(&akey)
 	if err != nil {
-		service.L().WithError(err).Error("could not decode request body")
+		service.L(ctx).WithError(err).Error("could not decode request body")
 		return err
 	}
 
@@ -48,7 +48,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		jwtServerURL, akey.Name, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
-		service.L().WithError(err).Error("could not register jwt params")
+		service.L(ctx).WithError(err).Error("could not register jwt params")
 		return err
 	}
 
@@ -64,7 +64,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	audBytes, err := json.Marshal(akey.Audience)
 	if err != nil {
-		service.L().WithError(err).Error("could not marshal audience")
+		service.L(ctx).WithError(err).Error("could not marshal audience")
 		return err
 	}
 
@@ -72,14 +72,14 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	metadataBytes, err := json.Marshal(akey.Metadata)
 	if err != nil {
-		service.L().WithError(err).Error("could not marshal metadata")
+		service.L(ctx).WithError(err).Error("could not marshal metadata")
 		return err
 	}
 	apiky.Metadata = string(metadataBytes)
 
 	err = service.DB(ctx, true).Create(&apiky).Error
 	if err != nil {
-		service.L().WithError(err).Error("could create api key in database")
+		service.L(ctx).WithError(err).Error("could create api key in database")
 		return err
 	}
 

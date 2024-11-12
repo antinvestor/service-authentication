@@ -34,7 +34,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	params := mux.Vars(req)
 	tokenType := params["tokenType"]
 
-	logger := service.L()
+	logger := service.L(ctx)
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {

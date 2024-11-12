@@ -23,7 +23,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return fmt.Errorf("could not convert configuration correctly")
 	}
 
-	logger := service.L()
+	logger := service.L(ctx)
 
 	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
 

@@ -26,7 +26,7 @@ func main() {
 	}
 
 	ctx, srv := frame.NewService(serviceName, frame.Config(&authenticationConfig))
-	log := srv.L()
+	log := srv.L(ctx)
 
 	serviceOptions := []frame.Option{frame.Datastore(ctx)}
 	if authenticationConfig.DoDatabaseMigrate() {

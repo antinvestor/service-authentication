@@ -20,7 +20,7 @@ func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return fmt.Errorf("could not convert configuration correctly")
 	}
 
-	logger := service.L().WithField("endpoint", "ShowLoginEndpoint")
+	logger := service.L(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
 	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
 
