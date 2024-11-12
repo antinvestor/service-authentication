@@ -46,7 +46,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
 			err2 := registerTmpl.Execute(rw, map[string]any{
-				"error":          service.Translate(req, "CouldNotCheckContactExists"),
+				"error":          service.Translate(ctx, req, "CouldNotCheckContactExists"),
 				"contact":        contact,
 				"name":           name,
 				"loginChallenge": loginChallenge,
@@ -68,7 +68,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 			log.Printf(" SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact, err)
 
 			err2 := registerTmpl.Execute(rw, map[string]any{
-				"error":          service.Translate(req, "CouldNotCreateProfileByContact"),
+				"error":          service.Translate(ctx, req, "CouldNotCreateProfileByContact"),
 				"contact":        contact,
 				"name":           name,
 				"loginChallenge": loginChallenge,
@@ -89,7 +89,7 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf(" SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId, err)
 
 		err2 := registerTmpl.Execute(rw, map[string]any{
-			"error":          service.Translate(req, "CouldNotCreateLoginDetails"),
+			"error":          service.Translate(ctx, req, "CouldNotCreateLoginDetails"),
 			"contact":        contact,
 			"name":           name,
 			"loginChallenge": loginChallenge,

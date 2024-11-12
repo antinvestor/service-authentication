@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
@@ -24,7 +25,7 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-func (h *holder) writeError(w http.ResponseWriter, err error, code int, msg string) {
+func (h *holder) writeError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -51,7 +52,7 @@ func (h *holder) addHandler(router *mux.Router,
 
 		err := f(w, r)
 		if err != nil {
-			h.writeError(w, err, 500, "could not process request")
+			h.writeError(r.Context(), w, err, 500, "could not process request")
 		}
 	})
 
