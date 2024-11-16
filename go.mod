@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.25.20
+	github.com/pitabwire/frame v1.25.21
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
