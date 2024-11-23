@@ -13,7 +13,7 @@ require (
 	github.com/pitabwire/frame v1.25.22
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.29.0
 	google.golang.org/grpc v1.68.0
 	gorm.io/datatypes v1.2.4
