@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.30.0
 	google.golang.org/grpc v1.68.1
-	gorm.io/datatypes v1.2.4
+	gorm.io/datatypes v1.2.5
 )
 
 require (
