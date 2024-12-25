@@ -28,7 +28,7 @@ func main() {
 	ctx, srv := frame.NewService(serviceName, frame.Config(&authenticationConfig))
 	log := srv.L(ctx)
 
-	serviceOptions := []frame.Option{frame.Datastore(ctx), frame.Translations("/localization", "en")}
+	serviceOptions := []frame.Option{frame.Datastore(ctx)}
 	if authenticationConfig.DoDatabaseMigrate() {
 		srv.Init(serviceOptions...)
 
@@ -79,7 +79,7 @@ func main() {
 		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
 
-	serviceTranslations := frame.Translations("en")
+	serviceTranslations := frame.Translations("/localization", "en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
 	authServiceHandlers := handlers.RecoveryHandler(
