@@ -28,7 +28,7 @@ func main() {
 	ctx, srv := frame.NewService(serviceName, frame.Config(&authenticationConfig))
 	log := srv.L(ctx)
 
-	serviceOptions := []frame.Option{frame.Datastore(ctx)}
+	serviceOptions := []frame.Option{frame.Datastore(ctx), frame.Translations("/localization", "en")}
 	if authenticationConfig.DoDatabaseMigrate() {
 		srv.Init(serviceOptions...)
 
