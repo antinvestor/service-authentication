@@ -15,7 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.32.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 	gorm.io/datatypes v1.2.5
 )
 
