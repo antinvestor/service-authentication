@@ -164,7 +164,7 @@ func processDeviceIdLink(_ context.Context, cfg *config.AuthenticationConfig, de
 
 	deviceId, ok := responseMap["id"]
 	if !ok {
-		deviceId, _ = responseMap["ID"]
+		deviceId = responseMap["ID"]
 	}
 
 	return deviceId.(string), nil
