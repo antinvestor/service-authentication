@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/config"
@@ -8,7 +11,9 @@ import (
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"net/http"
+	"strings"
 )
 
 func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -63,11 +68,21 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	partition := access.GetPartition()
 
+	deviceId := ""
+	cookie, err := req.Cookie("DevLnkID")
+	if err == nil {
+		deviceId, err = processDeviceIdLink(ctx, cfg, cookie.Value, profileID)
+		if err != nil {
+			logger.WithError(err).Info("could not process for device id")
+		}
+	}
+
 	tokenMap := map[string]any{
 		"tenant_id":       partition.GetTenantId(),
 		"partition_id":    partition.GetId(),
 		"partition_state": partition.GetState().String(),
 		"access_id":       access.GetAccessId(),
+		"device_id":       deviceId,
 		"access_state":    access.GetState().String(),
 		"roles":           []string{"user"},
 	}
@@ -104,4 +119,54 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	//}
 
 	return nil
+}
+
+func processDeviceIdLink(_ context.Context, cfg *config.AuthenticationConfig, deviceLinkId string, profileId string) (string, error) {
+
+	profileUrl := "https://profile.chamamobile.com/_public/device/link"
+	profileUrlTokens := strings.Split(cfg.ProfileServiceURI, ":")
+	if len(profileUrlTokens) == 2 {
+		profileUrl = fmt.Sprintf("https://%s/_public/device/link", profileUrlTokens[0])
+	}
+
+	payload := map[string]interface{}{
+		"link_id":    deviceLinkId,
+		"profile_id": profileId,
+	}
+
+	// Marshal the payload to JSON
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	// Make the POST request
+	resp, err := http.Post(profileUrl, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Check the status code
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf(" failed to get device id, status : [ %d ]  message : %s ", resp.StatusCode, resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var responseMap map[string]any
+	if err = json.Unmarshal(body, &responseMap); err != nil {
+		return "", err
+	}
+
+	deviceId, ok := responseMap["id"]
+	if !ok {
+		deviceId, _ = responseMap["ID"]
+	}
+
+	return deviceId.(string), nil
+
 }
