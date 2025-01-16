@@ -66,6 +66,22 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		}
 	}
 
+	accessRoles, err := partitionAPI.ListAccessRole(ctx, access.GetAccessId())
+	if err != nil {
+		logger.WithError(err).Info("there was an error getting access roles")
+		return err
+	}
+
+	// Create a slice to store data from the channel
+	var accessRolesList []string
+
+	// Read from the channel until it's closed
+	for val := range accessRoles {
+		if val.GetRole() != nil {
+			accessRolesList = append(accessRolesList, val.GetRole().GetName())
+		}
+	}
+
 	partition := access.GetPartition()
 
 	deviceId := ""
@@ -84,7 +100,7 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		"access_id":       access.GetAccessId(),
 		"device_id":       deviceId,
 		"access_state":    access.GetState().String(),
-		"roles":           []string{"user"},
+		"roles":           accessRolesList,
 	}
 
 	params := &hydra.AcceptConsentRequestParams{

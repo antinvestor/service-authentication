@@ -4,8 +4,8 @@ go 1.23.0
 
 require (
 	github.com/antinvestor/apis/go/common v1.30.0
-	github.com/antinvestor/apis/go/partition v1.30.1
-	github.com/antinvestor/apis/go/profile v1.30.1
+	github.com/antinvestor/apis/go/partition v1.30.5
+	github.com/antinvestor/apis/go/profile v1.30.5
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.1-20241127180247-a33202765966.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.3-20241127180247-a33202765966.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -46,7 +46,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/nats-io/nats.go v1.36.0 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
@@ -54,7 +53,6 @@ require (
 	github.com/panjf2000/ants/v2 v2.11.0 // indirect
 	github.com/pitabwire/natspubsub v0.1.7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
@@ -72,9 +70,9 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/api v0.216.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250102185135-69823020774d // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
-	google.golang.org/protobuf v1.36.2 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 	gorm.io/driver/postgres v1.5.11 // indirect
