@@ -142,7 +142,7 @@ func processDeviceIdLink(_ context.Context, cfg *config.AuthenticationConfig, de
 	profileUrl := "https://profile.chamamobile.com/_public/device/link"
 	profileUrlTokens := strings.Split(cfg.ProfileServiceURI, ":")
 	if len(profileUrlTokens) == 2 {
-		profileUrl = fmt.Sprintf("https://%s/_public/device/link", profileUrlTokens[0])
+		profileUrl = fmt.Sprintf("http://%s/_public/device/link", profileUrlTokens[0])
 	}
 
 	payload := map[string]interface{}{
