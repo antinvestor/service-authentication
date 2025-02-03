@@ -1,5 +1,7 @@
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.3-20241127180247-a33202765966.1 h1:cQZXKoQ+eB0kykzfJe80RP3nc+3PWbbBrUBm8XNYAQY=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.3-20241127180247-a33202765966.1/go.mod h1:6VPKM8zbmgf9qsmkmKeH49a36Vtmidw3rG53B5mTenc=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.4-20250130201111-63bb56e20495.1 h1:4erM3WLgEG/HIBrpBDmRbs1puhd7p0z7kNXDuhHthwM=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.4-20250130201111-63bb56e20495.1/go.mod h1:novQBstnxcGpfKf8qGRATqn1anQKwMJIbH5Q581jibU=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.115.0 h1:CnFSK6Xo3lDYRoBKEcAtia6VSC837/ZkJuRduSFnr14=
@@ -33,6 +35,8 @@ github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/antinvestor/apis/go/common v1.30.5 h1:HsCLzUPfxZD3ubDjvhh8FHdUqITQk/MmAXKqUtSksbc=
 github.com/antinvestor/apis/go/common v1.30.5/go.mod h1:+WjXS9JuxIQjdgF/8G9Qub9HhWsZzyqVZqY0IneURMM=
+github.com/antinvestor/apis/go/common v1.33.0 h1:4bnEg1yNWxKKxoAeEgFiY8HKEf2eBh62yOiJ0N1iT6I=
+github.com/antinvestor/apis/go/common v1.33.0/go.mod h1:U7Jv77pphx+lnsm7Us3EPVr/wenYO56GuLntIXoWh5I=
 github.com/antinvestor/apis/go/partition v1.30.5 h1:+6PdzgEnvw8UFSJ34O/C3k5ScrnBZXxYLk81Hgperh4=
 github.com/antinvestor/apis/go/partition v1.30.5/go.mod h1:NTT0wnXPanXTaf5SEhi9gLarFyjZGd/5B+sur9wKbUM=
 github.com/antinvestor/apis/go/partition v1.32.0 h1:MKUNXdTj3Wt6ixDkdIaJMM1H/2QvDQGZWb+sx/lA1s0=
