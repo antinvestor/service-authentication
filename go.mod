@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/antinvestor/apis/go/common v1.33.0
-	github.com/antinvestor/apis/go/partition v1.32.0
+	github.com/antinvestor/apis/go/partition v1.33.0
 	github.com/antinvestor/apis/go/profile v1.32.0
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2
@@ -70,8 +70,8 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/api v0.216.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250127172529-29210b9bc287 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250124145028-65684f501c47 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
