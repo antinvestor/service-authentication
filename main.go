@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	apis "github.com/antinvestor/apis/go/common"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
@@ -16,16 +17,16 @@ import (
 
 func main() {
 
+	ctx := context.Background()
 	serviceName := "service_authentication"
 
-	var authenticationConfig config.AuthenticationConfig
-	err := frame.ConfigProcess("", &authenticationConfig)
+	authenticationConfig, err := frame.ConfigLoadWithOIDC[config.AuthenticationConfig](ctx)
 	if err != nil {
 		logrus.WithError(err).Fatal("could not process configs")
 		return
 	}
 
-	ctx, srv := frame.NewService(serviceName, frame.Config(&authenticationConfig))
+	ctx, srv := frame.NewServiceWithContext(ctx, serviceName, frame.Config(&authenticationConfig))
 	log := srv.L(ctx)
 
 	serviceOptions := []frame.Option{frame.Datastore(ctx)}
