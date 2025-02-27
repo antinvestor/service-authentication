@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   authentication_db:
     image: postgres:17.4
