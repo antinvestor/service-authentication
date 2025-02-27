@@ -131,7 +131,7 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	var apiKeyModel models.APIKey
-	err = service.DB(ctx, true).Find(&apiKeyModel, "key = ? ", clientID).Error
+	err = service.DB(ctx, true).Where("key = ? ", clientID).First(&apiKeyModel).Error
 	if err != nil {
 
 		logger.WithError(err).Info("could not get api key for client id")

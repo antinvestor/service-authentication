@@ -24,7 +24,6 @@ type LoginEvent struct {
 }
 
 type Session struct {
-	SessionID    string `gorm:"type:varchar(50);primary_key"`
 	LoginEventID string `gorm:"type:varchar(50)"`
 	ExpiresAt    time.Time
 	IssuedAt     time.Time
@@ -36,7 +35,7 @@ type APIKey struct {
 	frame.BaseModel
 	Name      string `gorm:"type:varchar(255)"`
 	ProfileID string `gorm:"type:varchar(50)"`
-	Key       string `gorm:"type:varchar(255)"`
+	Key       string `gorm:"type:varchar(255);uniqueIndex"`
 	Hash      string `gorm:"type:varchar(255)"`
 	Scope     string `gorm:"type:text"`
 	Audience  string `gorm:"type:text"`
