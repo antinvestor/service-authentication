@@ -11,10 +11,11 @@ var forgotTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/
 
 func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	err := forgotTmpl.Execute(rw, map[string]any{
-		"error":          "",
-		csrf.TemplateTag: csrf.TemplateField(req),
-	})
+	payload := initTemplatePayload(req.Context())
+	payload["error"] = ""
+	payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+	err := forgotTmpl.Execute(rw, payload)
 
 	//if req.Method == "POST" {}
 

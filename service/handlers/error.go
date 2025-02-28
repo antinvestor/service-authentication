@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/gorilla/csrf"
 	"html/template"
 	"net/http"
 )
@@ -12,10 +13,12 @@ func ErrorEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	errorTitle := req.FormValue("error")
 	errorDescription := req.FormValue("error_description")
 
-	err := errorTmpl.Execute(rw, map[string]any{
-		"errorTitle":       errorTitle,
-		"errorDescription": errorDescription,
-	})
+	payload := initTemplatePayload(req.Context())
+	payload["errorTitle"] = errorTitle
+	payload["errorDescription"] = errorDescription
+	payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+	err := errorTmpl.Execute(rw, payload)
 
 	return err
 }

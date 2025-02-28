@@ -8,6 +8,7 @@ import (
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/config"
 	"github.com/antinvestor/service-authentication/hydra"
+	"github.com/antinvestor/service-authentication/utils"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,10 +85,9 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	partition := access.GetPartition()
 
-	deviceId := ""
-	cookie, err := req.Cookie("DevLnkID")
-	if err == nil {
-		deviceId, err = processDeviceIdLink(ctx, cfg, cookie.Value, profileID)
+	deviceId := utils.DeviceIDFromContext(ctx)
+	if deviceId != "" {
+		deviceId, err = processDeviceIdLink(ctx, cfg, deviceId, profileID)
 		if err != nil {
 			logger.WithError(err).Info("could not process for device id")
 		}
@@ -125,11 +125,12 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	// if getConseReq.Get("skip").Bool() {
 	//
 	// } else {
+
+	//payload := initTemplatePayload(req.Context())
+	//payload["error"] = ""
+	//payload[csrf.TemplateTag] = csrf.TemplateField(req)
 	//
-	//err := env.Template.ExecuteTemplate(rw, "login.html", map[string]any{
-	//	"error":          "",
-	//	csrf.TemplateTag: csrf.TemplateField(req),
-	//})
+	//err := env.Template.ExecuteTemplate(rw, "consent.html", payload)
 
 	// return err
 	//}

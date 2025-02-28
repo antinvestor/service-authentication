@@ -21,11 +21,12 @@ func ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	loginChallenge := req.FormValue("login_challenge")
 
-	err := registerTmpl.Execute(rw, map[string]any{
-		"error":          "",
-		"loginChallenge": loginChallenge,
-		csrf.TemplateTag: csrf.TemplateField(req),
-	})
+	payload := initTemplatePayload(req.Context())
+	payload["error"] = ""
+	payload["loginChallenge"] = loginChallenge
+	payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+	err := registerTmpl.Execute(rw, payload)
 	return err
 }
 
@@ -45,13 +46,15 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		log.Printf(" SubmitRegisterEndpoint -- could not get profile by contact %s : %v", contact, err)
 		st, ok := status.FromError(err)
 		if !ok || st.Code() != codes.NotFound {
-			err2 := registerTmpl.Execute(rw, map[string]any{
-				"error":          service.Translate(ctx, req, "CouldNotCheckContactExists"),
-				"contact":        contact,
-				"name":           name,
-				"loginChallenge": loginChallenge,
-				csrf.TemplateTag: csrf.TemplateField(req),
-			})
+
+			payload := initTemplatePayload(req.Context())
+			payload["error"] = service.Translate(ctx, req, "CouldNotCheckContactExists")
+			payload["contact"] = contact
+			payload["name"] = name
+			payload["loginChallenge"] = loginChallenge
+			payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+			err2 := registerTmpl.Execute(rw, payload)
 			if err2 != nil {
 				return err2
 			}
@@ -67,13 +70,14 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		if err != nil {
 			log.Printf(" SubmitRegisterEndpoint -- could not create profile by contact %s : %v", contact, err)
 
-			err2 := registerTmpl.Execute(rw, map[string]any{
-				"error":          service.Translate(ctx, req, "CouldNotCreateProfileByContact"),
-				"contact":        contact,
-				"name":           name,
-				"loginChallenge": loginChallenge,
-				csrf.TemplateTag: csrf.TemplateField(req),
-			})
+			payload := initTemplatePayload(req.Context())
+			payload["error"] = service.Translate(ctx, req, "CouldNotCreateProfileByContact")
+			payload["contact"] = contact
+			payload["name"] = name
+			payload["loginChallenge"] = loginChallenge
+			payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+			err2 := registerTmpl.Execute(rw, payload)
 			if err2 != nil {
 				return err2
 			}
@@ -88,13 +92,14 @@ func SubmitRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		log.Printf(" SubmitRegisterEndpoint -- could not create auth entry for profile %s : %+v", profileId, err)
 
-		err2 := registerTmpl.Execute(rw, map[string]any{
-			"error":          service.Translate(ctx, req, "CouldNotCreateLoginDetails"),
-			"contact":        contact,
-			"name":           name,
-			"loginChallenge": loginChallenge,
-			csrf.TemplateTag: csrf.TemplateField(req),
-		})
+		payload := initTemplatePayload(req.Context())
+		payload["error"] = service.Translate(ctx, req, "CouldNotCreateLoginDetails")
+		payload["contact"] = contact
+		payload["name"] = name
+		payload["loginChallenge"] = loginChallenge
+		payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+		err2 := registerTmpl.Execute(rw, payload)
 		if err2 != nil {
 			return err2
 		}
@@ -123,7 +128,7 @@ func createAuthEntry(ctx context.Context, profileId string, password string, log
 		ProfileHash:  profileHash,
 		PasswordHash: passwordHash,
 	}
-	if err := service.DB(ctx, false).Create(login).Error; err != nil {
+	if err = service.DB(ctx, false).Create(login).Error; err != nil {
 		return "/s/register", err
 	}
 

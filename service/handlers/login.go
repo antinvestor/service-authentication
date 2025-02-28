@@ -57,11 +57,12 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	} else {
 
-		err = loginTmpl.Execute(rw, map[string]any{
-			"error":          "",
-			"loginChallenge": loginChallenge,
-			csrf.TemplateTag: csrf.TemplateField(req),
-		})
+		payload := initTemplatePayload(req.Context())
+		payload["error"] = ""
+		payload["loginChallenge"] = loginChallenge
+		payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+		err = loginTmpl.Execute(rw, payload)
 
 		return err
 	}
@@ -100,11 +101,12 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		//TODO: In the event the user can't pass tests for long enough remember to use
 		//hydra.RejectLoginRequest()
 
-		err = loginTmpl.Execute(rw, map[string]any{
-			"error":          "unable to log you in ",
-			"loginChallenge": loginChallenge,
-			csrf.TemplateTag: csrf.TemplateField(req),
-		})
+		payload := initTemplatePayload(req.Context())
+		payload["error"] = "unable to log you in "
+		payload["loginChallenge"] = loginChallenge
+		payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+		err = loginTmpl.Execute(rw, payload)
 
 		return err
 	}

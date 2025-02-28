@@ -11,10 +11,11 @@ var setPasswordTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "
 
 func SetPasswordEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	err := setPasswordTmpl.Execute(rw, map[string]any{
-		"error":          "",
-		csrf.TemplateTag: csrf.TemplateField(req),
-	})
+	payload := initTemplatePayload(req.Context())
+	payload["error"] = ""
+	payload[csrf.TemplateTag] = csrf.TemplateField(req)
+
+	err := setPasswordTmpl.Execute(rw, payload)
 
 	return err
 }

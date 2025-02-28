@@ -85,7 +85,7 @@ func main() {
 
 	authServiceHandlers := handlers.RecoveryHandler(
 		handlers.PrintRecoveryStack(true))(
-		service.NewAuthRouterV1(srv, &authenticationConfig, profileCli, partitionCli))
+		service.NewAuthRouterV1(ctx, srv, &authenticationConfig, profileCli, partitionCli))
 
 	defaultServer := frame.HttpHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)

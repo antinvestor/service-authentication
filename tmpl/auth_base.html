@@ -110,29 +110,15 @@
 </div>
 
 <script>
-
-    const linkKeyIdPromise = (() => {
-        const existingId = document.cookie.split('; ').find(row => row.startsWith('DevLnkID='))?.split('=')[1];
-        if (existingId) {
-            return Promise.resolve(existingId);
-        }
-        return import("https://unpkg.com/uuidv7@^1").then(({uuidv7}) => {
-            const newId = uuidv7();
-            document.cookie = `DevLnkID=${newId}; max-age=473040000; path=/`;
-            return newId;
-        });
-    })();
-
-    linkKeyIdPromise.then(linkKeyId => {
         import('https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.umd.js')
             .then(() => ThumbmarkJS.getFingerprintData())
             .then(fp => {
                 navigator.sendBeacon("https://profile.chamamobile.com/_public/device/log", JSON.stringify({
                     data: fp,
-                    link_id: linkKeyId
+                    link_id: {{ .DeviceID }},
                 }));
             });
-    });
+
 </script>
 
 </body>
