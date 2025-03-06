@@ -353,6 +353,8 @@ github.com/pierrec/lz4 v1.0.2-0.20190131084431-473cd7ce01a1/go.mod h1:3/3N9NVKO0
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pitabwire/frame v1.30.4 h1:hDaaoHzXoFtmP7YXwzSy2yI7vzQXCrlWTMHRqqislrk=
 github.com/pitabwire/frame v1.30.4/go.mod h1:2g1uU2JyvvKyBc7mvt8P5aRLb3KNZJL7vpWWCUgcxmw=
+github.com/pitabwire/frame v1.30.5 h1:OKvWVPJcboznr+Bj2XckD1B8GmJhxOd2NIwkEo1zalQ=
+github.com/pitabwire/frame v1.30.5/go.mod h1:LVe+Smdm/meJTsq3HzHamfxQyjml+wWQGesHpl8ghZA=
 github.com/pitabwire/natspubsub v0.1.8 h1:+pOhUNH+mkdcGzQFZMiNzjjgK4lDX1j0QYJgQwcwFc4=
 github.com/pitabwire/natspubsub v0.1.8/go.mod h1:pEF6ULDkCP69o+JrJAPVBDzyHQZCkyJDuWIA/MUl5kk=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -519,6 +521,8 @@ golang.org/x/net v0.0.0-20201110031124-69a78807bb2b/go.mod h1:sp8m0HH+o8qH0wwXwY
 golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.35.0 h1:T5GQRQb2y08kTAByq9L4/bz8cipCdA8FbRTXewonqY8=
 golang.org/x/net v0.35.0/go.mod h1:EglIi67kWsHKlRzzVMUD93VMSWGFOMSZgxFjparz1Qk=
+golang.org/x/net v0.37.0 h1:1zLorHbz+LYj7MQlSf1+2tPIIgibq2eL5xkrGk6f+2c=
+golang.org/x/net v0.37.0/go.mod h1:ivrbrMbzFq5J41QOQh0siUuly180yBYtLp+CKbEaFx8=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.25.0 h1:CY4y7XT9v0cRI9oupztF8AgiIu99L/ksR/Xp/6jrZ70=
