@@ -11,7 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/securecookie v1.1.2
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.30.6
+	github.com/pitabwire/frame v1.30.7
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
@@ -23,7 +23,7 @@ require (
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.4-20250130201111-63bb56e20495.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
