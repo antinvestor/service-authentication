@@ -1,6 +1,6 @@
 services:
   authentication_db:
-    image: postgres:17.4
+    image: postgres:17.5
     environment:
       - POSTGRES_USER=ant
       - POSTGRES_PASSWORD=secret
