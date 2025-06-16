@@ -3,7 +3,7 @@ module github.com/antinvestor/service-authentication
 go 1.23.0
 
 require (
-	github.com/antinvestor/apis/go/common v1.34.12
+	github.com/antinvestor/apis/go/common v1.34.17
 	github.com/antinvestor/apis/go/partition v1.33.0
 	github.com/antinvestor/apis/go/profile v1.33.1
 	github.com/gorilla/csrf v1.7.3
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250603165357-b52ab10f4468.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/caarlos0/env/v11 v11.3.1 // indirect
