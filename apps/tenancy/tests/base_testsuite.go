@@ -1,0 +1,59 @@
+package tests
+
+import (
+	"context"
+	internaltests "github.com/antinvestor/service-authentication/internal/tests"
+	"testing"
+
+	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/stretchr/testify/require"
+
+	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/tests/testdef"
+)
+
+
+type BaseTestSuite struct {
+	internaltests.BaseTestSuite
+}
+
+func (bs *BaseTestSuite) CreateService(
+	t *testing.T,
+	depOpts *testdef.DependancyOption,
+) (*frame.Service, context.Context) {
+	t.Setenv("OTEL_TRACES_EXPORTER", "none")
+	cfg, err := frame.ConfigFromEnv[config.PartitionConfig]()
+	require.NoError(t, err)
+
+	cfg.LogLevel = "debug"
+	cfg.RunServiceSecurely = false
+	cfg.ServerPort = ""
+
+	for _, res := range depOpts.Database() {
+		testDS, cleanup, err0 := res.GetRandomisedDS(t.Context(), depOpts.Prefix())
+		require.NoError(t, err0)
+
+		t.Cleanup(func() {
+			cleanup(t.Context())
+		})
+
+		cfg.DatabasePrimaryURL = []string{testDS.String()}
+		cfg.DatabaseReplicaURL = []string{testDS.String()}
+	}
+
+	ctx, svc := frame.NewServiceWithContext(t.Context(), "partition tests",
+		frame.WithConfig(&cfg),
+		frame.WithDatastore(),
+		frame.WithNoopDriver())
+
+	svc.Init(ctx)
+
+	err = repository.Migrate(ctx, svc, "../../migrations/0001")
+	require.NoError(t, err)
+
+	err = svc.Run(ctx, "")
+	require.NoError(t, err)
+
+	return svc, ctx
+}
