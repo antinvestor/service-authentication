@@ -2,10 +2,10 @@ package utils
 
 import (
 	"context"
-	"encoding/hex"
-	"golang.org/x/crypto/bcrypt"
-
 	"crypto/sha256"
+	"encoding/hex"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 const defaultBCryptWorkFactor = 12

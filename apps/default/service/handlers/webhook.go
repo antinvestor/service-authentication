@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
-	"io"
-	"net/http"
 )
 
 // GetOauth2ClientById obtains a client id

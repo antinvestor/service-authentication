@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"html/template"
 	"net/http"
+
+	"github.com/antinvestor/service-authentication/apps/default/utils"
 )
 
 var indexTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/index.html"))

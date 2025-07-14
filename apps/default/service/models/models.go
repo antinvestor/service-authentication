@@ -1,9 +1,10 @@
 package models
 
 import (
+	"time"
+
 	"github.com/pitabwire/frame"
 	"gorm.io/datatypes"
-	"time"
 )
 
 type Login struct {

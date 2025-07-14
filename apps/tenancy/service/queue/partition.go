@@ -3,9 +3,9 @@ package queue
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-
 	"github.com/pitabwire/frame"
 )
 

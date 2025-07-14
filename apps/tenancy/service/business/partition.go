@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"net/http"
 	"net/url"
 	"strings"
 
 	commonv1 "github.com/antinvestor/apis/go/common/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 )
 

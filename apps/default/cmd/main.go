@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	apis "github.com/antinvestor/apis/go/common"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
@@ -12,7 +14,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
-	"strings"
 )
 
 func main() {

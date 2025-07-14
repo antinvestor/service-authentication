@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/gorilla/csrf"
 	"html/template"
 	"net/http"
+
+	"github.com/gorilla/csrf"
 )
 
 var errorTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/error.html"))

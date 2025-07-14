@@ -3,6 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -10,9 +14,6 @@ import (
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"html/template"
-	"log"
-	"net/http"
 )
 
 var registerTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/registration.html"))

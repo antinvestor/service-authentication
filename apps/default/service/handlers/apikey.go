@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
-	"net/http"
 )
 
 type apiKey struct {

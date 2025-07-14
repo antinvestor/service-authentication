@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame"
 )
 

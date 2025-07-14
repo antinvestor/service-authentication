@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
+	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/pitabwire/frame"
 )
 
 func (prtSrv *PartitionServer) toAPIError(err error) error {

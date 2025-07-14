@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
@@ -12,9 +16,6 @@ import (
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"net/http"
-	"strings"
 )
 
 func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -162,7 +163,11 @@ func processDeviceIdLink(_ context.Context, cfg *config.AuthenticationConfig, de
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	// Check the status code
 	if resp.StatusCode != http.StatusOK {

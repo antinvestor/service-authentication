@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/pitabwire/frame"
 )
 

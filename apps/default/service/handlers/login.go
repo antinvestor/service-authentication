@@ -3,6 +3,9 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"net/http"
+
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
@@ -10,8 +13,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
-	"html/template"
-	"net/http"
 )
 
 var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))
@@ -37,7 +38,7 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	getLogReq, err := defaultHydra.GetLoginRequest(ctx, loginChallenge)
 	if err != nil {
-		logger = logger.WithField("login_challange", loginChallenge)
+		logger = logger.WithField("login_challenge", loginChallenge)
 
 		logger.WithError(err).Info(" couldn't get a valid login challenge")
 		return err
@@ -125,9 +126,9 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func postLoginChecks(ctx context.Context,
-	profile *profilev1.ProfileObject, contact string,
-	login *models.Login, err error, request *http.Request) error {
+func postLoginChecks(_ context.Context,
+	_ *profilev1.ProfileObject, _ string,
+	_ *models.Login, err error, _ *http.Request) error {
 
 	if err != nil {
 		return err

@@ -2,17 +2,15 @@ package tests
 
 import (
 	"context"
-	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/stretchr/testify/require"
-
+	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/tests/testdef"
+	"github.com/stretchr/testify/require"
 )
-
 
 type BaseTestSuite struct {
 	internaltests.BaseTestSuite

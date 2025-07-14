@@ -21,6 +21,11 @@ help:   ## show this help
 	@echo 'targets:'
 	@egrep '^(.+)\:\ .*##\ (.+)' ${MAKEFILE_LIST} | sed 's/:.*##/#/' | column -t -c 2 -s '#'
 
+format:
+	find . -name '*.go' -not -path './.git/*' -exec sed -i '/^import (/,/^)/{/^$$/d}' {} +
+	find . -name '*.go' -not -path './.git/*' -exec goimports -w {} +
+	golangci-lint run --fix
+
 clean:  ## go clean
 	go clean
 
@@ -46,11 +51,9 @@ docker-stop: ## stops all docker containers
 # if it's not specified it will run all tests
 tests: ## runs all system tests
 	go test ./... -v
-    RETURNCODE=$?;
-    @if["$RETURNCODE" != "0"]; then\
-    	echo "unit tests failed" && exit 1;\
-    fi;
-
+	RETURNCODE=$$?; \
+	if [ "$$RETURNCODE" != "0" ]; then \
+		echo "unit tests failed" && exit 1; \
+	fi;
 
 build: clean fmt vet tests ## run all preliminary steps and tests the setup
-

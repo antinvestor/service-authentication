@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
 	"github.com/pitabwire/frame"
-	"net/http"
 )
 
 func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {

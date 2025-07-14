@@ -3,22 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+
+	"buf.build/go/protovalidate"
+	"github.com/antinvestor/apis/go/common"
+	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/queue"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-
-	"buf.build/go/protovalidate"
-	"github.com/antinvestor/apis/go/common"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	protovalidateinterceptor "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/pitabwire/frame"
 )
 
 func main() {

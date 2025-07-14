@@ -15,8 +15,8 @@ func AesEncrypt(key []byte, plaintext string) ([]byte, []byte, error) {
 
 	nonce := make([]byte, 12)
 
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, nonce, err
+	if _, errRand := io.ReadFull(rand.Reader, nonce); errRand != nil {
+		return nil, nonce, errRand
 	}
 
 	aesgcm, err := cipher.NewGCM(block)

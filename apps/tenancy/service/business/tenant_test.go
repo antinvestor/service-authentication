@@ -2,13 +2,13 @@ package business_test
 
 import (
 	"context"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"reflect"
 	"testing"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 )
 

@@ -3,9 +3,10 @@ package hydra
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	hydraclientgo "github.com/ory/hydra-client-go/v2"
 	"github.com/pkg/errors"
-	"net/http"
 )
 
 type (
@@ -80,21 +81,16 @@ func getChallengeID(r *http.Request, query string) (string, error) {
 	return consentChallenge, nil
 }
 
-func (h *DefaultHydra) getAdminURL(_ context.Context) (string, error) {
-	return h.adminUrl, nil
+func (h *DefaultHydra) getAdminURL(_ context.Context) string {
+	return h.adminUrl
 }
 
-func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) (hydraclientgo.OAuth2API, error) {
-	url, err := h.getAdminURL(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) hydraclientgo.OAuth2API {
+	url := h.getAdminURL(ctx)
 
 	configuration := hydraclientgo.NewConfiguration()
 	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: url}}
-
-	configuration.HTTPClient = &http.Client{}
-	return hydraclientgo.NewAPIClient(configuration).OAuth2API, nil
+	return hydraclientgo.NewAPIClient(configuration).OAuth2API
 }
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error) {
@@ -106,10 +102,7 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	alr.SetExtendSessionLifespan(params.ExtendSession)
 	alr.Amr = []string{}
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return "", err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	resp, _, err := aa.AcceptOAuth2LoginRequest(ctx).LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 	if err != nil {
@@ -124,10 +117,7 @@ func (h *DefaultHydra) GetLoginRequest(ctx context.Context, loginChallenge strin
 		return nil, fmt.Errorf("invalid login_challenge")
 	}
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	hlr, _, err := aa.GetOAuth2LoginRequest(ctx).LoginChallenge(loginChallenge).Execute()
 	if err != nil {
@@ -139,7 +129,7 @@ func (h *DefaultHydra) GetLoginRequest(ctx context.Context, loginChallenge strin
 
 func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params *AcceptConsentRequestParams) (string, error) {
 
-	// By default we enable session rememberance for a week
+	// By default we enable session remembrance for a week
 	sessionData := hydraclientgo.AcceptOAuth2ConsentRequestSession{
 		AccessToken: params.AccessTokenExtras,
 		IdToken:     params.IdTokenExtras,
@@ -151,10 +141,7 @@ func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params *AcceptC
 	alr.SetRememberFor(params.RememberDuration)
 	alr.SetSession(sessionData)
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return "", err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	resp, _, err := aa.AcceptOAuth2ConsentRequest(ctx).
 		ConsentChallenge(params.ConsentChallenge).AcceptOAuth2ConsentRequest(*alr).Execute()
@@ -170,10 +157,7 @@ func (h *DefaultHydra) GetConsentRequest(ctx context.Context, consentChallenge s
 		return nil, fmt.Errorf("invalid consent_challenge")
 	}
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	hlr, _, err := aa.GetOAuth2ConsentRequest(ctx).ConsentChallenge(consentChallenge).Execute()
 	if err != nil {
@@ -185,10 +169,7 @@ func (h *DefaultHydra) GetConsentRequest(ctx context.Context, consentChallenge s
 
 func (h *DefaultHydra) AcceptLogoutRequest(ctx context.Context, params *AcceptLogoutRequestParams) (string, error) {
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return "", err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	resp, _, err := aa.AcceptOAuth2LogoutRequest(ctx).LogoutChallenge(params.LogoutChallenge).Execute()
 	if err != nil {
@@ -203,10 +184,7 @@ func (h *DefaultHydra) GetLogoutRequest(ctx context.Context, logoutChallenge str
 		return nil, fmt.Errorf("invalid logout_challenge")
 	}
 
-	aa, err := h.getAdminAPIClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+	aa := h.getAdminAPIClient(ctx)
 
 	hlr, _, err := aa.GetOAuth2LogoutRequest(ctx).LogoutChallenge(logoutChallenge).Execute()
 	if err != nil {

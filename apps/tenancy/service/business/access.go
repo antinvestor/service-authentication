@@ -3,10 +3,10 @@ package business
 import (
 	"context"
 	"errors"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 )
 
