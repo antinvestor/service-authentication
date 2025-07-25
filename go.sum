@@ -51,6 +51,8 @@ github.com/antinvestor/apis/go/partition v1.37.2 h1:Glr9ciNPbY/J2q4lSwZbqv8bGYwu
 github.com/antinvestor/apis/go/partition v1.37.2/go.mod h1:Of8/l0ZPOuPS43zYWUgS5CHEulUONMKQi/22CfT9OBo=
 github.com/antinvestor/apis/go/profile v1.36.4 h1:6foTpi6UkdOx1k9h5C+aMBC3W01R+JGrw7iwhl5aRfg=
 github.com/antinvestor/apis/go/profile v1.36.4/go.mod h1:IDwN2dEXMrJ6HWWM4owExAGUTMX1hhveIVKMftcWG78=
+github.com/antinvestor/apis/go/profile v1.37.2 h1:nvidQCplFeW64QL+s/k0vN7utUO+ugu4R8uRCZIMw68=
+github.com/antinvestor/apis/go/profile v1.37.2/go.mod h1:prswfgrIpS+vEWJyJxAxlQ+QJwYO9Atrm3wxXnSkfsI=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
