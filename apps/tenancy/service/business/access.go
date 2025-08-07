@@ -83,7 +83,7 @@ func (ab *accessBusiness) GetAccess(
 			return nil, partitionErr
 		}
 
-		partitionObject := toAPIPartition(partition)
+		partitionObject := partition.ToAPI()
 
 		return toAPIAccess(partitionObject, access)
 	}
@@ -104,7 +104,7 @@ func (ab *accessBusiness) GetAccess(
 		return nil, err
 	}
 
-	partitionObject := toAPIPartition(partition)
+	partitionObject := partition.ToAPI()
 
 	return toAPIAccess(partitionObject, access)
 }
@@ -145,7 +145,7 @@ func (ab *accessBusiness) CreateAccess(
 			return nil, err
 		}
 	} else {
-		partitionObject := toAPIPartition(partition)
+		partitionObject := partition.ToAPI()
 		return toAPIAccess(partitionObject, access)
 	}
 
@@ -163,7 +163,7 @@ func (ab *accessBusiness) CreateAccess(
 	}
 
 	logger.WithField("access", access).Debug(" access created")
-	partitionObject := toAPIPartition(partition)
+	partitionObject := partition.ToAPI()
 
 	return toAPIAccess(partitionObject, access)
 }

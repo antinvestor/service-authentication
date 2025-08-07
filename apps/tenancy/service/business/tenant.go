@@ -7,6 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
 )
 
 type TenantBusiness interface {
@@ -41,16 +42,6 @@ type tenantBusiness struct {
 	tenantRepo repository.TenantRepository
 }
 
-func ToAPITenant(tenantModel *models.Tenant) *partitionv1.TenantObject {
-	properties := frame.DBPropertiesToMap(tenantModel.Properties)
-
-	return &partitionv1.TenantObject{
-		Id:          tenantModel.ID,
-		Description: tenantModel.Description,
-		Properties:  properties,
-	}
-}
-
 func ToModelTenant(tenantAPI *partitionv1.TenantObject) *models.Tenant {
 	return &models.Tenant{
 		Description: tenantAPI.GetDescription(),
@@ -69,7 +60,7 @@ func (t *tenantBusiness) GetTenant(ctx context.Context, tenantID string) (*parti
 		return nil, err
 	}
 
-	return ToAPITenant(tenant), nil
+	return tenant.ToAPI(), nil
 }
 
 func (t *tenantBusiness) CreateTenant(
@@ -92,7 +83,7 @@ func (t *tenantBusiness) CreateTenant(
 		return nil, err
 	}
 
-	return ToAPITenant(tenantModel), nil
+	return tenantModel.ToAPI(), nil
 }
 
 func (t *tenantBusiness) ListTenant(
@@ -100,20 +91,48 @@ func (t *tenantBusiness) ListTenant(
 	request *partitionv1.ListTenantRequest,
 	stream partitionv1.PartitionService_ListTenantServer,
 ) error {
-	tenantList, err := t.tenantRepo.GetByQuery(
+
+	searchProperties := map[string]any{}
+
+	for _, p := range request.GetProperties() {
+		searchProperties[p] = request.GetQuery()
+	}
+
+	query, err := datastore.NewSearchQuery(
 		ctx,
-		request.GetQuery(),
-		getUint32FromInt32(request.GetCount()),
-		getUint32FromInt64(request.GetPage()),
+		request.GetQuery(), searchProperties,
+		int(request.GetPage()),
+		int(request.GetCount()),
 	)
 	if err != nil {
 		return err
 	}
 
-	var responseList []*partitionv1.TenantObject
-	for _, tenant := range tenantList {
-		responseList = append(responseList, ToAPITenant(tenant))
+	jobResult, err := t.tenantRepo.Search(ctx, query)
+	if err != nil {
+		return err
 	}
 
-	return stream.Send(&partitionv1.ListTenantResponse{Data: responseList})
+	for {
+		result, ok := jobResult.ReadResult(ctx)
+
+		if !ok {
+			return nil
+		}
+
+		if result.IsError() {
+			return result.Error()
+		}
+
+		var responseObjects []*partitionv1.TenantObject
+		for _, tenant := range result.Item() {
+			responseObjects = append(responseObjects, tenant.ToAPI())
+		}
+
+		err = stream.Send(&partitionv1.ListTenantResponse{Data: responseObjects})
+		if err != nil {
+			return err
+		}
+
+	}
 }

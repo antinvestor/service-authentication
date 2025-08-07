@@ -7,7 +7,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
 )
 
@@ -126,8 +125,8 @@ func GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
 
-	params := mux.Vars(req)
-	apiKeyID := params["ApiKeyId"]
+	// Use native Go SDK path variable extraction
+	apiKeyID := req.PathValue("ApiKeyId")
 
 	var apiKeyModel models.APIKey
 	subject, _ := claims.GetSubject()
@@ -146,8 +145,8 @@ func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
 
-	params := mux.Vars(req)
-	apiKeyID := params["ApiKeyId"]
+	// Use native Go SDK path variable extraction
+	apiKeyID := req.PathValue("ApiKeyId")
 
 	var apiKeyModel models.APIKey
 	subject, _ := claims.GetSubject()

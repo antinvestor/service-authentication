@@ -9,12 +9,12 @@ import (
 	"net/url"
 	"strings"
 
-	commonv1 "github.com/antinvestor/apis/go/common/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
 )
 
 type PartitionBusiness interface {
@@ -56,20 +56,6 @@ type partitionBusiness struct {
 	partitionRepo repository.PartitionRepository
 }
 
-func toAPIPartition(partitionModel *models.Partition) *partitionv1.PartitionObject {
-	properties := frame.DBPropertiesToMap(partitionModel.Properties)
-
-	return &partitionv1.PartitionObject{
-		Id:          partitionModel.ID,
-		TenantId:    partitionModel.TenantID,
-		ParentId:    partitionModel.ParentID,
-		Name:        partitionModel.Name,
-		Description: partitionModel.Description,
-		Properties:  properties,
-		State:       commonv1.STATE(partitionModel.State),
-	}
-}
-
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
 	properties := frame.DBPropertiesToMap(partitionModel.Properties)
 
@@ -85,44 +71,50 @@ func (pb *partitionBusiness) ListPartition(
 	request *partitionv1.ListPartitionRequest,
 	stream partitionv1.PartitionService_ListPartitionServer,
 ) error {
-	partitionList, err := pb.partitionRepo.GetByQuery(
+
+	searchProperties := map[string]any{}
+
+	for _, p := range request.GetProperties() {
+		searchProperties[p] = request.GetQuery()
+	}
+
+	query, err := datastore.NewSearchQuery(
 		ctx,
-		request.GetQuery(),
-		getUint32FromInt32(request.GetCount()),
-		getUint32FromInt64(request.GetPage()),
+		request.GetQuery(), searchProperties,
+		int(request.GetPage()),
+		int(request.GetCount()),
 	)
 	if err != nil {
 		return err
 	}
 
-	var responseObjects []*partitionv1.PartitionObject
-	for _, partition := range partitionList {
-		responseObjects = append(responseObjects, toAPIPartition(partition))
-	}
-
-	err = stream.Send(&partitionv1.ListPartitionResponse{Data: responseObjects})
+	jobResult, err := pb.partitionRepo.Search(ctx, query)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	for {
+		result, ok := jobResult.ReadResult(ctx)
 
-func getUint32FromInt32(val int32) uint32 {
-	if val < 0 {
-		return 0
-	}
-	return uint32(val)
-}
+		if !ok {
+			return nil
+		}
 
-func getUint32FromInt64(val int64) uint32 {
-	if val < 0 {
-		return 0
+		if result.IsError() {
+			return result.Error()
+		}
+
+		var responseObjects []*partitionv1.PartitionObject
+		for _, partition := range result.Item() {
+			responseObjects = append(responseObjects, partition.ToAPI())
+		}
+
+		err = stream.Send(&partitionv1.ListPartitionResponse{Data: responseObjects})
+		if err != nil {
+			return err
+		}
+
 	}
-	if val > 0 {
-		return ^uint32(0) // Max uint32 value
-	}
-	return uint32(val)
 }
 
 func (pb *partitionBusiness) GetPartition(
@@ -135,7 +127,7 @@ func (pb *partitionBusiness) GetPartition(
 		return nil, err
 	}
 
-	partitionObj := toAPIPartition(partition)
+	partitionObj := partition.ToAPI()
 
 	var cfg *config.PartitionConfig
 	if c, ok := pb.service.Config().(*config.PartitionConfig); ok {
@@ -190,7 +182,7 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	return toAPIPartition(partition), nil
+	return partition.ToAPI(), nil
 }
 
 func (pb *partitionBusiness) UpdatePartition(
@@ -215,7 +207,7 @@ func (pb *partitionBusiness) UpdatePartition(
 		return nil, err
 	}
 
-	return toAPIPartition(partition), nil
+	return partition.ToAPI(), nil
 }
 
 func (pb *partitionBusiness) ListPartitionRoles(
@@ -281,8 +273,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	return toAPIPartitionRole(partitionRole), nil
 }
 
-func ReQueuePrimaryPartitionsForSync(service *frame.Service) {
-	ctx := context.Background()
+func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service, query *datastore.SearchQuery) {
 	logger := service.Log(ctx)
 
 	partitionRepository := repository.NewPartitionRepository(service)
@@ -293,20 +284,32 @@ func ReQueuePrimaryPartitionsForSync(service *frame.Service) {
 		return
 	}
 
-	const defaultMaxPartitionsToSync = 100
-	partitionList, err := partitionRepository.GetByQuery(ctx, "", defaultMaxPartitionsToSync, 0)
+	jobResult, err := partitionRepository.Search(ctx, query)
 	if err != nil {
-		logger.WithError(err).Debug(" could not get default system partition")
+		logger.WithError(err).Error(" could not create query for searching partitions")
 
 		return
 	}
 
-	for _, partition := range partitionList {
-		err = service.Publish(ctx, partitionConfig.PartitionSyncName, partition)
-		if err != nil {
-			logger.WithError(err).Debug("could not publish because")
+	for {
+		result, ok := jobResult.ReadResult(ctx)
 
+		if !ok {
 			return
+		}
+
+		if result.IsError() {
+			logger.WithError(err).Panic(" could not get default system partitions to sync successfully")
+			return
+		}
+
+		for _, partition := range result.Item() {
+			err = service.Publish(ctx, partitionConfig.PartitionSyncName, partition)
+			if err != nil {
+				logger.WithError(err).Panic("could not publish because")
+
+				return
+			}
 		}
 	}
 }

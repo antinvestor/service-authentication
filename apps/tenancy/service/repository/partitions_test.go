@@ -8,6 +8,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/tests/testdef"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,6 +93,154 @@ func (suite *PartitionTestSuite) TestGetByID() {
 	})
 }
 
+func (suite *PartitionTestSuite) TestSearch() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		tenantRepo := repository.NewTenantRepository(svc)
+		partitionRepo := repository.NewPartitionRepository(svc)
+
+		// Setup
+		tenant := models.Tenant{
+			Name:        "default",
+			Description: "Test",
+		}
+		err := tenantRepo.Save(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition1 := models.Partition{
+			Name:        "Search Partition One",
+			Description: "Some description here for search",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition1)
+		require.NoError(t, err)
+
+		partition2 := models.Partition{
+			Name:        "Search Partition Two",
+			Description: "Another description for search",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition2)
+		require.NoError(t, err)
+
+		testCases := []struct {
+			name          string
+			query         string
+			properties    map[string]any
+			expectedCount int
+			shouldError   bool
+		}{
+			{
+				name:          "Search by name",
+				query:         "Search Partition One",
+				properties:    nil,
+				expectedCount: 1,
+			},
+			{
+				name:          "Search by description",
+				query:         "description for search",
+				properties:    nil,
+				expectedCount: 2,
+			},
+			{
+				name:          "Search by partial name",
+				query:         "Search",
+				properties:    nil,
+				expectedCount: 2,
+			},
+			{
+				name:          "Search with no results",
+				query:         "non-existent",
+				properties:    nil,
+				expectedCount: 0,
+			},
+			{
+				name:          "Search by ID",
+				query:         "",
+				properties:    map[string]any{"id": partition1.GetID()},
+				expectedCount: 1,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				searchQuery, err := datastore.NewSearchQuery(ctx, tc.query, tc.properties, 0, 10)
+				require.NoError(t, err)
+
+				resultPipe, err := partitionRepo.Search(ctx, searchQuery)
+				require.NoError(t, err)
+
+				result, ok := resultPipe.ReadResult(ctx)
+				require.True(t, ok)
+
+				require.NoError(t, result.Error())
+				assert.Len(t, result.Item(), tc.expectedCount)
+			})
+		}
+	})
+}
+
+func (suite *PartitionTestSuite) TestDelete() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		tenantRepo := repository.NewTenantRepository(svc)
+		partitionRepo := repository.NewPartitionRepository(svc)
+
+		// Setup
+		tenant := models.Tenant{
+			Name:        "default",
+			Description: "Test",
+		}
+		err := tenantRepo.Save(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:        "To be deleted",
+			Description: "This partition will be deleted",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition)
+		require.NoError(t, err)
+
+		// Test deleting a partition with children (should fail)
+		parentPartition := models.Partition{
+			Name:        "Parent Partition",
+			Description: "This partition has a child",
+			BaseModel:   frame.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Save(ctx, &parentPartition)
+		require.NoError(t, err)
+
+		childPartition := models.Partition{
+			Name:     "Child Partition",
+			ParentID: parentPartition.GetID(),
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &childPartition)
+		require.NoError(t, err)
+
+		err = partitionRepo.Delete(ctx, parentPartition.GetID())
+		require.Error(t, err)
+
+		// Execute
+		err = partitionRepo.Delete(ctx, partition.GetID())
+		require.NoError(t, err)
+
+		// Verify
+		_, err = partitionRepo.GetByID(ctx, partition.GetID())
+		assert.Error(t, err, "Expected an error when getting a deleted partition")
+		assert.Contains(t, err.Error(), "record not found", "Error should indicate record not found")
+	})
+}
+
 func (suite *PartitionTestSuite) TestGetChildren() {
 	// Test cases
 	testCases := []struct {
@@ -145,6 +294,18 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 				err = partitionRepo.Save(ctx, &childPartition)
 				require.NoError(t, err)
 
+				// Child partition role
+				childPartitionRole := models.PartitionRole{
+					BaseModel: frame.BaseModel{
+						PartitionID: childPartition.GetID(),
+					},
+					Name:       "Child Partition Role",
+					Properties: frame.JSONMap{"description": "Child partition role description"},
+				}
+
+				err = partitionRepo.SaveRole(ctx, &childPartitionRole)
+				require.NoError(t, err)
+
 				// Execute
 				children, err := partitionRepo.GetChildren(ctx, parentPartition.GetID())
 
@@ -158,6 +319,49 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 				}
 			})
 		}
+	})
+}
+
+func (suite *PartitionTestSuite) TestSave() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		tenantRepo := repository.NewTenantRepository(svc)
+		partitionRepo := repository.NewPartitionRepository(svc)
+
+		// Setup
+		tenant := models.Tenant{
+			Name:        "default",
+			Description: "Test",
+		}
+		err := tenantRepo.Save(ctx, &tenant)
+		require.NoError(t, err)
+
+		// Create
+		partition := models.Partition{
+			Name:        "Save Test Partition",
+			Description: "Save test description",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition)
+		require.NoError(t, err)
+		assert.NotEmpty(t, partition.GetID())
+
+		// Verify creation
+		savedPartition, err := partitionRepo.GetByID(ctx, partition.GetID())
+		require.NoError(t, err)
+		assert.Equal(t, "Save Test Partition", savedPartition.Name)
+
+		// Update
+		savedPartition.Name = "Updated Partition Name"
+		err = partitionRepo.Save(ctx, savedPartition)
+		require.NoError(t, err)
+
+		// Verify update
+		updatedPartition, err := partitionRepo.GetByID(ctx, partition.GetID())
+		require.NoError(t, err)
+		assert.Equal(t, "Updated Partition Name", updatedPartition.Name)
 	})
 }
 
@@ -203,11 +407,11 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
-					Name: tc.roleName,
 					BaseModel: frame.BaseModel{
-						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
+					Name:       tc.roleName,
+					Properties: frame.JSONMap{"description": "Test role description"},
 				}
 
 				// Execute
@@ -282,11 +486,11 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
-					Name: tc.roleName,
 					BaseModel: frame.BaseModel{
-						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
+					Name:       tc.roleName,
+					Properties: frame.JSONMap{"description": "Test role description"},
 				}
 
 				err = partitionRepo.SaveRole(ctx, &partitionRole)
@@ -307,6 +511,112 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 				}
 			})
 		}
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetRoles() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		tenantRepo := repository.NewTenantRepository(svc)
+		partitionRepo := repository.NewPartitionRepository(svc)
+
+		// Setup
+		tenant := models.Tenant{
+			Name:        "default",
+			Description: "Test",
+		}
+		err := tenantRepo.Save(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:        "Partition for roles",
+			Description: "This partition has roles",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition)
+		require.NoError(t, err)
+
+		role1 := models.PartitionRole{
+			BaseModel: frame.BaseModel{
+				PartitionID: partition.GetID(),
+			},
+			Name:       "Admin",
+			Properties: frame.JSONMap{"description": "Administrator role"},
+		}
+		err = partitionRepo.SaveRole(ctx, &role1)
+		require.NoError(t, err)
+
+		role2 := models.PartitionRole{
+			BaseModel: frame.BaseModel{
+				PartitionID: partition.GetID(),
+			},
+			Name:       "User",
+			Properties: frame.JSONMap{"description": "User role"},
+		}
+		err = partitionRepo.SaveRole(ctx, &role2)
+		require.NoError(t, err)
+
+		// Execute
+		roles, err := partitionRepo.GetRoles(ctx, partition.GetID())
+		require.NoError(t, err)
+
+		// Verify
+		assert.Len(t, roles, 2, "Should have two roles")
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetRolesByID() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		tenantRepo := repository.NewTenantRepository(svc)
+		partitionRepo := repository.NewPartitionRepository(svc)
+
+		// Setup
+		tenant := models.Tenant{
+			Name:        "default",
+			Description: "Test",
+		}
+		err := tenantRepo.Save(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:        "Partition for roles",
+			Description: "This partition has roles",
+			BaseModel: frame.BaseModel{
+				TenantID: tenant.GetID(),
+			},
+		}
+		err = partitionRepo.Save(ctx, &partition)
+		require.NoError(t, err)
+
+		role1 := models.PartitionRole{
+			BaseModel: frame.BaseModel{
+				PartitionID: partition.GetID(),
+			},
+			Name:       "Admin",
+			Properties: frame.JSONMap{"description": "Administrator role"},
+		}
+		err = partitionRepo.SaveRole(ctx, &role1)
+		require.NoError(t, err)
+
+		role2 := models.PartitionRole{
+			BaseModel: frame.BaseModel{
+				PartitionID: partition.GetID(),
+			},
+			Name:       "User",
+			Properties: frame.JSONMap{"description": "User role"},
+		}
+		err = partitionRepo.SaveRole(ctx, &role2)
+		require.NoError(t, err)
+
+		// Execute
+		roles, err := partitionRepo.GetRolesByID(ctx, role1.GetID(), role2.GetID())
+		require.NoError(t, err)
+
+		// Verify
+		assert.Len(t, roles, 2, "Should have two roles")
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
 )
 
 type tenantRepository struct {
@@ -17,20 +18,43 @@ func (tr *tenantRepository) GetByID(ctx context.Context, id string) (*models.Ten
 	return tenant, err
 }
 
-func (tr *tenantRepository) GetByQuery(
+func (tr *tenantRepository) Search(
 	ctx context.Context,
-	query string,
-	count uint32,
-	page uint32,
-) ([]*models.Tenant, error) {
-	tenantList := make([]*models.Tenant, 0)
-	query = "%" + query + "%"
-	err := tr.service.DB(ctx, true).
-		Find(&tenantList, "id iLike ? OR name iLike ? OR description iLike ? ", query, query, query).
-		Offset(int(page * count)).
-		Limit(int(count)).
-		Error
-	return tenantList, err
+	query *datastore.SearchQuery) (frame.JobResultPipe[[]*models.Tenant], error) {
+
+	return datastore.StableSearch[models.Tenant](ctx, tr.service, query, func(
+		ctx context.Context,
+		query *datastore.SearchQuery,
+	) ([]*models.Tenant, error) {
+		var tenantList []*models.Tenant
+
+		paginator := query.Pagination
+
+		db := tr.service.DB(ctx, true).
+			Limit(paginator.Limit).Offset(paginator.Offset)
+
+		if query.Fields != nil {
+
+			tenantID, pok := query.Fields["id"]
+			if pok {
+				db = db.Where("id = ?", tenantID)
+			}
+		}
+
+		if query.Query != "" {
+
+			likeQuery := "%" + query.Query + "%"
+
+			db = db.Where("name iLike ? OR description iLike ? OR search_properties @@ plainto_tsquery(?) ", likeQuery, likeQuery, query.Query)
+		}
+
+		err := db.Find(&tenantList).Error
+		if err != nil {
+			return nil, err
+		}
+
+		return tenantList, nil
+	})
 }
 
 func (tr *tenantRepository) Save(ctx context.Context, tenant *models.Tenant) error {

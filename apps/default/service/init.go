@@ -14,7 +14,6 @@ import (
 	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
@@ -27,6 +26,7 @@ type holder struct {
 	profileCli   *profilev1.ProfileClient
 	partitionCli *partitionv1.PartitionClient
 }
+
 type ErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -92,33 +92,33 @@ func (h *holder) deviceIDMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (h *holder) addHandler(router *mux.Router,
+func (h *holder) addHandler(router *http.ServeMux,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+		// Set up request context with required services
 		r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
 		r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
 		r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
+		log := h.service.Log(r.Context())
+
 		err := f(w, r)
 		if err != nil {
-			h.writeError(r.Context(), w, err, 500, "could not process request")
+			log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
+			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
 		}
 	})
-
-	router.Path(path).
-		Name(name).
-		Handler(handler).
-		Methods(method)
 }
 
 // NewAuthRouterV1 NewRouterV1 -
 func NewAuthRouterV1(ctx context.Context, service *frame.Service,
 	authConfig *config.AuthenticationConfig,
 	profileCli *profilev1.ProfileClient,
-	partitionCli *partitionv1.PartitionClient) *mux.Router {
+	partitionCli *partitionv1.PartitionClient) *http.ServeMux {
 
 	log := service.Log(ctx)
-	router := mux.NewRouter().StrictSlash(true)
+	router := http.NewServeMux()
 
 	csrfSecret, err := hex.DecodeString(authConfig.CsrfSecret)
 	if err != nil {
@@ -126,17 +126,6 @@ func NewAuthRouterV1(ctx context.Context, service *frame.Service,
 	}
 
 	csrfMiddleware := csrf.Protect(csrfSecret, csrf.Secure(true))
-
-	sRouter := router.PathPrefix("/s").Subrouter()
-	sRouter.Use(csrfMiddleware)
-
-	authRouter := router.PathPrefix("/api").Subrouter()
-
-	webhookRouter := router.PathPrefix("/webhook").Subrouter()
-
-	authRouter.Use(func(handler http.Handler) http.Handler {
-		return service.AuthenticationMiddleware(handler, authConfig.Oauth2JwtVerifyAudience, authConfig.Oauth2JwtVerifyIssuer)
-	})
 
 	hashKey, err := hex.DecodeString(authConfig.SecureCookieHashKey)
 	if err != nil {
@@ -156,26 +145,77 @@ func NewAuthRouterV1(ctx context.Context, service *frame.Service,
 		sc:           securecookie.New(hashKey, blockKey),
 	}
 
-	sRouter.Use(h.deviceIDMiddleware)
-
+	// Basic routes
 	h.addHandler(router, handlers2.IndexEndpoint, "/", "IndexEndpoint", "GET")
 	h.addHandler(router, handlers2.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
 
-	h.addHandler(sRouter, handlers2.ShowLoginEndpoint, "/login", "ShowLoginEndpoint", "GET")
-	h.addHandler(sRouter, handlers2.SubmitLoginEndpoint, "/login/post", "SubmitLoginEndpoint", "POST")
-	h.addHandler(sRouter, handlers2.ShowLogoutEndpoint, "/logout", "ShowLogoutEndpoint", "GET")
-	h.addHandler(sRouter, handlers2.ShowConsentEndpoint, "/consent", "ShowConsentEndpoint", "GET")
-	h.addHandler(sRouter, handlers2.ShowRegisterEndpoint, "/register", "ShowRegisterEndpoint", "GET")
-	h.addHandler(sRouter, handlers2.SubmitRegisterEndpoint, "/register/post", "SubmitRegisterEndpoint", "POST")
-	h.addHandler(sRouter, handlers2.SetPasswordEndpoint, "/password", "SetPasswordEndpoint", "GET")
-	h.addHandler(sRouter, handlers2.ForgotEndpoint, "/forgot", "ForgotEndpoint", "GET")
+	// Secure routes (with CSRF protection and device ID middleware)
+	secureHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
+		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+			// Set up request context with required services
+			r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
+			r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
+			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
-	h.addHandler(webhookRouter, handlers2.TokenEnrichmentEndpoint, "/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
+			// Apply middleware chain: deviceID -> CSRF -> auth handler
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				err := f(w, r)
+				if err != nil {
+					log := h.service.Log(r.Context())
+					log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
+					h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+				}
+			})
 
-	h.addHandler(authRouter, handlers2.CreateAPIKeyEndpoint, "/key", "CreateAPIKeyEndpoint", "PUT")
-	h.addHandler(authRouter, handlers2.ListAPIKeyEndpoint, "/key", "ListApiKeyEndpoint", "GET")
-	h.addHandler(authRouter, handlers2.DeleteAPIKeyEndpoint, "/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
-	h.addHandler(authRouter, handlers2.GetAPIKeyEndpoint, "/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
+			// Apply CSRF middleware for secure routes
+			csrfHandler := csrfMiddleware(handler)
+			// Apply device ID middleware
+			deviceHandler := h.deviceIDMiddleware(csrfHandler)
+			deviceHandler.ServeHTTP(w, r)
+		})
+	}
+
+	// Auth routes (with authentication middleware)
+	authHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
+		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+			// Set up request context with required services
+			r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
+			r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
+			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
+
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				err := f(w, r)
+				if err != nil {
+					log := h.service.Log(r.Context())
+					log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
+					h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+				}
+			})
+
+			// Apply authentication middleware
+			authMiddleware := service.AuthenticationMiddleware(handler, authConfig.Oauth2JwtVerifyAudience, authConfig.Oauth2JwtVerifyIssuer)
+			authMiddleware.ServeHTTP(w, r)
+		})
+	}
+
+	// Secure routes with CSRF protection
+	secureHandler(handlers2.ShowLoginEndpoint, "/s/login", "ShowLoginEndpoint", "GET")
+	secureHandler(handlers2.SubmitLoginEndpoint, "/s/login/post", "SubmitLoginEndpoint", "POST")
+	secureHandler(handlers2.ShowLogoutEndpoint, "/s/logout", "ShowLogoutEndpoint", "GET")
+	secureHandler(handlers2.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
+	secureHandler(handlers2.ShowRegisterEndpoint, "/s/register", "ShowRegisterEndpoint", "GET")
+	secureHandler(handlers2.SubmitRegisterEndpoint, "/s/register/post", "SubmitRegisterEndpoint", "POST")
+	secureHandler(handlers2.SetPasswordEndpoint, "/s/password", "SetPasswordEndpoint", "GET")
+	secureHandler(handlers2.ForgotEndpoint, "/s/forgot", "ForgotEndpoint", "GET")
+
+	// Webhook routes (no auth required)
+	h.addHandler(router, handlers2.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
+
+	// API routes with authentication
+	authHandler(handlers2.CreateAPIKeyEndpoint, "/api/key", "CreateAPIKeyEndpoint", "PUT")
+	authHandler(handlers2.ListAPIKeyEndpoint, "/api/key", "ListApiKeyEndpoint", "GET")
+	authHandler(handlers2.DeleteAPIKeyEndpoint, "/api/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
+	authHandler(handlers2.GetAPIKeyEndpoint, "/api/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	return router
 }

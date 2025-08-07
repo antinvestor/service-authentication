@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"buf.build/go/protovalidate"
-	"github.com/antinvestor/apis/go/common"
+	apis "github.com/antinvestor/apis/go/common"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/queue"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -33,8 +33,6 @@ func main() {
 	ctx, svc := frame.NewServiceWithContext(ctx, serviceName, frame.WithConfig(&cfg))
 	log := svc.Log(ctx)
 
-	serviceOptions := []frame.Option{frame.WithDatastore()}
-
 	// Handle database migration if requested
 	if handleDatabaseMigration(ctx, svc, cfg, log) {
 		return
@@ -46,51 +44,14 @@ func main() {
 		return
 	}
 
-	jwtAudience := cfg.Oauth2JwtVerifyAudience
-	if jwtAudience == "" {
-		jwtAudience = serviceName
+	// Setup GRPC server
+	grpcServer, implementation := setupGRPCServer(ctx, svc, cfg, serviceName, log)
+
+	// Setup HTTP handlers and proxy
+	serviceOptions, httpErr := setupHTTPHandlers(ctx, svc, implementation, cfg, grpcServer)
+	if httpErr != nil {
+		log.WithError(httpErr).Fatal("could not setup HTTP handlers")
 	}
-
-	validator, err := protovalidate.New()
-	if err != nil {
-		log.WithError(err).Fatal("could not load validator for proto messages")
-	}
-
-	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			svc.UnaryAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
-			protovalidateinterceptor.UnaryServerInterceptor(validator),
-			recovery.UnaryServerInterceptor(),
-		),
-		grpc.ChainStreamInterceptor(
-			svc.StreamAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
-			protovalidateinterceptor.StreamServerInterceptor(validator),
-			recovery.StreamServerInterceptor(),
-		),
-	)
-
-	implementation := &handlers.PartitionServer{
-		Service: svc,
-	}
-
-	partitionv1.RegisterPartitionServiceServer(grpcServer, implementation)
-
-	grpcServerOpt := frame.WithGRPCServer(grpcServer)
-	serviceOptions = append(serviceOptions, grpcServerOpt)
-
-	proxyOptions := common.ProxyOptions{
-		GrpcServerEndpoint: fmt.Sprintf("localhost:%s", cfg.GrpcServerPort),
-		GrpcServerDialOpts: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
-	}
-
-	proxyMux, err := partitionv1.CreateProxyHandler(ctx, proxyOptions)
-	if err != nil {
-		log.WithError(err).Fatal("could not create proxy handler")
-		return
-	}
-
-	proxyServerOpt := frame.WithHTTPHandler(proxyMux)
-	serviceOptions = append(serviceOptions, proxyServerOpt)
 
 	partitionSyncQueueHandler := queue.PartitionSyncQueueHandler{
 		Service: svc,
@@ -107,12 +68,8 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
-	if cfg.SynchronizePrimaryPartitions {
-		svc.AddPreStartMethod(business.ReQueuePrimaryPartitionsForSync)
-	}
-
-	log.WithField("server http port", cfg.HTTPServerPort).
-		WithField("server grpc port", cfg.GrpcServerPort).
+	log.WithField("server http port", cfg.HTTPPort()).
+		WithField("server grpc port", cfg.GrpcPort()).
 		Info(" Initiating server operations")
 	err = implementation.Service.Run(ctx, "")
 	if err != nil {
@@ -139,4 +96,81 @@ func handleDatabaseMigration(
 		return true
 	}
 	return false
+}
+
+// setupGRPCServer initialises and configures the gRPC server.
+func setupGRPCServer(_ context.Context, svc *frame.Service,
+	cfg config.PartitionConfig,
+	serviceName string,
+	log *util.LogEntry) (*grpc.Server, *handlers.PartitionServer) {
+	jwtAudience := cfg.Oauth2JwtVerifyAudience
+	if jwtAudience == "" {
+		jwtAudience = serviceName
+	}
+
+	validator, err := protovalidate.New()
+	if err != nil {
+		log.WithError(err).Fatal("could not load validator for proto messages")
+	}
+
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			recovery.UnaryServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
+			svc.UnaryAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
+			protovalidateinterceptor.UnaryServerInterceptor(validator)),
+
+		grpc.ChainStreamInterceptor(
+			recovery.StreamServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
+			svc.StreamAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
+			protovalidateinterceptor.StreamServerInterceptor(validator),
+		),
+	)
+
+	implementation := &handlers.PartitionServer{
+		Service: svc,
+	}
+	partitionv1.RegisterPartitionServiceServer(grpcServer, implementation)
+
+	return grpcServer, implementation
+}
+
+// setupHTTPHandlers configures HTTP handlers and proxy.
+func setupHTTPHandlers(
+	ctx context.Context,
+	svc *frame.Service,
+	implementation *handlers.PartitionServer,
+	cfg config.PartitionConfig,
+	grpcServer *grpc.Server,
+) ([]frame.Option, error) {
+	// Start with datastore option
+	serviceOptions := []frame.Option{frame.WithDatastore()}
+
+	// Add GRPC server option
+	grpcServerOpt := frame.WithGRPCServer(grpcServer)
+	serviceOptions = append(serviceOptions, grpcServerOpt)
+
+	// Setup proxy
+	proxyOptions := apis.ProxyOptions{
+		GrpcServerEndpoint: fmt.Sprintf("localhost:%s", cfg.GrpcPort()),
+		GrpcServerDialOpts: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
+	}
+
+	proxyMux, err := partitionv1.CreateProxyHandler(ctx, proxyOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup REST handlers
+	jwtAudience := cfg.Oauth2JwtVerifyAudience
+	if jwtAudience == "" {
+		jwtAudience = svc.Name()
+	}
+
+	partitionServiceRestHandlers := svc.AuthenticationMiddleware(
+		implementation.NewSecureRouterV1(), jwtAudience, cfg.Oauth2JwtVerifyIssuer)
+
+	proxyMux.Handle("/public/", http.StripPrefix("/public", partitionServiceRestHandlers))
+	serviceOptions = append(serviceOptions, frame.WithHTTPHandler(proxyMux))
+
+	return serviceOptions, nil
 }

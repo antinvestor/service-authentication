@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/gorilla/mux"
 	"github.com/pitabwire/frame"
 )
 
@@ -32,8 +31,8 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	service := frame.Svc(ctx)
 
-	params := mux.Vars(req)
-	tokenType := params["tokenType"]
+	// Use native Go SDK path variable extraction
+	tokenType := req.PathValue("tokenType")
 
 	logger := service.Log(ctx)
 
