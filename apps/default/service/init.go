@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/util"
 )
 
 type holder struct {
@@ -54,21 +55,21 @@ func (h *holder) writeError(ctx context.Context, w http.ResponseWriter, err erro
 func (h *holder) deviceIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Try to get the existing cookie
-		cookie, err := r.Cookie("DevLnkID")
+		cookie, err := r.Cookie("DevSessionID")
 		if err == nil {
 			// Decode and verify the cookie
 			var decodedValue string
-			if decodeErr := h.sc.Decode("DevLnkID", cookie.Value, &decodedValue); decodeErr == nil {
+			if decodeErr := h.sc.Decode("DevSessionID", cookie.Value, &decodedValue); decodeErr == nil {
 				r = r.WithContext(utils.DeviceIDToContext(r.Context(), decodedValue))
 				next.ServeHTTP(w, r)
 				return
 			}
 		}
 
-		newDeviceID := frame.GenerateID(r.Context())
+		newDeviceID := util.IDString()
 
 		// Encode and sign the cookie
-		encoded, encodeErr := h.sc.Encode("DevLnkID", newDeviceID)
+		encoded, encodeErr := h.sc.Encode("DevSessionID", newDeviceID)
 		if encodeErr != nil {
 			http.Error(w, "Failed to encode cookie", http.StatusInternalServerError)
 			return
@@ -76,7 +77,7 @@ func (h *holder) deviceIDMiddleware(next http.Handler) http.Handler {
 
 		// Set the secure, signed cookie
 		http.SetCookie(w, &http.Cookie{
-			Name:     "DevLnkID",
+			Name:     "DevSessionID",
 			Value:    encoded,
 			Path:     "/",
 			MaxAge:   473040000, // 15 years
