@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -22,21 +23,17 @@ func (suite *PartitionTestSuite) TestGetByID() {
 	testCases := []struct {
 		name        string
 		shouldError bool
+		expectedErr string
+		setupFunc   func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition
 	}{
 		{
-			name:        "Get partition by ID",
+			name:        "Get existing partition by ID",
 			shouldError: false,
-		},
-	}
+			expectedErr: "",
+			setupFunc: func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition {
+				tenantRepo := repository.NewTenantRepository(svc)
+				partitionRepo := repository.NewPartitionRepository(svc)
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup
 				tenant := models.Tenant{
 					Name:        "default",
 					Description: "Test",
@@ -56,15 +53,39 @@ func (suite *PartitionTestSuite) TestGetByID() {
 				err = partitionRepo.Save(ctx, &partition)
 				require.NoError(t, err)
 
+				return &partition
+			},
+		},
+		{
+			name:        "Get non-existent partition",
+			shouldError: true,
+			expectedErr: "record not found",
+			setupFunc: func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition {
+				return &models.Partition{BaseModel: frame.BaseModel{ID: "non-existent-id"}}
+			},
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Setup
+				partition := tc.setupFunc(ctx, svc, t)
+
 				// Execute
-				savedPartition, err := partitionRepo.GetByID(ctx, partition.GetID())
+				savedPartition, err := repository.NewPartitionRepository(svc).GetByID(ctx, partition.GetID())
 
 				// Verify
 				if tc.shouldError {
 					require.Error(t, err)
+					assert.Contains(t, err.Error(), tc.expectedErr)
 				} else {
 					require.NoError(t, err)
 					assert.Equal(t, partition.GetID(), savedPartition.GetID(), "Partition IDs should match")
+					assert.Equal(t, partition.Name, savedPartition.Name, "Partition names should match")
+					assert.Equal(t, partition.Description, savedPartition.Description, "Partition descriptions should match")
 				}
 			})
 		}

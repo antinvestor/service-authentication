@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	PostgresqlDBImage = "paradedb/paradedb:latest"
-
 	DefaultRandomStringLength = 8
 )
 
@@ -21,7 +19,7 @@ type BaseTestSuite struct {
 }
 
 func initResources(_ context.Context) []testdef.TestResource {
-	pg := testpostgres.NewPGDepWithCred(PostgresqlDBImage, "ant", "s3cr3t", "service_profile")
+	pg := testpostgres.NewPGDepWithCred(testpostgres.PostgresqlDBImage, "ant", "s3cr3t", "service_profile")
 	resources := []testdef.TestResource{pg}
 	return resources
 }

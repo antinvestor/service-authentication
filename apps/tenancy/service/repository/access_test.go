@@ -22,12 +22,16 @@ func (suite *AccessTestSuite) TestSave() {
 	testCases := []struct {
 		name        string
 		profileID   string
-		shouldError bool
+		errorAssert require.ErrorAssertionFunc
+		checkError  func(t *testing.T, err error)
 	}{
 		{
 			name:        "Save access",
 			profileID:   "test-profile-id",
-			shouldError: false,
+			errorAssert: require.NoError,
+			checkError: func(t *testing.T, err error) {
+				// No error to check
+			},
 		},
 	}
 
@@ -71,15 +75,14 @@ func (suite *AccessTestSuite) TestSave() {
 				err = accessRepo.Save(ctx, &access)
 
 				// Verify
-				if tc.shouldError {
-					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
-
+				tc.errorAssert(t, err)
+				if err == nil {
 					savedAccess, fetchErr := accessRepo.GetByID(ctx, access.GetID())
 					require.NoError(t, fetchErr)
 					assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
 					assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match provided profile id")
+				} else {
+					tc.checkError(t, err)
 				}
 			})
 		}
@@ -91,12 +94,16 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 	testCases := []struct {
 		name        string
 		profileID   string
-		shouldError bool
+		errorAssert require.ErrorAssertionFunc
+		checkError  func(t *testing.T, err error)
 	}{
 		{
 			name:        "Get access by partition and profile",
 			profileID:   "test-profile-id",
-			shouldError: false,
+			errorAssert: require.NoError,
+			checkError: func(t *testing.T, err error) {
+				// No error to check
+			},
 		},
 	}
 
@@ -143,12 +150,12 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 				savedAccess, err := accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), tc.profileID)
 
 				// Verify
-				if tc.shouldError {
-					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
+				tc.errorAssert(t, err)
+				if err == nil {
 					assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
 					assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match profile id")
+				} else {
+					tc.checkError(t, err)
 				}
 			})
 		}
