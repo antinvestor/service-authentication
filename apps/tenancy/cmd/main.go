@@ -142,7 +142,7 @@ func setupHTTPHandlers(
 	cfg config.PartitionConfig,
 	grpcServer *grpc.Server,
 ) ([]frame.Option, error) {
-	// Start with datastore option
+	// Start with framedata option
 	serviceOptions := []frame.Option{frame.WithDatastore()}
 
 	// Add GRPC server option

@@ -7,7 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 type TenantBusiness interface {
@@ -98,15 +98,11 @@ func (t *tenantBusiness) ListTenant(
 		searchProperties[p] = request.GetQuery()
 	}
 
-	query, err := datastore.NewSearchQuery(
-		ctx,
+	query := framedata.NewSearchQuery(
 		request.GetQuery(), searchProperties,
 		int(request.GetPage()),
 		int(request.GetCount()),
 	)
-	if err != nil {
-		return err
-	}
 
 	jobResult, err := t.tenantRepo.Search(ctx, query)
 	if err != nil {

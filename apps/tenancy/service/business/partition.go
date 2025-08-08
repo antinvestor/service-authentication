@@ -14,7 +14,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 type PartitionBusiness interface {
@@ -78,15 +78,11 @@ func (pb *partitionBusiness) ListPartition(
 		searchProperties[p] = request.GetQuery()
 	}
 
-	query, err := datastore.NewSearchQuery(
-		ctx,
+	query := framedata.NewSearchQuery(
 		request.GetQuery(), searchProperties,
 		int(request.GetPage()),
 		int(request.GetCount()),
 	)
-	if err != nil {
-		return err
-	}
 
 	jobResult, err := pb.partitionRepo.Search(ctx, query)
 	if err != nil {
@@ -273,7 +269,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	return toAPIPartitionRole(partitionRole), nil
 }
 
-func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service, query *datastore.SearchQuery) {
+func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service, query *framedata.SearchQuery) {
 	logger := service.Log(ctx)
 
 	partitionRepository := repository.NewPartitionRepository(service)

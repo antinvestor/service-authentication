@@ -5,7 +5,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 type tenantRepository struct {
@@ -20,11 +20,11 @@ func (tr *tenantRepository) GetByID(ctx context.Context, id string) (*models.Ten
 
 func (tr *tenantRepository) Search(
 	ctx context.Context,
-	query *datastore.SearchQuery) (frame.JobResultPipe[[]*models.Tenant], error) {
+	query *framedata.SearchQuery) (frame.JobResultPipe[[]*models.Tenant], error) {
 
-	return datastore.StableSearch[models.Tenant](ctx, tr.service, query, func(
+	return framedata.StableSearch[models.Tenant](ctx, tr.service, query, func(
 		ctx context.Context,
-		query *datastore.SearchQuery,
+		query *framedata.SearchQuery,
 	) ([]*models.Tenant, error) {
 		var tenantList []*models.Tenant
 

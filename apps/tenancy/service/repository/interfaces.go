@@ -5,19 +5,19 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 type TenantRepository interface {
 	GetByID(ctx context.Context, id string) (*models.Tenant, error)
-	Search(ctx context.Context, query *datastore.SearchQuery) (frame.JobResultPipe[[]*models.Tenant], error)
+	Search(ctx context.Context, query *framedata.SearchQuery) (frame.JobResultPipe[[]*models.Tenant], error)
 	Save(ctx context.Context, tenant *models.Tenant) error
 	Delete(ctx context.Context, id string) error
 }
 
 type PartitionRepository interface {
 	GetByID(ctx context.Context, id string) (*models.Partition, error)
-	Search(ctx context.Context, query *datastore.SearchQuery) (frame.JobResultPipe[[]*models.Partition], error)
+	Search(ctx context.Context, query *framedata.SearchQuery) (frame.JobResultPipe[[]*models.Partition], error)
 	GetChildren(ctx context.Context, id string) ([]*models.Partition, error)
 	Save(ctx context.Context, partition *models.Partition) error
 	Delete(ctx context.Context, id string) error

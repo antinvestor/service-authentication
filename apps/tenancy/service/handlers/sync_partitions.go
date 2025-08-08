@@ -7,7 +7,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 const syncPartitionsPath = "/_system/sync/partitions"
@@ -44,18 +44,9 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 	if err != nil {
 		count = 50
 	}
-	query, err := datastore.NewSearchQuery(
-		ctx,
+	query := framedata.NewSearchQuery(
 		queryStr, make(map[string]any),
 		page, count)
-	if err != nil {
-
-		logger := prtSrv.Service.Log(ctx)
-		logger.WithError(err).Error("could not create search query")
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.Service, query)
 
 	rw.Header().Set("Content-Type", "application/json")

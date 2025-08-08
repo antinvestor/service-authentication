@@ -6,7 +6,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 )
 
 type partitionRepository struct {
@@ -20,12 +20,12 @@ func (pr *partitionRepository) GetByID(ctx context.Context, id string) (*models.
 }
 
 func (pr *partitionRepository) Search(
-	ctx context.Context, query *datastore.SearchQuery) (
+	ctx context.Context, query *framedata.SearchQuery) (
 	frame.JobResultPipe[[]*models.Partition], error) {
 
-	return datastore.StableSearch[models.Partition](ctx, pr.service, query, func(
+	return framedata.StableSearch[models.Partition](ctx, pr.service, query, func(
 		ctx context.Context,
-		query *datastore.SearchQuery,
+		query *framedata.SearchQuery,
 	) ([]*models.Partition, error) {
 		var partitionList []*models.Partition
 

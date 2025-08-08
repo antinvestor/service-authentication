@@ -8,7 +8,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/framedata"
 	"github.com/pitabwire/frame/tests/testdef"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,8 +168,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				searchQuery, err := datastore.NewSearchQuery(ctx, tc.query, tc.properties, 0, 10)
-				require.NoError(t, err)
+				searchQuery := framedata.NewSearchQuery(tc.query, tc.properties, 0, 10)
 
 				resultPipe, err := partitionRepo.Search(ctx, searchQuery)
 				require.NoError(t, err)
