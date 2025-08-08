@@ -10,7 +10,9 @@ import (
 	"github.com/pitabwire/frame/datastore"
 )
 
-func (prtSrv *PartitionServer) SynchronizaPartitions(rw http.ResponseWriter, req *http.Request) {
+const syncPartitionsPath = "/_system/sync/partitions"
+
+func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	cfg, ok := prtSrv.Service.Config().(*config.PartitionConfig)
@@ -64,7 +66,7 @@ func (prtSrv *PartitionServer) SynchronizaPartitions(rw http.ResponseWriter, req
 func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux := http.NewServeMux()
 
-	userServeMux.HandleFunc("/_system/synch/partitions", prtSrv.SynchronizaPartitions)
+	userServeMux.HandleFunc(syncPartitionsPath, prtSrv.SynchronizePartitions)
 
 	return userServeMux
 }
