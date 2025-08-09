@@ -47,6 +47,8 @@ github.com/antinvestor/apis/go/profile v1.37.9 h1:zZOeqb327H9+pBGveiT2jBXRTtfeqD
 github.com/antinvestor/apis/go/profile v1.37.9/go.mod h1:eZg3tInHTU230U6ij/hhQO4N4/vHxkNcSkJMlb1mO20=
 github.com/antinvestor/apis/go/profile v1.37.10 h1:4RuPWA9WcGoJ3sbQY5vebGCjmHA96MjrbSe4CwrWoQI=
 github.com/antinvestor/apis/go/profile v1.37.10/go.mod h1:eZg3tInHTU230U6ij/hhQO4N4/vHxkNcSkJMlb1mO20=
+github.com/antinvestor/apis/go/profile v1.38.2 h1:zL3Lcbqzi1vmmVobA7OH3k+hCJ3XWcO89SJCH+HHtEE=
+github.com/antinvestor/apis/go/profile v1.38.2/go.mod h1:bDGISZwb6TSPMx+d3rHzSibJiCR+a2Bec9iFnm3KGzU=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
