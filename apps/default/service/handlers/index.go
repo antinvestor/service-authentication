@@ -19,7 +19,7 @@ func initTemplatePayload(ctx context.Context) map[string]any {
 	return payload
 }
 
-func IndexEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) IndexEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	if req.Referer() != "" {
 		http.Redirect(rw, req, req.Referer(), http.StatusSeeOther)
 	}

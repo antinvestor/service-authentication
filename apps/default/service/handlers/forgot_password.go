@@ -9,7 +9,7 @@ import (
 
 var forgotTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/forgot.html"))
 
-func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	payload := initTemplatePayload(req.Context())
 	payload["error"] = ""
@@ -17,7 +17,7 @@ func ForgotEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	err := forgotTmpl.Execute(rw, payload)
 
-	//if req.Method == "POST" {}
+	// if req.Method == "POST" {}
 
 	return err
 }

@@ -9,7 +9,7 @@ import (
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
-	"github.com/antinvestor/service-authentication/apps/default/service"
+	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
@@ -76,17 +76,19 @@ func main() {
 	serviceTranslations := frame.WithTranslations("/localization", "en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
+	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, partitionCli)
+
 	authServiceHandlers := handlers.RecoveryHandler(
 		handlers.PrintRecoveryStack(true))(
-		service.NewAuthRouterV1(ctx, svc, &cfg, profileCli, partitionCli))
+		srv.SetupRouterV1(ctx))
 
 	defaultServer := frame.WithHTTPHandler(authServiceHandlers)
 	serviceOptions = append(serviceOptions, defaultServer)
 
 	svc.Init(ctx, serviceOptions...)
 
-	log.WithField("server http port", cfg.HTTPServerPort).
-		WithField("server grpc port", cfg.GrpcServerPort).
+	log.WithField("server http port", cfg.HTTPPort()).
+		WithField("server grpc port", cfg.GrpcPort()).
 		Info(" Initiating server operations")
 	err = svc.Run(ctx, "")
 	if err != nil {

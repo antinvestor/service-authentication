@@ -1,5 +1,5 @@
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1 h1:Lg6klmCi3v7VvpqeeLEER9/m5S8y9e9DjhqQnSCNy4k=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1/go.mod h1:avRlCjnFzl98VPaeCtJ24RrV/wwHFzB8sWXhj26+n/U=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1 h1:/AZH8sVB6LHv8G+hZlAMCP31NevnesHwYgnlgS5Vt14=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1/go.mod h1:eva/VCrd8X7xuJw+JtwCEyrCKiRRASukFqmirnWBvFU=
 buf.build/go/protovalidate v0.14.0 h1:kr/rC/no+DtRyYX+8KXLDxNnI1rINz0imk5K44ZpZ3A=
 buf.build/go/protovalidate v0.14.0/go.mod h1:+F/oISho9MO7gJQNYC2VWLzcO1fTPmaTA08SDYJZncA=
 cel.dev/expr v0.24.0 h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY=
@@ -29,12 +29,12 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/XSAM/otelsql v0.39.0 h1:4o374mEIMweaeevL7fd8Q3C710Xi2Jh/c8G4Qy9bvCY=
 github.com/XSAM/otelsql v0.39.0/go.mod h1:uMOXLUX+wkuAuP0AR3B45NXX7E9lJS2mERa8gqdU8R0=
-github.com/antinvestor/apis/go/common v1.37.9 h1:fxSm3yVEkzQrkY38CS7LzZ8cbEQ1OlPMPxJ/LOe/Hes=
-github.com/antinvestor/apis/go/common v1.37.9/go.mod h1:62XDxXBxRqRBgnA0PjRlNIUqLZJdfZ1xeLbrTlVkRfU=
-github.com/antinvestor/apis/go/partition v1.37.9 h1:XxNiClFxLPs/E0CcrpHqIbUUUKnwc95ICNm4pnBoT0A=
-github.com/antinvestor/apis/go/partition v1.37.9/go.mod h1:ZeXlGgLAu84XDJJfDl8JNkkzmzbYYnp7va59PbuLqCo=
-github.com/antinvestor/apis/go/profile v1.37.9 h1:zZOeqb327H9+pBGveiT2jBXRTtfeqDfl4npBlmKIs2k=
-github.com/antinvestor/apis/go/profile v1.37.9/go.mod h1:eZg3tInHTU230U6ij/hhQO4N4/vHxkNcSkJMlb1mO20=
+github.com/antinvestor/apis/go/common v1.38.0 h1:UIOR6oK0Zcj8Z05+MhkB2y1apvf8tIY3YGRfuvHnKro=
+github.com/antinvestor/apis/go/common v1.38.0/go.mod h1:QIvObLIyzPGb0n0O20USqVpPkt/y1wDcEpHzF4N03fs=
+github.com/antinvestor/apis/go/partition v1.38.2 h1:9N+tsN1zt71DZRAmuZ7xaKqYBZL9ei/r/3PVksZ0UYQ=
+github.com/antinvestor/apis/go/partition v1.38.2/go.mod h1:8CLIVZRiDDsiqkA4D+AT4SAz5Suxj5eHoiZl31aYd3k=
+github.com/antinvestor/apis/go/profile v1.38.2 h1:zL3Lcbqzi1vmmVobA7OH3k+hCJ3XWcO89SJCH+HHtEE=
+github.com/antinvestor/apis/go/profile v1.38.2/go.mod h1:bDGISZwb6TSPMx+d3rHzSibJiCR+a2Bec9iFnm3KGzU=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=

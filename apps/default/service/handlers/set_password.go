@@ -9,7 +9,7 @@ import (
 
 var setPasswordTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/set_password.html"))
 
-func SetPasswordEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) SetPasswordEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	payload := initTemplatePayload(req.Context())
 	payload["error"] = ""

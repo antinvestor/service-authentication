@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
 )
 
@@ -26,15 +25,15 @@ func GetOauth2ClientById(ctx context.Context,
 	return resultStatus, resultBody, err
 }
 
-func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
+// TokenEnrichmentEndpoint handles token enrichment requests
+func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 
 	// Use native Go SDK path variable extraction
 	tokenType := req.PathValue("tokenType")
 
-	logger := service.Log(ctx)
+	logger := h.service.Log(ctx)
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -48,127 +47,87 @@ func TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
-		logger.WithError(err).Error("could not decode request body")
+		logger.WithError(err).Error("could not unmarshal request body")
 		return err
 	}
 
-	response := map[string]map[string]map[string]any{
-		"session": {
-			"access_token": {
-				"roles": []string{"unknown"},
-			},
-			"id_token": {
-				"roles": []string{"unknown"},
-			},
-		},
-	}
+	response := tokenObject
 
-	sessionObject, ok := tokenObject["session"]
+	// sessionData, ok := tokenObject["session"].(map[string]any)
+	// if !ok {
+	// 	logger.Error("session data not found or invalid")
+	// 	rw.Header().Set("Content-Type", "application/json")
+	// 	rw.WriteHeader(http.StatusBadRequest)
+	// 	return json.NewEncoder(rw).Encode(map[string]string{"error": "session data not found"})
+	// }
+
+	clientData, ok := tokenObject["client"].(map[string]any)
 	if !ok {
+		logger.Error("client data not found or invalid")
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
+		rw.WriteHeader(http.StatusBadRequest)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "client data not found"})
 	}
 
-	session, ok1 := sessionObject.(map[string]any)
-	if !ok1 {
+	clientID, ok := clientData["client_id"].(string)
+	if !ok {
+		logger.Error("client_id not found or invalid")
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
+		rw.WriteHeader(http.StatusBadRequest)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 
-	clientID := session["client_id"].(string)
-	isSystemToken := false
-	var roles []string
-	entityName := ""
-
-	oauth2Config, ok := service.Config().(frame.ConfigurationOAUTH2)
-	if ok {
-		oauth2ServiceAdminHost := oauth2Config.GetOauth2ServiceAdminURI()
-
-		_, cBody, err0 := GetOauth2ClientById(ctx, oauth2ServiceAdminHost, clientID)
-		if err0 != nil {
-			return err0
-		}
-
-		var clientObject map[string]any
-		err = json.Unmarshal(cBody, &clientObject)
-		if err != nil {
-			logger.WithError(err).Error("could not decode client object")
-			return err
-		}
-		entityName = clientObject["client_name"].(string)
-
-		grantTypes, ok0 := clientObject["grant_types"].([]any)
-		if ok0 {
-
-			if len(grantTypes) == 1 {
-				grantType, ok6 := grantTypes[0].(string)
-				if ok6 && grantType == "client_credentials" {
-					isSystemToken = true
-				}
-			}
-		}
-	}
-
-	if !isSystemToken {
-
-		// For end users only add roles and service names
-		roles = append(roles, "user")
-
-		tokenMap := map[string]any{
-			"roles":        roles,
-			"service_name": entityName,
-		}
-
-		response["session"]["access_token"] = tokenMap
-		response["session"]["id_token"] = tokenMap
-
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
-
-	}
-
-	var apiKeyModel models.APIKey
-	err = service.DB(ctx, true).Where("key = ? ", clientID).First(&apiKeyModel).Error
+	// Check if this is an API key client
+	apiKeyModel, err := h.apiKeyRepo.GetByKey(ctx, clientID)
 	if err != nil {
+		h.service.Log(ctx).WithError(err).Error("could not find api key")
+		return err
+	}
 
-		logger.WithError(err).Info("could not get api key for client id")
+	if apiKeyModel == nil {
+		// Not an API key, handle as regular user token
 
-		if !frame.ErrorIsNoRows(err) {
-			return err
+		partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+		if err != nil {
+			logger.WithError(err).Error("could not get partition by profile id")
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return json.NewEncoder(rw).Encode(map[string]string{"error": "could not get partition"})
 		}
-
-		// These represent the core services that work generally on all entities
-		roles = append(roles, "system_internal")
 
 		tokenMap := map[string]any{
-			"roles":        roles,
-			"service_name": entityName,
+			"tenant_id":    partitionObj.GetTenantId(),
+			"partition_id": partitionObj.GetId(),
+			"roles":        []string{"user"},
 		}
 
-		response["session"]["access_token"] = tokenMap
-		response["session"]["id_token"] = tokenMap
+		response["session"].(map[string]any)["access_token"] = tokenMap
+		response["session"].(map[string]any)["id_token"] = tokenMap
 
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		return json.NewEncoder(rw).Encode(response)
-
 	}
 
-	// These are mostly external services with limited tenancy
-	roles = append(roles, "system_external")
+	// This is an API key client - handle as external service
+	roles := []string{"system_external"}
+
+	if apiKeyModel.Scope != "" {
+		var scopeList []string
+		err := json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList)
+		if err == nil {
+			roles = scopeList
+		}
+	}
 
 	tokenMap := map[string]any{
 		"tenant_id":    apiKeyModel.TenantID,
 		"partition_id": apiKeyModel.PartitionID,
 		"roles":        roles,
-		"service_name": entityName,
 	}
 
-	response["session"]["access_token"] = tokenMap
-	response["session"]["id_token"] = tokenMap
+	response["session"].(map[string]any)["access_token"] = tokenMap
+	response["session"].(map[string]any)["id_token"] = tokenMap
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)

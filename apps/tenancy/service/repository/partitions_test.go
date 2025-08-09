@@ -170,8 +170,8 @@ func (suite *PartitionTestSuite) TestSearch() {
 			t.Run(tc.name, func(t *testing.T) {
 				searchQuery := framedata.NewSearchQuery(tc.query, tc.properties, 0, 10)
 
-				resultPipe, err := partitionRepo.Search(ctx, searchQuery)
-				require.NoError(t, err)
+				resultPipe, resultErr := partitionRepo.Search(ctx, searchQuery)
+				require.NoError(t, resultErr)
 
 				result, ok := resultPipe.ReadResult(ctx)
 				require.True(t, ok)

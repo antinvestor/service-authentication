@@ -2,33 +2,26 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"html/template"
 	"net/http"
 
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
-	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
+	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
-	"github.com/pitabwire/frame"
 )
 
 var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))
 
-func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 
-	cfg, ok := service.Config().(*config.AuthenticationConfig)
-	if !ok {
-		return fmt.Errorf("could not convert configuration correctly")
-	}
+	logger := h.service.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
-	logger := service.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
-
-	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
 
 	loginChallenge, err := hydra.GetLoginChallengeID(req)
 	if err != nil {
@@ -71,19 +64,13 @@ func ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 }
 
-func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 
-	cfg, ok := service.Config().(*config.AuthenticationConfig)
-	if !ok {
-		return fmt.Errorf("could not convert configuration correctly")
-	}
+	logger := h.service.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
 
-	logger := service.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
-
-	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
 
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
@@ -91,15 +78,10 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	logger = logger.WithField("contact", contact)
 
-	profileObj, login, err := getLoginCredentials(ctx, contact, password)
+	profileObj, _, err := getLoginCredentials(ctx, h.loginRepo, contact, password)
 
-	err = postLoginChecks(ctx, profileObj, contact, login, err, req)
 	if err != nil {
-
-		logger.WithError(err).Info(" Could not login user")
-
-		// TODO: In the event the user can't pass tests for long enough remember to use
-		// hydra.RejectLoginRequest()
+		logger.WithError(err).Warn("could not get login credentials")
 
 		payload := initTemplatePayload(req.Context())
 		payload["error"] = "unable to log you in "
@@ -111,7 +93,7 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: true, RememberDuration: cfg.SessionRememberDuration}
+	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: true, RememberDuration: h.config.SessionRememberDuration}
 
 	redirectUrl, err := defaultHydra.AcceptLoginRequest(
 		req.Context(), params)
@@ -126,23 +108,23 @@ func SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func postLoginChecks(_ context.Context,
-	_ *profilev1.ProfileObject, _ string,
-	_ *models.Login, err error, _ *http.Request) error {
+//
+// func postLoginChecks(_ context.Context,
+// 	_ *profilev1.ProfileObject, _ string,
+// 	_ *models.Login, err error, _ *http.Request) error {
+//
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	// TODO: In the event the user can't pass tests for long enough remember to use
+// 	// hydra.RejectLoginRequest()
+//
+// 	return nil
+// }
 
-	if err != nil {
-		return err
-	}
+func getLoginCredentials(ctx context.Context, loginRepo repository.LoginRepository, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
 
-	// TODO: In the event the user can't pass tests for long enough remember to use
-	// hydra.RejectLoginRequest()
-
-	return nil
-}
-
-func getLoginCredentials(ctx context.Context, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
-
-	service := frame.Svc(ctx)
 	profileCli := profilev1.FromContext(ctx)
 
 	profileObj, err := profileCli.GetProfileByContact(ctx, contact)
@@ -151,20 +133,24 @@ func getLoginCredentials(ctx context.Context, contact string, password string) (
 		return nil, nil, err
 	}
 
-	login := models.Login{}
 	profileHash := utils.HashStringSecret(profileObj.GetId())
 
-	if err = service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error; err != nil {
+	login, err := loginRepo.GetByProfileHash(ctx, profileHash)
+	if err != nil {
 		return profileObj, nil, err
+	}
+
+	if login == nil {
+		return profileObj, nil, errors.New("login not found")
 	}
 
 	crypt := utils.NewBCrypt()
 
 	err = crypt.Compare(ctx, login.PasswordHash, []byte(password))
 	if err != nil {
-		return profileObj, &login, err
+		return profileObj, login, err
 	}
 
-	return profileObj, &login, nil
+	return profileObj, login, nil
 
 }

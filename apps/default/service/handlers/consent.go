@@ -9,30 +9,18 @@ import (
 	"net/http"
 	"strings"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 
-	partitionAPI := partitionv1.FromContext(ctx)
-	service := frame.Svc(ctx)
+	logger := h.service.Log(ctx)
 
-	cfg, ok := service.Config().(*config.AuthenticationConfig)
-	if !ok {
-		return fmt.Errorf("could not convert configuration correctly")
-	}
-
-	logger := service.Log(ctx)
-
-	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
 
 	consentChallenge, err := hydra.GetConsentChallengeID(req)
 	if err != nil {
@@ -41,75 +29,42 @@ func ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	getConseReq, err := defaultHydra.GetConsentRequest(req.Context(), consentChallenge)
+
 	if err != nil {
 		return err
 	}
-
-	logger.WithField("consent_request", getConseReq).Info("authenticated client payload")
-
-	requestedScope := getConseReq.GetRequestedScope()
-	profileID := getConseReq.GetSubject()
-
-	client := getConseReq.GetClient()
-
-	clientID := client.GetClientId()
-	grantedAudience := client.GetAudience()
-
-	access, err := partitionAPI.GetAccessByClientIdProfileId(ctx, clientID, profileID)
-	if err != nil {
-		st, ok0 := status.FromError(err)
-		if ok0 && st.Code() == codes.NotFound {
-			access, err = partitionAPI.CreateAccessByClientID(ctx, clientID, profileID)
-		}
-
-		if err != nil {
-			logger.WithError(err).Info("there was an error getting access")
-			return err
-		}
-	}
-
-	accessRoles, err := partitionAPI.ListAccessRole(ctx, access.GetAccessId())
-	if err != nil {
-		logger.WithError(err).Info("there was an error getting access roles")
-		return err
-	}
-
-	// Create a slice to store data from the channel
-	var accessRolesList []string
-
-	// Read from the channel until it's closed
-	for val := range accessRoles {
-		if val.GetRole() != nil {
-			accessRolesList = append(accessRolesList, val.GetRole().GetName())
-		}
-	}
-
-	partition := access.GetPartition()
 
 	deviceId := utils.DeviceIDFromContext(ctx)
-	if deviceId != "" {
-		deviceId, err = processDeviceIdLink(ctx, cfg, deviceId, profileID)
-		if err != nil {
-			logger.WithError(err).Info("could not process for device id")
-		}
+
+	deviceLinkId, err := processDeviceIdLink(ctx, h.config, deviceId, getConseReq.GetSubject())
+	if err != nil {
+		logger.WithError(err).Error("could not process device id link")
+		return err
+	}
+
+	client := getConseReq.GetClient()
+	clientID := client.GetClientId()
+
+	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+	if err != nil {
+		logger.WithError(err).Error("could not get partition by profile id")
+		return err
 	}
 
 	tokenMap := map[string]any{
-		"tenant_id":       partition.GetTenantId(),
-		"partition_id":    partition.GetId(),
-		"partition_state": partition.GetState().String(),
-		"access_id":       access.GetAccessId(),
+		"tenant_id":       partitionObj.GetTenantId(),
+		"partition_id":    partitionObj.GetId(),
+		"roles":           []string{"user"},
 		"device_id":       deviceId,
-		"access_state":    access.GetState().String(),
-		"roles":           accessRolesList,
+		"device_link_id":  deviceLinkId,
+		"profile_id":      getConseReq.GetSubject(),
+		"profile_contact": getConseReq.GetSubject(),
 	}
 
 	params := &hydra.AcceptConsentRequestParams{
 		ConsentChallenge:  consentChallenge,
-		GrantScope:        requestedScope,
-		GrantAudience:     grantedAudience,
-		Remember:          true,
-		RememberDuration:  0,
+		GrantScope:        getConseReq.GetRequestedScope(),
+		GrantAudience:     client.GetAudience(),
 		AccessTokenExtras: tokenMap,
 		IdTokenExtras:     tokenMap,
 	}

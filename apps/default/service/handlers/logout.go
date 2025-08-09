@@ -1,28 +1,18 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
-	"github.com/pitabwire/frame"
 )
 
-func ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
 
-	service := frame.Svc(ctx)
+	logger := h.service.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
-	cfg, ok := service.Config().(*config.AuthenticationConfig)
-	if !ok {
-		return fmt.Errorf("could not convert configuration correctly")
-	}
-
-	logger := service.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
-
-	defaultHydra := hydra.NewDefaultHydra(cfg.GetOauth2ServiceAdminURI())
+	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
 
 	logoutChallenge, err := hydra.GetLogoutChallengeID(req)
 	if err != nil {

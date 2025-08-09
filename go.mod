@@ -4,9 +4,9 @@ go 1.24.5
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.37.9
-	github.com/antinvestor/apis/go/partition v1.37.9
-	github.com/antinvestor/apis/go/profile v1.37.9
+	github.com/antinvestor/apis/go/common v1.38.0
+	github.com/antinvestor/apis/go/partition v1.38.2
+	github.com/antinvestor/apis/go/profile v1.38.2
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717185734-6c6e0d3c608e.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect

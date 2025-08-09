@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
-	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame"
@@ -22,11 +22,13 @@ type apiKey struct {
 	KeySecret string `json:"apiKeySecret"`
 }
 
-func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
+	if claims == nil {
+		return errors.New("no credentials detected")
+	}
 
 	apiKeySecretLength := 32
 
@@ -34,21 +36,19 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	var akey apiKey
 	err := decoder.Decode(&akey)
 	if err != nil {
-		service.Log(ctx).WithError(err).Error("could not decode request body")
+		h.service.Log(ctx).WithError(err).Error("could not decode request body")
 		return err
 	}
 
 	apiKeySecret := utils.GenerateRandomStringEfficient(apiKeySecretLength)
 
-	cfg := service.Config().(*config.AuthenticationConfig)
+	jwtServerURL := h.config.GetOauth2ServiceAdminURI()
 
-	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
-
-	jwtClient, err := service.RegisterForJwtWithParams(ctx,
+	jwtClient, err := h.service.RegisterForJwtWithParams(ctx,
 		jwtServerURL, akey.Name, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
-		service.Log(ctx).WithError(err).Error("could not register jwt params")
+		h.service.Log(ctx).WithError(err).Error("could not register jwt params")
 		return err
 	}
 
@@ -64,7 +64,7 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	audBytes, err := json.Marshal(akey.Audience)
 	if err != nil {
-		service.Log(ctx).WithError(err).Error("could not marshal audience")
+		h.service.Log(ctx).WithError(err).Error("could not marshal audience")
 		return err
 	}
 
@@ -72,14 +72,14 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	metadataBytes, err := json.Marshal(akey.Metadata)
 	if err != nil {
-		service.Log(ctx).WithError(err).Error("could not marshal metadata")
+		h.service.Log(ctx).WithError(err).Error("could not marshal metadata")
 		return err
 	}
 	apiky.Metadata = string(metadataBytes)
 
-	err = service.DB(ctx, true).Create(&apiky).Error
+	err = h.apiKeyRepo.Save(ctx, &apiky)
 	if err != nil {
-		service.Log(ctx).WithError(err).Error("could create api key in database")
+		h.service.Log(ctx).WithError(err).Error("could create api key in database")
 		return err
 	}
 
@@ -92,16 +92,17 @@ func CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return json.NewEncoder(rw).Encode(akey)
 }
 
-func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
 
-	var apiKeyList []models.APIKey
+	if claims == nil {
+		return errors.New("no credentials detected")
+	}
+
 	subject, _ := claims.GetSubject()
 
-	err := service.DB(ctx, true).Find(&apiKeyList, "profile_id = ?", subject).Error
-
+	apiKeyList, err := h.apiKeyRepo.GetByProfileID(ctx, subject)
 	if err != nil {
 		return err
 	}
@@ -116,23 +117,29 @@ func ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
-	rw.WriteHeader(http.StatusCreated)
+	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(apiObjects)
 }
 
-func GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
+	if claims == nil {
+		return errors.New("no credentials detected")
+	}
 
 	// Use native Go SDK path variable extraction
 	apiKeyID := req.PathValue("ApiKeyId")
 
-	var apiKeyModel models.APIKey
 	subject, _ := claims.GetSubject()
-	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
+	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
 		return err
+	}
+
+	if apiKeyModel == nil {
+		rw.WriteHeader(http.StatusNotFound)
+		return nil
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
@@ -140,31 +147,35 @@ func GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	service := frame.Svc(ctx)
 	claims := frame.ClaimsFromContext(ctx)
+	if claims == nil {
+		return errors.New("no credentials detected")
+	}
 
 	// Use native Go SDK path variable extraction
 	apiKeyID := req.PathValue("ApiKeyId")
 
-	var apiKeyModel models.APIKey
 	subject, _ := claims.GetSubject()
-	err := service.DB(ctx, true).Find(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
+	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
 		return err
 	}
 
-	cfg := service.Config().(*config.AuthenticationConfig)
+	if apiKeyModel == nil {
+		rw.WriteHeader(http.StatusNotFound)
+		return nil
+	}
 
-	jwtServerURL := cfg.GetOauth2ServiceAdminURI()
+	jwtServerURL := h.config.GetOauth2ServiceAdminURI()
 
-	err = service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyModel.Key)
+	err = h.service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyModel.Key)
 	if err != nil {
 		return err
 	}
 
-	err = service.DB(ctx, false).Delete(&apiKeyModel, "id = ? AND profile_id = ?", apiKeyID, subject).Error
+	err = h.apiKeyRepo.Delete(ctx, apiKeyID, subject)
 	if err != nil {
 		return err
 	}
