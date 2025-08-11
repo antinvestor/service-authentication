@@ -9,8 +9,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/tests/deps/testoryhydra"
-	"github.com/pitabwire/frame/tests/testdef"
+	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -19,22 +19,21 @@ import (
 type PartitionBusinessTestSuite struct {
 	tests.BaseTestSuite
 
-	hydraContainer testdef.TestResource
+	hydraContainer definition.TestResource
 }
 
 func (p *PartitionBusinessTestSuite) SetupSuite() {
 	p.BaseTestSuite.SetupSuite()
 
+	t := p.T()
+	ctx := t.Context()
+
 	for _, res := range p.Resources() {
-		if res.GetInternalDS().IsPostgres() {
-			p.hydraContainer = testoryhydra.NewWithCred(
-				testoryhydra.OryHydraImage,
-				testoryhydra.HydraConfiguration,
-				res.GetInternalDS().String(),
+		if res.GetInternalDS(ctx).IsPostgres() {
+			p.hydraContainer = testoryhydra.NewWithOpts(
+				testoryhydra.HydraConfiguration, definition.WithDependancies(res),
 			)
 
-			t := p.T()
-			ctx := t.Context()
 			err := p.hydraContainer.Setup(ctx, p.Network)
 			require.NoError(t, err)
 		}
@@ -63,12 +62,12 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 		},
 	}
 
-	p.WithTestDependancies(p.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	p.WithTestDependancies(p.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := p.CreateService(t, dep)
 
 		cfg, ok := svc.Config().(*config.PartitionConfig)
 		if ok {
-			cfg.Oauth2ServiceAdminURI = p.hydraContainer.GetInternalDS().String()
+			cfg.Oauth2ServiceAdminURI = p.hydraContainer.GetInternalDS(ctx).String()
 		}
 
 		tenantRepo := repository.NewTenantRepository(svc)

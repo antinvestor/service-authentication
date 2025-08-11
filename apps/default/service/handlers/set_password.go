@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 
 	"github.com/gorilla/csrf"
 )
-
-var setPasswordTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/set_password.html"))
 
 func (h *AuthServer) SetPasswordEndpoint(rw http.ResponseWriter, req *http.Request) error {
 

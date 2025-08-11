@@ -8,7 +8,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/tests/testdef"
+	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +18,7 @@ type BaseTestSuite struct {
 
 func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
-	depOpts *testdef.DependancyOption,
+	depOpts *definition.DependancyOption,
 ) (*frame.Service, context.Context) {
 	t.Setenv("OTEL_TRACES_EXPORTER", "none")
 	cfg, err := frame.ConfigFromEnv[config.PartitionConfig]()
@@ -28,7 +28,8 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.RunServiceSecurely = false
 	cfg.ServerPort = ""
 
-	for _, res := range depOpts.Database() {
+	ctx := t.Context()
+	for _, res := range depOpts.Database(ctx) {
 		testDS, cleanup, err0 := res.GetRandomisedDS(t.Context(), depOpts.Prefix())
 		require.NoError(t, err0)
 
@@ -40,7 +41,7 @@ func (bs *BaseTestSuite) CreateService(
 		cfg.DatabaseReplicaURL = []string{testDS.String()}
 	}
 
-	ctx, svc := frame.NewServiceWithContext(t.Context(), "partition tests",
+	ctx, svc := frame.NewServiceWithContext(ctx, "partition tests",
 		frame.WithConfig(&cfg),
 		frame.WithDatastore(),
 		frame.WithNoopDriver())

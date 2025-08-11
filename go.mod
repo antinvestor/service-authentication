@@ -7,18 +7,21 @@ require (
 	github.com/antinvestor/apis/go/common v1.38.0
 	github.com/antinvestor/apis/go/partition v1.38.2
 	github.com/antinvestor/apis/go/profile v1.38.2
+	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.52.0
+	github.com/pitabwire/frame v1.54.7
 	github.com/pitabwire/util v0.3.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 	golang.org/x/crypto v0.41.0
 	google.golang.org/grpc v1.74.2
 	gorm.io/datatypes v1.2.6
+	gorm.io/gorm v1.30.1
 )
 
 require (
@@ -43,8 +46,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.3.2+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -95,7 +97,6 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	github.com/testcontainers/testcontainers-go v0.38.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.38.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
@@ -147,5 +148,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
-	gorm.io/gorm v1.30.1 // indirect
 )

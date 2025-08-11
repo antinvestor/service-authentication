@@ -9,7 +9,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/framedata"
-	"github.com/pitabwire/frame/tests/testdef"
+	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -67,7 +67,7 @@ func (suite *PartitionTestSuite) TestGetByID() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 
 		for _, tc := range testCases {
@@ -94,7 +94,7 @@ func (suite *PartitionTestSuite) TestGetByID() {
 }
 
 func (suite *PartitionTestSuite) TestSearch() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -184,7 +184,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 }
 
 func (suite *PartitionTestSuite) TestDelete() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -252,7 +252,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -322,7 +322,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 }
 
 func (suite *PartitionTestSuite) TestSave() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -378,7 +378,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -457,7 +457,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -514,7 +514,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 }
 
 func (suite *PartitionTestSuite) TestGetRoles() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -567,7 +567,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 }
 
 func (suite *PartitionTestSuite) TestGetRolesByID() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)

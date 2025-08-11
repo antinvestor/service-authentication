@@ -7,7 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/tests/testdef"
+	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -35,7 +35,7 @@ func (suite *AccessTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -107,7 +107,7 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -178,7 +178,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -270,7 +270,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *testdef.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)

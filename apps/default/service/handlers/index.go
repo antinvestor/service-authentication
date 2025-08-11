@@ -2,13 +2,10 @@ package handlers
 
 import (
 	"context"
-	"html/template"
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 )
-
-var indexTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/index.html"))
 
 func initTemplatePayload(ctx context.Context) map[string]any {
 	payload := make(map[string]any)

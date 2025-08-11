@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
@@ -13,8 +12,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-var registerTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/registration.html"))
 
 func (h *AuthServer) ShowRegisterEndpoint(rw http.ResponseWriter, req *http.Request) error {
 

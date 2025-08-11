@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"html/template"
 	"net/http"
 
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
@@ -13,8 +12,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
 )
-
-var loginTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/login.html"))
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()

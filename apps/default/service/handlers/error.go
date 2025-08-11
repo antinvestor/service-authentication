@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 
 	"github.com/gorilla/csrf"
 )
-
-var errorTmpl = template.Must(template.ParseFiles("tmpl/auth_base.html", "tmpl/error.html"))
 
 func (h *AuthServer) ErrorEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
