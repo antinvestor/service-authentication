@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
-	"gorm.io/gorm"
 )
 
 type apiKeyRepository struct {
@@ -25,7 +23,7 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id string) (*models.APIK
 	var apiKey models.APIKey
 	err := r.service.DB(ctx, true).First(&apiKey, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -38,7 +36,7 @@ func (r *apiKeyRepository) GetByIDAndProfile(ctx context.Context, id, profileID 
 	var apiKey models.APIKey
 	err := r.service.DB(ctx, true).First(&apiKey, "id = ? AND profile_id = ?", id, profileID).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -51,7 +49,7 @@ func (r *apiKeyRepository) GetByKey(ctx context.Context, key string) (*models.AP
 	var apiKey models.APIKey
 	err := r.service.DB(ctx, true).First(&apiKey, "key = ?", key).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err

@@ -2,12 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
-	"gorm.io/gorm"
 )
 
 type sessionRepository struct {
@@ -26,7 +24,7 @@ func (r *sessionRepository) GetByID(ctx context.Context, id string) (*models.Ses
 	var session models.Session
 	err := r.service.DB(ctx, true).First(&session, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err

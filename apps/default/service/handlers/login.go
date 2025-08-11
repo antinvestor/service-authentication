@@ -65,7 +65,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	ctx := req.Context()
 
 	logger := h.service.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
-	
+
 	// Debug logging for POST request handling
 	logger.Info("SubmitLoginEndpoint called - POST request received")
 	logger.WithField("method", req.Method).WithField("url", req.URL.String()).Info("Request details")
@@ -77,13 +77,13 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		logger.WithError(err).Error("failed to parse form data")
 		return err
 	}
-	
+
 	logger.Info("Form data parsed successfully")
 
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
 	loginChallenge := req.PostForm.Get("login_challenge")
-	
+
 	logger.WithField("contact", contact).WithField("has_password", password != "").WithField("has_challenge", loginChallenge != "").Info("Form fields extracted")
 
 	logger = logger.WithField("contact", contact)
@@ -102,7 +102,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		logger.WithError(err).Error("DEBUG: getLoginCredentials failed")
 		return h.showLoginWithError(rw, req, loginChallenge, "unable to log you in")
 	}
-	
+
 	// Debug: Log successful authentication
 	logger.WithField("profile_id", profileObj.GetId()).WithField("has_login_record", loginRecord != nil).Info("DEBUG: Authentication successful")
 
@@ -132,7 +132,6 @@ func (h *AuthServer) showLoginWithError(rw http.ResponseWriter, req *http.Reques
 }
 
 func (h *AuthServer) getLoginCredentials(ctx context.Context, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
-
 
 	profileObj, err := h.profileCli.GetProfileByContact(ctx, contact)
 

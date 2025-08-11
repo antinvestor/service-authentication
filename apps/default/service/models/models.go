@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/pitabwire/frame"
-	"gorm.io/datatypes"
 )
 
 type Login struct {
 	frame.BaseModel
 	ProfileHash  string `gorm:"type:varchar(255)"`
 	PasswordHash []byte
-	Locked       datatypes.Date
+	Locked       time.Time
 }
 
 type LoginEvent struct {
@@ -19,7 +18,7 @@ type LoginEvent struct {
 	LoginID    string `gorm:"type:varchar(50)"`
 	AccessID   string `gorm:"type:varchar(50)"`
 	ContactID  string `gorm:"type:varchar(50)"`
-	Properties datatypes.JSONMap
+	Properties frame.JSONMap
 	Client     string
 	Status     int
 }

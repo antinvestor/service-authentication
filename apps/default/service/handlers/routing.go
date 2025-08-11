@@ -29,7 +29,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// In test environments, disable CSRF middleware to allow HTTP requests
 	serviceName := svc.Name()
 	isTestEnv := serviceName == "authentication tests"
-	
+
 	var csrfMiddleware func(http.Handler) http.Handler
 	if isTestEnv {
 		// In test environment, use a no-op middleware that just passes through
@@ -51,7 +51,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			if r.Method == "POST" {
 				h.service.Log(r.Context()).WithField("path", path).WithField("method", method).Info("DEBUG: secureHandler called for POST request")
 			}
-			
+
 			// Set up request context with required services
 			r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
 			r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
@@ -62,7 +62,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 				if r.Method == "POST" {
 					h.service.Log(r.Context()).WithField("handler", name).Info("DEBUG: About to call handler function")
 				}
-				
+
 				err := f(w, r)
 				if err != nil {
 					h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
@@ -73,12 +73,12 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			csrfHandler := csrfMiddleware(handler)
 			// Apply device ID middleware
 			deviceHandler := h.deviceIDMiddleware(csrfHandler)
-			
+
 			// Debug logging before middleware execution
 			if r.Method == "POST" {
 				h.service.Log(r.Context()).WithField("path", path).Info("DEBUG: About to execute middleware chain")
 			}
-			
+
 			deviceHandler.ServeHTTP(w, r)
 		})
 	}

@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
-	"gorm.io/gorm"
 )
 
 type loginRepository struct {
@@ -25,7 +23,7 @@ func (r *loginRepository) GetByProfileHash(ctx context.Context, profileHash stri
 	var login models.Login
 	err := r.service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err

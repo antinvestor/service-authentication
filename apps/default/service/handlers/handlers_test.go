@@ -50,7 +50,7 @@ func (suite *HandlersTestSuite) TestIndexEndpoint() {
 		// Test GET request to index endpoint
 		resp, err := http.Get(server.URL + "/")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -82,7 +82,7 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 		// Test GET request to error endpoint
 		resp, err := http.Get(server.URL + "/s/error")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -130,7 +130,7 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// We expect authentication failure since we don't have proper JWT setup
 		// In full integration test, this would verify successful creation
@@ -175,7 +175,7 @@ func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response structure (should be unauthorised without proper JWT)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -221,7 +221,7 @@ func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (should be unauthorised without proper JWT)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -266,7 +266,7 @@ func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (should be unauthorised without proper JWT)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -327,7 +327,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -364,7 +364,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		// Test unauthorised access
 		resp, err := http.Get(server.URL + "/api/key")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
@@ -375,7 +375,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		client := &http.Client{}
 		resp, err = client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 

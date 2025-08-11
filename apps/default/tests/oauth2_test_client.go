@@ -17,6 +17,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	hydraclientgo "github.com/ory/hydra-client-go/v2"
+	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -131,7 +132,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	if err != nil {
 		return "", fmt.Errorf("failed to initiate OAuth2 flow: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	fmt.Printf("DEBUG: Response status: %d\n", resp.StatusCode)
 
@@ -168,7 +169,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, email, password string) (*LoginResult, error) {
 	// Step 1: Get the login form to extract CSRF token
 	loginFormURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, loginChallenge)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", loginFormURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create login form request: %w", err)
@@ -178,7 +179,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 	if err != nil {
 		return nil, fmt.Errorf("failed to get login form: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status getting login form: %d", resp.StatusCode)
@@ -189,7 +190,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 	if err != nil {
 		return nil, fmt.Errorf("failed to read login form: %w", err)
 	}
-	
+
 	// Extract CSRF token from HTML (look for input with name="gorilla.csrf.Token")
 	csrfToken := ""
 	bodyStr := string(body)
@@ -226,7 +227,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit login: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	result := &LoginResult{
 		StatusCode: resp.StatusCode,
@@ -262,7 +263,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, loginChallenge, email, password string) (*LoginResult, string, error) {
 	// Step 1: Get the login form to extract CSRF token
 	loginFormURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, loginChallenge)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", loginFormURL, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create login form request: %w", err)
@@ -272,7 +273,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get login form: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -284,7 +285,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read login form: %w", err)
 	}
-	
+
 	// Extract CSRF token from HTML (look for input with name="gorilla.csrf.Token")
 	csrfToken := ""
 	bodyStr := string(body)
@@ -296,7 +297,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 			csrfToken = matches[1]
 		}
 	}
-	
+
 	// Debug logging
 	c.t.Logf("DEBUG: CSRF token extracted: %s (length: %d)", csrfToken, len(csrfToken))
 	c.t.Logf("DEBUG: Form contains CSRF field: %v", strings.Contains(bodyStr, `name="gorilla.csrf.Token"`))
@@ -317,7 +318,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 	if csrfToken != "" {
 		formData.Set("gorilla.csrf.Token", csrfToken)
 	}
-	
+
 	// Debug logging
 	c.t.Logf("DEBUG: Submitting login to: %s", loginURL)
 	c.t.Logf("DEBUG: Form data: %s", formData.Encode())
@@ -334,7 +335,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to submit login: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	// Read response body to capture error messages
 	body, err = io.ReadAll(resp.Body)
@@ -387,7 +388,7 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get consent: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	result := &ConsentResult{
 		StatusCode: resp.StatusCode,
@@ -468,38 +469,38 @@ type TokenResult struct {
 func (c *OAuth2TestClient) ExchangeCodeForToken(ctx context.Context, client *OAuth2Client, authorizationCode string) (*TokenResult, error) {
 	// Prepare token exchange request
 	tokenURL := fmt.Sprintf("%s/oauth2/token", c.HydraPublicURL)
-	
+
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", authorizationCode)
 	formData.Set("redirect_uri", client.RedirectURIs[0])
 	formData.Set("client_id", client.ClientID)
 	formData.Set("client_secret", client.ClientSecret)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", tokenURL, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create token request: %w", err)
 	}
-	
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	
+
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code for token: %w", err)
 	}
-	defer resp.Body.Close()
-	
+	defer util.CloseAndLogOnError(ctx, resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(body))
 	}
-	
+
 	var tokenResult TokenResult
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResult); err != nil {
 		return nil, fmt.Errorf("failed to decode token response: %w", err)
 	}
-	
+
 	return &tokenResult, nil
 }
 

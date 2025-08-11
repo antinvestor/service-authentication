@@ -10,6 +10,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	handlers2 "github.com/gorilla/handlers"
 	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -38,7 +39,7 @@ func (suite *AuthHandlersTestSuite) TestShowRegisterEndpoint() {
 		// Test GET request to register endpoint
 		resp, err := http.Get(server.URL + "/s/register")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -77,7 +78,7 @@ func (suite *AuthHandlersTestSuite) TestSubmitRegisterEndpoint() {
 
 		resp, err := http.PostForm(server.URL+"/s/register", formData)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (registration may fail due to external service dependencies)
 		// but we verify the endpoint processes the request
@@ -102,7 +103,7 @@ func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 		// Test GET request to consent endpoint with challenge parameter
 		resp, err := http.Get(server.URL + "/s/consent?consent_challenge=test-challenge")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (may redirect or show error due to invalid challenge)
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
@@ -126,7 +127,7 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 		// Test GET request to logout endpoint with challenge parameter
 		resp, err := http.Get(server.URL + "/s/logout?logout_challenge=test-logout-challenge")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (may redirect or show error due to invalid challenge)
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
@@ -150,7 +151,7 @@ func (suite *AuthHandlersTestSuite) TestForgotEndpoint() {
 		// Test GET request to forgot password endpoint
 		resp, err := http.Get(server.URL + "/s/forgot")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -168,7 +169,7 @@ func (suite *AuthHandlersTestSuite) TestForgotEndpoint() {
 
 		resp, err = http.PostForm(server.URL+"/s/forgot", formData)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (may show success or error depending on profile service)
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
@@ -192,7 +193,7 @@ func (suite *AuthHandlersTestSuite) TestSetPasswordEndpoint() {
 		// Test GET request to set password endpoint
 		resp, err := http.Get(server.URL + "/s/set_password?token=test-token")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -212,7 +213,7 @@ func (suite *AuthHandlersTestSuite) TestSetPasswordEndpoint() {
 
 		resp, err = http.PostForm(server.URL+"/s/set_password", formData)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify response (may show success or error depending on token validation)
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
@@ -236,7 +237,7 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 		// Test request to any endpoint to verify device ID middleware
 		resp, err := http.Get(server.URL + "/")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Verify device ID cookie is set
 		cookies := resp.Cookies()
@@ -273,14 +274,14 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 		// Test invalid endpoints
 		resp, err := http.Get(server.URL + "/invalid/endpoint")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
 		// Test POST to GET-only endpoint
 		resp, err = http.Post(server.URL+"/", "application/json", bytes.NewBuffer([]byte("{}")))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(ctx, resp.Body)
 
 		// Should handle method not allowed or process the request
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)

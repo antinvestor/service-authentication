@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
-	"gorm.io/gorm"
 )
 
 type loginEventRepository struct {
@@ -25,7 +23,7 @@ func (r *loginEventRepository) GetByID(ctx context.Context, id string) (*models.
 	var loginEvent models.LoginEvent
 	err := r.service.DB(ctx, true).First(&loginEvent, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if frame.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err
