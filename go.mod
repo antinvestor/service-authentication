@@ -7,7 +7,7 @@ require (
 	github.com/antinvestor/apis/go/common v1.38.0
 	github.com/antinvestor/apis/go/partition v1.38.2
 	github.com/antinvestor/apis/go/profile v1.38.2
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
