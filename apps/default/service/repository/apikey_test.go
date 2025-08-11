@@ -46,7 +46,8 @@ func (suite *APIKeyRepositoryTestSuite) TestSave() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		for _, tc := range testCases {
@@ -110,7 +111,8 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByID() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		for _, tc := range testCases {
@@ -183,7 +185,8 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByIDAndProfile() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		for _, tc := range testCases {
@@ -249,7 +252,8 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		for _, tc := range testCases {
@@ -289,7 +293,8 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 
 func (suite *APIKeyRepositoryTestSuite) TestGetByProfileID() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		profileID := "test-profile-list-123"
@@ -355,7 +360,8 @@ func (suite *APIKeyRepositoryTestSuite) TestDelete() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		apiKeyRepo := repository.NewAPIKeyRepository(svc)
 
 		for _, tc := range testCases {

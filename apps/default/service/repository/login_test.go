@@ -40,7 +40,8 @@ func (suite *LoginRepositoryTestSuite) TestSave() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		loginRepo := repository.NewLoginRepository(svc)
 
 		for _, tc := range testCases {
@@ -96,7 +97,8 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileHash() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		loginRepo := repository.NewLoginRepository(svc)
 
 		for _, tc := range testCases {
@@ -149,7 +151,8 @@ func (suite *LoginRepositoryTestSuite) TestDelete() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authSrv, ctx := suite.CreateService(t, dep)
+		svc := authSrv.Service()
 		loginRepo := repository.NewLoginRepository(svc)
 
 		for _, tc := range testCases {

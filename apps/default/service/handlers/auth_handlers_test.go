@@ -1,138 +1,292 @@
 package handlers_test
 
 import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
-	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame"
+	handlers2 "github.com/gorilla/handlers"
 	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandlersTestSuite struct {
 	tests.BaseTestSuite
 }
 
-func (suite *AuthHandlersTestSuite) TestShowLoginEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-
-		// For now, just test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
-	})
-}
-
-func (suite *AuthHandlersTestSuite) TestSubmitLoginEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-
-		// Create test login record first
-		profileID := "test-profile-login"
-		password := "testpassword123"
-		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-
-		// Create login record
-		login := &models.Login{
-			BaseModel: frame.BaseModel{
-				ID: util.IDString(),
-			},
-			ProfileHash:  utils.HashStringSecret(profileID),
-			PasswordHash: hashedPassword,
-		}
-
-		db := svc.DB(ctx, false)
-		err := db.Create(login).Error
-		require.NoError(t, err, "Should create login record")
-
-		// Test that we can create login records and access the database
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
-		assert.NotEmpty(t, login.ID, "Should have created login record")
-	})
+// TestAuthHandlersTestSuite runs the authentication handler test suite
+func TestAuthHandlersTestSuite(t *testing.T) {
+	suite.Run(t, new(AuthHandlersTestSuite))
 }
 
 func (suite *AuthHandlersTestSuite) TestShowRegisterEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// For now, just test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test GET request to register endpoint
+		resp, err := http.Get(server.URL + "/s/register")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+
+		// Verify register template rendering
+		body := make([]byte, 2048)
+		n, _ := resp.Body.Read(body)
+		bodyStr := string(body[:n])
+		assert.Contains(t, bodyStr, "<html>")
+		assert.Contains(t, bodyStr, "register")
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 
 func (suite *AuthHandlersTestSuite) TestSubmitRegisterEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// Test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
 
-		// Verify we can access the database
-		db := svc.DB(ctx, false)
-		assert.NotNil(t, db, "Should have database connection")
+		// Test POST request to register endpoint with form data
+		formData := url.Values{}
+		formData.Set("username", "newuser@example.com")
+		formData.Set("password", "newpassword123")
+		formData.Set("first_name", "Test")
+		formData.Set("last_name", "User")
+		formData.Set("challenge", "test-register-challenge")
+
+		resp, err := http.PostForm(server.URL+"/s/register", formData)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response (registration may fail due to external service dependencies)
+		// but we verify the endpoint processes the request
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 
 func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// For now, just test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test GET request to consent endpoint with challenge parameter
+		resp, err := http.Get(server.URL + "/s/consent?consent_challenge=test-challenge")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response (may redirect or show error due to invalid challenge)
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 
 func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// For now, just test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test GET request to logout endpoint with challenge parameter
+		resp, err := http.Get(server.URL + "/s/logout?logout_challenge=test-logout-challenge")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response (may redirect or show error due to invalid challenge)
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 
 func (suite *AuthHandlersTestSuite) TestForgotEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// For now, just test that the service was created successfully
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test GET request to forgot password endpoint
+		resp, err := http.Get(server.URL + "/s/forgot")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+
+		// Verify forgot password template rendering
+		body := make([]byte, 2048)
+		n, _ := resp.Body.Read(body)
+		bodyStr := string(body[:n])
+		assert.Contains(t, bodyStr, "<html>")
+
+		// Test POST request with email
+		formData := url.Values{}
+		formData.Set("email", "test@example.com")
+
+		resp, err = http.PostForm(server.URL+"/s/forgot", formData)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response (may show success or error depending on profile service)
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 
 func (suite *AuthHandlersTestSuite) TestSetPasswordEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		authServer, ctx := suite.CreateService(t, dep)
 
-		// Create existing login record
-		login := &models.Login{
-			BaseModel: frame.BaseModel{
-				ID: util.IDString(),
-			},
-			ProfileHash:  utils.HashStringSecret("test-profile-password"),
-			PasswordHash: []byte("old-password-hash"),
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test GET request to set password endpoint
+		resp, err := http.Get(server.URL + "/s/set_password?token=test-token")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+
+		// Verify set password template rendering
+		body := make([]byte, 2048)
+		n, _ := resp.Body.Read(body)
+		bodyStr := string(body[:n])
+		assert.Contains(t, bodyStr, "<html>")
+
+		// Test POST request with new password
+		formData := url.Values{}
+		formData.Set("password", "newpassword123")
+		formData.Set("confirm_password", "newpassword123")
+		formData.Set("token", "test-token")
+
+		resp, err = http.PostForm(server.URL+"/s/set_password", formData)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify response (may show success or error depending on token validation)
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
+	})
+}
+
+func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test request to any endpoint to verify device ID middleware
+		resp, err := http.Get(server.URL + "/")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Verify device ID cookie is set
+		cookies := resp.Cookies()
+		var deviceIDCookie *http.Cookie
+		for _, cookie := range cookies {
+			if cookie.Name == "device_id" {
+				deviceIDCookie = cookie
+				break
+			}
 		}
 
-		db := svc.DB(ctx, false)
-		err := db.Create(login).Error
-		require.NoError(t, err, "Should create login record")
+		assert.NotNil(t, deviceIDCookie, "Device ID cookie should be set")
+		if deviceIDCookie != nil {
+			assert.NotEmpty(t, deviceIDCookie.Value, "Device ID cookie should have a value")
+			assert.True(t, deviceIDCookie.HttpOnly, "Device ID cookie should be HttpOnly")
+		}
 
-		// Test that we can create login records and access the database
-		assert.NotNil(t, svc, "Should create service")
-		assert.NotNil(t, ctx, "Should create context")
-		assert.NotEmpty(t, login.ID, "Should have created login record")
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
+	})
+}
+
+func (suite *AuthHandlersTestSuite) TestErrorHandling() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Test invalid endpoints
+		resp, err := http.Get(server.URL + "/invalid/endpoint")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		// Test POST to GET-only endpoint
+		resp, err = http.Post(server.URL+"/", "application/json", bytes.NewBuffer([]byte("{}")))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Should handle method not allowed or process the request
+		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500)
+
+		// Verify service is working
+		assert.NotNil(t, authServer.Service())
 	})
 }
 

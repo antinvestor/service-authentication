@@ -65,6 +65,23 @@ func NewAuthServer(ctx context.Context, service *frame.Service,
 	return h
 }
 
+// Getter methods for accessing dependencies
+func (h *AuthServer) Service() *frame.Service {
+	return h.service
+}
+
+func (h *AuthServer) Config() *config.AuthenticationConfig {
+	return h.config
+}
+
+func (h *AuthServer) ProfileCli() *profilev1.ProfileClient {
+	return h.profileCli
+}
+
+func (h *AuthServer) PartitionCli() *partitionv1.PartitionClient {
+	return h.partitionCli
+}
+
 type ErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

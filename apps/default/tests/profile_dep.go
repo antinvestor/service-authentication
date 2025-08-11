@@ -68,7 +68,7 @@ func (d *dependency) migrateContainer(
 
 	genericContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: containerRequest,
-		Started: true,
+		Started:          true,
 	})
 	if err != nil {
 		return err

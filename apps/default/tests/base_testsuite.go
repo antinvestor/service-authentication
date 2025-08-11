@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	apis "github.com/antinvestor/apis/go/common"
@@ -29,7 +30,7 @@ func initResources(_ context.Context) []definition.TestResource {
 		definition.WithEnableLogging(true), definition.WithUseHostMode(false))
 	hydra := testoryhydra.NewWithOpts(
 		testoryhydra.HydraConfiguration, definition.WithDependancies(pg),
-		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+		definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 
 	// Add profile and partition service dependencies
 	profile := NewProfile(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
@@ -47,7 +48,7 @@ func (bs *BaseTestSuite) SetupSuite() {
 func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
 	depOpts *definition.DependancyOption,
-) (*frame.Service, context.Context) {
+) (*handlers.AuthServer, context.Context) {
 	t.Setenv("OTEL_TRACES_EXPORTER", "none")
 	cfg, err := frame.ConfigFromEnv[config.AuthenticationConfig]()
 	require.NoError(t, err)
@@ -86,7 +87,8 @@ func (bs *BaseTestSuite) CreateService(
 
 	cfg.PartitionServiceURI = partitionDR.GetDS(ctx).String()
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceURI = hydraDR.GetDS(ctx).String()
+	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
+	cfg.Oauth2ServiceURI = strings.Replace(cfg.Oauth2ServiceAdminURI, "4445", "4444", 1)
 
 	ctx, svc := frame.NewServiceWithContext(t.Context(), "authentication tests",
 		frame.WithConfig(&cfg),
@@ -109,11 +111,11 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithAudiences(svc.Name()))
 	require.NoError(t, err)
 
-	srv := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, partitionCli)
+	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, partitionCli)
 
 	authServiceHandlers := handlers2.RecoveryHandler(
 		handlers2.PrintRecoveryStack(true))(
-		srv.SetupRouterV1(ctx))
+		authServer.SetupRouterV1(ctx))
 
 	defaultServer := frame.WithHTTPHandler(authServiceHandlers)
 	svc.Init(ctx, defaultServer)
@@ -124,5 +126,5 @@ func (bs *BaseTestSuite) CreateService(
 	err = svc.Run(ctx, "")
 	require.NoError(t, err)
 
-	return svc, ctx
+	return authServer, ctx
 }

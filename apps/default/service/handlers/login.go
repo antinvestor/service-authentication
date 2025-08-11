@@ -8,7 +8,6 @@ import (
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
 )
@@ -66,29 +65,46 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	ctx := req.Context()
 
 	logger := h.service.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
+	
+	// Debug logging for POST request handling
+	logger.Info("SubmitLoginEndpoint called - POST request received")
+	logger.WithField("method", req.Method).WithField("url", req.URL.String()).Info("Request details")
 
 	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
+
+	// Parse form data before accessing PostForm
+	if err := req.ParseForm(); err != nil {
+		logger.WithError(err).Error("failed to parse form data")
+		return err
+	}
+	
+	logger.Info("Form data parsed successfully")
 
 	contact := req.PostForm.Get("contact")
 	password := req.PostForm.Get("password")
 	loginChallenge := req.PostForm.Get("login_challenge")
+	
+	logger.WithField("contact", contact).WithField("has_password", password != "").WithField("has_challenge", loginChallenge != "").Info("Form fields extracted")
 
 	logger = logger.WithField("contact", contact)
 
-	profileObj, _, err := getLoginCredentials(ctx, h.loginRepo, contact, password)
+	if contact == "" || password == "" || loginChallenge == "" {
+		logger.Error("missing required fields")
+		return h.showLoginWithError(rw, req, loginChallenge, "All fields are required")
+	}
+
+	// Debug: Log the authentication attempt
+	logger.Info("DEBUG: Starting authentication process")
+
+	profileObj, loginRecord, err := h.getLoginCredentials(ctx, contact, password)
 
 	if err != nil {
-		logger.WithError(err).Warn("could not get login credentials")
-
-		payload := initTemplatePayload(req.Context())
-		payload["error"] = "unable to log you in "
-		payload["loginChallenge"] = loginChallenge
-		payload[csrf.TemplateTag] = csrf.TemplateField(req)
-
-		err = loginTmpl.Execute(rw, payload)
-
-		return err
+		logger.WithError(err).Error("DEBUG: getLoginCredentials failed")
+		return h.showLoginWithError(rw, req, loginChallenge, "unable to log you in")
 	}
+	
+	// Debug: Log successful authentication
+	logger.WithField("profile_id", profileObj.GetId()).WithField("has_login_record", loginRecord != nil).Info("DEBUG: Authentication successful")
 
 	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: profileObj.GetId(), Remember: true, RememberDuration: h.config.SessionRememberDuration}
 
@@ -105,26 +121,20 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-//
-// func postLoginChecks(_ context.Context,
-// 	_ *profilev1.ProfileObject, _ string,
-// 	_ *models.Login, err error, _ *http.Request) error {
-//
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	// TODO: In the event the user can't pass tests for long enough remember to use
-// 	// hydra.RejectLoginRequest()
-//
-// 	return nil
-// }
+// showLoginWithError displays the login form with an error message
+func (h *AuthServer) showLoginWithError(rw http.ResponseWriter, req *http.Request, loginChallenge, errorMsg string) error {
+	payload := initTemplatePayload(req.Context())
+	payload["error"] = errorMsg
+	payload["loginChallenge"] = loginChallenge
+	payload[csrf.TemplateTag] = csrf.TemplateField(req)
 
-func getLoginCredentials(ctx context.Context, loginRepo repository.LoginRepository, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
+	return loginTmpl.Execute(rw, payload)
+}
 
-	profileCli := profilev1.FromContext(ctx)
+func (h *AuthServer) getLoginCredentials(ctx context.Context, contact string, password string) (*profilev1.ProfileObject, *models.Login, error) {
 
-	profileObj, err := profileCli.GetProfileByContact(ctx, contact)
+
+	profileObj, err := h.profileCli.GetProfileByContact(ctx, contact)
 
 	if err != nil {
 		return nil, nil, err
@@ -132,7 +142,7 @@ func getLoginCredentials(ctx context.Context, loginRepo repository.LoginReposito
 
 	profileHash := utils.HashStringSecret(profileObj.GetId())
 
-	login, err := loginRepo.GetByProfileHash(ctx, profileHash)
+	login, err := h.loginRepo.GetByProfileHash(ctx, profileHash)
 	if err != nil {
 		return profileObj, nil, err
 	}
