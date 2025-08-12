@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,6 +22,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// Global mutex to ensure sequential execution of integration tests
+var testMutex sync.Mutex
+
 // LoginTestSuite provides a dedicated test suite for login functionality
 type LoginTestSuite struct {
 	tests.BaseTestSuite
@@ -35,14 +39,15 @@ func TestLoginTestSuite(t *testing.T) {
 type LoginTestContext struct {
 	AuthServer   *handlers.AuthServer
 	Context      context.Context
-	Server       *httptest.Server
 	OAuth2Client *tests.OAuth2TestClient
 	LoginRepo    repository.LoginRepository
-	HydraClient  *tests.OAuth2Client
 }
 
 // SetupLoginTest creates a common test setup for login tests
 func (suite *LoginTestSuite) SetupLoginTest(t *testing.T, dep *definition.DependancyOption) *LoginTestContext {
+	// Acquire mutex to ensure sequential execution
+	testMutex.Lock()
+
 	// Create authentication server and context
 	authServer, ctx := suite.CreateService(t, dep)
 
@@ -51,33 +56,29 @@ func (suite *LoginTestSuite) SetupLoginTest(t *testing.T, dep *definition.Depend
 	server := httptest.NewServer(handler)
 
 	// Create OAuth2 test client
-	oauth2Client := tests.NewOAuth2TestClient(t, authServer, server.URL)
+	oauth2Client := tests.NewOAuth2TestClient(authServer)
+	oauth2Client.SetAuthServiceURL(server.URL)
 
-	// Create OAuth2 client in Hydra
-	hydraClient, err := oauth2Client.CreateOAuth2Client(ctx)
-	require.NoError(t, err)
-
-	// Create login repository
 	loginRepo := repository.NewLoginRepository(authServer.Service())
 
 	return &LoginTestContext{
 		AuthServer:   authServer,
 		Context:      ctx,
-		Server:       server,
 		OAuth2Client: oauth2Client,
 		LoginRepo:    loginRepo,
-		HydraClient:  hydraClient,
 	}
 }
 
 // TeardownLoginTest cleans up test resources
 func (suite *LoginTestSuite) TeardownLoginTest(testCtx *LoginTestContext) {
-	if testCtx.HydraClient != nil {
-		testCtx.OAuth2Client.CleanupOAuth2Client(testCtx.Context, testCtx.HydraClient.ClientID)
+
+	if testCtx.OAuth2Client != nil {
+		testCtx.OAuth2Client.Cleanup(testCtx.Context)
 	}
-	if testCtx.Server != nil {
-		testCtx.Server.Close()
-	}
+
+	// Add a small delay to ensure proper cleanup
+	time.Sleep(100 * time.Millisecond)
+
 }
 
 // CreateTestUser creates a test user with login credentials
@@ -113,43 +114,61 @@ func (suite *LoginTestSuite) CreateTestUser(ctx context.Context, authServer *han
 
 // TestLoginWithValidCredentials tests successful login with valid user credentials
 func (suite *LoginTestSuite) TestLoginWithValidCredentials() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.Run("default", func() {
+		t := suite.T()
+		dep := definition.NewDependancyOption("TestLoginWithValidCredentials", util.RandomString(8), suite.Resources())
 		testCtx := suite.SetupLoginTest(t, dep)
 		defer suite.TeardownLoginTest(testCtx)
 
-		// Test data
-		email := "validuser@example.com"
-		password := "testpassword123"
-
 		// Create test user
+		email := "valid@example.com"
+		password := "validpassword123"
 		err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, password)
 		require.NoError(t, err)
 
+		// Create OAuth2 client for this test
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+		
+
 		// Initiate OAuth2 flow to get a valid login challenge
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 		assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
-		// Test login with valid credentials using error capture method
-		loginResult, responseBody, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)
+		// Perform login with valid credentials
+		loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)
 		require.NoError(t, err)
-
-		// Verify successful login
-		assert.True(t, loginResult.Success, "Login should be successful with valid credentials")
-		assert.True(t, loginResult.StatusCode == http.StatusSeeOther || loginResult.StatusCode == http.StatusFound,
-			"Should redirect after successful login, got status: %d", loginResult.StatusCode)
+		assert.True(t, loginResult.Success, "Login should succeed with valid credentials")
+		assert.Equal(t, http.StatusSeeOther, loginResult.StatusCode, "Should redirect after successful login")
 		assert.NotEmpty(t, loginResult.Location, "Should have redirect location")
 
-		// Verify we get either consent challenge or authorization code
+		// Verify that we get a consent challenge or authorization code
+		var authorizationCode string
 		if loginResult.ConsentChallenge != "" {
-			assert.NotEmpty(t, loginResult.ConsentChallenge, "Should have consent challenge")
+			// Handle consent flow
+			consentResult, err := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
+			require.NoError(t, err)
+			assert.True(t, consentResult.Success, "Consent should succeed")
+			assert.NotEmpty(t, consentResult.AuthorizationCode, "Should receive authorization code")
+			authorizationCode = consentResult.AuthorizationCode
 		} else {
-			assert.NotEmpty(t, loginResult.AuthorizationCode, "Should have authorization code")
+			assert.NotEmpty(t, loginResult.AuthorizationCode, "Should receive authorization code directly")
+			authorizationCode = loginResult.AuthorizationCode
 		}
 
-		// Verify no error messages in response
-		assert.NotContains(t, responseBody, "unable to log you in", "Should not contain error message for valid login")
-		assert.NotContains(t, responseBody, "invalid credentials", "Should not contain error message for valid login")
+		// Exchange authorization code for access token
+		tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(testCtx.Context, oauth2Client, authorizationCode)
+		require.NoError(t, err)
+		assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
+		assert.NotEmpty(t, tokenResult.TokenType, "Should receive token type")
+		assert.Greater(t, tokenResult.ExpiresIn, 0, "Should have valid expiration time")
+
+		// Verify access token can be used for API calls
+		t.Logf("SUCCESS: Complete OAuth2 flow completed!")
+		t.Logf("Access Token: %s", tokenResult.AccessToken[:min(50, len(tokenResult.AccessToken))]+"...")
+		t.Logf("Token Type: %s", tokenResult.TokenType)
+		t.Logf("Expires In: %d seconds", tokenResult.ExpiresIn)
 
 		// Note: Database verification would require getting the profile ID from the created profile
 		// For now, we verify the login flow worked by checking the successful redirect
@@ -163,7 +182,10 @@ func (suite *LoginTestSuite) TestLoginWithInvalidUser() {
 		defer suite.TeardownLoginTest(testCtx)
 
 		// Initiate OAuth2 flow to get a valid login challenge
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+
+		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 		assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
@@ -204,8 +226,12 @@ func (suite *LoginTestSuite) TestLoginWithInvalidCredentials() {
 		err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, correctPassword)
 		require.NoError(t, err)
 
+		// Create OAuth2 client for this test
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+
 		// Initiate OAuth2 flow to get a valid login challenge
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 		assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
@@ -246,10 +272,15 @@ func (suite *LoginTestSuite) TestLoginMultipleFailedAttempts() {
 		err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, correctPassword)
 		require.NoError(t, err)
 
-		// Test multiple failed login attempts
+		// Create OAuth2 client for this test
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+		
+
+		// Test multiple failed attempts
 		for i, wrongPassword := range wrongPasswords {
 			// Get a fresh login challenge for each attempt
-			loginChallenge, err0 := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+			loginChallenge, err0 := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 			require.NoError(t, err0)
 			assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge for attempt %d", i+1)
 
@@ -270,7 +301,7 @@ func (suite *LoginTestSuite) TestLoginMultipleFailedAttempts() {
 		}
 
 		// After multiple failures, verify that correct credentials still work
-		finalLoginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		finalLoginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 
 		finalLoginResult, finalResponseBody, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, finalLoginChallenge, email, correctPassword)
@@ -323,7 +354,11 @@ func (suite *LoginTestSuite) TestLoginFormValidation() {
 		defer suite.TeardownLoginTest(testCtx)
 
 		// Get a valid login challenge
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+		
+
+		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 
 		// Test cases for form validation
@@ -381,52 +416,51 @@ func (suite *LoginTestSuite) TestCompleteOAuth2FlowWithAccessToken() {
 		err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, password)
 		require.NoError(t, err)
 
-		// Step 1: Initiate OAuth2 flow to get login challenge
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+		// Create OAuth2 client for this test
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+		require.NoError(t, err)
+		
+
+		// Initiate OAuth2 flow to get a valid login challenge
+		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 		require.NoError(t, err)
 		assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
-		// Step 2: Perform login (this may fail due to profile service, but we'll continue)
+		// Perform login with valid credentials
 		loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)
 		require.NoError(t, err)
+		assert.True(t, loginResult.Success, "Login should succeed with valid credentials")
+		assert.Equal(t, http.StatusSeeOther, loginResult.StatusCode, "Should redirect after successful login")
+		assert.NotEmpty(t, loginResult.Location, "Should have redirect location")
 
-		// Log the current status for debugging
-		t.Logf("Login attempt status: %d", loginResult.StatusCode)
-		t.Logf("Login response body snippet: %s", "")
-
-		// If login succeeds, continue with consent and token exchange
-		if loginResult.Success && loginResult.ConsentChallenge != "" {
-			// Step 3: Handle consent flow
+		// Verify that we get a consent challenge or authorization code
+		var authorizationCode string
+		if loginResult.ConsentChallenge != "" {
+			// Handle consent flow
 			consentResult, err := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
 			require.NoError(t, err)
-			assert.True(t, consentResult.Success, "Consent should be successful")
+			assert.True(t, consentResult.Success, "Consent should succeed")
 			assert.NotEmpty(t, consentResult.AuthorizationCode, "Should receive authorization code")
-
-			// Step 4: Exchange authorization code for access token
-			tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(testCtx.Context, testCtx.HydraClient, consentResult.AuthorizationCode)
-			require.NoError(t, err)
-			assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
-			assert.NotEmpty(t, tokenResult.TokenType, "Should receive token type")
-			assert.Greater(t, tokenResult.ExpiresIn, 0, "Should have valid expiration time")
-
-			// Step 5: Verify access token can be used for API calls
-			// This would typically involve making an authenticated API request
-			t.Logf("SUCCESS: Complete OAuth2 flow completed!")
-			t.Logf("Access Token: %s", tokenResult.AccessToken[:min(50, len(tokenResult.AccessToken))]+"...")
-			t.Logf("Token Type: %s", tokenResult.TokenType)
-			t.Logf("Expires In: %d seconds", tokenResult.ExpiresIn)
-
+			authorizationCode = consentResult.AuthorizationCode
 		} else {
-			// If login fails, this is expected due to profile service integration issues
-			// But we've verified the OAuth2 infrastructure is working
-			t.Logf("Login failed as expected due to profile service integration")
-			t.Logf("OAuth2 infrastructure is working correctly (challenge generation, form rendering, CSRF)")
-
-			// Verify that we at least got the proper OAuth2 challenge and form rendering
-			assert.NotEmpty(t, loginChallenge, "OAuth2 challenge generation working")
-			assert.Contains(t, "", "<html>", "Login form rendering working")
-			assert.Contains(t, "", "login", "Login form contains expected elements")
+			assert.NotEmpty(t, loginResult.AuthorizationCode, "Should receive authorization code directly")
+			authorizationCode = loginResult.AuthorizationCode
 		}
+
+		// Exchange authorization code for access token
+		tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(testCtx.Context, oauth2Client, authorizationCode)
+		require.NoError(t, err)
+		assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
+		assert.NotEmpty(t, tokenResult.TokenType, "Should receive token type")
+		assert.Greater(t, tokenResult.ExpiresIn, 0, "Should have valid expiration time")
+
+		// Verify access token can be used for API calls
+		// This would typically involve making an authenticated API request
+		t.Logf("SUCCESS: Complete OAuth2 flow completed!")
+		t.Logf("Access Token: %s", tokenResult.AccessToken[:min(50, len(tokenResult.AccessToken))]+"...")
+		t.Logf("Token Type: %s", tokenResult.TokenType)
+		t.Logf("Expires In: %d seconds", tokenResult.ExpiresIn)
+
 	})
 }
 
@@ -473,18 +507,49 @@ func (suite *LoginTestSuite) runValidCredentialsTest(t *testing.T, dep *definiti
 	err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, password)
 	require.NoError(t, err)
 
-	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+	// Create OAuth2 client for this test
+	oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+	require.NoError(t, err)
+	
+
+	// Initiate OAuth2 flow to get a valid login challenge
+	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 	require.NoError(t, err)
 	assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
+	// Perform login with valid credentials
 	loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)
 	require.NoError(t, err)
+	assert.True(t, loginResult.Success, "Login should succeed with valid credentials")
+	assert.Equal(t, http.StatusSeeOther, loginResult.StatusCode, "Should redirect after successful login")
+	assert.NotEmpty(t, loginResult.Location, "Should have redirect location")
 
-	// Log status for debugging
-	t.Logf("Valid credentials test - Status: %d", loginResult.StatusCode)
-	if !loginResult.Success {
-		t.Logf("Expected failure due to profile service integration: %s", "")
+	// Verify that we get a consent challenge or authorization code
+	var authorizationCode string
+	if loginResult.ConsentChallenge != "" {
+		// Handle consent flow
+		consentResult, err := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
+		require.NoError(t, err)
+		assert.True(t, consentResult.Success, "Consent should succeed")
+		assert.NotEmpty(t, consentResult.AuthorizationCode, "Should receive authorization code")
+		authorizationCode = consentResult.AuthorizationCode
+	} else {
+		assert.NotEmpty(t, loginResult.AuthorizationCode, "Should receive authorization code directly")
+		authorizationCode = loginResult.AuthorizationCode
 	}
+
+	// Exchange authorization code for access token
+	tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(testCtx.Context, oauth2Client, authorizationCode)
+	require.NoError(t, err)
+	assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
+	assert.NotEmpty(t, tokenResult.TokenType, "Should receive token type")
+	assert.Greater(t, tokenResult.ExpiresIn, 0, "Should have valid expiration time")
+
+	// Verify access token can be used for API calls
+	t.Logf("SUCCESS: Complete OAuth2 flow completed!")
+	t.Logf("Access Token: %s", tokenResult.AccessToken[:min(50, len(tokenResult.AccessToken))]+"...")
+	t.Logf("Token Type: %s", tokenResult.TokenType)
+	t.Logf("Expires In: %d seconds", tokenResult.ExpiresIn)
 }
 
 func (suite *LoginTestSuite) runInvalidUserTest(t *testing.T, dep *definition.DependancyOption) {
@@ -494,7 +559,13 @@ func (suite *LoginTestSuite) runInvalidUserTest(t *testing.T, dep *definition.De
 	email := "nonexistent@example.com"
 	password := "anypassword"
 
-	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+	// Create OAuth2 client for this test
+	oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+	require.NoError(t, err)
+	
+
+	// Initiate OAuth2 flow to get a valid login challenge
+	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 	require.NoError(t, err)
 
 	loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)
@@ -516,7 +587,13 @@ func (suite *LoginTestSuite) runInvalidCredentialsTest(t *testing.T, dep *defini
 	err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, correctPassword)
 	require.NoError(t, err)
 
-	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+	// Create OAuth2 client for this test
+	oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+	require.NoError(t, err)
+	
+
+	// Initiate OAuth2 flow to get a valid login challenge
+	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 	require.NoError(t, err)
 
 	loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, wrongPassword)
@@ -538,13 +615,21 @@ func (suite *LoginTestSuite) runMultipleFailedAttemptsTest(t *testing.T, dep *de
 	err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, correctPassword)
 	require.NoError(t, err)
 
+	// Create OAuth2 client for this test
+	oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+	require.NoError(t, err)
+	
+
 	// Test multiple failed attempts
 	for i, wrongPassword := range wrongPasswords {
-		loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
-		require.NoError(t, err)
+		// Get a fresh login challenge for each attempt
+		loginChallenge, err0 := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
+		require.NoError(t, err0)
+		assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge for attempt %d", i+1)
 
-		loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, wrongPassword)
-		require.NoError(t, err)
+		// Attempt login with wrong password
+		loginResult, _, err0 := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, wrongPassword)
+		require.NoError(t, err0)
 
 		t.Logf("Failed attempt %d - Status: %d", i+1, loginResult.StatusCode)
 		assert.False(t, loginResult.Success, "Login should fail with wrong password")
@@ -583,7 +668,13 @@ func (suite *LoginTestSuite) runCompleteOAuth2FlowTest(t *testing.T, dep *defini
 	err := suite.CreateTestUser(testCtx.Context, testCtx.AuthServer, testCtx.LoginRepo, email, password)
 	require.NoError(t, err)
 
-	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, testCtx.HydraClient)
+	// Create OAuth2 client for this test
+	oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(testCtx.Context)
+	require.NoError(t, err)
+	
+
+	// Initiate OAuth2 flow to get a valid login challenge
+	loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 	require.NoError(t, err)
 
 	loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(testCtx.Context, loginChallenge, email, password)

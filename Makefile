@@ -50,7 +50,7 @@ docker-stop: ## stops all docker containers
 # INTEGRATION_TEST_SUITE_PATH is used to run specific tests in Golang,
 # if it's not specified it will run all tests
 tests: ## runs all system tests
-	go test ./... -v
+	go test ./... -p 1 -v
 	RETURNCODE=$$?; \
 	if [ "$$RETURNCODE" != "0" ]; then \
 		echo "unit tests failed" && exit 1; \

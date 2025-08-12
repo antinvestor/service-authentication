@@ -28,7 +28,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
 	serviceName := svc.Name()
-	isTestEnv := serviceName == "authentication tests"
+	isTestEnv := serviceName == "authentication_tests"
 
 	var csrfMiddleware func(http.Handler) http.Handler
 	if isTestEnv {
@@ -51,11 +51,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			if r.Method == "POST" {
 				h.service.Log(r.Context()).WithField("path", path).WithField("method", method).Info("DEBUG: secureHandler called for POST request")
 			}
-
-			// Set up request context with required services
-			r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
-			r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
-			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Debug logging before calling handler
@@ -104,7 +99,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				err := f(w, r)
+				err = f(w, r)
 				if err != nil {
 					log := h.service.Log(r.Context())
 					log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
@@ -124,4 +119,14 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	authHandler(h.GetAPIKeyEndpoint, "/api/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	return router
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	apis "github.com/antinvestor/apis/go/common"
@@ -45,18 +44,15 @@ func main() {
 	var profileCli *profilev1.ProfileClient
 	var partitionCli *partitionv1.PartitionClient
 
-	oauth2ServiceHost := cfg.GetOauth2ServiceURI()
-	oauth2ServiceURL := fmt.Sprintf("%s/oauth2/token", oauth2ServiceHost)
 	audienceList := make([]string, 0)
-	oauth2ServiceAudience := cfg.Oauth2ServiceAudience
-	if oauth2ServiceAudience != "" {
-		audienceList = strings.Split(oauth2ServiceAudience, ",")
+	if cfg.Oauth2ServiceAudience != "" {
+		audienceList = strings.Split(cfg.Oauth2ServiceAudience, ",")
 	}
 	profileCli, err = profilev1.NewProfileClient(ctx,
 		apis.WithEndpoint(cfg.ProfileServiceURI),
-		apis.WithTokenEndpoint(oauth2ServiceURL),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(cfg.Oauth2ServiceClientSecret),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
@@ -65,9 +61,9 @@ func main() {
 	partitionServiceURL := cfg.PartitionServiceURI
 	partitionCli, err = partitionv1.NewPartitionsClient(ctx,
 		apis.WithEndpoint(partitionServiceURL),
-		apis.WithTokenEndpoint(oauth2ServiceURL),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(cfg.Oauth2ServiceClientSecret),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
 		apis.WithAudiences(audienceList...))
 	if err != nil {
 		log.Printf("main -- Could not setup partition service client: %v", err)

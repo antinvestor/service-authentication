@@ -26,7 +26,6 @@ WORKDIR /
 
 COPY --from=builder /app/binary /authentication
 COPY --from=builder /app/apps/default/migrations /migrations
-COPY --from=builder /app/apps/default/tmpl /tmpl
 COPY --from=builder /app/apps/default/localization /localization
 
 # Run the service command by default when the container starts.

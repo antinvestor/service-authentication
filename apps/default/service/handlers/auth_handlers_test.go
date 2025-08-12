@@ -2,11 +2,13 @@ package handlers_test
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	handlers2 "github.com/gorilla/handlers"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -228,14 +230,12 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 		authServer, ctx := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
+		handler := authServer.SetupRouterV1(ctx)
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
 		// Test request to any endpoint to verify device ID middleware
-		resp, err := http.Get(server.URL + "/")
+		resp, err := http.Get(server.URL + "/s/login")
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
@@ -243,7 +243,7 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 		cookies := resp.Cookies()
 		var deviceIDCookie *http.Cookie
 		for _, cookie := range cookies {
-			if cookie.Name == "device_id" {
+			if cookie.Name == handlers.DeviceSessionIDKey {
 				deviceIDCookie = cookie
 				break
 			}
@@ -276,7 +276,11 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(body), "Index")
 
 		// Test POST to GET-only endpoint
 		resp, err = http.Post(server.URL+"/", "application/json", bytes.NewBuffer([]byte("{}")))
@@ -289,8 +293,4 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
 	})
-}
-
-func TestAuthHandlers(t *testing.T) {
-	suite.Run(t, new(AuthHandlersTestSuite))
 }

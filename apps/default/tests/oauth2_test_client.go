@@ -16,9 +16,7 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	hydraclientgo "github.com/ory/hydra-client-go/v2"
 	"github.com/pitabwire/util"
-	"github.com/stretchr/testify/require"
 )
 
 // OAuth2TestClient provides utilities for testing OAuth2 flows with Hydra
@@ -28,32 +26,36 @@ type OAuth2TestClient struct {
 	AuthServiceURL string
 	Client         *http.Client
 	t              *testing.T
+
+	clientIdList []string
 }
 
 // NewOAuth2TestClient creates a new OAuth2 test client
-func NewOAuth2TestClient(t *testing.T, authServer *handlers.AuthServer, authServiceURL string) *OAuth2TestClient {
+func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 	// Get the public Hydra URL from config
 	publicURL := authServer.Config().Oauth2ServiceURI
 
 	// Convert public URL (port 4444) to admin URL (port 4445)
 	adminURL := authServer.Config().Oauth2ServiceAdminURI
 
-	jar, err := cookiejar.New(nil)
-	require.NoError(t, err)
+	jar, _ := cookiejar.New(nil)
 
 	return &OAuth2TestClient{
 		HydraAdminURL:  adminURL,
 		HydraPublicURL: publicURL,
-		AuthServiceURL: authServiceURL,
+		AuthServiceURL: "", // Will be set by test server
 		Client: &http.Client{
 			Jar:     jar,
 			Timeout: 30 * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				// Don't follow redirects - we want to capture them
+				ctx := req.Context()
+				util.Log(ctx).Info("Redirecting to : %s" + req.URL.String())
+
+				// Don't follow redirects automatically - we want to capture them
 				return http.ErrUseLastResponse
 			},
 		},
-		t: t,
+		t: nil, // No testing.T required for basic functionality
 	}
 }
 
@@ -70,32 +72,22 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context) (*OAuth2Clien
 	// Generate random client credentials
 	clientID := "test-client-" + c.generateRandomString(8)
 	clientSecret := c.generateRandomString(32)
-	redirectURI := c.AuthServiceURL + "/callback"
+	// Use a proper callback URI that won't interfere with OAuth2 endpoints
+	redirectURI := c.AuthServiceURL + "/oauth2/callback"
 
-	// Create Hydra client configuration
-	configuration := hydraclientgo.NewConfiguration()
-	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: c.HydraAdminURL}}
-	apiClient := hydraclientgo.NewAPIClient(configuration).OAuth2API
-
-	// Create OAuth2 client request
-	oAuth2Client := hydraclientgo.NewOAuth2Client()
-	oAuth2Client.SetClientId(clientID)
-	oAuth2Client.SetClientSecret(clientSecret)
-	oAuth2Client.SetRedirectUris([]string{redirectURI})
-	oAuth2Client.SetGrantTypes([]string{"authorization_code", "refresh_token"})
-	oAuth2Client.SetResponseTypes([]string{"code"})
-	oAuth2Client.SetScope("openid profile email")
 
 	// Create the client in Hydra
-	createdClient, _, err := apiClient.CreateOAuth2Client(ctx).OAuth2Client(*oAuth2Client).Execute()
+	err := NewOauthClient(ctx, c.HydraAdminURL, clientID, clientSecret, []string{redirectURI})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OAuth2 client: %w", err)
 	}
 
+	c.clientIdList = append(c.clientIdList, clientID)
+
 	return &OAuth2Client{
-		ClientID:     createdClient.GetClientId(),
-		ClientSecret: createdClient.GetClientSecret(),
-		RedirectURIs: createdClient.GetRedirectUris(),
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURIs: []string{redirectURI},
 		Scope:        "openid profile email",
 	}, nil
 }
@@ -299,12 +291,14 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 	}
 
 	// Debug logging
-	c.t.Logf("DEBUG: CSRF token extracted: %s (length: %d)", csrfToken, len(csrfToken))
-	c.t.Logf("DEBUG: Form contains CSRF field: %v", strings.Contains(bodyStr, `name="gorilla.csrf.Token"`))
-	if len(bodyStr) > 500 {
-		c.t.Logf("DEBUG: Login form HTML snippet: %s", bodyStr[:500])
-	} else {
-		c.t.Logf("DEBUG: Login form HTML: %s", bodyStr)
+	if c.t != nil {
+		c.t.Logf("DEBUG: CSRF token extracted: %s (length: %d)", csrfToken, len(csrfToken))
+		c.t.Logf("DEBUG: Form contains CSRF field: %v", strings.Contains(bodyStr, `name="gorilla.csrf.Token"`))
+		if len(bodyStr) > 500 {
+			c.t.Logf("DEBUG: Login form HTML snippet: %s", bodyStr[:500])
+		} else {
+			c.t.Logf("DEBUG: Login form HTML: %s", bodyStr)
+		}
 	}
 
 	// Step 2: Submit login with CSRF token
@@ -319,9 +313,10 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 		formData.Set("gorilla.csrf.Token", csrfToken)
 	}
 
-	// Debug logging
-	c.t.Logf("DEBUG: Submitting login to: %s", loginURL)
-	c.t.Logf("DEBUG: Form data: %s", formData.Encode())
+	if c.t != nil {
+		c.t.Logf("DEBUG: Submitting login to: %s", loginURL)
+		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
+	}
 
 	req, err = http.NewRequestWithContext(ctx, "POST", loginURL, strings.NewReader(formData.Encode()))
 	if err != nil {
@@ -540,10 +535,35 @@ type OAuth2FlowResult struct {
 
 // CleanupOAuth2Client deletes the OAuth2 client from Hydra
 func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID string) error {
-	configuration := hydraclientgo.NewConfiguration()
-	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: c.HydraAdminURL}}
-	apiClient := hydraclientgo.NewAPIClient(configuration).OAuth2API
+	if clientID == "" {
+		return nil
+	}
 
-	_, err := apiClient.DeleteOAuth2Client(ctx, clientID).Execute()
-	return err
+	deleteURL := fmt.Sprintf("%s/admin/clients/%s", c.HydraAdminURL, clientID)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", deleteURL, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer util.CloseAndLogOnError(ctx, resp.Body)
+
+	return nil
+}
+
+// Cleanup performs general cleanup of OAuth2 test client resources
+func (c *OAuth2TestClient) Cleanup(ctx context.Context) {
+	// General cleanup - specific client cleanup should be done via CleanupOAuth2Client
+	for _, clientID := range c.clientIdList {
+		_ = c.CleanupOAuth2Client(ctx, clientID)
+	}
+
+}
+
+// SetAuthServiceURL sets the authentication service URL for testing
+func (c *OAuth2TestClient) SetAuthServiceURL(url string) {
+	c.AuthServiceURL = url
 }

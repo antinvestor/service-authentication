@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -18,6 +17,8 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
 )
+
+const DeviceSessionIDKey = "ses_id"
 
 type AuthServer struct {
 	sc           *securecookie.SecureCookie
@@ -37,6 +38,8 @@ func NewAuthServer(ctx context.Context, service *frame.Service,
 	authConfig *config.AuthenticationConfig,
 	profileCli *profilev1.ProfileClient,
 	partitionCli *partitionv1.PartitionClient) *AuthServer {
+
+	log := util.Log(ctx)
 
 	hashKey, err := hex.DecodeString(authConfig.SecureCookieHashKey)
 	if err != nil {
@@ -65,7 +68,7 @@ func NewAuthServer(ctx context.Context, service *frame.Service,
 	return h
 }
 
-// Getter methods for accessing dependencies
+// Service methods for accessing dependencies
 func (h *AuthServer) Service() *frame.Service {
 	return h.service
 }
@@ -106,15 +109,26 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 	}
 }
 
+// NotFoundEndpoint handles 404 Not Found responses
+func (h *AuthServer) NotFoundEndpoint(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	
+	return json.NewEncoder(w).Encode(&ErrorResponse{
+		Code:    http.StatusNotFound,
+		Message: "The requested resource was not found",
+	})
+}
+
 // deviceIDMiddleware to ensure secure cookie
 func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Try to get the existing cookie
-		cookie, err := r.Cookie("DevSessionID")
+		cookie, err := r.Cookie(DeviceSessionIDKey)
 		if err == nil {
 			// Decode and verify the cookie
 			var decodedValue string
-			if decodeErr := h.sc.Decode("DevSessionID", cookie.Value, &decodedValue); decodeErr == nil {
+			if decodeErr := h.sc.Decode(DeviceSessionIDKey, cookie.Value, &decodedValue); decodeErr == nil {
 				r = r.WithContext(utils.DeviceIDToContext(r.Context(), decodedValue))
 				next.ServeHTTP(w, r)
 				return
@@ -124,7 +138,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		newDeviceID := util.IDString()
 
 		// Encode and sign the cookie
-		encoded, encodeErr := h.sc.Encode("DevSessionID", newDeviceID)
+		encoded, encodeErr := h.sc.Encode(DeviceSessionIDKey, newDeviceID)
 		if encodeErr != nil {
 			http.Error(w, "Failed to encode cookie", http.StatusInternalServerError)
 			return
@@ -132,7 +146,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
 		// Set the secure, signed cookie
 		http.SetCookie(w, &http.Cookie{
-			Name:     "DevSessionID",
+			Name:     DeviceSessionIDKey,
 			Value:    encoded,
 			Path:     "/",
 			MaxAge:   473040000, // 15 years
@@ -151,11 +165,6 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 
 	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-		// Set up request context with required services
-		r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
-		r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
-		r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
-
 		log := h.service.Log(r.Context())
 
 		err := f(w, r)

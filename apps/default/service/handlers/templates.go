@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"html/template"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 // Template variables for all handlers
@@ -12,54 +15,96 @@ var (
 	loginTmpl       *template.Template
 	forgotTmpl      *template.Template
 	registerTmpl    *template.Template
+	templateDir     string
 )
 
+// findTemplateDirectory searches for a template directory in common locations
+func findTemplateDirectory() string {
+	// Define potential template directory paths to search
+	searchPaths := []string{
+		"tmpl",                                        // Alternative current directory
+		"apps/default/tmpl",                          // Alternative from project root
+		"../tmpl",                                    // Alternative parent directory
+		"../../tmpl",                                 // Alternative two levels up
+		"apps/default/service/handlers/tmpl",         // Alternative relative to handlers
+	}
+
+	for _, path := range searchPaths {
+		if _, err := os.Stat(path); err == nil {
+			// Check if it's actually a directory
+			if info, err := os.Stat(path); err == nil && info.IsDir() {
+				// Verify it contains at least one .html file
+				if hasHTMLFiles(path) {
+					absPath, err := filepath.Abs(path)
+					if err == nil {
+						log.Printf("Found template directory: %s", absPath)
+						return absPath
+					}
+				}
+			}
+		}
+	}
+
+	log.Printf("Warning: No template directory found in search paths")
+	return ""
+}
+
+// hasHTMLFiles checks if a directory contains any .html files
+func hasHTMLFiles(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".html" {
+			return true
+		}
+	}
+	return false
+}
+
+func loadTemplate(name string) *template.Template {
+	if templateDir == "" {
+		templateDir = findTemplateDirectory()
+		if templateDir == "" {
+			log.Fatalf("No template directory found for template %s", name)
+		}
+	}
+
+	templatePath := filepath.Join(templateDir, name+".html")
+	basePath := filepath.Join(templateDir, "auth_base.html")
+
+	// Check if the specific template file exists
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Fatalf("Template file not found: %s", templatePath)
+	}
+
+	// Load the template, including base template if it exists
+	var tmpl *template.Template
+	var err error
+
+	if _, err = os.Stat(basePath); err == nil {
+		// Load with base template
+		tmpl, err = template.ParseFiles(basePath, templatePath)
+	} else {
+		// Load standalone template
+		tmpl, err = template.ParseFiles(templatePath)
+	}
+
+	if err != nil {
+		log.Fatalf("Failed to load template %s: %v", name, err)
+	}
+
+	return tmpl
+}
+
 func init() {
-	// For testing purposes, create minimal templates to avoid file loading issues
-	errorTmpl = template.Must(template.New("error").Parse(`<html><body>Error: {{.errorTitle}}</body></html>`))
-	setPasswordTmpl = template.Must(template.New("setpassword").Parse(`<html><body>Set Password</body></html>`))
-	indexTmpl = template.Must(template.New("index").Parse(`<html><body>Index</body></html>`))
-	loginTmpl = template.Must(template.New("login").Parse(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        {{if .error}}
-            <div class="error">{{.error}}</div>
-        {{end}}
-        <form method="POST" action="/s/login/post">
-            {{.csrfField}}
-            <input type="hidden" name="login_challenge" value="{{.loginChallenge}}">
-            
-            <div class="form-group">
-                <label for="contact">Email:</label>
-                <input type="email" id="contact" name="contact" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            
-            <button type="submit">Login</button>
-        </form>
-    </div>
-    <style>
-        .container { max-width: 400px; margin: 50px auto; padding: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        button { width: 100%; padding: 10px; background: #007bff; colour: white; border: none; border-radius: 4px; cursor: pointer; }
-        .error { colour: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; border-radius: 4px; }
-    </style>
-</body>
-</html>`))
-	forgotTmpl = template.Must(template.New("forgot").Parse(`<html><body>Forgot Password</body></html>`))
-	registerTmpl = template.Must(template.New("register").Parse(`<html><body>Register</body></html>`))
+	// Load templates from found directory
+	errorTmpl = loadTemplate("error")
+	setPasswordTmpl = loadTemplate("set_password")
+	indexTmpl = loadTemplate("index")
+	loginTmpl = loadTemplate("login")
+	forgotTmpl = loadTemplate("forgot")
+	registerTmpl = loadTemplate("registration")
 }

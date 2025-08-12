@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -73,7 +74,13 @@ func main() {
 		Info(" Initiating server operations")
 	err = implementation.Service.Run(ctx, "")
 	if err != nil {
-		log.WithError(err).Fatal("could not run server")
+		log = log.WithError(err)
+
+		if errors.Is(err, context.Canceled) {
+			log.Error("server stopping")
+		} else {
+			log.Fatal("server stopping with error")
+		}
 	}
 }
 
