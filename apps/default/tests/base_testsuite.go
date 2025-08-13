@@ -7,17 +7,18 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	apis "github.com/antinvestor/apis/go/common"
+	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
-	handlers2 "github.com/gorilla/handlers"
-	hydraclientgo "github.com/ory/hydra-client-go/v2"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
@@ -29,6 +30,10 @@ type BaseTestSuite struct {
 	internaltests.BaseTestSuite
 
 	FreeAuthPort string
+}
+
+func (bs *BaseTestSuite) ServerUrl() string {
+	return fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
 }
 
 func initResources(_ context.Context, loginUrl string) []definition.TestResource {
@@ -44,9 +49,10 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 
 	// Add profile and partition service dependencies
 	profile := NewProfile(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 
-	resources := []definition.TestResource{pg, hydra, profile, partition}
+	resources := []definition.TestResource{pg, hydra, profile, device, partition}
 	return resources
 }
 
@@ -58,7 +64,7 @@ func (bs *BaseTestSuite) SetupSuite() {
 
 	bs.InitResourceFunc = func(ctx context.Context) []definition.TestResource {
 
-		freePort, _ :=  getFreePort(ctx)
+		freePort, _ := getFreePort(ctx)
 		bs.FreeAuthPort = strconv.Itoa(freePort)
 
 		loginUrl := fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
@@ -76,6 +82,7 @@ func (bs *BaseTestSuite) CreateService(
 	var databaseDR definition.DependancyConn
 	var hydraDR definition.DependancyConn
 	var profileDR definition.DependancyConn
+	var deviceDR definition.DependancyConn
 	var partitionDR definition.DependancyConn
 	for _, res := range bs.Resources() {
 		switch res.Name() {
@@ -83,6 +90,8 @@ func (bs *BaseTestSuite) CreateService(
 			databaseDR = res
 		case ProfileImage:
 			profileDR = res
+		case DeviceImage:
+			deviceDR = res
 		case PartitionImage:
 			partitionDR = res
 		case testoryhydra.OryHydraImage:
@@ -107,7 +116,6 @@ func (bs *BaseTestSuite) CreateService(
 
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
 
-
 	cfg, err := frame.ConfigLoadWithOIDC[config.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
@@ -115,15 +123,15 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.RunServiceSecurely = false
 	cfg.HTTPServerPort = bs.FreeAuthPort
 
-
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
 
 	cfg.PartitionServiceURI = partitionDR.GetDS(ctx).String()
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
+	cfg.DeviceServiceURI = deviceDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications"
+	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_device"
 	cfg.Oauth2JwtVerifyAudience = "authentication_tests"
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
@@ -134,8 +142,6 @@ func (bs *BaseTestSuite) CreateService(
 
 	err = svc.RegisterForJwt(ctx)
 	require.NoError(t, err)
-
-
 
 	partitionCli, err := partitionv1.NewPartitionsClient(ctx,
 		apis.WithEndpoint(cfg.PartitionServiceURI),
@@ -153,11 +159,17 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithAudiences("service_profile"))
 	require.NoError(t, err)
 
-	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, partitionCli)
+	deviceCli, err := devicev1.NewDeviceClient(ctx,
+		apis.WithEndpoint(cfg.DeviceServiceURI),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		apis.WithTokenUsername(svc.JwtClientID()),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithAudiences("service_device"))
+	require.NoError(t, err)
 
-	authServiceHandlers := handlers2.RecoveryHandler(
-		handlers2.PrintRecoveryStack(true))(
-		authServer.SetupRouterV1(ctx))
+	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli)
+
+	authServiceHandlers := authServer.SetupRouterV1(ctx)
 
 	defaultServer := frame.WithHTTPHandler(authServiceHandlers)
 	svc.Init(ctx, defaultServer)
@@ -166,31 +178,40 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	go func() {
-	_ = svc.Run(ctx, "")
+		_ = svc.Run(ctx, "")
 	}()
 	return authServer, ctx
 }
 
-func NewOauthClient(ctx context.Context, hydraAdminURL, serviceClientID, serviceClientSecret string, redirectUris []string) error {
+func NewPartForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]string) (*partitionv1.PartitionObject, error) {
 
-	configuration := hydraclientgo.NewConfiguration()
-	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: hydraAdminURL}}
-	apiClient := hydraclientgo.NewAPIClient(configuration).OAuth2API
-
-	oAuth2Client := hydraclientgo.NewOAuth2Client()
-	oAuth2Client.SetClientId(serviceClientID)
-	oAuth2Client.SetClientSecret(serviceClientSecret)
-	oAuth2Client.SetGrantTypes([]string{"client_credentials"})
-	oAuth2Client.SetScope("openid profile email")
-	oAuth2Client.SetTokenEndpointAuthMethod("client_secret_post")
-	oAuth2Client.SetRedirectUris(redirectUris)
-
-	_, _, clientErr := apiClient.CreateOAuth2Client(ctx).OAuth2Client(*oAuth2Client).Execute()
-	if clientErr != nil && !strings.Contains(clientErr.Error(), "already exists") {
-		return clientErr
+	partition, err := partitionCli.NewChildPartition(ctx, "c2f4j7au6s7f91uqnojg", "c2f4j7au6s7f91uqnokg", name, description, properties)
+	if err != nil {
+		return nil, err
 	}
-	return nil
 
+	// wait for partition to be synced
+	partition, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
+
+		partition, err = partitionCli.GetPartition(ctx, partition.GetId())
+		if err != nil {
+			return nil, nil
+		}
+
+		_, ok := partition.GetProperties()["client_id"]
+		if ok {
+			return partition, nil
+		}
+
+		return nil, nil
+
+	}, 2*time.Second, 200*time.Millisecond)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to synchronise partition in time: %w", err)
+	}
+
+	return partition, nil
 }
 
 func getFreePort(ctx context.Context) (int, error) {

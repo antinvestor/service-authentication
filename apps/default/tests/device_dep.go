@@ -13,28 +13,28 @@ import (
 )
 
 const (
-	ProfileImage = "ghcr.io/antinvestor/service-profile:latest"
+	DeviceImage = "ghcr.io/antinvestor/service-profile-devices:latest"
 )
 
-type dependency struct {
+type deviceDependency struct {
 	*definition.DefaultImpl
 }
 
-func NewProfile(containerOpts ...definition.ContainerOption) definition.TestResource {
+func NewDevice(containerOpts ...definition.ContainerOption) definition.TestResource {
 	opts := definition.ContainerOpts{
-		ImageName:      ProfileImage,
-		Ports:          []string{"50056/tcp", "8086/tcp"},
-		NetworkAliases: []string{"profile", "service-profile"},
+		ImageName:      DeviceImage,
+		Ports:          []string{"50055/tcp", "8085/tcp"},
+		NetworkAliases: []string{"device", "service-device"},
 		UseHostMode:    false,
 	}
 	opts.Setup(containerOpts...)
 
-	return &dependency{
+	return &deviceDependency{
 		DefaultImpl: definition.NewDefaultImpl(opts, ""),
 	}
 }
 
-func (d *dependency) migrateContainer(
+func (d *deviceDependency) migrateContainer(
 	ctx context.Context,
 	ntwk *testcontainers.DockerNetwork,
 	databaseURL string,
@@ -68,7 +68,7 @@ func (d *dependency) migrateContainer(
 	return nil
 }
 
-func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwork) error {
+func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwork) error {
 	if len(d.Opts().Dependencies) != 2 {
 		return errors.New("no Database/ Oauth2 Service dependencies was supplied")
 	}
@@ -103,17 +103,11 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
 			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
-			"CORS_ENABLED":                 "true",
-			"CORS_ALLOW_CREDENTIALS":       "true",
-			"CORS_ALLOWED_HEADERS":         "Authorization,Content-Type,Origin",
-			"CORS_ALLOWED_ORIGINS":         "*",
-			"CONTACT_ENCRYPTION_KEY":       "4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax",
-			"CONTACT_ENCRYPTION_SALT":      "geYobar79WDL",
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI.String(),
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin.String(),
-			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
+			"OAUTH2_SERVICE_CLIENT_SECRET": "hkBaJroO9cDGleFnuaAZ",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_partition",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_profile",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_device",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},
 		WaitingFor: wait.ForLog("Initiating server operations"),

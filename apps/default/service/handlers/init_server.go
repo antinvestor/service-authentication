@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
@@ -18,13 +19,14 @@ import (
 	"github.com/pitabwire/util"
 )
 
-const DeviceSessionIDKey = "ses_id"
+const DeviceSessionIDKey = "dev_ses_id"
 
 type AuthServer struct {
 	sc           *securecookie.SecureCookie
 	service      *frame.Service
 	config       *config.AuthenticationConfig
 	profileCli   *profilev1.ProfileClient
+	deviceCli    *devicev1.DeviceClient
 	partitionCli *partitionv1.PartitionClient
 
 	// Repository dependencies
@@ -34,10 +36,7 @@ type AuthServer struct {
 	sessionRepo    repository.SessionRepository
 }
 
-func NewAuthServer(ctx context.Context, service *frame.Service,
-	authConfig *config.AuthenticationConfig,
-	profileCli *profilev1.ProfileClient,
-	partitionCli *partitionv1.PartitionClient) *AuthServer {
+func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient) *AuthServer {
 
 	log := util.Log(ctx)
 
@@ -55,6 +54,7 @@ func NewAuthServer(ctx context.Context, service *frame.Service,
 		service:      service,
 		config:       authConfig,
 		profileCli:   profileCli,
+		deviceCli:    deviceCli,
 		partitionCli: partitionCli,
 		sc:           securecookie.New(hashKey, blockKey),
 
@@ -79,6 +79,10 @@ func (h *AuthServer) Config() *config.AuthenticationConfig {
 
 func (h *AuthServer) ProfileCli() *profilev1.ProfileClient {
 	return h.profileCli
+}
+
+func (h *AuthServer) DeviceCli() *devicev1.DeviceClient {
+	return h.deviceCli
 }
 
 func (h *AuthServer) PartitionCli() *partitionv1.PartitionClient {
@@ -113,7 +117,7 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 func (h *AuthServer) NotFoundEndpoint(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	
+
 	return json.NewEncoder(w).Encode(&ErrorResponse{
 		Code:    http.StatusNotFound,
 		Message: "The requested resource was not found",
@@ -122,23 +126,45 @@ func (h *AuthServer) NotFoundEndpoint(w http.ResponseWriter, r *http.Request) er
 
 // deviceIDMiddleware to ensure secure cookie
 func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
+
+	performDeviceLog := func(ctx context.Context, r *http.Request, deviceSessID string) {
+		ipAddr := util.GetIP(r)
+		userAgent := r.UserAgent()
+
+		req := devicev1.LogRequest{
+
+			LinkId:    deviceSessID,
+			Ip:        ipAddr,
+			UserAgent: userAgent,
+			LastSeen:  time.Now().String(),
+			Extras:    map[string]string{"refer": r.Referer()},
+		}
+		_, err := h.DeviceCli().Svc().Log(ctx, &req)
+		if err != nil {
+			util.Log(ctx).WithField("device_session_id", deviceSessID).WithError(err).Info("device session log error")
+		}
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		// Try to get the existing cookie
 		cookie, err := r.Cookie(DeviceSessionIDKey)
 		if err == nil {
 			// Decode and verify the cookie
 			var decodedValue string
 			if decodeErr := h.sc.Decode(DeviceSessionIDKey, cookie.Value, &decodedValue); decodeErr == nil {
-				r = r.WithContext(utils.DeviceIDToContext(r.Context(), decodedValue))
+				ctx = utils.DeviceIDToContext(ctx, decodedValue)
+				r = r.WithContext(ctx)
+				defer performDeviceLog(ctx, r, decodedValue)
 				next.ServeHTTP(w, r)
 				return
 			}
 		}
 
-		newDeviceID := util.IDString()
+		newDeviceSessID := util.IDString()
 
 		// Encode and sign the cookie
-		encoded, encodeErr := h.sc.Encode(DeviceSessionIDKey, newDeviceID)
+		encoded, encodeErr := h.sc.Encode(DeviceSessionIDKey, newDeviceSessID)
 		if encodeErr != nil {
 			http.Error(w, "Failed to encode cookie", http.StatusInternalServerError)
 			return
@@ -155,7 +181,9 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 			Expires:  time.Now().Add(473040000 * time.Second),
 		})
-		r = r.WithContext(utils.DeviceIDToContext(r.Context(), newDeviceID))
+		r = r.WithContext(utils.DeviceIDToContext(r.Context(), newDeviceSessID))
+
+		defer performDeviceLog(ctx, r, newDeviceSessID)
 		// Continue to the next handler
 		next.ServeHTTP(w, r)
 	})

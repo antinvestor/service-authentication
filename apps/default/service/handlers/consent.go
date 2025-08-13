@@ -1,15 +1,10 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
-	"github.com/antinvestor/service-authentication/apps/default/config"
+	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 )
@@ -34,10 +29,10 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
-	deviceId := utils.DeviceIDFromContext(ctx)
+	deviceSessionID := utils.DeviceIDFromContext(ctx)
 
-	deviceLinkId, err := processDeviceIdLink(ctx, h.config, deviceId, getConseReq.GetSubject())
-	if err != nil {
+	deviceObj, err := h.processDeviceSession(ctx, deviceSessionID, getConseReq.GetSubject())
+	if err != nil && deviceObj == nil {
 		logger.WithError(err).Error("could not process device id link")
 		return err
 	}
@@ -55,8 +50,8 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		"tenant_id":       partitionObj.GetTenantId(),
 		"partition_id":    partitionObj.GetId(),
 		"roles":           []string{"user"},
-		"device_id":       deviceId,
-		"device_link_id":  deviceLinkId,
+		"device_id":       deviceObj.GetId(),
+		"device_link_id":  deviceObj.GetSessionId(),
 		"profile_id":      getConseReq.GetSubject(),
 		"profile_contact": getConseReq.GetSubject(),
 	}
@@ -94,56 +89,42 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-func processDeviceIdLink(_ context.Context, cfg *config.AuthenticationConfig, deviceLinkId string, profileId string) (string, error) {
+func (h *AuthServer) processDeviceSession(ctx context.Context, deviceSessionId string, profileId string) (*devicev1.DeviceObject, error) {
 
-	profileUrl := "https://profile.chamamobile.com/_public/device/link"
-	profileUrlTokens := strings.Split(cfg.ProfileServiceURI, ":")
-	if len(profileUrlTokens) == 2 {
-		profileUrl = fmt.Sprintf("http://%s/_public/device/link", profileUrlTokens[0])
-	}
+	deviceCli := h.DeviceCli()
 
-	payload := map[string]interface{}{
-		"link_id":    deviceLinkId,
-		"profile_id": profileId,
-	}
-
-	// Marshal the payload to JSON
-	jsonData, err := json.Marshal(payload)
+	var deviceObj *devicev1.DeviceObject
+	session, err := deviceCli.Svc().GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionId})
 	if err != nil {
-		return "", err
-	}
 
-	// Make the POST request
-	resp, err := http.Post(profileUrl, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			err = closeErr
+		resp, err0 := deviceCli.Svc().Create(ctx, &devicev1.CreateRequest{
+			Name:       "Error dev",
+			Properties: map[string]string{"source": "consent"},
+		})
+		if err0 != nil {
+			return nil, err0
 		}
-	}()
+		deviceObj = resp.GetData()
 
-	// Check the status code
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf(" failed to get device id, status : [ %d ]  message : %s ", resp.StatusCode, resp.Status)
+	} else {
+		deviceObj = session.GetData()
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	if deviceObj.GetProfileId() == profileId {
+		return deviceObj, nil
+	}
+
+	resp, err := deviceCli.Svc().Link(ctx, &devicev1.LinkRequest{
+		Id:         deviceSessionId,
+		ProfileId:  profileId,
+		Properties: map[string]string{"source": "consent"},
+	})
 	if err != nil {
-		return "", err
+		return deviceObj, err
 	}
 
-	var responseMap map[string]any
-	if err = json.Unmarshal(body, &responseMap); err != nil {
-		return "", err
-	}
+	deviceObj = resp.GetData()
 
-	deviceId, ok := responseMap["id"]
-	if !ok {
-		deviceId = responseMap["ID"]
-	}
-
-	return deviceId.(string), nil
+	return deviceObj, nil
 
 }

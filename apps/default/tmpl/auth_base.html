@@ -108,18 +108,5 @@
 <div class="container">
     {{template "content" .}}
 </div>
-
-<script>
-        import('https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.umd.js')
-            .then(() => ThumbmarkJS.getFingerprintData())
-            .then(fp => {
-                navigator.sendBeacon("https://profile.chamamobile.com/_public/device/log", JSON.stringify({
-                    data: fp,
-                    link_id: {{ .DeviceID }},
-                }));
-            });
-
-</script>
-
 </body>
 </html>

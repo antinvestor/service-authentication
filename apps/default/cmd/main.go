@@ -7,6 +7,7 @@ import (
 	apis "github.com/antinvestor/apis/go/common"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
+	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
@@ -42,6 +43,7 @@ func main() {
 	}
 
 	var profileCli *profilev1.ProfileClient
+	var deviceCli *devicev1.DeviceClient
 	var partitionCli *partitionv1.PartitionClient
 
 	audienceList := make([]string, 0)
@@ -50,6 +52,16 @@ func main() {
 	}
 	profileCli, err = profilev1.NewProfileClient(ctx,
 		apis.WithEndpoint(cfg.ProfileServiceURI),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		apis.WithTokenUsername(svc.JwtClientID()),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithAudiences(audienceList...))
+	if err != nil {
+		log.Printf("main -- Could not setup profile service : %v", err)
+	}
+
+	deviceCli, err = devicev1.NewDeviceClient(ctx,
+		apis.WithEndpoint(cfg.DeviceServiceURI),
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
@@ -72,7 +84,7 @@ func main() {
 	serviceTranslations := frame.WithTranslations("/localization", "en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
-	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, partitionCli)
+	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli)
 
 	authServiceHandlers := handlers.RecoveryHandler(
 		handlers.PrintRecoveryStack(true))(
