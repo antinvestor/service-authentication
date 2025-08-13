@@ -24,23 +24,10 @@ var handlerTestMutex sync.Mutex
 
 // Test timeout constants
 const (
-	HandlerTestTimeout      = 60 * time.Second  // Overall test timeout
-	HandlerOperationTimeout = 15 * time.Second  // Individual operation timeout
-	HandlerCleanupTimeout   = 5 * time.Second   // Cleanup operation timeout
+	HandlerTestTimeout      = 60 * time.Second // Overall test timeout
+	HandlerOperationTimeout = 15 * time.Second // Individual operation timeout
+	HandlerCleanupTimeout   = 5 * time.Second  // Cleanup operation timeout
 )
-
-// Define the apiKey struct locally for testing since it's not exported
-type apiKey struct {
-	ID       string            `json:"id"`
-	Name     string            `json:"name"`
-	ClientID string            `json:"clientId"`
-	Scope    string            `json:"scope"`
-	Audience []string          `json:"audience"`
-	Metadata map[string]string `json:"metadata"`
-
-	Key       string `json:"apiKey"`
-	KeySecret string `json:"apiKeySecret"`
-}
 
 type HandlersTestSuite struct {
 	tests.BaseTestSuite
@@ -102,7 +89,7 @@ func (suite *HandlersTestSuite) TestIndexEndpoint() {
 				// Test GET request to index endpoint
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -180,7 +167,7 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 				// Test GET request to error endpoint
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -509,7 +496,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 			Timeout: HandlerOperationTimeout,
 		}
 
-		// Test unauthorized access to API key endpoint (no JWT token)
+		// Test unauthorised access to API key endpoint (no JWT token)
 		// This should return 500 as established in previous tests
 		req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+"/api/key", nil)
 		require.NoError(t, err)
@@ -518,7 +505,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error for unauthorized access)
+		// Verify response (should be 500 Internal Server Error for unauthorised access)
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
 		// Verify service is working

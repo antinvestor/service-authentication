@@ -2,10 +2,7 @@
 
 {{define "content"}}
 
-
-<h1>Login </h1>
 <form method="post" action="/s/login/post">
-
     {{ .csrfField }}
     <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
 
@@ -13,33 +10,28 @@
     <div class="message error">{{ .error }}</div>
     {{end}}
 
-    <label>
-        <input type="text" name="contact" placeholder="email or phonenumber" class="field"/>
-    </label>
+    <fieldset>
+        <label>
+            Email or Phone Number
+            <input type="text" name="contact" placeholder="Enter your email or phone number" required>
+        </label>
 
-    <label>
-        <input type="password" name="password" placeholder="password" class="field"/>
-    </label>
+        <label>
+            Password
+            <input type="password" name="password" placeholder="Enter your password" required>
+        </label>
+    </fieldset>
 
-    <br/>
-    <input class="btn" type="submit" value="Login"/>
-
-
+    <div class="form-actions">
+        <button type="submit" class="contrast">Login</button>
+    </div>
 </form>
 
-
-<div class="pass-link">
-    <a class="is-outlined" href="/s/forgot">
-        Forgot password
-    </a>
-</div>
-
-<br/>
-<hr/>
-<br/>
-<div class="pass-link">
-    Not registered already? <a href="/s/register?login_challenge={{ .loginChallenge }}">signup</a>
+<div class="text-center mt-3">
+    <p><small>
+        <a href="/s/forgot">Forgot your password?</a> • 
+        <a href="/s/register?login_challenge={{ .loginChallenge }}">Create an account</a>
+    </small></p>
 </div>
 
 {{end}}
-

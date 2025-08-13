@@ -27,9 +27,9 @@ var testMutex sync.Mutex
 
 // Test timeout constants
 const (
-	TestTimeout          = 60 * time.Second  // Overall test timeout
-	OperationTimeout     = 15 * time.Second  // Individual operation timeout
-	CleanupTimeout       = 5 * time.Second   // Cleanup operation timeout
+	TestTimeout      = 60 * time.Second // Overall test timeout
+	OperationTimeout = 15 * time.Second // Individual operation timeout
+	CleanupTimeout   = 5 * time.Second  // Cleanup operation timeout
 )
 
 // LoginTestSuite provides a dedicated test suite for login functionality
@@ -55,10 +55,10 @@ type LoginTestContext struct {
 func (suite *LoginTestSuite) SetupLoginTest(t *testing.T, dep *definition.DependancyOption) *LoginTestContext {
 	// Acquire mutex to ensure sequential execution with timeout protection
 	testMutex.Lock()
-	
+
 	// Create timeout context for the entire test
 	ctx, cancel := context.WithTimeout(context.Background(), TestTimeout)
-	
+
 	authServer, baseCtx := suite.CreateService(t, dep)
 
 	// Create OAuth2 test client with timeout context
@@ -192,7 +192,7 @@ func (suite *LoginTestSuite) TestLoginWithValidCredentials() {
 					// Handle consent flow with timeout
 					consentCtx, consentCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
 					defer consentCancel()
-					
+
 					consentResult, err0 := testCtx.OAuth2Client.PerformConsent(consentCtx, loginResult.ConsentChallenge)
 					require.NoError(t, err0)
 					assert.True(t, consentResult.Success, "Consent should succeed")
@@ -206,7 +206,7 @@ func (suite *LoginTestSuite) TestLoginWithValidCredentials() {
 				// Exchange authorization code for access token with timeout
 				tokenCtx, tokenCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
 				defer tokenCancel()
-				
+
 				tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(tokenCtx, oauth2Client, authorizationCode)
 				require.NoError(t, err)
 				assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
@@ -394,12 +394,12 @@ func (suite *LoginTestSuite) TestLoginMultipleFailedAttempts() {
 
 				// Perform multiple failed login attempts
 				for i := 0; i < tc.failedAttempts; i++ {
-					loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
-					require.NoError(t, err)
+					challenge, loginErr := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
+					require.NoError(t, loginErr)
 
-					loginResult, _, err := testCtx.OAuth2Client.PerformLoginWithErrorCapture(opCtx, loginChallenge, tc.email, tc.wrongPassword)
-					require.NoError(t, err)
-					assert.False(t, loginResult.Success, fmt.Sprintf("Attempt %d should fail with wrong password", i+1))
+					result, _, loginErr := testCtx.OAuth2Client.PerformLoginWithErrorCapture(opCtx, challenge, tc.email, tc.wrongPassword)
+					require.NoError(t, loginErr)
+					assert.False(t, result.Success, fmt.Sprintf("Attempt %d should fail with wrong password", i+1))
 				}
 
 				// Now perform successful login

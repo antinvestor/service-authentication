@@ -83,6 +83,9 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		} else {
 			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx)
 			hydraPort, err = dep.PortMapping(ctx, "4444")
+			if err != nil {
+				return err
+			}
 		}
 	}
 

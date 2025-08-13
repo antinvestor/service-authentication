@@ -1,24 +1,31 @@
 
-{{ define "title"}}Forgot password{{ end }}
+{{ define "title"}}Forgot Password{{ end }}
 
 {{define "content"}}
 
-        <br/>
-        <h1>Forgot </h1>
+<form method="post">
+    {{ .csrfField }}
 
-        <br/>
+    {{if .error}}
+    <div class="message error">{{ .error }}</div>
+    {{end}}
 
-        <form method="post">
-            {{ .csrfField }}
+    <fieldset>
+        <label>
+            Email or Phone Number
+            <input type="text" name="contact" placeholder="Enter your email or phone number" required>
+        </label>
+    </fieldset>
 
-                <label>
-                    <input class="field" type="text" name="contact" placeholder="email or phonenumber"/>
-                </label>
+    <div class="form-actions">
+        <button type="submit" class="contrast">Send Reset Code</button>
+    </div>
+</form>
 
-
-            <input class="btn" type="submit" value="Get reset code" />
-
-        </form>
-
+<div class="text-center mt-3">
+    <p><small>
+        Remember your password? <a href="/s/login">Sign in</a>
+    </small></p>
+</div>
 
 {{end}}

@@ -58,9 +58,9 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 					h.service.Log(r.Context()).WithField("handler", name).Info("DEBUG: About to call handler function")
 				}
 
-				err := f(w, r)
-				if err != nil {
-					h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+				handlerErr := f(w, r)
+				if handlerErr != nil {
+					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
 			})
 
@@ -99,11 +99,11 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				err = f(w, r)
-				if err != nil {
+				handlerErr := f(w, r)
+				if handlerErr != nil {
 					log := h.service.Log(r.Context())
-					log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
-					h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+					log.WithError(handlerErr).WithField("path", path).WithField("name", name).Error("handler error")
+					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
 			})
 
@@ -119,14 +119,4 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	authHandler(h.GetAPIKeyEndpoint, "/api/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	return router
-}
-
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
 }

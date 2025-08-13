@@ -1,114 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="auto">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ template "title" .}}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-
+    
     <style>
-        * {
-            box-sizing: border-box;
+        /* Custom styles that complement Pico CSS */
+        main {
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
         }
-
-        body {
-            background-color: #ffffff;
-            font-family: "Arial", sans-serif;
-            padding: 50px;
-        }
-
-        .container {
-            margin: 20px auto;
-            padding: 10px;
-            width: 300px;
-            background-color: #dedede;
-            border-radius: 5px;
-        }
-
-        h1 {
-            width: 70%;
-            color: #777;
-            font-size: 32px;
-            margin: 28px auto;
-            margin-bottom: 20px;
+        
+        .logo {
             text-align: center;
-            /*padding-top: 40px;*/
+            margin-bottom: 2rem;
         }
-
-        form {
-            /*padding: 15px;*/
-            text-align: center;
-        }
-
-        input {
-            padding: 12px 0;
-            margin-bottom: 10px;
-            border-radius: 3px;
-            border: 2px solid transparent;
-            text-align: center;
-            width: 90%;
-            font-size: 16px;
-            transition: border .2s, background-color .2s;
-        }
-
-        form .field {
-            background-color: #ECF0F1;
-        }
-
-        form .btn {
-            background-color: #2f2f2f;
-            color: #fff;
-            line-height: 25px;
-            cursor: pointer;
-        }
-
-        form .btn:hover,
-        form .btn:active {
-            background-color: #060606;
-            border: 2px solid #060606;
-        }
-
-        input[type=checkbox] {
-            height: 0.95em;
-            width: 0.95em;
-        }
-
-        label input[type=checkbox] {
-            vertical-align: top;
-        }
-
-        label {
-            color: #777;
-        }
-
-        .pass-link {
-            text-align: center;
-        }
-
-        .pass-link a:link,
-        .pass-link a:visited {
-            color: #777;
-        }
-
+        
         .message {
-            padding: 10px;
-            margin: 10px;
-            color: #333;
-            background: #fafafa;
-            border: 1px solid #ccc;
+            padding: var(--pico-spacing);
+            margin-bottom: var(--pico-spacing);
+            border-radius: var(--pico-border-radius);
+            border: 1px solid var(--pico-muted-border-color);
+            background-color: var(--pico-background-color);
         }
-
+        
         .error {
-            color: #ba3939;
-            background: #ffe0e0;
-            border: 1px solid #a33a3a;
+            color: var(--pico-del-color);
+            background-color: var(--pico-del-background-color);
+            border-color: var(--pico-del-color);
+        }
+        
+        .success {
+            color: var(--pico-ins-color);
+            background-color: var(--pico-ins-background-color);
+            border-color: var(--pico-ins-color);
+        }
+        
+        .form-actions {
+            margin-top: 1.5rem;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-3 {
+            margin-top: 1.5rem;
+        }
+        
+        /* Ensure proper spacing for form elements */
+        form > * + * {
+            margin-top: var(--pico-spacing);
         }
     </style>
-
 </head>
 <body>
-<div class="container">
-    {{template "content" .}}
-</div>
+    <main class="container">
+        <div class="logo">
+            <h1>{{ template "title" .}}</h1>
+        </div>
+        {{template "content" .}}
+    </main>
 </body>
 </html>

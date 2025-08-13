@@ -2,20 +2,35 @@
 
 {{define "content"}}
 
-<div class="form-style-8">
-    <h1>Authorize</h1>
-    <form method="post">
+<form method="post">
+    {{ .csrfField }}
 
-        <p>
-            By logging in, you consent to grant these scopes:
-        <ul>
-        {{range .Scopes}} <li class="field"><label><input type="checkbox" name="scopes" value="{{.}}">{{.}}</label></li> {{end}}
-        </ul>
-        </p>
+    {{if .error}}
+    <div class="message error">{{ .error }}</div>
+    {{end}}
 
-        <input class="btn" type="submit" value="Consent">
+    <fieldset>
+        <legend>Application Authorization</legend>
+        <p>By continuing, you consent to grant the following permissions:</p>
+        
+        {{if .Scopes}}
+        <div class="grid">
+            {{range .Scopes}}
+            <label>
+                <input type="checkbox" name="scopes" value="{{.}}" checked>
+                {{.}}
+            </label>
+            {{end}}
+        </div>
+        {{else}}
+        <p><small>No specific scopes requested.</small></p>
+        {{end}}
+    </fieldset>
 
-    </form>
-</div>
+    <div class="form-actions">
+        <button type="submit" class="contrast">Grant Access</button>
+        <button type="button" onclick="window.history.back()" class="secondary outline">Cancel</button>
+    </div>
+</form>
 
 {{end}}

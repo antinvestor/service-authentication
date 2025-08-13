@@ -22,11 +22,11 @@ var (
 func findTemplateDirectory() string {
 	// Define potential template directory paths to search
 	searchPaths := []string{
-		"tmpl",                                        // Alternative current directory
-		"apps/default/tmpl",                          // Alternative from project root
-		"../tmpl",                                    // Alternative parent directory
-		"../../tmpl",                                 // Alternative two levels up
-		"apps/default/service/handlers/tmpl",         // Alternative relative to handlers
+		"tmpl",                               // Alternative current directory
+		"apps/default/tmpl",                  // Alternative from project root
+		"../tmpl",                            // Alternative parent directory
+		"../../tmpl",                         // Alternative two levels up
+		"apps/default/service/handlers/tmpl", // Alternative relative to handlers
 	}
 
 	for _, path := range searchPaths {

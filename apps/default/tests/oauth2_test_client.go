@@ -74,9 +74,8 @@ type OAuth2Client struct {
 	Scope        string
 }
 
-
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
-	
+
 }
 
 // CreateOAuth2Client creates a test OAuth2 client in Hydra
@@ -191,6 +190,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 }
 
 // PerformLogin performs the login process with the given credentials and login challenge
+// nolint:gocyclo,nolintlint //This is a test method no need to overthink
 func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, email, password string) (*LoginResult, error) {
 	// Step 1: Get the login form to extract CSRF token
 	loginFormURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, loginChallenge)
@@ -271,12 +271,6 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 				c.t.Logf("DEBUG: Login POST redirected to: %s", location)
 			}
 
-			// Parse the redirect URL to understand what Hydra wants us to do
-			parsedURL, err := url.Parse(location)
-			if err != nil {
-				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
-			}
-
 			// Check if this is a redirect back to Hydra for consent or authorization
 			if c.t != nil {
 				c.t.Logf("DEBUG: Checking if redirect is to Hydra - HydraPublicURL: %s", c.HydraPublicURL)
@@ -315,7 +309,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 				// This means the login was successful and Hydra is continuing the OAuth2 flow
 				// We should follow this redirect with the same HTTP client to maintain session
 
-				// IMPORTANT: Normalize the redirect URL to use the same hostname as HydraPublicURL
+				// IMPORTANT: Normalise the redirect URL to use the same hostname as HydraPublicURL
 				// to ensure cookies are preserved (localhost vs 127.0.0.1 mismatch)
 				normalizedLocation := location
 				if redirectURL.Hostname() != hydraURL.Hostname() {
@@ -323,7 +317,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 					redirectURL.Host = hydraURL.Host
 					normalizedLocation = redirectURL.String()
 					if c.t != nil {
-						c.t.Logf("DEBUG: Normalized redirect URL from %s to %s for cookie preservation", location, normalizedLocation)
+						c.t.Logf("DEBUG: Normalised redirect URL from %s to %s for cookie preservation", location, normalizedLocation)
 					}
 				}
 
@@ -338,7 +332,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 				// Log cookies being sent with redirect request
 				if c.t != nil {
 					if jar, ok := c.Client.Jar.(*cookiejar.Jar); ok {
-						if normalizedURL, err := url.Parse(normalizedLocation); err == nil {
+						if normalizedURL, parseErr := url.Parse(normalizedLocation); parseErr == nil {
 							cookies := jar.Cookies(normalizedURL)
 							c.t.Logf("DEBUG: Cookies being sent with redirect request to %s: %v", normalizedLocation, cookies)
 						}
@@ -352,7 +346,13 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 					}
 					return result, fmt.Errorf("failed to follow redirect: %w", err)
 				}
-				defer util.CloseAndLogOnError(ctx, redirectResp.Body)
+				defer func() {
+					if err := redirectResp.Body.Close(); err != nil {
+						if c.t != nil {
+							c.t.Logf("DEBUG: Failed to close response body: %v", err)
+						}
+					}
+				}()
 
 				if c.t != nil {
 					c.t.Logf("DEBUG: Redirect response status: %d", redirectResp.StatusCode)
@@ -430,9 +430,9 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 					if strings.Contains(bodyStr, "consent_challenge") {
 						// Extract consent challenge from the form or URL
 						if strings.Contains(location, "consent_challenge") {
-							parsedURL, err := url.Parse(location)
+							consentURL, err := url.Parse(location)
 							if err == nil {
-								result.ConsentChallenge = parsedURL.Query().Get("consent_challenge")
+								result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
 								result.Success = true
 								result.Location = location
 								if c.t != nil {
@@ -449,13 +449,19 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 			} else {
 				// Direct redirect to client (skip consent)
 				if strings.Contains(location, "consent_challenge") {
-					result.ConsentChallenge = parsedURL.Query().Get("consent_challenge")
-					result.Success = true
-					result.Location = location
+					consentURL, err := url.Parse(location)
+					if err == nil {
+						result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
+						result.Success = true
+						result.Location = location
+					}
 				} else if strings.Contains(location, "code=") {
-					result.AuthorizationCode = parsedURL.Query().Get("code")
-					result.Success = true
-					result.Location = location
+					codeURL, err := url.Parse(location)
+					if err == nil {
+						result.AuthorizationCode = codeURL.Query().Get("code")
+						result.Success = true
+						result.Location = location
+					}
 				}
 			}
 
@@ -467,6 +473,7 @@ func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, ema
 }
 
 // PerformLoginWithErrorCapture performs login and captures detailed error information
+// nolint:gocyclo,nolintlint //This is a test function no need to overthink
 func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, loginChallenge, email, password string) (*LoginResult, string, error) {
 	// Step 1: Get the login form to extract CSRF token
 	loginFormURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, loginChallenge)
@@ -571,12 +578,6 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 				c.t.Logf("DEBUG: Login POST redirected to: %s", location)
 			}
 
-			// Parse the redirect URL to understand what Hydra wants us to do
-			parsedURL, err := url.Parse(location)
-			if err != nil {
-				return result, responseBody, fmt.Errorf("failed to parse redirect URL: %w", err)
-			}
-
 			// Check if this is a redirect back to Hydra for consent or authorization
 			if c.t != nil {
 				c.t.Logf("DEBUG: Checking if redirect is to Hydra - HydraPublicURL: %s", c.HydraPublicURL)
@@ -615,7 +616,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 				// This means the login was successful and Hydra is continuing the OAuth2 flow
 				// We should follow this redirect with the same HTTP client to maintain session
 
-				// IMPORTANT: Normalize the redirect URL to use the same hostname as HydraPublicURL
+				// IMPORTANT: Normalise the redirect URL to use the same hostname as HydraPublicURL
 				// to ensure cookies are preserved (localhost vs 127.0.0.1 mismatch)
 				normalizedLocation := location
 				if redirectURL.Hostname() != hydraURL.Hostname() {
@@ -623,7 +624,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 					redirectURL.Host = hydraURL.Host
 					normalizedLocation = redirectURL.String()
 					if c.t != nil {
-						c.t.Logf("DEBUG: Normalized redirect URL from %s to %s for cookie preservation", location, normalizedLocation)
+						c.t.Logf("DEBUG: Normalised redirect URL from %s to %s for cookie preservation", location, normalizedLocation)
 					}
 				}
 
@@ -635,7 +636,7 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 				// Log cookies being sent with redirect request
 				if c.t != nil {
 					if jar, ok := c.Client.Jar.(*cookiejar.Jar); ok {
-						if normalizedURL, err := url.Parse(normalizedLocation); err == nil {
+						if normalizedURL, parseErr := url.Parse(normalizedLocation); parseErr == nil {
 							cookies := jar.Cookies(normalizedURL)
 							c.t.Logf("DEBUG: Cookies being sent with redirect request to %s: %v", normalizedLocation, cookies)
 						}
@@ -649,7 +650,13 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 					}
 					return result, responseBody, fmt.Errorf("failed to follow redirect: %w", err)
 				}
-				defer util.CloseAndLogOnError(ctx, redirectResp.Body)
+				defer func() {
+					if err := redirectResp.Body.Close(); err != nil {
+						if c.t != nil {
+							c.t.Logf("DEBUG: Failed to close response body: %v", err)
+						}
+					}
+				}()
 
 				if c.t != nil {
 					c.t.Logf("DEBUG: Redirect response status: %d", redirectResp.StatusCode)
@@ -727,9 +734,9 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 					if strings.Contains(bodyStr, "consent_challenge") {
 						// Extract consent challenge from the form or URL
 						if strings.Contains(location, "consent_challenge") {
-							parsedURL, err := url.Parse(location)
+							consentURL, err := url.Parse(location)
 							if err == nil {
-								result.ConsentChallenge = parsedURL.Query().Get("consent_challenge")
+								result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
 								result.Success = true
 								result.Location = location
 								if c.t != nil {
@@ -746,13 +753,19 @@ func (c *OAuth2TestClient) PerformLoginWithErrorCapture(ctx context.Context, log
 			} else {
 				// Direct redirect to client (skip consent)
 				if strings.Contains(location, "consent_challenge") {
-					result.ConsentChallenge = parsedURL.Query().Get("consent_challenge")
-					result.Success = true
-					result.Location = location
+					consentURL, err := url.Parse(location)
+					if err == nil {
+						result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
+						result.Success = true
+						result.Location = location
+					}
 				} else if strings.Contains(location, "code=") {
-					result.AuthorizationCode = parsedURL.Query().Get("code")
-					result.Success = true
-					result.Location = location
+					codeURL, err := url.Parse(location)
+					if err == nil {
+						result.AuthorizationCode = codeURL.Query().Get("code")
+						result.Success = true
+						result.Location = location
+					}
 				}
 			}
 
@@ -791,7 +804,7 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 		if c.t != nil {
 			c.t.Logf("DEBUG: Consent redirect status: %d, location: %s", resp.StatusCode, location)
 		}
-		
+
 		if location != "" {
 			// Follow the redirect to the OAuth2 server to complete the flow
 			// This allows the OAuth2 server to handle the authorization code generation
@@ -807,7 +820,13 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 			if err != nil {
 				return result, fmt.Errorf("failed to follow consent redirect: %w", err)
 			}
-			defer redirectResp.Body.Close()
+			defer func() {
+				if err := redirectResp.Body.Close(); err != nil {
+					if c.t != nil {
+						c.t.Logf("DEBUG: Failed to close response body: %v", err)
+					}
+				}
+			}()
 
 			if c.t != nil {
 				c.t.Logf("DEBUG: Redirect response status: %d", redirectResp.StatusCode)

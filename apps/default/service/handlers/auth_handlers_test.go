@@ -24,9 +24,9 @@ var authHandlerTestMutex sync.Mutex
 
 // Test timeout constants
 const (
-	AuthHandlerTestTimeout      = 60 * time.Second  // Overall test timeout
-	AuthHandlerOperationTimeout = 15 * time.Second  // Individual operation timeout
-	AuthHandlerCleanupTimeout   = 5 * time.Second   // Cleanup operation timeout
+	AuthHandlerTestTimeout      = 60 * time.Second // Overall test timeout
+	AuthHandlerOperationTimeout = 15 * time.Second // Individual operation timeout
+	AuthHandlerCleanupTimeout   = 5 * time.Second  // Cleanup operation timeout
 )
 
 type AuthHandlersTestSuite struct {
@@ -41,9 +41,9 @@ func TestAuthHandlersTestSuite(t *testing.T) {
 func (suite *AuthHandlersTestSuite) TestShowRegisterEndpoint() {
 	// Test cases
 	testCases := []struct {
-		name           string
-		endpoint       string
-		shouldError    bool
+		name        string
+		endpoint    string
+		shouldError bool
 	}{
 		{
 			name:        "ShowRegisterPage",
@@ -90,7 +90,7 @@ func (suite *AuthHandlersTestSuite) TestShowRegisterEndpoint() {
 				// Test GET request to register endpoint
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -242,7 +242,7 @@ func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 				// Test GET request to consent endpoint with challenge parameter
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint+"?consent_challenge=test", nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -267,7 +267,7 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 			name:           "ShowLogoutPage",
 			endpoint:       "/s/logout",
 			expectedStatus: http.StatusInternalServerError, // Expect error due to missing/invalid logout_challenge
-			expectedType:   "application/json", // Error response is JSON
+			expectedType:   "application/json",             // Error response is JSON
 			shouldError:    true,
 		},
 	}
@@ -310,12 +310,12 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 				// Test GET request to logout endpoint without valid challenge (expects error)
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
 
-				// Verify response matches expected error behavior
+				// Verify response matches expected error behaviour
 				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
 				assert.Contains(t, resp.Header.Get("Content-Type"), tc.expectedType)
 
@@ -392,7 +392,7 @@ func (suite *AuthHandlersTestSuite) TestForgotEndpoint() {
 				// Test request to forgot password endpoint
 				req, err := http.NewRequestWithContext(opCtx, tc.method, server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -470,7 +470,7 @@ func (suite *AuthHandlersTestSuite) TestSetPasswordEndpoint() {
 				// Test request to set password endpoint
 				req, err := http.NewRequestWithContext(opCtx, tc.method, server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -538,7 +538,7 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 				// Test GET request to login endpoint to verify device ID middleware
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
@@ -606,7 +606,7 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 				// Test GET request to error endpoint
 				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
 				require.NoError(t, err)
-				
+
 				resp, err := client.Do(req)
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)

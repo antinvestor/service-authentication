@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	apis "github.com/antinvestor/apis/go/common"
+	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
-	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
