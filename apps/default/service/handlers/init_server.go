@@ -37,7 +37,6 @@ type AuthServer struct {
 
 	// Login options enabled
 	loginOptions     map[string]bool
-	loginProviderMap map[string]string
 }
 
 func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient) *AuthServer {
@@ -54,6 +53,7 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *conf
 		log.Fatal("Failed to decode block key:", err)
 	}
 
+
 	h := &AuthServer{
 		service:      service,
 		config:       authConfig,
@@ -68,6 +68,8 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *conf
 		loginEventRepo: repository.NewLoginEventRepository(service),
 		sessionRepo:    repository.NewSessionRepository(service),
 	}
+
+	h.setupAuthProviders(ctx, authConfig)
 
 	return h
 }

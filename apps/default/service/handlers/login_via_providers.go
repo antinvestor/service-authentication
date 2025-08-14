@@ -29,18 +29,15 @@ func (h *AuthServer) setupAuthProviders(ctx context.Context, cfg *config.Authent
 	var providers []goth.Provider
 
 	h.loginOptions = map[string]bool{"enableContactLogin": !cfg.AuthProviderContactLoginDisabled}
-	h.loginProviderMap = make(map[string]string)
 
 	if cfg.AuthProviderGoogleClientID != "" {
 		providers = append(providers, google.New(cfg.AuthProviderGoogleClientID, cfg.AuthProviderGoogleSecret, cfg.AuthProviderGoogleCallbackURL, cfg.AuthProviderGoogleScopes...))
 		h.loginOptions["enableGoogleLogin"] = true
-		h.loginProviderMap["enableGoogleLogin"] = "Google"
 	}
 
 	if cfg.AuthProviderMetaClientID != "" {
 		providers = append(providers, facebook.New(cfg.AuthProviderMetaClientID, cfg.AuthProviderMetaSecret, cfg.AuthProviderMetaCallbackURL, cfg.AuthProviderMetaScopes...))
 		h.loginOptions["enableFacebookLogin"] = true
-		h.loginProviderMap["enableFacebookLogin"] = "Facebook"
 	}
 
 	if len(providers) > 0 {
