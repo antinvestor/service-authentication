@@ -116,7 +116,7 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileHash() {
 				require.NoError(t, err)
 
 				// Execute
-				foundLogin, err := loginRepo.GetByProfileHash(ctx, tc.queryHash)
+				foundLogin, err := loginRepo.GetByProfileID(ctx, tc.queryHash)
 
 				// Verify
 				require.NoError(t, err)
@@ -181,7 +181,7 @@ func (suite *LoginRepositoryTestSuite) TestDelete() {
 					require.NoError(t, err)
 
 					// Verify login is deleted
-					foundLogin, err := loginRepo.GetByProfileHash(ctx, tc.profileHash)
+					foundLogin, err := loginRepo.GetByProfileID(ctx, tc.profileHash)
 					require.NoError(t, err)
 					assert.Nil(t, foundLogin, "Login should be deleted")
 				}

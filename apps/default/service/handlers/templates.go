@@ -9,13 +9,13 @@ import (
 
 // Template variables for all handlers
 var (
-	errorTmpl       *template.Template
-	setPasswordTmpl *template.Template
-	indexTmpl       *template.Template
-	loginTmpl       *template.Template
-	forgotTmpl      *template.Template
-	registerTmpl    *template.Template
-	templateDir     string
+	errorTmpl         *template.Template
+	setPasswordTmpl   *template.Template
+	notFoundTmpl      *template.Template
+	loginTmpl         *template.Template
+	forgotTmpl        *template.Template
+	verifyContactTmpl *template.Template
+	templateDir       string
 )
 
 // findTemplateDirectory searches for a template directory in common locations
@@ -103,8 +103,8 @@ func init() {
 	// Load templates from found directory
 	errorTmpl = loadTemplate("error")
 	setPasswordTmpl = loadTemplate("set_password")
-	indexTmpl = loadTemplate("index")
+	notFoundTmpl = loadTemplate("index")
 	loginTmpl = loadTemplate("login")
 	forgotTmpl = loadTemplate("forgot")
-	registerTmpl = loadTemplate("registration")
+	verifyContactTmpl = loadTemplate("registration")
 }

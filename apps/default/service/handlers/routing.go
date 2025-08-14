@@ -41,8 +41,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	}
 
 	// Public routes (no auth, no CSRF)
-	h.addHandler(router, h.IndexEndpoint, "/", "IndexEndpoint", "GET")
-	h.addHandler(router, h.ErrorEndpoint, "/s/error", "ErrorEndpoint", "GET")
+	h.addHandler(router, h.NotFoundEndpoint, "/not-found", "NotFoundEndpoint", "GET")
+	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
 
 	// Secure routes with CSRF protection
 	secureHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
@@ -82,10 +82,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	secureHandler(h.SubmitLoginEndpoint, "/s/login/post", "SubmitLoginEndpoint", "POST")
 	secureHandler(h.ShowLogoutEndpoint, "/s/logout", "ShowLogoutEndpoint", "GET")
 	secureHandler(h.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
-	secureHandler(h.ShowRegisterEndpoint, "/s/register", "ShowRegisterEndpoint", "GET")
-	secureHandler(h.SubmitRegisterEndpoint, "/s/register/post", "SubmitRegisterEndpoint", "POST")
-	secureHandler(h.SetPasswordEndpoint, "/s/password", "SetPasswordEndpoint", "GET")
-	secureHandler(h.ForgotEndpoint, "/s/forgot", "ForgotEndpoint", "GET")
+	secureHandler(h.ShowVerificationEndpoint, "/s/verify/contact", "ShowVerificationEndpoint", "GET")
+	secureHandler(h.SubmitVerificationEndpoint, "/s/verify/contact/post", "SubmitVerificationEndpoint", "POST")
 
 	// Webhook routes (no auth required)
 	h.addHandler(router, h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")

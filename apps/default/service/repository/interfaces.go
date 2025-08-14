@@ -8,8 +8,9 @@ import (
 
 // LoginRepository handles database operations for Login entities
 type LoginRepository interface {
-	// GetByProfileHash retrieves a login by profile hash
-	GetByProfileHash(ctx context.Context, profileHash string) (*models.Login, error)
+	GetByID(ctx context.Context, id string) (*models.Login, error)
+	// GetByProfileID retrieves a login by profile id
+	GetByProfileID(ctx context.Context, profileID string) (*models.Login, error)
 	// Save creates or updates a login record
 	Save(ctx context.Context, login *models.Login) error
 	// Delete removes a login record by ID

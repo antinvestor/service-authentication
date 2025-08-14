@@ -6,16 +6,26 @@ import (
 	"github.com/pitabwire/frame"
 )
 
+type LoginSource string
+
+const (
+	LoginSourceDirect LoginSource = "direct"
+	LoginSourceGoogle LoginSource = "google"
+	LoginSourceMeta LoginSource = "facebook"
+)
+
 type Login struct {
 	frame.BaseModel
-	ProfileHash  string `gorm:"type:varchar(255)"`
-	PasswordHash []byte
-	Locked       time.Time
+	ProfileID string `gorm:"type:varchar(255)"`
+	Source string `gorm:"type:varchar(255)"`
+	Locked time.Time
 }
 
 type LoginEvent struct {
 	frame.BaseModel
 	LoginID    string `gorm:"type:varchar(50)"`
+	LoginChallengeID    string `gorm:"type:varchar(50)"`
+	VerificationID    string `gorm:"type:varchar(50)"`
 	AccessID   string `gorm:"type:varchar(50)"`
 	ContactID  string `gorm:"type:varchar(50)"`
 	Properties frame.JSONMap

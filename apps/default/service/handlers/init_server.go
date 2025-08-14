@@ -34,6 +34,10 @@ type AuthServer struct {
 	apiKeyRepo     repository.APIKeyRepository
 	loginEventRepo repository.LoginEventRepository
 	sessionRepo    repository.SessionRepository
+
+	// Login options enabled
+	loginOptions     map[string]bool
+	loginProviderMap map[string]string
 }
 
 func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient) *AuthServer {
@@ -94,6 +98,15 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+func initTemplatePayload(ctx context.Context) map[string]any {
+	payload := make(map[string]any)
+
+	deviceId := utils.DeviceIDFromContext(ctx)
+	payload["DeviceID"] = deviceId
+
+	return payload
+}
+
 func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -113,16 +126,11 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 	}
 }
 
-// NotFoundEndpoint handles 404 Not Found responses
-func (h *AuthServer) NotFoundEndpoint(w http.ResponseWriter, r *http.Request) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotFound)
 
-	return json.NewEncoder(w).Encode(&ErrorResponse{
-		Code:    http.StatusNotFound,
-		Message: "The requested resource was not found",
-	})
+func (h *AuthServer) NotFoundEndpoint(rw http.ResponseWriter, req *http.Request) error {
+	return notFoundTmpl.Execute(rw, initTemplatePayload(req.Context()))
 }
+
 
 // deviceIDMiddleware to ensure secure cookie
 func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {

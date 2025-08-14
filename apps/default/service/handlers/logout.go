@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/antinvestor/service-authentication/apps/default/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 )
 
 func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {

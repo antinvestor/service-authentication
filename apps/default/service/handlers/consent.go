@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
-	"github.com/antinvestor/service-authentication/apps/default/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 )
 

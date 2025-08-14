@@ -1,0 +1,251 @@
+{{ define "title"}}Verify Your Contact{{ end }}
+
+{{define "content"}}
+
+<div class="verification-container">
+    <div class="verification-header">
+        <h2>Almost there!</h2>
+        <p>We've sent a verification code to your contact. Please enter your name and the verification code to continue.</p>
+    </div>
+
+    <form method="post" action="/s/login/post" class="verification-form">
+        {{ .csrfField }}
+        <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
+
+        {{if .error}}
+        <div class="message error">{{ .error }}</div>
+        {{end}}
+
+        <div class="form-group">
+            <label for="profile_name">Full Name</label>
+            <input 
+                type="text" 
+                id="profile_name"
+                name="profile_name"
+                placeholder="Enter your full name" 
+                value="{{ .profile_name }}"
+                required 
+                autocomplete="name"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="verification_code">Verification Code</label>
+            <input 
+                type="text" 
+                id="verification_code"
+                name="verification_code" 
+                placeholder="Enter the 6-digit code" 
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required 
+                autocomplete="one-time-code"
+                class="verification-input"
+            >
+            <small class="help-text">Check your email or SMS for the verification code</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Verify & Continue</button>
+        </div>
+    </form>
+
+    <div class="verification-footer">
+        <p><small>
+            Didn't receive the code? 
+            <a href="#" onclick="resendCode()" class="resend-link">Resend verification code</a>
+        </small></p>
+    </div>
+</div>
+
+<style>
+.verification-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.verification-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.verification-header h2 {
+    color: var(--color);
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.verification-header p {
+    color: var(--muted-color, #666);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.verification-form {
+    background: var(--card-background-color, white);
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border-color, #e1e5e9);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-of-type {
+    margin-bottom: 2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--color);
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--form-element-border-color, #ddd);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: var(--form-element-background-color, white);
+    color: var(--color);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.verification-input {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    font-family: 'Courier New', monospace;
+}
+
+.help-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--muted-color, #666);
+    font-style: italic;
+}
+
+.form-actions {
+    margin-top: 2rem;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: var(--primary-color, #007bff);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover-color, #0056b3);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.verification-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #eee);
+}
+
+.resend-link {
+    color: var(--primary-color, #007bff);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.resend-link:hover {
+    text-decoration: underline;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .verification-form {
+        background: var(--card-background-color, #2d3748);
+        border-color: var(--card-border-color, #4a5568);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .verification-header p {
+        color: var(--muted-color, #a0aec0);
+    }
+    
+    .help-text {
+        color: var(--muted-color, #a0aec0);
+    }
+    
+    .verification-footer {
+        border-top-color: var(--border-color, #4a5568);
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .verification-container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    .verification-form {
+        padding: 1.5rem;
+    }
+    
+    .verification-header h2 {
+        font-size: 1.3rem;
+    }
+}
+</style>
+
+<script>
+function resendCode() {
+    // Placeholder for resend functionality
+    alert('Resend functionality would be implemented here');
+    return false;
+}
+
+// Auto-format verification code input
+document.addEventListener('DOMContentLoaded', function() {
+    const verificationInput = document.getElementById('verification_code');
+    if (verificationInput) {
+        verificationInput.addEventListener('input', function(e) {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+        
+        // Focus the verification input after page load for better UX
+        setTimeout(() => {
+            if (document.getElementById('name').value) {
+                verificationInput.focus();
+            }
+        }, 100);
+    }
+});
+</script>
+
+{{end}}
