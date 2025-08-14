@@ -109,7 +109,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 
-	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge)
+	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge, nil)
 	if err != nil {
 
 		logger.WithError(err).Error(" contact not log login attempt")
@@ -123,7 +123,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
-func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string) (*models.LoginEvent, error) {
+func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string, extra map[string]any) (*models.LoginEvent, error) {
 
 	login, err := h.loginRepo.GetByProfileID(ctx, profileID)
 	if err != nil {
@@ -150,6 +150,8 @@ func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSo
 		AccessID:         "",
 		ContactID:        contactID,
 	}
+	loginEvt.Properties = extra
+
 	loginEvt.GenID(ctx)
 	err = h.loginEventRepo.Save(ctx, loginEvt)
 	if err != nil {

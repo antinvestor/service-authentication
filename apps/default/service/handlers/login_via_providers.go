@@ -57,7 +57,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	user, err := gothic.CompleteUserAuth(rw, req)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	contactDetail := user.Email
@@ -67,11 +67,10 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contactDetail)
 	if err != nil {
-		return nil,  err
+		return nil, err
 	}
 
 	if existingProfile == nil {
-
 
 		userName := user.Name
 
@@ -81,7 +80,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		// don't have this profile in existence so we create it
 		existingProfile, err = h.profileCli.CreateProfileByContactAndName(ctx, contactDetail, userName)
 		if err != nil {
-			return  nil, err
+			return nil, err
 		}
 	}
 
@@ -95,14 +94,13 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 	if contactID == "" {
 		logger.Error(" contact not linked to profile found")
 		http.Redirect(rw, req, "/error", http.StatusInternalServerError)
-		return  nil, nil
+		return nil, nil
 	}
 
-	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", loginChallenge)
+	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", loginChallenge, user.RawData)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
-
 
 	return loginEvent, nil
 }
