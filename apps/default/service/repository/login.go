@@ -44,19 +44,6 @@ func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) 
 	return &login, nil
 }
 
-// GetByProfileHash retrieves a login by profile hash (deprecated - kept for backward compatibility)
-func (r *loginRepository) GetByProfileHash(ctx context.Context, profileHash string) (*models.Login, error) {
-	var login models.Login
-	err := r.service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error
-	if err != nil {
-		if frame.ErrorIsNoRows(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &login, nil
-}
-
 // Save creates or updates a login record
 func (r *loginRepository) Save(ctx context.Context, login *models.Login) error {
 	if login.ID == "" {

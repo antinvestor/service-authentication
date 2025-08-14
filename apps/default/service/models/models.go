@@ -11,26 +11,26 @@ type LoginSource string
 const (
 	LoginSourceDirect LoginSource = "direct"
 	LoginSourceGoogle LoginSource = "google"
-	LoginSourceMeta LoginSource = "facebook"
+	LoginSourceMeta   LoginSource = "facebook"
 )
 
 type Login struct {
 	frame.BaseModel
 	ProfileID string `gorm:"type:varchar(255)"`
-	Source string `gorm:"type:varchar(255)"`
-	Locked time.Time
+	Source    string `gorm:"type:varchar(255)"`
+	Locked    time.Time
 }
 
 type LoginEvent struct {
 	frame.BaseModel
-	LoginID    string `gorm:"type:varchar(50)"`
-	LoginChallengeID    string `gorm:"type:varchar(50)"`
-	VerificationID    string `gorm:"type:varchar(50)"`
-	AccessID   string `gorm:"type:varchar(50)"`
-	ContactID  string `gorm:"type:varchar(50)"`
-	Properties frame.JSONMap
-	Client     string
-	Status     int
+	LoginID          string `gorm:"type:varchar(50)"`
+	LoginChallengeID string `gorm:"type:varchar(50)"`
+	VerificationID   string `gorm:"type:varchar(50)"`
+	AccessID         string `gorm:"type:varchar(50)"`
+	ContactID        string `gorm:"type:varchar(50)"`
+	Properties       frame.JSONMap
+	Client           string
+	Status           int
 }
 
 type Session struct {

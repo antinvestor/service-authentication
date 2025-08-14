@@ -280,27 +280,27 @@ func (suite *PasswordlessLoginTestSuite) TestLoginSubmissionFlow() {
 // TestContactValidation tests the contact validation utility
 func (suite *PasswordlessLoginTestSuite) TestContactValidation() {
 	testCases := []struct {
-		name        string
-		contact     string
-		expectedType utils.ContactType
+		name          string
+		contact       string
+		expectedType  utils.ContactType
 		shouldBeValid bool
 	}{
 		{
-			name:         "ValidEmail",
-			contact:      "test@example.com",
-			expectedType: utils.ContactTypeEmail,
+			name:          "ValidEmail",
+			contact:       "test@example.com",
+			expectedType:  utils.ContactTypeEmail,
 			shouldBeValid: true,
 		},
 		{
-			name:         "ValidPhone",
-			contact:      "+1234567890",
-			expectedType: utils.ContactTypePhone,
+			name:          "ValidPhone",
+			contact:       "+1234567890",
+			expectedType:  utils.ContactTypePhone,
 			shouldBeValid: true,
 		},
 		{
-			name:         "InvalidContact",
-			contact:      "invalid-contact",
-			expectedType: utils.ContactTypeUnknown,
+			name:          "InvalidContact",
+			contact:       "invalid-contact",
+			expectedType:  utils.ContactTypeUnknown,
 			shouldBeValid: false,
 		},
 	}
@@ -308,10 +308,10 @@ func (suite *PasswordlessLoginTestSuite) TestContactValidation() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			contactType, isValid := utils.ValidateContact(tc.contact)
-			
+
 			assert.Equal(t, tc.expectedType, contactType, "Contact type should match expected")
 			assert.Equal(t, tc.shouldBeValid, isValid, "Contact validity should match expected")
-			
+
 			if tc.shouldBeValid {
 				assert.NotEqual(t, utils.ContactTypeUnknown, contactType, "Valid contacts should not be unknown type")
 			}
@@ -330,7 +330,7 @@ func (suite *PasswordlessLoginTestSuite) TestProviderLoginFlow() {
 
 		// Test that provider login endpoints are accessible
 		providerURL := fmt.Sprintf("%s/s/auth/google", testCtx.TestServer.URL)
-		
+
 		req, err := http.NewRequestWithContext(opCtx, "GET", providerURL, nil)
 		require.NoError(t, err)
 
@@ -357,7 +357,7 @@ func (suite *PasswordlessLoginTestSuite) TestLoginOptionsConfiguration() {
 
 		// Test that login page shows available options
 		loginURL := fmt.Sprintf("%s/s/login?login_challenge=test-challenge", testCtx.TestServer.URL)
-		
+
 		req, err := http.NewRequestWithContext(opCtx, "GET", loginURL, nil)
 		require.NoError(t, err)
 
@@ -381,9 +381,9 @@ func (suite *PasswordlessLoginTestSuite) TestVerificationPageDisplay() {
 		defer opCancel()
 
 		// Test verification page with parameters
-		verificationURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=test-event&profile_name=Test+User", 
+		verificationURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=test-event&profile_name=Test+User",
 			testCtx.TestServer.URL)
-		
+
 		req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
 		require.NoError(t, err)
 

@@ -126,11 +126,9 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 	}
 }
 
-
 func (h *AuthServer) NotFoundEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	return notFoundTmpl.Execute(rw, initTemplatePayload(req.Context()))
 }
-
 
 // deviceIDMiddleware to ensure secure cookie
 func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {

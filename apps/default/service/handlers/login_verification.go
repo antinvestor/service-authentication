@@ -134,7 +134,7 @@ func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSo
 
 		login = &models.Login{
 			ProfileID: profileID,
-			Source: string(source),
+			Source:    string(source),
 		}
 		login.GenID(ctx)
 		err = h.loginRepo.Save(ctx, login)

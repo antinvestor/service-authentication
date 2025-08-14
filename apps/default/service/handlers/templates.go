@@ -102,9 +102,7 @@ func loadTemplate(name string) *template.Template {
 func init() {
 	// Load templates from found directory
 	errorTmpl = loadTemplate("error")
-	setPasswordTmpl = loadTemplate("set_password")
-	notFoundTmpl = loadTemplate("index")
+	notFoundTmpl = loadTemplate("not_found")
 	loginTmpl = loadTemplate("login")
-	forgotTmpl = loadTemplate("forgot")
-	verifyContactTmpl = loadTemplate("registration")
+	verifyContactTmpl = loadTemplate("contact_verification")
 }

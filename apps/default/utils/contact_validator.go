@@ -37,12 +37,12 @@ func IsEmail(contact string) bool {
 func IsPhoneNumber(contact string) bool {
 	// Remove common phone number separators and spaces
 	cleaned := regexp.MustCompile(`[\s\-\(\)\+\.]`).ReplaceAllString(contact, "")
-	
+
 	// Check if it contains only digits after cleaning
 	if !regexp.MustCompile(`^[0-9]+$`).MatchString(cleaned) {
 		return false
 	}
-	
+
 	// Phone numbers should be between 7 and 15 digits (international standard)
 	length := len(cleaned)
 	return length >= 7 && length <= 15
@@ -51,19 +51,19 @@ func IsPhoneNumber(contact string) bool {
 // GetContactType determines whether a contact string is an email or phone number
 func GetContactType(contact string) ContactType {
 	contact = strings.TrimSpace(contact)
-	
+
 	if contact == "" {
 		return ContactTypeUnknown
 	}
-	
+
 	if IsEmail(contact) {
 		return ContactTypeEmail
 	}
-	
+
 	if IsPhoneNumber(contact) {
 		return ContactTypePhone
 	}
-	
+
 	return ContactTypeUnknown
 }
 

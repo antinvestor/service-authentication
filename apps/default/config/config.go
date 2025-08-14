@@ -22,7 +22,7 @@ type AuthenticationConfig struct {
 	AuthProviderGoogleClientID                      string   `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_CLIENT_ID"`
 	AuthProviderGoogleSecret                        string   `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_SECRET"`
 	AuthProviderGoogleCallbackURL                   string   `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_CALLBACK_URL"`
-	AuthProviderGoogleScopes                        []string `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_CALLBACK_URL"`
+	AuthProviderGoogleScopes                        []string `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_SCOPES"`
 
 	AuthProviderMetaClientID    string   `envDefault:"" env:"AUTH_PROVIDER_META_CLIENT_ID"`
 	AuthProviderMetaSecret      string   `envDefault:"" env:"AUTH_PROVIDER_META_SECRET"`

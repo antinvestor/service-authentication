@@ -12,7 +12,7 @@
     <h3>Sign in with</h3>
     
     {{if .enableGoogleLogin}}
-    <form method="post" action="/s/auth/google" class="social-login-form">
+    <form method="post" action="/social/login/google" class="social-login-form">
         {{ .csrfField }}
         <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
         <button type="submit" class="btn-google">
@@ -28,7 +28,7 @@
     {{end}}
     
     {{if .enableFacebookLogin}}
-    <form method="post" action="/s/auth/facebook" class="social-login-form">
+    <form method="post" action="/social/login/facebook" class="social-login-form">
         {{ .csrfField }}
         <input type="hidden" name="login_challenge" value="{{ .loginChallenge }}">
         <button type="submit" class="btn-facebook">
@@ -64,11 +64,6 @@
                 Email or Phone Number
                 <input type="text" name="contact" placeholder="Enter your email or phone number" required>
             </label>
-
-            <label>
-                Password
-                <input type="password" name="password" placeholder="Enter your password" required>
-            </label>
         </fieldset>
 
         <div class="form-actions">
@@ -77,16 +72,6 @@
     </form>
 </div>
 {{end}}
-
-<!-- Footer Links -->
-<div class="text-center mt-3">
-    <p><small>
-        {{if .enableContactLogin}}
-        <a href="/s/forgot">Forgot your password?</a> • 
-        {{end}}
-        <a href="/s/register?login_challenge={{ .loginChallenge }}">Create an account</a>
-    </small></p>
-</div>
 
 <!-- Styles for social login buttons -->
 <style>

@@ -124,6 +124,10 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 		return err
 	}
 
+	if loginEvt == nil {
+		return nil
+	}
+
 	req.PostForm = url.Values{}
 	req.PostForm.Set("login_event_id", loginEvt.GetID())
 	req.PostForm.Set(csrf.TemplateTag, csrf.Token(req))
@@ -136,11 +140,21 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 	svc := h.service
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderLoginEndpoint")
 
-	loginChallenge := req.FormValue("login_challenge")
+	// Parse form data before accessing PostForm
+	if err := req.ParseForm(); err != nil {
+		logger.WithError(err).Error("failed to parse form data")
+		return err
+	}
+
+	loginChallenge := req.PostFormValue("login_challenge")
 	// try to get the user without re-authenticating
 	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)
 	if err != nil {
 		gothic.BeginAuthHandler(rw, req)
+		return nil
+	}
+
+	if loginEvt == nil {
 		return nil
 	}
 
