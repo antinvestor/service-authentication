@@ -18,7 +18,33 @@ func NewLoginRepository(service *frame.Service) LoginRepository {
 	}
 }
 
-// GetByProfileHash retrieves a login by profile hash
+// GetByID retrieves a login by ID
+func (r *loginRepository) GetByID(ctx context.Context, id string) (*models.Login, error) {
+	var login models.Login
+	err := r.service.DB(ctx, true).First(&login, "id = ?", id).Error
+	if err != nil {
+		if frame.ErrorIsNoRows(err) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &login, nil
+}
+
+// GetByProfileID retrieves a login by profile ID
+func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) (*models.Login, error) {
+	var login models.Login
+	err := r.service.DB(ctx, true).First(&login, "profile_id = ?", profileID).Error
+	if err != nil {
+		if frame.ErrorIsNoRows(err) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &login, nil
+}
+
+// GetByProfileHash retrieves a login by profile hash (deprecated - kept for backward compatibility)
 func (r *loginRepository) GetByProfileHash(ctx context.Context, profileHash string) (*models.Login, error) {
 	var login models.Login
 	err := r.service.DB(ctx, true).First(&login, "profile_hash = ?", profileHash).Error
