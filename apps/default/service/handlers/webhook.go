@@ -53,23 +53,18 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	response := tokenObject
 
-	// sessionData, ok := tokenObject["session"].(map[string]any)
-	// if !ok {
-	// 	logger.Error("session data not found or invalid")
-	// 	rw.Header().Set("Content-Type", "application/json")
-	// 	rw.WriteHeader(http.StatusBadRequest)
-	// 	return json.NewEncoder(rw).Encode(map[string]string{"error": "session data not found"})
-	// }
-
-	clientData, ok := tokenObject["client"].(map[string]any)
+	sessionData, ok := tokenObject["session"].(map[string]any)
 	if !ok {
-		logger.Error("client data not found or invalid")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusBadRequest)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "client data not found"})
+		sessionData, ok = tokenObject["client"].(map[string]any)
+		if !ok {
+			logger.Error("no session or client data not found")
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusBadRequest)
+			return json.NewEncoder(rw).Encode(map[string]string{"error": "client/session data not found"})
+		}
 	}
 
-	clientID, ok := clientData["client_id"].(string)
+	clientID, ok := sessionData["client_id"].(string)
 	if !ok {
 		logger.Error("client_id not found or invalid")
 		rw.Header().Set("Content-Type", "application/json")

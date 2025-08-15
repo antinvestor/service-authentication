@@ -23,9 +23,6 @@ func (r *loginRepository) GetByID(ctx context.Context, id string) (*models.Login
 	var login models.Login
 	err := r.service.DB(ctx, true).First(&login, "id = ?", id).Error
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
-			return nil, err
-		}
 		return nil, err
 	}
 	return &login, nil
@@ -36,10 +33,7 @@ func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) 
 	var login models.Login
 	err := r.service.DB(ctx, true).First(&login, "profile_id = ?", profileID).Error
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
-			return nil, err
-		}
-		return nil, err
+return nil, err
 	}
 	return &login, nil
 }

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -510,6 +512,351 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
+	})
+}
+
+func (suite *HandlersTestSuite) TestShowVerificationEndpoint() {
+	// Test cases
+	testCases := []struct {
+		name           string
+		endpoint       string
+		queryParams    string
+		expectedStatus int
+		expectedType   string
+		shouldError    bool
+	}{
+		{
+			name:           "ShowVerificationPageWithParams",
+			endpoint:       "/s/verify/contact",
+			queryParams:    "?login_event_id=test-event&profile_name=Test+User",
+			expectedStatus: http.StatusOK,
+			expectedType:   "text/html",
+			shouldError:    false,
+		},
+		{
+			name:           "ShowVerificationPageWithoutParams",
+			endpoint:       "/s/verify/contact",
+			queryParams:    "",
+			expectedStatus: http.StatusOK,
+			expectedType:   "text/html",
+			shouldError:    false,
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		// Acquire mutex to ensure sequential execution with timeout protection
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				// Re-panic after cleanup
+				panic(r)
+			}
+		}()
+
+		// Create timeout context for the entire test
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Create operation context with timeout
+				opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+				defer opCancel()
+
+				// Create HTTP client with timeout
+				client := &http.Client{
+					Timeout: HandlerOperationTimeout,
+				}
+
+				// Test GET request to verification endpoint
+				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint+tc.queryParams, nil)
+				require.NoError(t, err)
+
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				defer util.CloseAndLogOnError(ctx, resp.Body)
+
+				// Verify response
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+				assert.Contains(t, resp.Header.Get("Content-Type"), tc.expectedType)
+
+				// Verify verification template rendering
+				body := make([]byte, 2048)
+				n, _ := resp.Body.Read(body)
+				bodyStr := string(body[:n])
+				assert.Contains(t, bodyStr, "<html>")
+
+				// Verify service is working
+				assert.NotNil(t, authServer.Service())
+			})
+		}
+	})
+}
+
+func (suite *HandlersTestSuite) TestNotFoundEndpoint() {
+	// Test cases
+	testCases := []struct {
+		name           string
+		endpoint       string
+		expectedStatus int
+		expectedType   string
+		shouldError    bool
+	}{
+		{
+			name:           "ShowNotFoundPage",
+			endpoint:       "/not-found",
+			expectedStatus: http.StatusOK,
+			expectedType:   "text/html",
+			shouldError:    false,
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		// Acquire mutex to ensure sequential execution with timeout protection
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				// Re-panic after cleanup
+				panic(r)
+				}
+		}()
+
+		// Create timeout context for the entire test
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Create operation context with timeout
+				opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+				defer opCancel()
+
+				// Create HTTP client with timeout
+				client := &http.Client{
+					Timeout: HandlerOperationTimeout,
+				}
+
+				// Test GET request to not found endpoint
+				req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+tc.endpoint, nil)
+				require.NoError(t, err)
+
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				defer util.CloseAndLogOnError(ctx, resp.Body)
+
+				// Verify response
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+				assert.Contains(t, resp.Header.Get("Content-Type"), tc.expectedType)
+
+				// Verify not found template rendering
+				body := make([]byte, 1024)
+				n, _ := resp.Body.Read(body)
+				bodyStr := string(body[:n])
+				assert.Contains(t, bodyStr, "<html>")
+
+				// Verify service is working
+				assert.NotNil(t, authServer.Service())
+			})
+		}
+	})
+}
+
+func (suite *HandlersTestSuite) TestSubmitVerificationEndpoint() {
+	// Test cases for verification submission
+	testCases := []struct {
+		name           string
+		endpoint       string
+		method         string
+		formData       url.Values
+		expectedStatus int
+		shouldError    bool
+	}{
+		{
+			name:           "SubmitVerificationWithoutSession",
+			endpoint:       "/s/verify/contact/submit",
+			method:         "POST",
+			formData:       url.Values{"contact": {"test@example.com"}},
+			expectedStatus: http.StatusSeeOther, // Redirect to error
+			shouldError:    true,
+		},
+		{
+			name:           "SubmitVerificationWithInvalidContact",
+			endpoint:       "/s/verify/contact/submit",
+			method:         "POST",
+			formData:       url.Values{"contact": {"invalid-contact"}},
+			expectedStatus: http.StatusSeeOther, // Redirect back to login
+			shouldError:    true,
+		},
+		{
+			name:           "SubmitVerificationWithEmptyContact",
+			endpoint:       "/s/verify/contact/submit",
+			method:         "POST",
+			formData:       url.Values{"contact": {""}},
+			expectedStatus: http.StatusSeeOther, // Redirect back to login
+			shouldError:    true,
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		// Acquire mutex to ensure sequential execution with timeout protection
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				// Re-panic after cleanup
+				panic(r)
+			}
+		}()
+
+		// Create timeout context for the entire test
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Create operation context with timeout
+				opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+				defer opCancel()
+
+				// Create HTTP client with timeout
+				client := &http.Client{
+					Timeout: HandlerOperationTimeout,
+					CheckRedirect: func(req *http.Request, via []*http.Request) error {
+						// Don't follow redirects so we can check the redirect response
+						return http.ErrUseLastResponse
+					},
+				}
+
+				// Test POST request to verification submission endpoint
+				req, err := http.NewRequestWithContext(opCtx, tc.method, server.URL+tc.endpoint, strings.NewReader(tc.formData.Encode()))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				defer util.CloseAndLogOnError(ctx, resp.Body)
+
+				// Verify response (should redirect due to missing session or invalid data)
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+
+				// Verify redirect location for error cases
+				if tc.shouldError {
+					location := resp.Header.Get("Location")
+					assert.NotEmpty(t, location)
+					assert.True(t, strings.Contains(location, "/error") || strings.Contains(location, "/s/login"))
+				}
+
+				// Verify service is working
+				assert.NotNil(t, authServer.Service())
+			})
+		}
+	})
+}
+
+func (suite *HandlersTestSuite) TestProviderEndpoints() {
+	// Test cases for provider login endpoints
+	testCases := []struct {
+		name           string
+		endpoint       string
+		method         string
+		expectedStatus int
+		shouldError    bool
+	}{
+		{
+			name:           "ProviderLoginGoogle",
+			endpoint:       "/s/social/login/google",
+			method:         "POST",
+			expectedStatus: http.StatusInternalServerError, // Expected without proper OAuth setup
+			shouldError:    true,
+		},
+		{
+			name:           "ProviderCallbackGoogle",
+			endpoint:       "/social/callback/google",
+			method:         "POST",
+			expectedStatus: http.StatusInternalServerError, // Expected without proper OAuth setup
+			shouldError:    true,
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		// Acquire mutex to ensure sequential execution with timeout protection
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				// Re-panic after cleanup
+				panic(r)
+			}
+		}()
+
+		// Create timeout context for the entire test
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		authServer, ctx := suite.CreateService(t, dep)
+
+		// Create HTTP test server using AuthServer's SetupRouterV1
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Create operation context with timeout
+				opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+				defer opCancel()
+
+				// Create HTTP client with timeout
+				client := &http.Client{
+					Timeout: HandlerOperationTimeout,
+				}
+
+				// Test request to provider endpoint
+				req, err := http.NewRequestWithContext(opCtx, tc.method, server.URL+tc.endpoint, nil)
+				require.NoError(t, err)
+
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				defer util.CloseAndLogOnError(ctx, resp.Body)
+
+				// Verify response (should be error due to missing OAuth setup)
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+
+				// Verify service is working
+				assert.NotNil(t, authServer.Service())
+			})
+		}
 	})
 }
 
