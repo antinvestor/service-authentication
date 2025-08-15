@@ -1,48 +1,233 @@
 {{ define "title"}}Error{{ end }}
 
 {{define "content"}}
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+        </div>
+        
+        <div class="error-header">
+            <h1>Oops! Something went wrong</h1>
+            <p class="error-subtitle">We encountered an unexpected error while processing your request.</p>
+        </div>
+        
+        {{if or .error .error_description .errorTitle .errorDescription}}
+        <div class="error-details">
+            {{if .error}}
+            <div class="error-message">
+                <strong>Error:</strong> {{ .error }}
+            </div>
+            {{end}}
+            
+            {{if .error_description}}
+            <div class="error-message">
+                <strong>Description:</strong> {{ .error_description }}
+            </div>
+            {{end}}
+            
+            {{if .errorTitle}}
+            <div class="error-message">
+                <strong>Error:</strong> {{ .errorTitle }}
+            </div>
+            {{end}}
+            
+            {{if .errorDescription}}
+            <div class="error-message">
+                <strong>Details:</strong> {{ .errorDescription }}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+        
+        <div class="error-help">
+            <p>If this problem persists, please <a href="mailto:support@chamamobile.com">contact our support team</a>.</p>
+        </div>
+    </div>
+</div>
 
-<article>
-    <header class="text-center">
-        <h1>⚠️</h1>
-        <h2>Oops! Something went wrong</h2>
-    </header>
+<style>
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 2rem 1rem;
+}
+
+.error-content {
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+.error-icon {
+    margin-bottom: 2rem;
+    color: #dc2626;
+    opacity: 0.8;
+}
+
+.error-icon svg {
+    width: 80px;
+    height: 80px;
+}
+
+.error-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.error-subtitle {
+    font-size: 1.1rem;
+    color: var(--muted-color, #666);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.error-details {
+    background: var(--card-background-color, #f8f9fa);
+    border: 1px solid var(--muted-border-color, #e9ecef);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.error-message {
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.error-message:last-child {
+    margin-bottom: 0;
+}
+
+.error-message strong {
+    color: var(--color);
+    font-weight: 600;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2.5rem 0;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: #0066cc;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0052a3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,102,204,0.2);
+}
+
+.btn-secondary {
+    background: var(--secondary-background, #f8f9fa);
+    color: var(--color);
+    border: 1px solid var(--muted-border-color, #e9ecef);
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-hover-background, #e9ecef);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-help {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--muted-border-color, #e9ecef);
+}
+
+.error-help p {
+    font-size: 0.9rem;
+    color: var(--muted-color, #666);
+    margin: 0;
+}
+
+.error-help a {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.error-help a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .error-container {
+        padding: 1rem 0.75rem;
+    }
     
-    {{if .error}}
-    <div class="message error">
-        <strong>Error Details:</strong> {{ .error }}
-    </div>
-    {{end}}
+    .error-header h1 {
+        font-size: 1.75rem;
+    }
     
-    {{if .error_description}}
-    <div class="message">
-        <strong>Description:</strong> {{ .error_description }}
-    </div>
-    {{end}}
+    .error-subtitle {
+        font-size: 1rem;
+    }
     
-    {{if .errorTitle}}
-    <div class="message">
-        <strong>Error:</strong> {{ .errorTitle }}
-    </div>
-    {{end}}
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
     
-    {{if .errorDescription}}
-    <div class="message">
-        <strong>Details:</strong> {{ .errorDescription }}
-    </div>
-    {{end}}
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        max-width: 200px;
+    }
     
-    <p>We're sorry, but something unexpected happened. Please try again or contact support if the problem persists.</p>
+    .error-icon svg {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .error-details {
+        background: var(--card-background-color, #2d3748);
+        border-color: var(--muted-border-color, #4a5568);
+    }
     
-    <footer class="text-center">
-        <nav>
-            <ul>
-                <li><a href="javascript:history.back()" role="button" class="secondary outline">Go Back</a></li>
-                <li><a href="/s/login" role="button" class="contrast">Sign In</a></li>
-                <li><a href="/" role="button" class="secondary">Home</a></li>
-            </ul>
-        </nav>
-    </footer>
-</article>
+    .btn-secondary {
+        background: var(--secondary-background, #2d3748);
+        border-color: var(--muted-border-color, #4a5568);
+    }
+    
+    .btn-secondary:hover {
+        background: var(--secondary-hover-background, #4a5568);
+    }
+}
+</style>
 
 {{end}}

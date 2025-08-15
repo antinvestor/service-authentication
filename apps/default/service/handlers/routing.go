@@ -41,7 +41,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	}
 
 	// Public routes (no auth, no CSRF)
-	h.addHandler(router, h.NotFoundEndpoint, "/not-found", "NotFoundEndpoint", "GET")
+	h.addHandler(router, h.NotFoundEndpoint, "/", "NotFoundEndpoint", "GET")
 	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
 
 	// Secure routes with CSRF protection

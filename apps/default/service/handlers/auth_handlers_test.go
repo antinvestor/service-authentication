@@ -561,8 +561,8 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 	}{
 		{
 			name:           "ErrorPageHandling",
-			endpoint:       "/s/error",
-			expectedStatus: http.StatusOK,
+			endpoint:       "/error",
+			expectedStatus: http.StatusInternalServerError,
 			expectedType:   "text/html",
 			shouldError:    false,
 		},

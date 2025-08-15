@@ -108,7 +108,28 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 	svc := h.service
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
-	loginChallenge := req.FormValue("login_challenge")
+	// Retrieve loginChallenge from session instead of form values
+	session, err := gothic.Store.Get(req, "auth-session")
+	if err != nil {
+		logger.WithError(err).Error("failed to get session")
+		http.Redirect(rw, req, "/error", http.StatusSeeOther)
+		return err
+	}
+
+	loginChallenge, ok := session.Values["login_challenge"].(string)
+	if !ok || loginChallenge == "" {
+		logger.Error("login_challenge not found in session")
+		http.Redirect(rw, req, "/error", http.StatusSeeOther)
+		return fmt.Errorf("login_challenge not found in session")
+	}
+
+	// Clean up the session value after retrieving it
+	delete(session.Values, "login_challenge")
+	err = session.Save(req, rw)
+	if err != nil {
+		logger.WithError(err).Warn("failed to save session after cleanup")
+	}
+
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
 	// try to get the user without re-authenticating
@@ -144,6 +165,21 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 	}
 
 	loginChallenge := req.PostFormValue("login_challenge")
+
+	// Store loginChallenge in session before OAuth redirect
+	session, err := gothic.Store.Get(req, "auth-session")
+	if err != nil {
+		logger.WithError(err).Error("failed to get session")
+		return err
+	}
+
+	session.Values["login_challenge"] = loginChallenge
+	err = session.Save(req, rw);
+	if err != nil {
+		logger.WithError(err).Error("failed to save login_challenge to session")
+		return err
+	}
+
 	// try to get the user without re-authenticating
 	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)
 	if err != nil {

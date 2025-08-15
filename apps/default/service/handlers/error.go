@@ -16,6 +16,7 @@ func (h *AuthServer) ErrorEndpoint(rw http.ResponseWriter, req *http.Request) er
 	payload["errorDescription"] = errorDescription
 	payload[csrf.TemplateTag] = csrf.TemplateField(req)
 
+	rw.WriteHeader(http.StatusInternalServerError)
 	err := errorTmpl.Execute(rw, payload)
 
 	return err
