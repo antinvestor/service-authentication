@@ -108,7 +108,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(response)
 	}
 
-	scopeData, ok := tokenObject["request"].(map[string]any)
+	requestData, ok := tokenObject["request"].(map[string]any)
 	if !ok {
 		logger.Error("request data not found")
 		rw.Header().Set("Content-Type", "application/json")
@@ -116,7 +116,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "request data not found"})
 	}
 
-	grantedScopes, ok := scopeData["granted_scopes"].([]string)
+	grantedScopes, ok := requestData["granted_scopes"].([]any)
 	if !ok {
 		logger.Error("scope not found or invalid")
 		rw.Header().Set("Content-Type", "application/json")
