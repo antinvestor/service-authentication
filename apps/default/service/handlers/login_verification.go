@@ -10,6 +10,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
+	"github.com/markbates/goth/gothic"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,11 +48,19 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	logger := svc.Log(ctx).WithField("endpoint", "SubmitVerificationEndpoint")
 
 	contact := req.PostForm.Get("contact")
-	loginChallenge := req.PostForm.Get("login_challenge")
+	// Retrieve loginChallenge from session instead of form values
+	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	if err != nil {
+		logger.WithError(err).Error("failed to get session")
+		http.Redirect(rw, req, "/error", http.StatusSeeOther)
+		return err
+	}
 
-	if loginChallenge == "" {
-		http.Redirect(rw, req, "/not-found", http.StatusNotFound)
-		return nil
+	loginChallenge, ok := session.Values[SessionKeyLoginChallenge].(string)
+	if !ok || loginChallenge == "" {
+		logger.Error("login_challenge not found in session")
+		http.Redirect(rw, req, "/error?error=login_challange_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
+		return fmt.Errorf("login_challenge not found in session")
 	}
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
