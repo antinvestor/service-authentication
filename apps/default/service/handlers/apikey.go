@@ -10,6 +10,8 @@ import (
 	"github.com/pitabwire/frame"
 )
 
+const constApiKeyIDPrefix = "api_k"
+
 type apiKey struct {
 	ID       string            `json:"id"`
 	Name     string            `json:"name"`
@@ -44,8 +46,10 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	jwtServerURL := h.config.GetOauth2ServiceAdminURI()
 
+	apiKeyID := constApiKeyIDPrefix + utils.GenerateRandomStringEfficient(32)
+
 	jwtClient, err := h.service.RegisterForJwtWithParams(ctx,
-		jwtServerURL, akey.Name, apiKeySecret,
+		jwtServerURL, akey.Name, apiKeyID, apiKeySecret,
 		akey.Scope, akey.Audience, akey.Metadata)
 	if err != nil {
 		h.service.Log(ctx).WithError(err).Error("could not register jwt params")
@@ -57,7 +61,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	apiky := models.APIKey{
 		Name:      akey.Name,
 		ProfileID: subject,
-		Key:       jwtClientID,
+		Key:       apiKeyID,
 		Hash:      apiKeySecret,
 		Scope:     akey.Scope,
 	}

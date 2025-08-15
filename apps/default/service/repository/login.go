@@ -33,7 +33,7 @@ func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) 
 	var login models.Login
 	err := r.service.DB(ctx, true).First(&login, "profile_id = ?", profileID).Error
 	if err != nil {
-return nil, err
+		return nil, err
 	}
 	return &login, nil
 }

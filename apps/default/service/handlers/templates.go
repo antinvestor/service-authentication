@@ -10,10 +10,8 @@ import (
 // Template variables for all handlers
 var (
 	errorTmpl         *template.Template
-	setPasswordTmpl   *template.Template
 	notFoundTmpl      *template.Template
 	loginTmpl         *template.Template
-	forgotTmpl        *template.Template
 	verifyContactTmpl *template.Template
 	templateDir       string
 )

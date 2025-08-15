@@ -629,7 +629,7 @@ func (suite *HandlersTestSuite) TestNotFoundEndpoint() {
 			if r := recover(); r != nil {
 				// Re-panic after cleanup
 				panic(r)
-				}
+			}
 		}()
 
 		// Create timeout context for the entire test

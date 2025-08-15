@@ -17,7 +17,7 @@ import (
 	"github.com/markbates/goth/providers/google"
 )
 
-func (h *AuthServer) setupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) {
+func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.AuthenticationConfig) {
 
 	sessionStore := sessions.NewCookieStore([]byte(cfg.AuthProviderSessionSecurityKey))
 	sessionStore.Options.Path = "/"
@@ -158,7 +158,6 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 	}
 
 	loginChallenge := req.PostFormValue("login_challenge")
-
 
 	// try to get the user without re-authenticating
 	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)

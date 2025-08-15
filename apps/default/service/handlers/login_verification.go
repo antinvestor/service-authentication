@@ -59,7 +59,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	loginChallenge, ok := session.Values[SessionKeyLoginChallenge].(string)
 	if !ok || loginChallenge == "" {
 		logger.Error("login_challenge not found in session")
-		http.Redirect(rw, req, "/error?error=login_challange_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
+		http.Redirect(rw, req, "/error?error=login_challenge_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
 		return fmt.Errorf("login_challenge not found in session")
 	}
 

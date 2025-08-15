@@ -66,7 +66,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		"partition_id":    partitionObj.GetId(),
 		"roles":           []string{"user"},
 		"device_id":       deviceObj.GetId(),
-		"login_id":  deviceObj.GetSessionId(),
+		"login_id":        deviceObj.GetSessionId(),
 		"profile_id":      getConseReq.GetSubject(),
 		"profile_contact": getConseReq.GetSubject(),
 	}

@@ -69,25 +69,25 @@ func (suite *LoginRepositoryTestSuite) TestSave() {
 
 func (suite *LoginRepositoryTestSuite) TestGetByProfileID() {
 	testCases := []struct {
-		name        string
-		profileID   string
-		source      string
-		queryID     string
-		shouldFind  bool
+		name       string
+		profileID  string
+		source     string
+		queryID    string
+		shouldFind bool
 	}{
 		{
-			name:        "Get existing login by profile ID",
-			profileID:   "test-profile-id-456",
-			source:      "direct",
-			queryID:     "test-profile-id-456",
-			shouldFind:  true,
+			name:       "Get existing login by profile ID",
+			profileID:  "test-profile-id-456",
+			source:     "direct",
+			queryID:    "test-profile-id-456",
+			shouldFind: true,
 		},
 		{
-			name:        "Get non-existing login by profile ID",
-			profileID:   "test-profile-id-789",
-			source:      "direct",
-			queryID:     "non-existing-id",
-			shouldFind:  false,
+			name:       "Get non-existing login by profile ID",
+			profileID:  "test-profile-id-789",
+			source:     "direct",
+			queryID:    "non-existing-id",
+			shouldFind: false,
 		},
 	}
 

@@ -36,7 +36,7 @@ type AuthServer struct {
 	sessionRepo    repository.SessionRepository
 
 	// Login options enabled
-	loginOptions     map[string]bool
+	loginOptions map[string]bool
 }
 
 func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient) *AuthServer {
@@ -52,7 +52,6 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *conf
 	if err != nil {
 		log.Fatal("Failed to decode block key:", err)
 	}
-
 
 	h := &AuthServer{
 		service:      service,

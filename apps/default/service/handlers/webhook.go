@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/pitabwire/frame"
 )
@@ -57,7 +59,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	if !ok {
 		sessionData, ok = tokenObject["client"].(map[string]any)
 		if !ok {
-			logger.Error("no session or client data not found")
+			logger.Error("no session or client data found")
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusBadRequest)
 			return json.NewEncoder(rw).Encode(map[string]string{"error": "client/session data not found"})
@@ -72,28 +74,30 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 
-	// Check if this is an API key client
-	apiKeyModel, err := h.apiKeyRepo.GetByKey(ctx, clientID)
-	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could not find api key")
-		return err
-	}
+	if strings.HasPrefix(clientID, "api_key") {
 
-	if apiKeyModel == nil {
-		// Not an API key, handle as regular user token
+		// Check if this is an API key client
+		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)
+		if err0 != nil {
+			h.service.Log(ctx).WithError(err0).Error("could not find api key")
+			return err0
+		}
 
-		partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
-		if err != nil {
-			logger.WithError(err).Error("could not get partition by profile id")
-			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusInternalServerError)
-			return json.NewEncoder(rw).Encode(map[string]string{"error": "could not get partition"})
+		// This is an API key client - handle as external service
+		roles := []string{"system_external"}
+
+		if apiKeyModel.Scope != "" {
+			var scopeList []string
+			err0 = json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList)
+			if err0 == nil {
+				roles = scopeList
+			}
 		}
 
 		tokenMap := map[string]any{
-			"tenant_id":    partitionObj.GetTenantId(),
-			"partition_id": partitionObj.GetId(),
-			"roles":        []string{"user"},
+			"tenant_id":    apiKeyModel.TenantID,
+			"partition_id": apiKeyModel.PartitionID,
+			"roles":        roles,
 		}
 
 		response["session"].(map[string]any)["access_token"] = tokenMap
@@ -104,21 +108,48 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(response)
 	}
 
-	// This is an API key client - handle as external service
-	roles := []string{"system_external"}
+	scopeData, ok := tokenObject["request"].(map[string]any)
+	if !ok {
+		logger.Error("request data not found")
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusBadRequest)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "request data not found"})
+	}
 
-	if apiKeyModel.Scope != "" {
-		var scopeList []string
-		err := json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList)
-		if err == nil {
-			roles = scopeList
-		}
+	grantedScopes, ok := scopeData["granted_scopes"].([]string)
+	if !ok {
+		logger.Error("scope not found or invalid")
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusBadRequest)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "scope not found"})
+	}
+
+	if slices.Contains(grantedScopes, frame.ConstInternalSystemScope) {
+
+		roles := []string{"system_internal"}
+		// This is an internal system client
+		response["session"].(map[string]any)["access_token"] = map[string]any{"roles": roles}
+		response["session"].(map[string]any)["id_token"] = map[string]any{"roles": roles}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(response)
+
+	}
+
+	// Handle as regular user token
+
+	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+	if err != nil {
+		logger.WithError(err).Error("could not get partition by profile id")
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "could not get partition"})
 	}
 
 	tokenMap := map[string]any{
-		"tenant_id":    apiKeyModel.TenantID,
-		"partition_id": apiKeyModel.PartitionID,
-		"roles":        roles,
+		"tenant_id":    partitionObj.GetTenantId(),
+		"partition_id": partitionObj.GetId(),
+		"roles":        []string{"user"},
 	}
 
 	response["session"].(map[string]any)["access_token"] = tokenMap
@@ -127,4 +158,5 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(response)
+
 }

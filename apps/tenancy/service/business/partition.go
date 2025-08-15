@@ -388,7 +388,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 		"client_id":      clientID,
 		"grant_types":    []string{"authorization_code", "refresh_token"},
 		"response_types": []string{"token", "id_token", "code", "token id_token", "token code id_token"},
-		"scope":          "openid offline offline_access profile contact",
+		"scope":          "openid offline_access profile",
 		"redirect_uris":  uriList,
 		"logo_uri":       logoURI,
 		"audience":       audienceList,
