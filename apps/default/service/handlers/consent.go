@@ -7,6 +7,7 @@ import (
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/markbates/goth/gothic"
 )
 
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -21,6 +22,20 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	if err != nil {
 		logger.WithError(err).Info(" couldn't get a valid login challenge")
 		return err
+	}
+
+	// Store loginChallenge in session before OAuth redirect
+	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	if err != nil {
+		logger.WithError(err).Error("failed to get session")
+		return err
+	}
+
+	// Clean up the session value after retrieving it
+	delete(session.Values, SessionKeyLoginChallenge)
+	err = session.Save(req, rw)
+	if err != nil {
+		logger.WithError(err).Warn("failed to save session after cleanup")
 	}
 
 	getConseReq, err := defaultHydra.GetConsentRequest(req.Context(), consentChallenge)
@@ -51,7 +66,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		"partition_id":    partitionObj.GetId(),
 		"roles":           []string{"user"},
 		"device_id":       deviceObj.GetId(),
-		"device_link_id":  deviceObj.GetSessionId(),
+		"login_id":  deviceObj.GetSessionId(),
 		"profile_id":      getConseReq.GetSubject(),
 		"profile_contact": getConseReq.GetSubject(),
 	}
