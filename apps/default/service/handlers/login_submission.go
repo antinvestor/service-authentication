@@ -101,7 +101,7 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	if !login.Locked.IsZero() {
-		return "", errors.New("Login is locked")
+		return "", errors.New("login is locked")
 	}
 
 	if models.LoginSource(login.Source) != models.LoginSourceDirect {
@@ -118,11 +118,11 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	if int(resp.GetCheckAttempts()) > h.config.AuthProviderContactLoginMaxVerificationAttempts {
-		return "", errors.New("Login verification attempts exceeded")
+		return "", errors.New("login verification attempts exceeded")
 	}
 
 	if !resp.GetSuccess() {
-		return "", errors.New("Login verification code is incorrect")
+		return "", errors.New("login verification code is incorrect")
 	}
 
 	return login.ProfileID, nil

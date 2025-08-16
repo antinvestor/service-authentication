@@ -17,7 +17,6 @@ type AuthenticationConfig struct {
 
 	AuthProviderContactLoginDisabled                bool     `envDefault:"false" env:"AUTH_PROVIDER_CONTACT_LOGIN_DISABLED"`
 	AuthProviderContactLoginMaxVerificationAttempts int      `envDefault:"3" env:"AUTH_PROVIDER_CONTACT_LOGIN_MAX_VERIFICATION_ATTEMPTS"`
-	AuthProviderSessionSecurityKey                  string   `envDefault:"" env:"AUTH_PROVIDER_SESSION_SECURITY_KEY"`
 	AuthProviderSessionAge                          int      `envDefault:"5184000"  env:"AUTH_PROVIDER_SESSION_AGE"`
 	AuthProviderGoogleClientID                      string   `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_CLIENT_ID"`
 	AuthProviderGoogleSecret                        string   `envDefault:"" env:"AUTH_PROVIDER_GOOGLE_SECRET"`

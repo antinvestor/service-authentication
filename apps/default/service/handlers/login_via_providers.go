@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,14 +18,30 @@ import (
 	"github.com/markbates/goth/providers/google"
 )
 
-func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.AuthenticationConfig) {
+func (h *AuthServer) setupCookieSessions(_ context.Context, cfg *config.AuthenticationConfig) error {
 
-	sessionStore := sessions.NewCookieStore([]byte(cfg.AuthProviderSessionSecurityKey))
+	hashKey, err := hex.DecodeString(cfg.SecureCookieHashKey)
+	if err != nil {
+		return err
+	}
+
+	blockKey, err := hex.DecodeString(cfg.SecureCookieBlockKey)
+	if err != nil {
+		return err
+	}
+
+	sessionStore := sessions.NewCookieStore(hashKey, blockKey)
 	sessionStore.Options.Path = "/"
 	sessionStore.Options.HttpOnly = true
 	sessionStore.Options.Secure = true
 
 	gothic.Store = sessionStore
+	h.cookieCodec = sessionStore.Codecs
+
+	return nil
+}
+
+func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.AuthenticationConfig) {
 
 	var providers []goth.Provider
 

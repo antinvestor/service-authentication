@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,7 +21,7 @@ import (
 const DeviceSessionIDKey = "dev_ses_id"
 
 type AuthServer struct {
-	sc           *securecookie.SecureCookie
+	cookieCodec  []securecookie.Codec
 	service      *frame.Service
 	config       *config.AuthenticationConfig
 	profileCli   *profilev1.ProfileClient
@@ -43,29 +42,23 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *conf
 
 	log := util.Log(ctx)
 
-	hashKey, err := hex.DecodeString(authConfig.SecureCookieHashKey)
-	if err != nil {
-		log.Fatal("Failed to decode hash key:", err)
-	}
-
-	blockKey, err := hex.DecodeString(authConfig.SecureCookieBlockKey)
-	if err != nil {
-		log.Fatal("Failed to decode block key:", err)
-	}
-
 	h := &AuthServer{
 		service:      service,
 		config:       authConfig,
 		profileCli:   profileCli,
 		deviceCli:    deviceCli,
 		partitionCli: partitionCli,
-		sc:           securecookie.New(hashKey, blockKey),
 
 		// Initialise repositories
 		loginRepo:      repository.NewLoginRepository(service),
 		apiKeyRepo:     repository.NewAPIKeyRepository(service),
 		loginEventRepo: repository.NewLoginEventRepository(service),
 		sessionRepo:    repository.NewSessionRepository(service),
+	}
+
+	err := h.setupCookieSessions(ctx, authConfig)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to setup cookie sessions")
 	}
 
 	h.setupAuthProviders(ctx, authConfig)
@@ -154,24 +147,30 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		// Try to get the existing cookie
 		cookie, err := r.Cookie(DeviceSessionIDKey)
 		if err == nil {
 			// Decode and verify the cookie
 			var decodedValue string
-			if decodeErr := h.sc.Decode(DeviceSessionIDKey, cookie.Value, &decodedValue); decodeErr == nil {
-				ctx = utils.DeviceIDToContext(ctx, decodedValue)
-				r = r.WithContext(ctx)
-				defer performDeviceLog(ctx, r, decodedValue)
-				next.ServeHTTP(w, r)
-				return
+			for _, cookieCodec := range h.cookieCodec {
+
+				decodeErr := cookieCodec.Decode(DeviceSessionIDKey, cookie.Value, &decodedValue)
+				if decodeErr == nil {
+					ctx = utils.DeviceIDToContext(ctx, decodedValue)
+					r = r.WithContext(ctx)
+
+					go performDeviceLog(ctx, r, decodedValue)
+					next.ServeHTTP(w, r)
+					return
+				}
 			}
 		}
 
 		newDeviceSessID := util.IDString()
 
 		// Encode and sign the cookie
-		encoded, encodeErr := h.sc.Encode(DeviceSessionIDKey, newDeviceSessID)
+		encoded, encodeErr := h.cookieCodec[0].Encode(DeviceSessionIDKey, newDeviceSessID)
 		if encodeErr != nil {
 			http.Error(w, "Failed to encode cookie", http.StatusInternalServerError)
 			return
