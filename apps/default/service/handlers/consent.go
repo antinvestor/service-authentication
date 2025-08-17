@@ -7,7 +7,6 @@ import (
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/markbates/goth/gothic"
 )
 
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {

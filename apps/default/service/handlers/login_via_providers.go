@@ -45,10 +45,6 @@ func (h *AuthServer) getLogginSession() sessions.Store {
 	return gothic.Store
 }
 
-func (h *AuthServer) getDeviceSession() sessions.Store {
-	return gothic.Store
-}
-
 func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.AuthenticationConfig) {
 
 	var providers []goth.Provider

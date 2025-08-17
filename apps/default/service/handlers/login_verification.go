@@ -10,7 +10,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
-	"github.com/markbates/goth/gothic"
 	"github.com/pitabwire/frame"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
