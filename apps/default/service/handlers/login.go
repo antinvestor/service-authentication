@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/csrf"
 )
 
-const SessionKeyStorageName = "login-storage"
+const SessionKeyLoginStorageName = "login-storage"
 const SessionKeyLoginChallenge = "login_challenge"
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -16,7 +16,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	logger := svc.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
 	// Store loginChallenge in session before OAuth redirect
-	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		return err

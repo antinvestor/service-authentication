@@ -130,7 +130,7 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
 	// Retrieve loginChallenge from session instead of form values
-	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
@@ -170,6 +170,8 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 
 	ctx := req.Context()
 	svc := h.service
+
+
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderLoginEndpoint")
 
 	// Parse form data before accessing PostForm
@@ -178,16 +180,25 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 		return err
 	}
 
-	loginChallenge := req.PostFormValue("login_challenge")
+	// Retrieve loginChallenge from session instead of form values
+	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
+	if err != nil {
+		logger.WithError(err).Error("failed to get session")
+		http.Redirect(rw, req, "/error", http.StatusSeeOther)
+		return err
+	}
+
+	loginChallenge, ok := session.Values[SessionKeyLoginChallenge].(string)
+	if !ok || loginChallenge == "" {
+		logger.Error("login_challenge not found in session")
+		http.Redirect(rw, req, "/error", http.StatusSeeOther)
+		return fmt.Errorf("login_challenge not found in session")
+	}
 
 	// try to get the user without re-authenticating
 	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)
 	if err != nil {
 		gothic.BeginAuthHandler(rw, req)
-		return nil
-	}
-
-	if loginEvt == nil {
 		return nil
 	}
 

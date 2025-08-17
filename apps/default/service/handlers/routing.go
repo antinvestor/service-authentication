@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/gorilla/csrf"
-	"github.com/pitabwire/frame"
 )
 
 // SetupRouterV1 -
@@ -92,11 +89,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// API routes with authentication
 	authHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-			// Set up request context with required services
-			r = r.WithContext(frame.SvcToContext(r.Context(), h.service))
-			r = r.WithContext(profilev1.ToContext(r.Context(), h.profileCli))
-			r = r.WithContext(partitionv1.ToContext(r.Context(), h.partitionCli))
-
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
@@ -112,6 +104,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		})
 	}
 
+	authHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "GET")
 	authHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "POST")
 
 	authHandler(h.CreateAPIKeyEndpoint, "/api/key", "CreateAPIKeyEndpoint", "PUT")
