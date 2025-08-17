@@ -171,7 +171,6 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 	ctx := req.Context()
 	svc := h.service
 
-
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderLoginEndpoint")
 
 	// Parse form data before accessing PostForm
