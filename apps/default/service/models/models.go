@@ -24,7 +24,7 @@ type Login struct {
 type LoginEvent struct {
 	frame.BaseModel
 	LoginID          string `gorm:"type:varchar(50)"`
-	LoginChallengeID string `gorm:"type:varchar(50)"`
+	LoginChallengeID string `gorm:"type:TEXT"`
 	VerificationID   string `gorm:"type:varchar(50)"`
 	AccessID         string `gorm:"type:varchar(50)"`
 	ContactID        string `gorm:"type:varchar(50)"`
@@ -46,8 +46,8 @@ type APIKey struct {
 	Name      string `gorm:"type:varchar(255)"`
 	ProfileID string `gorm:"type:varchar(50)"`
 	Key       string `gorm:"type:varchar(255);uniqueIndex"`
-	Hash      string `gorm:"type:varchar(255)"`
+	Hash      string `gorm:"type:TEXT"`
 	Scope     string `gorm:"type:text"`
 	Audience  string `gorm:"type:text"`
-	Metadata  string `gorm:"type:text"`
+	Metadata  frame.JSONMap
 }

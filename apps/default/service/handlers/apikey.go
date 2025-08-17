@@ -74,12 +74,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	apiky.Audience = string(audBytes)
 
-	metadataBytes, err := json.Marshal(akey.Metadata)
-	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could not marshal metadata")
-		return err
-	}
-	apiky.Metadata = string(metadataBytes)
+	apiky.Metadata = frame.DBPropertiesFromMap(akey.Metadata)
 
 	err = h.apiKeyRepo.Save(ctx, &apiky)
 	if err != nil {
