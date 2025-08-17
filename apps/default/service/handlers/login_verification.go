@@ -66,6 +66,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	_, isValid := utils.ValidateContact(contact)
 	if !isValid {
+		logger.WithField("contact", contact).Warn("supplied contact information is invalid")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return nil
 	}
@@ -73,8 +74,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contact)
 
 	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok || st.Code() != codes.NotFound {
+		st, errOk := status.FromError(err)
+		if !errOk || st.Code() != codes.NotFound {
 			logger.WithError(err).Error("failed to get profile")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 
