@@ -84,7 +84,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	secureHandler(h.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
 	secureHandler(h.ShowVerificationEndpoint, "/s/verify/contact", "ShowVerificationEndpoint", "GET")
 	secureHandler(h.SubmitVerificationEndpoint, "/s/verify/contact/post", "SubmitVerificationEndpoint", "POST")
-	secureHandler(h.ProviderLoginEndpoint, "/s/social/login/{provider}", "ProviderLoginEndpoint", "POST")
+	secureHandler(h.ProviderLoginEndpoint, "/s/social/login/{provider}", "SocialLoginEndpoint", "POST")
 
 	// Webhook routes (no auth required)
 	h.addHandler(router, h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
@@ -112,7 +112,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		})
 	}
 
-	authHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "CreateAPIKeyEndpoint", "POST")
+	authHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "POST")
 
 	authHandler(h.CreateAPIKeyEndpoint, "/api/key", "CreateAPIKeyEndpoint", "PUT")
 	authHandler(h.ListAPIKeyEndpoint, "/api/key", "ListApiKeyEndpoint", "GET")
