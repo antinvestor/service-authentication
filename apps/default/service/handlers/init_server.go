@@ -18,15 +18,18 @@ import (
 	"github.com/pitabwire/util"
 )
 
-const DeviceSessionIDKey = "dev_ses_id"
+const (
+	SessionKeyDeviceStorageName  = "device_storage"
+	SessionKeyDeviceSessionIDKey = "dev_sess_id"
+)
 
 type AuthServer struct {
-	cookieCodec  []securecookie.Codec
-	service      *frame.Service
-	config       *config.AuthenticationConfig
-	profileCli   *profilev1.ProfileClient
-	deviceCli    *devicev1.DeviceClient
-	partitionCli *partitionv1.PartitionClient
+	loginCookieCodec []securecookie.Codec
+	service          *frame.Service
+	config           *config.AuthenticationConfig
+	profileCli       *profilev1.ProfileClient
+	deviceCli        *devicev1.DeviceClient
+	partitionCli     *partitionv1.PartitionClient
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
@@ -148,29 +151,29 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var deviceSessID string
 		// Try to get the existing cookie
-		cookie, err := r.Cookie(DeviceSessionIDKey)
+		cookie, err := r.Cookie(SessionKeyDeviceStorageName)
 		if err == nil {
 			// Decode and verify the cookie
-			var decodedValue string
-			for _, cookieCodec := range h.cookieCodec {
+			for _, cookieCodec := range h.loginCookieCodec {
 
-				decodeErr := cookieCodec.Decode(DeviceSessionIDKey, cookie.Value, &decodedValue)
+				decodeErr := cookieCodec.Decode(SessionKeyDeviceSessionIDKey, cookie.Value, &deviceSessID)
 				if decodeErr == nil {
-					ctx = utils.DeviceIDToContext(ctx, decodedValue)
+					ctx = utils.DeviceIDToContext(ctx, deviceSessID)
 					r = r.WithContext(ctx)
 
-					go performDeviceLog(ctx, r, decodedValue)
+					performDeviceLog(ctx, r, deviceSessID)
 					next.ServeHTTP(w, r)
 					return
 				}
 			}
 		}
 
-		newDeviceSessID := util.IDString()
+		deviceSessID = util.IDString()
 
 		// Encode and sign the cookie
-		encoded, encodeErr := h.cookieCodec[0].Encode(DeviceSessionIDKey, newDeviceSessID)
+		encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceSessionIDKey, deviceSessID)
 		if encodeErr != nil {
 			http.Error(w, "Failed to encode cookie", http.StatusInternalServerError)
 			return
@@ -178,7 +181,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
 		// Set the secure, signed cookie
 		http.SetCookie(w, &http.Cookie{
-			Name:     DeviceSessionIDKey,
+			Name:     SessionKeyDeviceStorageName,
 			Value:    encoded,
 			Path:     "/",
 			MaxAge:   473040000, // 15 years
@@ -187,9 +190,9 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 			Expires:  time.Now().Add(473040000 * time.Second),
 		})
-		r = r.WithContext(utils.DeviceIDToContext(r.Context(), newDeviceSessID))
+		r = r.WithContext(utils.DeviceIDToContext(r.Context(), deviceSessID))
 
-		defer performDeviceLog(ctx, r, newDeviceSessID)
+		performDeviceLog(ctx, r, deviceSessID)
 		// Continue to the next handler
 		next.ServeHTTP(w, r)
 	})

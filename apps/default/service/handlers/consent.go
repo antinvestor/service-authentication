@@ -25,7 +25,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Store loginChallenge in session before OAuth redirect
-	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		return err

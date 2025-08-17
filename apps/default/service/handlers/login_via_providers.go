@@ -36,9 +36,17 @@ func (h *AuthServer) setupCookieSessions(_ context.Context, cfg *config.Authenti
 	sessionStore.Options.Secure = true
 
 	gothic.Store = sessionStore
-	h.cookieCodec = sessionStore.Codecs
+	h.loginCookieCodec = sessionStore.Codecs
 
 	return nil
+}
+
+func (h *AuthServer) getLogginSession() sessions.Store {
+	return gothic.Store
+}
+
+func (h *AuthServer) getDeviceSession() sessions.Store {
+	return gothic.Store
 }
 
 func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.AuthenticationConfig) {
@@ -126,7 +134,7 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
 	// Retrieve loginChallenge from session instead of form values
-	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)

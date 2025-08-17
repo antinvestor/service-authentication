@@ -5,7 +5,6 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/gorilla/csrf"
-	"github.com/markbates/goth/gothic"
 )
 
 const SessionKeyStorageName = "login-storage"
@@ -17,7 +16,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	logger := svc.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
 	// Store loginChallenge in session before OAuth redirect
-	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		return err

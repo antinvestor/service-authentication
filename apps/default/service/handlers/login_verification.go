@@ -49,7 +49,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	contact := req.PostForm.Get("contact")
 	// Retrieve loginChallenge from session instead of form values
-	session, err := gothic.Store.Get(req, SessionKeyStorageName)
+	session, err := h.getLogginSession().Get(req, SessionKeyStorageName)
 	if err != nil {
 		logger.WithError(err).Error("failed to get session")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
