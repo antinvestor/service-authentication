@@ -52,7 +52,7 @@ func main() {
 		apis.WithTokenPassword(svc.JwtClientSecret()),
 		apis.WithAudiences("service_partition"))
 	if err != nil {
-		log.Printf("main -- Could not setup partition service client: %v", err)
+		log.WithError(err).Fatal("could not setup partition service client: %v", err)
 	}
 
 	profileCli, err = profilev1.NewProfileClient(ctx,
@@ -62,7 +62,7 @@ func main() {
 		apis.WithTokenPassword(svc.JwtClientSecret()),
 		apis.WithAudiences("service_profile"))
 	if err != nil {
-		log.Printf("main -- Could not setup profile service : %v", err)
+		log.WithError(err).Fatal("could not setup profile service : %v", err)
 	}
 
 	deviceCli, err = devicev1.NewDeviceClient(ctx,
@@ -72,7 +72,7 @@ func main() {
 		apis.WithTokenPassword(svc.JwtClientSecret()),
 		apis.WithAudiences("service_devices"))
 	if err != nil {
-		log.Printf("main -- Could not setup profile service : %v", err)
+		log.WithError(err).Fatal("could not setup devices service : %v", err)
 	}
 
 	serviceTranslations := frame.WithTranslations("/localization", "en")
@@ -94,7 +94,7 @@ func main() {
 		Info(" Initiating server operations")
 	err = svc.Run(ctx, "")
 	if err != nil {
-		log.Printf("main -- Could not run Server : %v", err)
+		log.WithError(err).Error("could not run service")
 	}
 }
 

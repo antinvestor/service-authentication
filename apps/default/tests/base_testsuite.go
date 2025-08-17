@@ -124,9 +124,6 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.HTTPServerPort = bs.FreeAuthPort
 
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"
-
-	// Ensure OAuth2 service URI is properly configured for dependent services
-	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
 
