@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"strings"
 
 	apis "github.com/antinvestor/apis/go/common"
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
@@ -46,16 +45,22 @@ func main() {
 	var deviceCli *devicev1.DeviceClient
 	var partitionCli *partitionv1.PartitionClient
 
-	audienceList := make([]string, 0)
-	if cfg.Oauth2ServiceAudience != "" {
-		audienceList = strings.Split(cfg.Oauth2ServiceAudience, ",")
+	partitionCli, err = partitionv1.NewPartitionsClient(ctx,
+		apis.WithEndpoint(cfg.PartitionServiceURI),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		apis.WithTokenUsername(svc.JwtClientID()),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithAudiences("service_partition"))
+	if err != nil {
+		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
+
 	profileCli, err = profilev1.NewProfileClient(ctx,
 		apis.WithEndpoint(cfg.ProfileServiceURI),
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithAudiences(audienceList...))
+		apis.WithAudiences("service_profile"))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
 	}
@@ -65,20 +70,9 @@ func main() {
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithAudiences(audienceList...))
+		apis.WithAudiences("service_devices"))
 	if err != nil {
 		log.Printf("main -- Could not setup profile service : %v", err)
-	}
-
-	partitionServiceURL := cfg.PartitionServiceURI
-	partitionCli, err = partitionv1.NewPartitionsClient(ctx,
-		apis.WithEndpoint(partitionServiceURL),
-		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithAudiences(audienceList...))
-	if err != nil {
-		log.Printf("main -- Could not setup partition service client: %v", err)
 	}
 
 	serviceTranslations := frame.WithTranslations("/localization", "en")

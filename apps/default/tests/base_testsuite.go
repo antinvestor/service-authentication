@@ -131,7 +131,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
 	cfg.DeviceServiceURI = deviceDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_device"
+	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_devices"
 	cfg.Oauth2JwtVerifyAudience = "authentication_tests"
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
@@ -164,7 +164,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithAudiences("service_device"))
+		apis.WithAudiences("service_devices"))
 	require.NoError(t, err)
 
 	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli)
