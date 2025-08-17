@@ -16,6 +16,8 @@ import (
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/facebook"
 	"github.com/markbates/goth/providers/google"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (h *AuthServer) setupCookieSessions(_ context.Context, cfg *config.AuthenticationConfig) error {
@@ -112,8 +114,12 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 	logger.WithField("contact_detail", contactDetail).Debug("looking up existing profile by contact")
 	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contactDetail)
 	if err != nil {
-		logger.WithError(err).WithField("contact_detail", contactDetail).Error("failed to lookup profile by contact")
-		return nil, err
+		st, errOk := status.FromError(err)
+		if !errOk || st.Code() != codes.NotFound {
+
+			logger.WithError(err).WithField("contact_detail", contactDetail).Error("failed to lookup profile by contact")
+			return nil, err
+		}
 	}
 
 	// Step 4: Create profile if it doesn't exist
