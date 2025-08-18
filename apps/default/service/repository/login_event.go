@@ -33,12 +33,8 @@ func (r *loginEventRepository) GetByID(ctx context.Context, id string) (*models.
 
 // Save creates or updates a login event record
 func (r *loginEventRepository) Save(ctx context.Context, loginEvent *models.LoginEvent) error {
-	if loginEvent.ID == "" {
-		// Create new record
-		return r.service.DB(ctx, false).Create(loginEvent).Error
-	}
-	// Update existing record
-	return r.service.DB(ctx, false).Save(loginEvent).Error
+	// Create new record
+	return r.service.DB(ctx, false).Create(loginEvent).Error
 }
 
 // Delete removes a login event record by ID

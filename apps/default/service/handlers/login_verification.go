@@ -62,6 +62,13 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("login_challenge not found in session")
 	}
 
+	clientID, ok := session.Values[SessionKeyClientID].(string)
+	if !ok || clientID == "" {
+		logger.Error("clientID not found in session")
+		http.Redirect(rw, req, "/error?error=client_id_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
+		return fmt.Errorf("client id not found in session")
+	}
+
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
 	_, isValid := utils.ValidateContact(contact)
@@ -118,7 +125,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 
-	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge, nil)
+	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge, nil)
 	if err != nil {
 
 		logger.WithError(err).Error(" contact not log login attempt")
@@ -132,7 +139,14 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
-func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string, extra map[string]any) (*models.LoginEvent, error) {
+func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string, extra map[string]any) (*models.LoginEvent, error) {
+
+	deviceSessionID := utils.SessionIDFromContext(ctx)
+
+	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
 
 	login, err := h.loginRepo.GetByProfileID(ctx, profileID)
 	if err != nil {
@@ -146,6 +160,8 @@ func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSo
 			Source:    string(source),
 		}
 		login.GenID(ctx)
+		login.PartitionID = partitionObj.GetId()
+		login.TenantID = partitionObj.GetTenantId()
 		err = h.loginRepo.Save(ctx, login)
 		if err != nil {
 			return nil, err
@@ -160,8 +176,10 @@ func (h *AuthServer) noteLoginAttempt(ctx context.Context, source models.LoginSo
 		ContactID:        contactID,
 	}
 	loginEvt.Properties = extra
+	loginEvt.PartitionID = partitionObj.GetId()
+	loginEvt.TenantID = partitionObj.GetTenantId()
+	loginEvt.ID = deviceSessionID
 
-	loginEvt.GenID(ctx)
 	err = h.loginEventRepo.Save(ctx, loginEvt)
 	if err != nil {
 		return nil, err

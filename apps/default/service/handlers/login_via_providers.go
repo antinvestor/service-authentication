@@ -69,33 +69,18 @@ func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.Authentic
 
 }
 
-func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Request, loginChallenge string) (*models.LoginEvent, error) {
+func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Request, loginChallenge, clientID string) (*models.LoginEvent, error) {
 
 	ctx := req.Context()
 	svc := h.service
 	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
-	logger.Info("starting provider post-login process")
-
-	// Step 1: Complete OAuth2 authentication with provider
-	logger.Debug("attempting to complete user authentication with provider")
 	user, err := gothic.CompleteUserAuth(rw, req)
 	if err != nil {
 		logger.WithError(err).Error("failed to complete user authentication with provider")
 		return nil, err
 	}
 
-	logger.With("provider", user.Provider).
-		With("user_id", user.UserID).
-		With("email", user.Email).
-		With("name", user.Name).
-		With("first_name", user.FirstName).
-		With("last_name", user.LastName).
-		With("avatar_url", user.AvatarURL).
-		With("raw data", user.RawData).
-		Info("successfully completed provider authentication")
-
-	// Step 2: Extract contact detail from user data
 	contactDetail := user.Email
 	if contactDetail == "" {
 		logger.Warn("no email provided by provider, checking for phone number")
@@ -108,10 +93,6 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		return nil, fmt.Errorf("no contact detail provided by provider %s", user.Provider)
 	}
 
-	logger.WithField("contact_detail", contactDetail).Debug("extracted contact detail from provider")
-
-	// Step 3: Look up existing profile by contact
-	logger.WithField("contact_detail", contactDetail).Debug("looking up existing profile by contact")
 	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contactDetail)
 	if err != nil {
 		st, errOk := status.FromError(err)
@@ -122,27 +103,17 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		}
 	}
 
-	// Step 4: Create profile if it doesn't exist
 	if existingProfile == nil {
-		logger.WithField("contact_detail", contactDetail).Info("profile not found, creating new profile")
 
 		userName := user.Name
 		if userName == "" {
 			userName = strings.Join([]string{user.FirstName, user.LastName}, " ")
-			logger.WithField("constructed_name", userName).Debug("constructed user name from first and last name")
 		}
-
-		logger.With("contact_detail", contactDetail, "user_name", userName).Debug("creating new profile")
-
 		existingProfile, err = h.profileCli.CreateProfileByContactAndName(ctx, contactDetail, userName)
 		if err != nil {
 			logger.WithError(err).With("contact_detail", contactDetail, "user_name", userName).Error("failed to create new profile")
 			return nil, err
 		}
-
-		logger.WithField("profile_id", existingProfile.GetId()).Info("successfully created new profile")
-	} else {
-		logger.WithField("profile_id", existingProfile.GetId()).Info("found existing profile")
 	}
 
 	// Step 5: Find contact ID within the profile
@@ -167,10 +138,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		return nil, nil
 	}
 
-	// Step 6: Record login attempt
-	logger.With("provider", user.Provider, "profile_id", existingProfile.GetId(), "contact_id", contactID, "login_challenge", loginChallenge).Debug("recording login attempt")
-
-	loginEvent, err := h.noteLoginAttempt(ctx, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", loginChallenge, user.RawData)
+	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", loginChallenge, user.RawData)
 	if err != nil {
 		logger.WithError(err).With("provider", user.Provider, "profile_id", existingProfile.GetId(), "contact_id", contactID, "login_challenge", loginChallenge).Error("failed to record login attempt")
 		return nil, err
@@ -202,10 +170,17 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 		return fmt.Errorf("login_challenge not found in session")
 	}
 
+	clientID, ok := session.Values[SessionKeyClientID].(string)
+	if !ok || clientID == "" {
+		logger.Error("clientID not found in session")
+		http.Redirect(rw, req, "/error?error=client_id_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
+		return fmt.Errorf("client id not found in session")
+	}
+
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
 	// try to get the user without re-authenticating
-	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)
+	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge, clientID)
 	if err != nil {
 
 		logger.WithError(err).Error(" user login attempt failed")
@@ -252,8 +227,15 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 		return fmt.Errorf("login_challenge not found in session")
 	}
 
+	clientID, ok := session.Values[SessionKeyClientID].(string)
+	if !ok || clientID == "" {
+		logger.Error("clientID not found in session")
+		http.Redirect(rw, req, "/error?error=client_id_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
+		return fmt.Errorf("client id not found in session")
+	}
+
 	// try to get the user without re-authenticating
-	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge)
+	loginEvt, err := h.providerPostUserLogin(rw, req, loginChallenge, clientID)
 	if err != nil {
 		gothic.BeginAuthHandler(rw, req)
 		return nil

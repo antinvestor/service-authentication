@@ -88,22 +88,9 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
+	h.clearDeviceSessionID(rw)
+
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
-
-	// For the foreseeable future we will always skip the consent page
-	// if getConseReq.Get("skip").Bool() {
-	//
-	// } else {
-
-	// payload := initTemplatePayload(req.Context())
-	// payload["error"] = ""
-	// payload[csrf.TemplateTag] = csrf.TemplateField(req)
-	//
-	// err := env.Template.ExecuteTemplate(rw, "consent.html", payload)
-
-	// return err
-	// }
-
 	return nil
 }
 
@@ -189,4 +176,19 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 	})
 
 	return nil
+}
+
+// clearDeviceSessionID clears the device session ID cookie, forcing creation of a new session
+func (h *AuthServer) clearDeviceSessionID(w http.ResponseWriter) {
+	// Set an expired session cookie to clear it
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionKeySessionStorageName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Negative MaxAge means delete the cookie
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(-1 * time.Hour), // Set to past time
+	})
 }

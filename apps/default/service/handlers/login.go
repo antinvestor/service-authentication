@@ -9,6 +9,7 @@ import (
 
 const SessionKeyLoginStorageName = "login-storage"
 const SessionKeyLoginChallenge = "login_challenge"
+const SessionKeyClientID = "client_id"
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
@@ -60,6 +61,12 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	}
 
 	session.Values[SessionKeyLoginChallenge] = loginChallenge
+
+	client := getLogReq.GetClient()
+	clientId, ok := client.GetClientIdOk()
+	if ok {
+		session.Values[SessionKeyClientID] = *clientId
+	}
 	err = session.Save(req, rw)
 	if err != nil {
 		logger.WithError(err).Error("failed to save login_challenge to session")

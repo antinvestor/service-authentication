@@ -17,6 +17,7 @@ const (
 type Login struct {
 	frame.BaseModel
 	ProfileID string `gorm:"type:varchar(255)"`
+	ClientID  string `gorm:"type:varchar(255)"`
 	Source    string `gorm:"type:varchar(255)"`
 	Locked    time.Time
 }

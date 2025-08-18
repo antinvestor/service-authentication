@@ -136,25 +136,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	}
 
-	// Handle as regular user token
-
-	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
-	if err != nil {
-		logger.WithError(err).Error("could not get partition by profile id")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusInternalServerError)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "could not get partition"})
-	}
-
-	tokenMap := map[string]any{
-		"tenant_id":    partitionObj.GetTenantId(),
-		"partition_id": partitionObj.GetId(),
-		"roles":        []string{"user"},
-	}
-
-	response["session"].(map[string]any)["access_token"] = tokenMap
-	response["session"].(map[string]any)["id_token"] = tokenMap
-
+	// Handle as regular user token should already have everything
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(response)
