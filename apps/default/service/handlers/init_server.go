@@ -137,7 +137,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		userAgent := r.UserAgent()
 
 		req := devicev1.LogRequest{
-			DeviceId:    deviceID,
+			DeviceId:  deviceID,
 			SessionId: sessionID,
 			Ip:        ipAddr,
 			UserAgent: userAgent,
@@ -214,7 +214,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		r = r.WithContext(ctx)
 
 		performDeviceLog(ctx, r, deviceID, sessionID)
-		
+
 		// Continue to the next handler
 		next.ServeHTTP(w, r)
 	})

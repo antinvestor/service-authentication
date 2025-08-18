@@ -1,6 +1,10 @@
 name: Service testing action
 
-on: [push]
+on: 
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
 

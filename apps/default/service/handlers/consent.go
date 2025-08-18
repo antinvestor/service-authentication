@@ -44,8 +44,6 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
-
-
 	deviceObj, err := h.processDeviceSession(ctx, getConseReq.GetSubject())
 	if err != nil && deviceObj == nil {
 		logger.WithError(err).Error("could not process device id linkage")
@@ -56,7 +54,6 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	if err != nil {
 		logger.WithError(err).Error("could not store device id in cookie")
 	}
-
 
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
@@ -126,7 +123,6 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 		}
 	}
 
-
 	if deviceSessionID != "" {
 
 		session, err := deviceCli.Svc().GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
@@ -146,7 +142,6 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 		}
 		deviceObj = resp.GetData()
 	}
-
 
 	if deviceObj.GetProfileId() == profileId {
 		return deviceObj, nil
@@ -175,24 +170,23 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 		return nil
 	}
 
+	// Encode and sign the device ID cookie
+	encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceIDKey, deviceObj.GetId())
+	if encodeErr != nil {
+		return encodeErr
+	}
 
-		// Encode and sign the device ID cookie
-		encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceIDKey, deviceObj.GetId())
-		if encodeErr != nil {
-			return encodeErr
-		}
+	// Set the secure, signed device ID cookie (long-term)
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionKeyDeviceStorageName,
+		Value:    encoded,
+		Path:     "/",
+		MaxAge:   473040000, // 15 years
+		Secure:   true,      // HTTPS-only
+		HttpOnly: true,      // No JavaScript access
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(473040000 * time.Second),
+	})
 
-		// Set the secure, signed device ID cookie (long-term)
-		http.SetCookie(w, &http.Cookie{
-			Name:     SessionKeyDeviceStorageName,
-			Value:    encoded,
-			Path:     "/",
-			MaxAge:   473040000, // 15 years
-			Secure:   true,      // HTTPS-only
-			HttpOnly: true,      // No JavaScript access
-			SameSite: http.SameSiteStrictMode,
-			Expires:  time.Now().Add(473040000 * time.Second),
-		})
-
-		return nil
+	return nil
 }
