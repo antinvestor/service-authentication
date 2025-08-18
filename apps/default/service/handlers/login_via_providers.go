@@ -176,7 +176,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		return nil, err
 	}
 
-	logger.With("login_event_id", loginEvent.GetID(), "provider", user.Provider, "profile_id", existingProfile.GetId(), "contact_id", contactID, "login_challenge", loginChallenge).Info("successfully completed provider post-login process")
+	logger.With("login_event_id", loginEvent.GetID(), "provider", user.Provider, "profile_id", existingProfile.GetId(), "contact_id", contactID).Info("successfully completed provider post-login process")
 
 	return loginEvent, nil
 }

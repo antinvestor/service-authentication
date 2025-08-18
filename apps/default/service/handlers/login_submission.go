@@ -29,7 +29,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	profileName := req.PostForm.Get("profile_name")
 	verificationCode := req.PostForm.Get("verification_code")
-	loginEventID := req.PostForm.Get("login_evt_id")
+	loginEventID := req.PostForm.Get("login_event_id")
 
 	if loginEventID == "" {
 		logger.Warn("missing a login event id")
