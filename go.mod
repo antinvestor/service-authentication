@@ -1,13 +1,13 @@
 module github.com/antinvestor/service-authentication
 
-go 1.24.5
+go 1.25
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.39.2
-	github.com/antinvestor/apis/go/device v1.40.0
-	github.com/antinvestor/apis/go/partition v1.40.0
-	github.com/antinvestor/apis/go/profile v1.40.0
+	github.com/antinvestor/apis/go/common v1.40.1
+	github.com/antinvestor/apis/go/device v1.40.2
+	github.com/antinvestor/apis/go/partition v1.40.2
+	github.com/antinvestor/apis/go/profile v1.40.2
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
@@ -118,7 +118,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
-	go.uber.org/mock v0.5.2 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	gocloud.dev v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect

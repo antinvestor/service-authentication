@@ -23,7 +23,6 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	// Parse form data before accessing PostForm
 	if err := req.ParseForm(); err != nil {
-		logger.WithError(err).Error("failed to parse form data")
 		return err
 	}
 
@@ -32,14 +31,12 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	loginEventID := req.PostForm.Get("login_event_id")
 
 	if loginEventID == "" {
-		logger.Warn("missing a login event id")
 		http.Redirect(rw, req, "/error", http.StatusBadRequest)
 		return nil
 	}
 
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
-		logger.WithError(err).Warn("missing a required field")
 		if frame.ErrorIsNoRows(err) {
 			http.Redirect(rw, req, "/not-found", http.StatusNotFound)
 			return nil
@@ -50,13 +47,11 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
-		logger.WithError(err).Warn("could not verify submitted code")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, err.Error())
 	}
 
 	profileObj, err := h.updateProfileName(ctx, profileID, profileName)
 	if err != nil {
-		logger.WithError(err).Error("DEBUG: updateProfileName failed")
 		return err
 	}
 
@@ -67,12 +62,10 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		req.Context(), params)
 
 	if err != nil {
-		logger.WithError(err).Error("critical issue")
 		return err
 	}
 
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
-
 	return nil
 }
 
