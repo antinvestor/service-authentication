@@ -137,13 +137,17 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		userAgent := r.UserAgent()
 
 		req := devicev1.LogRequest{
-			DeviceId:  deviceID,
 			SessionId: sessionID,
 			Ip:        ipAddr,
 			UserAgent: userAgent,
 			LastSeen:  time.Now().String(),
 			Extras:    map[string]string{"refer": r.Referer()},
 		}
+
+		if deviceID != "" {
+			req.DeviceId = deviceID
+		}
+
 		_, err := h.DeviceCli().Svc().Log(ctx, &req)
 		if err != nil {
 			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Info("device session log error")
