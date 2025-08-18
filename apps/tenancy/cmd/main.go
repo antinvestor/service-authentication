@@ -123,12 +123,12 @@ func setupGRPCServer(_ context.Context, svc *frame.Service,
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			recovery.UnaryServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
-			svc.UnaryAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
+			svc.UnaryAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
 			protovalidateinterceptor.UnaryServerInterceptor(validator)),
 
 		grpc.ChainStreamInterceptor(
 			recovery.StreamServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
-			svc.StreamAuthInterceptor(jwtAudience, cfg.Oauth2JwtVerifyIssuer),
+			svc.StreamAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
 			protovalidateinterceptor.StreamServerInterceptor(validator),
 		),
 	)

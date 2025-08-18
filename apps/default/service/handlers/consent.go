@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
@@ -43,13 +44,19 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
-	deviceSessionID := utils.DeviceIDFromContext(ctx)
 
-	deviceObj, err := h.processDeviceSession(ctx, deviceSessionID, getConseReq.GetSubject())
+
+	deviceObj, err := h.processDeviceSession(ctx, getConseReq.GetSubject())
 	if err != nil && deviceObj == nil {
-		logger.WithError(err).Error("could not process device id link")
+		logger.WithError(err).Error("could not process device id linkage")
 		return err
 	}
+
+	err = h.storeDeviceID(ctx, rw, deviceObj)
+	if err != nil {
+		logger.WithError(err).Error("could not store device id in cookie")
+	}
+
 
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
@@ -103,14 +110,33 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-func (h *AuthServer) processDeviceSession(ctx context.Context, deviceSessionId string, profileId string) (*devicev1.DeviceObject, error) {
+func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string) (*devicev1.DeviceObject, error) {
+
+	deviceID := utils.DeviceIDFromContext(ctx)
+	deviceSessionID := utils.SessionIDFromContext(ctx)
 
 	deviceCli := h.DeviceCli()
 
 	var deviceObj *devicev1.DeviceObject
-	session, err := deviceCli.Svc().GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionId})
-	if err != nil {
 
+	if deviceID != "" {
+		resp, err := deviceCli.Svc().GetById(ctx, &devicev1.GetByIdRequest{Id: []string{deviceID}})
+		if err == nil && len(resp.GetData()) > 0 {
+			deviceObj = resp.GetData()[0]
+		}
+	}
+
+
+	if deviceSessionID != "" {
+
+		session, err := deviceCli.Svc().GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
+		if err == nil {
+			deviceObj = session.GetData()
+		}
+
+	}
+
+	if deviceObj == nil {
 		resp, err0 := deviceCli.Svc().Create(ctx, &devicev1.CreateRequest{
 			Name:       "Error dev",
 			Properties: map[string]string{"source": "consent"},
@@ -119,17 +145,15 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, deviceSessionId s
 			return nil, err0
 		}
 		deviceObj = resp.GetData()
-
-	} else {
-		deviceObj = session.GetData()
 	}
+
 
 	if deviceObj.GetProfileId() == profileId {
 		return deviceObj, nil
 	}
 
 	resp, err := deviceCli.Svc().Link(ctx, &devicev1.LinkRequest{
-		Id:         deviceSessionId,
+		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
 		Properties: map[string]string{"source": "consent"},
 	})
@@ -141,4 +165,34 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, deviceSessionId s
 
 	return deviceObj, nil
 
+}
+
+func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, deviceObj *devicev1.DeviceObject) error {
+
+	deviceID := utils.DeviceIDFromContext(ctx)
+
+	if deviceObj.GetId() == deviceID {
+		return nil
+	}
+
+
+		// Encode and sign the device ID cookie
+		encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceIDKey, deviceObj.GetId())
+		if encodeErr != nil {
+			return encodeErr
+		}
+
+		// Set the secure, signed device ID cookie (long-term)
+		http.SetCookie(w, &http.Cookie{
+			Name:     SessionKeyDeviceStorageName,
+			Value:    encoded,
+			Path:     "/",
+			MaxAge:   473040000, // 15 years
+			Secure:   true,      // HTTPS-only
+			HttpOnly: true,      // No JavaScript access
+			SameSite: http.SameSiteStrictMode,
+			Expires:  time.Now().Add(473040000 * time.Second),
+		})
+
+		return nil
 }

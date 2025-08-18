@@ -73,7 +73,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	ctx := req.Context()
 	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint").WithField("login_challenge", loginChallenge)
+	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
 	logger.Info("starting provider post-login process")
 

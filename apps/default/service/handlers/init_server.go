@@ -20,7 +20,8 @@ import (
 
 const (
 	SessionKeyDeviceStorageName  = "device_storage"
-	SessionKeyDeviceLinkIDKey    = "link_id"
+	SessionKeySessionStorageName = "session_storage"
+	SessionKeyDeviceIDKey        = "link_id"
 	SessionKeyDeviceSessionIDKey = "sess_id"
 )
 
@@ -128,16 +129,16 @@ func (h *AuthServer) NotFoundEndpoint(rw http.ResponseWriter, req *http.Request)
 	return notFoundTmpl.Execute(rw, initTemplatePayload(req.Context()))
 }
 
-// deviceIDMiddleware to ensure secure cookie
+// deviceIDMiddleware to ensure secure cookie and session handling
 func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
-	performDeviceLog := func(ctx context.Context, r *http.Request, deviceLinkID, deviceSessionID string) {
+	performDeviceLog := func(ctx context.Context, r *http.Request, deviceID, sessionID string) {
 		ipAddr := util.GetIP(r)
 		userAgent := r.UserAgent()
 
 		req := devicev1.LogRequest{
-			LinkId:    deviceLinkID,
-			SessionId: deviceSessionID,
+			DeviceId:    deviceID,
+			SessionId: sessionID,
 			Ip:        ipAddr,
 			UserAgent: userAgent,
 			LastSeen:  time.Now().String(),
@@ -145,59 +146,75 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		}
 		_, err := h.DeviceCli().Svc().Log(ctx, &req)
 		if err != nil {
-			util.Log(ctx).WithField("device_session_id", deviceLinkID).WithError(err).Info("device session log error")
+			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Info("device session log error")
 		}
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		var deviceLinkID string
-		var deviceSessionID string
-		// Try to get the existing cookie
-		cookie, err := r.Cookie(SessionKeyDeviceStorageName)
+		var deviceID string
+		var sessionID string
+		var sessionIDExists bool
+
+		// Try to get the existing device ID cookie
+		deviceCookie, err := r.Cookie(SessionKeyDeviceStorageName)
 		if err == nil {
-			// Decode and verify the cookie
+			// Decode and verify the device ID cookie
 			for _, cookieCodec := range h.loginCookieCodec {
-
-				decodeErr := cookieCodec.Decode(SessionKeyDeviceLinkIDKey, cookie.Value, &deviceLinkID)
+				decodeErr := cookieCodec.Decode(SessionKeyDeviceIDKey, deviceCookie.Value, &deviceID)
 				if decodeErr == nil {
-
-					_ = cookieCodec.Decode(SessionKeyDeviceSessionIDKey, cookie.Value, &deviceSessionID)
-
-					ctx = utils.DeviceIDToContext(ctx, deviceLinkID)
-					r = r.WithContext(ctx)
-
-					performDeviceLog(ctx, r, deviceLinkID, deviceSessionID)
-					next.ServeHTTP(w, r)
-					return
+					break
 				}
 			}
 		}
 
-		deviceLinkID = util.IDString()
-
-		// Encode and sign the cookie
-		encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceLinkIDKey, deviceLinkID)
-		if encodeErr != nil {
-			http.Error(w, "failed to encode cookie", http.StatusInternalServerError)
-			return
+		// Try to get the existing session ID cookie
+		sessionCookie, err := r.Cookie(SessionKeySessionStorageName)
+		if err == nil {
+			// Decode and verify the session ID cookie
+			for _, cookieCodec := range h.loginCookieCodec {
+				decodeErr := cookieCodec.Decode(SessionKeyDeviceSessionIDKey, sessionCookie.Value, &sessionID)
+				if decodeErr == nil {
+					sessionIDExists = true
+					break
+				}
+			}
 		}
 
-		// Set the secure, signed cookie
-		http.SetCookie(w, &http.Cookie{
-			Name:     SessionKeyDeviceStorageName,
-			Value:    encoded,
-			Path:     "/",
-			MaxAge:   473040000, // 15 years
-			Secure:   true,      // HTTPS-only
-			HttpOnly: true,      // No JavaScript access
-			SameSite: http.SameSiteStrictMode,
-			Expires:  time.Now().Add(473040000 * time.Second),
-		})
-		r = r.WithContext(utils.DeviceIDToContext(r.Context(), deviceLinkID))
+		// If session ID doesn't exist, create a new one
+		if !sessionIDExists {
+			sessionID = util.IDString()
 
-		performDeviceLog(ctx, r, deviceLinkID, deviceSessionID)
+			// Encode and sign the session ID cookie
+			encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceSessionIDKey, sessionID)
+			if encodeErr != nil {
+				http.Error(w, "failed to encode session cookie", http.StatusInternalServerError)
+				return
+			}
+
+			// Set the secure, signed session ID cookie (short-term for login session)
+			http.SetCookie(w, &http.Cookie{
+				Name:     SessionKeySessionStorageName,
+				Value:    encoded,
+				Path:     "/",
+				MaxAge:   1800, // 1 hour for login session
+				Secure:   true, // HTTPS-only
+				HttpOnly: true, // No JavaScript access
+				SameSite: http.SameSiteStrictMode,
+				Expires:  time.Now().Add(30 * time.Minute),
+			})
+		}
+
+		if deviceID != "" {
+			// Add both device ID and session ID to context
+			ctx = utils.DeviceIDToContext(ctx, deviceID)
+		}
+		ctx = utils.SessionIDToContext(ctx, sessionID)
+		r = r.WithContext(ctx)
+
+		performDeviceLog(ctx, r, deviceID, sessionID)
+		
 		// Continue to the next handler
 		next.ServeHTTP(w, r)
 	})

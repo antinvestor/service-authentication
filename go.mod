@@ -4,10 +4,10 @@ go 1.24.5
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.38.0
-	github.com/antinvestor/apis/go/device v1.39.0
-	github.com/antinvestor/apis/go/partition v1.39.0
-	github.com/antinvestor/apis/go/profile v1.39.0
+	github.com/antinvestor/apis/go/common v1.39.2
+	github.com/antinvestor/apis/go/device v1.40.0
+	github.com/antinvestor/apis/go/partition v1.40.0
+	github.com/antinvestor/apis/go/profile v1.40.0
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
