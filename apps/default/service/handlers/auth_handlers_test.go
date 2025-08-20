@@ -619,8 +619,7 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 				body := make([]byte, 1024)
 				n, _ := resp.Body.Read(body)
 				bodyStr := string(body[:n])
-				assert.Contains(t, bodyStr, "<html>")
-				assert.Contains(t, bodyStr, "Error")
+				assert.Contains(t, bodyStr, "<title>Error</title>")
 
 				// Verify service is working
 				assert.NotNil(t, authServer.Service())

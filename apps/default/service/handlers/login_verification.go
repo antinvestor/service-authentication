@@ -82,16 +82,15 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
-
 	contactID := ""
-if existingProfile == nil {
+	if existingProfile == nil {
 
-for _, profileContact := range existingProfile.GetContacts() {
-		if strings.EqualFold(contact, profileContact.GetDetail()) {
-			contactID = profileContact.GetId()
+		for _, profileContact := range existingProfile.GetContacts() {
+			if strings.EqualFold(contact, profileContact.GetDetail()) {
+				contactID = profileContact.GetId()
+			}
 		}
 	}
-}
 
 	if contactID == "" {
 

@@ -115,8 +115,8 @@ func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, 
 	return profileCli.CreateProfileByContactAndName(ctx, email, name)
 }
 
-// CreateMockVerification creates a mock verification record for testing
-func (suite *PasswordlessLoginTestSuite) CreateMockVerification(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
+// CreateVerification creates a mock verification record for testing
+func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
 	profileCli := authServer.ProfileCli()
 	return profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		ContactId:        contactID,
@@ -229,7 +229,7 @@ func (suite *PasswordlessLoginTestSuite) TestLoginSubmissionFlow() {
 		require.NotEmpty(t, contactID)
 
 		// Create mock verification
-		verification, err := suite.CreateMockVerification(opCtx, testCtx.AuthServer, contactID)
+		verification, err := suite.CreateVerification(opCtx, testCtx.AuthServer, contactID)
 		require.NoError(t, err)
 
 		// Create login event manually for testing

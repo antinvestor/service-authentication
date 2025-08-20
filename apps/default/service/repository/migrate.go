@@ -9,5 +9,5 @@ import (
 
 func Migrate(ctx context.Context, svc *frame.Service, migrationPath string) error {
 	return svc.MigrateDatastore(ctx, migrationPath,
-		&models.APIKey{}, &models.Session{}, &models.Login{}, &models.LoginEvent{})
+		&models.APIKey{}, &models.Login{}, &models.LoginEvent{})
 }

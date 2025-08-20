@@ -13,8 +13,6 @@ type LoginRepository interface {
 	GetByProfileID(ctx context.Context, profileID string) (*models.Login, error)
 	// Save creates or updates a login record
 	Save(ctx context.Context, login *models.Login) error
-	// Delete removes a login record by ID
-	Delete(ctx context.Context, id string) error
 }
 
 // APIKeyRepository handles database operations for APIKey entities
@@ -39,8 +37,6 @@ type LoginEventRepository interface {
 	GetByID(ctx context.Context, id string) (*models.LoginEvent, error)
 	// Save creates or updates a login event record
 	Save(ctx context.Context, loginEvent *models.LoginEvent) error
-	// Delete removes a login event record by ID
-	Delete(ctx context.Context, id string) error
 }
 
 // SessionRepository handles database operations for Session entities

@@ -111,68 +111,14 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileID() {
 				foundLogin, err := loginRepo.GetByProfileID(ctx, tc.queryID)
 
 				// Verify
-				require.NoError(t, err)
 				if tc.shouldFind {
+					require.NoError(t, err)
 					require.NotNil(t, foundLogin, "Should find login")
 					assert.Equal(t, tc.profileID, foundLogin.ProfileID, "Profile ID should match")
 					assert.Equal(t, tc.source, foundLogin.Source, "Source should match")
 				} else {
-					assert.Nil(t, foundLogin, "Should not find login")
-				}
-			})
-		}
-	})
-}
-
-func (suite *LoginRepositoryTestSuite) TestDelete() {
-	testCases := []struct {
-		name        string
-		profileID   string
-		shouldError bool
-	}{
-		{
-			name:        "Delete existing login",
-			profileID:   "test-profile-id-delete",
-			shouldError: false,
-		},
-		{
-			name:        "Delete non-existing login",
-			profileID:   "non-existing-profile-id",
-			shouldError: false, // GORM doesn't error on delete of non-existing record
-		},
-	}
-
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		loginRepo := repository.NewLoginRepository(svc)
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup - create login first for valid test case
-				login := &models.Login{
-					ProfileID: tc.profileID,
-					Source:    "direct",
-				}
-
-				if tc.name == "Delete existing login" {
-					err := loginRepo.Save(ctx, login)
-					require.NoError(t, err)
-				}
-
-				// Execute
-				err := loginRepo.Delete(ctx, login.ID)
-
-				// Verify
-				if tc.shouldError {
 					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
-
-					// Verify login is deleted
-					foundLogin, err := loginRepo.GetByProfileID(ctx, tc.profileID)
-					require.NoError(t, err)
-					assert.Nil(t, foundLogin, "Login should be deleted")
+					assert.Nil(t, foundLogin, "Should not find login")
 				}
 			})
 		}

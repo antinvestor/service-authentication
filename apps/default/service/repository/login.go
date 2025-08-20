@@ -47,8 +47,3 @@ func (r *loginRepository) Save(ctx context.Context, login *models.Login) error {
 	// Update existing record
 	return r.service.DB(ctx, false).Save(login).Error
 }
-
-// Delete removes a login record by ID
-func (r *loginRepository) Delete(ctx context.Context, id string) error {
-	return r.service.DB(ctx, false).Delete(&models.Login{}, "id = ?", id).Error
-}

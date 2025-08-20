@@ -37,7 +37,6 @@ type AuthServer struct {
 	loginRepo      repository.LoginRepository
 	apiKeyRepo     repository.APIKeyRepository
 	loginEventRepo repository.LoginEventRepository
-	sessionRepo    repository.SessionRepository
 
 	// Login options enabled
 	loginOptions map[string]bool
@@ -58,7 +57,6 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *conf
 		loginRepo:      repository.NewLoginRepository(service),
 		apiKeyRepo:     repository.NewAPIKeyRepository(service),
 		loginEventRepo: repository.NewLoginEventRepository(service),
-		sessionRepo:    repository.NewSessionRepository(service),
 	}
 
 	err := h.setupCookieSessions(ctx, authConfig)
@@ -126,6 +124,8 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 }
 
 func (h *AuthServer) NotFoundEndpoint(rw http.ResponseWriter, req *http.Request) error {
+	rw.Header().Set("Content-Type", "text/html")
+	rw.WriteHeader(http.StatusNotFound)
 	return notFoundTmpl.Execute(rw, initTemplatePayload(req.Context()))
 }
 

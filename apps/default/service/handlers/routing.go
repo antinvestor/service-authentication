@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/csrf"
 )
@@ -41,28 +42,42 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Static file serving (no auth, no CSRF) with cache headers
 	staticDir := filepath.Join("static")
 	fileServer := http.FileServer(http.Dir(staticDir))
-	
+
 	// Wrap file server with cache headers
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set cache headers for static assets
 		w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
 		w.Header().Set("Expires", "Thu, 31 Dec 2025 23:59:59 GMT")
-		
+
 		// Set proper content types
 		if filepath.Ext(r.URL.Path) == ".css" {
 			w.Header().Set("Content-Type", "text/css")
 		} else if filepath.Ext(r.URL.Path) == ".js" {
 			w.Header().Set("Content-Type", "application/javascript")
 		}
-		
+
 		fileServer.ServeHTTP(w, r)
 	})
-	
-	router.Handle("/static/", http.StripPrefix("/static/", staticHandler))
 
 	// Public routes (no auth, no CSRF)
-	h.addHandler(router, h.NotFoundEndpoint, "/", "NotFoundEndpoint", "GET")
 	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
+
+	// Custom root handler that handles both static files and index
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/static/") {
+			// Handle static files
+			staticHandler.ServeHTTP(w, r)
+			return
+		}
+		// Handle other paths as not found
+		err = h.NotFoundEndpoint(w, r)
+		if err != nil {
+			log := h.service.Log(r.Context())
+			log.WithError(err).WithField("path", r.URL.Path).WithField("name", "NotFoundEndpoint").Error("handler error")
+			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+		}
+
+	})
 
 	// Secure routes with CSRF protection
 	unAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
