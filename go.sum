@@ -33,8 +33,8 @@ github.com/antinvestor/apis/go/device v1.40.2 h1:B6NcMXVbg4AzLjmk1HvbyN8Tqm9KEo6
 github.com/antinvestor/apis/go/device v1.40.2/go.mod h1:MhROKA9XWo+tSx4d2WN8z38tnqEDkiUzpcQV6jsrmxo=
 github.com/antinvestor/apis/go/partition v1.40.2 h1:V1tLbheMB//rSgHjcadNcXNntEMZrk5WsIsAH9o/OwM=
 github.com/antinvestor/apis/go/partition v1.40.2/go.mod h1:xzNSg4NmQ6S5x10zvF+j57qrWqrmzLh9JU9Y/qpVUTk=
-github.com/antinvestor/apis/go/profile v1.40.2 h1:D4Ng1Ent6w/Dfs3QVCnjRu9iqnEvfmaG/AZb5Vd3auM=
-github.com/antinvestor/apis/go/profile v1.40.2/go.mod h1:Jelc81BcLpVAjhhgCx+6HchbobgomdBaiL12h/Z0Grs=
+github.com/antinvestor/apis/go/profile v1.40.4 h1:Epfc0kiaTF6wOW+ta0qrllbYrRT3FyA9vMnVqKfjUcI=
+github.com/antinvestor/apis/go/profile v1.40.4/go.mod h1:Jelc81BcLpVAjhhgCx+6HchbobgomdBaiL12h/Z0Grs=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/caarlos0/env/v11 v11.3.1 h1:cArPWC15hWmEt+gWk7YBi7lEXTXCvpaSdCiZE2X5mCA=

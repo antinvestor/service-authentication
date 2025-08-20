@@ -71,15 +71,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
-	_, isValid := utils.ValidateContact(contact)
-	if !isValid {
-		logger.WithField("contact", contact).Warn("supplied contact information is invalid")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return nil
-	}
-
 	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contact)
-
 	if err != nil {
 		st, errOk := status.FromError(err)
 		if !errOk || st.Code() != codes.NotFound {
@@ -90,28 +82,31 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	if existingProfile == nil {
-		// don't have this profile in existence so we create it
-		existingProfile, err = h.profileCli.CreateProfileByContactAndName(ctx, contact, "")
-		if err != nil {
-			logger.WithError(err).Error(" could not create profile by contact")
-			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
-			return nil
-		}
-	}
 
 	contactID := ""
-	for _, profileContact := range existingProfile.GetContacts() {
+if existingProfile == nil {
+
+for _, profileContact := range existingProfile.GetContacts() {
 		if strings.EqualFold(contact, profileContact.GetDetail()) {
 			contactID = profileContact.GetId()
 		}
 	}
+}
 
 	if contactID == "" {
-		logger.WithError(err).Error(" contact not linked to profile found")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return nil
+
+		// don't have this contact in existence so we create it
+		contactResp, err0 := h.profileCli.Svc().CreateContact(ctx, &profilev1.CreateContactRequest{
+			Contact: contact,
+		})
+		if err0 != nil {
+			logger.WithError(err0).Error(" could not create/find existing contact")
+			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+
+			return nil
+		}
+
+		contactID = contactResp.GetData().GetId()
 	}
 
 	resp, err := h.profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{

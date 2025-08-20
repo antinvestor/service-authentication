@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gorilla/csrf"
 )
@@ -36,6 +37,28 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	} else {
 		csrfMiddleware = csrf.Protect(csrfSecret, csrf.Secure(true))
 	}
+
+	// Static file serving (no auth, no CSRF) with cache headers
+	staticDir := filepath.Join("static")
+	fileServer := http.FileServer(http.Dir(staticDir))
+	
+	// Wrap file server with cache headers
+	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set cache headers for static assets
+		w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
+		w.Header().Set("Expires", "Thu, 31 Dec 2025 23:59:59 GMT")
+		
+		// Set proper content types
+		if filepath.Ext(r.URL.Path) == ".css" {
+			w.Header().Set("Content-Type", "text/css")
+		} else if filepath.Ext(r.URL.Path) == ".js" {
+			w.Header().Set("Content-Type", "application/javascript")
+		}
+		
+		fileServer.ServeHTTP(w, r)
+	})
+	
+	router.Handle("/static/", http.StripPrefix("/static/", staticHandler))
 
 	// Public routes (no auth, no CSRF)
 	h.addHandler(router, h.NotFoundEndpoint, "/", "NotFoundEndpoint", "GET")
