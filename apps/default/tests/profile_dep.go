@@ -69,22 +69,32 @@ func (d *dependency) migrateContainer(
 }
 
 func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwork) error {
-	if len(d.Opts().Dependencies) != 2 {
-		return errors.New("no Database/ Oauth2 Service dependencies was supplied")
+	if len(d.Opts().Dependencies) != 3 {
+		return errors.New("not all expected resource dependencies were supplied, ensure there is a DB, Oauth2 service & Notification container")
 	}
 
 	var err error
 	databaseURL := ""
 	hydraPort := ""
 	var oauth2ServiceURIAdmin frame.DataSource
+	var partitionService frame.DataSource
+	var notificationService frame.DataSource
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
 			databaseURL = dep.GetInternalDS(ctx).String()
 		} else {
-			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx)
-			hydraPort, err = dep.PortMapping(ctx, "4444")
-			if err != nil {
-				return err
+
+			if dep.Name() == NotificationImage {
+				notificationService = dep.GetInternalDS(ctx)
+			} else if dep.Name() == PartitionImage {
+				partitionService = dep.GetInternalDS(ctx)
+			} else {
+
+				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx)
+				hydraPort, err = dep.PortMapping(ctx, "4444")
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -118,6 +128,8 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_partition",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_profile",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
+			"NOTIFICATION_SERVICE_URI":     notificationService.String(),
+			"PARTITION_SERVICE_URI":        partitionService.String(),
 		},
 		WaitingFor: wait.ForLog("Initiating server operations"),
 	}

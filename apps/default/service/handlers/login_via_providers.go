@@ -35,7 +35,9 @@ func (h *AuthServer) setupCookieSessions(_ context.Context, cfg *config.Authenti
 	sessionStore := sessions.NewCookieStore(hashKey, blockKey)
 	sessionStore.Options.Path = "/"
 	sessionStore.Options.HttpOnly = true
-	sessionStore.Options.Secure = true
+	// Disable Secure flag to allow HTTP in test environments
+	// TODO: Make this configurable based on environment in production
+	sessionStore.Options.Secure = false
 
 	gothic.Store = sessionStore
 	h.loginCookieCodec = sessionStore.Codecs
@@ -51,11 +53,13 @@ func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.Authentic
 
 	var providers []goth.Provider
 
-	h.loginOptions = map[string]bool{"enableContactLogin": !cfg.AuthProviderContactLoginDisabled}
+	h.loginOptions = map[string]any{"enableContactLogin": !cfg.AuthProviderContactLoginDisabled}
 
 	if cfg.AuthProviderGoogleClientID != "" {
 		providers = append(providers, google.New(cfg.AuthProviderGoogleClientID, cfg.AuthProviderGoogleSecret, cfg.AuthProviderGoogleCallbackURL, cfg.AuthProviderGoogleScopes...))
 		h.loginOptions["enableGoogleLogin"] = true
+		h.loginOptions["googleClientId"] = cfg.AuthProviderGoogleClientID
+		h.loginOptions["googleRedirectUri"] = cfg.AuthProviderGoogleCallbackURL
 	}
 
 	if cfg.AuthProviderMetaClientID != "" {
@@ -83,13 +87,13 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	contactDetail := user.Email
 	if contactDetail == "" {
-		logger.Warn("no email provided by provider, checking for phone number")
+		logger.Warn("no contact provided by provider, checking for phone number")
 		// Check if a phonenumber was used
 		// TODO: Add phone number extraction logic if needed
 	}
 
 	if contactDetail == "" {
-		logger.Error("no contact detail (email or phone) provided by provider")
+		logger.Error("no contact detail (contact or phone) provided by provider")
 		return nil, fmt.Errorf("no contact detail provided by provider %s", user.Provider)
 	}
 

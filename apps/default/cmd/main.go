@@ -81,7 +81,7 @@ func main() {
 	serviceTranslations := frame.WithTranslations("/localization", "en")
 	serviceOptions = append(serviceOptions, serviceTranslations)
 
-	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli)
+	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli, nil)
 
 	authServiceHandlers := handlers.RecoveryHandler(
 		handlers.PrintRecoveryStack(true))(

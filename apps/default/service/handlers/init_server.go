@@ -8,6 +8,7 @@ import (
 	"time"
 
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
+	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
@@ -32,6 +33,7 @@ type AuthServer struct {
 	profileCli       *profilev1.ProfileClient
 	deviceCli        *devicev1.DeviceClient
 	partitionCli     *partitionv1.PartitionClient
+	notificationCli  *notificationv1.NotificationClient
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
@@ -39,19 +41,20 @@ type AuthServer struct {
 	loginEventRepo repository.LoginEventRepository
 
 	// Login options enabled
-	loginOptions map[string]bool
+	loginOptions map[string]any
 }
 
-func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient) *AuthServer {
+func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient, notificationCli *notificationv1.NotificationClient) *AuthServer {
 
 	log := util.Log(ctx)
 
 	h := &AuthServer{
-		service:      service,
-		config:       authConfig,
-		profileCli:   profileCli,
-		deviceCli:    deviceCli,
-		partitionCli: partitionCli,
+		service:         service,
+		config:          authConfig,
+		profileCli:      profileCli,
+		deviceCli:       deviceCli,
+		partitionCli:    partitionCli,
+		notificationCli: notificationCli,
 
 		// Initialise repositories
 		loginRepo:      repository.NewLoginRepository(service),
@@ -88,6 +91,9 @@ func (h *AuthServer) DeviceCli() *devicev1.DeviceClient {
 
 func (h *AuthServer) PartitionCli() *partitionv1.PartitionClient {
 	return h.partitionCli
+}
+func (h *AuthServer) NotificationCli() *notificationv1.NotificationClient {
+	return h.notificationCli
 }
 
 type ErrorResponse struct {

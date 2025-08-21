@@ -24,5 +24,7 @@ jobs:
         with:
           # Optional: pass GITHUB_TOKEN to avoid rate limiting.
           token: ${{ secrets.GITHUB_TOKEN }}
-      - run: go test -p 1 -json -v ./... 2>&1 | gotestfmt -hide all
-
+      - name: Run tests with coverage
+        env:
+          GOTOOLCHAIN: go1.25.0+auto
+        run: go test -p 1 -json -v ./... 2>&1 | gotestfmt -hide all

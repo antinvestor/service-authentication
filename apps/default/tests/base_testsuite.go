@@ -11,6 +11,7 @@ import (
 
 	apis "github.com/antinvestor/apis/go/common"
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
+	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/config"
@@ -39,20 +40,21 @@ func (bs *BaseTestSuite) ServerUrl() string {
 func initResources(_ context.Context, loginUrl string) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_authentication",
 		definition.WithUserName("ant"), definition.WithPassword("s3cr3t"),
-		definition.WithEnableLogging(true), definition.WithUseHostMode(false))
+		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
 	localHydraConfig := strings.Replace(testoryhydra.HydraConfiguration, "http://127.0.0.1:3000/", loginUrl+"/s/", 3)
 
 	hydra := testoryhydra.NewWithOpts(
 		localHydraConfig, definition.WithDependancies(pg),
-		definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	// Add profile and partition service dependencies
-	profile := NewProfile(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	notifications := NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	profile := NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 
-	resources := []definition.TestResource{pg, hydra, profile, device, partition}
+	resources := []definition.TestResource{pg, hydra, notifications, profile, device, partition}
 	return resources
 }
 
@@ -84,6 +86,7 @@ func (bs *BaseTestSuite) CreateService(
 	var profileDR definition.DependancyConn
 	var deviceDR definition.DependancyConn
 	var partitionDR definition.DependancyConn
+	var notificationDR definition.DependancyConn
 	for _, res := range bs.Resources() {
 		switch res.Name() {
 		case testpostgres.PostgresqlDBImage:
@@ -94,6 +97,8 @@ func (bs *BaseTestSuite) CreateService(
 			deviceDR = res
 		case PartitionImage:
 			partitionDR = res
+		case NotificationImage:
+			notificationDR = res
 		case testoryhydra.OryHydraImage:
 			hydraDR = res
 		}
@@ -148,6 +153,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithScopes(frame.ConstInternalSystemScope),
 		apis.WithAudiences("service_partition"))
 	require.NoError(t, err)
 
@@ -156,6 +162,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithScopes(frame.ConstInternalSystemScope),
 		apis.WithAudiences("service_profile"))
 	require.NoError(t, err)
 
@@ -164,10 +171,20 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithScopes(frame.ConstInternalSystemScope),
 		apis.WithAudiences("service_devices"))
 	require.NoError(t, err)
 
-	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli)
+	notificationCli, err := notificationv1.NewNotificationClient(ctx,
+		apis.WithEndpoint(notificationDR.GetDS(ctx).String()),
+		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		apis.WithTokenUsername(svc.JwtClientID()),
+		apis.WithTokenPassword(svc.JwtClientSecret()),
+		apis.WithScopes(frame.ConstInternalSystemScope),
+		apis.WithAudiences("service_notifications"))
+	require.NoError(t, err)
+
+	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli, notificationCli)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 
@@ -183,7 +200,7 @@ func (bs *BaseTestSuite) CreateService(
 	return authServer, ctx
 }
 
-func NewPartForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]string) (*partitionv1.PartitionObject, error) {
+func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]string) (*partitionv1.PartitionObject, error) {
 
 	partition, err := partitionCli.NewChildPartition(ctx, "c2f4j7au6s7f91uqnojg", "c2f4j7au6s7f91uqnokg", name, description, properties)
 	if err != nil {

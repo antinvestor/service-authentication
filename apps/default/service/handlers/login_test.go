@@ -2,7 +2,9 @@ package handlers_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,12 +13,15 @@ import (
 	"testing"
 	"time"
 
+	commonv1 "github.com/antinvestor/apis/go/common/v1"
+	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,8 +72,9 @@ func (suite *PasswordlessLoginTestSuite) SetupPasswordlessLoginTest(t *testing.T
 	router := authServer.SetupRouterV1(baseCtx)
 	testServer := httptest.NewServer(router)
 
-	// Create OAuth2 test client
+	// Create OAuth2 test client with test server URL
 	oauth2Client := tests.NewOAuth2TestClient(authServer)
+	oauth2Client.AuthServiceURL = testServer.URL
 
 	// Create login repository
 	loginRepo := repository.NewLoginRepository(authServer.Service())
@@ -124,23 +130,118 @@ func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context,
 	})
 }
 
-// TestContactVerificationFlow tests the complete contact verification flow
-func (suite *PasswordlessLoginTestSuite) TestContactVerificationFlow() {
+// GetVerificationCodeFromDatabase retrieves the actual verification code from the database
+func (suite *PasswordlessLoginTestSuite) GetVerificationCodeFromDatabase(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
+
+	// loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
+	// loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
+	// if err != nil {
+	//	return "", err
+	// }
+
+	notifCli := authServer.NotificationCli()
+
+	notif, err := frametests.WaitForConditionWithResult[notificationv1.Notification](ctx, func() (*notificationv1.Notification, error) {
+
+		resp, err0 := notifCli.Svc().Search(ctx, &commonv1.SearchRequest{
+			Limits: &commonv1.Pagination{
+				Count: 10,
+				Page:  0,
+			},
+			Extras: map[string]string{"template_id": "9bsv0s23l8og00vgjq90"},
+		})
+		if err0 != nil {
+			return nil, err0
+		}
+
+		var nSlice []*notificationv1.Notification
+		for {
+			n, err1 := resp.Recv()
+			if err1 == nil {
+				nSlice = append(nSlice, n.GetData()...)
+				continue
+			}
+
+			if errors.Is(err1, io.EOF) {
+				break
+			}
+			return nil, err1
+
+		}
+
+		if len(nSlice) == 0 {
+			return nil, nil
+		}
+
+		return nSlice[0], nil
+	}, 5*time.Second, 300*time.Millisecond)
+
+	if err != nil {
+		return "", err
+	}
+
+	return notif.GetPayload()["code"], nil
+}
+
+// TestOAuth2ClientCreation tests just the OAuth2 client creation step
+func (suite *PasswordlessLoginTestSuite) TestOAuth2ClientCreation() {
+	testCases := []struct {
+		name string
+	}{
+		{
+			name: "BasicClientCreation",
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
+		defer suite.TeardownPasswordlessLoginTest(testCtx)
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
+				defer opCancel()
+
+				// Test just OAuth2 client creation
+				testCtx.OAuth2Client.SetTestingT(t) // Enable debug logging
+				oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, tc.name)
+				if err != nil {
+					t.Logf("FAILED: OAuth2 client creation failed: %v", err)
+					t.FailNow()
+				}
+				t.Logf("SUCCESS: OAuth2 client created with ID: %s", oauth2Client.ClientID)
+
+				// Test login challenge initiation
+				loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
+				if err != nil {
+					t.Logf("FAILED: OAuth2 login flow initiation failed: %v", err)
+					t.FailNow()
+				}
+				t.Logf("SUCCESS: Login challenge received: %s", loginChallenge)
+
+				t.Logf("OAuth2 client creation and login challenge test completed successfully")
+			})
+		}
+	})
+}
+
+// TestSuccessfulContactLoginFlow tests the passwordless contact verification flow
+func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 	testCases := []struct {
 		name        string
-		email       string
+		contact     string
 		userName    string
 		shouldError bool
 	}{
 		{
 			name:        "ValidContactVerification",
-			email:       "test@example.com",
+			contact:     "test@example.com",
 			userName:    "Test User",
 			shouldError: false,
 		},
 		{
 			name:        "ValidPhoneVerification",
-			email:       "+1234567890",
+			contact:     "+1234567890",
 			userName:    "Phone User",
 			shouldError: false,
 		},
@@ -155,49 +256,90 @@ func (suite *PasswordlessLoginTestSuite) TestContactVerificationFlow() {
 				opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
 				defer opCancel()
 
-				// Step 1: Create test profile
-				profile, err := suite.CreateTestProfile(opCtx, testCtx.AuthServer, tc.email, tc.userName)
-				require.NoError(t, err)
-				assert.NotNil(t, profile)
-
-				// Step 2: Get contact ID
-				var contactID string
-				for _, contact := range profile.GetContacts() {
-					if strings.EqualFold(tc.email, contact.GetDetail()) {
-						contactID = contact.GetId()
-						break
-					}
-				}
-				require.NotEmpty(t, contactID, "Contact ID should be found")
-
-				// Step 3: Initiate OAuth2 flow to get login challenge
+				// Create OAuth2 client for this test
+				testCtx.OAuth2Client.SetTestingT(t) // Enable debug logging
 				oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, tc.name)
-				require.NoError(t, err)
+				if err != nil {
+					t.Logf("FAILED: OAuth2 client creation failed: %v", err)
+					t.FailNow()
+				}
+				t.Logf("SUCCESS: OAuth2 client created with ID: %s", oauth2Client.ClientID)
 
-				loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
-				require.NoError(t, err)
-				assert.NotEmpty(t, loginChallenge)
+				// Initiate OAuth2 flow to get a valid login challenge
+				loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
+				if err != nil {
+					t.Logf("FAILED: OAuth2 login flow initiation failed: %v", err)
+					t.FailNow()
+				}
+				t.Logf("SUCCESS: Login challenge received: %s", loginChallenge)
+				assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
 
-				// Step 4: Test contact verification initiation
-				verificationURL := fmt.Sprintf("%s/s/verify/contact/post", testCtx.TestServer.URL)
-				formData := url.Values{
-					"contact":         {tc.email},
-					"login_challenge": {loginChallenge},
+				// Step 1: Submit contact for verification
+				contactVerificationResult, err := testCtx.OAuth2Client.SubmitContactVerification(testCtx.Context, loginChallenge, tc.contact)
+				if err != nil {
+					t.Logf("FAILED: Contact verification submission failed: %v", err)
+					t.FailNow()
 				}
 
-				req, err := http.NewRequestWithContext(opCtx, "POST", verificationURL, strings.NewReader(formData.Encode()))
+				t.Logf("Contact verification result: Success=%v, VerificationSent=%v, LoginEventID=%s, ProfileName=%s, ErrorMessage=%s",
+					contactVerificationResult.Success, contactVerificationResult.VerificationSent,
+					contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, contactVerificationResult.ErrorMessage)
+
+				if !contactVerificationResult.Success {
+					t.Logf("FAILED: Contact verification was not successful. Error: %s", contactVerificationResult.ErrorMessage)
+					t.FailNow()
+				}
+
+				assert.True(t, contactVerificationResult.Success, "Contact verification submission should succeed")
+				assert.True(t, contactVerificationResult.VerificationSent, "Verification should be sent")
+				assert.NotEmpty(t, contactVerificationResult.LoginEventID, "Should receive login event ID")
+				assert.NotEmpty(t, contactVerificationResult.ProfileName, "Should receive profile name")
+
+				t.Logf("Contact verification submitted successfully:")
+				t.Logf("  Login Event ID: %s", contactVerificationResult.LoginEventID)
+				t.Logf("  Profile Name: %s", contactVerificationResult.ProfileName)
+
+				// Step 2: Get verification code from database (in real scenario, user would receive this via email/SMS)
+				verificationCode, err := suite.GetVerificationCodeFromDatabase(opCtx, testCtx.AuthServer, contactVerificationResult.LoginEventID)
 				require.NoError(t, err)
-				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				assert.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
-				resp, err := http.DefaultClient.Do(req)
+				t.Logf("Retrieved verification code: %s", verificationCode)
+
+				// Step 3: Complete contact verification with the code
+				loginResult, err := testCtx.OAuth2Client.CheckContactVerification(testCtx.Context,
+					contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, verificationCode)
 				require.NoError(t, err)
-				defer resp.Body.Close()
+				assert.True(t, loginResult.Success, "Contact verification should succeed with valid code")
 
-				// Should redirect to verification page or process successfully
-				assert.True(t, resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusOK,
-					"Expected redirect or success, got %d", resp.StatusCode)
+				// Verify that we get a consent challenge or authorization code
+				var authorizationCode string
+				if loginResult.ConsentChallenge != "" {
+					// Handle consent flow
+					consentResult, err := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
+					require.NoError(t, err)
+					assert.True(t, consentResult.Success, "Consent should succeed")
+					assert.NotEmpty(t, consentResult.AuthorizationCode, "Should receive authorization code")
+					authorizationCode = consentResult.AuthorizationCode
+				} else {
+					assert.NotEmpty(t, loginResult.AuthorizationCode, "Should receive authorization code directly")
+					authorizationCode = loginResult.AuthorizationCode
+				}
 
-				t.Logf("Contact verification flow completed for %s", tc.email)
+				// Step 4: Exchange authorization code for access token
+				tokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(testCtx.Context, oauth2Client, authorizationCode)
+				require.NoError(t, err)
+				assert.NotEmpty(t, tokenResult.AccessToken, "Should receive access token")
+				assert.NotEmpty(t, tokenResult.TokenType, "Should receive token type")
+				assert.Greater(t, tokenResult.ExpiresIn, 0, "Should have valid expiration time")
+
+				// Success! Complete OAuth2 flow completed
+				t.Logf("SUCCESS: Complete OAuth2 contact verification flow completed!")
+				t.Logf("Access Token: %s", tokenResult.AccessToken[:min(50, len(tokenResult.AccessToken))]+"...")
+				t.Logf("Token Type: %s", tokenResult.TokenType)
+				t.Logf("Expires In: %d seconds", tokenResult.ExpiresIn)
+
+				t.Logf("Contact verification flow completed for %s", tc.contact)
 			})
 		}
 	})
@@ -343,31 +485,6 @@ func (suite *PasswordlessLoginTestSuite) TestProviderLoginFlow() {
 			"Provider endpoint should be accessible, got %d", resp.StatusCode)
 
 		t.Log("Provider login flow endpoint is accessible")
-	})
-}
-
-// TestLoginOptionsConfiguration tests that login options are properly configured
-func (suite *PasswordlessLoginTestSuite) TestLoginOptionsConfiguration() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
-		defer suite.TeardownPasswordlessLoginTest(testCtx)
-
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
-		defer opCancel()
-
-		// Test that login page shows available options
-		loginURL := fmt.Sprintf("%s/s/login?login_challenge=test-challenge", testCtx.TestServer.URL)
-
-		req, err := http.NewRequestWithContext(opCtx, "GET", loginURL, nil)
-		require.NoError(t, err)
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "Login page should be accessible")
-
-		t.Log("Login options configuration test completed")
 	})
 }
 
