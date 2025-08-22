@@ -10,8 +10,8 @@ import (
 	apis "github.com/antinvestor/apis/go/common"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/queue"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	protovalidateinterceptor "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
@@ -54,15 +54,9 @@ func main() {
 		log.WithError(httpErr).Fatal("could not setup HTTP handlers")
 	}
 
-	partitionSyncQueueURL := cfg.QueuePartitionSyncURL
-	partitionSyncQueue := frame.WithRegisterSubscriber(
-		cfg.PartitionSyncName,
-		partitionSyncQueueURL,
-		queue.NewPartitionSyncQueueHandler(svc),
-	)
-	partitionSyncQueueP := frame.WithRegisterPublisher(cfg.PartitionSyncName, partitionSyncQueueURL)
-
-	serviceOptions = append(serviceOptions, partitionSyncQueue, partitionSyncQueueP)
+	serviceOptions = append(serviceOptions, frame.WithRegisterEvents(
+		events.NewPartitionSynchronizationEventHandler(svc),
+	))
 
 	svc.Init(ctx, serviceOptions...)
 

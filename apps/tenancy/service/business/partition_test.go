@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
@@ -96,7 +96,7 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 				require.NoError(t, err)
 
 				// Execute
-				err = business.SyncPartitionOnHydra(ctx, svc, partition)
+				err = events.SyncPartitionOnHydra(ctx, svc, partition)
 
 				// Verify
 				if tc.shouldError {

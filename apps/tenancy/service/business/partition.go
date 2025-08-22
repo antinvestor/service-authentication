@@ -2,15 +2,12 @@ package business
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
-	"net/url"
 	"strings"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
@@ -167,12 +164,7 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	cfg, ok := pb.service.Config().(*config.PartitionConfig)
-	if !ok {
-		return nil, errors.New("invalid configuration type")
-	}
-
-	err = pb.service.Publish(ctx, cfg.PartitionSyncName, partition.GetID())
+	err = pb.service.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
 	if err != nil {
 		return nil, err
 	}
@@ -272,12 +264,6 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service
 	logger := service.Log(ctx)
 
 	partitionRepository := repository.NewPartitionRepository(service)
-	var partitionConfig *config.PartitionConfig
-	if c, ok := service.Config().(*config.PartitionConfig); ok {
-		partitionConfig = c
-	} else {
-		return
-	}
 
 	jobResult, err := partitionRepository.Search(ctx, query)
 	if err != nil {
@@ -299,7 +285,7 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service
 		}
 
 		for _, partition := range result.Item() {
-			err = service.Publish(ctx, partitionConfig.PartitionSyncName, partition.GetID())
+			err = service.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
 			if err != nil {
 				logger.WithError(err).Panic("could not publish because")
 
@@ -307,192 +293,4 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service
 			}
 		}
 	}
-}
-
-func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition *models.Partition) error {
-	var cfg *config.PartitionConfig
-	if c, ok := service.Config().(*config.PartitionConfig); ok {
-		cfg = c
-	} else {
-		return errors.New("invalid configuration type")
-	}
-
-	hydraBaseURL := cfg.GetOauth2ServiceAdminURI()
-	hydraURL := fmt.Sprintf("%s/admin/clients", hydraBaseURL)
-	httpMethod := http.MethodPost
-
-	clientID, clientIDExists := partition.Properties["client_id"].(string)
-
-	if !clientIDExists {
-		clientID = partition.GetID()
-	} else {
-		hydraIDURL := fmt.Sprintf("%s/%s", hydraURL, clientID)
-
-		// Handle partition deletion
-		if partition.DeletedAt.Valid {
-			return deletePartitionOnHydra(ctx, service, hydraIDURL)
-		}
-
-		// Check if client exists and update HTTP method/URL accordingly
-		status, _, err := service.InvokeRestService(ctx, http.MethodGet, hydraIDURL, nil, nil)
-		if err != nil {
-			return err
-		}
-
-		if status == http.StatusOK {
-			httpMethod = http.MethodPut
-			hydraURL = hydraIDURL
-		}
-	}
-
-	// Prepare the payload
-	payload, err := preparePayload(clientID, partition)
-	if err != nil {
-		return err
-	}
-
-	// Invoke the Hydra service
-	status, result, err := service.InvokeRestService(ctx, httpMethod, hydraURL, payload, nil)
-	if err != nil {
-		return err
-	}
-
-	if status < 200 || status > 299 {
-		return fmt.Errorf("invalid response status %d: %s", status, string(result))
-	}
-
-	// Update partition with response data
-	return updatePartitionWithResponse(ctx, service, partition, result)
-}
-
-func deletePartitionOnHydra(ctx context.Context, service *frame.Service, hydraIDURL string) error {
-	_, _, err := service.InvokeRestService(ctx, http.MethodDelete, hydraIDURL, nil, nil)
-	return err
-}
-
-func preparePayload(clientID string, partition *models.Partition) (map[string]any, error) {
-	logoURI := ""
-	if val, ok := partition.Properties["logo_uri"].(string); ok {
-		logoURI = val
-	}
-
-	audienceList := extractStringList(partition.Properties, "audience")
-	scopeList := extractStringList(partition.Properties, "scope")
-
-	if len(scopeList) == 0 {
-		scopeList = append(scopeList, "openid", "offline_access", "profile")
-	}
-
-	uriList, err := prepareRedirectURIs(partition)
-	if err != nil {
-		return nil, err
-	}
-
-	payload := map[string]any{
-		"client_name":    partition.Name,
-		"client_id":      clientID,
-		"grant_types":    []string{"authorization_code", "refresh_token"},
-		"response_types": []string{"token", "id_token", "code", "token id_token", "token code id_token"},
-		"scope":          strings.Join(scopeList, " "),
-		"redirect_uris":  uriList,
-		"logo_uri":       logoURI,
-		"audience":       audienceList,
-	}
-
-	if _, ok := partition.Properties["token_endpoint_auth_method"]; ok {
-		payload["token_endpoint_auth_method"] = partition.Properties["token_endpoint_auth_method"]
-	} else {
-		payload["token_endpoint_auth_method"] = "none"
-		if partition.ClientSecret != "" {
-			payload["client_secret"] = partition.ClientSecret
-			payload["token_endpoint_auth_method"] = "client_secret_post"
-		}
-	}
-
-	return payload, nil
-}
-
-func extractStringList(properties map[string]any, key string) []string {
-	var list []string
-	if val, ok := properties[key]; ok {
-
-		if str, okStr := val.(string); okStr {
-			if strings.Contains(str, " ") {
-				list = strings.Split(str, " ")
-				return list
-			}
-
-			if strings.Contains(str, ",") {
-				list = strings.Split(str, ",")
-				return list
-			}
-		}
-
-		if arr, okArr := val.([]interface{}); okArr {
-			for _, v := range arr {
-				if str, okStr := v.(string); okStr {
-					list = append(list, str)
-				}
-			}
-		}
-	}
-	return list
-}
-
-func prepareRedirectURIs(partition *models.Partition) ([]string, error) {
-	var uriList []string
-	if val, ok := partition.Properties["redirect_uris"]; ok {
-		switch uris := val.(type) {
-		case string:
-			uriList = strings.Split(uris, ",")
-		case []interface{}: // Use interface{} to match JSON unmarshal type
-			for _, v := range uris {
-				if str, okStr := v.(string); okStr {
-					uriList = append(uriList, str)
-				}
-			}
-		default:
-			return nil, fmt.Errorf("invalid redirect_uris format: %v", val)
-		}
-	}
-
-	var finalURIList []string
-	for _, uri := range uriList {
-		parsedURI, err := url.Parse(uri)
-		if err != nil {
-			return nil, err
-		}
-		params := parsedURI.Query()
-		if !params.Has("partition_id") {
-			params.Add("partition_id", partition.ID)
-		}
-		parsedURI.RawQuery = params.Encode()
-		finalURIList = append(finalURIList, parsedURI.String())
-	}
-
-	return finalURIList, nil
-}
-
-func updatePartitionWithResponse(
-	ctx context.Context,
-	service *frame.Service,
-	partition *models.Partition,
-	result []byte,
-) error {
-	var response map[string]any
-	if err := json.Unmarshal(result, &response); err != nil {
-		return err
-	}
-
-	if partition.Properties == nil {
-		partition.Properties = make(frame.JSONMap)
-	}
-
-	for k, v := range response {
-		partition.Properties[k] = v
-	}
-
-	// Save partition
-	partitionRepository := repository.NewPartitionRepository(service)
-	return partitionRepository.Save(ctx, partition)
 }
