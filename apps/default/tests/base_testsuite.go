@@ -50,7 +50,7 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 
 	// Add profile and partition service dependencies
 	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	notifications := NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 	profile := NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
@@ -202,7 +202,8 @@ func (bs *BaseTestSuite) CreateService(
 
 func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]string) (*partitionv1.PartitionObject, error) {
 
-	partition, err := partitionCli.NewChildPartition(ctx, "c2f4j7au6s7f91uqnojg", "c2f4j7au6s7f91uqnokg", name, description, properties)
+	partition, err := partitionCli.NewChildPartition(ctx,
+		"c2f4j7au6s7f91uqnojg", "c2f4j7au6s7f91uqnokg", name, description, properties)
 	if err != nil {
 		return nil, err
 	}

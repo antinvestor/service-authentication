@@ -97,6 +97,7 @@ type OAuth2Client struct {
 	ClientSecret string
 	RedirectURIs []string
 	Scope        string
+	Audience     []string
 }
 
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
@@ -112,7 +113,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
 		map[string]string{
 			"scope":         "openid offline offline_access profile contact",
-			"audience":      "service_matrix service_profile service_partition service_files authentication_tests",
+			"audience":      "service_devices,service_profile,service_partition,service_files,authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
 			"redirect_uris": redirectURI})
 	if err != nil {
@@ -129,6 +130,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		ClientSecret: "",
 		RedirectURIs: []string{redirectURI + "?partition_id=" + partition.GetId()},
 		Scope:        "openid profile offline_access contact",
+		Audience:     []string{"authentication_tests"},
 	}
 
 	return client, nil
@@ -148,6 +150,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 		"client_id":     {client.ClientID},
 		"response_type": {"code"},
 		"scope":         {client.Scope},
+		"audience":      client.Audience,
 		"redirect_uri":  {client.RedirectURIs[0]},
 		"state":         {state},
 		"nonce":         {nonce},

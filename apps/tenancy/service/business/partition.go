@@ -156,10 +156,11 @@ func (pb *partitionBusiness) CreatePartition(
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
 		Properties:  frame.DBPropertiesFromMap(request.GetProperties()),
-		BaseModel: frame.BaseModel{
-			TenantID: tenant.GetID(),
-		},
 	}
+
+	partition.GenID(ctx)
+	partition.TenantID = tenant.GetID()
+	partition.PartitionID = tenant.PartitionID
 
 	err = pb.partitionRepo.Save(ctx, partition)
 	if err != nil {
