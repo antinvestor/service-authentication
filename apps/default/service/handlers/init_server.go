@@ -110,6 +110,7 @@ func initTemplatePayload(ctx context.Context) map[string]any {
 	return payload
 }
 
+// nolint: unparam //code has to remain as it is
 func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
 
 	w.Header().Set("Content-Type", "application/json")

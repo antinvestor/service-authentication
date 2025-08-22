@@ -23,8 +23,8 @@ func NewPartitionServer(ctx context.Context, service *frame.Service) *PartitionS
 		Service:           service,
 		partitionBusiness: business.NewPartitionBusiness(service),
 		tenantBusiness:    business.NewTenantBusiness(ctx, service),
-		accessBusiness:    business.NewAccessBusiness(service),
-		pageBusiness:      business.NewPageBusiness(service),
+		accessBusiness:    business.NewAccessBusiness(ctx, service),
+		pageBusiness:      business.NewPageBusiness(ctx, service),
 	}
 }
 
