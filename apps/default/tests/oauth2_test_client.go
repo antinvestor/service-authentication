@@ -30,6 +30,7 @@ type OAuth2TestClient struct {
 	t              *testing.T
 
 	clientIdList []string
+	cookieJar    http.CookieJar // Store reference to cookie jar for clearing
 
 	// Store OAuth2 session context to maintain CSRF state
 	currentState string
@@ -50,7 +51,7 @@ func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 	}
 	jar, _ := cookiejar.New(options)
 
-	return &OAuth2TestClient{
+	client := &OAuth2TestClient{
 		HydraAdminURL:  adminURL,
 		HydraPublicURL: publicURL,
 		AuthServiceURL: "", // Will be set by test server
@@ -60,7 +61,7 @@ func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 			Timeout: 10 * time.Second, // Reduced from 30s to 10s for faster failure detection
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				ctx := req.Context()
-				util.Log(ctx).Info("Redirecting to : %s" + req.URL.String())
+				util.Log(ctx).Info("Redirecting to : " + req.URL.String())
 
 				// Don't follow redirects automatically - we want to capture them
 				return http.ErrUseLastResponse
@@ -68,6 +69,23 @@ func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 		},
 		t: nil, // No testing.T required for basic functionality
 	}
+	client.cookieJar = jar // Store reference to cookie jar for clearing
+	return client
+}
+
+// ClearSession clears all cookies to ensure fresh session for each test
+func (c *OAuth2TestClient) ClearSession() {
+	// Create a new cookie jar to replace the old one
+	options := &cookiejar.Options{
+		PublicSuffixList: nil, // Use default public suffix list
+	}
+	newJar, _ := cookiejar.New(options)
+	c.Client.Jar = newJar
+	c.cookieJar = newJar
+
+	// Also clear OAuth2 session state
+	c.currentState = ""
+	c.currentNonce = ""
 }
 
 // OAuth2Client represents an OAuth2 client configuration
@@ -191,7 +209,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 		}
 	}
 
-	// Extract login challenge from the redirect URL
+	// Return the redirect URL
 	// Hydra should redirect to our auth service with login_challenge parameter
 	if resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusFound {
 		location := resp.Header.Get("Location")
@@ -199,17 +217,19 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 			c.t.Logf("DEBUG: Redirect location: %s", location)
 		}
 		if location != "" {
-			parsedURL, err := url.Parse(location)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse redirect URL: %w", err)
+			parsedURL, err0 := url.Parse(location)
+			if err0 != nil {
+				return "", fmt.Errorf("failed to parse redirect URL: %w", err0)
 			}
 
-			loginChallenge := parsedURL.Query().Get("login_challenge")
-			if loginChallenge == "" {
-				return "", fmt.Errorf("no login_challenge found in redirect URL: %s", location)
+			knownUrl, err0 := url.Parse(c.AuthServiceURL)
+			if err0 != nil {
+				return "", fmt.Errorf("failed to parse redirect URL: %w", err0)
 			}
 
-			return loginChallenge, nil
+			parsedURL.Host = knownUrl.Host
+
+			return parsedURL.String(), nil
 		}
 	}
 
@@ -222,300 +242,25 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	return "", fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 }
 
-// PerformLogin performs the login process with the given credentials and login challenge
-// nolint:gocyclo,nolintlint //This is a test method no need to overthink
-func (c *OAuth2TestClient) PerformLogin(ctx context.Context, loginChallenge, email, password string) (*LoginResult, error) {
-	// Step 1: Get the login form to extract CSRF token
-	loginFormURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, loginChallenge)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", loginFormURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create login form request: %w", err)
-	}
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get login form: %w", err)
-	}
-	defer util.CloseAndLogOnError(ctx, resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status getting login form: %d", resp.StatusCode)
-	}
-
-	// Parse HTML to extract CSRF token
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read login form: %w", err)
-	}
-
-	// Extract CSRF token from HTML (look for input with name="gorilla.csrf.Token")
-	csrfToken := ""
-	bodyStr := string(body)
+func extractCSRFTokenFromBody(bodyStr string) string {
 	if strings.Contains(bodyStr, `name="gorilla.csrf.Token"`) {
 		// Simple regex to extract CSRF token value
 		re := regexp.MustCompile(`name="gorilla\.csrf\.Token"[^>]*value="([^"]*)"`)
 		matches := re.FindStringSubmatch(bodyStr)
 		if len(matches) > 1 {
-			csrfToken = matches[1]
+			return matches[1]
 		}
 	}
 
-	// Step 2: Submit login with CSRF token
-	loginURL := fmt.Sprintf("%s/s/login/post", c.AuthServiceURL)
-
-	// Prepare form data
-	formData := url.Values{}
-	formData.Set("contact", email)
-	formData.Set("password", password)
-	formData.Set("login_challenge", loginChallenge)
-	if csrfToken != "" {
-		formData.Set("gorilla.csrf.Token", csrfToken)
-	}
-
-	req, err = http.NewRequestWithContext(ctx, "POST", loginURL, strings.NewReader(formData.Encode()))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create login request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Referer", loginFormURL) // Use the login form URL as referer for CSRF validation
-
-	resp, err = c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to submit login: %w", err)
-	}
-	defer util.CloseAndLogOnError(ctx, resp.Body)
-
-	result := &LoginResult{
-		StatusCode: resp.StatusCode,
-		Location:   resp.Header.Get("Location"),
-		Success:    false,
-	}
-
-	// Check if login was successful (should redirect to consent or back to client)
-	if resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusFound {
-		location := resp.Header.Get("Location")
-		if location != "" {
-			// The login POST should redirect back to Hydra's OAuth2 server
-			// Instead of manually following redirects, let's validate the redirect URL
-			// and extract the necessary information without breaking CSRF session
-			if c.t != nil {
-				c.t.Logf("DEBUG: Login POST redirected to: %s", location)
-			}
-
-			// Check if this is a redirect back to Hydra for consent or authorization
-			if c.t != nil {
-				c.t.Logf("DEBUG: Checking if redirect is to Hydra - HydraPublicURL: %s", c.HydraPublicURL)
-				c.t.Logf("DEBUG: Redirect location: %s", location)
-			}
-
-			// Parse both URLs to compare them properly (handle localhost vs 127.0.0.1)
-			hydraURL, err := url.Parse(c.HydraPublicURL)
-			if err != nil {
-				return result, fmt.Errorf("failed to parse Hydra public URL: %w", err)
-			}
-
-			redirectURL, err := url.Parse(location)
-			if err != nil {
-				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
-			}
-
-			// Check if redirect is to Hydra by comparing host and port
-			isHydraRedirect := (redirectURL.Port() == hydraURL.Port()) &&
-				(redirectURL.Hostname() == hydraURL.Hostname() ||
-					(redirectURL.Hostname() == "127.0.0.1" && hydraURL.Hostname() == "localhost") ||
-					(redirectURL.Hostname() == "localhost" && hydraURL.Hostname() == "127.0.0.1"))
-
-			if c.t != nil {
-				c.t.Logf("DEBUG: Hydra host:port = %s:%s, Redirect host:port = %s:%s",
-					hydraURL.Hostname(), hydraURL.Port(), redirectURL.Hostname(), redirectURL.Port())
-				c.t.Logf("DEBUG: Is Hydra redirect: %v", isHydraRedirect)
-			}
-
-			if isHydraRedirect {
-				if c.t != nil {
-					c.t.Logf("DEBUG: Redirect is back to Hydra OAuth2 server")
-					c.t.Logf("DEBUG: Following redirect to complete OAuth2 flow: %s", location)
-				}
-
-				// This means the login was successful and Hydra is continuing the OAuth2 flow
-				// We should follow this redirect with the same HTTP client to maintain session
-
-				// IMPORTANT: Normalise the redirect URL to use the same hostname as HydraPublicURL
-				// to ensure cookies are preserved (localhost vs 127.0.0.1 mismatch)
-				normalizedLocation := location
-				if redirectURL.Hostname() != hydraURL.Hostname() {
-					// Replace the hostname in the redirect URL with the hostname from HydraPublicURL
-					redirectURL.Host = hydraURL.Host
-					normalizedLocation = redirectURL.String()
-					if c.t != nil {
-						c.t.Logf("DEBUG: Normalised redirect URL from %s to %s for cookie preservation", location, normalizedLocation)
-					}
-				}
-
-				redirectReq, err := http.NewRequestWithContext(ctx, "GET", normalizedLocation, nil)
-				if err != nil {
-					if c.t != nil {
-						c.t.Logf("DEBUG: Failed to follow redirect: %v", err)
-					}
-					return result, fmt.Errorf("failed to create redirect request: %w", err)
-				}
-
-				// Log cookies being sent with redirect request
-				if c.t != nil {
-					if jar, ok := c.Client.Jar.(*cookiejar.Jar); ok {
-						if normalizedURL, parseErr := url.Parse(normalizedLocation); parseErr == nil {
-							cookies := jar.Cookies(normalizedURL)
-							c.t.Logf("DEBUG: Cookies being sent with redirect request to %s: %v", normalizedLocation, cookies)
-						}
-					}
-				}
-
-				redirectResp, err := c.Client.Do(redirectReq)
-				if err != nil {
-					if c.t != nil {
-						c.t.Logf("DEBUG: Failed to follow redirect: %v", err)
-					}
-					return result, fmt.Errorf("failed to follow redirect: %w", err)
-				}
-				defer func() {
-					if err := redirectResp.Body.Close(); err != nil {
-						if c.t != nil {
-							c.t.Logf("DEBUG: Failed to close response body: %v", err)
-						}
-					}
-				}()
-
-				if c.t != nil {
-					c.t.Logf("DEBUG: Redirect response status: %d", redirectResp.StatusCode)
-					c.t.Logf("DEBUG: Redirect response location: %s", redirectResp.Header.Get("Location"))
-					c.t.Logf("DEBUG: Redirect response headers: %v", redirectResp.Header)
-					c.t.Logf("DEBUG: Redirect response cookies: %v", redirectResp.Cookies())
-				}
-
-				// Check if Hydra redirects to consent or directly to client
-				if redirectResp.StatusCode == http.StatusSeeOther || redirectResp.StatusCode == http.StatusFound {
-					finalLocation := redirectResp.Header.Get("Location")
-					if finalLocation != "" {
-						finalParsedURL, err := url.Parse(finalLocation)
-						if err != nil {
-							return result, fmt.Errorf("failed to parse final redirect URL: %w", err)
-						}
-
-						// Check if redirected to consent flow
-						if strings.Contains(finalLocation, "consent_challenge") {
-							result.ConsentChallenge = finalParsedURL.Query().Get("consent_challenge")
-							result.Success = true
-							result.Location = finalLocation
-							if c.t != nil {
-								c.t.Logf("DEBUG: Received consent challenge: %s", result.ConsentChallenge)
-							}
-						} else if strings.Contains(finalLocation, "code=") {
-							// Direct redirect to client with authorization code
-							result.AuthorizationCode = finalParsedURL.Query().Get("code")
-							result.Success = true
-							result.Location = finalLocation
-							if c.t != nil {
-								c.t.Logf("DEBUG: Received authorization code: %s", result.AuthorizationCode[:min(10, len(result.AuthorizationCode))]+"...")
-							}
-						} else if strings.Contains(finalLocation, "error=") {
-							// Handle OAuth2 errors (like CSRF issues)
-							errorCode := finalParsedURL.Query().Get("error")
-							errorDesc := finalParsedURL.Query().Get("error_description")
-							if c.t != nil {
-								c.t.Logf("DEBUG: OAuth2 error - %s: %s", errorCode, errorDesc)
-							}
-							result.Success = false
-							result.Location = finalLocation
-							return result, fmt.Errorf("OAuth2 error: %s - %s", errorCode, errorDesc)
-						} else {
-							// Unknown redirect, might need to follow further
-							if c.t != nil {
-								c.t.Logf("DEBUG: Unknown redirect location: %s", finalLocation)
-							}
-							result.Success = false
-							result.Location = finalLocation
-							return result, fmt.Errorf("unexpected redirect location: %s", finalLocation)
-						}
-					}
-				} else {
-					// If no further redirect, check the response body for consent form or other content
-					if c.t != nil {
-						c.t.Logf("DEBUG: No further redirect from Hydra, status: %d", redirectResp.StatusCode)
-					}
-
-					// Read response body to check for consent form or error
-					body, err := io.ReadAll(redirectResp.Body)
-					if err != nil {
-						return result, fmt.Errorf("failed to read redirect response body: %w", err)
-					}
-
-					if c.t != nil {
-						c.t.Logf("DEBUG: Redirect response body length: %d", len(body))
-						if len(body) > 0 && len(body) < 1000 {
-							c.t.Logf("DEBUG: Redirect response body: %s", string(body))
-						}
-					}
-
-					// Check if this is a consent form by looking for consent_challenge in the body
-					bodyStr := string(body)
-					if strings.Contains(bodyStr, "consent_challenge") {
-						// Extract consent challenge from the form or URL
-						if strings.Contains(location, "consent_challenge") {
-							consentURL, err := url.Parse(location)
-							if err == nil {
-								result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
-								result.Success = true
-								result.Location = location
-								if c.t != nil {
-									c.t.Logf("DEBUG: Extracted consent challenge from original location: %s", result.ConsentChallenge)
-								}
-							}
-						}
-					} else {
-						result.Success = false
-						result.Location = location
-						return result, fmt.Errorf("unexpected response from Hydra: status %d", redirectResp.StatusCode)
-					}
-				}
-			} else {
-				// Direct redirect to client (skip consent)
-				if strings.Contains(location, "consent_challenge") {
-					consentURL, err := url.Parse(location)
-					if err == nil {
-						result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
-						result.Success = true
-						result.Location = location
-					}
-				} else if strings.Contains(location, "code=") {
-					codeURL, err := url.Parse(location)
-					if err == nil {
-						result.AuthorizationCode = codeURL.Query().Get("code")
-						result.Success = true
-						result.Location = location
-					}
-				}
-			}
-
-			result.Location = location
-		}
-	}
-
-	return result, nil
+	return ""
 }
 
-// SubmitContactVerification submits contact for verification and returns verification details
-func (c *OAuth2TestClient) SubmitContactVerification(ctx context.Context, loginChallenge, contact string) (*ContactVerificationResult, error) {
+// PerformContactVerification submits contact for verification and returns verification details
+// nolint:gocyclo,nolintlint //This is a test method no need to overthink
+func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, loginPageURL, contact string) (*ContactVerificationResult, error) {
 	// Step 1: First visit the login page to establish the session with the login challenge
 	// Properly URL-encode the login challenge to handle special characters
-	loginPageURL := fmt.Sprintf("%s/s/login?login_challenge=%s", c.AuthServiceURL, url.QueryEscape(loginChallenge))
-
-	if c.t != nil {
-		c.t.Logf("DEBUG: Visiting login page to establish session: %s", loginPageURL)
-		c.t.Logf("DEBUG: Original login challenge: %s", loginChallenge)
-		c.t.Logf("DEBUG: URL-encoded login challenge: %s", url.QueryEscape(loginChallenge))
-	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", loginPageURL, nil)
 	if err != nil {
@@ -532,17 +277,8 @@ func (c *OAuth2TestClient) SubmitContactVerification(ctx context.Context, loginC
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	bodyStr := string(bodyBytes)
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: Login page response status: %d", resp.StatusCode)
-		c.t.Logf("DEBUG: Login page response headers: %v", resp.Header)
-		if len(bodyStr) > 200 {
-			c.t.Logf("DEBUG: Login page response body (first 200 chars): %s", bodyStr[:200])
-		} else {
-			c.t.Logf("DEBUG: Login page response body: %s", bodyStr)
-		}
-	}
-
-	if resp.StatusCode != http.StatusOK {
+	// Handle both 200 OK and 303 See Other (redirect) as valid responses
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusSeeOther {
 		return &ContactVerificationResult{
 			StatusCode:   resp.StatusCode,
 			Success:      false,
@@ -550,9 +286,16 @@ func (c *OAuth2TestClient) SubmitContactVerification(ctx context.Context, loginC
 		}, fmt.Errorf("unexpected status visiting login page: %d", resp.StatusCode)
 	}
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: Successfully visited login page, session should be established")
+	// If we got a redirect, that's also fine - the session should still be established
+	if resp.StatusCode == http.StatusSeeOther {
+		if c.t != nil {
+			location := resp.Header.Get("Location")
+			c.t.Logf("DEBUG: Login page redirected to: %s", location)
+		}
 	}
+
+	// Extract CSRF token from HTML (look for input with name="gorilla.csrf.Token")
+	csrfToken := extractCSRFTokenFromBody(bodyStr)
 
 	// Step 2: Now submit contact for verification
 	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
@@ -560,7 +303,9 @@ func (c *OAuth2TestClient) SubmitContactVerification(ctx context.Context, loginC
 	// Prepare form data - DO NOT include login_challenge as it should be retrieved from session
 	formData := url.Values{}
 	formData.Set("contact", contact)
-
+	if csrfToken != "" {
+		formData.Set("gorilla.csrf.Token", csrfToken)
+	}
 	if c.t != nil {
 		c.t.Logf("DEBUG: Submitting contact verification to: %s", verificationURL)
 		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
@@ -613,9 +358,13 @@ func (c *OAuth2TestClient) SubmitContactVerification(ctx context.Context, loginC
 				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
 			}
 
+
 			// Extract login_event_id and profile_name from redirect URL
 			result.LoginEventID = parsedURL.Query().Get("login_event_id")
-			result.ProfileName = parsedURL.Query().Get("profile_name")
+
+			if parsedURL.Query().Has("profile_name") {
+				result.ProfileName = parsedURL.Query().Get("profile_name")
+			}
 			result.Location = location
 			result.Success = true
 			result.VerificationSent = true
@@ -964,47 +713,6 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 		if c.t != nil {
 			c.t.Logf("DEBUG: Consent response status: %d (expected redirect)", resp.StatusCode)
 		}
-	}
-
-	return result, nil
-}
-
-// CompleteOAuth2Flow performs the complete OAuth2 authorization code flow
-func (c *OAuth2TestClient) CompleteOAuth2Flow(ctx context.Context, client *OAuth2Client, email, password string) (*OAuth2FlowResult, error) {
-	// Step 1: Initiate login flow
-	loginChallenge, err := c.InitiateLoginFlow(ctx, client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initiate login flow: %w", err)
-	}
-
-	// Step 2: Perform login
-	loginResult, err := c.PerformLogin(ctx, loginChallenge, email, password)
-	if err != nil {
-		return nil, fmt.Errorf("failed to perform login: %w", err)
-	}
-
-	result := &OAuth2FlowResult{
-		LoginChallenge: loginChallenge,
-		LoginResult:    loginResult,
-	}
-
-	if !loginResult.Success {
-		return result, nil
-	}
-
-	// Step 3: Handle consent if required
-	if loginResult.ConsentChallenge != "" {
-		consentResult, err := c.PerformConsent(ctx, loginResult.ConsentChallenge)
-		if err != nil {
-			return result, fmt.Errorf("failed to perform consent: %w", err)
-		}
-		result.ConsentResult = consentResult
-
-		if consentResult.Success {
-			result.AuthorizationCode = consentResult.AuthorizationCode
-		}
-	} else if loginResult.AuthorizationCode != "" {
-		result.AuthorizationCode = loginResult.AuthorizationCode
 	}
 
 	return result, nil

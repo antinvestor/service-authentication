@@ -133,11 +133,11 @@ func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context,
 // GetVerificationCodeFromDatabase retrieves the actual verification code from the database
 func (suite *PasswordlessLoginTestSuite) GetVerificationCodeFromDatabase(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
 
-	// loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
-	// loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
-	// if err != nil {
-	//	return "", err
-	// }
+	loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
+	loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
+	if err != nil {
+		return "", err
+	}
 
 	notifCli := authServer.NotificationCli()
 
@@ -173,7 +173,13 @@ func (suite *PasswordlessLoginTestSuite) GetVerificationCodeFromDatabase(ctx con
 			return nil, nil
 		}
 
-		return nSlice[0], nil
+		for _, n := range nSlice {
+			if n.GetPayload()["verification_id"] == loginEvt.VerificationID {
+				return n, nil
+			}
+		}
+
+		return nil, nil
 	}, 5*time.Second, 300*time.Millisecond)
 
 	if err != nil {
@@ -241,18 +247,20 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 		},
 		{
 			name:        "ValidPhoneVerification",
-			contact:     "+1234567890",
+			contact:     "+12345678990",
 			userName:    "Phone User",
 			shouldError: false,
 		},
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
-		defer suite.TeardownPasswordlessLoginTest(testCtx)
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
+
+				testCtx := suite.SetupPasswordlessLoginTest(t, dep)
+				defer suite.TeardownPasswordlessLoginTest(testCtx)
+
 				opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
 				defer opCancel()
 
@@ -266,16 +274,15 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 				t.Logf("SUCCESS: OAuth2 client created with ID: %s", oauth2Client.ClientID)
 
 				// Initiate OAuth2 flow to get a valid login challenge
-				loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
+				loginRedirect, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 				if err != nil {
 					t.Logf("FAILED: OAuth2 login flow initiation failed: %v", err)
 					t.FailNow()
 				}
-				t.Logf("SUCCESS: Login challenge received: %s", loginChallenge)
-				assert.NotEmpty(t, loginChallenge, "Should receive a valid login challenge")
+				assert.NotEmpty(t, loginRedirect, "Should receive a valid login challenge")
 
 				// Step 1: Submit contact for verification
-				contactVerificationResult, err := testCtx.OAuth2Client.SubmitContactVerification(testCtx.Context, loginChallenge, tc.contact)
+				contactVerificationResult, err := testCtx.OAuth2Client.PerformContactVerification(testCtx.Context, loginRedirect, tc.contact)
 				if err != nil {
 					t.Logf("FAILED: Contact verification submission failed: %v", err)
 					t.FailNow()
@@ -293,7 +300,6 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 				assert.True(t, contactVerificationResult.Success, "Contact verification submission should succeed")
 				assert.True(t, contactVerificationResult.VerificationSent, "Verification should be sent")
 				assert.NotEmpty(t, contactVerificationResult.LoginEventID, "Should receive login event ID")
-				assert.NotEmpty(t, contactVerificationResult.ProfileName, "Should receive profile name")
 
 				t.Logf("Contact verification submitted successfully:")
 				t.Logf("  Login Event ID: %s", contactVerificationResult.LoginEventID)
