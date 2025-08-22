@@ -74,10 +74,8 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 }
 
 func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition *models.Partition) error {
-	var cfg *config.PartitionConfig
-	if c, ok := service.Config().(*config.PartitionConfig); ok {
-		cfg = c
-	} else {
+	cfg, ok := service.Config().(*config.PartitionConfig)
+	if !ok {
 		return errors.New("invalid configuration type")
 	}
 
@@ -247,13 +245,17 @@ func updatePartitionWithResponse(
 		return err
 	}
 
-	if partition.Properties == nil {
-		partition.Properties = make(frame.JSONMap)
+	props := partition.Properties
+
+	if props == nil {
+		props = frame.JSONMap{}
 	}
 
 	for k, v := range response {
-		partition.Properties[k] = v
+		props[k] = v
 	}
+
+	partition.Properties = props
 
 	// Save partition
 	partitionRepository := repository.NewPartitionRepository(service)
