@@ -4,7 +4,6 @@ import (
 	"context"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 )
 
 func (prtSrv *PartitionServer) CreatePage(
@@ -12,8 +11,7 @@ func (prtSrv *PartitionServer) CreatePage(
 	req *partitionv1.CreatePageRequest,
 ) (*partitionv1.CreatePageResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	pageBusiness := business.NewPageBusiness(ctx, prtSrv.Service)
-	page, err := pageBusiness.CreatePage(ctx, req)
+	page, err := prtSrv.pageBusiness.CreatePage(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" CreatePage -- could not create a new page")
 		return nil, prtSrv.toAPIError(err)
@@ -26,8 +24,7 @@ func (prtSrv *PartitionServer) GetPage(
 	req *partitionv1.GetPageRequest,
 ) (*partitionv1.GetPageResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	pageBusiness := business.NewPageBusiness(ctx, prtSrv.Service)
-	page, err := pageBusiness.GetPage(ctx, req)
+	page, err := prtSrv.pageBusiness.GetPage(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" GetPage -- could not get page")
 		return nil, prtSrv.toAPIError(err)
@@ -40,8 +37,7 @@ func (prtSrv *PartitionServer) RemovePage(
 	req *partitionv1.RemovePageRequest,
 ) (*partitionv1.RemovePageResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	pageBusiness := business.NewPageBusiness(ctx, prtSrv.Service)
-	err := pageBusiness.RemovePage(ctx, req)
+	err := prtSrv.pageBusiness.RemovePage(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" RemovePage -- could not remove page")
 		return &partitionv1.RemovePageResponse{

@@ -29,8 +29,7 @@ func (prtSrv *PartitionServer) CreateAccess(
 	req *partitionv1.CreateAccessRequest,
 ) (*partitionv1.CreateAccessResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	access, err := accessBusiness.CreateAccess(ctx, req)
+	access, err := prtSrv.accessBusiness.CreateAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access")
 		return nil, prtSrv.toAPIError(err)
@@ -43,8 +42,7 @@ func (prtSrv *PartitionServer) GetAccess(
 	req *partitionv1.GetAccessRequest,
 ) (*partitionv1.GetAccessResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	access, err := accessBusiness.GetAccess(ctx, req)
+	access, err := prtSrv.accessBusiness.GetAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get access")
 		return nil, prtSrv.toAPIError(err)
@@ -57,8 +55,7 @@ func (prtSrv *PartitionServer) RemoveAccess(
 	req *partitionv1.RemoveAccessRequest,
 ) (*partitionv1.RemoveAccessResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	err := accessBusiness.RemoveAccess(ctx, req)
+	err := prtSrv.accessBusiness.RemoveAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access")
 		return &partitionv1.RemoveAccessResponse{
@@ -75,8 +72,7 @@ func (prtSrv *PartitionServer) CreateAccessRole(
 	req *partitionv1.CreateAccessRoleRequest,
 ) (*partitionv1.CreateAccessRoleResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	accessRole, err := accessBusiness.CreateAccessRole(ctx, req)
+	accessRole, err := prtSrv.accessBusiness.CreateAccessRole(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access roles")
 		return nil, prtSrv.toAPIError(err)
@@ -89,8 +85,7 @@ func (prtSrv *PartitionServer) ListAccessRoles(
 	req *partitionv1.ListAccessRoleRequest,
 ) (*partitionv1.ListAccessRoleResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	accessRoleList, err := accessBusiness.ListAccessRoles(ctx, req)
+	accessRoleList, err := prtSrv.accessBusiness.ListAccessRoles(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get list of access roles")
 		return nil, prtSrv.toAPIError(err)
@@ -103,8 +98,7 @@ func (prtSrv *PartitionServer) RemoveAccessRole(
 	req *partitionv1.RemoveAccessRoleRequest,
 ) (*partitionv1.RemoveAccessRoleResponse, error) {
 	logger := prtSrv.Service.Log(ctx)
-	accessBusiness := business.NewAccessBusiness(ctx, prtSrv.Service)
-	err := accessBusiness.RemoveAccessRole(ctx, req)
+	err := prtSrv.accessBusiness.RemoveAccessRole(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access role")
 		return &partitionv1.RemoveAccessRoleResponse{

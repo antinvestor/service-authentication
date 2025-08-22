@@ -167,14 +167,12 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	var partitionConfig *config.PartitionConfig
-	if c, ok := pb.service.Config().(*config.PartitionConfig); ok {
-		partitionConfig = c
-	} else {
+	cfg, ok := pb.service.Config().(*config.PartitionConfig)
+	if !ok {
 		return nil, errors.New("invalid configuration type")
 	}
 
-	err = pb.service.Publish(ctx, partitionConfig.PartitionSyncName, partition)
+	err = pb.service.Publish(ctx, cfg.PartitionSyncName, partition.GetID())
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +299,7 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service
 		}
 
 		for _, partition := range result.Item() {
-			err = service.Publish(ctx, partitionConfig.PartitionSyncName, partition)
+			err = service.Publish(ctx, partitionConfig.PartitionSyncName, partition.GetID())
 			if err != nil {
 				logger.WithError(err).Panic("could not publish because")
 
@@ -372,7 +370,7 @@ func deletePartitionOnHydra(ctx context.Context, service *frame.Service, hydraID
 	return err
 }
 
-func preparePayload(clientID string, partition *models.Partition) (map[string]interface{}, error) {
+func preparePayload(clientID string, partition *models.Partition) (map[string]any, error) {
 	logoURI := ""
 	if val, ok := partition.Properties["logo_uri"].(string); ok {
 		logoURI = val
@@ -390,7 +388,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 		return nil, err
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"client_name":    partition.Name,
 		"client_id":      clientID,
 		"grant_types":    []string{"authorization_code", "refresh_token"},
@@ -414,7 +412,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 	return payload, nil
 }
 
-func extractStringList(properties map[string]interface{}, key string) []string {
+func extractStringList(properties map[string]any, key string) []string {
 	var list []string
 	if val, ok := properties[key]; ok {
 
@@ -481,7 +479,7 @@ func updatePartitionWithResponse(
 	partition *models.Partition,
 	result []byte,
 ) error {
-	var response map[string]interface{}
+	var response map[string]any
 	if err := json.Unmarshal(result, &response); err != nil {
 		return err
 	}

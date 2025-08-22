@@ -54,14 +54,11 @@ func main() {
 		log.WithError(httpErr).Fatal("could not setup HTTP handlers")
 	}
 
-	partitionSyncQueueHandler := queue.PartitionSyncQueueHandler{
-		Service: svc,
-	}
 	partitionSyncQueueURL := cfg.QueuePartitionSyncURL
 	partitionSyncQueue := frame.WithRegisterSubscriber(
 		cfg.PartitionSyncName,
 		partitionSyncQueueURL,
-		&partitionSyncQueueHandler,
+		queue.NewPartitionSyncQueueHandler(svc),
 	)
 	partitionSyncQueueP := frame.WithRegisterPublisher(cfg.PartitionSyncName, partitionSyncQueueURL)
 

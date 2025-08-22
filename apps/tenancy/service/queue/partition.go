@@ -2,23 +2,31 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 )
 
 type PartitionSyncQueueHandler struct {
-	Service *frame.Service
+	service             *frame.Service
+	partitionRepository repository.PartitionRepository
+}
+
+func NewPartitionSyncQueueHandler(svc *frame.Service) frame.SubscribeWorker {
+	return &PartitionSyncQueueHandler{
+		service:             svc,
+		partitionRepository: repository.NewPartitionRepository(svc),
+	}
 }
 
 func (psq *PartitionSyncQueueHandler) Handle(ctx context.Context, _ map[string]string, payload []byte) error {
-	partition := &models.Partition{}
-	err := json.Unmarshal(payload, &partition) // Fixed: Added & to properly pass pointer for json.Unmarshal
+	partitionID := string(payload)
+
+	partition, err := psq.partitionRepository.GetByID(ctx, partitionID)
 	if err != nil {
 		return err
 	}
 
-	return business.SyncPartitionOnHydra(ctx, psq.Service, partition)
+	return business.SyncPartitionOnHydra(ctx, psq.service, partition)
 }

@@ -146,7 +146,7 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 		}
 
 		// Create test API key request
-		apiKeyReq := map[string]interface{}{
+		apiKeyReq := map[string]any{
 			"name":     "test-api-key",
 			"scope":    "read",
 			"audience": []string{"test"},
@@ -360,7 +360,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 		}
 
 		// Create test webhook request
-		webhookReq := map[string]interface{}{
+		webhookReq := map[string]any{
 			"token": "test-token",
 		}
 		jsonData, err := json.Marshal(webhookReq)
