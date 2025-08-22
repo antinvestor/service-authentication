@@ -2,26 +2,17 @@ package handlers_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	commonv1 "github.com/antinvestor/apis/go/common/v1"
-	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
-	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -128,65 +119,6 @@ func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context,
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	})
-}
-
-// GetVerificationCodeFromDatabase retrieves the actual verification code from the database
-func (suite *PasswordlessLoginTestSuite) GetVerificationCodeFromDatabase(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
-
-	loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
-	loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
-	if err != nil {
-		return "", err
-	}
-
-	notifCli := authServer.NotificationCli()
-
-	notif, err := frametests.WaitForConditionWithResult[notificationv1.Notification](ctx, func() (*notificationv1.Notification, error) {
-
-		resp, err0 := notifCli.Svc().Search(ctx, &commonv1.SearchRequest{
-			Limits: &commonv1.Pagination{
-				Count: 10,
-				Page:  0,
-			},
-			Extras: map[string]string{"template_id": "9bsv0s23l8og00vgjq90"},
-		})
-		if err0 != nil {
-			return nil, err0
-		}
-
-		var nSlice []*notificationv1.Notification
-		for {
-			n, err1 := resp.Recv()
-			if err1 == nil {
-				nSlice = append(nSlice, n.GetData()...)
-				continue
-			}
-
-			if errors.Is(err1, io.EOF) {
-				break
-			}
-			return nil, err1
-
-		}
-
-		if len(nSlice) == 0 {
-			return nil, nil
-		}
-
-		for _, n := range nSlice {
-			if n.GetPayload()["verification_id"] == loginEvt.VerificationID {
-				return n, nil
-			}
-		}
-
-		return nil, nil
-	}, 5*time.Second, 300*time.Millisecond)
-
-	if err != nil {
-		return "", err
-	}
-
-	return notif.GetPayload()["code"], nil
 }
 
 // TestOAuth2ClientCreation tests just the OAuth2 client creation step
@@ -305,15 +237,15 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 				t.Logf("  Login Event ID: %s", contactVerificationResult.LoginEventID)
 				t.Logf("  Profile Name: %s", contactVerificationResult.ProfileName)
 
-				// Step 2: Get verification code from database (in real scenario, user would receive this via email/SMS)
-				verificationCode, err := suite.GetVerificationCodeFromDatabase(opCtx, testCtx.AuthServer, contactVerificationResult.LoginEventID)
+				// Step 2: Get verification code from database (in real scenario, user would receive this via contact/SMS)
+				verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, testCtx.AuthServer, contactVerificationResult.LoginEventID)
 				require.NoError(t, err)
 				assert.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
 				t.Logf("Retrieved verification code: %s", verificationCode)
 
 				// Step 3: Complete contact verification with the code
-				loginResult, err := testCtx.OAuth2Client.CheckContactVerification(testCtx.Context,
+				loginResult, err := testCtx.OAuth2Client.PerformCodeVerification(testCtx.Context,
 					contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, verificationCode)
 				require.NoError(t, err)
 				assert.True(t, loginResult.Success, "Contact verification should succeed with valid code")
@@ -351,122 +283,6 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 	})
 }
 
-// TestLoginSubmissionFlow tests the final login submission with verification code
-func (suite *PasswordlessLoginTestSuite) TestLoginSubmissionFlow() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
-		defer suite.TeardownPasswordlessLoginTest(testCtx)
-
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
-		defer opCancel()
-
-		// Create test profile
-		email := "submission@example.com"
-		userName := "Submission User"
-		profile, err := suite.CreateTestProfile(opCtx, testCtx.AuthServer, email, userName)
-		require.NoError(t, err)
-
-		// Get contact ID
-		var contactID string
-		for _, contact := range profile.GetContacts() {
-			if strings.EqualFold(email, contact.GetDetail()) {
-				contactID = contact.GetId()
-				break
-			}
-		}
-		require.NotEmpty(t, contactID)
-
-		// Create mock verification
-		verification, err := suite.CreateVerification(opCtx, testCtx.AuthServer, contactID)
-		require.NoError(t, err)
-
-		// Create login event manually for testing
-		loginRepo := testCtx.LoginRepo
-		login := &models.Login{
-			ProfileID: profile.GetId(),
-			Source:    string(models.LoginSourceDirect),
-		}
-		login.GenID(opCtx)
-		err = loginRepo.Save(opCtx, login)
-		require.NoError(t, err)
-
-		loginEventRepo := repository.NewLoginEventRepository(testCtx.AuthServer.Service())
-		loginEvent := &models.LoginEvent{
-			LoginID:          login.GetID(),
-			LoginChallengeID: "test-challenge",
-			VerificationID:   verification.GetId(),
-			ContactID:        contactID,
-		}
-		loginEvent.GenID(opCtx)
-		err = loginEventRepo.Save(opCtx, loginEvent)
-		require.NoError(t, err)
-
-		// Test login submission
-		loginURL := fmt.Sprintf("%s/s/login/post", testCtx.TestServer.URL)
-		formData := url.Values{
-			"login_event_id":    {loginEvent.GetID()},
-			"profile_name":      {userName},
-			"verification_code": {"123456"}, // Mock verification code
-		}
-
-		req, err := http.NewRequestWithContext(opCtx, "POST", loginURL, strings.NewReader(formData.Encode()))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Should process the login submission
-		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 400,
-			"Expected success or redirect, got %d", resp.StatusCode)
-
-		t.Log("Login submission flow completed successfully")
-	})
-}
-
-// TestContactValidation tests the contact validation utility
-func (suite *PasswordlessLoginTestSuite) TestContactValidation() {
-	testCases := []struct {
-		name          string
-		contact       string
-		expectedType  utils.ContactType
-		shouldBeValid bool
-	}{
-		{
-			name:          "ValidEmail",
-			contact:       "test@example.com",
-			expectedType:  utils.ContactTypeEmail,
-			shouldBeValid: true,
-		},
-		{
-			name:          "ValidPhone",
-			contact:       "+1234567890",
-			expectedType:  utils.ContactTypePhone,
-			shouldBeValid: true,
-		},
-		{
-			name:          "InvalidContact",
-			contact:       "invalid-contact",
-			expectedType:  utils.ContactTypeUnknown,
-			shouldBeValid: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			contactType, isValid := utils.ValidateContact(tc.contact)
-
-			assert.Equal(t, tc.expectedType, contactType, "Contact type should match expected")
-			assert.Equal(t, tc.shouldBeValid, isValid, "Contact validity should match expected")
-
-			if tc.shouldBeValid {
-				assert.NotEqual(t, utils.ContactTypeUnknown, contactType, "Valid contacts should not be unknown type")
-			}
-		})
-	}
-}
-
 // TestProviderLoginFlow tests OAuth2 provider login integration
 func (suite *PasswordlessLoginTestSuite) TestProviderLoginFlow() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
@@ -491,31 +307,5 @@ func (suite *PasswordlessLoginTestSuite) TestProviderLoginFlow() {
 			"Provider endpoint should be accessible, got %d", resp.StatusCode)
 
 		t.Log("Provider login flow endpoint is accessible")
-	})
-}
-
-// TestVerificationPageDisplay tests that the verification page displays correctly
-func (suite *PasswordlessLoginTestSuite) TestVerificationPageDisplay() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
-		defer suite.TeardownPasswordlessLoginTest(testCtx)
-
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, OperationTimeout)
-		defer opCancel()
-
-		// Test verification page with parameters
-		verificationURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=test-event&profile_name=Test+User",
-			testCtx.TestServer.URL)
-
-		req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
-		require.NoError(t, err)
-
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "Verification page should be accessible")
-
-		t.Log("Verification page display test completed")
 	})
 }

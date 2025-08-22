@@ -5,19 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -105,7 +101,15 @@ func (suite *LoginVerificationTestSuite) TeardownVerificationTest(testCtx *Verif
 // CreateTestProfile creates a test profile for verification testing
 func (suite *LoginVerificationTestSuite) CreateTestProfile(ctx context.Context, authServer *handlers.AuthServer, email, name string) (*profilev1.ProfileObject, error) {
 	profileCli := authServer.ProfileCli()
-	return profileCli.CreateProfileByContactAndName(ctx, email, name)
+	resp, err := profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
+		Type:       profilev1.ProfileType_PERSON,
+		Contact:    email,
+		Properties: map[string]string{handlers.KeyProfileName: name},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetData(), nil
 }
 
 // CreateVerificationRecord creates a verification record and returns the verification code
@@ -117,138 +121,120 @@ func (suite *LoginVerificationTestSuite) CreateVerificationRecord(ctx context.Co
 	})
 }
 
-// GetVerificationCodeFromDatabase retrieves the actual verification code from the database
-func (suite *LoginVerificationTestSuite) GetVerificationCodeFromDatabase(ctx context.Context, authServer *handlers.AuthServer, verificationID string) (string, error) {
-	// For now, we'll use a mock verification code since the exact API method needs to be determined
-	// In a real implementation, this would query the profile service to get the verification record
-	// and extract the actual code from the database
-	return "123456", nil
-}
-
-// TestCompleteVerificationFlow tests the complete verification flow with real database verification codes
-func (suite *LoginVerificationTestSuite) TestCompleteVerificationFlow() {
+// TestCodeVerificationFlow tests the complete verification flow with real database verification codes
+func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 	testCases := []struct {
-		name     string
-		email    string
-		userName string
+		name          string
+		contact       string
+		userName      string
+		badLoginCodes []string
+		expectSuccess bool
 	}{
 		{
-			name:     "ValidEmailVerification",
-			email:    "verify@example.com",
-			userName: "Verify User",
+			name:          "ValidEmailVerification",
+			contact:       "verify@example.com",
+			userName:      "Verify User",
+			badLoginCodes: []string{},
+			expectSuccess: true,
 		},
 		{
-			name:     "ValidPhoneVerification",
-			email:    "+1234567890",
-			userName: "Phone User",
+			name:          "ValidPhoneVerification",
+			contact:       "+12345678900",
+			userName:      "Phone User",
+			badLoginCodes: []string{},
+			expectSuccess: true,
+		},
+		{
+			name:          "One wrong attempt then correct",
+			contact:       "onewrong@example.com",
+			userName:      "One Wrong User",
+			badLoginCodes: []string{"111111"},
+			expectSuccess: true,
+		},
+		{
+			name:          "Three wrong attempts then correct",
+			contact:       "threewrong@example.com",
+			userName:      "Three Wrong User",
+			badLoginCodes: []string{"111111", "222222", "333333"},
+			expectSuccess: false,
+		},
+		{
+			name:          "Five wrong attempts then the correct one",
+			contact:       "fivewrong@example.com",
+			userName:      "Five Wrong User",
+			badLoginCodes: []string{"111111", "222222", "333333", "444444", "555555"},
+			expectSuccess: false,
 		},
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		testCtx := suite.SetupVerificationTest(t, dep)
-		defer suite.TeardownVerificationTest(testCtx)
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
+
+				testCtx := suite.SetupVerificationTest(t, dep)
+				defer suite.TeardownVerificationTest(testCtx)
+
 				opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
 				defer opCancel()
 
-				// Step 1: Create test profile
-				profile, err := suite.CreateTestProfile(opCtx, testCtx.AuthServer, tc.email, tc.userName)
-				require.NoError(t, err)
-				assert.NotNil(t, profile)
-
-				// Step 2: Get contact ID
-				var contactID string
-				for _, contact := range profile.GetContacts() {
-					if strings.EqualFold(tc.email, contact.GetDetail()) {
-						contactID = contact.GetId()
-						break
-					}
-				}
-				require.NotEmpty(t, contactID, "Contact ID should be found")
-
-				// Step 3: Create verification record
-				verification, err := suite.CreateVerificationRecord(opCtx, testCtx.AuthServer, contactID)
-				require.NoError(t, err)
-				assert.NotNil(t, verification)
-
-				// Step 4: Get real verification code from database
-				verificationCode, err := suite.GetVerificationCodeFromDatabase(opCtx, testCtx.AuthServer, verification.GetId())
-				require.NoError(t, err)
-				assert.NotEmpty(t, verificationCode)
-
-				// Step 5: Initiate OAuth2 flow to get login challenge
+				// Create OAuth2 client for this test
+				testCtx.OAuth2Client.SetTestingT(t) // Enable debug logging
 				oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, tc.name)
-				if err != nil {
-					t.Logf("OAuth2 client creation failed: %v", err)
-					t.Skip("Skipping test due to OAuth2 client setup failure")
-					return
+				require.NoError(t, err)
+
+				// Initiate OAuth2 flow to get a valid login challenge
+				loginRedirect, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
+				require.NoError(t, err)
+
+				// Step 1: Submit contact for verification
+				contactVerificationResult, err := testCtx.OAuth2Client.PerformContactVerification(testCtx.Context, loginRedirect, tc.contact)
+				require.NoError(t, err)
+
+				if !contactVerificationResult.Success {
+					t.Logf("FAILED: Contact verification was not successful. Error: %s", contactVerificationResult.ErrorMessage)
+					t.FailNow()
 				}
 
-				loginChallenge, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
-				if err != nil {
-					t.Logf("OAuth2 login flow initiation failed: %v", err)
-					t.Skip("Skipping test due to OAuth2 login flow failure")
-					return
-				}
-				assert.NotEmpty(t, loginChallenge)
+				require.True(t, contactVerificationResult.Success, "Contact verification submission should succeed")
 
-				// Step 6: Create login and login event records
-				loginRepo := testCtx.LoginRepo
-				login := &models.Login{
-					ProfileID: profile.GetId(),
-					Source:    string(models.LoginSourceDirect),
-				}
-				login.GenID(opCtx)
-				err = loginRepo.Save(opCtx, login)
+				// Step 2: Get verification code from database (in real scenario, user would receive this via contact/SMS)
+				verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, testCtx.AuthServer, contactVerificationResult.LoginEventID)
 				require.NoError(t, err)
+				require.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
-				loginEventRepo := repository.NewLoginEventRepository(testCtx.AuthServer.Service())
-				loginEvent := &models.LoginEvent{
-					LoginID:          login.GetID(),
-					LoginChallengeID: loginChallenge,
-					VerificationID:   verification.GetId(),
-					ContactID:        contactID,
-				}
-				loginEvent.GenID(opCtx)
-				err = loginEventRepo.Save(opCtx, loginEvent)
-				require.NoError(t, err)
 
-				// Step 7: Test verification page display
-				verificationURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=%s&profile_name=%s",
-					testCtx.TestServer.URL, loginEvent.GetID(), tc.userName)
+				// Try all the wrong codes first
+				for i, wrongCode := range tc.badLoginCodes {
+					t.Logf("Attempting wrong verification code %d/%d: %s", i+1, len(tc.badLoginCodes), wrongCode)
+					result, err2 := testCtx.OAuth2Client.PerformCodeVerification(testCtx.Context,
+						contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, wrongCode)
 
-				req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
-				require.NoError(t, err)
+					// Wrong codes should fail
+					if err2 == nil && result.Success {
+						t.Errorf("Expected wrong code %s to fail, but it succeeded", wrongCode)
+					}
 
-				resp, err := http.DefaultClient.Do(req)
-				require.NoError(t, err)
-				defer resp.Body.Close()
-
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-				// Step 8: Test verification submission with real code
-				submitURL := fmt.Sprintf("%s/s/login/post", testCtx.TestServer.URL)
-				formData := url.Values{
-					"login_event_id":    {loginEvent.GetID()},
-					"profile_name":      {tc.userName},
-					"verification_code": {verificationCode},
+					time.Sleep(1*time.Second)
 				}
 
-				req, err = http.NewRequestWithContext(opCtx, "POST", submitURL, strings.NewReader(formData.Encode()))
-				require.NoError(t, err)
-				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				// For tests expecting failure, try the correct code to verify it's blocked
+				// For tests expecting success, try the correct code to verify it works
+				t.Logf("Now attempting correct verification code: %s", verificationCode)
+				finalResult, finalErr := testCtx.OAuth2Client.PerformCodeVerification(testCtx.Context,
+					contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, verificationCode)
 
-				resp, err = http.DefaultClient.Do(req)
-				require.NoError(t, err)
-				defer resp.Body.Close()
+				// Validate final result
+				if tc.expectSuccess {
+					require.NoError(t, finalErr, "Final verification should succeed")
+					require.NotNil(t, finalResult, "Final result should not be nil for successful verification")
+					require.True(t, finalResult.Success, "Final verification should succeed after wrong attempts")
+					t.Logf("Successfully completed verification after %d wrong attempts", len(tc.badLoginCodes))
+				} else {
+					require.Error(t, finalErr, "Final verification should fail after multiple wrong attempts")
+					t.Logf("Verification correctly failed after %d wrong attempts", len(tc.badLoginCodes)+1)
+				}
 
-				// Should process the verification successfully
-				assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 400,
-					"Expected success or redirect, got %d", resp.StatusCode)
-
-				t.Logf("Complete verification flow completed for %s with code %s", tc.email, verificationCode)
 			})
 		}
 	})
@@ -273,11 +259,11 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Contains(t, resp.Header.Get("Content-Type"), "text/html")
 
 		// Verify service is working
-		assert.NotNil(t, testCtx.AuthServer.Service())
+		require.NotNil(t, testCtx.AuthServer.Service())
 
 		t.Log("Verification endpoint basics test completed")
 	})

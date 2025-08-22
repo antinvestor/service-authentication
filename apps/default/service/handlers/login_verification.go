@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	profilev1 "github.com/antinvestor/apis/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
@@ -13,6 +12,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -112,9 +112,6 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 			return nil
 		}
-		logger.Info("DEBUG: Profile not found (NotFound error) - will create new contact")
-	} else {
-		logger.WithField("profile_id", existingProfile.GetId()).Info("DEBUG: Found existing profile")
 	}
 
 	contactID := ""
@@ -142,39 +139,27 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		contactID = contactResp.GetData().GetId()
 	}
 
-	logger.WithField("contact_id", contactID).Info("DEBUG: Creating contact verification")
-
-	// Generate a verification ID that matches the required pattern [0-9a-z_-]{3,20}
-	verificationID := fmt.Sprintf("ver_%d", time.Now().Unix()%1000000)
-	logger.WithField("verification_id", verificationID).Info("DEBUG: Generated verification ID")
-
 	resp, err := h.profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
-		Id:               verificationID,
+		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	})
 	if err != nil {
-		logger.WithError(err).Error("DEBUG: could not create contact verification - redirecting to login")
+		logger.WithError(err).Info("could not create contact verification - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 
 		return err
 	}
-	logger.WithField("verification_id", resp.GetId()).Info("DEBUG: Successfully created contact verification")
 
-	logger.Info("DEBUG: Storing login attempt")
 	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge, nil)
 	if err != nil {
-		logger.WithError(err).Error("DEBUG: could not store login attempt - redirecting to login")
+		logger.WithError(err).Error("could not store login attempt - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 
 		return err
 	}
-	logger.WithField("login_event_id", loginEvent.GetID()).Info("DEBUG: Successfully stored login attempt")
-
 	// Extract profile name from properties or use a default
 	profileName = existingProfile.GetProperties()[KeyProfileName]
-	logger.WithField("profile_name", profileName).Info("DEBUG: Using profile name")
-
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
@@ -275,6 +260,11 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
 
+	if verifyResp.GetCheckAttempts() > 3 {
+		logger.Error("verification code verification failed after too many attempts")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts")
+	}
+
 	if !verifyResp.GetSuccess() {
 		logger.Error("verification code verification returned false")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
@@ -290,7 +280,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	st, errOk := status.FromError(err)
 	if !errOk || st.Code() != codes.NotFound {
-		logger.WithError(err).Error("DEBUG: failed to get profile by contact")
+		logger.WithError(err).Error("failed to get profile by contact")
 		return err
 	}
 

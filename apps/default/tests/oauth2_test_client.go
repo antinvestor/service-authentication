@@ -2,9 +2,8 @@ package tests
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,8 +14,12 @@ import (
 	"testing"
 	"time"
 
+	commonv1 "github.com/antinvestor/apis/go/common/v1"
+	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/default/service/repository"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
 )
 
@@ -105,12 +108,6 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	// Use a proper callback URI that won't interfere with OAuth2 endpoints
 	redirectURI := c.AuthServiceURL + "/oauth2/callback"
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: Creating OAuth2 client with name: %s", testName)
-		c.t.Logf("DEBUG: AuthServiceURL: %s", c.AuthServiceURL)
-		c.t.Logf("DEBUG: RedirectURI being registered: %s", redirectURI)
-	}
-
 	// Create the client in Hydra
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
 		map[string]string{
@@ -125,18 +122,6 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		return nil, fmt.Errorf("failed to create OAuth2 client: %w", err)
 	}
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: Successfully created partition with ID: %s", partition.GetId())
-		c.t.Logf("DEBUG: Partition properties: %+v", partition.GetProperties())
-
-		// Check if client_id property exists
-		if clientID, ok := partition.GetProperties()["client_id"]; ok {
-			c.t.Logf("DEBUG: Found client_id in partition properties: %s", clientID)
-		} else {
-			c.t.Logf("DEBUG: WARNING - client_id property not found in partition properties")
-		}
-	}
-
 	c.clientIdList = append(c.clientIdList, partition.GetId())
 
 	client := &OAuth2Client{
@@ -146,19 +131,14 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		Scope:        "openid profile offline_access contact",
 	}
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: Created OAuth2Client: ClientID=%s, RedirectURIs=%v, Scope=%s",
-			client.ClientID, client.RedirectURIs, client.Scope)
-	}
-
 	return client, nil
 }
 
 // InitiateLoginFlow starts an OAuth2 authorization code flow and returns the login challenge
 func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2Client) (string, error) {
 	// Build authorization URL
-	state := c.generateRandomString(16)
-	nonce := c.generateRandomString(16)
+	state := util.RandomString(16)
+	nonce := util.RandomString(16)
 
 	// Store session context for CSRF continuity
 	c.currentState = state
@@ -177,13 +157,6 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	authURL := fmt.Sprintf("%s/oauth2/auth", c.HydraPublicURL)
 	fullAuthURL := fmt.Sprintf("%s?%s", authURL, params.Encode())
 
-	if c.t != nil {
-		c.t.Logf("DEBUG: HydraPublicURL: %s", c.HydraPublicURL)
-		c.t.Logf("DEBUG: Full auth URL: %s", fullAuthURL)
-		c.t.Logf("DEBUG: Redirect URI in authorization request: %s", client.RedirectURIs[0])
-		c.t.Logf("DEBUG: Storing OAuth2 session - state: %s, nonce: %s", state, nonce)
-	}
-
 	// Make request to initiate OAuth2 flow
 	req, err := http.NewRequestWithContext(ctx, "GET", fullAuthURL, nil)
 	if err != nil {
@@ -197,9 +170,6 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	if c.t != nil {
-		c.t.Logf("DEBUG: Response status: %d", resp.StatusCode)
-		c.t.Logf("DEBUG: Response cookies: %v", resp.Cookies())
-
 		// Log current cookies in jar
 		if jar, ok := c.Client.Jar.(*cookiejar.Jar); ok {
 			if hydraURL, err := url.Parse(c.HydraPublicURL); err == nil {
@@ -213,9 +183,6 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	// Hydra should redirect to our auth service with login_challenge parameter
 	if resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusFound {
 		location := resp.Header.Get("Location")
-		if c.t != nil {
-			c.t.Logf("DEBUG: Redirect location: %s", location)
-		}
 		if location != "" {
 			parsedURL, err0 := url.Parse(location)
 			if err0 != nil {
@@ -241,7 +208,6 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 
 	return "", fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 }
-
 
 func extractCSRFTokenFromBody(bodyStr string) string {
 	if strings.Contains(bodyStr, `name="gorilla.csrf.Token"`) {
@@ -358,7 +324,6 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
 			}
 
-
 			// Extract login_event_id and profile_name from redirect URL
 			result.LoginEventID = parsedURL.Query().Get("login_event_id")
 
@@ -417,8 +382,9 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 	return result, nil
 }
 
-// CheckContactVerification completes the contact verification with the verification code
-func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEventID, profileName, verificationCode string) (*LoginResult, error) {
+// PerformCodeVerification completes the contact verification with the verification code
+// nolint:gocyclo,nolintlint //This is a test method no need to overthink
+func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEventID, profileName, verificationCode string) (*VerificationCodeResult, error) {
 	// Step 1: Get the verification form to extract CSRF token
 	verificationFormURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=%s&profile_name=%s",
 		c.AuthServiceURL, url.QueryEscape(loginEventID), url.QueryEscape(profileName))
@@ -436,7 +402,7 @@ func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEv
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return &LoginResult{
+		return &VerificationCodeResult{
 			StatusCode: resp.StatusCode,
 			Success:    false,
 		}, fmt.Errorf("unexpected status getting verification form: %d, body: %s", resp.StatusCode, string(body))
@@ -494,7 +460,7 @@ func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEv
 	}
 	defer util.CloseAndLogOnError(ctx, resp.Body)
 
-	result := &LoginResult{
+	result := &VerificationCodeResult{
 		StatusCode: resp.StatusCode,
 		Location:   resp.Header.Get("Location"),
 		Success:    false,
@@ -518,6 +484,19 @@ func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEv
 			redirectURL, err := url.Parse(location)
 			if err != nil {
 				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
+			}
+
+			// Check if redirected back to verification page (indicates failure)
+			if strings.Contains(location, "/s/verify/contact") {
+				errorMsg := redirectURL.Query().Get("error")
+				if errorMsg != "" {
+					if c.t != nil {
+						c.t.Logf("DEBUG: Verification failed, redirected back to verification page with error: %s", errorMsg)
+					}
+					result.Success = false
+					result.Location = location
+					return result, fmt.Errorf("verification failed: %s", errorMsg)
+				}
 			}
 
 			// Check if redirect is to Hydra by comparing host and port
@@ -597,20 +576,20 @@ func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEv
 					}
 				}
 			} else {
+				result.Location = location
 				// Direct redirect to client (skip consent)
 				if strings.Contains(location, "consent_challenge") {
 					consentURL, err := url.Parse(location)
 					if err == nil {
 						result.ConsentChallenge = consentURL.Query().Get("consent_challenge")
 						result.Success = true
-						result.Location = location
+
 					}
 				} else if strings.Contains(location, "code=") {
 					codeURL, err := url.Parse(location)
 					if err == nil {
 						result.AuthorizationCode = codeURL.Query().Get("code")
 						result.Success = true
-						result.Location = location
 					}
 				}
 			}
@@ -619,7 +598,7 @@ func (c *OAuth2TestClient) CheckContactVerification(ctx context.Context, loginEv
 		}
 	} else {
 		// Handle error cases
-		body, _ := io.ReadAll(resp.Body)
+		body, _ = io.ReadAll(resp.Body)
 		if c.t != nil {
 			c.t.Logf("DEBUG: Verification failed with status: %d, body: %s", resp.StatusCode, string(body))
 		}
@@ -767,17 +746,8 @@ func (c *OAuth2TestClient) ExchangeCodeForToken(ctx context.Context, client *OAu
 	return &tokenResult, nil
 }
 
-// generateRandomString generates a random string of the specified length
-func (c *OAuth2TestClient) generateRandomString(length int) string {
-	bytes := make([]byte, length/2)
-	if _, err := rand.Read(bytes); err != nil {
-		c.t.Fatalf("failed to generate random string: %v", err)
-	}
-	return hex.EncodeToString(bytes)[:length]
-}
-
-// LoginResult represents the result of a login attempt
-type LoginResult struct {
+// VerificationCodeResult represents the result of a login attempt
+type VerificationCodeResult struct {
 	StatusCode        int
 	Location          string
 	Success           bool
@@ -807,7 +777,7 @@ type ConsentResult struct {
 // OAuth2FlowResult represents the complete OAuth2 flow result
 type OAuth2FlowResult struct {
 	LoginChallenge    string
-	LoginResult       *LoginResult
+	LoginResult       *VerificationCodeResult
 	ConsentResult     *ConsentResult
 	AuthorizationCode string
 }
@@ -831,6 +801,65 @@ func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID str
 	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	return nil
+}
+
+// GetVerificationCodeByLoginEventID retrieves the actual verification code from the database
+func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
+
+	loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
+	loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
+	if err != nil {
+		return "", err
+	}
+
+	notifCli := authServer.NotificationCli()
+
+	notif, err := frametests.WaitForConditionWithResult[notificationv1.Notification](ctx, func() (*notificationv1.Notification, error) {
+
+		resp, err0 := notifCli.Svc().Search(ctx, &commonv1.SearchRequest{
+			Limits: &commonv1.Pagination{
+				Count: 10,
+				Page:  0,
+			},
+			Extras: map[string]string{"template_id": "9bsv0s23l8og00vgjq90"},
+		})
+		if err0 != nil {
+			return nil, err0
+		}
+
+		var nSlice []*notificationv1.Notification
+		for {
+			n, err1 := resp.Recv()
+			if err1 == nil {
+				nSlice = append(nSlice, n.GetData()...)
+				continue
+			}
+
+			if errors.Is(err1, io.EOF) {
+				break
+			}
+			return nil, err1
+
+		}
+
+		if len(nSlice) == 0 {
+			return nil, nil
+		}
+
+		for _, n := range nSlice {
+			if n.GetPayload()["verification_id"] == loginEvt.VerificationID {
+				return n, nil
+			}
+		}
+
+		return nil, nil
+	}, 5*time.Second, 300*time.Millisecond)
+
+	if err != nil {
+		return "", err
+	}
+
+	return notif.GetPayload()["code"], nil
 }
 
 // Cleanup performs general cleanup of OAuth2 test client resources
