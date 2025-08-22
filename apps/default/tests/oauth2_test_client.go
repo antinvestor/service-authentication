@@ -112,7 +112,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
 		map[string]string{
 			"scope":         "openid offline offline_access profile contact",
-			"audience":      "service_matrix,service_profile,service_partition,service_files",
+			"audience":      "service_matrix service_profile service_partition service_files authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
 			"redirect_uris": redirectURI})
 	if err != nil {
@@ -314,7 +314,8 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 	}
 
 	// Check if contact verification was submitted successfully
-	if verifyResp.StatusCode == http.StatusSeeOther || verifyResp.StatusCode == http.StatusFound {
+	switch verifyResp.StatusCode {
+	case http.StatusSeeOther, http.StatusFound:
 		location := verifyResp.Header.Get("Location")
 		if location != "" {
 			// Should redirect to verification page with login_event_id and profile_name
@@ -349,7 +350,7 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 				}
 			}
 		}
-	} else if verifyResp.StatusCode == http.StatusOK {
+	case http.StatusOK:
 		// Check if the response contains error messages or form
 		if strings.Contains(responseBody, "error") || strings.Contains(responseBody, "invalid") {
 			result.Success = false
@@ -368,7 +369,7 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 				c.t.Logf("DEBUG: Contact verification form displayed (status 200)")
 			}
 		}
-	} else {
+	default:
 		result.Success = false
 		result.ErrorMessage = fmt.Sprintf("unexpected status code: %d", resp.StatusCode)
 		if c.t != nil {
@@ -511,13 +512,13 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 
 			if isHydraRedirect {
 				// Follow the redirect to complete the OAuth2 flow
-				// Normalize the redirect URL to use the same hostname as HydraPublicURL
+				// Normalise the redirect URL to use the same hostname as HydraPublicURL
 				normalizedLocation := location
 				if redirectURL.Hostname() != hydraURL.Hostname() {
 					redirectURL.Host = hydraURL.Host
 					normalizedLocation = redirectURL.String()
 					if c.t != nil {
-						c.t.Logf("DEBUG: Normalized redirect URL from %s to %s", location, normalizedLocation)
+						c.t.Logf("DEBUG: Normalised redirect URL from %s to %s", location, normalizedLocation)
 					}
 				}
 

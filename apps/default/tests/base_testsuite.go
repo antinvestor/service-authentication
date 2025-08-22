@@ -49,10 +49,10 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	// Add profile and partition service dependencies
-	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	notifications := NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	profile := NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	notifications := NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	profile := NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	resources := []definition.TestResource{pg, hydra, notifications, profile, device, partition}
 	return resources
@@ -125,7 +125,7 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
-	cfg.RunServiceSecurely = false
+	//cfg.RunServiceSecurely = false
 	cfg.HTTPServerPort = bs.FreeAuthPort
 
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"

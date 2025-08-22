@@ -203,7 +203,6 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 				require.NoError(t, err)
 				require.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
-
 				// Try all the wrong codes first
 				for i, wrongCode := range tc.badLoginCodes {
 					t.Logf("Attempting wrong verification code %d/%d: %s", i+1, len(tc.badLoginCodes), wrongCode)
@@ -215,7 +214,7 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 						t.Errorf("Expected wrong code %s to fail, but it succeeded", wrongCode)
 					}
 
-					time.Sleep(1*time.Second)
+					time.Sleep(1 * time.Second)
 				}
 
 				// For tests expecting failure, try the correct code to verify it's blocked

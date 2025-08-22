@@ -254,8 +254,8 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 				var authorizationCode string
 				if loginResult.ConsentChallenge != "" {
 					// Handle consent flow
-					consentResult, err := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
-					require.NoError(t, err)
+					consentResult, err0 := testCtx.OAuth2Client.PerformConsent(testCtx.Context, loginResult.ConsentChallenge)
+					require.NoError(t, err0)
 					assert.True(t, consentResult.Success, "Consent should succeed")
 					assert.NotEmpty(t, consentResult.AuthorizationCode, "Should receive authorization code")
 					authorizationCode = consentResult.AuthorizationCode

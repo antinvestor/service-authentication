@@ -378,6 +378,12 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 	}
 
 	audienceList := extractStringList(partition.Properties, "audience")
+	scopeList := extractStringList(partition.Properties, "scope")
+
+	if len(scopeList) == 0 {
+		scopeList = append(scopeList, "openid", "offline_access", "profile")
+	}
+
 	uriList, err := prepareRedirectURIs(partition)
 	if err != nil {
 		return nil, err
@@ -388,7 +394,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 		"client_id":      clientID,
 		"grant_types":    []string{"authorization_code", "refresh_token"},
 		"response_types": []string{"token", "id_token", "code", "token id_token", "token code id_token"},
-		"scope":          "openid offline_access profile",
+		"scope":          strings.Join(scopeList, " "),
 		"redirect_uris":  uriList,
 		"logo_uri":       logoURI,
 		"audience":       audienceList,
@@ -410,6 +416,19 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]in
 func extractStringList(properties map[string]interface{}, key string) []string {
 	var list []string
 	if val, ok := properties[key]; ok {
+
+		if str, okStr := val.(string); okStr {
+			if strings.Contains(str, " ") {
+				list = strings.Split(str, " ")
+				return list
+			}
+
+			if strings.Contains(str, ",") {
+				list = strings.Split(str, ",")
+				return list
+			}
+		}
+
 		if arr, okArr := val.([]interface{}); okArr {
 			for _, v := range arr {
 				if str, okStr := v.(string); okStr {
