@@ -163,9 +163,8 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error when no JWT token is provided)
-		// Note: Authentication middleware should ideally return 401, but currently returns 500
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Verify response (should be 401 Unauthorised when no JWT token is provided)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
@@ -214,9 +213,8 @@ func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error when no JWT token is provided)
-		// Note: Authentication middleware should ideally return 401, but currently returns 500
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Verify response (should be 401 Unauthorised when no JWT token is provided)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
@@ -265,9 +263,8 @@ func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error when no JWT token is provided)
-		// Note: Authentication middleware should ideally return 401, but currently returns 500
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Verify response (should be 401 Unauthorised when no JWT token is provided)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
@@ -316,9 +313,8 @@ func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error when no JWT token is provided)
-		// Note: Authentication middleware should ideally return 401, but currently returns 500
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Verify response (should be 401 Unauthorised when no JWT token is provided)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())
@@ -418,7 +414,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		}
 
 		// Test unauthorised access to API key endpoint (no JWT token)
-		// This should return 500 as established in previous tests
+		// This should return 401 Unauthorised as authentication middleware is working correctly
 		req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+"/api/key", nil)
 		require.NoError(t, err)
 
@@ -426,8 +422,8 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		require.NoError(t, err)
 		defer util.CloseAndLogOnError(ctx, resp.Body)
 
-		// Verify response (should be 500 Internal Server Error for unauthorised access)
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Verify response (should be 401 Unauthorised for unauthorised access)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 		// Verify service is working
 		assert.NotNil(t, authServer.Service())

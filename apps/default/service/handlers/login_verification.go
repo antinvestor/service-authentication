@@ -276,12 +276,17 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	resp, err := h.profileCli.Svc().GetByContact(ctx, &profilev1.GetByContactRequest{Contact: loginEvent.ContactID})
 	if err == nil {
 		profileObj = resp.GetData()
-	}
-
-	st, errOk := status.FromError(err)
-	if !errOk || st.Code() != codes.NotFound {
-		logger.WithError(err).Error("failed to get profile by contact")
-		return err
+	} else {
+		// Check if it's a "not found" error, which is expected for new users
+		st, errOk := status.FromError(err)
+		if errOk && st.Code() == codes.NotFound {
+			// Profile not found - this is expected for new users, we'll create one below
+			logger.Debug("Profile not found for contact, will create new profile")
+		} else {
+			// Unexpected error occurred
+			logger.WithError(err).Error("failed to get profile by contact")
+			return err
+		}
 	}
 
 	if profileObj == nil {

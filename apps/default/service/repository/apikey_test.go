@@ -143,13 +143,14 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByID() {
 				foundAPIKey, err := apiKeyRepo.GetByID(ctx, queryID)
 
 				// Verify
-				require.NoError(t, err)
 				if tc.shouldFind {
+					require.NoError(t, err)
 					require.NotNil(t, foundAPIKey, "Should find API key")
 					assert.Equal(t, apiKey.ID, foundAPIKey.ID, "API key ID should match")
 					assert.Equal(t, tc.profileID, foundAPIKey.ProfileID, "Profile ID should match")
 					assert.Equal(t, tc.keyName, foundAPIKey.Name, "Key name should match")
 				} else {
+					require.Error(t, err, "Should return error for non-existing API key")
 					assert.Nil(t, foundAPIKey, "Should not find API key")
 				}
 			})
@@ -211,12 +212,13 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByIDAndProfile() {
 				foundAPIKey, err := apiKeyRepo.GetByIDAndProfile(ctx, apiKey.ID, tc.queryProfile)
 
 				// Verify
-				require.NoError(t, err)
 				if tc.shouldFind {
+					require.NoError(t, err)
 					require.NotNil(t, foundAPIKey, "Should find API key")
 					assert.Equal(t, apiKey.ID, foundAPIKey.ID, "API key ID should match")
 					assert.Equal(t, tc.profileID, foundAPIKey.ProfileID, "Profile ID should match")
 				} else {
+					require.Error(t, err, "Should return error for wrong profile")
 					assert.Nil(t, foundAPIKey, "Should not find API key")
 				}
 			})
@@ -278,12 +280,13 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 				foundAPIKey, err := apiKeyRepo.GetByKey(ctx, tc.queryKey)
 
 				// Verify
-				require.NoError(t, err)
 				if tc.shouldFind {
+					require.NoError(t, err)
 					require.NotNil(t, foundAPIKey, "Should find API key")
 					assert.Equal(t, tc.key, foundAPIKey.Key, "Key should match")
 					assert.Equal(t, tc.profileID, foundAPIKey.ProfileID, "Profile ID should match")
 				} else {
+					require.Error(t, err, "Should return error for non-existing key")
 					assert.Nil(t, foundAPIKey, "Should not find API key")
 				}
 			})
@@ -391,9 +394,9 @@ func (suite *APIKeyRepositoryTestSuite) TestDelete() {
 				} else {
 					require.NoError(t, err)
 
-					// Verify API key is deleted
+					// Verify API key is deleted (should return error when trying to find it)
 					foundAPIKey, err := apiKeyRepo.GetByID(ctx, apiKey.ID)
-					require.NoError(t, err)
+					require.Error(t, err, "Should return error for deleted API key")
 					assert.Nil(t, foundAPIKey, "API key should be deleted")
 				}
 			})

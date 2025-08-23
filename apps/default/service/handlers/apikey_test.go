@@ -356,7 +356,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyRetrieval() {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusAccepted, resp.StatusCode, "Should return Accepted status")
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "Should return OK status")
 
 		t.Logf("Successfully retrieved API key: %s", createdKey.ID)
 	})
@@ -402,8 +402,11 @@ func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
 		err = json.NewDecoder(resp.Body).Decode(&createdKey)
 		require.NoError(t, err)
 
+		t.Logf("DEBUG: Starting deletion test for API key: %s", createdKey.ID)
+
 		// Now test deleting the API key
 		url = fmt.Sprintf("%s/api/key/%s", testCtx.TestServer.URL, createdKey.ID)
+		t.Logf("DEBUG: Sending DELETE request to: %s", url)
 		req, err = http.NewRequestWithContext(testCtx.Context, "DELETE", url, nil)
 		require.NoError(t, err)
 
@@ -413,8 +416,15 @@ func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
+		t.Logf("DEBUG: DELETE response status: %d (expected: %d)", resp.StatusCode, http.StatusAccepted)
+		if resp.StatusCode != http.StatusAccepted {
+			body, _ := io.ReadAll(resp.Body)
+			t.Logf("DEBUG: DELETE response body: %s", string(body))
+		}
+
 		assert.Equal(t, http.StatusAccepted, resp.StatusCode, "Should return Accepted status")
 
+		t.Logf("DEBUG: Verifying deletion by attempting to retrieve deleted key")
 		// Verify the key is deleted by trying to retrieve it
 		req, err = http.NewRequestWithContext(testCtx.Context, "GET", url, nil)
 		require.NoError(t, err)
@@ -424,6 +434,12 @@ func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
 		resp, err = client.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
+
+		t.Logf("DEBUG: GET after deletion response status: %d (expected: %d)", resp.StatusCode, http.StatusNotFound)
+		if resp.StatusCode != http.StatusNotFound {
+			body, _ := io.ReadAll(resp.Body)
+			t.Logf("DEBUG: GET after deletion response body: %s", string(body))
+		}
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode, "Deleted key should not be found")
 

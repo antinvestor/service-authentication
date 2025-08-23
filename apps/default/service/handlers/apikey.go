@@ -65,6 +65,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 		Hash:      apiKeySecret,
 		Scope:     akey.Scope,
 	}
+	apiky.GenID(ctx)
 
 	audBytes, err := json.Marshal(akey.Audience)
 	if err != nil {
@@ -133,17 +134,42 @@ func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request
 	subject, _ := claims.GetSubject()
 	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
+		if frame.ErrorIsNoRows(err) {
+			rw.WriteHeader(http.StatusNotFound)
+			return nil
+		}
+
 		return err
 	}
 
-	if apiKeyModel == nil {
-		rw.WriteHeader(http.StatusNotFound)
-		return nil
+	// Return the API key information (without sensitive data)
+	miniApiKey := apiKey{
+		ID:       apiKeyModel.ID,
+		Name:     apiKeyModel.Name,
+		Scope:    apiKeyModel.Scope,
+		Audience: []string{}, // Parse from apiKeyModel.Audience if needed
+		Metadata: make(map[string]string),
+	}
+
+	// Convert metadata from frame.JSONMap to map[string]string
+	for key, value := range apiKeyModel.Metadata {
+		if strValue, ok := value.(string); ok {
+			miniApiKey.Metadata[key] = strValue
+		}
+	}
+
+	// Parse audience if it's stored as JSON
+	if apiKeyModel.Audience != "" {
+		var audience []string
+		err = json.Unmarshal([]byte(apiKeyModel.Audience), &audience)
+		if err == nil {
+			miniApiKey.Audience = audience
+		}
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
-	rw.WriteHeader(http.StatusAccepted)
-	return nil
+	rw.WriteHeader(http.StatusOK)
+	return json.NewEncoder(rw).Encode(miniApiKey)
 }
 
 func (h *AuthServer) DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -159,12 +185,11 @@ func (h *AuthServer) DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	subject, _ := claims.GetSubject()
 	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
+		if frame.ErrorIsNoRows(err) {
+			rw.WriteHeader(http.StatusNotFound)
+			return nil
+		}
 		return err
-	}
-
-	if apiKeyModel == nil {
-		rw.WriteHeader(http.StatusNotFound)
-		return nil
 	}
 
 	jwtServerURL := h.config.GetOauth2ServiceAdminURI()

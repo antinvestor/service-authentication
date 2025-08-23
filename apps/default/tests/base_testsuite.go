@@ -50,7 +50,7 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 
 	// Add profile and partition service dependencies
 	device := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 	notifications := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 	profile := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
@@ -125,7 +125,8 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
-	//cfg.RunServiceSecurely = false
+	cfg.DatabaseTraceQueries = true
+	// cfg.RunServiceSecurely = false
 	cfg.HTTPServerPort = bs.FreeAuthPort
 
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"
@@ -153,7 +154,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstInternalSystemScope),
+		apis.WithScopes(frame.ConstSystemScopeInternal),
 		apis.WithAudiences("service_partition"))
 	require.NoError(t, err)
 
@@ -162,7 +163,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstInternalSystemScope),
+		apis.WithScopes(frame.ConstSystemScopeInternal),
 		apis.WithAudiences("service_profile"))
 	require.NoError(t, err)
 
@@ -171,7 +172,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstInternalSystemScope),
+		apis.WithScopes(frame.ConstSystemScopeInternal),
 		apis.WithAudiences("service_devices"))
 	require.NoError(t, err)
 
@@ -180,7 +181,7 @@ func (bs *BaseTestSuite) CreateService(
 		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		apis.WithTokenUsername(svc.JwtClientID()),
 		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstInternalSystemScope),
+		apis.WithScopes(frame.ConstSystemScopeInternal),
 		apis.WithAudiences("service_notifications"))
 	require.NoError(t, err)
 

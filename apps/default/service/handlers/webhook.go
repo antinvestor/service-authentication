@@ -124,7 +124,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "scope not found"})
 	}
 
-	if slices.Contains(grantedScopes, frame.ConstInternalSystemScope) {
+	if slices.Contains(grantedScopes, frame.ConstSystemScopeInternal) {
 
 		roles := []string{"system_internal"}
 		// This is an internal system client
