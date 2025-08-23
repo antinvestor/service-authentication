@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	PartitionImage = "ghcr.io/antinvestor/service-partition:latest"
+	PartitionImage = "ghcr.io/antinvestor/service-authentication-tenancy:latest"
 )
 
 type partitionDependancy struct {
@@ -101,10 +101,6 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_profile,authentication_tests",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_partition",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
-			// Disable partition sync subscription in test environment to prevent context cancellation
-			"SYNCHRONISE_PRIMARY_PARTITIONS": "false",
-			"QUEUE_PARTITION_SYNC":           "mem://test_partition_sync",
-			"QUEUE_PARTITION_SYNC_NAME":      "test_partition_sync",
 		},
 
 		WaitingFor: wait.ForLog("Initiating server operations"),

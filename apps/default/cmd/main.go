@@ -10,7 +10,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/gorilla/handlers"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
 )
@@ -83,11 +82,7 @@ func main() {
 
 	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli, nil)
 
-	authServiceHandlers := handlers.RecoveryHandler(
-		handlers.PrintRecoveryStack(true))(
-		srv.SetupRouterV1(ctx))
-
-	defaultServer := frame.WithHTTPHandler(authServiceHandlers)
+	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
 
 	svc.Init(ctx, serviceOptions...)

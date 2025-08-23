@@ -98,6 +98,7 @@ type OAuth2Client struct {
 	RedirectURIs []string
 	Scope        string
 	Audience     []string
+	props        map[string]string
 }
 
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
@@ -129,8 +130,9 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		ClientID:     partition.GetId(),
 		ClientSecret: "",
 		RedirectURIs: []string{redirectURI + "?partition_id=" + partition.GetId()},
-		Scope:        "openid profile offline_access contact",
+		Scope:        "openid offline_access profile",
 		Audience:     []string{"authentication_tests"},
+		props:        partition.GetProperties(),
 	}
 
 	return client, nil

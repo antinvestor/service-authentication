@@ -3,27 +3,6 @@
 {{define "content"}}
 <div class="login-container">
 
-    {{if .enableGoogleLogin}}
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-    <div id="g_id_onload"
-         data-client_id="{{ .googleClientId }}"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-login_uri="{{ .googleRedirectUri }}"
-         data-auto_prompt="false">
-    </div>
-
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="continue_with"
-         data-size="large"
-         data-logo_alignment="left">
-    </div>
-    {{end}}
-
 {{if .error}}
 <div class="message error">{{ .error }}</div>
 {{end}}

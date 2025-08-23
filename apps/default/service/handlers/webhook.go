@@ -74,7 +74,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 
-	if strings.HasPrefix(clientID, "api_key") {
+	if strings.HasPrefix(clientID, constApiKeyIDPrefix) {
 
 		// Check if this is an API key client
 		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)

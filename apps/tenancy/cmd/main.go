@@ -14,7 +14,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	protovalidateinterceptor "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc"
@@ -97,7 +96,7 @@ func handleDatabaseMigration(
 }
 
 // setupGRPCServer initialises and configures the gRPC server.
-func setupGRPCServer(_ context.Context, svc *frame.Service,
+func setupGRPCServer(ctx context.Context, svc *frame.Service,
 	cfg config.PartitionConfig,
 	serviceName string,
 	log *util.LogEntry) (*grpc.Server, *handlers.PartitionServer) {
@@ -113,20 +112,16 @@ func setupGRPCServer(_ context.Context, svc *frame.Service,
 
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			recovery.UnaryServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
 			svc.UnaryAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
 			protovalidateinterceptor.UnaryServerInterceptor(validator)),
 
 		grpc.ChainStreamInterceptor(
-			recovery.StreamServerInterceptor(recovery.WithRecoveryHandlerContext(frame.RecoveryHandlerFun)),
 			svc.StreamAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
 			protovalidateinterceptor.StreamServerInterceptor(validator),
 		),
 	)
 
-	implementation := &handlers.PartitionServer{
-		Service: svc,
-	}
+	implementation := handlers.NewPartitionServer(ctx, svc)
 	partitionv1.RegisterPartitionServiceServer(grpcServer, implementation)
 
 	return grpcServer, implementation

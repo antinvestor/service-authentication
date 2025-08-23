@@ -33,6 +33,7 @@ func (c *OAuth2TestClient) AcquireAccessTokenForContact(ctx context.Context, t *
 		return nil, err
 	}
 	t.Logf("SUCCESS: OAuth2 client created with ID: %s", oauth2Client.ClientID)
+	t.Logf("SUCCESS: Partition props : %s", oauth2Client.props)
 
 	// Step 2: Initiate OAuth2 flow to get a valid login challenge
 	loginRedirect, err := c.InitiateLoginFlow(ctx, oauth2Client)

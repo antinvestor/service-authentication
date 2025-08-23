@@ -10,7 +10,7 @@ import (
 	"github.com/pitabwire/frame"
 )
 
-const constApiKeyIDPrefix = "api_k"
+const constApiKeyIDPrefix = "api_key"
 
 type apiKey struct {
 	ID       string            `json:"id"`

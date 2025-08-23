@@ -49,10 +49,10 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	// Add profile and partition service dependencies
-	device := NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partition := NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	notifications := NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	profile := NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	device := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	notifications := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	profile := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	resources := []definition.TestResource{pg, hydra, notifications, profile, device, partition}
 	return resources
@@ -91,13 +91,13 @@ func (bs *BaseTestSuite) CreateService(
 		switch res.Name() {
 		case testpostgres.PostgresqlDBImage:
 			databaseDR = res
-		case ProfileImage:
+		case internaltests.ProfileImage:
 			profileDR = res
-		case DeviceImage:
+		case internaltests.DeviceImage:
 			deviceDR = res
-		case PartitionImage:
+		case internaltests.PartitionImage:
 			partitionDR = res
-		case NotificationImage:
+		case internaltests.NotificationImage:
 			notificationDR = res
 		case testoryhydra.OryHydraImage:
 			hydraDR = res

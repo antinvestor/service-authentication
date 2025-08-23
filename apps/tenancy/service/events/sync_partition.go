@@ -179,13 +179,11 @@ func extractStringList(properties map[string]any, key string) []string {
 
 		if str, okStr := val.(string); okStr {
 			if strings.Contains(str, " ") {
-				list = strings.Split(str, " ")
-				return list
+				return strings.Split(str, " ")
 			}
 
 			if strings.Contains(str, ",") {
-				list = strings.Split(str, ",")
-				return list
+				return strings.Split(str, ",")
 			}
 		}
 
