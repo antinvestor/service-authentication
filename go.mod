@@ -4,11 +4,11 @@ go 1.25
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.40.1
-	github.com/antinvestor/apis/go/device v1.40.2
-	github.com/antinvestor/apis/go/notification v1.40.2
-	github.com/antinvestor/apis/go/partition v1.40.2
-	github.com/antinvestor/apis/go/profile v1.40.4
+	github.com/antinvestor/apis/go/common v1.41.0
+	github.com/antinvestor/apis/go/device v1.41.0
+	github.com/antinvestor/apis/go/notification v1.41.0
+	github.com/antinvestor/apis/go/partition v1.41.0
+	github.com/antinvestor/apis/go/profile v1.41.0
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
@@ -19,7 +19,7 @@ require (
 	github.com/pitabwire/frame v1.55.9
 	github.com/pitabwire/util v0.3.4
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	golang.org/x/crypto v0.41.0
 	google.golang.org/grpc v1.75.0
