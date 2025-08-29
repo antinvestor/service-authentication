@@ -67,7 +67,7 @@ func (d *partitionDependancy) migrateContainer(
 
 func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwork) error {
 	if len(d.Opts().Dependencies) != 2 {
-		return errors.New("no Database/ Oauth2 Service dependencies was supplied")
+		return errors.New("no Database/ Oauth2 svc dependencies was supplied")
 	}
 
 	databaseURL := ""

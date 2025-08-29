@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,7 +22,6 @@ import (
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
-	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,7 +64,7 @@ func (bs *BaseTestSuite) SetupSuite() {
 
 	bs.InitResourceFunc = func(ctx context.Context) []definition.TestResource {
 
-		freePort, _ := getFreePort(ctx)
+		freePort, _ := frametests.GetFreePort(ctx)
 		bs.FreeAuthPort = strconv.Itoa(freePort)
 
 		loginUrl := fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
@@ -231,19 +229,4 @@ func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.Part
 	}
 
 	return partition, nil
-}
-
-func getFreePort(ctx context.Context) (int, error) {
-	a, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	var l *net.TCPListener
-	l, err = net.ListenTCP("tcp", a)
-	if err != nil {
-		return 0, err
-	}
-	defer util.CloseAndLogOnError(ctx, l)
-	return l.Addr().(*net.TCPAddr).Port, nil
 }

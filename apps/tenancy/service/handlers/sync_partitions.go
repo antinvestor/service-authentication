@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,12 +11,12 @@ import (
 	"github.com/pitabwire/frame/framedata"
 )
 
-const syncPartitionsPath = "/_system/sync/partitions"
+const SyncPartitionsHTTPPath = "/_system/sync/partitions"
 
 func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	cfg, ok := prtSrv.Service.Config().(*config.PartitionConfig)
+	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
 	if !ok {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
@@ -29,6 +30,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(rw).Encode(response)
+		return
 	}
 
 	response["triggered"] = true
@@ -47,7 +49,20 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 	query := framedata.NewSearchQuery(
 		queryStr, make(map[string]any),
 		page, count)
-	business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.Service, query)
+	err = business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.svc, query)
+	if err != nil {
+
+		rw.Header().Set("Content-Type", "application/json")
+
+		log := prtSrv.svc.Log(ctx).WithError(err)
+		log.Error("internal service error synchronising partitions")
+
+		_, err = rw.Write([]byte(fmt.Sprintf(" internal processing err message: %s", err.Error())))
+		if err != nil {
+			log.Error("could not write error to response")
+		}
+
+	}
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
@@ -57,7 +72,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux := http.NewServeMux()
 
-	userServeMux.HandleFunc(syncPartitionsPath, prtSrv.SynchronizePartitions)
+	userServeMux.HandleFunc(SyncPartitionsHTTPPath, prtSrv.SynchronizePartitions)
 
 	return userServeMux
 }

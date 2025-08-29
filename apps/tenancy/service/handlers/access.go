@@ -27,7 +27,7 @@ func (prtSrv *PartitionServer) CreateAccess(
 	ctx context.Context,
 	req *partitionv1.CreateAccessRequest,
 ) (*partitionv1.CreateAccessResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	access, err := prtSrv.accessBusiness.CreateAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access")
@@ -40,7 +40,7 @@ func (prtSrv *PartitionServer) GetAccess(
 	ctx context.Context,
 	req *partitionv1.GetAccessRequest,
 ) (*partitionv1.GetAccessResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	access, err := prtSrv.accessBusiness.GetAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get access")
@@ -53,7 +53,7 @@ func (prtSrv *PartitionServer) RemoveAccess(
 	ctx context.Context,
 	req *partitionv1.RemoveAccessRequest,
 ) (*partitionv1.RemoveAccessResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	err := prtSrv.accessBusiness.RemoveAccess(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access")
@@ -70,7 +70,7 @@ func (prtSrv *PartitionServer) CreateAccessRole(
 	ctx context.Context,
 	req *partitionv1.CreateAccessRoleRequest,
 ) (*partitionv1.CreateAccessRoleResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	accessRole, err := prtSrv.accessBusiness.CreateAccessRole(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access roles")
@@ -83,7 +83,7 @@ func (prtSrv *PartitionServer) ListAccessRoles(
 	ctx context.Context,
 	req *partitionv1.ListAccessRoleRequest,
 ) (*partitionv1.ListAccessRoleResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	accessRoleList, err := prtSrv.accessBusiness.ListAccessRoles(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get list of access roles")
@@ -96,7 +96,7 @@ func (prtSrv *PartitionServer) RemoveAccessRole(
 	ctx context.Context,
 	req *partitionv1.RemoveAccessRoleRequest,
 ) (*partitionv1.RemoveAccessRoleResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	err := prtSrv.accessBusiness.RemoveAccessRole(ctx, req)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access role")

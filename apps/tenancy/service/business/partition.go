@@ -260,36 +260,29 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	return toAPIPartitionRole(partitionRole), nil
 }
 
-func ReQueuePrimaryPartitionsForSync(ctx context.Context, service *frame.Service, query *framedata.SearchQuery) {
-	logger := service.Log(ctx)
-
-	partitionRepository := repository.NewPartitionRepository(service)
+func ReQueuePrimaryPartitionsForSync(ctx context.Context, svc *frame.Service, query *framedata.SearchQuery) error {
+	partitionRepository := repository.NewPartitionRepository(svc)
 
 	jobResult, err := partitionRepository.Search(ctx, query)
 	if err != nil {
-		logger.WithError(err).Error(" could not create query for searching partitions")
-
-		return
+		return err
 	}
 
 	for {
 		result, ok := jobResult.ReadResult(ctx)
 
 		if !ok {
-			return
+			return nil
 		}
 
 		if result.IsError() {
-			logger.WithError(err).Panic(" could not get default system partitions to sync successfully")
-			return
+			return result.Error()
 		}
 
 		for _, partition := range result.Item() {
-			err = service.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
+			err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
 			if err != nil {
-				logger.WithError(err).Panic("could not publish because")
-
-				return
+				return err
 			}
 		}
 	}

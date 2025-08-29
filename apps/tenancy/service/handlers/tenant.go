@@ -9,7 +9,7 @@ import (
 func (prtSrv *PartitionServer) GetTenant(
 	ctx context.Context,
 	req *partitionv1.GetTenantRequest) (*partitionv1.GetTenantResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	tenant, err := prtSrv.tenantBusiness.GetTenant(ctx, req.GetId())
 	if err != nil {
 		logger.Debug("could not obtain the specified tenant")
@@ -23,7 +23,7 @@ func (prtSrv *PartitionServer) ListTenant(
 	stream partitionv1.PartitionService_ListTenantServer,
 ) error {
 	ctx := stream.Context()
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	err := prtSrv.tenantBusiness.ListTenant(ctx, req, stream)
 	if err != nil {
 		logger.Debug("could not list tenants")
@@ -36,7 +36,7 @@ func (prtSrv *PartitionServer) CreateTenant(
 	ctx context.Context,
 	req *partitionv1.CreateTenantRequest,
 ) (*partitionv1.CreateTenantResponse, error) {
-	logger := prtSrv.Service.Log(ctx)
+	logger := prtSrv.svc.Log(ctx)
 	tenant, err := prtSrv.tenantBusiness.CreateTenant(ctx, req)
 	if err != nil {
 		logger.Debug("could not create a new tenant")

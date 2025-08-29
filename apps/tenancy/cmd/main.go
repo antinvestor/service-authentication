@@ -62,7 +62,7 @@ func main() {
 	log.WithField("server http port", cfg.HTTPPort()).
 		WithField("server grpc port", cfg.GrpcPort()).
 		Info(" Initiating server operations")
-	err = implementation.Service.Run(ctx, "")
+	err = svc.Run(ctx, "")
 	if err != nil {
 		log = log.WithError(err)
 

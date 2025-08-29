@@ -1,10 +1,11 @@
-package events
+package events_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
@@ -16,6 +17,10 @@ import (
 
 type SyncPartitionTestSuite struct {
 	tests.BaseTestSuite
+}
+
+func TestSyncPartitionTestSuite(t *testing.T) {
+	suite.Run(t, new(SyncPartitionTestSuite))
 }
 
 // Test comprehensive partition synchronisation scenarios
@@ -141,7 +146,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				}
 
 				// Execute SyncPartitionOnHydra
-				err := SyncPartitionOnHydra(ctx, svc, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, svc, tc.partition)
 
 				// Log the result
 				if err != nil {
@@ -198,7 +203,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_DeletedPartition()
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		// Execute sync operation
-		err := SyncPartitionOnHydra(ctx, svc, partition)
+		err := events.SyncPartitionOnHydra(ctx, svc, partition)
 
 		// Log result
 		if err != nil {
@@ -273,7 +278,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Logf("Testing error scenario: %s", tc.description)
 
-				err := SyncPartitionOnHydra(ctx, svc, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, svc, tc.partition)
 
 				if tc.expectError {
 					require.Error(t, err, "Expected error for %s", tc.name)
@@ -312,7 +317,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 		svc, ctx := suite.CreateService(t, dep)
 		// Measure execution time
 		start := time.Now()
-		err := SyncPartitionOnHydra(ctx, svc, partition)
+		err := events.SyncPartitionOnHydra(ctx, svc, partition)
 		duration := time.Since(start)
 
 		// Log performance metrics
@@ -333,8 +338,4 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 		require.Contains(suite.T(), partition.ID, "test-performance-")
 
 	})
-}
-
-func TestSyncPartitionTestSuite(t *testing.T) {
-	suite.Run(t, new(SyncPartitionTestSuite))
 }
