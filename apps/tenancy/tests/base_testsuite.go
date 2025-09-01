@@ -12,6 +12,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testnats"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
@@ -113,7 +114,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 		ExtendQuery("jetstream", "true").
 		ExtendQuery("subject", "svc.tenancy.internal._queue").
 		ExtendQuery("stream_name", "svc_tenancy").
-		ExtendQuery("stream_subjects", "svc.tenancy.*").
+		ExtendQuery("stream_subjects", "svc.tenancy.>").
 		ExtendQuery("consumer_durable_name", "svc_tenancy_internal_queue").
 		ExtendQuery("consumer_filter_subject", "svc.tenancy.internal._queue").
 		ExtendQuery("consumer_ack_policy", "explicit").
@@ -124,7 +125,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 		String()
 
 	ctx, svc := frame.NewServiceWithContext(ctx, "tenancy tests",
-		frame.WithConfig(&cfg), frame.WithDatastore(), frame.WithNoopDriver())
+		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(svc),

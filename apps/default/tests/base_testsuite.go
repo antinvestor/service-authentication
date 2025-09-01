@@ -142,7 +142,7 @@ func (bs *BaseTestSuite) CreateService(
 	ctx, svc := frame.NewServiceWithContext(t.Context(), "authentication_tests",
 		frame.WithConfig(&cfg),
 		frame.WithDatastore(),
-		frame.WithNoopDriver())
+		frametests.WithNoopDriver())
 
 	err = svc.RegisterForJwt(ctx)
 	require.NoError(t, err)
