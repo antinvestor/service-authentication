@@ -14,7 +14,7 @@ type Tenant struct {
 }
 
 func (t *Tenant) ToAPI() *partitionv1.TenantObject {
-	properties := frame.DBPropertiesToMap(t.Properties)
+	properties, _ := t.Properties.ToStructPB()
 
 	return &partitionv1.TenantObject{
 		Id:          t.ID,
@@ -34,7 +34,7 @@ type Partition struct {
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
-	properties := frame.DBPropertiesToMap(p.Properties)
+	properties, _ := p.Properties.ToStructPB()
 
 	return &partitionv1.PartitionObject{
 		Id:          p.ID,
@@ -54,7 +54,7 @@ type PartitionRole struct {
 }
 
 func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
-	properties := frame.DBPropertiesToMap(pr.Properties)
+	properties, _ := pr.Properties.ToStructPB()
 
 	return &partitionv1.PartitionRoleObject{
 		PartitionId: pr.PartitionID,

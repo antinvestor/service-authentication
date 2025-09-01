@@ -23,6 +23,7 @@ import (
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type BaseTestSuite struct {
@@ -199,13 +200,22 @@ func (bs *BaseTestSuite) CreateService(
 	return authServer, ctx
 }
 
-func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]string) (*partitionv1.PartitionObject, error) {
+func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]any) (*partitionv1.PartitionObject, error) {
 
-	partition, err := partitionCli.NewChildPartition(ctx,
-		"c2f4j7au6s7f91uqnojg", "c2f4j7au6s7f91uqnokg", name, description, properties)
+	propstruct, _ := structpb.NewStruct(properties)
+
+	result, err := partitionCli.Svc().CreatePartition(ctx, &partitionv1.CreatePartitionRequest{
+		TenantId:    "c2f4j7au6s7f91uqnojg",
+		ParentId:    "c2f4j7au6s7f91uqnokg",
+		Name:        name,
+		Description: description,
+		Properties:  propstruct,
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	partition := result.GetData()
 
 	// wait for partition to be synced
 	partition, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
@@ -215,7 +225,7 @@ func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.Part
 			return nil, nil
 		}
 
-		_, ok := partition.GetProperties()["client_id"]
+		_, ok := partition.GetProperties().AsMap()["client_id"]
 		if ok {
 			return partition, nil
 		}

@@ -15,6 +15,7 @@ import (
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const KeyProfileName = "au_name"
@@ -103,7 +104,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
-	existingProfile, err := h.profileCli.GetProfileByContact(ctx, contact)
+	result, err := h.profileCli.Svc().GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contact})
 	if err != nil {
 		st, errOk := status.FromError(err)
 		if !errOk || st.Code() != codes.NotFound {
@@ -114,6 +115,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
+	existingProfile := result.GetData()
 	contactID := ""
 	if existingProfile != nil {
 		for _, profileContact := range existingProfile.GetContacts() {
@@ -159,7 +161,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 	// Extract profile name from properties or use a default
-	profileName = existingProfile.GetProperties()[KeyProfileName]
+	properties := existingProfile.GetProperties().AsMap()
+	profileName = properties[KeyProfileName].(string)
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
@@ -291,10 +294,14 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	if profileObj == nil {
 
+		properties, _ := structpb.NewStruct(map[string]any{
+			KeyProfileName: profileName,
+		})
+
 		res, err0 := h.profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    loginEvent.ContactID,
-			Properties: map[string]string{KeyProfileName: profileName},
+			Properties: properties,
 		})
 		if err0 != nil {
 			logger.WithError(err0).Error("DEBUG: failed to create new profile by contact & name")

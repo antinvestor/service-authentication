@@ -9,6 +9,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -71,11 +72,11 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, profileName string) (*profilev1.ProfileObject, error) {
 
+	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
+
 	response, err := h.profileCli.Svc().Update(ctx, &profilev1.UpdateRequest{
 		Id: profileID,
-		Properties: map[string]string{
-			KeyProfileName: profileName,
-		},
+		Properties: props,
 	})
 
 	if err != nil {

@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.40.1
-	github.com/antinvestor/apis/go/device v1.40.2
-	github.com/antinvestor/apis/go/notification v1.40.2
-	github.com/antinvestor/apis/go/partition v1.40.2
-	github.com/antinvestor/apis/go/profile v1.40.4
+	github.com/antinvestor/apis/go/common v1.41.2
+	github.com/antinvestor/apis/go/device v1.41.3
+	github.com/antinvestor/apis/go/notification v1.41.3
+	github.com/antinvestor/apis/go/partition v1.41.3
+	github.com/antinvestor/apis/go/profile v1.41.3
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
@@ -16,7 +16,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.57.0
+	github.com/pitabwire/frame v1.58.0
 	github.com/pitabwire/util v0.3.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -130,8 +130,8 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.248.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250826171959-ef028d996bc1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250826171959-ef028d996bc1 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect

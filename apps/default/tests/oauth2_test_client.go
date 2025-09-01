@@ -21,6 +21,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // OAuth2TestClient provides utilities for testing OAuth2 flows with Hydra
@@ -98,7 +99,7 @@ type OAuth2Client struct {
 	RedirectURIs []string
 	Scope        string
 	Audience     []string
-	props        map[string]string
+	props        map[string]any
 }
 
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
@@ -112,7 +113,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 
 	// Create the client in Hydra
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
-		map[string]string{
+		map[string]any{
 			"scope":         "openid offline offline_access profile contact",
 			"audience":      "service_devices,service_profile,service_partition,service_files,authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
@@ -132,7 +133,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		RedirectURIs: []string{redirectURI + "?partition_id=" + partition.GetId()},
 		Scope:        "openid offline_access profile",
 		Audience:     []string{"authentication_tests"},
-		props:        partition.GetProperties(),
+		props:        partition.GetProperties().AsMap(),
 	}
 
 	return client, nil
@@ -822,12 +823,14 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 
 	notif, err := frametests.WaitForConditionWithResult[notificationv1.Notification](ctx, func() (*notificationv1.Notification, error) {
 
+		extras, _ := structpb.NewStruct(map[string]any{"template_id": "9bsv0s23l8og00vgjq90"})
+
 		resp, err0 := notifCli.Svc().Search(ctx, &commonv1.SearchRequest{
 			Limits: &commonv1.Pagination{
 				Count: 10,
 				Page:  0,
 			},
-			Extras: map[string]string{"template_id": "9bsv0s23l8og00vgjq90"},
+			Extras: extras,
 		})
 		if err0 != nil {
 			return nil, err0
@@ -853,7 +856,7 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 		}
 
 		for _, n := range nSlice {
-			if n.GetPayload()["verification_id"] == loginEvt.VerificationID {
+			if n.GetPayload().AsMap()["verification_id"].(string) == loginEvt.VerificationID {
 				return n, nil
 			}
 		}
@@ -865,7 +868,7 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 		return "", err
 	}
 
-	return notif.GetPayload()["code"], nil
+	return notif.GetPayload().AsMap()["code"].(string), nil
 }
 
 // Cleanup performs general cleanup of OAuth2 test client resources

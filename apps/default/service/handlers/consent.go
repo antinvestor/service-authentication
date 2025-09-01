@@ -8,6 +8,7 @@ import (
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -119,10 +120,12 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 
 	}
 
+	props, _ := structpb.NewStruct(map[string]any{"source": "consent"})
 	if deviceObj == nil {
+
 		resp, err0 := deviceCli.Svc().Create(ctx, &devicev1.CreateRequest{
 			Name:       "Error dev",
-			Properties: map[string]string{"source": "consent"},
+			Properties: props,
 		})
 		if err0 != nil {
 			return nil, err0
@@ -137,7 +140,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	resp, err := deviceCli.Svc().Link(ctx, &devicev1.LinkRequest{
 		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
-		Properties: map[string]string{"source": "consent"},
+		Properties: props,
 	})
 	if err != nil {
 		return deviceObj, err

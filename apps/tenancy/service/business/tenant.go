@@ -45,7 +45,7 @@ type tenantBusiness struct {
 func ToModelTenant(tenantAPI *partitionv1.TenantObject) *models.Tenant {
 	return &models.Tenant{
 		Description: tenantAPI.GetDescription(),
-		Properties:  frame.DBPropertiesFromMap(tenantAPI.GetProperties()),
+		Properties:  tenantAPI.GetProperties().AsMap(),
 	}
 }
 
@@ -67,15 +67,11 @@ func (t *tenantBusiness) CreateTenant(
 	ctx context.Context,
 	request *partitionv1.CreateTenantRequest,
 ) (*partitionv1.TenantObject, error) {
-	jsonMap := make(frame.JSONMap)
-	for k, v := range request.GetProperties() {
-		jsonMap[k] = v
-	}
 
 	tenantModel := &models.Tenant{
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
-		Properties:  jsonMap,
+		Properties:  request.GetProperties().AsMap(),
 	}
 
 	err := t.tenantRepo.Save(ctx, tenantModel)

@@ -16,6 +16,7 @@ import (
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Global mutex to ensure sequential execution of integration tests
@@ -101,10 +102,13 @@ func (suite *LoginVerificationTestSuite) TeardownVerificationTest(testCtx *Verif
 // CreateTestProfile creates a test profile for verification testing
 func (suite *LoginVerificationTestSuite) CreateTestProfile(ctx context.Context, authServer *handlers.AuthServer, email, name string) (*profilev1.ProfileObject, error) {
 	profileCli := authServer.ProfileCli()
+
+	props, _ := structpb.NewStruct(map[string]any{handlers.KeyProfileName: name})
+
 	resp, err := profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    email,
-		Properties: map[string]string{handlers.KeyProfileName: name},
+		Properties: props,
 	})
 	if err != nil {
 		return nil, err

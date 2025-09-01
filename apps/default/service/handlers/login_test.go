@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Global mutex to ensure sequential execution of integration tests
@@ -107,9 +108,23 @@ func (suite *PasswordlessLoginTestSuite) TeardownPasswordlessLoginTest(testCtx *
 }
 
 // CreateTestProfile creates a test profile for passwordless authentication
-func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, authServer *handlers.AuthServer, email, name string) (*profilev1.ProfileObject, error) {
+func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, authServer *handlers.AuthServer, contact, name string) (*profilev1.ProfileObject, error) {
 	profileCli := authServer.ProfileCli()
-	return profileCli.CreateProfileByContactAndName(ctx, email, name)
+
+	properties, _ := structpb.NewStruct(map[string]any{
+		handlers.KeyProfileName: name,
+	})
+
+	result, err := profileCli.Svc().Create( ctx, &profilev1.CreateRequest{
+		Type:       profilev1.ProfileType_PERSON,
+		Contact:    contact,
+		Properties: properties,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.GetData(), nil
 }
 
 // CreateVerification creates a mock verification record for testing

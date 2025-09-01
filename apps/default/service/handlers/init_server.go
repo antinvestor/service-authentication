@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -143,12 +144,14 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		ipAddr := util.GetIP(r)
 		userAgent := r.UserAgent()
 
+		extras, _ := structpb.NewStruct(map[string]any{"refer": r.Referer()})
+
 		req := devicev1.LogRequest{
 			SessionId: sessionID,
 			Ip:        ipAddr,
 			UserAgent: userAgent,
 			LastSeen:  time.Now().String(),
-			Extras:    map[string]string{"refer": r.Referer()},
+			Extras:    extras,
 		}
 
 		if deviceID != "" {

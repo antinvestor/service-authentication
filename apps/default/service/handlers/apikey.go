@@ -75,7 +75,11 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	apiky.Audience = string(audBytes)
 
-	apiky.Metadata = frame.DBPropertiesFromMap(akey.Metadata)
+	apiky.Metadata = map[string]any{}
+
+	for k,v := range akey.Metadata{
+		apiky.Metadata[k] = v
+	}
 
 	err = h.apiKeyRepo.Save(ctx, &apiky)
 	if err != nil {

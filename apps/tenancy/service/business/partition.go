@@ -12,6 +12,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/framedata"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type PartitionBusiness interface {
@@ -54,7 +55,7 @@ type partitionBusiness struct {
 }
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
-	properties := frame.DBPropertiesToMap(partitionModel.Properties)
+	properties, _ := partitionModel.Properties.ToStructPB()
 
 	return &partitionv1.PartitionRoleObject{
 		PartitionId: partitionModel.PartitionID,
@@ -130,11 +131,11 @@ func (pb *partitionBusiness) GetPartition(
 	}
 
 	if strings.EqualFold(claims.GetServiceName(), "service_matrix") {
-		props := partitionObj.GetProperties()
+		props := partitionObj.GetProperties().AsMap()
 
 		props["client_secret"] = partition.ClientSecret
 		props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
-		partitionObj.Properties = props
+		partitionObj.Properties, _ = structpb.NewStruct(props)
 	}
 
 	return partitionObj, nil
@@ -152,7 +153,7 @@ func (pb *partitionBusiness) CreatePartition(
 		ParentID:    request.GetParentId(),
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
-		Properties:  frame.DBPropertiesFromMap(request.GetProperties()),
+		Properties:  request.GetProperties().AsMap(),
 	}
 
 	partition.GenID(ctx)
@@ -181,7 +182,7 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 
 	jsonMap := partition.Properties
-	for k, v := range request.GetProperties() {
+	for k, v := range request.GetProperties().AsMap() {
 		jsonMap[k] = v
 	}
 
@@ -238,10 +239,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 		return nil, err
 	}
 
-	jsonMap := make(frame.JSONMap)
-	for k, v := range request.GetProperties() {
-		jsonMap[k] = v
-	}
+	jsonMap := request.GetProperties().AsMap()
 
 	partitionRole := &models.PartitionRole{
 		Name:       request.GetName(),
