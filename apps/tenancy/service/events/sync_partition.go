@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
@@ -22,6 +23,15 @@ type PartitionSyncEvent struct {
 	partitionRepository repository.PartitionRepository
 }
 
+func typeName(v any) string {
+	t := reflect.TypeOf(v)
+	if t.Kind() == reflect.Ptr {
+		return "*" + t.Elem().String()
+	}
+	return t.String()
+}
+
+
 func NewPartitionSynchronizationEventHandler(svc *frame.Service) frame.EventI {
 	return &PartitionSyncEvent{
 		svc:                 svc,
@@ -34,22 +44,24 @@ func (csq *PartitionSyncEvent) Name() string {
 }
 
 func (csq *PartitionSyncEvent) PayloadType() any {
-	return frame.JSONMap{}
+	return map[string]any{}
 }
 
 func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
-	_, ok := payload.(frame.JSONMap)
+	_, ok := payload.(map[string]any)
 	if !ok {
-		return errors.New("invalid payload type, expected *string")
+		return errors.New("invalid payload type, expected : "+ typeName(payload))
 	}
 
 	return nil
 }
 
 func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
-	jsonPayload, ok := payload.(frame.JSONMap)
+	var jsonPayload frame.JSONMap
+	var ok bool
+	jsonPayload, ok = payload.(map[string]any)
 	if !ok {
-		return errors.New("invalid payload type, expected *string")
+		return errors.New("invalid payload type, expected "+ typeName(payload))
 	}
 	partitionID := jsonPayload.GetString("id")
 

@@ -7,8 +7,10 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -336,6 +338,56 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 		// Verify partition structure
 		require.Equal(suite.T(), "Performance Test Partition", partition.Name)
 		require.Contains(suite.T(), partition.ID, "test-performance-")
+
+	})
+}
+
+// Test performance and resource usage
+func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
+	partition := &models.Partition{
+		BaseModel: frame.BaseModel{
+			ID: fmt.Sprintf("test-event-%d", time.Now().Unix()),
+		},
+		Name: "Events Test Partition",
+		Properties: frame.JSONMap{
+			"redirect_uris": []interface{}{"https://event-test.com/callback"},
+			"scope":         "openid profile email",
+			"audience":      []interface{}{"perf-api"},
+		},
+	}
+
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+		svc, ctx := suite.CreateService(t, dep)
+		// Measure execution time
+
+		partitionRepo := repository.NewPartitionRepository(svc)
+		err := partitionRepo.Save(ctx, partition)
+		require.NoError(t, err)
+
+		err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
+
+		// wait for partition to be synced
+		partition, err = frametests.WaitForConditionWithResult(ctx, func() (*models.Partition, error) {
+
+			partition, err = partitionRepo.GetByID(ctx, partition.GetID())
+			if err != nil {
+				return nil, nil
+			}
+
+			_, ok := partition.Properties["client_id"]
+			if ok {
+				return partition, nil
+			}
+
+			return nil, nil
+
+		}, 2*time.Second, 200*time.Millisecond)
+
+		require.NoError(t, err)
+
+		// Verify partition structure
+		require.Equal(t, "Events Test Partition", partition.Name)
+		require.Contains(t, partition.ID, "test-event-")
 
 	})
 }
