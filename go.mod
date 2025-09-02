@@ -16,7 +16,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.58.0
+	github.com/pitabwire/frame v1.58.6
 	github.com/pitabwire/util v0.3.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -24,6 +24,7 @@ require (
 	gocloud.dev v0.43.0
 	golang.org/x/crypto v0.41.0
 	google.golang.org/grpc v1.75.0
+	google.golang.org/protobuf v1.36.8
 	gorm.io/gorm v1.30.2
 )
 
@@ -132,7 +133,6 @@ require (
 	google.golang.org/api v0.248.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250826171959-ef028d996bc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250826171959-ef028d996bc1 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )

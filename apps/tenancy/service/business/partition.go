@@ -55,12 +55,11 @@ type partitionBusiness struct {
 }
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
-	properties, _ := partitionModel.Properties.ToStructPB()
 
 	return &partitionv1.PartitionRoleObject{
 		PartitionId: partitionModel.PartitionID,
 		Name:        partitionModel.Name,
-		Properties:  properties,
+		Properties:  partitionModel.Properties.ToProtoStruct(),
 	}
 }
 

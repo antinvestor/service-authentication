@@ -57,7 +57,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 		log := prtSrv.svc.Log(ctx).WithError(err)
 		log.Error("internal service error synchronising partitions")
 
-		_, err = rw.Write([]byte(fmt.Sprintf(" internal processing err message: %s", err.Error())))
+		_, err = fmt.Fprintf(rw, " internal processing err message: %s", err.Error())
 		if err != nil {
 			log.Error("could not write error to response")
 		}

@@ -60,7 +60,7 @@ func (bs *BaseTestSuite) CreateService(
 }
 
 func (bs *BaseTestSuite) CreateServiceWithPortAccess(
-	t *testing.T, depOpts *definition.DependancyOption, accessPort int, ) (
+	t *testing.T, depOpts *definition.DependancyOption, accessPort int) (
 	*handlers.PartitionServer, *frame.Service, context.Context) {
 
 	ctx := t.Context()

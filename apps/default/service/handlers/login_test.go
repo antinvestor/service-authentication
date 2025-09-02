@@ -115,7 +115,7 @@ func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, 
 		handlers.KeyProfileName: name,
 	})
 
-	result, err := profileCli.Svc().Create( ctx, &profilev1.CreateRequest{
+	result, err := profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    contact,
 		Properties: properties,

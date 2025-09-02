@@ -14,12 +14,11 @@ type Tenant struct {
 }
 
 func (t *Tenant) ToAPI() *partitionv1.TenantObject {
-	properties, _ := t.Properties.ToStructPB()
 
 	return &partitionv1.TenantObject{
 		Id:          t.ID,
 		Description: t.Description,
-		Properties:  properties,
+		Properties:  t.Properties.ToProtoStruct(),
 	}
 }
 
@@ -34,7 +33,6 @@ type Partition struct {
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
-	properties, _ := p.Properties.ToStructPB()
 
 	return &partitionv1.PartitionObject{
 		Id:          p.ID,
@@ -42,7 +40,7 @@ func (p *Partition) ToAPI() *partitionv1.PartitionObject {
 		ParentId:    p.ParentID,
 		Name:        p.Name,
 		Description: p.Description,
-		Properties:  properties,
+		Properties:  p.Properties.ToProtoStruct(),
 		State:       commonv1.STATE(p.State),
 	}
 }
@@ -54,12 +52,11 @@ type PartitionRole struct {
 }
 
 func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
-	properties, _ := pr.Properties.ToStructPB()
 
 	return &partitionv1.PartitionRoleObject{
 		PartitionId: pr.PartitionID,
 		Name:        pr.Name,
-		Properties:  properties,
+		Properties:  pr.Properties.ToProtoStruct(),
 	}
 }
 

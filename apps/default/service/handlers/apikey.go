@@ -77,7 +77,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	apiky.Metadata = map[string]any{}
 
-	for k,v := range akey.Metadata{
+	for k, v := range akey.Metadata {
 		apiky.Metadata[k] = v
 	}
 

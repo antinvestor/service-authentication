@@ -75,7 +75,7 @@ func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, pr
 	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
 
 	response, err := h.profileCli.Svc().Update(ctx, &profilev1.UpdateRequest{
-		Id: profileID,
+		Id:         profileID,
 		Properties: props,
 	})
 
