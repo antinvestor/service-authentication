@@ -48,7 +48,7 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 
 	// Add profile and partition service dependencies
 	device := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	notifications := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 	profile := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
@@ -77,7 +77,6 @@ func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
 	depOpts *definition.DependancyOption,
 ) (*handlers.AuthServer, context.Context) {
-	t.Setenv("OTEL_TRACES_EXPORTER", "none")
 
 	var databaseDR definition.DependancyConn
 	var hydraDR definition.DependancyConn
@@ -108,8 +107,6 @@ func (bs *BaseTestSuite) CreateService(
 	t.Cleanup(func() {
 		cleanup(ctx)
 	})
-
-	t.Setenv("OTEL_TRACES_EXPORTER", "none")
 
 	hydraPort, err := hydraDR.PortMapping(ctx, "4444/tcp")
 	require.NoError(t, err)

@@ -164,7 +164,7 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	err = pb.service.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
+	err = pb.service.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, svc *frame.Service, qu
 		}
 
 		for _, partition := range result.Item() {
-			err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, partition.GetID())
+			err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
 			if err != nil {
 				return err
 			}

@@ -34,12 +34,11 @@ func (csq *PartitionSyncEvent) Name() string {
 }
 
 func (csq *PartitionSyncEvent) PayloadType() any {
-	pType := ""
-	return &pType
+	return frame.JSONMap{}
 }
 
 func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
-	_, ok := payload.(*string)
+	_, ok := payload.(frame.JSONMap)
 	if !ok {
 		return errors.New("invalid payload type, expected *string")
 	}
@@ -48,11 +47,11 @@ func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
 }
 
 func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
-	idStrPtr, ok := payload.(*string)
+	jsonPayload, ok := payload.(frame.JSONMap)
 	if !ok {
 		return errors.New("invalid payload type, expected *string")
 	}
-	partitionID := *idStrPtr
+	partitionID := jsonPayload.GetString("id")
 
 	logger := csq.svc.Log(ctx).WithField("payload", partitionID).WithField("type", csq.Name())
 	logger.Info("initiated synchronisation of partition")
