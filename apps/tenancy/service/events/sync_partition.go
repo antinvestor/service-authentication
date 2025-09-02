@@ -31,7 +31,6 @@ func typeName(v any) string {
 	return t.String()
 }
 
-
 func NewPartitionSynchronizationEventHandler(svc *frame.Service) frame.EventI {
 	return &PartitionSyncEvent{
 		svc:                 svc,
@@ -50,7 +49,7 @@ func (csq *PartitionSyncEvent) PayloadType() any {
 func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
 	_, ok := payload.(map[string]any)
 	if !ok {
-		return errors.New("invalid payload type, expected : "+ typeName(payload))
+		return errors.New("invalid payload type, expected : " + typeName(payload))
 	}
 
 	return nil
@@ -61,7 +60,7 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 	var ok bool
 	jsonPayload, ok = payload.(map[string]any)
 	if !ok {
-		return errors.New("invalid payload type, expected "+ typeName(payload))
+		return errors.New("invalid payload type, expected " + typeName(payload))
 	}
 	partitionID := jsonPayload.GetString("id")
 

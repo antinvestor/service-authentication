@@ -112,11 +112,11 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.EventsQueueURL = qDS.
 		ExtendQuery("jetstream", "true").
-		ExtendQuery("subject", "svc.tenancy.internal._queue").
+		ExtendQuery("subject", "svc.tenancy.internal._queue_"+depOpts.Prefix()).
 		ExtendQuery("stream_name", "svc_tenancy").
 		ExtendQuery("stream_subjects", "svc.tenancy.>").
-		ExtendQuery("consumer_durable_name", "svc_tenancy_internal_queue").
-		ExtendQuery("consumer_filter_subject", "svc.tenancy.internal._queue").
+		ExtendQuery("consumer_durable_name", "svc_tenancy_internal_queue_"+depOpts.Prefix()).
+		ExtendQuery("consumer_filter_subject", "svc.tenancy.internal._queue_"+depOpts.Prefix()).
 		ExtendQuery("consumer_ack_policy", "explicit").
 		ExtendQuery("consumer_deliver_policy", "all").
 		ExtendQuery("consumer_replay_policy", "instant").

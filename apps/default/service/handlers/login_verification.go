@@ -161,8 +161,9 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 	// Extract profile name from properties or use a default
-	properties := existingProfile.GetProperties().AsMap()
-	profileName = properties[KeyProfileName].(string)
+	var properties frame.JSONMap
+	properties = properties.FromProtoStruct(existingProfile.GetProperties())
+	profileName = properties.GetString(KeyProfileName)
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
