@@ -23,7 +23,6 @@ import (
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type BaseTestSuite struct {
@@ -200,16 +199,14 @@ func (bs *BaseTestSuite) CreateService(
 	return authServer, ctx
 }
 
-func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties map[string]any) (*partitionv1.PartitionObject, error) {
-
-	propstruct, _ := structpb.NewStruct(properties)
+func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties frame.JSONMap) (*partitionv1.PartitionObject, error) {
 
 	result, err := partitionCli.Svc().CreatePartition(ctx, &partitionv1.CreatePartitionRequest{
 		TenantId:    "c2f4j7au6s7f91uqnojg",
 		ParentId:    "c2f4j7au6s7f91uqnokg",
 		Name:        name,
 		Description: description,
-		Properties:  propstruct,
+		Properties:  properties.ToProtoStruct(),
 	})
 	if err != nil {
 		return nil, err
@@ -225,7 +222,8 @@ func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.Part
 			return nil, nil
 		}
 
-		_, ok := partition.GetProperties().AsMap()["client_id"]
+		var partProperties frame.JSONMap = partition.GetProperties().AsMap()
+		_, ok := partProperties["client_id"]
 		if ok {
 			return partition, nil
 		}

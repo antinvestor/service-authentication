@@ -19,6 +19,7 @@ import (
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
+	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -99,7 +100,7 @@ type OAuth2Client struct {
 	RedirectURIs []string
 	Scope        string
 	Audience     []string
-	props        map[string]any
+	props        frame.JSONMap
 }
 
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
@@ -113,7 +114,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 
 	// Create the client in Hydra
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
-		map[string]any{
+		frame.JSONMap{
 			"scope":         "openid offline offline_access profile contact",
 			"audience":      "service_devices,service_profile,service_partition,service_files,authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
