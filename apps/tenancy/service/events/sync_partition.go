@@ -149,6 +149,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 
 	audienceList := extractStringList(partition.Properties, "audience")
 	scopeList := extractStringList(partition.Properties, "scope")
+	postLogoutRedirectUriList := extractStringList(partition.Properties, "post_logout_redirect_uris")
 
 	if len(scopeList) == 0 {
 		scopeList = append(scopeList, "openid", "offline_access", "profile")
@@ -160,14 +161,15 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 	}
 
 	payload := map[string]any{
-		"client_name":    partition.Name,
-		"client_id":      clientID,
-		"grant_types":    []string{"authorization_code", "refresh_token"},
-		"response_types": []string{"token", "id_token", "code", "token id_token", "token code id_token"},
-		"scope":          strings.Join(scopeList, " "),
-		"redirect_uris":  uriList,
-		"logo_uri":       logoURI,
-		"audience":       audienceList,
+		"client_name":               partition.Name,
+		"client_id":                 clientID,
+		"grant_types":               []string{"authorization_code", "refresh_token"},
+		"response_types":            []string{"token", "id_token", "code", "token id_token", "token code id_token"},
+		"scope":                     strings.Join(scopeList, " "),
+		"redirect_uris":             uriList,
+		"post_logout_redirect_uris": postLogoutRedirectUriList,
+		"logo_uri":                  logoURI,
+		"audience":                  audienceList,
 	}
 
 	if _, ok := partition.Properties["token_endpoint_auth_method"]; ok {
