@@ -1,5 +1,5 @@
 -- Default base partition
-INSERT INTO tenants (id, tenant_id, partition_id, name, description) VALUES('9bsv0s0hijjg02qks6dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi Development', 'Default base tenant for testing and building stawi');
+INSERT INTO tenants (id, tenant_id, partition_id, name, description) VALUES('9bsv0s0hijjg09bzz6dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi Development', 'Default base tenant for testing and building stawi');
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, client_secret, properties)
     VALUES('9bsv0s0hijjg02qks6i0', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
            'Stawi Development', 'Default Stawi development partition',
