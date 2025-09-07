@@ -45,7 +45,7 @@ func (tr *tenantRepository) Search(
 
 			likeQuery := "%" + query.Query + "%"
 
-			db = db.Where("name iLike ? OR description iLike ? OR search_properties @@ plainto_tsquery(?) ", likeQuery, likeQuery, query.Query)
+			db = db.Where("name iLike ? OR description iLike ? OR search_vector @@ plainto_tsquery(?) ", likeQuery, likeQuery, query.Query)
 		}
 
 		err := db.Find(&tenantList).Error
