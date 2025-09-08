@@ -2,7 +2,6 @@ package business
 
 import (
 	"context"
-	"errors"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -41,31 +40,6 @@ type accessBusiness struct {
 	partitionRepo repository.PartitionRepository
 }
 
-func toAPIAccess(
-	partitionObject *partitionv1.PartitionObject,
-	accessModel *models.Access) (*partitionv1.AccessObject, error) {
-	if partitionObject == nil {
-		return nil, errors.New("no partition exists for this access")
-	}
-
-	return &partitionv1.AccessObject{
-		AccessId:  accessModel.GetID(),
-		ProfileId: accessModel.ProfileID,
-		Partition: partitionObject,
-	}, nil
-}
-
-func toAPIAccessRole(
-	partitionRoleObj *partitionv1.PartitionRoleObject,
-	accessRoleModel *models.AccessRole,
-) *partitionv1.AccessRoleObject {
-	return &partitionv1.AccessRoleObject{
-		AccessRoleId: accessRoleModel.GetID(),
-		AccessId:     accessRoleModel.AccessID,
-		Role:         partitionRoleObj,
-	}
-}
-
 func (ab *accessBusiness) GetAccess(
 	ctx context.Context,
 	request *partitionv1.GetAccessRequest) (*partitionv1.AccessObject, error) {
@@ -85,7 +59,7 @@ func (ab *accessBusiness) GetAccess(
 
 		partitionObject := partition.ToAPI()
 
-		return toAPIAccess(partitionObject, access)
+		return access.ToAPI(partitionObject)
 	}
 
 	var partition *models.Partition
@@ -106,7 +80,7 @@ func (ab *accessBusiness) GetAccess(
 
 	partitionObject := partition.ToAPI()
 
-	return toAPIAccess(partitionObject, access)
+	return access.ToAPI(partitionObject)
 }
 
 func (ab *accessBusiness) RemoveAccess(
@@ -146,7 +120,7 @@ func (ab *accessBusiness) CreateAccess(
 		}
 	} else {
 		partitionObject := partition.ToAPI()
-		return toAPIAccess(partitionObject, access)
+		return access.ToAPI(partitionObject)
 	}
 
 	access = &models.Access{
@@ -165,7 +139,7 @@ func (ab *accessBusiness) CreateAccess(
 	logger.WithField("access", access).Debug(" access created")
 	partitionObject := partition.ToAPI()
 
-	return toAPIAccess(partitionObject, access)
+	return access.ToAPI(partitionObject)
 }
 
 func (ab *accessBusiness) ListAccessRoles(
@@ -195,7 +169,7 @@ func (ab *accessBusiness) ListAccessRoles(
 	response := make([]*partitionv1.AccessRoleObject, 0)
 
 	for _, acc := range accessRoleList {
-		response = append(response, toAPIAccessRole(partitionRoleIDMap[acc.PartitionRoleID], acc))
+		response = append(response, acc.ToAPI(partitionRoleIDMap[acc.PartitionRoleID]))
 	}
 
 	return &partitionv1.ListAccessRoleResponse{
@@ -238,5 +212,5 @@ func (ab *accessBusiness) CreateAccessRole(
 	}
 
 	partitionRoleObj := toAPIPartitionRole(partitionRoles[0])
-	return toAPIAccessRole(partitionRoleObj, accessRole), nil
+	return accessRole.ToAPI(partitionRoleObj), nil
 }

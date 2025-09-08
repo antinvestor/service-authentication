@@ -3,7 +3,6 @@ package business
 import (
 	"context"
 
-	commonv1 "github.com/antinvestor/apis/go/common/v1"
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -33,25 +32,16 @@ type pageBusiness struct {
 	partitionRepo repository.PartitionRepository
 }
 
-func toAPIPage(pageModel *models.Page) *partitionv1.PageObject {
-	return &partitionv1.PageObject{
-		PageId: pageModel.GetID(),
-		Name:   pageModel.Name,
-		Html:   pageModel.HTML,
-		State:  commonv1.STATE(pageModel.State),
-	}
-}
-
 func (ab *pageBusiness) GetPage(
 	ctx context.Context,
 	request *partitionv1.GetPageRequest,
 ) (*partitionv1.PageObject, error) {
-	access, err := ab.pageRepo.GetByPartitionAndName(ctx, request.GetPartitionId(), request.GetName())
+	page, err := ab.pageRepo.GetByPartitionAndName(ctx, request.GetPartitionId(), request.GetName())
 	if err != nil {
 		return nil, err
 	}
 
-	return toAPIPage(access), nil
+	return page.ToAPI(), nil
 }
 
 func (ab *pageBusiness) RemovePage(ctx context.Context, request *partitionv1.RemovePageRequest) error {
@@ -81,5 +71,5 @@ func (ab *pageBusiness) CreatePage(
 		return nil, err
 	}
 
-	return toAPIPage(page), nil
+	return page.ToAPI(), nil
 }

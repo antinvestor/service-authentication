@@ -7,7 +7,7 @@ require (
 	github.com/antinvestor/apis/go/common v1.41.2
 	github.com/antinvestor/apis/go/device v1.41.3
 	github.com/antinvestor/apis/go/notification v1.41.3
-	github.com/antinvestor/apis/go/partition v1.41.3
+	github.com/antinvestor/apis/go/partition v1.42.0
 	github.com/antinvestor/apis/go/profile v1.41.3
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
