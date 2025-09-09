@@ -29,6 +29,7 @@ COPY --from=builder /app/apps/default/migrations /migrations
 COPY --from=builder /app/apps/default/tmpl /tmpl
 COPY --from=builder /app/apps/default/static /static
 COPY --from=builder /app/apps/default/localization /localization
+COPY --from=builder /app/apps/default/openapi.json /openapi.json
 
 # Run the service command by default when the container starts.
 ENTRYPOINT ["/authentication"]

@@ -65,6 +65,18 @@ func (prtSrv *PartitionServer) GetPartition(
 	return &partitionv1.GetPartitionResponse{Data: partition}, nil
 }
 
+func (prtSrv *PartitionServer) GetPartitionParents(
+	ctx context.Context,
+	req *partitionv1.GetPartitionParentsRequest) (*partitionv1.GetPartitionParentsResponse, error) {
+	logger := prtSrv.svc.Log(ctx)
+	partition, err := prtSrv.partitionBusiness.GetPartitionParents(ctx, req)
+	if err != nil {
+		logger.WithError(err).Debug(" could not obtain the specified partition")
+		return nil, prtSrv.toAPIError(err)
+	}
+	return &partitionv1.GetPartitionParentsResponse{Data: partition}, nil
+}
+
 func (prtSrv *PartitionServer) UpdatePartition(
 	ctx context.Context,
 	req *partitionv1.UpdatePartitionRequest) (*partitionv1.UpdatePartitionResponse, error) {

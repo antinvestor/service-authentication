@@ -1,0 +1,463 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Authentication Service - API Key Management",
+    "description": "API Key management endpoints for the Authentication Service",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Antinvestor",
+      "url": "https://github.com/antinvestor/service-authentication"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://auth.antinvestor.com",
+      "description": "Production server"
+    },
+    {
+      "url": "https://auth-staging.antinvestor.com",
+      "description": "Staging server"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/key": {
+      "put": {
+        "summary": "Create API Key",
+        "description": "Creates a new API key for the authenticated user",
+        "operationId": "createAPIKey",
+        "tags": ["API Keys"],
+        "parameters": [
+          {
+            "name": "partition_id",
+            "in": "query",
+            "required": false,
+            "description": "Optional child partition ID to associate with the API key",
+            "schema": {
+              "type": "string"
+            },
+            "example": "partition_123"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKey"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic API key creation",
+                  "value": {
+                    "name": "My API Key",
+                    "clientId": "my-client-app",
+                    "scope": "read write",
+                    "audience": ["api.example.com"],
+                    "metadata": {
+                      "purpose": "Integration testing",
+                      "environment": "development"
+                    }
+                  }
+                },
+                "minimal": {
+                  "summary": "Minimal API key creation",
+                  "value": {
+                    "name": "Simple Key",
+                    "clientId": "simple-client",
+                    "scope": "read",
+                    "audience": [],
+                    "metadata": {}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Successful API key creation",
+                    "value": {
+                      "id": "01234567-89ab-cdef-0123-456789abcdef",
+                      "name": "My API Key",
+                      "clientId": "my-client-app",
+                      "scope": "read write",
+                      "audience": ["api.example.com"],
+                      "metadata": {
+                        "purpose": "Integration testing",
+                        "environment": "development"
+                      },
+                      "apiKey": "oauth2_client_id_generated_by_hydra",
+                      "apiKeySecret": "32_character_random_secret_string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List API Keys",
+        "description": "Retrieves all API keys for the authenticated user",
+        "operationId": "listAPIKeys",
+        "tags": ["API Keys"],
+        "responses": {
+          "200": {
+            "description": "List of API keys retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKey"
+                  }
+                },
+                "examples": {
+                  "success": {
+                    "summary": "List of user's API keys",
+                    "value": [
+                      {
+                        "id": "01234567-89ab-cdef-0123-456789abcdef",
+                        "name": "My API Key",
+                        "scope": "read write"
+                      },
+                      {
+                        "id": "fedcba98-7654-3210-fedc-ba9876543210",
+                        "name": "Another Key",
+                        "scope": "read"
+                      }
+                    ]
+                  },
+                  "empty": {
+                    "summary": "No API keys found",
+                    "value": []
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/key/{ApiKeyId}": {
+      "get": {
+        "summary": "Get API Key",
+        "description": "Retrieves a specific API key by ID for the authenticated user",
+        "operationId": "getAPIKey",
+        "tags": ["API Keys"],
+        "parameters": [
+          {
+            "name": "ApiKeyId",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the API key",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "01234567-89ab-cdef-0123-456789abcdef"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "API key details",
+                    "value": {
+                      "id": "01234567-89ab-cdef-0123-456789abcdef",
+                      "name": "My API Key",
+                      "scope": "read write",
+                      "audience": ["api.example.com"],
+                      "metadata": {
+                        "purpose": "Integration testing",
+                        "environment": "development"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete API Key",
+        "description": "Deletes a specific API key by ID for the authenticated user",
+        "operationId": "deleteAPIKey",
+        "tags": ["API Keys"],
+        "parameters": [
+          {
+            "name": "ApiKeyId",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the API key to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "01234567-89ab-cdef-0123-456789abcdef"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "API key deletion accepted and processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "API key deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained through OAuth2 authentication flow"
+      }
+    },
+    "schemas": {
+      "ApiKey": {
+        "type": "object",
+        "required": ["name", "clientId", "scope", "audience"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the API key.\n\n**Availability:**\n- ✅ Present in responses (GET, PUT)\n- ❌ Not required in requests (PUT)",
+            "example": "01234567-89ab-cdef-0123-456789abcdef",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for the API key",
+            "example": "My Integration API Key",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "clientId": {
+            "type": "string",
+            "description": "Client identifier for the API key",
+            "example": "my-client-app",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "scope": {
+            "type": "string",
+            "description": "OAuth2 scopes for the API key (space-separated)",
+            "example": "read write admin"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of intended audiences for the API key",
+            "example": ["api.example.com", "service.example.com"]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Additional metadata key-value pairs",
+            "example": {
+              "purpose": "Integration testing",
+              "environment": "development",
+              "team": "backend"
+            }
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "The actual API key (OAuth2 client ID) to use for authentication.\n\n**Availability:**\n- ✅ Present in create response (PUT)\n- ❌ Not present in list response (GET /api/key)\n- ❌ Not present in get response (GET /api/key/{id})\n- ❌ Not required in requests",
+            "example": "oauth2_client_id_generated_by_hydra",
+            "readOnly": true
+          },
+          "apiKeySecret": {
+            "type": "string",
+            "description": "The API key secret to use for authentication.\n\n**Availability:**\n- ✅ Present in create response (PUT) - **ONLY TIME IT'S AVAILABLE**\n- ❌ Never present in other responses for security\n- ❌ Not required in requests",
+            "example": "32_character_random_secret_string",
+            "minLength": 32,
+            "maxLength": 32,
+            "readOnly": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message describing what went wrong",
+            "example": "Invalid request parameters"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code for programmatic handling",
+            "example": "INVALID_REQUEST"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "API Keys",
+      "description": "Operations for managing API keys",
+      "externalDocs": {
+        "description": "API Key Management Guide",
+        "url": "https://docs.antinvestor.com/authentication/api-keys"
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ type PartitionRepository interface {
 	GetByID(ctx context.Context, id string) (*models.Partition, error)
 	Search(ctx context.Context, query *framedata.SearchQuery) (frame.JobResultPipe[[]*models.Partition], error)
 	GetChildren(ctx context.Context, id string) ([]*models.Partition, error)
+	GetParents(ctx context.Context, id string) ([]*models.Partition, error)
 	Save(ctx context.Context, partition *models.Partition) error
 	Delete(ctx context.Context, id string) error
 

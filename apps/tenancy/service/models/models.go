@@ -56,28 +56,38 @@ type PartitionRole struct {
 }
 
 func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
+
+	state := commonv1.STATE_ACTIVE
+	if pr.DeletedAt.Valid {
+		state = commonv1.STATE_DELETED
+	}
+
 	return &partitionv1.PartitionRoleObject{
+		Id:          pr.ID,
 		PartitionId: pr.PartitionID,
 		Name:        pr.Name,
 		Properties:  pr.Properties.ToProtoStruct(),
 		CreatedAt:   timestamppb.New(pr.CreatedAt),
+		State:       state,
 	}
 }
 
 type Page struct {
 	frame.BaseModel
-	Name  string `gorm:"type:varchar(50);"`
-	HTML  string `gorm:"type:text;"`
-	State int32
+	Name       string `gorm:"type:varchar(50);"`
+	HTML       string `gorm:"type:text;"`
+	State      int32
+	Properties frame.JSONMap
 }
 
 func (p *Page) ToAPI() *partitionv1.PageObject {
 	return &partitionv1.PageObject{
-		PageId:    p.GetID(),
-		Name:      p.Name,
-		Html:      p.HTML,
-		State:     commonv1.STATE(p.State),
-		CreatedAt: timestamppb.New(p.CreatedAt),
+		Id:         p.GetID(),
+		Name:       p.Name,
+		Html:       p.HTML,
+		State:      commonv1.STATE(p.State),
+		CreatedAt:  timestamppb.New(p.CreatedAt),
+		Properties: p.Properties.ToProtoStruct(),
 	}
 }
 
@@ -94,9 +104,10 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 	}
 
 	return &partitionv1.AccessObject{
-		AccessId:  a.GetID(),
+		Id:        a.GetID(),
 		ProfileId: a.ProfileID,
 		Partition: partitionObject,
+		State:     commonv1.STATE(a.State),
 		CreatedAt: timestamppb.New(a.CreatedAt),
 	}, nil
 }

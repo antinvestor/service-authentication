@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	devicev1 "github.com/antinvestor/apis/go/device/v1"
@@ -246,4 +247,50 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
 		}
 	})
+}
+
+// SwaggerEndpoint serves the OpenAPI specification as JSON
+func (h *AuthServer) SwaggerEndpoint(rw http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
+	
+	// Try multiple locations for the OpenAPI JSON file
+	possiblePaths := []string{
+		"openapi.json",                    // Current directory
+		"apps/default/openapi.json",       // Relative to project root
+		"./openapi.json",                  // Explicit current directory
+		"../openapi.json",                 // Parent directory
+		"../../openapi.json",              // Two levels up
+		"openapi-apikey.json",             // Alternative naming in current dir
+		"apps/default/openapi-apikey.json", // Alternative naming in apps/default
+	}
+	
+	var jsonData []byte
+	var err error
+	var foundPath string
+	
+	// Try each path until we find the file
+	for _, path := range possiblePaths {
+		jsonData, err = os.ReadFile(path)
+		if err == nil {
+			foundPath = path
+			break
+		}
+	}
+	
+	// If no file found in any location, return error
+	if foundPath == "" {
+		h.service.Log(ctx).WithError(err).Error("could not find OpenAPI JSON file in any expected location")
+		return fmt.Errorf("OpenAPI specification file not found")
+	}
+	
+	h.service.Log(ctx).WithField("path", foundPath).Debug("serving OpenAPI specification from file")
+	
+	// Set headers and serve the JSON content directly
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	rw.WriteHeader(http.StatusOK)
+	
+	// Write the JSON content directly without parsing/encoding
+	_, err = rw.Write(jsonData)
+	return err
 }

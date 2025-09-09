@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame"
@@ -33,6 +34,12 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	}
 
 	apiKeySecretLength := 32
+
+	uriQuery := req.URL.Query()
+	childPartitionID := ""
+	if uriQuery.Has("partition_id") {
+		childPartitionID = uriQuery.Get("partition_id")
+	}
 
 	decoder := json.NewDecoder(req.Body)
 	var akey apiKey
@@ -66,6 +73,23 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 		Scope:     akey.Scope,
 	}
 	apiky.GenID(ctx)
+
+	if childPartitionID != "" {
+
+		// Confirm its a child partition
+		resp, err0 := h.PartitionCli().Svc().GetPartitionParents(ctx, &partitionv1.GetPartitionParentsRequest{
+			Id: childPartitionID,
+		})
+		if err0 != nil {
+			return err0
+		}
+
+		for _, parent := range resp.Data {
+			if parent.Id == apiky.PartitionID {
+				apiky.PartitionID = childPartitionID
+			}
+		}
+	}
 
 	audBytes, err := json.Marshal(akey.Audience)
 	if err != nil {

@@ -17,6 +17,7 @@ import (
 
 type PartitionBusiness interface {
 	GetPartition(ctx context.Context, request *partitionv1.GetPartitionRequest) (*partitionv1.PartitionObject, error)
+	GetPartitionParents(ctx context.Context, request *partitionv1.GetPartitionParentsRequest) ([]*partitionv1.PartitionObject, error)
 	CreatePartition(
 		ctx context.Context,
 		request *partitionv1.CreatePartitionRequest) (*partitionv1.PartitionObject, error)
@@ -53,6 +54,7 @@ type partitionBusiness struct {
 	tenantRepo    repository.TenantRepository
 	partitionRepo repository.PartitionRepository
 }
+
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
 
@@ -139,6 +141,24 @@ func (pb *partitionBusiness) GetPartition(
 
 	return partitionObj, nil
 }
+
+
+func (pb *partitionBusiness) GetPartitionParents(ctx context.Context, request *partitionv1.GetPartitionParentsRequest) ([]*partitionv1.PartitionObject, error) {
+
+	parentList, err := pb.partitionRepo.GetParents(ctx, request.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	var parentPartitionList []*partitionv1.PartitionObject
+	for _, parent := range parentList {
+		parentObj := parent.ToAPI()
+		parentPartitionList = append(parentPartitionList, parentObj)
+	}
+	return parentPartitionList, nil
+
+}
+
 
 func (pb *partitionBusiness) CreatePartition(
 	ctx context.Context,
