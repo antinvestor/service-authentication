@@ -14,25 +14,25 @@ import (
 
 // extractGrantedScopes efficiently extracts granted_scopes from multiple possible locations in the webhook payload
 func extractGrantedScopes(tokenObject map[string]any) []any {
-
-	// Check request.granted_scopes
-	if request, ok := tokenObject["request"].(map[string]any); ok {
-		if scopes, ok := request["granted_scopes"].([]any); ok && len(scopes) > 0 {
-			return scopes
-		}
-	}
-
-	if scopes, ok := tokenObject["granted_scopes"].([]any); ok && len(scopes) > 0 {
+	var scopes []any
+	var ok bool
+	if scopes, ok = tokenObject["granted_scopes"].([]any); ok {
 		return scopes
 	}
-	
-	// Check requester.granted_scopes
-	if requester, ok := tokenObject["requester"].(map[string]any); ok {
-		if scopes, ok := requester["granted_scopes"].([]any); ok && len(scopes) > 0 {
+
+	request, ok := tokenObject["request"].(map[string]any)
+	if ok {
+		if scopes, ok = request["granted_scopes"].([]any); ok {
 			return scopes
 		}
 	}
-	
+
+	if request, ok = tokenObject["requester"].(map[string]any); ok {
+		if scopes, ok = request["granted_scopes"].([]any); ok {
+			return scopes
+		}
+	}
+
 	return nil
 }
 
