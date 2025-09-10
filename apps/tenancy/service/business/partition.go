@@ -55,7 +55,6 @@ type partitionBusiness struct {
 	partitionRepo repository.PartitionRepository
 }
 
-
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
 
 	return &partitionv1.PartitionRoleObject{
@@ -142,7 +141,6 @@ func (pb *partitionBusiness) GetPartition(
 	return partitionObj, nil
 }
 
-
 func (pb *partitionBusiness) GetPartitionParents(ctx context.Context, request *partitionv1.GetPartitionParentsRequest) ([]*partitionv1.PartitionObject, error) {
 
 	parentList, err := pb.partitionRepo.GetParents(ctx, request.GetId())
@@ -158,7 +156,6 @@ func (pb *partitionBusiness) GetPartitionParents(ctx context.Context, request *p
 	return parentPartitionList, nil
 
 }
-
 
 func (pb *partitionBusiness) CreatePartition(
 	ctx context.Context,
@@ -205,8 +202,12 @@ func (pb *partitionBusiness) UpdatePartition(
 		jsonMap[k] = v
 	}
 
-	partition.Name = request.GetName()
-	partition.Description = request.GetDescription()
+	if request.GetName() != "" {
+		partition.Name = request.GetName()
+	}
+	if request.GetDescription() != "" {
+		partition.Description = request.GetDescription()
+	}
 	partition.Properties = jsonMap
 
 	err = pb.partitionRepo.Save(ctx, partition)

@@ -13,6 +13,7 @@ import (
 type TenantBusiness interface {
 	GetTenant(ctx context.Context, tenantID string) (*partitionv1.TenantObject, error)
 	CreateTenant(ctx context.Context, request *partitionv1.CreateTenantRequest) (*partitionv1.TenantObject, error)
+	UpdateTenant(ctx context.Context, request *partitionv1.UpdateTenantRequest) (*partitionv1.TenantObject, error)
 	ListTenant(
 		ctx context.Context,
 		request *partitionv1.ListTenantRequest,
@@ -80,6 +81,35 @@ func (t *tenantBusiness) CreateTenant(
 	}
 
 	return tenantModel.ToAPI(), nil
+}
+
+func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *partitionv1.UpdateTenantRequest) (*partitionv1.TenantObject, error) {
+
+	tenant, err := t.tenantRepo.GetByID(ctx, request.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	jsonMap := tenant.Properties
+	for k, v := range request.GetProperties().AsMap() {
+		jsonMap[k] = v
+	}
+
+	if request.GetName() != "" {
+		tenant.Name = request.GetName()
+	}
+	if request.GetDescription() != "" {
+		tenant.Description = request.GetDescription()
+	}
+
+	tenant.Properties = jsonMap
+
+	err = t.tenantRepo.Save(ctx, tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	return tenant.ToAPI(), nil
 }
 
 func (t *tenantBusiness) ListTenant(

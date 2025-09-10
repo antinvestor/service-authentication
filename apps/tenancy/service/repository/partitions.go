@@ -65,7 +65,7 @@ func (pr *partitionRepository) Search(
 
 func (pr *partitionRepository) GetParents(ctx context.Context, id string) ([]*models.Partition, error) {
 	var parents []*models.Partition
-	
+
 	// Use a recursive CTE to get all parents in a single query with depth limit of 5
 	query := `
 		WITH RECURSIVE parent_hierarchy AS (
@@ -91,7 +91,7 @@ func (pr *partitionRepository) GetParents(ctx context.Context, id string) ([]*mo
 		SELECT id, created_at, tenant_id, partition_id, name, description, parent_id, client_secret, properties, state 
 		FROM parent_hierarchy ORDER BY depth DESC
 	`
-	
+
 	err := pr.service.DB(ctx, true).Raw(query, id).Scan(&parents).Error
 	return parents, err
 }

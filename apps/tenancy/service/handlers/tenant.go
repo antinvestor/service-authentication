@@ -44,3 +44,16 @@ func (prtSrv *PartitionServer) CreateTenant(
 	}
 	return &partitionv1.CreateTenantResponse{Data: tenant}, nil
 }
+
+func (prtSrv *PartitionServer) UpdateTenant(
+	ctx context.Context,
+	req *partitionv1.UpdateTenantRequest,
+) (*partitionv1.UpdateTenantResponse, error) {
+	logger := prtSrv.svc.Log(ctx)
+	tenant, err := prtSrv.tenantBusiness.UpdateTenant(ctx, req)
+	if err != nil {
+		logger.WithError(err).Debug("could not update our tenant")
+		return nil, prtSrv.toAPIError(err)
+	}
+	return &partitionv1.UpdateTenantResponse{Data: tenant}, nil
+}

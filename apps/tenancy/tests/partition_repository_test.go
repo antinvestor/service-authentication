@@ -29,8 +29,8 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 	// Create a hierarchy: Root -> Company -> Department -> Team
 	// Root partition (no parent)
 	rootPartition := &models.Partition{
-		Name:        "Root Organization",
-		Description: "Top level organization",
+		Name:        "Root Organisation",
+		Description: "Top level organisation",
 		ParentID:    "", // No parent
 		State:       1,
 	}
@@ -211,17 +211,17 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 	for i := 4; i < 9; i++ { // Levels 4, 5, 6, 7, 8
 		expectedParentIDs[partitions[i].ID] = true
 	}
-	
+
 	// Verify that all returned parents are in the expected set
 	for i, parent := range parents {
-		assert.True(t, expectedParentIDs[parent.ID], 
+		assert.True(t, expectedParentIDs[parent.ID],
 			fmt.Sprintf("Parent at index %d (ID: %s) should be one of the first 5 levels", i, parent.ID))
 	}
-	
+
 	// Verify that we have exactly the expected parents (no duplicates)
 	returnedIDs := make(map[string]bool)
 	for _, parent := range parents {
-		assert.False(t, returnedIDs[parent.ID], 
+		assert.False(t, returnedIDs[parent.ID],
 			fmt.Sprintf("Parent ID %s should not be duplicated", parent.ID))
 		returnedIDs[parent.ID] = true
 	}
