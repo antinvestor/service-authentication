@@ -76,9 +76,16 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	if childPartitionID != "" {
 
+		tenancySvc := h.PartitionCli().Svc()
+
+		childResp, err1 := tenancySvc.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: childPartitionID})
+		if err1 != nil {
+			return err1
+		}
+
 		// Confirm its a child partition
-		resp, err0 := h.PartitionCli().Svc().GetPartitionParents(ctx, &partitionv1.GetPartitionParentsRequest{
-			Id: childPartitionID,
+		resp, err0 := tenancySvc.GetPartitionParents(ctx, &partitionv1.GetPartitionParentsRequest{
+			Id: childResp.GetData().GetId(),
 		})
 		if err0 != nil {
 			return err0
