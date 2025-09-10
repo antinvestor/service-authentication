@@ -12,6 +12,30 @@ import (
 	"github.com/pitabwire/frame"
 )
 
+// extractGrantedScopes efficiently extracts granted_scopes from multiple possible locations in the webhook payload
+func extractGrantedScopes(tokenObject map[string]any) []any {
+
+	// Check request.granted_scopes
+	if request, ok := tokenObject["request"].(map[string]any); ok {
+		if scopes, ok := request["granted_scopes"].([]any); ok && len(scopes) > 0 {
+			return scopes
+		}
+	}
+
+	if scopes, ok := tokenObject["granted_scopes"].([]any); ok && len(scopes) > 0 {
+		return scopes
+	}
+	
+	// Check requester.granted_scopes
+	if requester, ok := tokenObject["requester"].(map[string]any); ok {
+		if scopes, ok := requester["granted_scopes"].([]any); ok && len(scopes) > 0 {
+			return scopes
+		}
+	}
+	
+	return nil
+}
+
 // GetOauth2ClientById obtains a client id
 func GetOauth2ClientById(ctx context.Context,
 	oauth2ServiceAdminHost string, clientID string) (int, []byte, error) {
@@ -108,13 +132,13 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(response)
 	}
 
-	grantedScopes, ok := tokenObject["granted_scopes"].([]any)
-	if !ok {
-
-		logger.Error("scope not found or invalid")
+	// Extract granted_scopes from multiple possible locations efficiently
+	grantedScopes := extractGrantedScopes(tokenObject)
+	if grantedScopes == nil {
+		logger.Info("granted_scopes not found in any location (top-level, requester, or request)")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "scope not found"})
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "granted_scopes not found"})
 	}
 
 	if slices.Contains(grantedScopes, frame.ConstSystemScopeInternal) {
