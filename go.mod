@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	buf.build/go/protovalidate v0.14.0
-	github.com/antinvestor/apis/go/common v1.42.0
-	github.com/antinvestor/apis/go/device v1.42.1
-	github.com/antinvestor/apis/go/notification v1.42.1
-	github.com/antinvestor/apis/go/partition v1.42.2
-	github.com/antinvestor/apis/go/profile v1.42.1
+	github.com/antinvestor/apis/go/common v1.43.4
+	github.com/antinvestor/apis/go/device v1.43.4
+	github.com/antinvestor/apis/go/notification v1.43.4
+	github.com/antinvestor/apis/go/partition v1.43.4
+	github.com/antinvestor/apis/go/profile v1.43.4
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
@@ -16,7 +16,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.58.8
+	github.com/pitabwire/frame v1.58.9
 	github.com/pitabwire/util v0.3.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -25,7 +25,7 @@ require (
 	golang.org/x/crypto v0.42.0
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
-	gorm.io/gorm v1.30.5
+	gorm.io/gorm v1.31.0
 )
 
 require (
@@ -100,7 +100,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/contrib/propagators/autoprop v0.63.0 // indirect
