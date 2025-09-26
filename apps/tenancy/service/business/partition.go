@@ -2,7 +2,6 @@ package business
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
@@ -123,18 +122,16 @@ func (pb *partitionBusiness) GetPartition(
 
 	partitionObj := partition.ToAPI()
 
-	var cfg *config.PartitionConfig
-	if c, ok := pb.service.Config().(*config.PartitionConfig); ok {
-		cfg = c
-	} else {
-		return nil, errors.New("invalid configuration type")
-	}
-
 	if strings.EqualFold(claims.GetServiceName(), "service_matrix") {
 		props := partitionObj.GetProperties().AsMap()
 
 		props["client_secret"] = partition.ClientSecret
-		props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
+
+		cfg, ok := pb.service.Config().(*config.PartitionConfig)
+		if ok {
+			props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
+		}
+
 		partitionObj.Properties, _ = structpb.NewStruct(props)
 	}
 
