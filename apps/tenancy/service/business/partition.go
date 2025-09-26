@@ -2,6 +2,7 @@ package business
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
@@ -114,6 +115,9 @@ func (pb *partitionBusiness) GetPartition(
 	ctx context.Context,
 	request *partitionv1.GetPartitionRequest) (*partitionv1.PartitionObject, error) {
 	claims := frame.ClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, fmt.Errorf("partitions can only be pulled by known entities")
+	}
 
 	partition, err := pb.partitionRepo.GetByID(ctx, request.GetId())
 	if err != nil {
@@ -122,7 +126,11 @@ func (pb *partitionBusiness) GetPartition(
 
 	partitionObj := partition.ToAPI()
 
-	if strings.EqualFold(claims.GetServiceName(), "service_matrix") {
+	pb.service.Log(ctx).WithField("service", claims.GetServiceName()).Info(" ------------------ Service name -----------------")
+
+	subject, _ := claims.GetSubject()
+	pb.service.Log(ctx).WithField("subject", subject).Info(" ------------------ Subject -----------------")
+	if strings.EqualFold(subject, "service_matrix") {
 		props := partitionObj.GetProperties().AsMap()
 
 		props["client_secret"] = partition.ClientSecret
@@ -130,6 +138,7 @@ func (pb *partitionBusiness) GetPartition(
 		cfg, ok := pb.service.Config().(*config.PartitionConfig)
 		if ok {
 			props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
+			pb.service.Log(ctx).WithField("uri", cfg.GetOauth2WellKnownOIDC()).Info(" ------------------ Oauth2 well known OIDC url -----------------")
 		}
 
 		partitionObj.Properties, _ = structpb.NewStruct(props)
