@@ -126,10 +126,7 @@ func (pb *partitionBusiness) GetPartition(
 
 	partitionObj := partition.ToAPI()
 
-	pb.service.Log(ctx).WithField("service", claims.GetServiceName()).Info(" ------------------ Service name -----------------")
-
 	subject, _ := claims.GetSubject()
-	pb.service.Log(ctx).WithField("subject", subject).Info(" ------------------ Subject -----------------")
 	if strings.EqualFold(subject, "service_matrix") {
 		props := partitionObj.GetProperties().AsMap()
 
@@ -138,7 +135,6 @@ func (pb *partitionBusiness) GetPartition(
 		cfg, ok := pb.service.Config().(*config.PartitionConfig)
 		if ok {
 			props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
-			pb.service.Log(ctx).WithField("uri", cfg.GetOauth2WellKnownOIDC()).Info(" ------------------ Oauth2 well known OIDC url -----------------")
 		}
 
 		partitionObj.Properties, _ = structpb.NewStruct(props)
