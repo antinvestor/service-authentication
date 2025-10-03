@@ -16,6 +16,7 @@ import (
 	protovalidateinterceptor "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/util"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -111,6 +112,7 @@ func setupGRPCServer(ctx context.Context, svc *frame.Service,
 	}
 
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			svc.UnaryAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
 			protovalidateinterceptor.UnaryServerInterceptor(validator)),
