@@ -29,7 +29,7 @@ func NewPartitionSvc(containerOpts ...definition.ContainerOption) definition.Tes
 	opts.Setup(containerOpts...)
 
 	return &partitionDependancy{
-		DefaultImpl: definition.NewDefaultImpl(opts, ""),
+		DefaultImpl: definition.NewDefaultImpl(opts, "http"),
 	}
 }
 

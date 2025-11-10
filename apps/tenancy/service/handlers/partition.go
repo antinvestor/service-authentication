@@ -40,7 +40,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service) *PartitionS
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
 
-	cfg := service.Config().(config.PartitionConfig)
+	cfg := service.Config().(*config.PartitionConfig)
 	eventsMan := service.EventsManager()
 
 	// Create business layers with repository dependencies
@@ -48,7 +48,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service) *PartitionS
 		svc:               service,
 		eventsMan:         eventsMan,
 		PartitionRepo:     partitionRepo,
-		PartitionBusiness: business.NewPartitionBusiness(cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
+		PartitionBusiness: business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
 		TenantBusiness:    business.NewTenantBusiness(service, tenantRepo),
 		AccessBusiness:    business.NewAccessBusiness(service, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
 		PageBusiness:      business.NewPageBusiness(service, pageRepo, partitionRepo),

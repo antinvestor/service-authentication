@@ -29,7 +29,7 @@ func NewDevice(containerOpts ...definition.ContainerOption) definition.TestResou
 	opts.Setup(containerOpts...)
 
 	return &deviceDependency{
-		DefaultImpl: definition.NewDefaultImpl(opts, ""),
+		DefaultImpl: definition.NewDefaultImpl(opts, "http"),
 	}
 }
 

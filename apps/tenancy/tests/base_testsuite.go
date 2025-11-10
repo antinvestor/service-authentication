@@ -39,7 +39,7 @@ type DepsBuilder struct {
 func BuildDeps(ctx context.Context, svc *frame.Service) *DepsBuilder {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
-	cfg := svc.Config().(aconfig.PartitionConfig)
+	cfg := svc.Config().(*aconfig.PartitionConfig)
 	eventsMan := svc.EventsManager()
 
 	depBuilder := &DepsBuilder{
@@ -51,7 +51,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service) *DepsBuilder {
 		PageRepo:          repository.NewPageRepository(ctx, dbPool, workMan),
 	}
 
-	depBuilder.PartitionBusiness = business.NewPartitionBusiness(cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo)
 	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
@@ -144,6 +144,10 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
+
+	cfg.DatabaseMigrate = true
+	cfg.DatabaseTraceQueries = true
+
 	cfg.HTTPServerPort = fmt.Sprintf(":%d", accessPort)
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}

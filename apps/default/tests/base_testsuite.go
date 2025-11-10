@@ -105,13 +105,13 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		localHydraConfig, definition.WithDependancies(pg),
 		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
-	// Add profile and partition service dependencies
-	device := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partition := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	notifications := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	profile := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notifications), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	// Add profileSvc and partitionSvc service dependencies
+	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
-	resources := []definition.TestResource{pg, hydra, notifications, profile, device, partition}
+	resources := []definition.TestResource{pg, hydra, notificationsSvc, profileSvc, deviceSvc, partitionSvc}
 	return resources
 }
 
@@ -179,6 +179,7 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
+	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 	// cfg.RunServiceSecurely = false
 	cfg.HTTPServerPort = bs.FreeAuthPort
@@ -191,6 +192,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
 	cfg.DeviceServiceURI = deviceDR.GetDS(ctx).String()
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
+	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_devices"
 	cfg.Oauth2JwtVerifyAudience = "authentication_tests"

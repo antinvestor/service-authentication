@@ -29,7 +29,7 @@ func NewNotificationSvc(containerOpts ...definition.ContainerOption) definition.
 	opts.Setup(containerOpts...)
 
 	return &notificationDependancy{
-		DefaultImpl: definition.NewDefaultImpl(opts, ""),
+		DefaultImpl: definition.NewDefaultImpl(opts, "http"),
 	}
 }
 

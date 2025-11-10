@@ -29,7 +29,7 @@ func NewProfile(containerOpts ...definition.ContainerOption) definition.TestReso
 	opts.Setup(containerOpts...)
 
 	return &dependency{
-		DefaultImpl: definition.NewDefaultImpl(opts, ""),
+		DefaultImpl: definition.NewDefaultImpl(opts, "http"),
 	}
 }
 

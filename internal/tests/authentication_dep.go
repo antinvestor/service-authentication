@@ -29,7 +29,7 @@ func NewAuthentication(containerOpts ...definition.ContainerOption) definition.T
 	opts.Setup(containerOpts...)
 
 	return &authenticationDependency{
-		DefaultImpl: definition.NewDefaultImpl(opts, ""),
+		DefaultImpl: definition.NewDefaultImpl(opts, "http"),
 	}
 }
 
