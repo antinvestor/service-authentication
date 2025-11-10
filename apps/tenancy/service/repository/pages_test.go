@@ -31,7 +31,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		pageRepo := repository.NewPageRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -51,7 +51,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -62,7 +62,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 				page := models.Page{
 					Name: tc.pageName,
 					HTML: "<div></div>",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -103,7 +103,7 @@ func (suite *PageTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		pageRepo := repository.NewPageRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -123,7 +123,7 @@ func (suite *PageTestSuite) TestSave() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -134,7 +134,7 @@ func (suite *PageTestSuite) TestSave() {
 				page := models.Page{
 					Name: tc.pageName,
 					HTML: tc.html,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -172,7 +172,7 @@ func (suite *PageTestSuite) TestDelete() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		pageRepo := repository.NewPageRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -192,7 +192,7 @@ func (suite *PageTestSuite) TestDelete() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -203,7 +203,7 @@ func (suite *PageTestSuite) TestDelete() {
 				page := models.Page{
 					Name: "test",
 					HTML: "<div></div>",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},

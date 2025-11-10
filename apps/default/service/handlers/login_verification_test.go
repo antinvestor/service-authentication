@@ -9,11 +9,13 @@ import (
 	"testing"
 	"time"
 
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -43,14 +45,14 @@ type VerificationTestContext struct {
 }
 
 // SetupVerificationTest creates a common test setup for verification tests with timeout handling
-func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep *definition.DependancyOption) *VerificationTestContext {
+func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep *definition.DependencyOption) *VerificationTestContext {
 	// Use global mutex to ensure sequential execution
 	verificationTestMutex.Lock()
 
 	// Create context with timeout for overall test
 	ctx, cancel := context.WithTimeout(context.Background(), VerificationTestTimeout)
 
-	authServer, baseCtx := suite.CreateService(t, dep)
+	baseCtx, authServer, deps := suite.CreateService(t, dep)
 
 	// Set up HTTP test server
 	router := authServer.SetupRouterV1(baseCtx)
@@ -61,14 +63,12 @@ func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep
 	oauth2Client.AuthServiceURL = testServer.URL
 
 	// Create login repository
-	loginRepo := repository.NewLoginRepository(authServer.Service())
-
 	return &VerificationTestContext{
 		AuthServer:   authServer,
 		Context:      ctx,
 		Cancel:       cancel,
 		OAuth2Client: oauth2Client,
-		LoginRepo:    loginRepo,
+		LoginRepo:    deps.LoginRepo,
 		TestServer:   testServer,
 	}
 }
@@ -105,24 +105,28 @@ func (suite *LoginVerificationTestSuite) CreateTestProfile(ctx context.Context, 
 
 	props, _ := structpb.NewStruct(map[string]any{handlers.KeyProfileName: name})
 
-	resp, err := profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
+	resp, err := profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    email,
 		Properties: props,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}
-	return resp.GetData(), nil
+	return resp.Msg.GetData(), nil
 }
 
 // CreateVerificationRecord creates a verification record and returns the verification code
 func (suite *LoginVerificationTestSuite) CreateVerificationRecord(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
 	profileCli := authServer.ProfileCli()
-	return profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
+	resp, err := profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		ContactId:        contactID,
 		DurationToExpire: "15m",
-	})
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return resp.Msg, nil
 }
 
 // TestCodeVerificationFlow tests the complete verification flow with real database verification codes
@@ -171,7 +175,7 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -245,7 +249,7 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 
 // TestVerificationEndpointBasics tests basic verification endpoint functionality
 func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupVerificationTest(t, dep)
 		defer suite.TeardownVerificationTest(testCtx)
 
@@ -260,7 +264,7 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer util.CloseAndLogOnError(testCtx.Context, resp.Body)
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Contains(t, resp.Header.Get("Content-Type"), "text/html")

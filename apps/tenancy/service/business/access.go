@@ -3,7 +3,7 @@ package business
 import (
 	"context"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
@@ -125,7 +125,7 @@ func (ab *accessBusiness) CreateAccess(
 
 	access = &models.Access{
 		ProfileID: request.GetProfileId(),
-		BaseModel: frame.BaseModel{
+		BaseModel: data.BaseModel{
 			TenantID:    partition.TenantID,
 			PartitionID: partition.GetID(),
 		},

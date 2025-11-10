@@ -13,7 +13,7 @@ type pageRepository struct {
 
 func (pgr *pageRepository) GetByID(ctx context.Context, id string) (*models.Page, error) {
 	page := &models.Page{}
-	err := pgr.service.DB(ctx, true).First(page, "id = ?", id).Error
+	err := pgr.Pool().DB(ctx, true).First(page, "id = ?", id).Error
 	return page, err
 }
 
@@ -23,16 +23,16 @@ func (pgr *pageRepository) GetByPartitionAndName(
 	name string,
 ) (*models.Page, error) {
 	page := &models.Page{}
-	err := pgr.service.DB(ctx, true).First(page, "partition_id = ? AND name = ?", partitionID, name).Error
+	err := pgr.Pool().DB(ctx, true).First(page, "partition_id = ? AND name = ?", partitionID, name).Error
 	return page, err
 }
 
 func (pgr *pageRepository) Save(ctx context.Context, page *models.Page) error {
-	return pgr.service.DB(ctx, false).Save(page).Error
+	return pgr.Pool().DB(ctx, false).Save(page).Error
 }
 
 func (pgr *pageRepository) Delete(ctx context.Context, id string) error {
-	return pgr.service.DB(ctx, false).Where("id = ?", id).Delete(&models.Page{}).Error
+	return pgr.Pool().DB(ctx, false).Where("id = ?", id).Delete(&models.Page{}).Error
 }
 
 func NewPageRepository(service *frame.Service) PageRepository {

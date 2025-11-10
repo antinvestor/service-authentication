@@ -14,12 +14,14 @@ import (
 	"testing"
 	"time"
 
-	commonv1 "github.com/antinvestor/apis/go/common/v1"
-	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	"connectrpc.com/connect"
+	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
+	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -30,7 +32,7 @@ type OAuth2TestClient struct {
 	HydraAdminURL  string
 	HydraPublicURL string
 	AuthServiceURL string
-	PartitionCli   *partitionv1.PartitionClient
+	PartitionCli   partitionv1connect.PartitionServiceClient
 	Client         *http.Client
 	t              *testing.T
 
@@ -100,7 +102,7 @@ type OAuth2Client struct {
 	RedirectURIs []string
 	Scope        string
 	Audience     []string
-	props        frame.JSONMap
+	props        data.JSONMap
 }
 
 func (c *OAuth2TestClient) PostLoginRedirectHandler() {
@@ -114,7 +116,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 
 	// Create the client in Hydra
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
-		frame.JSONMap{
+		data.JSONMap{
 			"scope":         "openid offline offline_access profile contact",
 			"audience":      "service_devices,service_profile,service_partition,service_files,authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
@@ -826,13 +828,13 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 
 		extras, _ := structpb.NewStruct(map[string]any{"template_id": "9bsv0s23l8og00vgjq90"})
 
-		resp, err0 := notifCli.Svc().Search(ctx, &commonv1.SearchRequest{
+		resp, err0 := notifCli.Search(ctx, connect.NewRequest(&commonv1.SearchRequest{
 			Limits: &commonv1.Pagination{
 				Count: 10,
 				Page:  0,
 			},
 			Extras: extras,
-		})
+		}))
 		if err0 != nil {
 			return nil, err0
 		}

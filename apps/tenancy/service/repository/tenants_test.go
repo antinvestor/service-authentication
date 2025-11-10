@@ -42,7 +42,7 @@ func (suite *TenantTestSuite) TestSave() {
 		// does not enforce these constraints
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 
@@ -103,7 +103,7 @@ func (suite *TenantTestSuite) TestGetByID() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 
@@ -176,7 +176,7 @@ func (suite *TenantTestSuite) TestDelete() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 

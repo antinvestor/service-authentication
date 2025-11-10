@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
@@ -37,10 +36,9 @@ func (suite *LoginRepositoryTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		loginRepo := repository.NewLoginRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		loginRepo := deps.LoginRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -51,7 +49,7 @@ func (suite *LoginRepositoryTestSuite) TestSave() {
 				}
 
 				// Execute
-				err := loginRepo.Save(ctx, login)
+				err := loginRepo.Create(ctx, login)
 
 				// Assert
 				if tc.shouldError {
@@ -91,10 +89,9 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileID() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		loginRepo := repository.NewLoginRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		loginRepo := deps.LoginRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -104,7 +101,7 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileID() {
 					Source:    tc.source,
 				}
 
-				err := loginRepo.Save(ctx, login)
+				err := loginRepo.Create(ctx, login)
 				require.NoError(t, err)
 
 				// Execute

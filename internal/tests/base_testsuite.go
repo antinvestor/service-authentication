@@ -36,10 +36,10 @@ func (bs *BaseTestSuite) TearDownSuite() {
 	bs.FrameBaseTestSuite.TearDownSuite()
 }
 
-// WithTestDependancies Creates subtests with each known DependancyOption.
-func (bs *BaseTestSuite) WithTestDependancies(t *testing.T, testFn func(t *testing.T, dep *definition.DependancyOption)) {
-	options := []*definition.DependancyOption{
-		definition.NewDependancyOption("default", util.RandomString(DefaultRandomStringLength), bs.Resources()),
+// WithTestDependancies Creates subtests with each known DependencyOption.
+func (bs *BaseTestSuite) WithTestDependancies(t *testing.T, testFn func(t *testing.T, dep *definition.DependencyOption)) {
+	options := []*definition.DependencyOption{
+		definition.NewDependencyOption("default", util.RandomString(DefaultRandomStringLength), bs.Resources()),
 	}
 
 	frametests.WithTestDependancies(t, options, testFn)

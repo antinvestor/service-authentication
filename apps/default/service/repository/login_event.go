@@ -4,26 +4,31 @@ import (
 	"context"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/workerpool"
 )
 
 type loginEventRepository struct {
-	service *frame.Service
+	datastore.BaseRepository[*models.LoginEvent]
 }
 
 // NewLoginEventRepository creates a new instance of LoginEventRepository
-func NewLoginEventRepository(service *frame.Service) LoginEventRepository {
+func NewLoginEventRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) LoginEventRepository {
 	return &loginEventRepository{
-		service: service,
+		BaseRepository: datastore.NewBaseRepository[*models.LoginEvent](
+		ctx, dbPool, workMan, func() *models.LoginEvent { return &models.LoginEvent{} },
+	),
 	}
 }
 
 // GetByID retrieves a login event by ID
 func (r *loginEventRepository) GetByID(ctx context.Context, id string) (*models.LoginEvent, error) {
 	var loginEvent models.LoginEvent
-	err := r.service.DB(ctx, true).First(&loginEvent, "id = ?", id).Error
+	err := r.Pool().DB(ctx, true).First(&loginEvent, "id = ?", id).Error
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
+		if data.ErrorIsNoRows(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -34,10 +39,10 @@ func (r *loginEventRepository) GetByID(ctx context.Context, id string) (*models.
 // Save creates or updates a login event record
 func (r *loginEventRepository) Save(ctx context.Context, loginEvent *models.LoginEvent) error {
 	// Create new record
-	return r.service.DB(ctx, false).Create(loginEvent).Error
+	return r.Pool().DB(ctx, false).Create(loginEvent).Error
 }
 
 // Delete removes a login event record by ID
 func (r *loginEventRepository) Delete(ctx context.Context, id string) error {
-	return r.service.DB(ctx, false).Delete(&models.LoginEvent{}, "id = ?", id).Error
+	return r.Pool().DB(ctx, false).Delete(&models.LoginEvent{}, "id = ?", id).Error
 }

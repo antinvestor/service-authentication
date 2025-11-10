@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -104,7 +104,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
-	result, err := h.profileCli.Svc().GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contact})
+	result, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contact})
 	if err != nil {
 		st, errOk := status.FromError(err)
 		if !errOk || st.Code() != codes.NotFound {
@@ -128,7 +128,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	if contactID == "" {
 
 		// don't have this contact in existence so we create it
-		contactResp, err0 := h.profileCli.Svc().CreateContact(ctx, &profilev1.CreateContactRequest{
+		contactResp, err0 := h.profileCli.CreateContact(ctx, &profilev1.CreateContactRequest{
 			Contact: contact,
 		})
 		if err0 != nil {
@@ -141,7 +141,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		contactID = contactResp.GetData().GetId()
 	}
 
-	resp, err := h.profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
+	resp, err := h.profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
@@ -258,7 +258,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	logger.WithField("verification_id", loginEvent.VerificationID).WithField("verification_code", verificationCode).Info("DEBUG: Calling CheckVerification")
 
-	verifyResp, err := h.profileCli.Svc().CheckVerification(ctx, verifyReq)
+	verifyResp, err := h.profileCli.CheckVerification(ctx, verifyReq)
 	if err != nil {
 		logger.WithError(err).Error("verification code verification failed")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
@@ -277,7 +277,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	logger.Info("DEBUG: Verification code verified successfully")
 
 	var profileObj *profilev1.ProfileObject
-	resp, err := h.profileCli.Svc().GetByContact(ctx, &profilev1.GetByContactRequest{Contact: loginEvent.ContactID})
+	resp, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: loginEvent.ContactID})
 	if err == nil {
 		profileObj = resp.GetData()
 	} else {
@@ -299,7 +299,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 			KeyProfileName: profileName,
 		})
 
-		res, err0 := h.profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
+		res, err0 := h.profileCli.Create(ctx, &profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    loginEvent.ContactID,
 			Properties: properties,

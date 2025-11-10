@@ -14,7 +14,7 @@ type tenantRepository struct {
 
 func (tr *tenantRepository) GetByID(ctx context.Context, id string) (*models.Tenant, error) {
 	tenant := &models.Tenant{}
-	err := tr.service.DB(ctx, true).First(tenant, "id = ?", id).Error
+	err := tr.Pool().DB(ctx, true).First(tenant, "id = ?", id).Error
 	return tenant, err
 }
 
@@ -30,7 +30,7 @@ func (tr *tenantRepository) Search(
 
 		paginator := query.Pagination
 
-		db := tr.service.DB(ctx, true).
+		db := tr.Pool().DB(ctx, true).
 			Limit(paginator.Limit).Offset(paginator.Offset)
 
 		if query.Fields != nil {
@@ -58,7 +58,7 @@ func (tr *tenantRepository) Search(
 }
 
 func (tr *tenantRepository) Save(ctx context.Context, tenant *models.Tenant) error {
-	return tr.service.DB(ctx, false).Save(tenant).Error
+	return tr.Pool().DB(ctx, false).Save(tenant).Error
 }
 
 func (tr *tenantRepository) Delete(ctx context.Context, id string) error {
@@ -66,7 +66,7 @@ func (tr *tenantRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	return tr.service.DB(ctx, false).Delete(tenant).Error
+	return tr.Pool().DB(ctx, false).Delete(tenant).Error
 }
 
 func NewTenantRepository(service *frame.Service) TenantRepository {

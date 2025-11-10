@@ -3,14 +3,14 @@ package models
 import (
 	"errors"
 
-	commonv1 "github.com/antinvestor/apis/go/common/v1"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/pitabwire/frame"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Tenant struct {
-	frame.BaseModel
+	data.BaseModel
 	Name        string `gorm:"type:varchar(100);"`
 	Description string `gorm:"type:text;"`
 	Properties  frame.JSONMap
@@ -27,7 +27,7 @@ func (t *Tenant) ToAPI() *partitionv1.TenantObject {
 }
 
 type Partition struct {
-	frame.BaseModel
+	data.BaseModel
 	Name         string        `gorm:"type:varchar(100);" json:"name"`
 	Description  string        `gorm:"type:text;"         json:"description"`
 	ParentID     string        `gorm:"type:varchar(50);"  json:"parent_id"`
@@ -50,7 +50,7 @@ func (p *Partition) ToAPI() *partitionv1.PartitionObject {
 }
 
 type PartitionRole struct {
-	frame.BaseModel
+	data.BaseModel
 	Name       string `gorm:"type:varchar(100);"`
 	Properties frame.JSONMap
 }
@@ -73,7 +73,7 @@ func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
 }
 
 type Page struct {
-	frame.BaseModel
+	data.BaseModel
 	Name       string `gorm:"type:varchar(50);"`
 	HTML       string `gorm:"type:text;"`
 	State      int32
@@ -92,7 +92,7 @@ func (p *Page) ToAPI() *partitionv1.PageObject {
 }
 
 type Access struct {
-	frame.BaseModel
+	data.BaseModel
 	ProfileID string `gorm:"type:varchar(50);"`
 	State     int32
 }
@@ -113,7 +113,7 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 }
 
 type AccessRole struct {
-	frame.BaseModel
+	data.BaseModel
 	AccessID        string `gorm:"type:varchar(50);"`
 	PartitionRoleID string `gorm:"type:varchar(50);"`
 }

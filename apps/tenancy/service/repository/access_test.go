@@ -35,7 +35,7 @@ func (suite *AccessTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -55,7 +55,7 @@ func (suite *AccessTestSuite) TestSave() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -65,7 +65,7 @@ func (suite *AccessTestSuite) TestSave() {
 
 				access := models.Access{
 					ProfileID: tc.profileID,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -107,7 +107,7 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -127,7 +127,7 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -137,7 +137,7 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 
 				access := models.Access{
 					ProfileID: tc.profileID,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -178,7 +178,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -198,7 +198,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -208,7 +208,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 
 				partitionRole := models.PartitionRole{
 					Name: tc.roleName,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -219,7 +219,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 
 				access := models.Access{
 					ProfileID: tc.profileID,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -232,7 +232,7 @@ func (suite *AccessTestSuite) TestSaveRole() {
 				err = accessRepo.SaveRole(ctx, &models.AccessRole{
 					AccessID:        access.GetID(),
 					PartitionRoleID: partitionRole.GetID(),
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -270,7 +270,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		accessRepo := repository.NewAccessRepository(svc)
 		tenantRepo := repository.NewTenantRepository(svc)
@@ -290,7 +290,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -300,7 +300,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 
 				partitionRole := models.PartitionRole{
 					Name: tc.roleName,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -311,7 +311,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 
 				access := models.Access{
 					ProfileID: tc.profileID,
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},
@@ -323,7 +323,7 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 				accessRole := models.AccessRole{
 					AccessID:        access.GetID(),
 					PartitionRoleID: partitionRole.GetID(),
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID:    tenant.GetID(),
 						PartitionID: partition.GetID(),
 					},

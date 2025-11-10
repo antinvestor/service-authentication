@@ -62,7 +62,7 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 		},
 	}
 
-	p.WithTestDependancies(p.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	p.WithTestDependancies(p.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := p.CreateService(t, dep)
 
 		cfg, ok := svc.Config().(*config.PartitionConfig)
@@ -87,7 +87,7 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 				partition := &models.Partition{
 					Name:        "test partition",
 					Description: "",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}

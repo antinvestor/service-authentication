@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -266,7 +266,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	partitionRole := &models.PartitionRole{
 		Name:       request.GetName(),
 		Properties: jsonMap,
-		BaseModel: frame.BaseModel{
+		BaseModel: data.BaseModel{
 			PartitionID: partition.PartitionID,
 			TenantID:    partition.TenantID,
 		},

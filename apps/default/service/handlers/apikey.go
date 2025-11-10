@@ -5,10 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/security"
 )
 
 const constApiKeyIDPrefix = "api_key"
@@ -28,7 +29,7 @@ type apiKey struct {
 func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	claims := frame.ClaimsFromContext(ctx)
+	claims := security.ClaimsFromContext(ctx)
 	if claims == nil {
 		return errors.New("no credentials detected")
 	}

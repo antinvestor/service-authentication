@@ -8,22 +8,81 @@ import (
 	"testing"
 	"time"
 
-	apis "github.com/antinvestor/apis/go/common"
-	devicev1 "github.com/antinvestor/apis/go/device/v1"
-	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
-	"github.com/antinvestor/service-authentication/apps/default/config"
+	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
+	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"connectrpc.com/connect"
+	"github.com/antinvestor/apis/go/common"
+	"github.com/antinvestor/apis/go/device"
+	"github.com/antinvestor/apis/go/notification"
+	"github.com/antinvestor/apis/go/partition"
+	"github.com/antinvestor/apis/go/profile"
+	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/security/openid"
 	"github.com/stretchr/testify/require"
 )
+
+type DepsBuilder struct {
+	APIKeyRepo     repository.APIKeyRepository
+	LoginRepo      repository.LoginRepository
+	LoginEventRepo repository.LoginEventRepository
+
+	ProfileCli profilev1connect.ProfileServiceClient
+	DeviceCli devicev1connect.DeviceServiceClient
+	PartitionCli partitionv1connect.PartitionServiceClient
+	NotificationCli notificationv1connect.NotificationServiceClient
+}
+
+func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	workMan := svc.WorkManager()
+	// qMan := svc.QueueManager()
+	// 
+	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
+
+	depBuilder := &DepsBuilder{
+		APIKeyRepo:     repository.NewAPIKeyRepository(ctx, dbPool, workMan),
+		LoginRepo:      repository.NewLoginRepository(ctx, dbPool, workMan),
+		LoginEventRepo: repository.NewLoginEventRepository(ctx, dbPool, workMan),
+	}
+
+	var err error
+
+	depBuilder.PartitionCli, err = setupPartitionClient(ctx, svc.SecurityManager(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	depBuilder.NotificationCli, err = setupNotificationClient(ctx, svc.SecurityManager(), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	depBuilder.ProfileCli, err = setupProfileClient(ctx, svc.SecurityManager(), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	depBuilder.DeviceCli, err = setupDeviceClient(ctx, svc.SecurityManager(), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return depBuilder, nil
+}
 
 type BaseTestSuite struct {
 	internaltests.BaseTestSuite
@@ -75,8 +134,8 @@ func (bs *BaseTestSuite) SetupSuite() {
 
 func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
-	depOpts *definition.DependancyOption,
-) (*handlers.AuthServer, context.Context) {
+	depOpts *definition.DependencyOption,
+) (context.Context, *handlers.AuthServer, *DepsBuilder) {
 
 	var databaseDR definition.DependancyConn
 	var hydraDR definition.DependancyConn
@@ -116,7 +175,7 @@ func (bs *BaseTestSuite) CreateService(
 
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
 
-	cfg, err := frame.ConfigLoadWithOIDC[config.AuthenticationConfig](ctx)
+	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
@@ -131,98 +190,124 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.PartitionServiceURI = partitionDR.GetDS(ctx).String()
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
 	cfg.DeviceServiceURI = deviceDR.GetDS(ctx).String()
+	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_devices"
 	cfg.Oauth2JwtVerifyAudience = "authentication_tests"
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
-	ctx, svc := frame.NewServiceWithContext(t.Context(), "authentication_tests",
-		frame.WithConfig(&cfg),
-		frame.WithDatastore(),
-		frametests.WithNoopDriver())
+	ctx, svc := frame.NewServiceWithContext(t.Context(),
+		frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
+		frame.WithDatastore(), frametests.WithNoopDriver(), frame.WithRegisterServerOauth2Client())
 
-	err = svc.RegisterForJwt(ctx)
+
+
+	depsBuilder, err := BuildRepos(ctx, svc)
 	require.NoError(t, err)
 
-	partitionCli, err := partitionv1.NewPartitionsClient(ctx,
-		apis.WithEndpoint(cfg.PartitionServiceURI),
-		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstSystemScopeInternal),
-		apis.WithAudiences("service_partition"))
-	require.NoError(t, err)
-
-	profileCli, err := profilev1.NewProfileClient(ctx,
-		apis.WithEndpoint(cfg.ProfileServiceURI),
-		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstSystemScopeInternal),
-		apis.WithAudiences("service_profile"))
-	require.NoError(t, err)
-
-	deviceCli, err := devicev1.NewDeviceClient(ctx,
-		apis.WithEndpoint(cfg.DeviceServiceURI),
-		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstSystemScopeInternal),
-		apis.WithAudiences("service_devices"))
-	require.NoError(t, err)
-
-	notificationCli, err := notificationv1.NewNotificationClient(ctx,
-		apis.WithEndpoint(notificationDR.GetDS(ctx).String()),
-		apis.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		apis.WithTokenUsername(svc.JwtClientID()),
-		apis.WithTokenPassword(svc.JwtClientSecret()),
-		apis.WithScopes(frame.ConstSystemScopeInternal),
-		apis.WithAudiences("service_notifications"))
-	require.NoError(t, err)
-
-	authServer := handlers.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli, notificationCli)
+	authServer := handlers.NewAuthServer(ctx, svc, &cfg, depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 
 	defaultServer := frame.WithHTTPHandler(authServiceHandlers)
 	svc.Init(ctx, defaultServer)
 
-	err = repository.Migrate(ctx, svc, "../../migrations/0001")
+	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
 	require.NoError(t, err)
 
 	go func() {
 		_ = svc.Run(ctx, "")
 	}()
-	return authServer, ctx
+	return ctx, authServer, depsBuilder
 }
 
-func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.PartitionClient, name, description string, properties frame.JSONMap) (*partitionv1.PartitionObject, error) {
+// setupDeviceClient creates and configures the device client.
+func setupDeviceClient(
+	ctx context.Context,
+	clHolder security.InternalOauth2ClientHolder,
+	cfg *aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
+	return device.NewClient(ctx,
+		common.WithEndpoint(cfg.DeviceServiceURI),
+		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		common.WithTokenUsername(clHolder.JwtClientID()),
+		common.WithTokenPassword(clHolder.JwtClientSecret()),
+		common.WithScopes(openid.ConstSystemScopeInternal),
+		common.WithAudiences("service_devices"))
+}
 
-	result, err := partitionCli.Svc().CreatePartition(ctx, &partitionv1.CreatePartitionRequest{
+// setupNotificationClient creates and configures the notification client.
+func setupNotificationClient(
+	ctx context.Context,
+	clHolder security.InternalOauth2ClientHolder,
+	cfg *aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
+	return notification.NewClient(ctx,
+		common.WithEndpoint(cfg.NotificationServiceURI),
+		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		common.WithTokenUsername(clHolder.JwtClientID()),
+		common.WithTokenPassword(clHolder.JwtClientSecret()),
+		common.WithScopes(openid.ConstSystemScopeInternal),
+		common.WithAudiences("service_notifications"))
+}
+
+// setupPartitionClient creates and configures the partition client.
+func setupPartitionClient(
+	ctx context.Context,
+	clHolder security.InternalOauth2ClientHolder,
+	cfg *aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
+	return partition.NewClient(ctx,
+		common.WithEndpoint(cfg.PartitionServiceURI),
+		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		common.WithTokenUsername(clHolder.JwtClientID()),
+		common.WithTokenPassword(clHolder.JwtClientSecret()),
+		common.WithScopes(openid.ConstSystemScopeInternal),
+		common.WithAudiences("service_partition"))
+}
+
+// setupProfileClient creates and configures the profile client.
+func setupProfileClient(
+	ctx context.Context,
+	clHolder security.InternalOauth2ClientHolder,
+	cfg *aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
+	return profile.NewClient(ctx,
+		common.WithEndpoint(cfg.ProfileServiceURI),
+		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
+		common.WithTokenUsername(clHolder.JwtClientID()),
+		common.WithTokenPassword(clHolder.JwtClientSecret()),
+		common.WithScopes(openid.ConstSystemScopeInternal),
+		common.WithAudiences("service_profile"))
+}
+
+func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {
+
+	result, err := partitionCli.CreatePartition(ctx, connect.NewRequest(&partitionv1.CreatePartitionRequest{
 		TenantId:    "c2f4j7au6s7f91uqnojg",
 		ParentId:    "c2f4j7au6s7f91uqnokg",
 		Name:        name,
 		Description: description,
 		Properties:  properties.ToProtoStruct(),
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}
 
-	partition := result.GetData()
+	res := result.Msg.GetData()
 
 	// wait for partition to be synced
-	partition, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
+	res, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
 
-		partition, err = partitionCli.GetPartition(ctx, partition.GetId())
-		if err != nil {
+		response, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+			Id: res.GetId(),
+		}))
+		if err0 != nil {
 			return nil, nil
 		}
 
-		var partProperties frame.JSONMap = partition.GetProperties().AsMap()
+		prt := response.Msg.GetData()
+
+		var partProperties data.JSONMap = prt.GetProperties().AsMap()
 		_, ok := partProperties["client_id"]
 		if ok {
-			return partition, nil
+			return prt, nil
 		}
 
 		return nil, nil
@@ -233,5 +318,5 @@ func NewPartitionForOauthCli(ctx context.Context, partitionCli *partitionv1.Part
 		return nil, fmt.Errorf("failed to synchronise partition in time: %w", err)
 	}
 
-	return partition, nil
+	return res, nil
 }

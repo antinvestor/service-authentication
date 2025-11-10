@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
@@ -45,16 +44,14 @@ func (suite *APIKeyRepositoryTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup
 				apiKey := &models.APIKey{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						ID:          util.IDString(),
 						TenantID:    "test-tenant",
 						PartitionID: "test-partition",
@@ -66,7 +63,7 @@ func (suite *APIKeyRepositoryTestSuite) TestSave() {
 				}
 
 				// Execute
-				err := apiKeyRepo.Save(ctx, apiKey)
+				err := deps.APIKeyRepo.Create(ctx, apiKey)
 
 				// Verify
 				if tc.shouldError {
@@ -110,16 +107,15 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByID() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		apiKeyRepo := deps.APIKeyRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup - create API key first
 				apiKey := &models.APIKey{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						ID:          util.IDString(),
 						TenantID:    "test-tenant",
 						PartitionID: "test-partition",
@@ -130,7 +126,7 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByID() {
 					Scope:     "",
 				}
 
-				err := apiKeyRepo.Save(ctx, apiKey)
+				err := deps.APIKeyRepo.Create(ctx, apiKey)
 				require.NoError(t, err)
 
 				// Set query ID for valid test case
@@ -185,16 +181,15 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByIDAndProfile() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		apiKeyRepo := deps.APIKeyRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup - create API key first
 				apiKey := &models.APIKey{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						ID:          util.IDString(),
 						TenantID:    "test-tenant",
 						PartitionID: "test-partition",
@@ -205,7 +200,7 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByIDAndProfile() {
 					Scope:     "",
 				}
 
-				err := apiKeyRepo.Save(ctx, apiKey)
+				err := apiKeyRepo.Create(ctx, apiKey)
 				require.NoError(t, err)
 
 				// Execute
@@ -253,16 +248,15 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		apiKeyRepo := deps.APIKeyRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup - create API key first
 				apiKey := &models.APIKey{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						ID:          util.IDString(),
 						TenantID:    "test-tenant",
 						PartitionID: "test-partition",
@@ -273,7 +267,7 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 					Scope:     "",
 				}
 
-				err := apiKeyRepo.Save(ctx, apiKey)
+				err := apiKeyRepo.Create(ctx, apiKey)
 				require.NoError(t, err)
 
 				// Execute
@@ -295,17 +289,16 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByKey() {
 }
 
 func (suite *APIKeyRepositoryTestSuite) TestGetByProfileID() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		apiKeyRepo := deps.APIKeyRepo
 
 		profileID := "test-profile-list-123"
 
 		// Setup - create multiple API keys for the same profile
 		apiKeys := []*models.APIKey{
 			{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID:          util.IDString(),
 					TenantID:    "test-tenant",
 					PartitionID: "test-partition",
@@ -316,7 +309,7 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByProfileID() {
 				Scope:     "",
 			},
 			{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID:          util.IDString(),
 					TenantID:    "test-tenant",
 					PartitionID: "test-partition",
@@ -329,7 +322,7 @@ func (suite *APIKeyRepositoryTestSuite) TestGetByProfileID() {
 		}
 
 		for _, apiKey := range apiKeys {
-			err := apiKeyRepo.Save(ctx, apiKey)
+			err := apiKeyRepo.Create(ctx, apiKey)
 			require.NoError(t, err)
 		}
 
@@ -362,16 +355,15 @@ func (suite *APIKeyRepositoryTestSuite) TestDelete() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
-		authSrv, ctx := suite.CreateService(t, dep)
-		svc := authSrv.Service()
-		apiKeyRepo := repository.NewAPIKeyRepository(svc)
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		apiKeyRepo := deps.APIKeyRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup - create API key first
 				apiKey := &models.APIKey{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						ID:          util.IDString(),
 						TenantID:    "test-tenant",
 						PartitionID: "test-partition",
@@ -382,11 +374,11 @@ func (suite *APIKeyRepositoryTestSuite) TestDelete() {
 					Scope:     "",
 				}
 
-				err := apiKeyRepo.Save(ctx, apiKey)
+				err := apiKeyRepo.Create(ctx, apiKey)
 				require.NoError(t, err)
 
 				// Execute
-				err = apiKeyRepo.Delete(ctx, apiKey.ID, tc.profileID)
+				err = apiKeyRepo.DeleteByProfile(ctx, apiKey.ID, tc.profileID)
 
 				// Verify
 				if tc.shouldError {

@@ -40,12 +40,12 @@ type APIKeyTestContext struct {
 }
 
 // SetupAPIKeyTest creates a common test setup for API key tests
-func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.DependancyOption) *APIKeyTestContext {
+func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.DependencyOption) *APIKeyTestContext {
 	// Create context with timeout for overall test
 	ctx, cancel := context.WithTimeout(context.Background(), APIKeyTestTimeout)
 
 	// Setup auth server using the BaseTestSuite method
-	authServer, baseCtx := suite.CreateService(t, dep)
+	baseCtx, authServer, deps := suite.CreateService(t, dep)
 
 	// Set up HTTP test server
 	router := authServer.SetupRouterV1(baseCtx)
@@ -148,7 +148,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyCreation() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				testCtx := suite.SetupAPIKeyTest(t, dep)
@@ -210,7 +210,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyCreation() {
 
 // TestAPIKeyListing tests listing API keys for a user
 func (suite *APIKeyTestSuite) TestAPIKeyListing() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupAPIKeyTest(t, dep)
 		defer suite.TeardownAPIKeyTest(testCtx)
 
@@ -307,7 +307,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyListing() {
 
 // TestAPIKeyRetrieval tests retrieving a specific API key
 func (suite *APIKeyTestSuite) TestAPIKeyRetrieval() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupAPIKeyTest(t, dep)
 		defer suite.TeardownAPIKeyTest(testCtx)
 
@@ -364,7 +364,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyRetrieval() {
 
 // TestAPIKeyDeletion tests deleting API keys
 func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupAPIKeyTest(t, dep)
 		defer suite.TeardownAPIKeyTest(testCtx)
 
@@ -514,7 +514,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyErrorScenarios() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				testCtx := suite.SetupAPIKeyTest(t, dep)
@@ -571,7 +571,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyErrorScenarios() {
 
 // TestAPIKeyAuthentication tests using API keys for authentication
 func (suite *APIKeyTestSuite) TestAPIKeyAuthentication() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		t.Logf("DEBUG: Starting TestAPIKeyAuthentication")
 
 		testCtx := suite.SetupAPIKeyTest(t, dep)

@@ -152,7 +152,7 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependancyOption) {
+			suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependencyOption) {
 
 				freePort, err := frametests.GetFreePort(t.Context())
 				require.NoError(t, err)
@@ -198,7 +198,7 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 
 func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_InvalidConfigType() {
 	suite.T().Run("invalid_config_type", func(t *testing.T) {
-		suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependancyOption) {
+		suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependencyOption) {
 			// Create service with wrong config type
 			ctx := context.Background()
 
@@ -228,7 +228,7 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_InvalidConfigTyp
 
 func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 	suite.T().Run("router_creation", func(t *testing.T) {
-		suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependancyOption) {
+		suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependencyOption) {
 			// Create service with test dependencies
 			svc, ctx := suite.CreateService(t, dep)
 

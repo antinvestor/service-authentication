@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	devicev1 "github.com/antinvestor/apis/go/device/v1"
+	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -105,7 +105,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	var deviceObj *devicev1.DeviceObject
 
 	if deviceID != "" {
-		resp, err := deviceCli.Svc().GetById(ctx, &devicev1.GetByIdRequest{Id: []string{deviceID}})
+		resp, err := deviceCli.GetById(ctx, &devicev1.GetByIdRequest{Id: []string{deviceID}})
 		if err == nil && len(resp.GetData()) > 0 {
 			deviceObj = resp.GetData()[0]
 		}
@@ -113,7 +113,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 
 	if deviceSessionID != "" {
 
-		session, err := deviceCli.Svc().GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
+		session, err := deviceCli.GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
 		if err == nil {
 			deviceObj = session.GetData()
 		}
@@ -123,7 +123,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	props, _ := structpb.NewStruct(map[string]any{"source": "consent"})
 	if deviceObj == nil {
 
-		resp, err0 := deviceCli.Svc().Create(ctx, &devicev1.CreateRequest{
+		resp, err0 := deviceCli.Create(ctx, &devicev1.CreateRequest{
 			Name:       "Error dev",
 			Properties: props,
 		})
@@ -137,7 +137,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 		return deviceObj, nil
 	}
 
-	resp, err := deviceCli.Svc().Link(ctx, &devicev1.LinkRequest{
+	resp, err := deviceCli.Link(ctx, &devicev1.LinkRequest{
 		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
 		Properties: props,

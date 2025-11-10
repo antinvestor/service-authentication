@@ -60,7 +60,7 @@ func (suite *AuthHandlersTestSuite) TestSubmitRegisterEndpoint() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		authHandlerTestMutex.Lock()
 		defer func() {
@@ -137,7 +137,7 @@ func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		authHandlerTestMutex.Lock()
 		defer func() {
@@ -205,7 +205,7 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		authHandlerTestMutex.Lock()
 		defer func() {
@@ -277,7 +277,7 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		authHandlerTestMutex.Lock()
 		defer func() {
@@ -345,7 +345,7 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		authHandlerTestMutex.Lock()
 		defer func() {

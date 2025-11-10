@@ -15,7 +15,7 @@ type partitionRepository struct {
 
 func (pr *partitionRepository) GetByID(ctx context.Context, id string) (*models.Partition, error) {
 	partition := &models.Partition{}
-	err := pr.service.DB(ctx, true).First(partition, "id = ?", id).Error
+	err := pr.Pool().DB(ctx, true).First(partition, "id = ?", id).Error
 	return partition, err
 }
 
@@ -31,7 +31,7 @@ func (pr *partitionRepository) Search(
 
 		paginator := query.Pagination
 
-		db := pr.service.DB(ctx, true).
+		db := pr.Pool().DB(ctx, true).
 			Limit(paginator.Limit).Offset(paginator.Offset)
 
 		if query.Fields != nil {
@@ -92,24 +92,24 @@ func (pr *partitionRepository) GetParents(ctx context.Context, id string) ([]*mo
 		FROM parent_hierarchy ORDER BY depth DESC
 	`
 
-	err := pr.service.DB(ctx, true).Raw(query, id).Scan(&parents).Error
+	err := pr.Pool().DB(ctx, true).Raw(query, id).Scan(&parents).Error
 	return parents, err
 }
 
 func (pr *partitionRepository) GetChildren(ctx context.Context, id string) ([]*models.Partition, error) {
 	childPartition := make([]*models.Partition, 0)
-	err := pr.service.DB(ctx, true).Find(&childPartition, "parent_id = ?", id).Error
+	err := pr.Pool().DB(ctx, true).Find(&childPartition, "parent_id = ?", id).Error
 	return childPartition, err
 }
 
 func (pr *partitionRepository) Save(ctx context.Context, partition *models.Partition) error {
-	return pr.service.DB(ctx, false).Save(partition).Error
+	return pr.Pool().DB(ctx, false).Save(partition).Error
 }
 
 func (pr *partitionRepository) Delete(ctx context.Context, id string) error {
 	// Check if the partition has children
 	var childCount int64
-	db := pr.service.DB(ctx, true)
+	db := pr.Pool().DB(ctx, true)
 	if err := db.Model(&models.Partition{}).Where("parent_id = ?", id).Count(&childCount).Error; err != nil {
 		return err
 	}
@@ -118,30 +118,30 @@ func (pr *partitionRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	var partition models.Partition
-	if err := pr.service.DB(ctx, true).First(&partition, "id = ?", id).Error; err != nil {
+	if err := pr.Pool().DB(ctx, true).First(&partition, "id = ?", id).Error; err != nil {
 		return err
 	}
-	return pr.service.DB(ctx, false).Delete(&partition).Error
+	return pr.Pool().DB(ctx, false).Delete(&partition).Error
 }
 
 func (pr *partitionRepository) GetRoles(ctx context.Context, partitionID string) ([]*models.PartitionRole, error) {
 	partitionRoles := make([]*models.PartitionRole, 0)
-	err := pr.service.DB(ctx, true).Find(&partitionRoles, "partition_id = ?", partitionID).Error
+	err := pr.Pool().DB(ctx, true).Find(&partitionRoles, "partition_id = ?", partitionID).Error
 	return partitionRoles, err
 }
 
 func (pr *partitionRepository) GetRolesByID(ctx context.Context, idList ...string) ([]*models.PartitionRole, error) {
 	partitionRoles := make([]*models.PartitionRole, 0)
-	err := pr.service.DB(ctx, true).Find(&partitionRoles, "id IN ?", idList).Error
+	err := pr.Pool().DB(ctx, true).Find(&partitionRoles, "id IN ?", idList).Error
 	return partitionRoles, err
 }
 
 func (pr *partitionRepository) SaveRole(ctx context.Context, role *models.PartitionRole) error {
-	return pr.service.DB(ctx, false).Save(role).Error
+	return pr.Pool().DB(ctx, false).Save(role).Error
 }
 
 func (pr *partitionRepository) RemoveRole(ctx context.Context, partitionRoleID string) error {
-	return pr.service.DB(ctx, false).Where("id = ?", partitionRoleID).Delete(&models.PartitionRole{}).Error
+	return pr.Pool().DB(ctx, false).Where("id = ?", partitionRoleID).Delete(&models.PartitionRole{}).Error
 }
 
 func NewPartitionRepository(service *frame.Service) PartitionRepository {

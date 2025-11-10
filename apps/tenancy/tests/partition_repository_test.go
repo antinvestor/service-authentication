@@ -22,7 +22,7 @@ func TestPartitionRepositoryTestSuite(t *testing.T) {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependancyOption("test_get_parents", "test_get_parents", nil))
+	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_get_parents", "test_get_parents", nil))
 
 	partitionRepo := repository.NewPartitionRepository(svc)
 
@@ -109,7 +109,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithOrphanedPartition() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependancyOption("test_orphaned", "test_orphaned", nil))
+	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_orphaned", "test_orphaned", nil))
 
 	partitionRepo := repository.NewPartitionRepository(svc)
 
@@ -132,7 +132,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithOrphanedPartition()
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependancyOption("test_circular", "test_circular", nil))
+	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_circular", "test_circular", nil))
 
 	partitionRepo := repository.NewPartitionRepository(svc)
 
@@ -176,7 +176,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference()
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependancyOption("test_deep", "test_deep", nil))
+	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_deep", "test_deep", nil))
 
 	partitionRepo := repository.NewPartitionRepository(svc)
 
@@ -229,7 +229,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithEmptyParentID() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependancyOption("test_empty_parent", "test_empty_parent", nil))
+	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_empty_parent", "test_empty_parent", nil))
 
 	partitionRepo := repository.NewPartitionRepository(svc)
 

@@ -35,7 +35,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "NewPartitionWithBasicProperties",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-basic-%d", time.Now().Unix()),
 				},
 				Name:         "Basic Test Partition",
@@ -53,7 +53,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "PartitionWithComplexProperties",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-complex-%d", time.Now().Unix()),
 				},
 				Name:         "Complex Test Partition",
@@ -76,7 +76,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "PartitionWithStringRedirectURIs",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-string-uris-%d", time.Now().Unix()),
 				},
 				Name: "String URIs Test Partition",
@@ -91,7 +91,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "PartitionWithCustomClientID",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-custom-client-%d", time.Now().Unix()),
 				},
 				Name: "Custom Client ID Partition",
@@ -106,7 +106,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "MinimalPartition",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-minimal-%d", time.Now().Unix()),
 				},
 				Name:       "Minimal Test Partition",
@@ -117,7 +117,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		{
 			name: "PartitionWithClientSecretAndCustomAuth",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-auth-method-%d", time.Now().Unix()),
 				},
 				Name:         "Auth Method Test Partition",
@@ -131,7 +131,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 
 		for _, tc := range testCases {
@@ -191,7 +191,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 // Test partition deletion scenario
 func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_DeletedPartition() {
 	partition := &models.Partition{
-		BaseModel: frame.BaseModel{
+		BaseModel: data.BaseModel{
 			ID: fmt.Sprintf("test-deleted-%d", time.Now().Unix()),
 			DeletedAt: gorm.DeletedAt{
 				Time:  time.Now(),
@@ -202,7 +202,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_DeletedPartition()
 		Description: "Test partition marked for deletion",
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		// Execute sync operation
 		err := events.SyncPartitionOnHydra(ctx, svc, partition)
@@ -232,7 +232,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 		{
 			name: "InvalidRedirectURIType",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-invalid-uri-type-%d", time.Now().Unix()),
 				},
 				Name: "Invalid URI Type Test",
@@ -246,7 +246,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 		{
 			name: "MalformedRedirectURI",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-malformed-uri-%d", time.Now().Unix()),
 				},
 				Name: "Malformed URI Test",
@@ -260,7 +260,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 		{
 			name: "EmptyPartitionName",
 			partition: &models.Partition{
-				BaseModel: frame.BaseModel{
+				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-empty-name-%d", time.Now().Unix()),
 				},
 				Name: "", // Empty name
@@ -273,7 +273,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 
 		for _, tc := range errorTestCases {
@@ -304,7 +304,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 // Test performance and resource usage
 func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 	partition := &models.Partition{
-		BaseModel: frame.BaseModel{
+		BaseModel: data.BaseModel{
 			ID: fmt.Sprintf("test-performance-%d", time.Now().Unix()),
 		},
 		Name: "Performance Test Partition",
@@ -315,7 +315,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		// Measure execution time
 		start := time.Now()
@@ -345,7 +345,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 // Test performance and resource usage
 func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 	partition := &models.Partition{
-		BaseModel: frame.BaseModel{
+		BaseModel: data.BaseModel{
 			ID: fmt.Sprintf("test-event-%d", time.Now().Unix()),
 		},
 		Name: "Events Test Partition",
@@ -356,7 +356,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		// Measure execution time
 

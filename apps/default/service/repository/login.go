@@ -4,24 +4,28 @@ import (
 	"context"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/workerpool"
 )
 
 type loginRepository struct {
-	service *frame.Service
+	datastore.BaseRepository[*models.Login]
 }
 
 // NewLoginRepository creates a new instance of LoginRepository
-func NewLoginRepository(service *frame.Service) LoginRepository {
+func NewLoginRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) LoginRepository {
 	return &loginRepository{
-		service: service,
+		BaseRepository: datastore.NewBaseRepository[*models.Login](
+		ctx, dbPool, workMan, func() *models.Login { return &models.Login{} },
+	),
 	}
 }
 
 // GetByID retrieves a login by ID
 func (r *loginRepository) GetByID(ctx context.Context, id string) (*models.Login, error) {
 	var login models.Login
-	err := r.service.DB(ctx, true).First(&login, "id = ?", id).Error
+	err := r.Pool().DB(ctx, true).First(&login, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +35,7 @@ func (r *loginRepository) GetByID(ctx context.Context, id string) (*models.Login
 // GetByProfileID retrieves a login by profile ID
 func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) (*models.Login, error) {
 	var login models.Login
-	err := r.service.DB(ctx, true).First(&login, "profile_id = ?", profileID).Error
+	err := r.Pool().DB(ctx, true).First(&login, "profile_id = ?", profileID).Error
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +46,8 @@ func (r *loginRepository) GetByProfileID(ctx context.Context, profileID string) 
 func (r *loginRepository) Save(ctx context.Context, login *models.Login) error {
 	if login.ID == "" {
 		// Create new record
-		return r.service.DB(ctx, false).Create(login).Error
+		return r.Pool().DB(ctx, false).Create(login).Error
 	}
 	// Update existing record
-	return r.service.DB(ctx, false).Save(login).Error
+	return r.Pool().DB(ctx, false).Save(login).Error
 }

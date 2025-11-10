@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
@@ -51,14 +51,14 @@ type PasswordlessLoginTestContext struct {
 }
 
 // SetupPasswordlessLoginTest creates a common test setup for passwordless login tests with timeout handling
-func (suite *PasswordlessLoginTestSuite) SetupPasswordlessLoginTest(t *testing.T, dep *definition.DependancyOption) *PasswordlessLoginTestContext {
+func (suite *PasswordlessLoginTestSuite) SetupPasswordlessLoginTest(t *testing.T, dep *definition.DependencyOption) *PasswordlessLoginTestContext {
 	// Use global mutex to ensure sequential execution
 	testMutex.Lock()
 
 	// Create context with timeout for overall test
 	ctx, cancel := context.WithTimeout(context.Background(), TestTimeout)
 
-	authServer, baseCtx := suite.CreateService(t, dep)
+	baseCtx, authServer, deps := suite.CreateService(t, dep)
 
 	// Set up HTTP test server
 	router := authServer.SetupRouterV1(baseCtx)
@@ -115,7 +115,7 @@ func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, 
 		handlers.KeyProfileName: name,
 	})
 
-	result, err := profileCli.Svc().Create(ctx, &profilev1.CreateRequest{
+	result, err := profileCli.Create(ctx, &profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    contact,
 		Properties: properties,
@@ -130,7 +130,7 @@ func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, 
 // CreateVerification creates a mock verification record for testing
 func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
 	profileCli := authServer.ProfileCli()
-	return profileCli.Svc().CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
+	return profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	})
@@ -146,7 +146,7 @@ func (suite *PasswordlessLoginTestSuite) TestOAuth2ClientCreation() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
 		defer suite.TeardownPasswordlessLoginTest(testCtx)
 
@@ -200,7 +200,7 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -300,7 +300,7 @@ func (suite *PasswordlessLoginTestSuite) TestSuccessfulContactLoginFlow() {
 
 // TestProviderLoginFlow tests OAuth2 provider login integration
 func (suite *PasswordlessLoginTestSuite) TestProviderLoginFlow() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		testCtx := suite.SetupPasswordlessLoginTest(t, dep)
 		defer suite.TeardownPasswordlessLoginTest(testCtx)
 

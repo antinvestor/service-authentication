@@ -46,7 +46,7 @@ func (suite *PartitionTestSuite) TestGetByID() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -62,12 +62,12 @@ func (suite *PartitionTestSuite) TestGetByID() {
 			shouldError: true,
 			expectedErr: "record not found",
 			setupFunc: func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition {
-				return &models.Partition{BaseModel: frame.BaseModel{ID: "non-existent-id"}}
+				return &models.Partition{BaseModel: data.BaseModel{ID: "non-existent-id"}}
 			},
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 
 		for _, tc := range testCases {
@@ -94,7 +94,7 @@ func (suite *PartitionTestSuite) TestGetByID() {
 }
 
 func (suite *PartitionTestSuite) TestSearch() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -110,7 +110,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 		partition1 := models.Partition{
 			Name:        "Search Partition One",
 			Description: "Some description here for search",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -120,7 +120,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 		partition2 := models.Partition{
 			Name:        "Search Partition Two",
 			Description: "Another description for search",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -184,7 +184,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 }
 
 func (suite *PartitionTestSuite) TestDelete() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -200,7 +200,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 		partition := models.Partition{
 			Name:        "To be deleted",
 			Description: "This partition will be deleted",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -211,7 +211,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 		parentPartition := models.Partition{
 			Name:        "Parent Partition",
 			Description: "This partition has a child",
-			BaseModel:   frame.BaseModel{TenantID: tenant.GetID()},
+			BaseModel:   data.BaseModel{TenantID: tenant.GetID()},
 		}
 		err = partitionRepo.Save(ctx, &parentPartition)
 		require.NoError(t, err)
@@ -219,7 +219,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 		childPartition := models.Partition{
 			Name:     "Child Partition",
 			ParentID: parentPartition.GetID(),
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -252,7 +252,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -272,7 +272,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 				parentPartition := models.Partition{
 					Name:        "Parent Partition",
 					Description: "Parent partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -285,7 +285,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 					Name:        "Child Partition",
 					Description: "Child partition description",
 					ParentID:    parentPartition.GetID(),
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -295,7 +295,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 
 				// Child partition role
 				childPartitionRole := models.PartitionRole{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						PartitionID: childPartition.GetID(),
 					},
 					Name:       "Child Partition Role",
@@ -322,7 +322,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 }
 
 func (suite *PartitionTestSuite) TestSave() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -339,7 +339,7 @@ func (suite *PartitionTestSuite) TestSave() {
 		partition := models.Partition{
 			Name:        "Save Test Partition",
 			Description: "Save test description",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -378,7 +378,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -397,7 +397,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -406,7 +406,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						PartitionID: partition.GetID(),
 					},
 					Name:       tc.roleName,
@@ -457,7 +457,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -476,7 +476,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 				partition := models.Partition{
 					Name:        "Test Partition",
 					Description: "Test partition description",
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						TenantID: tenant.GetID(),
 					},
 				}
@@ -485,7 +485,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
-					BaseModel: frame.BaseModel{
+					BaseModel: data.BaseModel{
 						PartitionID: partition.GetID(),
 					},
 					Name:       tc.roleName,
@@ -514,7 +514,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 }
 
 func (suite *PartitionTestSuite) TestGetRoles() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -530,7 +530,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 		partition := models.Partition{
 			Name:        "Partition for roles",
 			Description: "This partition has roles",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -538,7 +538,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 		require.NoError(t, err)
 
 		role1 := models.PartitionRole{
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				PartitionID: partition.GetID(),
 			},
 			Name:       "Admin",
@@ -548,7 +548,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 		require.NoError(t, err)
 
 		role2 := models.PartitionRole{
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				PartitionID: partition.GetID(),
 			},
 			Name:       "User",
@@ -567,7 +567,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 }
 
 func (suite *PartitionTestSuite) TestGetRolesByID() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		svc, ctx := suite.CreateService(t, dep)
 		tenantRepo := repository.NewTenantRepository(svc)
 		partitionRepo := repository.NewPartitionRepository(svc)
@@ -583,7 +583,7 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 		partition := models.Partition{
 			Name:        "Partition for roles",
 			Description: "This partition has roles",
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				TenantID: tenant.GetID(),
 			},
 		}
@@ -591,7 +591,7 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 		require.NoError(t, err)
 
 		role1 := models.PartitionRole{
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				PartitionID: partition.GetID(),
 			},
 			Name:       "Admin",
@@ -601,7 +601,7 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 		require.NoError(t, err)
 
 		role2 := models.PartitionRole{
-			BaseModel: frame.BaseModel{
+			BaseModel: data.BaseModel{
 				PartitionID: partition.GetID(),
 			},
 			Name:       "User",

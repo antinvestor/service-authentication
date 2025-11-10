@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame"
@@ -74,7 +74,7 @@ func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, pr
 
 	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
 
-	response, err := h.profileCli.Svc().Update(ctx, &profilev1.UpdateRequest{
+	response, err := h.profileCli.Update(ctx, &profilev1.UpdateRequest{
 		Id:         profileID,
 		Properties: props,
 	})
@@ -103,7 +103,7 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	verificationID := event.VerificationID
-	resp, err := h.profileCli.Svc().CheckVerification(ctx, &profilev1.CheckVerificationRequest{
+	resp, err := h.profileCli.CheckVerification(ctx, &profilev1.CheckVerificationRequest{
 		Id:   verificationID,
 		Code: code,
 	})

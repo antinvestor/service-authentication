@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/pitabwire/frame"
 )

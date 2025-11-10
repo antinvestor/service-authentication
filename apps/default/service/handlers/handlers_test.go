@@ -51,7 +51,7 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -112,7 +112,7 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -172,7 +172,7 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -222,7 +222,7 @@ func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -272,7 +272,7 @@ func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -322,7 +322,7 @@ func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -380,7 +380,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 }
 
 func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -448,7 +448,7 @@ func (suite *HandlersTestSuite) TestNotFoundEndpoint() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {
@@ -533,7 +533,7 @@ func (suite *HandlersTestSuite) TestProviderEndpoints() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependancyOption) {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
 		handlerTestMutex.Lock()
 		defer func() {

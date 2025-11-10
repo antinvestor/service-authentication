@@ -8,11 +8,13 @@ import (
 	"os"
 	"time"
 
-	devicev1 "github.com/antinvestor/apis/go/device/v1"
-	notificationv1 "github.com/antinvestor/apis/go/notification/v1"
-	partitionv1 "github.com/antinvestor/apis/go/partition/v1"
-	profilev1 "github.com/antinvestor/apis/go/profile/v1"
-	"github.com/antinvestor/service-authentication/apps/default/config"
+	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
+	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
+	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"connectrpc.com/connect"
+	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/securecookie"
@@ -31,11 +33,11 @@ const (
 type AuthServer struct {
 	loginCookieCodec []securecookie.Codec
 	service          *frame.Service
-	config           *config.AuthenticationConfig
-	profileCli       *profilev1.ProfileClient
-	deviceCli        *devicev1.DeviceClient
-	partitionCli     *partitionv1.PartitionClient
-	notificationCli  *notificationv1.NotificationClient
+	config           *aconfig.AuthenticationConfig
+	profileCli       profilev1connect.ProfileServiceClient
+	deviceCli        devicev1connect.DeviceServiceClient
+	partitionCli     partitionv1connect.PartitionServiceClient
+	notificationCli  notificationv1connect.NotificationServiceClient
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
@@ -46,7 +48,9 @@ type AuthServer struct {
 	loginOptions map[string]any
 }
 
-func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *config.AuthenticationConfig, profileCli *profilev1.ProfileClient, deviceCli *devicev1.DeviceClient, partitionCli *partitionv1.PartitionClient, notificationCli *notificationv1.NotificationClient) *AuthServer {
+func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *aconfig.AuthenticationConfig,
+	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
+	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
 
 	log := util.Log(ctx)
 
@@ -79,22 +83,22 @@ func (h *AuthServer) Service() *frame.Service {
 	return h.service
 }
 
-func (h *AuthServer) Config() *config.AuthenticationConfig {
+func (h *AuthServer) Config() *aconfig.AuthenticationConfig {
 	return h.config
 }
 
-func (h *AuthServer) ProfileCli() *profilev1.ProfileClient {
+func (h *AuthServer) ProfileCli() profilev1connect.ProfileServiceClient {
 	return h.profileCli
 }
 
-func (h *AuthServer) DeviceCli() *devicev1.DeviceClient {
+func (h *AuthServer) DeviceCli() devicev1connect.DeviceServiceClient {
 	return h.deviceCli
 }
 
-func (h *AuthServer) PartitionCli() *partitionv1.PartitionClient {
+func (h *AuthServer) PartitionCli() partitionv1connect.PartitionServiceClient {
 	return h.partitionCli
 }
-func (h *AuthServer) NotificationCli() *notificationv1.NotificationClient {
+func (h *AuthServer) NotificationCli() notificationv1connect.NotificationServiceClient {
 	return h.notificationCli
 }
 
@@ -159,7 +163,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 			req.DeviceId = deviceID
 		}
 
-		_, err := h.DeviceCli().Svc().Log(ctx, &req)
+		_, err := h.DeviceCli().Log(ctx, connect.NewRequest(&req))
 		if err != nil {
 			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Info("device session log error")
 		}
