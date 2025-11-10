@@ -58,14 +58,10 @@ func main() {
 		),
 	}
 
-	log := util.Log(ctx)
-
-	serviceOptions = append(serviceOptions)
-
 	svc.Init(ctx, serviceOptions...)
 
-	log.WithField("server http port", cfg.HTTPPort()).
-		WithField("server grpc port", cfg.GrpcPort()).
+	log := util.Log(ctx)
+	log.WithField("server port", cfg.HTTPPort()).
 		Info(" Initiating server operations")
 	err = svc.Run(ctx, "")
 	if err != nil {
@@ -97,7 +93,7 @@ func handleDatabaseMigration(
 	return false
 }
 
-// setupConnectServer initializes and configures the connect server.
+// setupConnectServer initialises and configures the connect server.
 func setupConnectServer(
 	ctx context.Context,
 	securityMan security.Manager,

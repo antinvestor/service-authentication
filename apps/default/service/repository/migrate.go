@@ -12,7 +12,7 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 
 	pool := dbManager.GetPool(ctx, datastore.DefaultMigrationPoolName)
 	if pool == nil {
-		return errors.New("datastore pool is not initialized")
+		return errors.New("datastore pool is not initialised")
 	}
 
 	return dbManager.Migrate(ctx, pool, migrationPath,

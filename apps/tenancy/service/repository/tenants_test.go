@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
@@ -43,8 +42,9 @@ func (suite *TenantTestSuite) TestSave() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -55,7 +55,7 @@ func (suite *TenantTestSuite) TestSave() {
 				}
 
 				// Execute
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 
 				// Verify
 				tc.errorAssert(t, err)
@@ -104,8 +104,9 @@ func (suite *TenantTestSuite) TestGetByID() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -115,7 +116,7 @@ func (suite *TenantTestSuite) TestGetByID() {
 					Description: tc.description,
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				// Execute
@@ -177,8 +178,9 @@ func (suite *TenantTestSuite) TestDelete() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -188,7 +190,7 @@ func (suite *TenantTestSuite) TestDelete() {
 					Description: tc.description,
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				// Execute

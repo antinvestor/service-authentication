@@ -187,7 +187,7 @@ func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request
 		Metadata: make(map[string]string),
 	}
 
-	// Convert metadata from frame.JSONMap to map[string]string
+	// Convert metadata from data.JSONMap to map[string]string
 	for key, value := range apiKeyModel.Metadata {
 		if strValue, ok := value.(string); ok {
 			miniApiKey.Metadata[key] = strValue

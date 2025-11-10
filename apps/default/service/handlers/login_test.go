@@ -10,6 +10,7 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
@@ -69,7 +70,7 @@ func (suite *PasswordlessLoginTestSuite) SetupPasswordlessLoginTest(t *testing.T
 	oauth2Client.AuthServiceURL = testServer.URL
 
 	// Create login repository
-	loginRepo := repository.NewLoginRepository(authServer.Service())
+	loginRepo := deps.LoginRepo
 
 	return &PasswordlessLoginTestContext{
 		AuthServer:   authServer,
@@ -115,25 +116,30 @@ func (suite *PasswordlessLoginTestSuite) CreateTestProfile(ctx context.Context, 
 		handlers.KeyProfileName: name,
 	})
 
-	result, err := profileCli.Create(ctx, &profilev1.CreateRequest{
+	result, err := profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    contact,
 		Properties: properties,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}
 
-	return result.GetData(), nil
+	return result.Msg.GetData(), nil
 }
 
 // CreateVerification creates a mock verification record for testing
 func (suite *PasswordlessLoginTestSuite) CreateVerification(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
 	profileCli := authServer.ProfileCli()
-	return profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
+	res, err := profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		ContactId:        contactID,
 		DurationToExpire: "15m",
-	})
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Msg, nil
 }
 
 // TestOAuth2ClientCreation tests just the OAuth2 client creation step

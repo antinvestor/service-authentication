@@ -41,14 +41,14 @@ type APIKeyTestContext struct {
 
 // SetupAPIKeyTest creates a common test setup for API key tests
 func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.DependencyOption) *APIKeyTestContext {
-	// Create context with timeout for overall test
-	ctx, cancel := context.WithTimeout(context.Background(), APIKeyTestTimeout)
+
+	ctx, authServer, deps := suite.CreateService(t, dep)
 
 	// Setup auth server using the BaseTestSuite method
-	baseCtx, authServer, deps := suite.CreateService(t, dep)
+	_ = deps
 
 	// Set up HTTP test server
-	router := authServer.SetupRouterV1(baseCtx)
+	router := authServer.SetupRouterV1(ctx)
 	testServer := httptest.NewServer(router)
 
 	// Create OAuth2 test client with test server URL
@@ -58,7 +58,6 @@ func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.Depe
 	return &APIKeyTestContext{
 		AuthServer:   authServer,
 		Context:      ctx,
-		Cancel:       cancel,
 		OAuth2Client: oauth2Client,
 		TestServer:   testServer,
 	}

@@ -75,7 +75,8 @@ func (suite *AuthHandlersTestSuite) TestSubmitRegisterEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), AuthHandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, deps := suite.CreateService(t, dep)
+		_ = deps
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -152,7 +153,8 @@ func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), AuthHandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, deps := suite.CreateService(t, dep)
+		_ = deps
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -220,7 +222,8 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), AuthHandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, deps := suite.CreateService(t, dep)
+		_ = deps
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -292,7 +295,8 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), AuthHandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, deps := suite.CreateService(t, dep)
+		_ = deps
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -360,7 +364,8 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), AuthHandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, deps := suite.CreateService(t, dep)
+		_ = deps
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(

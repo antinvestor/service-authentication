@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -35,58 +34,59 @@ func (suite *AccessTestSuite) TestSave() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		accessRepo := repository.NewAccessRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+	t := suite.T()
+	dep := definition.NewDependancyOption("access_test", "access_test", nil)
+	ctx, svc, deps := suite.CreateService(t, dep)
+	_ = svc
+	accessRepo := deps.AccessRepo
+	tenantRepo := deps.TenantRepo
+	partitionRepo := deps.PartitionRepo
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup
-				tenant := models.Tenant{
-					Name:        "Access T",
-					Description: "Test",
-				}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			tenant := models.Tenant{
+				Name:        "Access T",
+				Description: "Test",
+			}
 
-				err := tenantRepo.Save(ctx, &tenant)
-				require.NoError(t, err)
+			err := tenantRepo.Create(ctx, &tenant)
+			require.NoError(t, err)
 
-				partition := models.Partition{
-					Name:        "Test Partition",
-					Description: "Test partition description",
-					BaseModel: data.BaseModel{
-						TenantID: tenant.GetID(),
-					},
-				}
+			partition := models.Partition{
+				Name:        "Test Partition",
+				Description: "Test partition description",
+				BaseModel: data.BaseModel{
+					TenantID: tenant.GetID(),
+				},
+			}
 
-				err = partitionRepo.Save(ctx, &partition)
-				require.NoError(t, err)
+			err = partitionRepo.Create(ctx, &partition)
+			require.NoError(t, err)
 
-				access := models.Access{
-					ProfileID: tc.profileID,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
+			access := models.Access{
+				ProfileID: tc.profileID,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
 
-				// Execute
-				err = accessRepo.Save(ctx, &access)
+			// Execute
+			err = accessRepo.Create(ctx, &access)
 
-				// Verify
-				tc.errorAssert(t, err)
-				if err == nil {
-					savedAccess, fetchErr := accessRepo.GetByID(ctx, access.GetID())
-					require.NoError(t, fetchErr)
-					assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
-					assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match provided profile id")
-				} else {
-					tc.checkError(t, err)
-				}
-			})
-		}
-	})
+			// Verify
+			tc.errorAssert(t, err)
+			if err == nil {
+				savedAccess, fetchErr := accessRepo.GetByID(ctx, access.GetID())
+				require.NoError(t, fetchErr)
+				assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
+				assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match provided profile id")
+			} else {
+				tc.checkError(t, err)
+			}
+		})
+	}
 }
 
 func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
@@ -107,59 +107,60 @@ func (suite *AccessTestSuite) TestGetByPartitionAndProfile() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		accessRepo := repository.NewAccessRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+	t := suite.T()
+	dep := definition.NewDependancyOption("access_test", "access_test", nil)
+	ctx, svc, deps := suite.CreateService(t, dep)
+	_ = svc
+	accessRepo := deps.AccessRepo
+	tenantRepo := deps.TenantRepo
+	partitionRepo := deps.PartitionRepo
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup
-				tenant := models.Tenant{
-					Name:        "Access T",
-					Description: "Test",
-				}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			tenant := models.Tenant{
+				Name:        "Access T",
+				Description: "Test",
+			}
 
-				err := tenantRepo.Save(ctx, &tenant)
-				require.NoError(t, err)
+			err := tenantRepo.Create(ctx, &tenant)
+			require.NoError(t, err)
 
-				partition := models.Partition{
-					Name:        "Test Partition",
-					Description: "Test partition description",
-					BaseModel: data.BaseModel{
-						TenantID: tenant.GetID(),
-					},
-				}
+			partition := models.Partition{
+				Name:        "Test Partition",
+				Description: "Test partition description",
+				BaseModel: data.BaseModel{
+					TenantID: tenant.GetID(),
+				},
+			}
 
-				err = partitionRepo.Save(ctx, &partition)
-				require.NoError(t, err)
+			err = partitionRepo.Create(ctx, &partition)
+			require.NoError(t, err)
 
-				access := models.Access{
-					ProfileID: tc.profileID,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
+			access := models.Access{
+				ProfileID: tc.profileID,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
 
-				err = accessRepo.Save(ctx, &access)
-				require.NoError(t, err)
+			err = accessRepo.Create(ctx, &access)
+			require.NoError(t, err)
 
-				// Execute
-				savedAccess, err := accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), tc.profileID)
+			// Execute
+			savedAccess, err := accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), tc.profileID)
 
-				// Verify
-				tc.errorAssert(t, err)
-				if err == nil {
-					assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
-					assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match profile id")
-				} else {
-					tc.checkError(t, err)
-				}
-			})
-		}
-	})
+			// Verify
+			tc.errorAssert(t, err)
+			if err == nil {
+				assert.Equal(t, partition.GetID(), savedAccess.PartitionID, "Access partition id should match parent partition id")
+				assert.Equal(t, tc.profileID, savedAccess.ProfileID, "Access profile id should match profile id")
+			} else {
+				tc.checkError(t, err)
+			}
+		})
+	}
 }
 
 func (suite *AccessTestSuite) TestSaveRole() {
@@ -178,80 +179,83 @@ func (suite *AccessTestSuite) TestSaveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		accessRepo := repository.NewAccessRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+	t := suite.T()
+	dep := definition.NewDependancyOption("access_test", "access_test", nil)
+	ctx, svc, deps := suite.CreateService(t, dep)
+	_ = svc
+	accessRepo := deps.AccessRepo
+	accessRoleRepo := deps.AccessRoleRepo
+	tenantRepo := deps.TenantRepo
+	partitionRepo := deps.PartitionRepo
+	partitionRoleRepo := deps.PartitionRoleRepo
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup
-				tenant := models.Tenant{
-					Name:        "Access T",
-					Description: "Test",
-				}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			tenant := models.Tenant{
+				Name:        "Access T",
+				Description: "Test",
+			}
 
-				err := tenantRepo.Save(ctx, &tenant)
-				require.NoError(t, err)
+			err := tenantRepo.Create(ctx, &tenant)
+			require.NoError(t, err)
 
-				partition := models.Partition{
-					Name:        "Test Partition",
-					Description: "Test partition description",
-					BaseModel: data.BaseModel{
-						TenantID: tenant.GetID(),
-					},
-				}
+			partition := models.Partition{
+				Name:        "Test Partition",
+				Description: "Test partition description",
+				BaseModel: data.BaseModel{
+					TenantID: tenant.GetID(),
+				},
+			}
 
-				err = partitionRepo.Save(ctx, &partition)
-				require.NoError(t, err)
+			err = partitionRepo.Create(ctx, &partition)
+			require.NoError(t, err)
 
-				partitionRole := models.PartitionRole{
-					Name: tc.roleName,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
+			partitionRole := models.PartitionRole{
+				Name: tc.roleName,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
 
-				err = partitionRepo.SaveRole(ctx, &partitionRole)
-				require.NoError(t, err)
+			err = partitionRoleRepo.Create(ctx, &partitionRole)
+			require.NoError(t, err)
 
-				access := models.Access{
-					ProfileID: tc.profileID,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
+			access := models.Access{
+				ProfileID: tc.profileID,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
 
-				err = accessRepo.Save(ctx, &access)
-				require.NoError(t, err)
+			err = accessRepo.Create(ctx, &access)
+			require.NoError(t, err)
 
-				// Execute
-				err = accessRepo.SaveRole(ctx, &models.AccessRole{
-					AccessID:        access.GetID(),
-					PartitionRoleID: partitionRole.GetID(),
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				})
-
-				// Verify
-				if tc.shouldError {
-					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
-
-					roles, rolesErr := accessRepo.GetRoles(ctx, access.GetID())
-					require.NoError(t, rolesErr)
-					assert.Len(t, roles, 1, "There should be one access role")
-					assert.Equal(t, partitionRole.GetID(), roles[0].PartitionRoleID, "Access role should have correct partition role ID")
-				}
+			// Execute
+			err = accessRoleRepo.Create(ctx, &models.AccessRole{
+				AccessID:        access.GetID(),
+				PartitionRoleID: partitionRole.GetID(),
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
 			})
-		}
-	})
+
+			// Verify
+			if tc.shouldError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				roles, rolesErr := accessRoleRepo.GetByAccessID(ctx, access.GetID())
+				require.NoError(t, rolesErr)
+				assert.Len(t, roles, 1, "There should be one access role")
+				assert.Equal(t, partitionRole.GetID(), roles[0].PartitionRoleID, "Access role should have correct partition role ID")
+			}
+		})
+	}
 }
 
 func (suite *AccessTestSuite) TestRemoveRole() {
@@ -270,84 +274,87 @@ func (suite *AccessTestSuite) TestRemoveRole() {
 		},
 	}
 
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		accessRepo := repository.NewAccessRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+	t := suite.T()
+	dep := definition.NewDependancyOption("access_test", "access_test", nil)
+	ctx, svc, deps := suite.CreateService(t, dep)
+	_ = svc
+	accessRepo := deps.AccessRepo
+	accessRoleRepo := deps.AccessRoleRepo
+	tenantRepo := deps.TenantRepo
+	partitionRepo := deps.PartitionRepo
+	partitionRoleRepo := deps.PartitionRoleRepo
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// Setup
-				tenant := models.Tenant{
-					Name:        "Access T",
-					Description: "Test",
-				}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			tenant := models.Tenant{
+				Name:        "Access T",
+				Description: "Test",
+			}
 
-				err := tenantRepo.Save(ctx, &tenant)
+			err := tenantRepo.Create(ctx, &tenant)
+			require.NoError(t, err)
+
+			partition := models.Partition{
+				Name:        "Test Partition",
+				Description: "Test partition description",
+				BaseModel: data.BaseModel{
+					TenantID: tenant.GetID(),
+				},
+			}
+
+			err = partitionRepo.Create(ctx, &partition)
+			require.NoError(t, err)
+
+			partitionRole := models.PartitionRole{
+				Name: tc.roleName,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
+
+			err = partitionRoleRepo.Create(ctx, &partitionRole)
+			require.NoError(t, err)
+
+			access := models.Access{
+				ProfileID: tc.profileID,
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
+
+			err = accessRepo.Create(ctx, &access)
+			require.NoError(t, err)
+
+			accessRole := models.AccessRole{
+				AccessID:        access.GetID(),
+				PartitionRoleID: partitionRole.GetID(),
+				BaseModel: data.BaseModel{
+					TenantID:    tenant.GetID(),
+					PartitionID: partition.GetID(),
+				},
+			}
+
+			err = accessRoleRepo.Create(ctx, &accessRole)
+			require.NoError(t, err)
+
+			// Execute
+			err = accessRoleRepo.Delete(ctx, accessRole.GetID())
+
+			// Verify
+			if tc.shouldError {
+				require.Error(t, err)
+			} else {
 				require.NoError(t, err)
 
-				partition := models.Partition{
-					Name:        "Test Partition",
-					Description: "Test partition description",
-					BaseModel: data.BaseModel{
-						TenantID: tenant.GetID(),
-					},
-				}
-
-				err = partitionRepo.Save(ctx, &partition)
-				require.NoError(t, err)
-
-				partitionRole := models.PartitionRole{
-					Name: tc.roleName,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
-
-				err = partitionRepo.SaveRole(ctx, &partitionRole)
-				require.NoError(t, err)
-
-				access := models.Access{
-					ProfileID: tc.profileID,
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
-
-				err = accessRepo.Save(ctx, &access)
-				require.NoError(t, err)
-
-				accessRole := models.AccessRole{
-					AccessID:        access.GetID(),
-					PartitionRoleID: partitionRole.GetID(),
-					BaseModel: data.BaseModel{
-						TenantID:    tenant.GetID(),
-						PartitionID: partition.GetID(),
-					},
-				}
-
-				err = accessRepo.SaveRole(ctx, &accessRole)
-				require.NoError(t, err)
-
-				// Execute
-				err = accessRepo.RemoveRole(ctx, accessRole.GetID())
-
-				// Verify
-				if tc.shouldError {
-					require.Error(t, err)
-				} else {
-					require.NoError(t, err)
-
-					roles, rolesErr := accessRepo.GetRoles(ctx, access.GetID())
-					require.NoError(t, rolesErr)
-					assert.Empty(t, roles, "There should be no access roles after deletion")
-				}
-			})
-		}
-	})
+				roles, rolesErr := accessRoleRepo.GetByAccessID(ctx, access.GetID())
+				require.NoError(t, rolesErr)
+				assert.Empty(t, roles, "There should be no access roles after deletion")
+			}
+		})
+	}
 }
 
 // TestAccessRepository runs the access repository test suite.

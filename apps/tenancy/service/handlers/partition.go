@@ -6,7 +6,7 @@ import (
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
@@ -40,7 +40,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service) *PartitionS
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
 
-	cfg := service.Config().(config.AuthenticationConfig)
+	cfg := service.Config().(config.PartitionConfig)
 	eventsMan := service.EventsManager()
 
 	// Create business layers with repository dependencies

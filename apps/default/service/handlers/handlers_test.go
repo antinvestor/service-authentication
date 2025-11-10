@@ -66,7 +66,7 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -127,7 +127,7 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -187,7 +187,7 @@ func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -237,7 +237,7 @@ func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -287,7 +287,7 @@ func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -337,7 +337,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -395,7 +395,7 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -463,7 +463,7 @@ func (suite *HandlersTestSuite) TestNotFoundEndpoint() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(
@@ -548,7 +548,7 @@ func (suite *HandlersTestSuite) TestProviderEndpoints() {
 		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 		defer testCancel()
 
-		authServer, ctx := suite.CreateService(t, dep)
+		ctx, authServer, _ := suite.CreateService(t, dep)
 
 		// Create HTTP test server using AuthServer's SetupRouterV1
 		handler := handlers2.RecoveryHandler(

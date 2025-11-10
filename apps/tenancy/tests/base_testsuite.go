@@ -5,22 +5,59 @@ import (
 	"fmt"
 	"testing"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testnats"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
+
+type DepsBuilder struct {
+	TenantRepo        repository.TenantRepository
+	PartitionRepo     repository.PartitionRepository
+	PartitionRoleRepo repository.PartitionRoleRepository
+	AccessRepo        repository.AccessRepository
+	AccessRoleRepo    repository.AccessRoleRepository
+	PageRepo          repository.PageRepository
+
+	PartitionBusiness business.PartitionBusiness
+	TenantBusiness    business.TenantBusiness
+	AccessBusiness    business.AccessBusiness
+	PageBusiness      business.PageBusiness
+}
+
+func BuildDeps(ctx context.Context, svc *frame.Service) *DepsBuilder {
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	workMan := svc.WorkManager()
+	cfg := svc.Config().(aconfig.PartitionConfig)
+	eventsMan := svc.EventsManager()
+
+	depBuilder := &DepsBuilder{
+		TenantRepo:        repository.NewTenantRepository(ctx, dbPool, workMan),
+		PartitionRepo:     repository.NewPartitionRepository(ctx, dbPool, workMan),
+		PartitionRoleRepo: repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
+		AccessRepo:        repository.NewAccessRepository(ctx, dbPool, workMan),
+		AccessRoleRepo:    repository.NewAccessRoleRepository(ctx, dbPool, workMan),
+		PageRepo:          repository.NewPageRepository(ctx, dbPool, workMan),
+	}
+
+	depBuilder.PartitionBusiness = business.NewPartitionBusiness(cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
+
+	return depBuilder
+}
 
 type BaseTestSuite struct {
 	internaltests.BaseTestSuite
@@ -55,14 +92,14 @@ func (bs *BaseTestSuite) SetupSuite() {
 func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
 	depOpts *definition.DependencyOption,
-) (*frame.Service, context.Context) {
-	_, svc, ctx := bs.CreateServiceWithPortAccess(t, depOpts, 0)
-	return svc, ctx
+) (context.Context, *frame.Service, *DepsBuilder) {
+	ctx, svc, _, deps := bs.CreateServiceWithPortAccess(t, depOpts, 0)
+	return ctx, svc, deps
 }
 
 func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	t *testing.T, depOpts *definition.DependencyOption, accessPort int) (
-	*handlers.PartitionServer, *frame.Service, context.Context) {
+	context.Context, *frame.Service, *handlers.PartitionServer, *DepsBuilder) {
 
 	ctx := t.Context()
 
@@ -128,13 +165,11 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
-	serviceOptions := []frame.Option{frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(ctx, svc),
-	)}
-
 	implementation := handlers.NewPartitionServer(ctx, svc)
-	grpcServer := grpc.NewServer()
-	partitionv1.RegisterPartitionServiceServer(grpcServer, implementation)
+
+	serviceOptions := []frame.Option{frame.WithRegisterEvents(
+		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
+	)}
 
 	serviceOptions = append(serviceOptions, frame.WithHTTPHandler(implementation.NewSecureRouterV1()))
 
@@ -145,5 +180,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 
 	_ = svc.Run(ctx, "")
 
-	return implementation, svc, ctx
+	deps := BuildDeps(ctx, svc)
+
+	return ctx, svc, implementation, deps
 }

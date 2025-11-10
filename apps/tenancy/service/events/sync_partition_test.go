@@ -7,9 +7,8 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -42,7 +41,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				Name:         "Basic Test Partition",
 				Description:  "Test partition with basic properties",
 				ClientSecret: "basic-test-secret",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": []interface{}{"https://basic-test.com/callback"},
 					"scope":         "openid profile email",
 					"audience":      []interface{}{"basic-api"},
@@ -59,7 +58,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				},
 				Name:         "Complex Test Partition",
 				ClientSecret: "complex-secret",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": []interface{}{
 						"https://app1.com/callback",
 						"https://app2.com/auth",
@@ -81,7 +80,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 					ID: fmt.Sprintf("test-string-uris-%d", time.Now().Unix()),
 				},
 				Name: "String URIs Test Partition",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": "https://string1.com/callback,https://string2.com/auth",
 					"scope":         "openid profile",
 					"audience":      "string-api1,string-api2",
@@ -96,7 +95,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 					ID: fmt.Sprintf("test-custom-client-%d", time.Now().Unix()),
 				},
 				Name: "Custom Client ID Partition",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"client_id":     "custom-oauth-client-123",
 					"redirect_uris": []interface{}{"https://custom.com/callback"},
 					"scope":         "openid profile",
@@ -111,7 +110,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 					ID: fmt.Sprintf("test-minimal-%d", time.Now().Unix()),
 				},
 				Name:       "Minimal Test Partition",
-				Properties: frame.JSONMap{},
+				Properties: data.JSONMap{},
 			},
 			description: "Tests partition with minimal configuration",
 		},
@@ -123,7 +122,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				},
 				Name:         "Auth Method Test Partition",
 				ClientSecret: "auth-method-secret",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"token_endpoint_auth_method": "client_secret_post",
 					"redirect_uris":              []interface{}{"https://auth-test.com/callback"},
 				},
@@ -133,7 +132,9 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
+
+		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -143,13 +144,13 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				originalName := tc.partition.Name
 				originalID := tc.partition.ID
 				originalSecret := tc.partition.ClientSecret
-				originalProperties := make(frame.JSONMap)
+				originalProperties := make(data.JSONMap)
 				for k, v := range tc.partition.Properties {
 					originalProperties[k] = v
 				}
 
 				// Execute SyncPartitionOnHydra
-				err := events.SyncPartitionOnHydra(ctx, svc, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, tc.partition)
 
 				// Log the result
 				if err != nil {
@@ -204,9 +205,12 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_DeletedPartition()
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
+
+		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
+
 		// Execute sync operation
-		err := events.SyncPartitionOnHydra(ctx, svc, partition)
+		err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, partition)
 
 		// Log result
 		if err != nil {
@@ -237,7 +241,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 					ID: fmt.Sprintf("test-invalid-uri-type-%d", time.Now().Unix()),
 				},
 				Name: "Invalid URI Type Test",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": 12345, // Invalid type - should be string or []interface{}
 				},
 			},
@@ -251,7 +255,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 					ID: fmt.Sprintf("test-malformed-uri-%d", time.Now().Unix()),
 				},
 				Name: "Malformed URI Test",
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": "not-a-valid-url-format",
 				},
 			},
@@ -265,7 +269,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 					ID: fmt.Sprintf("test-empty-name-%d", time.Now().Unix()),
 				},
 				Name: "", // Empty name
-				Properties: frame.JSONMap{
+				Properties: data.JSONMap{
 					"redirect_uris": []interface{}{"https://empty-name.com/callback"},
 				},
 			},
@@ -275,13 +279,15 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
+
+		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 
 		for _, tc := range errorTestCases {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Logf("Testing error scenario: %s", tc.description)
 
-				err := events.SyncPartitionOnHydra(ctx, svc, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, tc.partition)
 
 				if tc.expectError {
 					require.Error(t, err, "Expected error for %s", tc.name)
@@ -309,7 +315,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 			ID: fmt.Sprintf("test-performance-%d", time.Now().Unix()),
 		},
 		Name: "Performance Test Partition",
-		Properties: frame.JSONMap{
+		Properties: data.JSONMap{
 			"redirect_uris": []interface{}{"https://perf-test.com/callback"},
 			"scope":         "openid profile email",
 			"audience":      []interface{}{"perf-api"},
@@ -317,10 +323,12 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
+
 		// Measure execution time
 		start := time.Now()
-		err := events.SyncPartitionOnHydra(ctx, svc, partition)
+		err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, partition)
 		duration := time.Since(start)
 
 		// Log performance metrics
@@ -350,7 +358,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 			ID: fmt.Sprintf("test-event-%d", time.Now().Unix()),
 		},
 		Name: "Events Test Partition",
-		Properties: frame.JSONMap{
+		Properties: data.JSONMap{
 			"redirect_uris": []interface{}{"https://event-test.com/callback"},
 			"scope":         "openid profile email",
 			"audience":      []interface{}{"perf-api"},
@@ -358,14 +366,14 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
 		// Measure execution time
 
-		partitionRepo := repository.NewPartitionRepository(svc)
-		err := partitionRepo.Save(ctx, partition)
+		partitionRepo := deps.PartitionRepo
+		err := partitionRepo.Create(ctx, partition)
 		require.NoError(t, err)
 
-		err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
+		err = svc.EventsManager().Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
 
 		// wait for partition to be synced
 		partition, err = frametests.WaitForConditionWithResult(ctx, func() (*models.Partition, error) {

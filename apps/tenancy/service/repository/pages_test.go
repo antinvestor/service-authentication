@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -32,10 +31,11 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		pageRepo := repository.NewPageRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		pageRepo := deps.PageRepo
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -45,7 +45,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -56,7 +56,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				page := models.Page{
@@ -68,7 +68,7 @@ func (suite *PageTestSuite) TestGetByPartitionAndName() {
 					},
 				}
 
-				err = pageRepo.Save(ctx, &page)
+				err = pageRepo.Create(ctx, &page)
 				require.NoError(t, err)
 
 				// Execute
@@ -104,10 +104,11 @@ func (suite *PageTestSuite) TestSave() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		pageRepo := repository.NewPageRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		pageRepo := deps.PageRepo
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -117,7 +118,7 @@ func (suite *PageTestSuite) TestSave() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -128,7 +129,7 @@ func (suite *PageTestSuite) TestSave() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				page := models.Page{
@@ -141,7 +142,7 @@ func (suite *PageTestSuite) TestSave() {
 				}
 
 				// Execute
-				err = pageRepo.Save(ctx, &page)
+				err = pageRepo.Create(ctx, &page)
 
 				// Verify
 				if tc.shouldError {
@@ -173,10 +174,11 @@ func (suite *PageTestSuite) TestDelete() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		pageRepo := repository.NewPageRepository(svc)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		pageRepo := deps.PageRepo
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -186,7 +188,7 @@ func (suite *PageTestSuite) TestDelete() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -197,7 +199,7 @@ func (suite *PageTestSuite) TestDelete() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				page := models.Page{
@@ -209,7 +211,7 @@ func (suite *PageTestSuite) TestDelete() {
 					},
 				}
 
-				err = pageRepo.Save(ctx, &page)
+				err = pageRepo.Create(ctx, &page)
 				require.NoError(t, err)
 
 				// Execute

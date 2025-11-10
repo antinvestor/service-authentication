@@ -6,10 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +28,7 @@ func TestSyncPartitionsTestSuite(t *testing.T) {
 	suite.Run(t, new(SyncPartitionsTestSuite))
 }
 
-func openNatsConnectionExample(ctx context.Context, url frame.DataSource) error {
+func openNatsConnectionExample(ctx context.Context, url data.DSN) error {
 
 	// pubsub.OpenTopic creates a *pubsub.Topic from a URL.
 	// This URL will Dial the NATS server at the URL in the environment variable
@@ -157,14 +159,14 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 				freePort, err := frametests.GetFreePort(t.Context())
 				require.NoError(t, err)
 				// Create service with test dependencies
-				_, svc, ctx := suite.CreateServiceWithPortAccess(t, dep, freePort)
+				ctx, svc, _, _ := suite.CreateServiceWithPortAccess(t, dep, freePort)
 
 				// Get config and set sync preference
-				cfg, ok := svc.Config().(*config.PartitionConfig)
+				cfg, ok := svc.Config().(*aconfig.PartitionConfig)
 				require.True(t, ok, "Config should be PartitionConfig type")
 				cfg.SynchronizePrimaryPartitions = tc.syncEnabled
 
-				err = openNatsConnectionExample(ctx, frame.DataSource(cfg.EventsQueueURL))
+				err = openNatsConnectionExample(ctx, data.DSN(cfg.EventsQueueURL))
 				require.NoError(t, err)
 
 				//
@@ -203,12 +205,12 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_InvalidConfigTyp
 			ctx := context.Background()
 
 			// Create service with wrong config type using frame.ConfigurationDefault
-			wrongConfig := &config.PartitionConfig{}
+			wrongConfig := &aconfig.PartitionConfig{}
 			wrongConfig.SynchronizePrimaryPartitions = true
 
 			// Create a service with the wrong config to test the type assertion failure
-			_, svc := frame.NewServiceWithContext(ctx, "test service",
-				frame.WithConfig(&frame.ConfigurationDefault{})) // This will cause type assertion to fail
+			_, svc := frame.NewServiceWithContext(ctx, frame.WithName("test service"),
+				frame.WithConfig(&config.ConfigurationDefault{})) // This will cause type assertion to fail
 
 			partitionServer := handlers.NewPartitionServer(ctx, svc)
 
@@ -230,7 +232,7 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 	suite.T().Run("router_creation", func(t *testing.T) {
 		suite.WithTestDependancies(t, func(t *testing.T, dep *definition.DependencyOption) {
 			// Create service with test dependencies
-			svc, ctx := suite.CreateService(t, dep)
+			ctx, svc, _ := suite.CreateService(t, dep)
 
 			// Create partition server
 			partitionServer := handlers.NewPartitionServer(ctx, svc)

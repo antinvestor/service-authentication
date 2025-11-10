@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,9 +21,10 @@ func TestPartitionRepositoryTestSuite(t *testing.T) {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_get_parents", "test_get_parents", nil))
+	ctx, svc, deps := suite.CreateService(t, definition.NewDependancyOption("test_get_parents", "test_get_parents", nil))
+	_ = svc
 
-	partitionRepo := repository.NewPartitionRepository(svc)
+	partitionRepo := deps.PartitionRepo
 
 	// Create a hierarchy: Root -> Company -> Department -> Team
 	// Root partition (no parent)
@@ -35,7 +35,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 		State:       1,
 	}
 	rootPartition.GenID(ctx)
-	err := partitionRepo.Save(ctx, rootPartition)
+	err := partitionRepo.Create(ctx, rootPartition)
 	require.NoError(t, err)
 
 	// Company partition (parent: root)
@@ -46,7 +46,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 		State:       1,
 	}
 	companyPartition.GenID(ctx)
-	err = partitionRepo.Save(ctx, companyPartition)
+	err = partitionRepo.Create(ctx, companyPartition)
 	require.NoError(t, err)
 
 	// Department partition (parent: company)
@@ -57,7 +57,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 		State:       1,
 	}
 	departmentPartition.GenID(ctx)
-	err = partitionRepo.Save(ctx, departmentPartition)
+	err = partitionRepo.Create(ctx, departmentPartition)
 	require.NoError(t, err)
 
 	// Team partition (parent: department)
@@ -68,7 +68,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 		State:       1,
 	}
 	teamPartition.GenID(ctx)
-	err = partitionRepo.Save(ctx, teamPartition)
+	err = partitionRepo.Create(ctx, teamPartition)
 	require.NoError(t, err)
 
 	// Test 1: Get parents of team partition (should return department, company, root)
@@ -109,9 +109,10 @@ func (suite *PartitionRepositoryTestSuite) TestGetParents() {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithOrphanedPartition() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_orphaned", "test_orphaned", nil))
+	ctx, svc, deps := suite.CreateService(t, definition.NewDependancyOption("test_orphaned", "test_orphaned", nil))
+	_ = svc
 
-	partitionRepo := repository.NewPartitionRepository(svc)
+	partitionRepo := deps.PartitionRepo
 
 	// Create a partition with a non-existent parent ID
 	orphanedPartition := &models.Partition{
@@ -121,7 +122,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithOrphanedPartition()
 		State:       1,
 	}
 	orphanedPartition.GenID(ctx)
-	err := partitionRepo.Save(ctx, orphanedPartition)
+	err := partitionRepo.Create(ctx, orphanedPartition)
 	require.NoError(t, err)
 
 	// Test: Get parents of orphaned partition (should handle gracefully)
@@ -132,9 +133,10 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithOrphanedPartition()
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_circular", "test_circular", nil))
+	ctx, svc, deps := suite.CreateService(t, definition.NewDependancyOption("test_circular", "test_circular", nil))
+	_ = svc
 
-	partitionRepo := repository.NewPartitionRepository(svc)
+	partitionRepo := deps.PartitionRepo
 
 	// Create two partitions that reference each other (circular reference)
 	partition1 := &models.Partition{
@@ -154,16 +156,16 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference()
 	partition2.GenID(ctx)
 
 	// Save partition1 first
-	err := partitionRepo.Save(ctx, partition1)
+	err := partitionRepo.Create(ctx, partition1)
 	require.NoError(t, err)
 
 	// Save partition2
-	err = partitionRepo.Save(ctx, partition2)
+	err = partitionRepo.Create(ctx, partition2)
 	require.NoError(t, err)
 
 	// Update partition1 to reference partition2 (creating circular reference)
 	partition1.ParentID = partition2.ID
-	err = partitionRepo.Save(ctx, partition1)
+	err = partitionRepo.Create(ctx, partition1)
 	require.NoError(t, err)
 
 	// Test: Get parents should handle circular reference gracefully
@@ -176,9 +178,10 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference()
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_deep", "test_deep", nil))
+	ctx, svc, deps := suite.CreateService(t, definition.NewDependancyOption("test_deep", "test_deep", nil))
+	_ = svc
 
-	partitionRepo := repository.NewPartitionRepository(svc)
+	partitionRepo := deps.PartitionRepo
 
 	// Create a deep hierarchy (10 levels)
 	var partitions []*models.Partition
@@ -192,7 +195,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 			State:       1,
 		}
 		partition.GenID(ctx)
-		err := partitionRepo.Save(ctx, partition)
+		err := partitionRepo.Create(ctx, partition)
 		require.NoError(t, err)
 
 		partitions = append(partitions, partition)
@@ -229,9 +232,10 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsDeepHierarchy() {
 
 func (suite *PartitionRepositoryTestSuite) TestGetParentsWithEmptyParentID() {
 	t := suite.T()
-	svc, ctx := suite.CreateService(t, definition.NewDependencyOption("test_empty_parent", "test_empty_parent", nil))
+	ctx, svc, deps := suite.CreateService(t, definition.NewDependancyOption("test_empty_parent", "test_empty_parent", nil))
+	_ = svc
 
-	partitionRepo := repository.NewPartitionRepository(svc)
+	partitionRepo := deps.PartitionRepo
 
 	// Create partition with explicitly empty parent ID
 	partition := &models.Partition{
@@ -241,7 +245,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithEmptyParentID() {
 		State:       1,
 	}
 	partition.GenID(ctx)
-	err := partitionRepo.Save(ctx, partition)
+	err := partitionRepo.Create(ctx, partition)
 	require.NoError(t, err)
 
 	// Test: Should return no parents

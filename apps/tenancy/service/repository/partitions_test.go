@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
@@ -25,22 +24,22 @@ func (suite *PartitionTestSuite) TestGetByID() {
 		name        string
 		shouldError bool
 		expectedErr string
-		setupFunc   func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition
+		setupFunc   func(ctx context.Context, svc *frame.Service, deps *tests.DepsBuilder, t *testing.T) *models.Partition
 	}{
 		{
 			name:        "Get existing partition by ID",
 			shouldError: false,
 			expectedErr: "",
-			setupFunc: func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition {
-				tenantRepo := repository.NewTenantRepository(svc)
-				partitionRepo := repository.NewPartitionRepository(svc)
+			setupFunc: func(ctx context.Context, svc *frame.Service, deps *tests.DepsBuilder, t *testing.T) *models.Partition {
+				tenantRepo := deps.TenantRepo
+				partitionRepo := deps.PartitionRepo
 
 				tenant := models.Tenant{
 					Name:        "default",
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -51,7 +50,7 @@ func (suite *PartitionTestSuite) TestGetByID() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				return &partition
@@ -61,22 +60,24 @@ func (suite *PartitionTestSuite) TestGetByID() {
 			name:        "Get non-existent partition",
 			shouldError: true,
 			expectedErr: "record not found",
-			setupFunc: func(ctx context.Context, svc *frame.Service, t *testing.T) *models.Partition {
+			setupFunc: func(ctx context.Context, svc *frame.Service, deps *tests.DepsBuilder, t *testing.T) *models.Partition {
 				return &models.Partition{BaseModel: data.BaseModel{ID: "non-existent-id"}}
 			},
 		},
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Setup
-				partition := tc.setupFunc(ctx, svc, t)
+				partition := tc.setupFunc(ctx, svc, deps, t)
 
 				// Execute
-				savedPartition, err := repository.NewPartitionRepository(svc).GetByID(ctx, partition.GetID())
+				partitionRepo := deps.PartitionRepo
+				savedPartition, err := partitionRepo.GetByID(ctx, partition.GetID())
 
 				// Verify
 				if tc.shouldError {
@@ -95,16 +96,17 @@ func (suite *PartitionTestSuite) TestGetByID() {
 
 func (suite *PartitionTestSuite) TestSearch() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		// Setup
 		tenant := models.Tenant{
 			Name:        "default",
 			Description: "Test",
 		}
-		err := tenantRepo.Save(ctx, &tenant)
+		err := tenantRepo.Create(ctx, &tenant)
 		require.NoError(t, err)
 
 		partition1 := models.Partition{
@@ -114,7 +116,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition1)
+		err = partitionRepo.Create(ctx, &partition1)
 		require.NoError(t, err)
 
 		partition2 := models.Partition{
@@ -124,7 +126,7 @@ func (suite *PartitionTestSuite) TestSearch() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition2)
+		err = partitionRepo.Create(ctx, &partition2)
 		require.NoError(t, err)
 
 		testCases := []struct {
@@ -168,7 +170,18 @@ func (suite *PartitionTestSuite) TestSearch() {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				searchQuery := data.NewSearchQuery(tc.query, tc.properties, 0, 10)
+
+				searchFilter := map[string]any{}
+				if tc.query != "" {
+					searchFilter[""] = tc.query
+				}
+
+				searchQuery := data.NewSearchQuery(
+					data.WithSearchFiltersOrByValue(searchFilter),
+					data.WithSearchFiltersAndByValue(tc.properties),
+					data.WithSearchOffset(0),
+					data.WithSearchLimit(10),
+				)
 
 				resultPipe, resultErr := partitionRepo.Search(ctx, searchQuery)
 				require.NoError(t, resultErr)
@@ -185,16 +198,17 @@ func (suite *PartitionTestSuite) TestSearch() {
 
 func (suite *PartitionTestSuite) TestDelete() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		// Setup
 		tenant := models.Tenant{
 			Name:        "default",
 			Description: "Test",
 		}
-		err := tenantRepo.Save(ctx, &tenant)
+		err := tenantRepo.Create(ctx, &tenant)
 		require.NoError(t, err)
 
 		partition := models.Partition{
@@ -204,7 +218,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition)
+		err = partitionRepo.Create(ctx, &partition)
 		require.NoError(t, err)
 
 		// Test deleting a partition with children (should fail)
@@ -213,7 +227,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 			Description: "This partition has a child",
 			BaseModel:   data.BaseModel{TenantID: tenant.GetID()},
 		}
-		err = partitionRepo.Save(ctx, &parentPartition)
+		err = partitionRepo.Create(ctx, &parentPartition)
 		require.NoError(t, err)
 
 		childPartition := models.Partition{
@@ -223,7 +237,7 @@ func (suite *PartitionTestSuite) TestDelete() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &childPartition)
+		err = partitionRepo.Create(ctx, &childPartition)
 		require.NoError(t, err)
 
 		err = partitionRepo.Delete(ctx, parentPartition.GetID())
@@ -253,9 +267,11 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -265,7 +281,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				// Parent partition
@@ -277,7 +293,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &parentPartition)
+				err = partitionRepo.Create(ctx, &parentPartition)
 				require.NoError(t, err)
 
 				// Child partition
@@ -290,7 +306,7 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &childPartition)
+				err = partitionRepo.Create(ctx, &childPartition)
 				require.NoError(t, err)
 
 				// Child partition role
@@ -299,10 +315,10 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 						PartitionID: childPartition.GetID(),
 					},
 					Name:       "Child Partition Role",
-					Properties: frame.JSONMap{"description": "Child partition role description"},
+					Properties: data.JSONMap{"description": "Child partition role description"},
 				}
 
-				err = partitionRepo.SaveRole(ctx, &childPartitionRole)
+				err = partitionRoleRepo.Create(ctx, &childPartitionRole)
 				require.NoError(t, err)
 
 				// Execute
@@ -323,16 +339,17 @@ func (suite *PartitionTestSuite) TestGetChildren() {
 
 func (suite *PartitionTestSuite) TestSave() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		// Setup
 		tenant := models.Tenant{
 			Name:        "default",
 			Description: "Test",
 		}
-		err := tenantRepo.Save(ctx, &tenant)
+		err := tenantRepo.Create(ctx, &tenant)
 		require.NoError(t, err)
 
 		// Create
@@ -343,7 +360,7 @@ func (suite *PartitionTestSuite) TestSave() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition)
+		err = partitionRepo.Create(ctx, &partition)
 		require.NoError(t, err)
 		assert.NotEmpty(t, partition.GetID())
 
@@ -354,7 +371,7 @@ func (suite *PartitionTestSuite) TestSave() {
 
 		// Update
 		savedPartition.Name = "Updated Partition Name"
-		err = partitionRepo.Save(ctx, savedPartition)
+		err = partitionRepo.Create(ctx, savedPartition)
 		require.NoError(t, err)
 
 		// Verify update
@@ -379,9 +396,11 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -391,7 +410,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -402,7 +421,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
@@ -410,11 +429,11 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 						PartitionID: partition.GetID(),
 					},
 					Name:       tc.roleName,
-					Properties: frame.JSONMap{"description": "Test role description"},
+					Properties: data.JSONMap{"description": "Test role description"},
 				}
 
 				// Execute
-				err = partitionRepo.SaveRole(ctx, &partitionRole)
+				err = partitionRoleRepo.Create(ctx, &partitionRole)
 
 				// Verify
 				if tc.shouldError {
@@ -423,7 +442,7 @@ func (suite *PartitionTestSuite) TestSaveRole() {
 					require.NoError(t, err)
 
 					// Get roles and find the one with matching name
-					roles, rolesErr := partitionRepo.GetRoles(ctx, partition.GetID())
+					roles, rolesErr := partitionRoleRepo.GetByPartitionID(ctx, partition.GetID())
 					require.NoError(t, rolesErr)
 
 					var savedRole *models.PartitionRole
@@ -458,9 +477,11 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 	}
 
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -470,7 +491,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 					Description: "Test",
 				}
 
-				err := tenantRepo.Save(ctx, &tenant)
+				err := tenantRepo.Create(ctx, &tenant)
 				require.NoError(t, err)
 
 				partition := models.Partition{
@@ -481,7 +502,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 					},
 				}
 
-				err = partitionRepo.Save(ctx, &partition)
+				err = partitionRepo.Create(ctx, &partition)
 				require.NoError(t, err)
 
 				partitionRole := models.PartitionRole{
@@ -489,14 +510,14 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 						PartitionID: partition.GetID(),
 					},
 					Name:       tc.roleName,
-					Properties: frame.JSONMap{"description": "Test role description"},
+					Properties: data.JSONMap{"description": "Test role description"},
 				}
 
-				err = partitionRepo.SaveRole(ctx, &partitionRole)
+				err = partitionRoleRepo.Create(ctx, &partitionRole)
 				require.NoError(t, err)
 
 				// Execute
-				err = partitionRepo.RemoveRole(ctx, partitionRole.GetID())
+				err = partitionRoleRepo.Delete(ctx, partitionRole.GetID())
 
 				// Verify
 				if tc.shouldError {
@@ -504,7 +525,7 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 				} else {
 					require.NoError(t, err)
 
-					roles, rolesErr := partitionRepo.GetRoles(ctx, partition.GetID())
+					roles, rolesErr := partitionRoleRepo.GetByPartitionID(ctx, partition.GetID())
 					require.NoError(t, rolesErr)
 					assert.Empty(t, roles, "Should have no roles after deletion")
 				}
@@ -515,16 +536,18 @@ func (suite *PartitionTestSuite) TestRemoveRole() {
 
 func (suite *PartitionTestSuite) TestGetRoles() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		tenantRepo := deps.TenantRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
+		partitionRepo := deps.PartitionRepo
 
 		// Setup
 		tenant := models.Tenant{
 			Name:        "default",
 			Description: "Test",
 		}
-		err := tenantRepo.Save(ctx, &tenant)
+		err := tenantRepo.Create(ctx, &tenant)
 		require.NoError(t, err)
 
 		partition := models.Partition{
@@ -534,7 +557,7 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition)
+		err = partitionRepo.Create(ctx, &partition)
 		require.NoError(t, err)
 
 		role1 := models.PartitionRole{
@@ -542,9 +565,9 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 				PartitionID: partition.GetID(),
 			},
 			Name:       "Admin",
-			Properties: frame.JSONMap{"description": "Administrator role"},
+			Properties: data.JSONMap{"description": "Administrator role"},
 		}
-		err = partitionRepo.SaveRole(ctx, &role1)
+		err = partitionRoleRepo.Create(ctx, &role1)
 		require.NoError(t, err)
 
 		role2 := models.PartitionRole{
@@ -552,13 +575,13 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 				PartitionID: partition.GetID(),
 			},
 			Name:       "User",
-			Properties: frame.JSONMap{"description": "User role"},
+			Properties: data.JSONMap{"description": "User role"},
 		}
-		err = partitionRepo.SaveRole(ctx, &role2)
+		err = partitionRoleRepo.Create(ctx, &role2)
 		require.NoError(t, err)
 
 		// Execute
-		roles, err := partitionRepo.GetRoles(ctx, partition.GetID())
+		roles, err := partitionRoleRepo.GetByPartitionID(ctx, partition.GetID())
 		require.NoError(t, err)
 
 		// Verify
@@ -568,16 +591,18 @@ func (suite *PartitionTestSuite) TestGetRoles() {
 
 func (suite *PartitionTestSuite) TestGetRolesByID() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		svc, ctx := suite.CreateService(t, dep)
-		tenantRepo := repository.NewTenantRepository(svc)
-		partitionRepo := repository.NewPartitionRepository(svc)
+		ctx, svc, deps := suite.CreateService(t, dep)
+		_ = svc
+		partitionRoleRepo := deps.PartitionRoleRepo
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
 
 		// Setup
 		tenant := models.Tenant{
 			Name:        "default",
 			Description: "Test",
 		}
-		err := tenantRepo.Save(ctx, &tenant)
+		err := tenantRepo.Create(ctx, &tenant)
 		require.NoError(t, err)
 
 		partition := models.Partition{
@@ -587,7 +612,7 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 				TenantID: tenant.GetID(),
 			},
 		}
-		err = partitionRepo.Save(ctx, &partition)
+		err = partitionRepo.Create(ctx, &partition)
 		require.NoError(t, err)
 
 		role1 := models.PartitionRole{
@@ -595,9 +620,9 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 				PartitionID: partition.GetID(),
 			},
 			Name:       "Admin",
-			Properties: frame.JSONMap{"description": "Administrator role"},
+			Properties: data.JSONMap{"description": "Administrator role"},
 		}
-		err = partitionRepo.SaveRole(ctx, &role1)
+		err = partitionRoleRepo.Create(ctx, &role1)
 		require.NoError(t, err)
 
 		role2 := models.PartitionRole{
@@ -605,13 +630,13 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 				PartitionID: partition.GetID(),
 			},
 			Name:       "User",
-			Properties: frame.JSONMap{"description": "User role"},
+			Properties: data.JSONMap{"description": "User role"},
 		}
-		err = partitionRepo.SaveRole(ctx, &role2)
+		err = partitionRoleRepo.Create(ctx, &role2)
 		require.NoError(t, err)
 
 		// Execute
-		roles, err := partitionRepo.GetRolesByID(ctx, role1.GetID(), role2.GetID())
+		roles, err := partitionRoleRepo.GetRolesByID(ctx, role1.GetID(), role2.GetID())
 		require.NoError(t, err)
 
 		// Verify
