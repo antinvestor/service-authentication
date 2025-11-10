@@ -10,6 +10,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/stretchr/testify/require"

@@ -10,16 +10,20 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
+	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
+	fevents "github.com/pitabwire/frame/events"
+	"github.com/pitabwire/util"
 )
 
 const EventKeyPartitionSynchronization = "partition.synchronization.event"
 
 type PartitionSyncEvent struct {
-	svc                 *frame.Service
+	cfg                 config.ConfigurationOAUTH2
+	cli                 client.Manager
 	partitionRepository repository.PartitionRepository
 }
 
@@ -31,10 +35,11 @@ func typeName(v any) string {
 	return t.String()
 }
 
-func NewPartitionSynchronizationEventHandler(svc *frame.Service) frame.EventI {
+func NewPartitionSynchronizationEventHandler(ctx context.Context, cfg config.ConfigurationOAUTH2, cli client.Manager, partitionRepository repository.PartitionRepository) fevents.EventI {
 	return &PartitionSyncEvent{
-		svc:                 svc,
-		partitionRepository: repository.NewPartitionRepository(svc),
+		cfg:                 cfg,
+		cli:                 cli,
+		partitionRepository: partitionRepository,
 	}
 }
 
@@ -56,7 +61,7 @@ func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
 }
 
 func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
-	var jsonPayload frame.JSONMap
+	var jsonPayload data.JSONMap
 	var ok bool
 	jsonPayload, ok = payload.(map[string]any)
 	if !ok {
@@ -64,7 +69,7 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 	}
 	partitionID := jsonPayload.GetString("id")
 
-	logger := csq.svc.Log(ctx).WithField("payload", partitionID).WithField("type", csq.Name())
+	logger := util.Log(ctx).WithField("payload", partitionID).WithField("type", csq.Name())
 	logger.Info("initiated synchronisation of partition")
 
 	partition, err := csq.partitionRepository.GetByID(ctx, partitionID)
@@ -72,7 +77,7 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 		return err
 	}
 
-	err = SyncPartitionOnHydra(ctx, csq.svc, partition)
+	err = SyncPartitionOnHydra(ctx, csq.cfg, csq.cli, csq.partitionRepository, partition)
 	if err != nil {
 		return err
 	}
@@ -83,11 +88,7 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 	return nil
 }
 
-func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition *models.Partition) error {
-	cfg, ok := service.Config().(*config.PartitionConfig)
-	if !ok {
-		return errors.New("invalid configuration type")
-	}
+func SyncPartitionOnHydra(ctx context.Context, cfg config.ConfigurationOAUTH2, cli client.Manager, partitionRepo repository.PartitionRepository, partition *models.Partition) error {
 
 	hydraBaseURL := cfg.GetOauth2ServiceAdminURI()
 	hydraURL := fmt.Sprintf("%s/admin/clients", hydraBaseURL)
@@ -103,11 +104,11 @@ func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition
 
 	// Handle partition deletion
 	if partition.DeletedAt.Valid {
-		return deletePartitionOnHydra(ctx, service, hydraIDURL)
+		return deletePartitionOnHydra(ctx, cli, hydraIDURL)
 	}
 
 	// Check if client exists and update HTTP method/URL accordingly
-	status, _, err := service.InvokeRestService(ctx, http.MethodGet, hydraIDURL, nil, nil)
+	status, _, err := cli.Invoke(ctx, http.MethodGet, hydraIDURL, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition
 	}
 
 	// Invoke the Hydra service
-	status, result, err := service.InvokeRestService(ctx, httpMethod, hydraURL, payload, nil)
+	status, result, err := cli.Invoke(ctx, httpMethod, hydraURL, payload, nil)
 	if err != nil {
 		return err
 	}
@@ -133,11 +134,11 @@ func SyncPartitionOnHydra(ctx context.Context, service *frame.Service, partition
 	}
 
 	// Update partition with response data
-	return updatePartitionWithResponse(ctx, service, partition, result)
+	return updatePartitionWithResponse(ctx, partitionRepo, partition, result)
 }
 
-func deletePartitionOnHydra(ctx context.Context, service *frame.Service, hydraIDURL string) error {
-	_, _, err := service.InvokeRestService(ctx, http.MethodDelete, hydraIDURL, nil, nil)
+func deletePartitionOnHydra(ctx context.Context, cli client.Manager, hydraIDURL string) error {
+	_, _, err := cli.Invoke(ctx, http.MethodDelete, hydraIDURL, nil, nil)
 	return err
 }
 
@@ -246,7 +247,7 @@ func prepareRedirectURIs(partition *models.Partition) ([]string, error) {
 
 func updatePartitionWithResponse(
 	ctx context.Context,
-	service *frame.Service,
+	partitionRepo repository.PartitionRepository,
 	partition *models.Partition,
 	result []byte,
 ) error {
@@ -258,7 +259,7 @@ func updatePartitionWithResponse(
 	props := partition.Properties
 
 	if props == nil {
-		props = frame.JSONMap{}
+		props = data.JSONMap{}
 	}
 
 	for k, v := range response {
@@ -268,6 +269,10 @@ func updatePartitionWithResponse(
 	partition.Properties = props
 
 	// Save partition
-	partitionRepository := repository.NewPartitionRepository(service)
-	return partitionRepository.Save(ctx, partition)
+
+	_, err := partitionRepo.Update(ctx, partition, "")
+	if err != nil {
+		return err
+	}
+	return nil
 }

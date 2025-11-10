@@ -8,7 +8,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/stretchr/testify/assert"

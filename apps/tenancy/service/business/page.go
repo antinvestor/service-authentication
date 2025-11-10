@@ -7,6 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 )
 
 type PageBusiness interface {
@@ -15,10 +16,11 @@ type PageBusiness interface {
 	CreatePage(ctx context.Context, request *partitionv1.CreatePageRequest) (*partitionv1.PageObject, error)
 }
 
-func NewPageBusiness(_ context.Context, service *frame.Service) PageBusiness {
-	pageRepo := repository.NewPageRepository(service)
-	partitionRepo := repository.NewPartitionRepository(service)
-
+func NewPageBusiness(
+	service *frame.Service,
+	pageRepo repository.PageRepository,
+	partitionRepo repository.PartitionRepository,
+) PageBusiness {
 	return &pageBusiness{
 		service:       service,
 		pageRepo:      pageRepo,
@@ -66,7 +68,7 @@ func (ab *pageBusiness) CreatePage(
 		},
 	}
 
-	err = ab.pageRepo.Save(ctx, page)
+	err = ab.pageRepo.Create(ctx, page)
 	if err != nil {
 		return nil, err
 	}

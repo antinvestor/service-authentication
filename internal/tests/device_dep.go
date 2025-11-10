@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -76,12 +75,12 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 	var err error
 	databaseURL := ""
 	hydraPort := ""
-	var oauth2ServiceURIAdmin frame.DataSource
+	oauth2ServiceURIAdmin := ""
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
 			databaseURL = dep.GetInternalDS(ctx).String()
 		} else {
-			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx)
+			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
 			hydraPort, err = dep.PortMapping(ctx, "4444")
 			if err != nil {
 				return err
@@ -94,10 +93,8 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		return err
 	}
 
-	oauth2ServiceURI, err := oauth2ServiceURIAdmin.ChangePort(hydraPort)
-	if err != nil {
-		return err
-	}
+	// Convert admin URI to public URI by changing port
+	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", hydraPort, 1)
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
@@ -106,8 +103,8 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
 			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
-			"OAUTH2_SERVICE_URI":           oauth2ServiceURI.String(),
-			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin.String(),
+			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
+			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkBaJroO9cDGleFnuaAZ",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_partition,service_profile,authentication_tests",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_devices",

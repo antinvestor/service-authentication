@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
+	"github.com/pitabwire/frame/security"
+	httpInterceptor "github.com/pitabwire/frame/security/interceptors/http"
 )
 
 // SetupRouterV1 -
@@ -125,8 +127,12 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 				}
 			})
 
+			sm := svc.SecurityManager()
+			smAuth := sm.GetAuthenticator(ctx)
 			// Apply authentication middleware
-			authMiddleware := svc.AuthenticationMiddleware(handler, cfg.Oauth2JwtVerifyAudience, cfg.Oauth2JwtVerifyIssuer)
+			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, smAuth,
+				security.WithAudience(cfg.Oauth2JwtVerifyAudience),
+				security.WithIssuer(cfg.Oauth2JwtVerifyIssuer))
 			authMiddleware.ServeHTTP(w, r)
 		})
 	}

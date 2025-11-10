@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/framedata"
+	"github.com/pitabwire/frame/data"
+	fevents "github.com/pitabwire/frame/events"
+	"github.com/pitabwire/frame/security"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -26,8 +27,7 @@ type PartitionBusiness interface {
 		request *partitionv1.UpdatePartitionRequest) (*partitionv1.PartitionObject, error)
 	ListPartition(
 		ctx context.Context,
-		request *partitionv1.ListPartitionRequest,
-		stream partitionv1.PartitionService_ListPartitionServer) error
+		request *partitionv1.ListPartitionRequest) ([]*partitionv1.PartitionObject, error)
 
 	RemovePartitionRole(ctx context.Context, request *partitionv1.RemovePartitionRoleRequest) error
 	ListPartitionRoles(
@@ -38,21 +38,28 @@ type PartitionBusiness interface {
 		request *partitionv1.CreatePartitionRoleRequest) (*partitionv1.PartitionRoleObject, error)
 }
 
-func NewPartitionBusiness(service *frame.Service) PartitionBusiness {
-	tenantRepository := repository.NewTenantRepository(service)
-	partitionRepository := repository.NewPartitionRepository(service)
-
+func NewPartitionBusiness(
+	cfg config.AuthenticationConfig,
+	eventsMan fevents.Manager,
+	tenantRepo repository.TenantRepository,
+	partitionRepo repository.PartitionRepository,
+	partitionRoleRepo repository.PartitionRoleRepository,
+) PartitionBusiness {
 	return &partitionBusiness{
-		service:       service,
-		partitionRepo: partitionRepository,
-		tenantRepo:    tenantRepository,
+		cfg:               cfg,
+		eventsMan:         eventsMan,
+		partitionRepo:     partitionRepo,
+		partitionRoleRepo: partitionRoleRepo,
+		tenantRepo:        tenantRepo,
 	}
 }
 
 type partitionBusiness struct {
-	service       *frame.Service
-	tenantRepo    repository.TenantRepository
-	partitionRepo repository.PartitionRepository
+	eventsMan         fevents.Manager
+	cfg               config.AuthenticationConfig
+	tenantRepo        repository.TenantRepository
+	partitionRepo     repository.PartitionRepository
+	partitionRoleRepo repository.PartitionRoleRepository
 }
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
@@ -66,55 +73,63 @@ func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.Parti
 
 func (pb *partitionBusiness) ListPartition(
 	ctx context.Context,
-	request *partitionv1.ListPartitionRequest,
-	stream partitionv1.PartitionService_ListPartitionServer,
-) error {
+	request *partitionv1.ListPartitionRequest) ([]*partitionv1.PartitionObject, error) {
 
-	searchProperties := map[string]any{}
-
-	for _, p := range request.GetProperties() {
-		searchProperties[p] = request.GetQuery()
-	}
-
-	query := framedata.NewSearchQuery(
-		request.GetQuery(), searchProperties,
-		int(request.GetPage()),
-		int(request.GetCount()),
-	)
-
+	query := pb.buildSearchQuery(ctx, request)
 	jobResult, err := pb.partitionRepo.Search(ctx, query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var responseObjects []*partitionv1.PartitionObject
 	for {
 		result, ok := jobResult.ReadResult(ctx)
 
 		if !ok {
-			return nil
+			return responseObjects, nil
 		}
 
 		if result.IsError() {
-			return result.Error()
+			return responseObjects, result.Error()
 		}
 
-		var responseObjects []*partitionv1.PartitionObject
 		for _, partition := range result.Item() {
 			responseObjects = append(responseObjects, partition.ToAPI())
-		}
-
-		err = stream.Send(&partitionv1.ListPartitionResponse{Data: responseObjects})
-		if err != nil {
-			return err
 		}
 
 	}
 }
 
+// buildSearchQuery creates the search query from the request.
+func (pb *partitionBusiness) buildSearchQuery(ctx context.Context, query *partitionv1.ListPartitionRequest) *data.SearchQuery {
+	profileID := ""
+	claims := security.ClaimsFromContext(ctx)
+	if claims != nil {
+		profileID, _ = claims.GetSubject()
+	}
+
+	filterProperties := map[string]any{}
+	searchProperties := map[string]any{}
+
+	// Add additional properties from the request
+	for _, p := range query.GetProperties() {
+		filterProperties[fmt.Sprintf("%s = ? ", p)] = query.GetQuery()
+	}
+
+	// Build searchProperties map, only add profile_id if it's not empty
+	if profileID != "" {
+		searchProperties["profile_id"] = profileID
+	}
+
+	return data.NewSearchQuery(data.WithSearchLimit(int(query.GetCount())),
+		data.WithSearchOffset(int(query.GetPage())), data.WithSearchFiltersAndByValue(filterProperties),
+		data.WithSearchFiltersOrByValue(searchProperties))
+}
+
 func (pb *partitionBusiness) GetPartition(
 	ctx context.Context,
 	request *partitionv1.GetPartitionRequest) (*partitionv1.PartitionObject, error) {
-	claims := frame.ClaimsFromContext(ctx)
+	claims := security.ClaimsFromContext(ctx)
 	if claims == nil {
 		return nil, fmt.Errorf("partitions can only be pulled by known entities")
 	}
@@ -131,11 +146,7 @@ func (pb *partitionBusiness) GetPartition(
 		props := partitionObj.GetProperties().AsMap()
 
 		props["client_secret"] = partition.ClientSecret
-
-		cfg, ok := pb.service.Config().(*config.PartitionConfig)
-		if ok {
-			props["client_discovery_uri"] = cfg.GetOauth2WellKnownOIDC()
-		}
+		props["client_discovery_uri"] = pb.cfg.GetOauth2WellKnownOIDC()
 
 		partitionObj.Properties, _ = structpb.NewStruct(props)
 	}
@@ -178,12 +189,12 @@ func (pb *partitionBusiness) CreatePartition(
 	partition.TenantID = tenant.GetID()
 	partition.PartitionID = tenant.PartitionID
 
-	err = pb.partitionRepo.Save(ctx, partition)
+	err = pb.partitionRepo.Create(ctx, partition)
 	if err != nil {
 		return nil, err
 	}
 
-	err = pb.service.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
+	err = pb.eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +223,7 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 	partition.Properties = jsonMap
 
-	err = pb.partitionRepo.Save(ctx, partition)
+	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "properties")
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +235,7 @@ func (pb *partitionBusiness) ListPartitionRoles(
 	ctx context.Context,
 	request *partitionv1.ListPartitionRoleRequest,
 ) (*partitionv1.ListPartitionRoleResponse, error) {
-	partitionRoleList, err := pb.partitionRepo.GetRoles(ctx, request.GetPartitionId())
+	partitionRoleList, err := pb.partitionRoleRepo.GetByPartitionID(ctx, request.GetPartitionId())
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +255,7 @@ func (pb *partitionBusiness) RemovePartitionRole(
 	ctx context.Context,
 	request *partitionv1.RemovePartitionRoleRequest,
 ) error {
-	err := pb.partitionRepo.RemoveRole(ctx, request.GetId())
+	err := pb.partitionRoleRepo.Delete(ctx, request.GetId())
 	if err != nil {
 		return err
 	}
@@ -272,7 +283,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 		},
 	}
 
-	err = pb.partitionRepo.SaveRole(ctx, partitionRole)
+	err = pb.partitionRoleRepo.Create(ctx, partitionRole)
 	if err != nil {
 		return nil, err
 	}
@@ -280,10 +291,9 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	return toAPIPartitionRole(partitionRole), nil
 }
 
-func ReQueuePrimaryPartitionsForSync(ctx context.Context, svc *frame.Service, query *framedata.SearchQuery) error {
-	partitionRepository := repository.NewPartitionRepository(svc)
+func ReQueuePrimaryPartitionsForSync(ctx context.Context, partitionRepo repository.PartitionRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
 
-	jobResult, err := partitionRepository.Search(ctx, query)
+	jobResult, err := partitionRepo.Search(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -300,7 +310,7 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, svc *frame.Service, qu
 		}
 
 		for _, partition := range result.Item() {
-			err = svc.Emit(ctx, events.EventKeyPartitionSynchronization, frame.JSONMap{"id": partition.GetID()})
+			err = eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
 			if err != nil {
 				return err
 			}

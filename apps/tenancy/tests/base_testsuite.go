@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testnats"
@@ -96,7 +97,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
 
-	cfg, err := frame.ConfigLoadWithOIDC[config.PartitionConfig](ctx)
+	cfg, err := config.LoadWithOIDC[aconfig.PartitionConfig](ctx)
 	require.NoError(t, err)
 
 	qDS, err := queueDR.GetDS(ctx).WithUser("ant")
@@ -124,11 +125,11 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 		ExtendQuery("stream_storage", "file").
 		String()
 
-	ctx, svc := frame.NewServiceWithContext(ctx, "tenancy tests",
+	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(svc),
+		events.NewPartitionSynchronizationEventHandler(ctx, svc),
 	)}
 
 	implementation := handlers.NewPartitionServer(ctx, svc)
@@ -139,7 +140,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 
 	svc.Init(ctx, serviceOptions...)
 
-	err = repository.Migrate(ctx, svc, "../../migrations/0001")
+	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
 	require.NoError(t, err)
 
 	_ = svc.Run(ctx, "")

@@ -41,9 +41,9 @@ type DepsBuilder struct {
 	LoginRepo      repository.LoginRepository
 	LoginEventRepo repository.LoginEventRepository
 
-	ProfileCli profilev1connect.ProfileServiceClient
-	DeviceCli devicev1connect.DeviceServiceClient
-	PartitionCli partitionv1connect.PartitionServiceClient
+	ProfileCli      profilev1connect.ProfileServiceClient
+	DeviceCli       devicev1connect.DeviceServiceClient
+	PartitionCli    partitionv1connect.PartitionServiceClient
 	NotificationCli notificationv1connect.NotificationServiceClient
 }
 
@@ -51,7 +51,7 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
 	// qMan := svc.QueueManager()
-	// 
+	//
 	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
 
 	depBuilder := &DepsBuilder{
@@ -199,8 +199,6 @@ func (bs *BaseTestSuite) CreateService(
 	ctx, svc := frame.NewServiceWithContext(t.Context(),
 		frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
 		frame.WithDatastore(), frametests.WithNoopDriver(), frame.WithRegisterServerOauth2Client())
-
-
 
 	depsBuilder, err := BuildRepos(ctx, svc)
 	require.NoError(t, err)

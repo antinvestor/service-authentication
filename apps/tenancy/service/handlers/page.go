@@ -4,47 +4,46 @@ import (
 	"context"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"connectrpc.com/connect"
 )
 
 func (prtSrv *PartitionServer) CreatePage(
 	ctx context.Context,
-	req *partitionv1.CreatePageRequest,
-) (*partitionv1.CreatePageResponse, error) {
+	req *connect.Request[partitionv1.CreatePageRequest],
+) (*connect.Response[partitionv1.CreatePageResponse], error) {
 	logger := prtSrv.svc.Log(ctx)
-	page, err := prtSrv.pageBusiness.CreatePage(ctx, req)
+	page, err := prtSrv.PageBusiness.CreatePage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" CreatePage -- could not create a new page")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return &partitionv1.CreatePageResponse{Data: page}, nil
+	return connect.NewResponse(&partitionv1.CreatePageResponse{Data: page}), nil
 }
 
 func (prtSrv *PartitionServer) GetPage(
 	ctx context.Context,
-	req *partitionv1.GetPageRequest,
-) (*partitionv1.GetPageResponse, error) {
+	req *connect.Request[partitionv1.GetPageRequest],
+) (*connect.Response[partitionv1.GetPageResponse], error) {
 	logger := prtSrv.svc.Log(ctx)
-	page, err := prtSrv.pageBusiness.GetPage(ctx, req)
+	page, err := prtSrv.PageBusiness.GetPage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" GetPage -- could not get page")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return &partitionv1.GetPageResponse{Data: page}, nil
+	return connect.NewResponse(&partitionv1.GetPageResponse{Data: page}), nil
 }
 
 func (prtSrv *PartitionServer) RemovePage(
 	ctx context.Context,
-	req *partitionv1.RemovePageRequest,
-) (*partitionv1.RemovePageResponse, error) {
+	req *connect.Request[partitionv1.RemovePageRequest],
+) (*connect.Response[partitionv1.RemovePageResponse], error) {
 	logger := prtSrv.svc.Log(ctx)
-	err := prtSrv.pageBusiness.RemovePage(ctx, req)
+	err := prtSrv.PageBusiness.RemovePage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" RemovePage -- could not remove page")
-		return &partitionv1.RemovePageResponse{
-			Succeeded: false,
-		}, prtSrv.toAPIError(err)
+		return nil, prtSrv.toAPIError(err)
 	}
-	return &partitionv1.RemovePageResponse{
+	return connect.NewResponse(&partitionv1.RemovePageResponse{
 		Succeeded: true,
-	}, nil
+	}), nil
 }

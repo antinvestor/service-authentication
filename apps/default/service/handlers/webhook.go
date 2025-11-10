@@ -9,7 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
+	"github.com/pitabwire/frame/security/openid"
 )
 
 // extractGrantedScopes efficiently extracts granted_scopes from multiple possible locations in the webhook payload
@@ -37,14 +38,12 @@ func extractGrantedScopes(tokenObject map[string]any) []any {
 }
 
 // GetOauth2ClientById obtains a client id
-func GetOauth2ClientById(ctx context.Context,
+func GetOauth2ClientById(ctx context.Context, cl client.Manager,
 	oauth2ServiceAdminHost string, clientID string) (int, []byte, error) {
-
-	service := frame.Svc(ctx)
 
 	oauth2AdminURI := fmt.Sprintf("%s%s/%s", oauth2ServiceAdminHost, "/admin/clients", clientID)
 
-	resultStatus, resultBody, err := service.InvokeRestService(ctx, http.MethodGet, oauth2AdminURI, nil, nil)
+	resultStatus, resultBody, err := cl.Invoke(ctx, http.MethodGet, oauth2AdminURI, nil, nil)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -141,7 +140,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "granted_scopes not found"})
 	}
 
-	if slices.Contains(grantedScopes, frame.ConstSystemScopeInternal) {
+	if slices.Contains(grantedScopes, openid.ConstSystemScopeInternal) {
 
 		roles := []string{"system_internal"}
 		// This is an internal system client

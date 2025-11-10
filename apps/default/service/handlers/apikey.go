@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
 )
 
@@ -52,19 +53,20 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	apiKeySecret := utils.GenerateRandomStringEfficient(apiKeySecretLength)
 
-	jwtServerURL := h.config.GetOauth2ServiceAdminURI()
+	// TODO: Update JWT registration for new frame API
+	// jwtServerURL := h.config.GetOauth2ServiceAdminURI()
 
 	apiKeyID := constApiKeyIDPrefix + utils.GenerateRandomStringEfficient(32)
 
-	jwtClient, err := h.service.RegisterForJwtWithParams(ctx,
-		jwtServerURL, akey.Name, apiKeyID, apiKeySecret,
-		akey.Scope, akey.Audience, akey.Metadata)
-	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could not register jwt params")
-		return err
-	}
+	// jwtClient, err := h.service.RegisterForJwtWithParams(ctx,
+	// 	jwtServerURL, akey.Name, apiKeyID, apiKeySecret,
+	// 	akey.Scope, akey.Audience, akey.Metadata)
+	// if err != nil {
+	// 	h.service.Log(ctx).WithError(err).Error("could not register jwt params")
+	// 	return err
+	// }
 
-	jwtClientID := jwtClient["client_id"].(string)
+	jwtClientID := apiKeyID // jwtClient["client_id"].(string)
 	subject, _ := claims.GetSubject()
 	apiky := models.APIKey{
 		Name:      akey.Name,
@@ -77,22 +79,20 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	if childPartitionID != "" {
 
-		tenancySvc := h.PartitionCli().Svc()
-
-		childResp, err1 := tenancySvc.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: childPartitionID})
+		childResp, err1 := h.PartitionCli().GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: childPartitionID}))
 		if err1 != nil {
 			return err1
 		}
 
 		// Confirm its a child partition
-		resp, err0 := tenancySvc.GetPartitionParents(ctx, &partitionv1.GetPartitionParentsRequest{
-			Id: childResp.GetData().GetId(),
-		})
+		resp, err0 := h.PartitionCli().GetPartitionParents(ctx, connect.NewRequest(&partitionv1.GetPartitionParentsRequest{
+			Id: childResp.Msg.GetData().GetId(),
+		}))
 		if err0 != nil {
 			return err0
 		}
 
-		for _, parent := range resp.Data {
+		for _, parent := range resp.Msg.Data {
 			if parent.Id == apiky.PartitionID {
 				apiky.PartitionID = childPartitionID
 			}
@@ -113,7 +113,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 		apiky.Metadata[k] = v
 	}
 
-	err = h.apiKeyRepo.Save(ctx, &apiky)
+	err = h.apiKeyRepo.Create(ctx, &apiky)
 	if err != nil {
 		h.service.Log(ctx).WithError(err).Error("could create api key in database")
 		return err
@@ -130,7 +130,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 func (h *AuthServer) ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	claims := frame.ClaimsFromContext(ctx)
+	claims := security.ClaimsFromContext(ctx)
 
 	if claims == nil {
 		return errors.New("no credentials detected")
@@ -159,7 +159,7 @@ func (h *AuthServer) ListAPIKeyEndpoint(rw http.ResponseWriter, req *http.Reques
 
 func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	claims := frame.ClaimsFromContext(ctx)
+	claims := security.ClaimsFromContext(ctx)
 	if claims == nil {
 		return errors.New("no credentials detected")
 	}
@@ -170,7 +170,7 @@ func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request
 	subject, _ := claims.GetSubject()
 	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
+		if data.ErrorIsNoRows(err) {
 			rw.WriteHeader(http.StatusNotFound)
 			return nil
 		}
@@ -210,7 +210,7 @@ func (h *AuthServer) GetAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request
 
 func (h *AuthServer) DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	claims := frame.ClaimsFromContext(ctx)
+	claims := security.ClaimsFromContext(ctx)
 	if claims == nil {
 		return errors.New("no credentials detected")
 	}
@@ -219,23 +219,24 @@ func (h *AuthServer) DeleteAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	apiKeyID := req.PathValue("ApiKeyId")
 
 	subject, _ := claims.GetSubject()
-	apiKeyModel, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
+	_, err := h.apiKeyRepo.GetByIDAndProfile(ctx, apiKeyID, subject)
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
+		if data.ErrorIsNoRows(err) {
 			rw.WriteHeader(http.StatusNotFound)
 			return nil
 		}
 		return err
 	}
 
-	jwtServerURL := h.config.GetOauth2ServiceAdminURI()
+	// TODO: Update JWT unregistration for new frame API
+	// jwtServerURL := h.config.GetOauth2ServiceAdminURI()
 
-	err = h.service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyModel.Key)
-	if err != nil {
-		return err
-	}
+	// err = h.service.UnRegisterForJwt(ctx, jwtServerURL, apiKeyModel.Key)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = h.apiKeyRepo.Delete(ctx, apiKeyID, subject)
+	err = h.apiKeyRepo.DeleteByProfile(ctx, apiKeyID, subject)
 	if err != nil {
 		return err
 	}

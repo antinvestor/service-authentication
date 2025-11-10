@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/gorilla/csrf"
@@ -99,7 +100,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		return nil, fmt.Errorf("no contact detail provided by provider %s", user.Provider)
 	}
 
-	result, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contactDetail})
+	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
 	if err != nil {
 		st, errOk := status.FromError(err)
 		if !errOk || st.Code() != codes.NotFound {
@@ -109,7 +110,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		}
 	}
 
-	existingProfile := result.GetData()
+	existingProfile := result.Msg.GetData()
 	if existingProfile == nil {
 
 		userName := user.Name
@@ -121,16 +122,16 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 			KeyProfileName: userName,
 		})
 
-		createResult, err0 := h.profileCli.Create(ctx, &profilev1.CreateRequest{
+		createResult, err0 := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    contactDetail,
 			Properties: properties,
-		})
+		}))
 		if err0 != nil {
 			logger.WithError(err0).With("contact_detail", contactDetail, "user_name", userName).Error("failed to create new profile")
 			return nil, err0
 		}
-		existingProfile = createResult.GetData()
+		existingProfile = createResult.Msg.GetData()
 	}
 
 	// Step 5: Find contact ID within the profile

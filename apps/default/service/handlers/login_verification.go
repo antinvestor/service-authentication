@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"strings"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/csrf"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -104,7 +106,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
 
-	result, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contact})
+	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
 	if err != nil {
 		st, errOk := status.FromError(err)
 		if !errOk || st.Code() != codes.NotFound {
@@ -115,7 +117,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	existingProfile := result.GetData()
+	existingProfile := result.Msg.GetData()
 	contactID := ""
 	if existingProfile != nil {
 		for _, profileContact := range existingProfile.GetContacts() {
@@ -128,9 +130,9 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	if contactID == "" {
 
 		// don't have this contact in existence so we create it
-		contactResp, err0 := h.profileCli.CreateContact(ctx, &profilev1.CreateContactRequest{
+		contactResp, err0 := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
-		})
+		}))
 		if err0 != nil {
 			logger.WithError(err0).Error(" could not create/find existing contact")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -138,14 +140,14 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 			return nil
 		}
 
-		contactID = contactResp.GetData().GetId()
+		contactID = contactResp.Msg.GetData().GetId()
 	}
 
-	resp, err := h.profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
+	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
-	})
+	}))
 	if err != nil {
 		logger.WithError(err).Info("could not create contact verification - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -153,7 +155,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 
-	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.GetId(), loginChallenge, nil)
+	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.Msg.GetId(), loginChallenge, nil)
 	if err != nil {
 		logger.WithError(err).Error("could not store login attempt - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -161,7 +163,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		return err
 	}
 	// Extract profile name from properties or use a default
-	var properties frame.JSONMap
+	var properties data.JSONMap
 	properties = properties.FromProtoStruct(existingProfile.GetProperties())
 	profileName = properties.GetString(KeyProfileName)
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
@@ -171,15 +173,16 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, sou
 
 	deviceSessionID := utils.SessionIDFromContext(ctx)
 
-	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
 	if err != nil {
 		return nil, err
 	}
 
+	partitionObj := partitionResp.Msg.GetData()
 	login, err := h.loginRepo.GetByProfileID(ctx, profileID)
 	if err != nil {
 
-		if !frame.ErrorIsNoRows(err) {
+		if !data.ErrorIsNoRows(err) {
 			return nil, err
 		}
 
@@ -190,7 +193,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, sou
 		login.GenID(ctx)
 		login.PartitionID = partitionObj.GetId()
 		login.TenantID = partitionObj.GetTenantId()
-		err = h.loginRepo.Save(ctx, login)
+		err = h.loginRepo.Create(ctx, login)
 		if err != nil {
 			return nil, err
 		}
@@ -208,7 +211,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, sou
 	loginEvt.TenantID = partitionObj.GetTenantId()
 	loginEvt.ID = deviceSessionID
 
-	err = h.loginEventRepo.Save(ctx, loginEvt)
+	err = h.loginEventRepo.Create(ctx, loginEvt)
 	if err != nil {
 		return nil, err
 	}
@@ -258,18 +261,18 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	logger.WithField("verification_id", loginEvent.VerificationID).WithField("verification_code", verificationCode).Info("DEBUG: Calling CheckVerification")
 
-	verifyResp, err := h.profileCli.CheckVerification(ctx, verifyReq)
+	verifyResp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(verifyReq))
 	if err != nil {
 		logger.WithError(err).Error("verification code verification failed")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
 
-	if verifyResp.GetCheckAttempts() > 3 {
+	if verifyResp.Msg.GetCheckAttempts() > 3 {
 		logger.Error("verification code verification failed after too many attempts")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts")
 	}
 
-	if !verifyResp.GetSuccess() {
+	if !verifyResp.Msg.GetSuccess() {
 		logger.Error("verification code verification returned false")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
@@ -277,9 +280,9 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	logger.Info("DEBUG: Verification code verified successfully")
 
 	var profileObj *profilev1.ProfileObject
-	resp, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: loginEvent.ContactID})
+	resp, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: loginEvent.ContactID}))
 	if err == nil {
-		profileObj = resp.GetData()
+		profileObj = resp.Msg.GetData()
 	} else {
 		// Check if it's a "not found" error, which is expected for new users
 		st, errOk := status.FromError(err)
@@ -299,17 +302,17 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 			KeyProfileName: profileName,
 		})
 
-		res, err0 := h.profileCli.Create(ctx, &profilev1.CreateRequest{
+		res, err0 := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    loginEvent.ContactID,
 			Properties: properties,
-		})
+		}))
 		if err0 != nil {
 			logger.WithError(err0).Error("DEBUG: failed to create new profile by contact & name")
 			return err0
 		}
 
-		profileObj = res.GetData()
+		profileObj = res.Msg.GetData()
 	}
 
 	// Complete OAuth2 login flow using login_challenge from loginEvent

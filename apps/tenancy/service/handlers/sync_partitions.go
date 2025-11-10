@@ -8,7 +8,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/pitabwire/frame/framedata"
+	"github.com/pitabwire/frame/data"
 )
 
 const SyncPartitionsHTTPPath = "/_system/sync/partitions"
@@ -36,6 +36,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 	response["triggered"] = true
 
 	queryStr := req.URL.Query().Get("q")
+	_ = queryStr
 	pageStr := req.URL.Query().Get("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil {
@@ -46,10 +47,10 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 	if err != nil {
 		count = 50
 	}
-	query := framedata.NewSearchQuery(
-		queryStr, make(map[string]any),
-		page, count)
-	err = business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.svc, query)
+
+	query := data.NewSearchQuery(
+		data.WithSearchLimit(count), data.WithSearchOffset(page))
+	err = business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, query)
 	if err != nil {
 
 		rw.Header().Set("Content-Type", "application/json")

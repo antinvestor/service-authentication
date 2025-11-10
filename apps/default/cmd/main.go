@@ -97,7 +97,7 @@ func handleDatabaseMigration(
 	if cfg.DoDatabaseMigrate() {
 		svc.Init(ctx, serviceOptions...)
 
-		err := repository.Migrate(ctx, svc, cfg.GetDatabaseMigrationPath())
+		err := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
 		if err != nil {
 			log.WithError(err).Fatal("main -- Could not migrate successfully")
 		}

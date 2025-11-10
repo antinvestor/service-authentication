@@ -3,7 +3,17 @@ module github.com/antinvestor/service-authentication
 go 1.25.0
 
 require (
-	buf.build/go/protovalidate v1.0.0
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251104075539-aa13b0d20c93.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251104075601-1b4b2a5749d5.2
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251104075601-1b4b2a5749d5.1
+	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251103165756-9f424454275d.2
+	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251103165756-9f424454275d.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251103165825-e20d41e9ec19.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251103165825-e20d41e9ec19.1
+	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251103165858-2dd49c83c15e.2
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251103165858-2dd49c83c15e.1
+	connectrpc.com/connect v1.19.1
+	connectrpc.com/otelconnect v0.8.0
 	github.com/antinvestor/apis/go/common v1.47.12
 	github.com/antinvestor/apis/go/device v1.47.13
 	github.com/antinvestor/apis/go/notification v1.47.13
@@ -13,7 +23,6 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
 	github.com/pitabwire/frame v1.65.1
@@ -21,7 +30,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0
 	gocloud.dev v0.43.0
 	golang.org/x/crypto v0.43.0
 	google.golang.org/grpc v1.76.0
@@ -30,9 +38,9 @@ require (
 )
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251104075539-aa13b0d20c93.1 // indirect
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1 // indirect
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.10-20230414000709-087bc8072ce4.1 // indirect
+	buf.build/go/protovalidate v1.0.0 // indirect
 	cel.dev/expr v0.25.0 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
@@ -64,8 +72,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
-	github.com/google/gnostic v0.7.1 // indirect
-	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
@@ -117,6 +123,7 @@ require (
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0 // indirect
 	go.opentelemetry.io/contrib/bridges/prometheus v0.63.0 // indirect
 	go.opentelemetry.io/contrib/exporters/autoexport v0.63.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/contrib/propagators/autoprop v0.63.0 // indirect
 	go.opentelemetry.io/contrib/propagators/aws v1.38.0 // indirect
@@ -145,7 +152,6 @@ require (
 	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect

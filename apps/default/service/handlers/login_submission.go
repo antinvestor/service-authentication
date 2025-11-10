@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -38,7 +39,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
-		if frame.ErrorIsNoRows(err) {
+		if data.ErrorIsNoRows(err) {
 			http.Redirect(rw, req, "/not-found", http.StatusNotFound)
 			return nil
 		}
@@ -74,16 +75,16 @@ func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, pr
 
 	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
 
-	response, err := h.profileCli.Update(ctx, &profilev1.UpdateRequest{
+	response, err := h.profileCli.Update(ctx, connect.NewRequest(&profilev1.UpdateRequest{
 		Id:         profileID,
 		Properties: props,
-	})
+	}))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return response.GetData(), nil
+	return response.Msg.GetData(), nil
 
 }
 
@@ -103,19 +104,19 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	verificationID := event.VerificationID
-	resp, err := h.profileCli.CheckVerification(ctx, &profilev1.CheckVerificationRequest{
+	resp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
 		Id:   verificationID,
 		Code: code,
-	})
+	}))
 	if err != nil {
 		return "", err
 	}
 
-	if int(resp.GetCheckAttempts()) > h.config.AuthProviderContactLoginMaxVerificationAttempts {
+	if int(resp.Msg.GetCheckAttempts()) > h.config.AuthProviderContactLoginMaxVerificationAttempts {
 		return "", errors.New("login verification attempts exceeded")
 	}
 
-	if !resp.GetSuccess() {
+	if !resp.Msg.GetSuccess() {
 		return "", errors.New("login verification code is incorrect")
 	}
 

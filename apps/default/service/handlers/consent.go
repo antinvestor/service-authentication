@@ -6,6 +6,8 @@ import (
 	"time"
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -59,12 +61,13 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
 
-	partitionObj, err := h.partitionCli.GetPartition(ctx, clientID)
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
 	if err != nil {
 		logger.WithError(err).Error("could not get partition by profile id")
 		return err
 	}
 
+	partitionObj := partitionResp.Msg.GetData()
 	tokenMap := map[string]any{
 		"tenant_id":       partitionObj.GetTenantId(),
 		"partition_id":    partitionObj.GetId(),
@@ -105,17 +108,17 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	var deviceObj *devicev1.DeviceObject
 
 	if deviceID != "" {
-		resp, err := deviceCli.GetById(ctx, &devicev1.GetByIdRequest{Id: []string{deviceID}})
-		if err == nil && len(resp.GetData()) > 0 {
-			deviceObj = resp.GetData()[0]
+		resp, err := deviceCli.GetById(ctx, connect.NewRequest(&devicev1.GetByIdRequest{Id: []string{deviceID}}))
+		if err == nil && len(resp.Msg.GetData()) > 0 {
+			deviceObj = resp.Msg.GetData()[0]
 		}
 	}
 
 	if deviceSessionID != "" {
 
-		session, err := deviceCli.GetBySessionId(ctx, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
+		session, err := deviceCli.GetBySessionId(ctx, connect.NewRequest(&devicev1.GetBySessionIdRequest{Id: deviceSessionID}))
 		if err == nil {
-			deviceObj = session.GetData()
+			deviceObj = session.Msg.GetData()
 		}
 
 	}
@@ -123,30 +126,30 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	props, _ := structpb.NewStruct(map[string]any{"source": "consent"})
 	if deviceObj == nil {
 
-		resp, err0 := deviceCli.Create(ctx, &devicev1.CreateRequest{
+		resp, err0 := deviceCli.Create(ctx, connect.NewRequest(&devicev1.CreateRequest{
 			Name:       "Error dev",
 			Properties: props,
-		})
+		}))
 		if err0 != nil {
 			return nil, err0
 		}
-		deviceObj = resp.GetData()
+		deviceObj = resp.Msg.GetData()
 	}
 
 	if deviceObj.GetProfileId() == profileId {
 		return deviceObj, nil
 	}
 
-	resp, err := deviceCli.Link(ctx, &devicev1.LinkRequest{
+	resp, err := deviceCli.Link(ctx, connect.NewRequest(&devicev1.LinkRequest{
 		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
 		Properties: props,
-	})
+	}))
 	if err != nil {
 		return deviceObj, err
 	}
 
-	deviceObj = resp.GetData()
+	deviceObj = resp.Msg.GetData()
 
 	return deviceObj, nil
 

@@ -17,8 +17,8 @@ type loginRepository struct {
 func NewLoginRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) LoginRepository {
 	return &loginRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.Login](
-		ctx, dbPool, workMan, func() *models.Login { return &models.Login{} },
-	),
+			ctx, dbPool, workMan, func() *models.Login { return &models.Login{} },
+		),
 	}
 }
 

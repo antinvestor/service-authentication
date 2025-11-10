@@ -4,17 +4,13 @@ import (
 	"context"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/workerpool"
 )
 
 type pageRepository struct {
-	service *frame.Service
-}
-
-func (pgr *pageRepository) GetByID(ctx context.Context, id string) (*models.Page, error) {
-	page := &models.Page{}
-	err := pgr.Pool().DB(ctx, true).First(page, "id = ?", id).Error
-	return page, err
+	datastore.BaseRepository[*models.Page]
 }
 
 func (pgr *pageRepository) GetByPartitionAndName(
@@ -27,17 +23,10 @@ func (pgr *pageRepository) GetByPartitionAndName(
 	return page, err
 }
 
-func (pgr *pageRepository) Save(ctx context.Context, page *models.Page) error {
-	return pgr.Pool().DB(ctx, false).Save(page).Error
-}
-
-func (pgr *pageRepository) Delete(ctx context.Context, id string) error {
-	return pgr.Pool().DB(ctx, false).Where("id = ?", id).Delete(&models.Page{}).Error
-}
-
-func NewPageRepository(service *frame.Service) PageRepository {
-	repo := pageRepository{
-		service: service,
+func NewPageRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) PageRepository {
+	return &pageRepository{
+		BaseRepository: datastore.NewBaseRepository[*models.Page](
+			ctx, dbPool, workMan, func() *models.Page { return &models.Page{} },
+		),
 	}
-	return &repo
 }

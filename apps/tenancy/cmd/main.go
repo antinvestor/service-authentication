@@ -3,60 +3,64 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
-	"buf.build/go/protovalidate"
-	apis "github.com/antinvestor/apis/go/common"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	"connectrpc.com/connect"
+	"connectrpc.com/otelconnect"
+	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	protovalidateinterceptor "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/security"
+	securityconnect "github.com/pitabwire/frame/security/interceptors/connect"
+	securityhttp "github.com/pitabwire/frame/security/interceptors/http"
 	"github.com/pitabwire/util"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	serviceName := "service_partition"
 	ctx := context.Background()
 
-	cfg, err := frame.ConfigLoadWithOIDC[config.PartitionConfig](ctx)
+	cfg, err := config.LoadWithOIDC[aconfig.PartitionConfig](ctx)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not process configs")
 		return
 	}
 
-	ctx, svc := frame.NewServiceWithContext(ctx, serviceName, frame.WithConfig(&cfg))
-	log := svc.Log(ctx)
+	if cfg.Name() == "" {
+		cfg.ServiceName = "service_partition"
+	}
+
+	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore(), frame.WithRegisterServerOauth2Client())
 
 	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, svc, cfg, log) {
+	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {
 		return
 	}
 
-	err = svc.RegisterForJwt(ctx)
-	if err != nil {
-		log.WithError(err).Fatal("could not register for jwt")
-		return
+	sm := svc.SecurityManager()
+	cliMan := svc.HTTPClientManager()
+
+	partSrv := handlers.NewPartitionServer(ctx, svc)
+
+	// Setup Connect server
+	connectHandler := setupConnectServer(ctx, sm, partSrv)
+
+	// Setup HTTP handlers
+	// Start with datastore option
+	serviceOptions := []frame.Option{
+		frame.WithHTTPHandler(connectHandler),
+		frame.WithRegisterEvents(
+			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.PartitionRepo),
+		),
 	}
 
-	// Setup GRPC server
-	grpcServer, implementation := setupGRPCServer(ctx, svc, cfg, serviceName, log)
+	log := util.Log(ctx)
 
-	// Setup HTTP handlers and proxy
-	serviceOptions, httpErr := setupHTTPHandlers(ctx, svc, implementation, cfg, grpcServer)
-	if httpErr != nil {
-		log.WithError(httpErr).Fatal("could not setup HTTP handlers")
-	}
-
-	serviceOptions = append(serviceOptions, frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(svc),
-	))
+	serviceOptions = append(serviceOptions)
 
 	svc.Init(ctx, serviceOptions...)
 
@@ -78,94 +82,48 @@ func main() {
 // handleDatabaseMigration performs database migration if configured to do so.
 func handleDatabaseMigration(
 	ctx context.Context,
-	svc *frame.Service,
-	cfg config.PartitionConfig,
-	log *util.LogEntry,
+	cfg config.ConfigurationDatabase,
+	dbManager datastore.Manager,
 ) bool {
-	serviceOptions := []frame.Option{frame.WithDatastore()}
 
 	if cfg.DoDatabaseMigrate() {
-		svc.Init(ctx, serviceOptions...)
 
-		err := repository.Migrate(ctx, svc, cfg.GetDatabaseMigrationPath())
+		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
 		if err != nil {
-			log.WithError(err).Fatal("main -- Could not migrate successfully")
+			util.Log(ctx).WithError(err).Fatal("main -- Could not migrate successfully")
 		}
 		return true
 	}
 	return false
 }
 
-// setupGRPCServer initialises and configures the gRPC server.
-func setupGRPCServer(ctx context.Context, svc *frame.Service,
-	cfg config.PartitionConfig,
-	serviceName string,
-	log *util.LogEntry) (*grpc.Server, *handlers.PartitionServer) {
-	jwtAudience := cfg.Oauth2JwtVerifyAudience
-	if jwtAudience == "" {
-		jwtAudience = serviceName
-	}
-
-	validator, err := protovalidate.New()
-	if err != nil {
-		log.WithError(err).Fatal("could not load validator for proto messages")
-	}
-
-	grpcServer := grpc.NewServer(
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
-		grpc.ChainUnaryInterceptor(
-			svc.UnaryAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
-			protovalidateinterceptor.UnaryServerInterceptor(validator)),
-
-		grpc.ChainStreamInterceptor(
-			svc.StreamAuthInterceptor(jwtAudience, cfg.GetOauth2Issuer()),
-			protovalidateinterceptor.StreamServerInterceptor(validator),
-		),
-	)
-
-	implementation := handlers.NewPartitionServer(ctx, svc)
-	partitionv1.RegisterPartitionServiceServer(grpcServer, implementation)
-
-	return grpcServer, implementation
-}
-
-// setupHTTPHandlers configures HTTP handlers and proxy.
-func setupHTTPHandlers(
+// setupConnectServer initializes and configures the connect server.
+func setupConnectServer(
 	ctx context.Context,
-	svc *frame.Service,
+	securityMan security.Manager,
 	implementation *handlers.PartitionServer,
-	cfg config.PartitionConfig,
-	grpcServer *grpc.Server,
-) ([]frame.Option, error) {
-	// Start with framedata option
-	serviceOptions := []frame.Option{frame.WithDatastore()}
-
-	// Add GRPC server option
-	grpcServerOpt := frame.WithGRPCServer(grpcServer)
-	serviceOptions = append(serviceOptions, grpcServerOpt)
-
-	// Setup proxy
-	proxyOptions := apis.ProxyOptions{
-		GrpcServerEndpoint: fmt.Sprintf("localhost%s", cfg.GrpcPort()),
-		GrpcServerDialOpts: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
-	}
-
-	proxyMux, err := partitionv1.CreateProxyHandler(ctx, proxyOptions)
+) http.Handler {
+	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
-		return nil, err
+		util.Log(ctx).WithError(err).Fatal("could not configure open telemetry")
 	}
 
-	// Setup REST handlers
-	jwtAudience := cfg.Oauth2JwtVerifyAudience
-	if jwtAudience == "" {
-		jwtAudience = svc.Name()
+	validateInterceptor, err := securityconnect.NewValidationInterceptor()
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not configure validation interceptor")
 	}
 
-	partitionServiceRestHandlers := svc.AuthenticationMiddleware(
-		implementation.NewSecureRouterV1(), jwtAudience, cfg.Oauth2JwtVerifyIssuer)
+	authenticator := securityMan.GetAuthenticator(ctx)
+	authInterceptor := securityconnect.NewAuthInterceptor(authenticator)
 
-	proxyMux.Handle("/public/", http.StripPrefix("/public", partitionServiceRestHandlers))
-	serviceOptions = append(serviceOptions, frame.WithHTTPHandler(proxyMux))
+	_, serverHandler := partitionv1connect.NewPartitionServiceHandler(
+		implementation, connect.WithInterceptors(authInterceptor, otelInterceptor, validateInterceptor))
 
-	return serviceOptions, nil
+	publicRestHandler := securityhttp.AuthenticationMiddleware(implementation.NewSecureRouterV1(), authenticator)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", serverHandler)
+	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
+
+	return mux
 }

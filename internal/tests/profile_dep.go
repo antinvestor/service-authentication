@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -76,21 +75,21 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 	var err error
 	databaseURL := ""
 	hydraPort := ""
-	var oauth2ServiceURIAdmin frame.DataSource
-	var partitionService frame.DataSource
-	var notificationService frame.DataSource
+	oauth2ServiceURIAdmin := ""
+	partitionService := ""
+	notificationService := ""
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
 			databaseURL = dep.GetInternalDS(ctx).String()
 		} else {
 
 			if dep.Name() == NotificationImage {
-				notificationService = dep.GetInternalDS(ctx)
+				notificationService = dep.GetInternalDS(ctx).String()
 			} else if dep.Name() == PartitionImage {
-				partitionService = dep.GetInternalDS(ctx)
+				partitionService = dep.GetInternalDS(ctx).String()
 			} else {
 
-				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx)
+				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
 				hydraPort, err = dep.PortMapping(ctx, "4444")
 				if err != nil {
 					return err
@@ -104,10 +103,8 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		return err
 	}
 
-	oauth2ServiceURI, err := oauth2ServiceURIAdmin.ChangePort(hydraPort)
-	if err != nil {
-		return err
-	}
+	// Convert admin URI to public URI by changing port
+	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", hydraPort, 1)
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
@@ -122,14 +119,14 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"CORS_ALLOWED_ORIGINS":         "*",
 			"CONTACT_ENCRYPTION_KEY":       "4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax",
 			"CONTACT_ENCRYPTION_SALT":      "geYobar79WDL",
-			"OAUTH2_SERVICE_URI":           oauth2ServiceURI.String(),
-			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin.String(),
+			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
+			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_partition",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_profile",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
-			"NOTIFICATION_SERVICE_URI":     notificationService.String(),
-			"PARTITION_SERVICE_URI":        partitionService.String(),
+			"NOTIFICATION_SERVICE_URI":     notificationService,
+			"PARTITION_SERVICE_URI":        partitionService,
 		},
 		WaitingFor: wait.ForLog("Initiating server operations"),
 	}

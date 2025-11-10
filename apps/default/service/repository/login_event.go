@@ -18,8 +18,8 @@ type loginEventRepository struct {
 func NewLoginEventRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) LoginEventRepository {
 	return &loginEventRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.LoginEvent](
-		ctx, dbPool, workMan, func() *models.LoginEvent { return &models.LoginEvent{} },
-	),
+			ctx, dbPool, workMan, func() *models.LoginEvent { return &models.LoginEvent{} },
+		),
 	}
 }
 

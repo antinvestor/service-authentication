@@ -5,7 +5,7 @@ import (
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -13,7 +13,7 @@ type Tenant struct {
 	data.BaseModel
 	Name        string `gorm:"type:varchar(100);"`
 	Description string `gorm:"type:text;"`
-	Properties  frame.JSONMap
+	Properties  data.JSONMap
 }
 
 func (t *Tenant) ToAPI() *partitionv1.TenantObject {
@@ -28,12 +28,12 @@ func (t *Tenant) ToAPI() *partitionv1.TenantObject {
 
 type Partition struct {
 	data.BaseModel
-	Name         string        `gorm:"type:varchar(100);" json:"name"`
-	Description  string        `gorm:"type:text;"         json:"description"`
-	ParentID     string        `gorm:"type:varchar(50);"  json:"parent_id"`
-	ClientSecret string        `gorm:"type:varchar(250);" json:"client_secret"`
-	Properties   frame.JSONMap `                          json:"properties"`
-	State        int32         `                          json:"state"`
+	Name         string       `gorm:"type:varchar(100);" json:"name"`
+	Description  string       `gorm:"type:text;"         json:"description"`
+	ParentID     string       `gorm:"type:varchar(50);"  json:"parent_id"`
+	ClientSecret string       `gorm:"type:varchar(250);" json:"client_secret"`
+	Properties   data.JSONMap `                          json:"properties"`
+	State        int32        `                          json:"state"`
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
@@ -52,7 +52,7 @@ func (p *Partition) ToAPI() *partitionv1.PartitionObject {
 type PartitionRole struct {
 	data.BaseModel
 	Name       string `gorm:"type:varchar(100);"`
-	Properties frame.JSONMap
+	Properties data.JSONMap
 }
 
 func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
@@ -77,7 +77,7 @@ type Page struct {
 	Name       string `gorm:"type:varchar(50);"`
 	HTML       string `gorm:"type:text;"`
 	State      int32
-	Properties frame.JSONMap
+	Properties data.JSONMap
 }
 
 func (p *Page) ToAPI() *partitionv1.PageObject {

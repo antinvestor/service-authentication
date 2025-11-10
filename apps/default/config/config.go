@@ -11,7 +11,7 @@ type AuthenticationConfig struct {
 	PartitionServiceURI     string `envDefault:"127.0.0.1:7003" env:"PARTITION_SERVICE_URI"`
 	ProfileServiceURI       string `envDefault:"127.0.0.1:7020" env:"PROFILE_SERVICE_URI"`
 	DeviceServiceURI        string `envDefault:"127.0.0.1:7020" env:"DEVICE_SERVICE_URI"`
-	NotificationServiceURI        string `envDefault:"127.0.0.1:7020" env:"NOTIFICATION_SERVICE_URI"`
+	NotificationServiceURI  string `envDefault:"127.0.0.1:7020" env:"NOTIFICATION_SERVICE_URI"`
 
 	CsrfSecret string `envDefault:"f80105efab6d863fd8fc243d269094469e2277e8f12e5a0a9f401e88494f7b4b" env:"CSRF_SECRET"`
 

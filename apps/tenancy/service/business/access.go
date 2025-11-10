@@ -7,6 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/data"
 )
 
 type AccessBusiness interface {
@@ -23,21 +24,28 @@ type AccessBusiness interface {
 		request *partitionv1.CreateAccessRoleRequest) (*partitionv1.AccessRoleObject, error)
 }
 
-func NewAccessBusiness(_ context.Context, service *frame.Service) AccessBusiness {
-	accessRepo := repository.NewAccessRepository(service)
-	partitionRepo := repository.NewPartitionRepository(service)
-
+func NewAccessBusiness(
+	service *frame.Service,
+	accessRepo repository.AccessRepository,
+	accessRoleRepo repository.AccessRoleRepository,
+	partitionRepo repository.PartitionRepository,
+	partitionRoleRepo repository.PartitionRoleRepository,
+) AccessBusiness {
 	return &accessBusiness{
-		service:       service,
-		accessRepo:    accessRepo,
-		partitionRepo: partitionRepo,
+		service:           service,
+		accessRepo:        accessRepo,
+		accessRoleRepo:    accessRoleRepo,
+		partitionRepo:     partitionRepo,
+		partitionRoleRepo: partitionRoleRepo,
 	}
 }
 
 type accessBusiness struct {
-	service       *frame.Service
-	accessRepo    repository.AccessRepository
-	partitionRepo repository.PartitionRepository
+	service           *frame.Service
+	accessRepo        repository.AccessRepository
+	accessRoleRepo    repository.AccessRoleRepository
+	partitionRepo     repository.PartitionRepository
+	partitionRoleRepo repository.PartitionRoleRepository
 }
 
 func (ab *accessBusiness) GetAccess(
@@ -115,7 +123,7 @@ func (ab *accessBusiness) CreateAccess(
 
 	access, err := ab.accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), request.GetProfileId())
 	if err != nil {
-		if !frame.ErrorIsNoRows(err) {
+		if !data.ErrorIsNoRows(err) {
 			return nil, err
 		}
 	} else {
@@ -131,7 +139,7 @@ func (ab *accessBusiness) CreateAccess(
 		},
 	}
 
-	err = ab.accessRepo.Save(ctx, access)
+	err = ab.accessRepo.Create(ctx, access)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +153,7 @@ func (ab *accessBusiness) CreateAccess(
 func (ab *accessBusiness) ListAccessRoles(
 	ctx context.Context,
 	request *partitionv1.ListAccessRoleRequest) (*partitionv1.ListAccessRoleResponse, error) {
-	accessRoleList, err := ab.accessRepo.GetRoles(ctx, request.GetAccessId())
+	accessRoleList, err := ab.accessRoleRepo.GetByAccessID(ctx, request.GetAccessId())
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +164,7 @@ func (ab *accessBusiness) ListAccessRoles(
 		parititionRoleIDs = append(parititionRoleIDs, accessR.PartitionRoleID)
 	}
 
-	partitionRoles, err := ab.partitionRepo.GetRolesByID(ctx, parititionRoleIDs...)
+	partitionRoles, err := ab.partitionRoleRepo.GetRolesByID(ctx, parititionRoleIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +188,7 @@ func (ab *accessBusiness) ListAccessRoles(
 func (ab *accessBusiness) RemoveAccessRole(
 	ctx context.Context,
 	request *partitionv1.RemoveAccessRoleRequest) error {
-	err := ab.accessRepo.RemoveRole(ctx, request.GetId())
+	err := ab.accessRoleRepo.Delete(ctx, request.GetId())
 	if err != nil {
 		return err
 	}
@@ -196,7 +204,7 @@ func (ab *accessBusiness) CreateAccessRole(
 		return nil, err
 	}
 
-	partitionRoles, err := ab.partitionRepo.GetRolesByID(ctx, request.GetPartitionRoleId())
+	partitionRoles, err := ab.partitionRoleRepo.GetRolesByID(ctx, request.GetPartitionRoleId())
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +214,7 @@ func (ab *accessBusiness) CreateAccessRole(
 		PartitionRoleID: partitionRoles[0].GetID(),
 	}
 
-	err = ab.accessRepo.SaveRole(ctx, accessRole)
+	err = ab.accessRoleRepo.Create(ctx, accessRole)
 	if err != nil {
 		return nil, err
 	}

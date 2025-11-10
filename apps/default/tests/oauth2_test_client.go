@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,13 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	"connectrpc.com/connect"
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
@@ -816,7 +813,7 @@ func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID str
 // GetVerificationCodeByLoginEventID retrieves the actual verification code from the database
 func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
 
-	loginEventRepo := repository.NewLoginEventRepository(authServer.Service())
+	loginEventRepo := authServer.LoginEventRepo()
 	loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
 	if err != nil {
 		return "", err
@@ -840,17 +837,14 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 		}
 
 		var nSlice []*notificationv1.Notification
-		for {
-			n, err1 := resp.Recv()
-			if err1 == nil {
-				nSlice = append(nSlice, n.GetData()...)
-				continue
+		for resp.Receive() {
+			err1 := resp.Err()
+			if err1 != nil {
+				return nil, err1
 			}
 
-			if errors.Is(err1, io.EOF) {
-				break
-			}
-			return nil, err1
+			n := resp.Msg()
+			nSlice = append(nSlice, n.GetData()...)
 
 		}
 

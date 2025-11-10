@@ -7,7 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/framedata"
+	"github.com/pitabwire/frame/data"
 )
 
 type TenantBusiness interface {
@@ -16,25 +16,16 @@ type TenantBusiness interface {
 	UpdateTenant(ctx context.Context, request *partitionv1.UpdateTenantRequest) (*partitionv1.TenantObject, error)
 	ListTenant(
 		ctx context.Context,
-		request *partitionv1.ListTenantRequest,
-		stream partitionv1.PartitionService_ListTenantServer,
-	) error
+		request *partitionv1.ListTenantRequest) ([]*partitionv1.TenantObject, error)
 }
 
-func NewTenantBusiness(ctx context.Context, service *frame.Service) TenantBusiness {
-	tenantRepo := repository.NewTenantRepository(service)
-
-	return NewTenantBusinessWithRepo(ctx, service, tenantRepo)
-}
-
-func NewTenantBusinessWithRepo(
-	_ context.Context,
+func NewTenantBusiness(
 	service *frame.Service,
-	repo repository.TenantRepository,
+	tenantRepo repository.TenantRepository,
 ) TenantBusiness {
 	return &tenantBusiness{
 		service:    service,
-		tenantRepo: repo,
+		tenantRepo: tenantRepo,
 	}
 }
 
@@ -75,7 +66,7 @@ func (t *tenantBusiness) CreateTenant(
 		Properties:  request.GetProperties().AsMap(),
 	}
 
-	err := t.tenantRepo.Save(ctx, tenantModel)
+	err := t.tenantRepo.Create(ctx, tenantModel)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +95,7 @@ func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *partitionv1.
 
 	tenant.Properties = jsonMap
 
-	err = t.tenantRepo.Save(ctx, tenant)
+	_, err = t.tenantRepo.Update(ctx, tenant, "name", "description", "properties")
 	if err != nil {
 		return nil, err
 	}
@@ -114,47 +105,39 @@ func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *partitionv1.
 
 func (t *tenantBusiness) ListTenant(
 	ctx context.Context,
-	request *partitionv1.ListTenantRequest,
-	stream partitionv1.PartitionService_ListTenantServer,
-) error {
+	request *partitionv1.ListTenantRequest) ([]*partitionv1.TenantObject, error) {
 
-	searchProperties := map[string]any{}
+	filterProperties := map[string]any{}
 
 	for _, p := range request.GetProperties() {
-		searchProperties[p] = request.GetQuery()
+		filterProperties[p+" = ?"] = request.GetQuery()
 	}
 
-	query := framedata.NewSearchQuery(
-		request.GetQuery(), searchProperties,
-		int(request.GetPage()),
-		int(request.GetCount()),
+	query := data.NewSearchQuery(
+		data.WithSearchLimit(int(request.GetCount())),
+		data.WithSearchOffset(int(request.GetPage())),
+		data.WithSearchFiltersAndByValue(filterProperties),
 	)
 
 	jobResult, err := t.tenantRepo.Search(ctx, query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var responseObjects []*partitionv1.TenantObject
 	for {
 		result, ok := jobResult.ReadResult(ctx)
 
 		if !ok {
-			return nil
+			return responseObjects, nil
 		}
 
 		if result.IsError() {
-			return result.Error()
+			return responseObjects, result.Error()
 		}
 
-		var responseObjects []*partitionv1.TenantObject
 		for _, tenant := range result.Item() {
 			responseObjects = append(responseObjects, tenant.ToAPI())
 		}
-
-		err = stream.Send(&partitionv1.ListTenantResponse{Data: responseObjects})
-		if err != nil {
-			return err
-		}
-
 	}
 }
