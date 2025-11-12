@@ -4,10 +4,10 @@ buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251104075601-1b4b2a5
 buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251104075601-1b4b2a5749d5.2/go.mod h1:1+nBTMSSoqTPEw1kg9DFTDFY15b309oEHJCneHnupBQ=
 buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251104075601-1b4b2a5749d5.1 h1:9azyRE2HfJ+Z+us+O4uNgmx/i29B396+TheyVpmD2CE=
 buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251104075601-1b4b2a5749d5.1/go.mod h1:hpr0knlPG/m08ndai3QdXEFin/ObbdBkd/n0xtK3Mh8=
-buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251103165756-9f424454275d.2 h1:KuqdSZdaBbHv/ttQTWbrIt5zv07q4pcFy9B20x4NSX0=
-buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251103165756-9f424454275d.2/go.mod h1:qYpq9yZhiWsxcnfbAR4X8VPdTdl0GWRESVbNL4mc+XI=
-buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251103165756-9f424454275d.1 h1:L2lCjBRBNoYxcKpJxqQk9y0FO7cQE+cyF41pgagPlSU=
-buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251103165756-9f424454275d.1/go.mod h1:ND5BHq2Q/jS/YtuZn2PUVKQkoy9CceQ7+C2wvqEtROc=
+buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251104183814-0a16cadd9e5d.2 h1:MKmHOUaceZClXCNUlJaI1fMLOUWypY01yIZgoYW03/A=
+buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251104183814-0a16cadd9e5d.2/go.mod h1:cAVdWIFkFokEbjla0NSaPC82hHS8exTiZ3AIft1qMTY=
+buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251104183814-0a16cadd9e5d.1 h1:tHc2h/YipnrmPdvVLhseqAaH3SzPvttQEEzUF4WyMuI=
+buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251104183814-0a16cadd9e5d.1/go.mod h1:cRyraIw3erl4/YJLovGdCaqLeUEVmBNLNMyfilPUtM4=
 buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251103165825-e20d41e9ec19.2 h1:qx7BZlLAv+nGQYagRyUcrQrK7vKjtc4pZGlfdyJtd70=
 buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251103165825-e20d41e9ec19.2/go.mod h1:dtszMRxaUUHEghZFildnEakH4As9Qur6Xu7XA1PKl5M=
 buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251103165825-e20d41e9ec19.1 h1:IcBXK7Lu2bAbUBCARWy/OijAjoYwaMSPVA9edO3zj/8=
