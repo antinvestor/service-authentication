@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -145,7 +144,7 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	state := util.RandomString(16)
 	nonce := util.RandomString(16)
 
-	// Store session context for CSRF continuity
+	// Store session context for continuity
 	c.currentState = state
 	c.currentNonce = nonce
 
@@ -215,19 +214,6 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	return "", fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 }
 
-func extractCSRFTokenFromBody(bodyStr string) string {
-	if strings.Contains(bodyStr, `name="gorilla.csrf.Token"`) {
-		// Simple regex to extract CSRF token value
-		re := regexp.MustCompile(`name="gorilla\.csrf\.Token"[^>]*value="([^"]*)"`)
-		matches := re.FindStringSubmatch(bodyStr)
-		if len(matches) > 1 {
-			return matches[1]
-		}
-	}
-
-	return ""
-}
-
 // PerformContactVerification submits contact for verification and returns verification details
 // nolint:gocyclo,nolintlint //This is a test method no need to overthink
 func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, loginPageURL, contact string) (*ContactVerificationResult, error) {
@@ -266,8 +252,6 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 		}
 	}
 
-	// Extract CSRF token from HTML (look for input with name="gorilla.csrf.Token")
-	csrfToken := extractCSRFTokenFromBody(bodyStr)
 
 	// Step 2: Now submit contact for verification
 	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
@@ -275,9 +259,7 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 	// Prepare form data - DO NOT include login_challenge as it should be retrieved from session
 	formData := url.Values{}
 	formData.Set("contact", contact)
-	if csrfToken != "" {
-		formData.Set("gorilla.csrf.Token", csrfToken)
-	}
+
 	if c.t != nil {
 		c.t.Logf("DEBUG: Submitting contact verification to: %s", verificationURL)
 		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
@@ -392,7 +374,7 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 // PerformCodeVerification completes the contact verification with the verification code
 // nolint:gocyclo,nolintlint //This is a test method no need to overthink
 func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEventID, profileName, verificationCode string) (*VerificationCodeResult, error) {
-	// Step 1: Get the verification form to extract CSRF token
+	// Step 1: Get the verification form to extract token
 	verificationFormURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=%s&profile_name=%s",
 		c.AuthServiceURL, url.QueryEscape(loginEventID), url.QueryEscape(profileName))
 
@@ -415,27 +397,6 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 		}, fmt.Errorf("unexpected status getting verification form: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse HTML to extract CSRF token
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read verification form: %w", err)
-	}
-
-	// Extract CSRF token from HTML
-	csrfToken := ""
-	bodyStr := string(body)
-	if strings.Contains(bodyStr, `name="gorilla.csrf.Token"`) {
-		re := regexp.MustCompile(`name="gorilla\.csrf\.Token"[^>]*value="([^"]*)"`)
-		matches := re.FindStringSubmatch(bodyStr)
-		if len(matches) > 1 {
-			csrfToken = matches[1]
-		}
-	}
-
-	if c.t != nil {
-		c.t.Logf("DEBUG: Verification form CSRF token: %s (length: %d)", csrfToken, len(csrfToken))
-	}
-
 	// Step 2: Submit verification code
 	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
 
@@ -444,9 +405,6 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 	formData.Set("login_event_id", loginEventID)
 	formData.Set("profile_name", profileName)
 	formData.Set("verification_code", verificationCode)
-	if csrfToken != "" {
-		formData.Set("gorilla.csrf.Token", csrfToken)
-	}
 
 	if c.t != nil {
 		c.t.Logf("DEBUG: Submitting verification code to: %s", verificationURL)
@@ -605,7 +563,7 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 		}
 	} else {
 		// Handle error cases
-		body, _ = io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		if c.t != nil {
 			c.t.Logf("DEBUG: Verification failed with status: %d, body: %s", resp.StatusCode, string(body))
 		}

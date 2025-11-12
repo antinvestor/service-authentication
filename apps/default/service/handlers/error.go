@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"net/http"
-
-	"github.com/gorilla/csrf"
 )
 
 func (h *AuthServer) ErrorEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -14,7 +12,6 @@ func (h *AuthServer) ErrorEndpoint(rw http.ResponseWriter, req *http.Request) er
 	payload := initTemplatePayload(req.Context())
 	payload["errorTitle"] = errorTitle
 	payload["errorDescription"] = errorDescription
-	payload[csrf.TemplateTag] = csrf.TemplateField(req)
 
 	rw.Header().Set("Content-Type", "text/html")
 	rw.WriteHeader(http.StatusInternalServerError)

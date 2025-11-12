@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
 
-	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame/security"
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/http"
 )
@@ -20,11 +18,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	svc := h.service
 	cfg := h.config
-
-	csrfSecret, err := hex.DecodeString(cfg.CsrfSecret)
-	if err != nil {
-		svc.Log(ctx).Fatal("Failed to decode csrf secret :", err)
-	}
 
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
@@ -38,7 +31,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			return h
 		}
 	} else {
-		csrfMiddleware = csrf.Protect(csrfSecret, csrf.Secure(true))
+		csrfMiddleware = http.NewCrossOriginProtection().Handler
 	}
 
 	// Static file serving (no auth, no CSRF) with cache headers
@@ -73,7 +66,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			return
 		}
 		// Handle other paths as not found
-		err = h.NotFoundEndpoint(w, r)
+		err := h.NotFoundEndpoint(w, r)
 		if err != nil {
 			log := h.service.Log(r.Context())
 			log.WithError(err).WithField("path", r.URL.Path).WithField("name", "NotFoundEndpoint").Error("handler error")

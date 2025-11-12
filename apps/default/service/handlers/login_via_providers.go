@@ -12,7 +12,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
@@ -213,7 +212,6 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 
 	req.PostForm = url.Values{}
 	req.PostForm.Set("login_event_id", loginEvt.GetID())
-	req.PostForm.Set(csrf.TemplateTag, csrf.Token(req))
 	return h.SubmitLoginEndpoint(rw, req)
 }
 
@@ -263,6 +261,5 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 
 	req.PostForm = url.Values{}
 	req.PostForm.Set("login_event_id", loginEvt.GetID())
-	req.PostForm.Set(csrf.TemplateTag, csrf.Token(req))
 	return h.SubmitLoginEndpoint(rw, req)
 }

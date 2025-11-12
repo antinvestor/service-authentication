@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
-	"github.com/gorilla/csrf"
 )
 
 const SessionKeyLoginStorageName = "login-storage"
@@ -76,7 +75,6 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	payload := initTemplatePayload(req.Context())
 
 	payload["error"] = ""
-	payload[csrf.TemplateTag] = csrf.TemplateField(req)
 
 	for k, val := range h.loginOptions {
 		payload[k] = val

@@ -12,7 +12,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/gorilla/csrf"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
@@ -31,7 +30,6 @@ func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.
 	payload := initTemplatePayload(req.Context())
 	payload["login_event_id"] = loginEventID
 	payload["profile_name"] = profileName
-	payload[csrf.TemplateTag] = csrf.TemplateField(req)
 
 	if errorMsg != "" {
 		payload["error"] = errorMsg

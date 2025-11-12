@@ -9,7 +9,6 @@
     </div>
 
     <form method="post" action="/s/login/post" class="verification-form">
-        {{ .csrfField }}
         <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
 
         {{if .error}}
