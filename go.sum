@@ -218,8 +218,8 @@ github.com/ory/hydra-client-go/v2 v2.2.1 h1:m1821pIX6ybG/3oSAn2wtrbBKNwe9q5A8fLl
 github.com/ory/hydra-client-go/v2 v2.2.1/go.mod h1:K83R+iK40+5uF2uQ34yRUrf9izRvFsza9pG2Se5qMmk=
 github.com/panjf2000/ants/v2 v2.11.3 h1:AfI0ngBoXJmYOpDh9m516vjqoUu2sLrIVgppI9TZVpg=
 github.com/panjf2000/ants/v2 v2.11.3/go.mod h1:8u92CYMUc6gyvTIw8Ru7Mt7+/ESnJahz5EVtqfrilek=
-github.com/pitabwire/frame v1.65.3 h1:sC2PbT18zVONwh3D/OEEYXd69LJqDAYHoG10u1IWyoo=
-github.com/pitabwire/frame v1.65.3/go.mod h1:KvoO1pGTQnBYwj7t8q7xnu675aka02u2B2F9+pfjFpo=
+github.com/pitabwire/frame v1.65.5 h1:E2QPeUfXlKfHGNN59v2PQr26zhrwIjjf5yvnPg2zOK8=
+github.com/pitabwire/frame v1.65.5/go.mod h1:KvoO1pGTQnBYwj7t8q7xnu675aka02u2B2F9+pfjFpo=
 github.com/pitabwire/natspubsub v0.7.4 h1:gKNsutB8zoOMTq4h2o3SsLYhkZ1rPeKVowuDRMParFU=
 github.com/pitabwire/natspubsub v0.7.4/go.mod h1:sfQ2dg/zwXbSIelKabWOhEcxTkDB4HFc+JozUFSZrEU=
 github.com/pitabwire/util v0.3.5 h1:+0edmrGEyLaC/Q4+9i1auPxpygd1N1Q/r0Gj5rlLkaU=
@@ -272,10 +272,10 @@ github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0 h1:s2bIayFX
 github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0/go.mod h1:h+u/2KoREGTnTl9UwrQ/g+XhasAT8E6dClclAADeXoQ=
 github.com/testcontainers/testcontainers-go/modules/valkey v0.40.0 h1:V0zwJVnN8fOT++ySwo/P5cwd3pmXI7O4VdA7kQ+5OiM=
 github.com/testcontainers/testcontainers-go/modules/valkey v0.40.0/go.mod h1:z+ndszow9abHiSnpO/hOvCgUMv80FldiKZHSpMwd80s=
-github.com/tklauser/go-sysconf v0.3.15 h1:VE89k0criAymJ/Os65CSn1IXaol+1wrsFHEB8Ol49K4=
-github.com/tklauser/go-sysconf v0.3.15/go.mod h1:Dmjwr6tYFIseJw7a3dRLJfsHAMXZ3nEnL/aZY+0IuI4=
-github.com/tklauser/numcpus v0.10.0 h1:18njr6LDBk1zuna922MgdjQuJFjrdppsZG60sHGfjso=
-github.com/tklauser/numcpus v0.10.0/go.mod h1:BiTKazU708GQTYF4mB+cmlpT2Is1gLk7XVuEeem8LsQ=
+github.com/tklauser/go-sysconf v0.3.16 h1:frioLaCQSsF5Cy1jgRBrzr6t502KIIwQ0MArYICU0nA=
+github.com/tklauser/go-sysconf v0.3.16/go.mod h1:/qNL9xxDhc7tx3HSRsLWNnuzbVfh3e7gh/BmM179nYI=
+github.com/tklauser/numcpus v0.11.0 h1:nSTwhKH5e1dMNsCdVBukSZrURJRoHbSEQjdEbY+9RXw=
+github.com/tklauser/numcpus v0.11.0/go.mod h1:z+LwcLq54uWZTX0u/bGobaV34u6V7KNlTZejzM6/3MQ=
 github.com/valkey-io/valkey-go v1.0.68 h1:bTbfonp49b41DqrF30q+y2JL3gcbjd2IiacFAtO4JBA=
 github.com/valkey-io/valkey-go v1.0.68/go.mod h1:bHmwjIEOrGq/ubOJfh5uMRs7Xj6mV3mQ/ZXUbmqpjqY=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
