@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.65.3
+	github.com/pitabwire/frame v1.65.5
 	github.com/pitabwire/util v0.3.5
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -115,8 +115,8 @@ require (
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/testcontainers/testcontainers-go/modules/nats v0.40.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0 // indirect
