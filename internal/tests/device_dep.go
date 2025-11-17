@@ -22,7 +22,7 @@ type deviceDependency struct {
 func NewDevice(containerOpts ...definition.ContainerOption) definition.TestResource {
 	opts := definition.ContainerOpts{
 		ImageName:      DeviceImage,
-		Ports:          []string{"50055/tcp", "8085/tcp"},
+		Ports:          []string{"8085/tcp"},
 		NetworkAliases: []string{"device", "service-device"},
 		UseHostMode:    false,
 	}
@@ -100,8 +100,8 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
-			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
-			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
+			"TRACE_REQUESTS":               "true",
+			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,

@@ -22,7 +22,7 @@ type notificationDependancy struct {
 func NewNotificationSvc(containerOpts ...definition.ContainerOption) definition.TestResource {
 	opts := definition.ContainerOpts{
 		ImageName:      NotificationImage,
-		Ports:          []string{"50057/tcp", "8087/tcp"},
+		Ports:          []string{"8087/tcp"},
 		UseHostMode:    false,
 		NetworkAliases: []string{"notification", "service-notification"},
 	}
@@ -94,8 +94,8 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 		Image: NotificationImage,
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
-			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
-			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
+			"TRACE_REQUESTS":               "true",
+			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"CORS_ENABLED":                 "true",
 			"CORS_ALLOW_CREDENTIALS":       "true",

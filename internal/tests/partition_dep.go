@@ -22,7 +22,7 @@ type partitionDependancy struct {
 func NewPartitionSvc(containerOpts ...definition.ContainerOption) definition.TestResource {
 	opts := definition.ContainerOpts{
 		ImageName:      PartitionImage,
-		Ports:          []string{"50053/tcp", "8083/tcp"},
+		Ports:          []string{"8083/tcp"},
 		UseHostMode:    false,
 		NetworkAliases: []string{"partition", "service-partition"},
 	}
@@ -91,8 +91,8 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
-			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
-			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
+			"TRACE_REQUESTS":               "true",
+			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
 			"OAUTH2_WELL_KNOWN_JWK":        oauth2ServiceURI + "/.well-known/jwks.json",

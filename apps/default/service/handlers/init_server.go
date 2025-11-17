@@ -19,7 +19,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/securecookie"
 	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -50,6 +49,7 @@ type AuthServer struct {
 }
 
 func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *aconfig.AuthenticationConfig,
+	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository, apiKeyRepository repository.APIKeyRepository,
 	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
 
@@ -64,9 +64,9 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *acon
 		notificationCli: notificationCli,
 
 		// Initialise repositories
-		loginRepo:      repository.NewLoginRepository(ctx, service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName), service.WorkManager()),
-		apiKeyRepo:     repository.NewAPIKeyRepository(ctx, service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName), service.WorkManager()),
-		loginEventRepo: repository.NewLoginEventRepository(ctx, service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName), service.WorkManager()),
+		loginRepo:      loginRepository,
+		apiKeyRepo:     apiKeyRepository,
+		loginEventRepo: loginEventRepository,
 	}
 
 	err := h.setupCookieSessions(ctx, authConfig)

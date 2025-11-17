@@ -33,6 +33,7 @@ import (
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/openid"
+	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,6 +51,7 @@ type DepsBuilder struct {
 func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
+	sMan := svc.SecurityManager()
 	// qMan := svc.QueueManager()
 	//
 	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
@@ -62,21 +64,21 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 
 	var err error
 
-	depBuilder.PartitionCli, err = setupPartitionClient(ctx, svc.SecurityManager(), cfg)
+	depBuilder.PartitionCli, err = setupPartitionClient(ctx, sMan, cfg)
 	if err != nil {
 		return nil, err
 	}
-	depBuilder.NotificationCli, err = setupNotificationClient(ctx, svc.SecurityManager(), cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	depBuilder.ProfileCli, err = setupProfileClient(ctx, svc.SecurityManager(), cfg)
+	depBuilder.NotificationCli, err = setupNotificationClient(ctx, sMan, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	depBuilder.DeviceCli, err = setupDeviceClient(ctx, svc.SecurityManager(), cfg)
+	depBuilder.ProfileCli, err = setupProfileClient(ctx, sMan, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	depBuilder.DeviceCli, err = setupDeviceClient(ctx, sMan, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -106,10 +108,10 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	// Add profileSvc and partitionSvc service dependencies
-	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 
 	resources := []definition.TestResource{pg, hydra, notificationsSvc, profileSvc, deviceSvc, partitionSvc}
 	return resources
@@ -179,6 +181,7 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	cfg.LogLevel = "debug"
+	cfg.TraceRequests = true
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 	// cfg.RunServiceSecurely = false
@@ -205,7 +208,9 @@ func (bs *BaseTestSuite) CreateService(
 	depsBuilder, err := BuildRepos(ctx, svc)
 	require.NoError(t, err)
 
-	authServer := handlers.NewAuthServer(ctx, svc, &cfg, depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
+	authServer := handlers.NewAuthServer(ctx, svc, &cfg,
+		depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
+		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 
@@ -254,8 +259,11 @@ func setupPartitionClient(
 	ctx context.Context,
 	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
+	util.Log(ctx).WithField("url", cfg.PartitionServiceURI).Error("partition service url")
 	return partition.NewClient(ctx,
 		common.WithEndpoint(cfg.PartitionServiceURI),
+		common.WithTraceRequests(),
+		common.WithTraceResponses(),
 		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		common.WithTokenUsername(clHolder.JwtClientID()),
 		common.WithTokenPassword(clHolder.JwtClientSecret()),
@@ -287,6 +295,7 @@ func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connec
 		Properties:  properties.ToProtoStruct(),
 	}))
 	if err != nil {
+		util.Log(ctx).WithError(err).Error("failed to create partition")
 		return nil, err
 	}
 

@@ -17,6 +17,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/openid"
 	"github.com/pitabwire/util"
@@ -36,40 +37,48 @@ func main() {
 		cfg.ServiceName = "service_authentication"
 	}
 
-	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client())
+	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(), frame.WithDatastore())
 	log := svc.Log(ctx)
 
-	serviceOptions := []frame.Option{frame.WithDatastore()}
+	sm := svc.SecurityManager()
+	dbManager := svc.DatastoreManager()
+
+	workManager := svc.WorkManager()
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 
 	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, svc, cfg, log) {
+	if handleDatabaseMigration(ctx, dbManager, cfg, log) {
 		return
 	}
 
-	partitionCli, err := setupPartitionClient(ctx, svc.SecurityManager(), cfg)
+	partitionCli, err := setupPartitionClient(ctx, sm, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup partition service client: %v", err)
 	}
 
-	notificationCli, err := setupNotificationClient(ctx, svc.SecurityManager(), cfg)
+	notificationCli, err := setupNotificationClient(ctx, sm, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup notification service client: %v", err)
 	}
 
-	profileCli, err := setupProfileClient(ctx, svc.SecurityManager(), cfg)
+	profileCli, err := setupProfileClient(ctx, sm, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup profile service : %v", err)
 	}
 
-	deviceCli, err := setupDeviceClient(ctx, svc.SecurityManager(), cfg)
+	deviceCli, err := setupDeviceClient(ctx, sm, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup devices service : %v", err)
 	}
 
 	serviceTranslations := frame.WithTranslation("/localization", "en")
-	serviceOptions = append(serviceOptions, serviceTranslations)
+	serviceOptions := []frame.Option{serviceTranslations}
 
-	srv := handlers2.NewAuthServer(ctx, svc, &cfg, profileCli, deviceCli, partitionCli, notificationCli)
+	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
+	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
+	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
+
+	srv := handlers2.NewAuthServer(ctx, svc, &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
@@ -88,16 +97,14 @@ func main() {
 // handleDatabaseMigration performs database migration if configured to do so.
 func handleDatabaseMigration(
 	ctx context.Context,
-	svc *frame.Service,
+	dbManager datastore.Manager,
 	cfg aconfig.AuthenticationConfig,
 	log *util.LogEntry,
 ) bool {
-	serviceOptions := []frame.Option{frame.WithDatastore()}
 
 	if cfg.DoDatabaseMigrate() {
-		svc.Init(ctx, serviceOptions...)
 
-		err := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
+		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
 		if err != nil {
 			log.WithError(err).Fatal("main -- Could not migrate successfully")
 		}

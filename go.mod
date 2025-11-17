@@ -1,30 +1,30 @@
 module github.com/antinvestor/service-authentication
 
-go 1.25.0
+go 1.25.2
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251104075539-aa13b0d20c93.1
-	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251104075601-1b4b2a5749d5.2
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251104075601-1b4b2a5749d5.1
-	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251103165756-9f424454275d.2
-	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251103165756-9f424454275d.1
-	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251103165825-e20d41e9ec19.2
-	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251103165825-e20d41e9ec19.1
-	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251103165858-2dd49c83c15e.2
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251103165858-2dd49c83c15e.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251115174401-cf993dd61681.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251115181028-8235247fcb53.2
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251115181028-8235247fcb53.1
+	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251115181141-8a8c898fd720.2
+	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251115181141-8a8c898fd720.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251115181220-b54955485f7e.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251115181220-b54955485f7e.1
+	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251115181258-23365fece788.2
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251115181258-23365fece788.1
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/otelconnect v0.8.0
-	github.com/antinvestor/apis/go/common v1.47.12
-	github.com/antinvestor/apis/go/device v1.47.13
-	github.com/antinvestor/apis/go/notification v1.47.13
-	github.com/antinvestor/apis/go/partition v1.47.13
-	github.com/antinvestor/apis/go/profile v1.47.13
+	github.com/antinvestor/apis/go/common v1.48.7
+	github.com/antinvestor/apis/go/device v1.48.8
+	github.com/antinvestor/apis/go/notification v1.48.8
+	github.com/antinvestor/apis/go/partition v1.48.8
+	github.com/antinvestor/apis/go/profile v1.48.8
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.65.3
+	github.com/pitabwire/frame v1.66.1
 	github.com/pitabwire/util v0.3.5
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -115,8 +115,8 @@ require (
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/testcontainers/testcontainers-go/modules/nats v0.40.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0 // indirect
