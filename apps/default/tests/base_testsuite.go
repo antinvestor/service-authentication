@@ -113,7 +113,7 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
 
-	resources := []definition.TestResource{pg, hydra, notificationsSvc, profileSvc, deviceSvc, partitionSvc}
+	resources := []definition.TestResource{pg, hydra, partitionSvc, notificationsSvc, profileSvc, deviceSvc}
 	return resources
 }
 
