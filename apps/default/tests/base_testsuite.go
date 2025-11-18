@@ -197,7 +197,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = "service_profile,service_partition,service_notifications,service_devices"
+	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_partition", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = "authentication_tests"
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
