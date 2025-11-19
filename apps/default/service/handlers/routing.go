@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pitabwire/frame/security"
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/http"
 )
 
@@ -17,7 +16,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	router := http.NewServeMux()
 
 	svc := h.service
-	cfg := h.config
 
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
@@ -123,9 +121,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			sm := svc.SecurityManager()
 			smAuth := sm.GetAuthenticator(ctx)
 			// Apply authentication middleware
-			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, smAuth,
-				security.WithAudience(cfg.Oauth2JwtVerifyAudience),
-				security.WithIssuer(cfg.Oauth2JwtVerifyIssuer))
+			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, smAuth)
 			authMiddleware.ServeHTTP(w, r)
 		})
 	}
