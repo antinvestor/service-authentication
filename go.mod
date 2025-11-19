@@ -3,28 +3,28 @@ module github.com/antinvestor/service-authentication
 go 1.25.2
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251115174401-cf993dd61681.1
-	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251115181028-8235247fcb53.2
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251115181028-8235247fcb53.1
-	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251115181141-8a8c898fd720.2
-	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251115181141-8a8c898fd720.1
-	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251115181220-b54955485f7e.2
-	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251115181220-b54955485f7e.1
-	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251115181258-23365fece788.2
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251115181258-23365fece788.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.10-20251119161617-faec0015998a.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251119161652-dfdcd18d6df0.2
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.10-20251119161652-dfdcd18d6df0.1
+	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251119161822-0f712795b762.2
+	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.10-20251119161822-0f712795b762.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251119161904-6bc16b04bbca.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.10-20251119161904-6bc16b04bbca.1
+	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251119161948-fcd977fb5334.2
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251119161948-fcd977fb5334.1
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/otelconnect v0.8.0
-	github.com/antinvestor/apis/go/common v1.48.13
-	github.com/antinvestor/apis/go/device v1.48.14
-	github.com/antinvestor/apis/go/notification v1.48.14
-	github.com/antinvestor/apis/go/partition v1.48.14
-	github.com/antinvestor/apis/go/profile v1.48.14
+	github.com/antinvestor/apis/go/common v1.48.17
+	github.com/antinvestor/apis/go/device v1.48.16
+	github.com/antinvestor/apis/go/notification v1.48.16
+	github.com/antinvestor/apis/go/partition v1.48.16
+	github.com/antinvestor/apis/go/profile v1.48.16
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.67.0
+	github.com/pitabwire/frame v1.67.1
 	github.com/pitabwire/util v0.3.5
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
