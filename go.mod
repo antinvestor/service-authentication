@@ -39,7 +39,7 @@ require (
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1 // indirect
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.10-20230414000709-087bc8072ce4.1 // indirect
-	buf.build/go/protovalidate v1.0.0 // indirect
+	buf.build/go/protovalidate v1.0.1 // indirect
 	cel.dev/expr v0.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
