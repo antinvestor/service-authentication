@@ -48,11 +48,12 @@ func (csq *PartitionSyncEvent) Name() string {
 }
 
 func (csq *PartitionSyncEvent) PayloadType() any {
-	return map[string]any{}
+	var payloadT map[string]any
+	return &payloadT
 }
 
 func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
-	_, ok := payload.(map[string]any)
+	_, ok := payload.(*map[string]any)
 	if !ok {
 		return errors.New("invalid payload type, expected : " + typeName(payload))
 	}
@@ -62,14 +63,16 @@ func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
 
 func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 	var jsonPayload data.JSONMap
-	var ok bool
-	jsonPayload, ok = payload.(map[string]any)
+	d, ok := payload.(*map[string]any)
 	if !ok {
 		return errors.New("invalid payload type, expected " + typeName(payload))
 	}
+
+	jsonPayload = *d
+
 	partitionID := jsonPayload.GetString("id")
 
-	logger := util.Log(ctx).WithField("payload", partitionID).WithField("type", csq.Name())
+	logger := util.Log(ctx).WithField("payload", payload).WithField("type", csq.Name())
 	logger.Info("initiated synchronisation of partition")
 
 	partition, err := csq.partitionRepository.GetByID(ctx, partitionID)
@@ -270,7 +273,7 @@ func updatePartitionWithResponse(
 
 	// Save partition
 
-	_, err := partitionRepo.Update(ctx, partition, "")
+	_, err := partitionRepo.Update(ctx, partition, "properties")
 	if err != nil {
 		return err
 	}

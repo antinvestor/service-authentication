@@ -8,6 +8,117 @@ services:
     ports:
       - "5433:5432"
 
+  hydra:
+    image: oryhydra/hydra:latest
+    depends_on:
+      - authentication_db
+    environment:
+      - DSN=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - URLS_SELF_ISSUER=http://hydra:4444
+      - URLS_CONSENT=http://authentication_svc:8080/s/consent
+      - URLS_LOGIN=http://authentication_svc:8080/s/login
+      - SERVE_PUBLIC_CORS_ENABLED=true
+      - SERVE_PUBLIC_CORS_ALLOWED_ORIGINS=http://127.0.0.1:*,http://localhost:*
+      - SERVE_ADMIN_CORS_ENABLED=true
+      - SERVE_ADMIN_CORS_ALLOWED_ORIGINS=http://127.0.0.1:*,http://localhost:*
+      - LOG_LEVEL=debug
+      - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
+    ports:
+      - "4444:4444"
+      - "4445:4445"
+    command: ["serve", "all", "--dev"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4445/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  partition_svc:
+    image: ghcr.io/antinvestor/service-authentication-tenancy:latest
+    depends_on:
+      - authentication_db
+      - hydra
+    environment:
+      - LOG_LEVEL=debug
+      - TRACE_REQUESTS=true
+      - HTTP_PORT=8083
+      - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - OAUTH2_SERVICE_URI=http://hydra:4444
+      - OAUTH2_WELL_KNOWN_JWK=http://hydra:4444/.well-known/jwks.json
+      - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
+      - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
+      - OAUTH2_SERVICE_AUDIENCE=service_notifications,service_profile,authentication_tests
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_partition
+      - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
+    ports:
+      - "8083:8083"
+
+  notification_svc:
+    image: ghcr.io/antinvestor/service-notification:latest
+    depends_on:
+      - authentication_db
+      - hydra
+    environment:
+      - LOG_LEVEL=debug
+      - HTTP_PORT=8087
+      - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - OAUTH2_SERVICE_URI=http://hydra:4444
+      - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
+      - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
+      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_partition
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_notifications
+      - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
+    ports:
+      - "8087:8087"
+
+  profile_svc:
+    image: ghcr.io/antinvestor/service-profile:latest
+    depends_on:
+      - authentication_db
+      - hydra
+      - partition_svc
+      - notification_svc
+    environment:
+      - LOG_LEVEL=debug
+      - HTTP_PORT=8086
+      - GRPC_PORT=50056
+      - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - CORS_ENABLED=true
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOWED_HEADERS=Authorization,Content-Type,Origin
+      - CORS_ALLOWED_ORIGINS=*
+      - CONTACT_ENCRYPTION_KEY=4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax
+      - CONTACT_ENCRYPTION_SALT=geYobar79WDL
+      - OAUTH2_SERVICE_URI=http://hydra:4444
+      - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
+      - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
+      - OAUTH2_SERVICE_AUDIENCE=service_notifications,service_partition
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_profile
+      - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
+      - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
+      - PARTITION_SERVICE_URI=http://partition_svc:8083
+    ports:
+      - "50056:50056"
+      - "8086:8086"
+
+  device_svc:
+    image: ghcr.io/antinvestor/service-profile-devices:latest
+    depends_on:
+      - authentication_db
+      - hydra
+    environment:
+      - LOG_LEVEL=debug
+      - HTTP_PORT=8085
+      - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
+      - OAUTH2_SERVICE_URI=http://hydra:4444
+      - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
+      - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
+      - OAUTH2_SERVICE_AUDIENCE=service_profile
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_devices
+      - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
+    ports:
+      - "8085:8085"
+
   authentication_migration:
     build: ./
     depends_on:
@@ -22,8 +133,24 @@ services:
     build: ./
     depends_on:
       - authentication_db
+      - hydra
+      - partition_svc
+      - notification_svc
+      - profile_svc
+      - device_svc
     environment:
       - LOG_LEVEL=debug
       - DATABASE_URL=postgres://ant:secret@authentication_db:5432/service_authentication?sslmode=disable
-      - OAUTH2_SERVICE_ADMIN_URI=http://service-hydra.core.svc.cluster.local:4445
+      - OAUTH2_SERVICE_URI=http://hydra:4444
+      - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
+      - OAUTH2_SERVICE_CLIENT_SECRET=vkGiJroO9dAS5eFnuaGy
+      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_partition,service_notifications,service_devices
+      - OAUTH2_JWT_VERIFY_AUDIENCE=authentication_tests
+      - OAUTH2_JWT_VERIFY_ISSUER=http://hydra:4444
+      - PROFILE_SERVICE_URI=http://profile_svc:8086
+      - PARTITION_SERVICE_URI=http://partition_svc:8083
+      - DEVICE_SERVICE_URI=http://device_svc:8085
+      - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
+    ports:
+      - "8080:8080"
     restart: unless-stopped

@@ -42,10 +42,7 @@ type APIKeyTestContext struct {
 // SetupAPIKeyTest creates a common test setup for API key tests
 func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.DependencyOption) *APIKeyTestContext {
 
-	ctx, authServer, deps := suite.CreateService(t, dep)
-
-	// Setup auth server using the BaseTestSuite method
-	_ = deps
+	ctx, authServer, _ := suite.CreateService(t, dep)
 
 	// Set up HTTP test server
 	router := authServer.SetupRouterV1(ctx)

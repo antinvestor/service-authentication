@@ -100,6 +100,8 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
+			"TRACE_REQUESTS":               "true",
+			"DATABASE_LOG_QUERIES":         "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,

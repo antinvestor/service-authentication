@@ -374,29 +374,33 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 		require.NoError(t, err)
 
 		err = svc.EventsManager().Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
+		require.NoError(t, err)
 
-		// wait for partition to be synced
-		partition, err = frametests.WaitForConditionWithResult(ctx, func() (*models.Partition, error) {
+		// wait for finalPart to be synced
+		finalPart, finalErr := frametests.WaitForConditionWithResult(ctx, func() (*models.Partition, error) {
 
-			partition, err = partitionRepo.GetByID(ctx, partition.GetID())
-			if err != nil {
-				return nil, nil
+			iPart, iErr := partitionRepo.GetByID(ctx, partition.GetID())
+			if iErr != nil {
+				if data.ErrorIsNoRows(iErr) {
+					return nil, nil
+				}
+				return nil, iErr
 			}
 
-			_, ok := partition.Properties["client_id"]
+			_, ok := iPart.Properties["client_id"]
 			if ok {
-				return partition, nil
+				return iPart, nil
 			}
 
 			return nil, nil
 
 		}, 2*time.Second, 200*time.Millisecond)
 
-		require.NoError(t, err)
+		require.NoError(t, finalErr)
 
-		// Verify partition structure
-		require.Equal(t, "Events Test Partition", partition.Name)
-		require.Contains(t, partition.ID, "test-event-")
+		// Verify finalPart structure
+		require.Equal(t, "Events Test Partition", finalPart.Name)
+		require.Contains(t, finalPart.ID, "test-event-")
 
 	})
 }

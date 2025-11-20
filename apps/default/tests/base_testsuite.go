@@ -102,6 +102,7 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
 	localHydraConfig := strings.Replace(testoryhydra.HydraConfiguration, "http://127.0.0.1:3000/", loginUrl+"/s/", 3)
+	localHydraConfig = strings.Replace(localHydraConfig, "http://127.0.0.1:3000/", loginUrl+"/", 2)
 
 	hydra := testoryhydra.NewWithOpts(
 		localHydraConfig, definition.WithDependancies(pg),
@@ -203,7 +204,11 @@ func (bs *BaseTestSuite) CreateService(
 
 	ctx, svc := frame.NewServiceWithContext(t.Context(),
 		frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
-		frame.WithDatastore(), frametests.WithNoopDriver(), frame.WithRegisterServerOauth2Client())
+		frame.WithDatastore(), frame.WithRegisterServerOauth2Client())
+
+	t.Cleanup(func() {
+		svc.Stop(ctx)
+	})
 
 	depsBuilder, err := BuildRepos(ctx, svc)
 	require.NoError(t, err)
@@ -259,11 +264,11 @@ func setupPartitionClient(
 	ctx context.Context,
 	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
-	util.Log(ctx).WithField("url", cfg.PartitionServiceURI).Error("partition service url")
 	return partition.NewClient(ctx,
 		common.WithEndpoint(cfg.PartitionServiceURI),
 		common.WithTraceRequests(),
 		common.WithTraceResponses(),
+		common.WithTraceHeaders(),
 		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
 		common.WithTokenUsername(clHolder.JwtClientID()),
 		common.WithTokenPassword(clHolder.JwtClientSecret()),
