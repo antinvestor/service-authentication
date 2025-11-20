@@ -16,6 +16,7 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	fevents "github.com/pitabwire/frame/events"
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 )
 
@@ -71,6 +72,8 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 	jsonPayload = *d
 
 	partitionID := jsonPayload.GetString("id")
+
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
 	logger := util.Log(ctx).WithField("payload", payload).WithField("type", csq.Name())
 	logger.Info("initiated synchronisation of partition")
