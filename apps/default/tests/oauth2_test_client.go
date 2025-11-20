@@ -252,7 +252,6 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 		}
 	}
 
-
 	// Step 2: Now submit contact for verification
 	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
 

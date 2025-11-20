@@ -158,9 +158,8 @@ func (suite *PartitionTestSuite) TestSearch() {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 
-
 				searchQuery := data.NewSearchQuery(
-					
+
 					data.WithSearchFiltersAndByValue(tc.properties),
 					data.WithSearchOffset(0),
 					data.WithSearchLimit(10),
@@ -351,7 +350,6 @@ func (suite *PartitionTestSuite) TestSave() {
 		savedPartition, err := partitionRepo.GetByID(ctx, partition.GetID())
 		require.NoError(t, err)
 		assert.Equal(t, "Save Test Partition", savedPartition.Name)
-
 
 		// Test completed successfully
 	})

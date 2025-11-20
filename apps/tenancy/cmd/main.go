@@ -104,10 +104,7 @@ func setupConnectServer(
 		util.Log(ctx).WithError(err).Fatal("could not configure open telemetry")
 	}
 
-	validateInterceptor, err := securityconnect.NewValidationInterceptor()
-	if err != nil {
-		util.Log(ctx).WithError(err).Fatal("could not configure validation interceptor")
-	}
+	validateInterceptor := securityconnect.NewValidationInterceptor()
 
 	authenticator := securityMan.GetAuthenticator(ctx)
 	authInterceptor := securityconnect.NewAuthInterceptor(authenticator)
