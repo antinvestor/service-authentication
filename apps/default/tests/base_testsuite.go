@@ -228,7 +228,7 @@ func (bs *BaseTestSuite) CreateService(
 	go func() {
 		_ = svc.Run(ctx, "")
 	}()
-	return ctx, authServer, depsBuilder
+	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
 // setupDeviceClient creates and configures the device client.

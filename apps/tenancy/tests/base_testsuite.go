@@ -19,6 +19,7 @@ import (
 	"github.com/pitabwire/frame/frametests/deps/testnats"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/security"
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,5 +187,5 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 
 	deps := BuildDeps(ctx, svc)
 
-	return ctx, svc, implementation, deps
+	return security.SkipTenancyChecksOnClaims(ctx), svc, implementation, deps
 }
