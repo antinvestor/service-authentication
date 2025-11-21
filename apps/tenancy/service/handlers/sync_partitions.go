@@ -9,12 +9,13 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/security"
 )
 
 const SyncPartitionsHTTPPath = "/_system/sync/partitions"
 
 func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
+	ctx := security.SkipTenancyChecksOnClaims(req.Context())
 
 	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
 	if !ok {
