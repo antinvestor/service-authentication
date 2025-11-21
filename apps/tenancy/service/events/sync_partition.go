@@ -36,7 +36,7 @@ func typeName(v any) string {
 	return t.String()
 }
 
-func NewPartitionSynchronizationEventHandler(ctx context.Context, cfg config.ConfigurationOAUTH2, cli client.Manager, partitionRepository repository.PartitionRepository) fevents.EventI {
+func NewPartitionSynchronizationEventHandler(_ context.Context, cfg config.ConfigurationOAUTH2, cli client.Manager, partitionRepository repository.PartitionRepository) fevents.EventI {
 	return &PartitionSyncEvent{
 		cfg:                 cfg,
 		cli:                 cli,
@@ -73,9 +73,11 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 
 	partitionID := jsonPayload.GetString("id")
 
-	ctx = security.SkipTenancyChecksOnClaims(ctx)
+	logger := util.Log(ctx).
+		WithField("payload", payload).
+		WithField("type", csq.Name()).
+		WithField("skip claims", security.SkipTenancyChecksOnClaims(ctx))
 
-	logger := util.Log(ctx).WithField("payload", payload).WithField("type", csq.Name())
 	logger.Info("initiated synchronisation of partition")
 
 	partition, err := csq.partitionRepository.GetByID(ctx, partitionID)

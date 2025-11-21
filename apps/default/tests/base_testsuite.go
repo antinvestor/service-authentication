@@ -90,6 +90,7 @@ type BaseTestSuite struct {
 	internaltests.BaseTestSuite
 
 	FreeAuthPort string
+	handler *handlers.AuthServer
 }
 
 func (bs *BaseTestSuite) ServerUrl() string {
@@ -133,6 +134,8 @@ func (bs *BaseTestSuite) SetupSuite() {
 		return initResources(ctx, loginUrl)
 	}
 	bs.BaseTestSuite.SetupSuite()
+
+	_, bs.handler, _ = bs.CreateService(bs.T(), definition.NewDependancyOption("default", "default", bs.Resources()))
 }
 
 func (bs *BaseTestSuite) CreateService(
@@ -186,8 +189,9 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 	// cfg.RunServiceSecurely = false
-	cfg.HTTPServerPort = bs.FreeAuthPort
-
+	if bs.handler == nil {
+		cfg.HTTPServerPort = bs.FreeAuthPort
+	}
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
@@ -202,9 +206,15 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
-	ctx, svc := frame.NewServiceWithContext(t.Context(),
-		frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
-		frame.WithDatastore(), frame.WithRegisterServerOauth2Client())
+
+	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
+		frame.WithDatastore(), frame.WithRegisterServerOauth2Client(), }
+
+	if bs.handler != nil {
+		opts = append(opts, frametests.WithNoopDriver())
+	}
+
+	ctx, svc := frame.NewServiceWithContext(t.Context(), opts ...)
 
 	t.Cleanup(func() {
 		svc.Stop(ctx)
