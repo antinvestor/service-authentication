@@ -62,7 +62,7 @@ func (csq *PartitionSyncEvent) Validate(_ context.Context, payload any) error {
 	return nil
 }
 
-func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
+func (csq *PartitionSyncEvent) Execute(ictx context.Context, payload any) error {
 	var jsonPayload data.JSONMap
 	d, ok := payload.(*map[string]any)
 	if !ok {
@@ -71,12 +71,13 @@ func (csq *PartitionSyncEvent) Execute(ctx context.Context, payload any) error {
 
 	jsonPayload = *d
 
+	ctx := security.SkipTenancyChecksOnClaims(ictx)
+
 	partitionID := jsonPayload.GetString("id")
 
 	logger := util.Log(ctx).
 		WithField("payload", payload).
-		WithField("type", csq.Name()).
-		WithField("skip claims", security.SkipTenancyChecksOnClaims(ctx))
+		WithField("type", csq.Name())
 
 	logger.Info("initiated synchronisation of partition")
 
