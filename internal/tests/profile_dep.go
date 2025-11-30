@@ -22,7 +22,7 @@ type dependency struct {
 func NewProfile(containerOpts ...definition.ContainerOption) definition.TestResource {
 	opts := definition.ContainerOpts{
 		ImageName:      ProfileImage,
-		Ports:          []string{"50056/tcp", "8086/tcp"},
+		Ports:          []string{"8086/tcp"},
 		NetworkAliases: []string{"profile", "service-profile"},
 		UseHostMode:    false,
 	}
@@ -110,8 +110,9 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
-			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[1], "/tcp", "", 1),
-			"GRPC_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
+			"TRACE_REQUESTS":               "true",
+			"DATABASE_LOG_QUERIES":         "true",
+			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"CORS_ENABLED":                 "true",
 			"CORS_ALLOW_CREDENTIALS":       "true",
@@ -128,8 +129,10 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"NOTIFICATION_SERVICE_URI":     notificationService,
 			"PARTITION_SERVICE_URI":        partitionService,
 		},
+
 		WaitingFor: wait.ForLog("Initiating server operations"),
 	}
+
 	d.Configure(ctx, ntwk, &containerRequest)
 
 	genericContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

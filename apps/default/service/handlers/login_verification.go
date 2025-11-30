@@ -12,6 +12,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
@@ -106,8 +107,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
 	if err != nil {
-		st, errOk := status.FromError(err)
-		if !errOk || st.Code() != codes.NotFound {
+
+		if !frame.ErrorIsNotFound(err) {
 			logger.WithError(err).Error("DEBUG: failed to get profile - redirecting to login")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 
@@ -115,12 +116,17 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	existingProfile := result.Msg.GetData()
+	var existingProfile *profilev1.ProfileObject
 	contactID := ""
-	if existingProfile != nil {
-		for _, profileContact := range existingProfile.GetContacts() {
-			if strings.EqualFold(contact, profileContact.GetDetail()) {
-				contactID = profileContact.GetId()
+
+	if result != nil {
+		existingProfile = result.Msg.GetData()
+
+		if existingProfile != nil {
+			for _, profileContact := range existingProfile.GetContacts() {
+				if strings.EqualFold(contact, profileContact.GetDetail()) {
+					contactID = profileContact.GetId()
+				}
 			}
 		}
 	}

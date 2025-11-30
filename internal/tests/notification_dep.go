@@ -41,7 +41,6 @@ func (d *notificationDependancy) migrateContainer(
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
-		Cmd:   []string{"migrate"},
 		Env: map[string]string{
 			"LOG_LEVEL":    "debug",
 			"DO_MIGRATION": "true",
@@ -50,12 +49,12 @@ func (d *notificationDependancy) migrateContainer(
 
 		WaitingFor: wait.ForExit(),
 	}
+
 	d.Configure(ctx, ntwk, &containerRequest)
 
 	genericContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: containerRequest,
-
-		Started: true,
+		Started:          true,
 	})
 	if err != nil {
 		return err
@@ -95,16 +94,14 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
 			"TRACE_REQUESTS":               "true",
+			"DATABASE_LOG_QUERIES":         "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"CORS_ENABLED":                 "true",
 			"CORS_ALLOW_CREDENTIALS":       "true",
 			"CORS_ALLOWED_HEADERS":         "Authorization,Content-Type,Origin",
 			"CORS_ALLOWED_ORIGINS":         "*",
-			"CONTACT_ENCRYPTION_KEY":       "4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax",
-			"CONTACT_ENCRYPTION_SALT":      "geYobar79WDL",
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
-			"OAUTH2_WELL_KNOWN_JWK":        oauth2ServiceURI + "/.well-known/jwks.json",
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_profile,service_partition,authentication_tests",
@@ -118,8 +115,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 	d.Configure(ctx, ntwk, &containerRequest)
 
 	genericContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: containerRequest,
-		Started:          true,
+		ContainerRequest: containerRequest, Started: true,
 	})
 
 	if err != nil {

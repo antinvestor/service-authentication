@@ -90,7 +90,7 @@ type BaseTestSuite struct {
 	internaltests.BaseTestSuite
 
 	FreeAuthPort string
-	handler *handlers.AuthServer
+	handler      *handlers.AuthServer
 }
 
 func (bs *BaseTestSuite) ServerUrl() string {
@@ -110,10 +110,10 @@ func initResources(_ context.Context, loginUrl string) []definition.TestResource
 		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	// Add profileSvc and partitionSvc service dependencies
-	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
-	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(true), definition.WithUseHostMode(true))
+	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
 	resources := []definition.TestResource{pg, hydra, partitionSvc, notificationsSvc, profileSvc, deviceSvc}
 	return resources
@@ -206,15 +206,14 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
-
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
-		frame.WithDatastore(), frame.WithRegisterServerOauth2Client(), }
+		frame.WithDatastore(), frame.WithRegisterServerOauth2Client()}
 
 	if bs.handler != nil {
 		opts = append(opts, frametests.WithNoopDriver())
 	}
 
-	ctx, svc := frame.NewServiceWithContext(t.Context(), opts ...)
+	ctx, svc := frame.NewServiceWithContext(t.Context(), opts...)
 
 	t.Cleanup(func() {
 		svc.Stop(ctx)

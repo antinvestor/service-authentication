@@ -13,7 +13,7 @@ import (
 	"github.com/antinvestor/apis/go/partition"
 	"github.com/antinvestor/apis/go/profile"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
-	handlers2 "github.com/antinvestor/service-authentication/apps/default/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
@@ -38,16 +38,17 @@ func main() {
 	}
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(), frame.WithDatastore())
+
 	log := svc.Log(ctx)
 
 	sm := svc.SecurityManager()
 	dbManager := svc.DatastoreManager()
 
 	workManager := svc.WorkManager()
-	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	dbPool := dbManager.GetPool(ctx, datastore.DefaultPoolName)
 
 	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, dbManager, cfg, log) {
+	if handleDatabaseMigration(ctx, dbManager, cfg) {
 		return
 	}
 
@@ -78,7 +79,7 @@ func main() {
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
 
-	srv := handlers2.NewAuthServer(ctx, svc, &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
+	srv := handlers.NewAuthServer(ctx, svc, &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
@@ -98,14 +99,13 @@ func handleDatabaseMigration(
 	ctx context.Context,
 	dbManager datastore.Manager,
 	cfg aconfig.AuthenticationConfig,
-	log *util.LogEntry,
 ) bool {
 
 	if cfg.DoDatabaseMigrate() {
 
 		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
 		if err != nil {
-			log.WithError(err).Fatal("main -- Could not migrate successfully")
+			util.Log(ctx).WithError(err).Fatal("main -- Could not migrate successfully")
 		}
 		return true
 	}

@@ -793,25 +793,17 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 			return nil, err0
 		}
 
-		var nSlice []*notificationv1.Notification
 		for resp.Receive() {
 			err1 := resp.Err()
 			if err1 != nil {
 				return nil, err1
 			}
 
-			n := resp.Msg()
-			nSlice = append(nSlice, n.GetData()...)
-
-		}
-
-		if len(nSlice) == 0 {
-			return nil, nil
-		}
-
-		for _, n := range nSlice {
-			if n.GetPayload().AsMap()["verification_id"].(string) == loginEvt.VerificationID {
-				return n, nil
+			nmsg := resp.Msg()
+			for _, n := range nmsg.GetData() {
+				if n.GetPayload().AsMap()["verification_id"].(string) == loginEvt.VerificationID {
+					return n, nil
+				}
 			}
 		}
 
