@@ -220,8 +220,8 @@ github.com/ory/hydra-client-go/v2 v2.2.1 h1:m1821pIX6ybG/3oSAn2wtrbBKNwe9q5A8fLl
 github.com/ory/hydra-client-go/v2 v2.2.1/go.mod h1:K83R+iK40+5uF2uQ34yRUrf9izRvFsza9pG2Se5qMmk=
 github.com/panjf2000/ants/v2 v2.11.3 h1:AfI0ngBoXJmYOpDh9m516vjqoUu2sLrIVgppI9TZVpg=
 github.com/panjf2000/ants/v2 v2.11.3/go.mod h1:8u92CYMUc6gyvTIw8Ru7Mt7+/ESnJahz5EVtqfrilek=
-github.com/pitabwire/frame v1.67.15 h1:lobfX/kLu7urAGTKIq919Gaxm5FKCdp7f/Qp/nyXcWM=
-github.com/pitabwire/frame v1.67.15/go.mod h1:2H5Bb8rXJtFG8ySEtWZT3QHUu2ok6zGnMUtBdXInrAM=
+github.com/pitabwire/frame v1.67.16 h1:UJEPY+346MkQhHmaJ32DCVNDhUVbG5rEJ2IJAn1p5tY=
+github.com/pitabwire/frame v1.67.16/go.mod h1:2H5Bb8rXJtFG8ySEtWZT3QHUu2ok6zGnMUtBdXInrAM=
 github.com/pitabwire/natspubsub v0.7.5 h1:EPh8ue2zhpKno4pgtRRYAshdT+rlRU9Z3QTApcTMJkk=
 github.com/pitabwire/natspubsub v0.7.5/go.mod h1:ZgbVhYOEVz2Wnx4P6r8ROjpvHYI5F4Dkct5omKqXObI=
 github.com/pitabwire/util v0.3.6 h1:53RDm3o1d2MXuDIpBLP7bjfWTedZwUNFRDoy2Iny+VE=
