@@ -202,7 +202,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_partition", "service_notifications", "service_devices"}
+	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
@@ -282,7 +282,7 @@ func setupPartitionClient(
 		common.WithTokenUsername(clHolder.JwtClientID()),
 		common.WithTokenPassword(clHolder.JwtClientSecret()),
 		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_partition"))
+		common.WithAudiences("service_tenancy"))
 }
 
 // setupProfileClient creates and configures the profile client.

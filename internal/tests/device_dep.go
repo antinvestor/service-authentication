@@ -106,7 +106,7 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkBaJroO9cDGleFnuaAZ",
-			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_partition,service_profile,authentication_tests",
+			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_tenancy,service_profile,authentication_tests",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_devices",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},

@@ -151,7 +151,7 @@ func setupPartitionClient(
 		common.WithTokenUsername(clHolder.JwtClientID()),
 		common.WithTokenPassword(clHolder.JwtClientSecret()),
 		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_partition"))
+		common.WithAudiences("service_tenancy"))
 }
 
 // setupProfileClient creates and configures the profile client.

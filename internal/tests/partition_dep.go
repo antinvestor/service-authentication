@@ -100,7 +100,7 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_profile,authentication_tests",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_partition",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_tenancy",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},
 

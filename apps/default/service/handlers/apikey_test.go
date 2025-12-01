@@ -137,7 +137,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyCreation() {
 			name:           "APIKeyWithMultipleAudiences",
 			apiKeyName:     "multi-audience-key",
 			scope:          "read write delete",
-			audience:       []string{"service_profile", "service_notifications", "service_devices", "service_partition"},
+			audience:       []string{"service_profile", "service_notifications", "service_devices", "service_tenancy"},
 			metadata:       map[string]string{"type": "admin", "version": "v1"},
 			expectSuccess:  true,
 			expectedStatus: http.StatusCreated,

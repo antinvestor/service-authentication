@@ -114,7 +114,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client",
 		data.JSONMap{
 			"scope":         "openid offline offline_access profile contact",
-			"audience":      "service_devices,service_profile,service_partition,service_files,authentication_tests",
+			"audience":      "service_devices,service_profile,service_tenancy,service_files,authentication_tests",
 			"logo_uri":      "https://testing.com/logo.png",
 			"redirect_uris": redirectURI})
 	if err != nil {
