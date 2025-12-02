@@ -72,25 +72,32 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 		return errors.New("no Database/ Oauth2 svc dependencies was supplied")
 	}
 
+	var err error
 	databaseURL := ""
+	hydraPort := ""
 	oauth2ServiceURIAdmin := ""
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
 			databaseURL = dep.GetInternalDS(ctx).String()
 		} else {
 			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			hydraPort, err = dep.PortMapping(ctx, "4444")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	err := d.migrateContainer(ctx, ntwk, databaseURL)
+	err = d.migrateContainer(ctx, ntwk, databaseURL)
 	if err != nil {
 		return err
 	}
 
-	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", "4444", 1)
+	// Convert admin URI to public URI by changing port
+	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", hydraPort, 1)
 
 	containerRequest := testcontainers.ContainerRequest{
-		Image: NotificationImage,
+		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                    "debug",
 			"TRACE_REQUESTS":               "true",
@@ -104,12 +111,12 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
-			"OAUTH2_SERVICE_AUDIENCE":      "service_profile,service_tenancy,authentication_tests",
+			"OAUTH2_SERVICE_AUDIENCE":      "service_profile,service_tenancy,service_devices",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_notifications",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},
 
-		WaitingFor: wait.ForLog("Initiating server operations"),
+		WaitingFor: wait.ForLog("Initiating service operations"),
 	}
 
 	d.Configure(ctx, ntwk, &containerRequest)

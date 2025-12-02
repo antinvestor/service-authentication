@@ -60,12 +60,9 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
-	log := util.Log(ctx)
-	log.WithField("server port", cfg.HTTPPort()).
-		Info(" Initiating server operations")
 	err = svc.Run(ctx, "")
 	if err != nil {
-		log = log.WithError(err)
+		log := util.Log(ctx).WithError(err)
 
 		if errors.Is(err, context.Canceled) {
 			log.Error("server stopping")
