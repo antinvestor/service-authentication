@@ -35,9 +35,11 @@ type DepsBuilder struct {
 	TenantBusiness    business.TenantBusiness
 	AccessBusiness    business.AccessBusiness
 	PageBusiness      business.PageBusiness
+
+	Server *handlers.PartitionServer
 }
 
-func BuildDeps(ctx context.Context, svc *frame.Service) *DepsBuilder {
+func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.PartitionServer) *DepsBuilder {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
 	cfg := svc.Config().(*aconfig.PartitionConfig)
@@ -50,6 +52,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service) *DepsBuilder {
 		AccessRepo:        repository.NewAccessRepository(ctx, dbPool, workMan),
 		AccessRoleRepo:    repository.NewAccessRoleRepository(ctx, dbPool, workMan),
 		PageRepo:          repository.NewPageRepository(ctx, dbPool, workMan),
+		Server:            server,
 	}
 
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
@@ -94,13 +97,12 @@ func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
 	depOpts *definition.DependencyOption,
 ) (context.Context, *frame.Service, *DepsBuilder) {
-	ctx, svc, _, deps := bs.CreateServiceWithPortAccess(t, depOpts, 0)
-	return ctx, svc, deps
+	return bs.CreateServiceWithPortAccess(t, depOpts, 0)
 }
 
 func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	t *testing.T, depOpts *definition.DependencyOption, accessPort int) (
-	context.Context, *frame.Service, *handlers.PartitionServer, *DepsBuilder) {
+	context.Context, *frame.Service, *DepsBuilder) {
 
 	ctx := t.Context()
 
@@ -166,6 +168,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 		ExtendQuery("stream_retention", "workqueue").
 		ExtendQuery("stream_storage", "file").
 		String()
+	cfg.SynchronizePrimaryPartitions = true
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
@@ -185,7 +188,7 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 
 	_ = svc.Run(ctx, "")
 
-	deps := BuildDeps(ctx, svc)
+	deps := BuildDeps(ctx, svc, implementation)
 
-	return security.SkipTenancyChecksOnClaims(ctx), svc, implementation, deps
+	return security.SkipTenancyChecksOnClaims(ctx), svc, deps
 }

@@ -15,6 +15,15 @@ import (
 const SyncPartitionsHTTPPath = "/_system/sync/partitions"
 
 func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
+
+	if req.Method != http.MethodPost {
+		http.Error(rw,
+			http.StatusText(http.StatusMethodNotAllowed),
+			http.StatusMethodNotAllowed,
+		)
+		return
+	}
+
 	ctx := security.SkipTenancyChecksOnClaims(req.Context())
 
 	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
