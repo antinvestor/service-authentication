@@ -226,7 +226,7 @@ func (suite *PageTestSuite) TestDelete() {
 					deletedPage, fetchErr := pageRepo.GetByID(ctx, page.GetID())
 					require.Error(t, fetchErr, "Should get an error when fetching deleted page")
 					assert.Contains(t, fetchErr.Error(), "record not found", "Error should mention 'record not found'")
-					assert.Empty(t, deletedPage.GetID(), "Deleted page ID should be empty")
+					assert.Nil(t, deletedPage, "Deleted page ID should be empty")
 				}
 			})
 		}

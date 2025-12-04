@@ -165,7 +165,7 @@ func (suite *PartitionRepositoryTestSuite) TestGetParentsWithCircularReference()
 
 	// Update partition1 to reference partition2 (creating circular reference)
 	partition1.ParentID = partition2.ID
-	err = partitionRepo.Create(ctx, partition1)
+	_, err = partitionRepo.Update(ctx, partition1, "parent_id")
 	require.NoError(t, err)
 
 	// Test: Get parents should handle circular reference gracefully

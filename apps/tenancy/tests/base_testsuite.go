@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
@@ -97,12 +96,6 @@ func (bs *BaseTestSuite) CreateService(
 	t *testing.T,
 	depOpts *definition.DependencyOption,
 ) (context.Context, *frame.Service, *DepsBuilder) {
-	return bs.CreateServiceWithPortAccess(t, depOpts, 0)
-}
-
-func (bs *BaseTestSuite) CreateServiceWithPortAccess(
-	t *testing.T, depOpts *definition.DependencyOption, accessPort int) (
-	context.Context, *frame.Service, *DepsBuilder) {
 
 	ctx := t.Context()
 
@@ -151,7 +144,6 @@ func (bs *BaseTestSuite) CreateServiceWithPortAccess(
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 
-	cfg.HTTPServerPort = fmt.Sprintf(":%d", accessPort)
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()

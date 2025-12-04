@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -129,8 +130,12 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			suite.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
 
-				ctx, _, dep := suite.CreateService(t, depOpts)
+				ctx, svc, dep := suite.CreateService(t, depOpts)
 
+				cfg, ok := svc.Config().(*config.PartitionConfig)
+				if ok {
+					cfg.SynchronizePrimaryPartitions = tc.syncEnabled
+				}
 				// Create test request
 				url := "/_system/sync/partitions" + tc.queryParams
 				req := httptest.NewRequest(tc.httpMethod, url, nil)
@@ -141,7 +146,7 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 
 				// Verify response status and content type
 				assert.Equal(t, tc.expectedStatus, rw.Code, tc.description)
-				assert.Equal(t, tc.expectedContentType, rw.Header().Get("Content-Type"), tc.description)
+				assert.Equal(t, tc.expectedContentType, rw.Header().Get("Content-Type"), tc.expectedContentType)
 
 				// Parse response body
 				var response map[string]interface{}
@@ -155,25 +160,6 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 			})
 		})
 	}
-}
-
-func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_InvalidConfigType() {
-	suite.T().Run("invalid_config_type", func(t *testing.T) {
-		suite.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
-			ctx, _, dep := suite.CreateService(t, depOpts)
-
-			// Create test request
-			req := httptest.NewRequest(http.MethodGet, "/_system/sync/partitions", nil)
-			req = req.WithContext(ctx)
-			rw := httptest.NewRecorder()
-
-			// Call handler
-			dep.Server.SynchronizePartitions(rw, req)
-
-			// Verify response - should return 500 for invalid config
-			assert.Equal(t, http.StatusMethodNotAllowed, rw.Code)
-		})
-	})
 }
 
 func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {

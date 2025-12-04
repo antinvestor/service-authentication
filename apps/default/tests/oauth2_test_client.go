@@ -39,9 +39,9 @@ type OAuth2TestClient struct {
 	cookieJar    http.CookieJar // Store reference to cookie jar for clearing
 
 	// Store OAuth2 session context to maintain CSRF state
-	currentState         string
-	currentNonce         string
-	currentCodeVerifier  string // For PKCE
+	currentState        string
+	currentNonce        string
+	currentCodeVerifier string // For PKCE
 }
 
 // NewOAuth2TestClient creates a new OAuth2 test client
@@ -145,7 +145,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 // generateCodeVerifier generates a random code verifier for PKCE
 func generateCodeVerifier() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
@@ -172,15 +172,15 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	c.currentCodeVerifier = codeVerifier
 
 	params := url.Values{
-		"client_id":              {client.ClientID},
-		"response_type":          {"code"},
-		"scope":                  {client.Scope},
-		"audience":               client.Audience,
-		"redirect_uri":           {client.RedirectURIs[0]},
-		"state":                  {state},
-		"nonce":                  {nonce},
-		"code_challenge":         {codeChallenge},
-		"code_challenge_method":  {"S256"},
+		"client_id":             {client.ClientID},
+		"response_type":         {"code"},
+		"scope":                 {client.Scope},
+		"audience":              client.Audience,
+		"redirect_uri":          {client.RedirectURIs[0]},
+		"state":                 {state},
+		"nonce":                 {nonce},
+		"code_challenge":        {codeChallenge},
+		"code_challenge_method": {"S256"},
 	}
 
 	// Use the standard OAuth2 authorization endpoint
