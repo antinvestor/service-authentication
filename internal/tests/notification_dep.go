@@ -42,9 +42,10 @@ func (d *notificationDependancy) migrateContainer(
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":    "debug",
-			"DO_MIGRATION": "true",
-			"DATABASE_URL": databaseURL,
+			"LOG_LEVEL":            "debug",
+			"DO_MIGRATION":         "true",
+			"DATABASE_LOG_QUERIES": "true",
+			"DATABASE_URL":         databaseURL,
 		},
 
 		WaitingFor: wait.ForExit(),
@@ -102,6 +103,8 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"LOG_LEVEL":                    "debug",
 			"TRACE_REQUESTS":               "true",
 			"DATABASE_LOG_QUERIES":         "true",
+			"DATABASE_SLOW_QUERY_THRESHOLD":         "10ms",
+			"OPENTELEMETRY_DISABLE":        "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"CORS_ENABLED":                 "true",
@@ -116,7 +119,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},
 
-		WaitingFor: wait.ForLog("Initiating service operations"),
+		WaitingFor: wait.ForLog("Initiating server operations"),
 	}
 
 	d.Configure(ctx, ntwk, &containerRequest)

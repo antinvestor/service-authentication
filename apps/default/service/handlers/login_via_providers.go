@@ -17,8 +17,7 @@ import (
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/facebook"
 	"github.com/markbates/goth/providers/google"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/pitabwire/frame"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -101,8 +100,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
 	if err != nil {
-		st, errOk := status.FromError(err)
-		if !errOk || st.Code() != codes.NotFound {
+		if frame.ErrorIsNotFound(err) {
 
 			logger.WithError(err).WithField("contact_detail", contactDetail).Error("failed to lookup profile by contact")
 			return nil, err

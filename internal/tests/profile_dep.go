@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
+	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -79,21 +81,20 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 	partitionService := ""
 	notificationService := ""
 	for _, dep := range d.Opts().Dependencies {
-		if dep.GetDS(ctx).IsDB() {
+
+		switch dep.Name() {
+		case testpostgres.PostgresqlDBImage:
 			databaseURL = dep.GetInternalDS(ctx).String()
-		} else {
+		case NotificationImage:
+			notificationService = dep.GetInternalDS(ctx).String()
+		case PartitionImage:
+			partitionService = dep.GetInternalDS(ctx).String()
+		case testoryhydra.OryHydraImage:
 
-			if dep.Name() == NotificationImage {
-				notificationService = dep.GetInternalDS(ctx).String()
-			} else if dep.Name() == PartitionImage {
-				partitionService = dep.GetInternalDS(ctx).String()
-			} else {
-
-				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
-				hydraPort, err = dep.PortMapping(ctx, "4444")
-				if err != nil {
-					return err
-				}
+			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			hydraPort, err = dep.PortMapping(ctx, "4444")
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -112,6 +113,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"LOG_LEVEL":                    "debug",
 			"TRACE_REQUESTS":               "true",
 			"DATABASE_LOG_QUERIES":         "true",
+			"OPENTELEMETRY_DISABLE":        "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
 			"CORS_ENABLED":                 "true",
@@ -140,7 +142,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to start genericContainer: %w", err)
+		return fmt.Errorf("failed to start generic container: %w", err)
 	}
 
 	d.SetContainer(genericContainer)

@@ -15,8 +15,6 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -289,8 +287,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		profileObj = resp.Msg.GetData()
 	} else {
 		// Check if it's a "not found" error, which is expected for new users
-		st, errOk := status.FromError(err)
-		if errOk && st.Code() == codes.NotFound {
+		if frame.ErrorIsNotFound(err) {
 			// Profile not found - this is expected for new users, we'll create one below
 			logger.Debug("Profile not found for contact, will create new profile")
 		} else {
