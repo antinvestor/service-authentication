@@ -103,7 +103,6 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"LOG_LEVEL":                    "debug",
 			"TRACE_REQUESTS":               "true",
 			"DATABASE_LOG_QUERIES":         "true",
-			"DATABASE_SLOW_QUERY_THRESHOLD":         "10ms",
 			"OPENTELEMETRY_DISABLE":        "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
