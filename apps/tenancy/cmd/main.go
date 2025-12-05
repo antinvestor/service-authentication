@@ -7,7 +7,6 @@ import (
 
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"connectrpc.com/connect"
-	"connectrpc.com/otelconnect"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
@@ -16,7 +15,7 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
-	securityconnect "github.com/pitabwire/frame/security/interceptors/connect"
+	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
 	securityhttp "github.com/pitabwire/frame/security/interceptors/http"
 	"github.com/pitabwire/util"
 )
@@ -93,21 +92,19 @@ func handleDatabaseMigration(
 // setupConnectServer initialises and configures the connect server.
 func setupConnectServer(
 	ctx context.Context,
-	securityMan security.Manager,
+	sm security.Manager,
 	implementation *handlers.PartitionServer,
 ) http.Handler {
-	otelInterceptor, err := otelconnect.NewInterceptor()
+
+	authenticator := sm.GetAuthenticator(ctx)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, sm.GetAuthenticator(ctx))
 	if err != nil {
-		util.Log(ctx).WithError(err).Fatal("could not configure open telemetry")
+		util.Log(ctx).WithError(err).Fatal("main -- Could not create default interceptors")
 	}
 
-	validateInterceptor := securityconnect.NewValidationInterceptor()
-
-	authenticator := securityMan.GetAuthenticator(ctx)
-	authInterceptor := securityconnect.NewAuthInterceptor(authenticator)
-
 	_, serverHandler := partitionv1connect.NewPartitionServiceHandler(
-		implementation, connect.WithInterceptors(authInterceptor, otelInterceptor, validateInterceptor))
+		implementation, connect.WithInterceptors(defaultInterceptorList...))
 
 	publicRestHandler := securityhttp.AuthenticationMiddleware(implementation.NewSecureRouterV1(), authenticator)
 
