@@ -120,6 +120,30 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 		return "", errors.New("login verification code is incorrect")
 	}
 
+	if login.ProfileID == "" {
+
+		properties, _ := structpb.NewStruct(map[string]any{
+			"src": "direct",
+		})
+
+		results, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+			Type:       profilev1.ProfileType_PERSON,
+			Contact:    event.ContactID,
+			Properties: properties,
+		}))
+
+		if createErr != nil {
+			return "", createErr
+		}
+
+		login.ProfileID = results.Msg.GetData().GetId()
+
+		_, createErr = h.loginRepo.Update(ctx, login, "profile_id")
+		if createErr != nil {
+			return "", createErr
+		}
+	}
+
 	return login.ProfileID, nil
 
 }
