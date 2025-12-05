@@ -14,11 +14,11 @@ require (
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251119161948-fcd977fb5334.1
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/otelconnect v0.8.0
-	github.com/antinvestor/apis/go/common v1.48.17
-	github.com/antinvestor/apis/go/device v1.48.16
-	github.com/antinvestor/apis/go/notification v1.48.16
-	github.com/antinvestor/apis/go/partition v1.48.16
-	github.com/antinvestor/apis/go/profile v1.48.16
+	github.com/antinvestor/apis/go/common v1.48.24
+	github.com/antinvestor/apis/go/device v1.48.24
+	github.com/antinvestor/apis/go/notification v1.48.24
+	github.com/antinvestor/apis/go/partition v1.48.24
+	github.com/antinvestor/apis/go/profile v1.48.24
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
@@ -29,7 +29,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
-	gocloud.dev v0.44.0
 	golang.org/x/crypto v0.45.0
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10
@@ -150,6 +149,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.9.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	gocloud.dev v0.44.0 // indirect
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
