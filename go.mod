@@ -13,7 +13,6 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251205175955-9870a37939f7.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.10-20251205175955-9870a37939f7.1
 	connectrpc.com/connect v1.19.1
-	connectrpc.com/otelconnect v0.8.0
 	github.com/antinvestor/apis/go/common v1.49.0
 	github.com/antinvestor/apis/go/device v1.49.0
 	github.com/antinvestor/apis/go/notification v1.49.0
@@ -24,7 +23,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v2 v2.2.1
-	github.com/pitabwire/frame v1.68.12
+	github.com/pitabwire/frame v1.68.13
 	github.com/pitabwire/util v0.3.6
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -41,6 +40,7 @@ require (
 	buf.build/go/protovalidate v1.0.1 // indirect
 	cel.dev/expr v0.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
+	connectrpc.com/otelconnect v0.8.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
