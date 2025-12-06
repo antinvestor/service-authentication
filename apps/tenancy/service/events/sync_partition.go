@@ -162,7 +162,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 	postLogoutRedirectUriList := extractStringList(partition.Properties, "post_logout_redirect_uris")
 
 	if len(scopeList) == 0 {
-		scopeList = append(scopeList, "openid", "offline_access", "profile")
+		scopeList = append(scopeList, "openid", "offline", "offline_access", "profile")
 	}
 
 	uriList, err := prepareRedirectURIs(partition)
