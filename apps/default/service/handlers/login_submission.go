@@ -60,8 +60,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginEvent.LoginChallengeID,
 		SubjectID: profileObj.GetId(), Remember: true, RememberDuration: h.config.SessionRememberDuration}
 
-	redirectUrl, err := defaultHydra.AcceptLoginRequest(
-		req.Context(), params)
+	redirectUrl, err := defaultHydra.AcceptLoginRequest(ctx, params)
 
 	if err != nil {
 		return err

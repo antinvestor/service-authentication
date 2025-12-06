@@ -22,7 +22,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
-	github.com/ory/hydra-client-go/v2 v2.2.1
+	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.68.13
 	github.com/pitabwire/util v0.3.6
 	github.com/pkg/errors v0.9.1

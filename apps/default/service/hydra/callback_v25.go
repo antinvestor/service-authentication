@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	hydraclientgo "github.com/ory/hydra-client-go/v2"
+	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pkg/errors"
 )
 
