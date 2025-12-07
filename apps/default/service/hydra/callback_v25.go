@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/util"
 	"github.com/pkg/errors"
 )
 
@@ -75,7 +76,7 @@ func getChallengeID(r *http.Request, query string) (string, error) {
 
 	consentChallenge := r.URL.Query().Get(query)
 	if consentChallenge == "" {
-		return "", errors.WithStack(fmt.Errorf("%s parameter is present but empty", query))
+		return "", fmt.Errorf("%s parameter is present but empty", query)
 	}
 
 	return consentChallenge, nil
@@ -104,9 +105,16 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 
 	aa := h.getAdminAPIClient(ctx)
 
+	util.Log(ctx).WithFields(map[string]any{
+		"url":        h.getAdminURL(ctx),
+		"subject id": params.SubjectID,
+		"session":    params.SessionID,
+		"challange":  params.LoginChallenge,
+	}).Info("AcceptLoginRequest -- parameters")
+
 	resp, _, err := aa.AcceptOAuth2LoginRequest(ctx).LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 
 	return resp.RedirectTo, nil
