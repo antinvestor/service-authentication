@@ -269,9 +269,6 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Contains(t, resp.Header.Get("Content-Type"), "text/html")
 
-		// Verify service is working
-		require.NotNil(t, testCtx.AuthServer.Service())
-
 		t.Log("Verification endpoint basics test completed")
 	})
 }

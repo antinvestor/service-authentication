@@ -15,10 +15,12 @@ import (
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/securecookie"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -32,12 +34,14 @@ const (
 
 type AuthServer struct {
 	loginCookieCodec []securecookie.Codec
-	service          *frame.Service
 	config           *aconfig.AuthenticationConfig
-	profileCli       profilev1connect.ProfileServiceClient
-	deviceCli        devicev1connect.DeviceServiceClient
-	partitionCli     partitionv1connect.PartitionServiceClient
-	notificationCli  notificationv1connect.NotificationServiceClient
+
+	securityAuth security.Authenticator
+
+	profileCli      profilev1connect.ProfileServiceClient
+	deviceCli       devicev1connect.DeviceServiceClient
+	partitionCli    partitionv1connect.PartitionServiceClient
+	notificationCli notificationv1connect.NotificationServiceClient
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
@@ -46,9 +50,11 @@ type AuthServer struct {
 
 	// Login options enabled
 	loginOptions map[string]any
+
+	defaultHydraCli *hydra.DefaultHydra
 }
 
-func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *aconfig.AuthenticationConfig,
+func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, authConfig *aconfig.AuthenticationConfig,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository, apiKeyRepository repository.APIKeyRepository,
 	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
@@ -56,7 +62,9 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *acon
 	log := util.Log(ctx)
 
 	h := &AuthServer{
-		service:         service,
+
+		securityAuth: securityAuth,
+
 		config:          authConfig,
 		profileCli:      profileCli,
 		deviceCli:       deviceCli,
@@ -67,6 +75,11 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *acon
 		loginRepo:      loginRepository,
 		apiKeyRepo:     apiKeyRepository,
 		loginEventRepo: loginEventRepository,
+
+		defaultHydraCli: hydra.NewDefaultHydra(client.NewHTTPClient(ctx,
+			client.WithHTTPCheckRedirect(func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			})), authConfig.GetOauth2ServiceAdminURI()),
 	}
 
 	err := h.setupCookieSessions(ctx, authConfig)
@@ -77,11 +90,6 @@ func NewAuthServer(ctx context.Context, service *frame.Service, authConfig *acon
 	h.setupAuthProviders(ctx, authConfig)
 
 	return h
-}
-
-// Service methods for accessing dependencies
-func (h *AuthServer) Service() *frame.Service {
-	return h.service
 }
 
 func (h *AuthServer) Config() *aconfig.AuthenticationConfig {
@@ -127,7 +135,7 @@ func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err 
 
 	w.Header().Set("Content-Type", "application/json")
 
-	log := h.service.Log(ctx).
+	log := util.Log(ctx).
 		WithField("code", code).
 		WithField("message", msg).WithError(err)
 	log.Error("internal service error")
@@ -249,7 +257,7 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 
 	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-		log := h.service.Log(r.Context())
+		log := util.Log(r.Context())
 
 		err := f(w, r)
 		if err != nil {
@@ -289,11 +297,11 @@ func (h *AuthServer) SwaggerEndpoint(rw http.ResponseWriter, req *http.Request) 
 
 	// If no file found in any location, return error
 	if foundPath == "" {
-		h.service.Log(ctx).WithError(err).Error("could not find OpenAPI JSON file in any expected location")
+		util.Log(ctx).WithError(err).Error("could not find OpenAPI JSON file in any expected location")
 		return fmt.Errorf("OpenAPI specification file not found")
 	}
 
-	h.service.Log(ctx).WithField("path", foundPath).Debug("serving OpenAPI specification from file")
+	util.Log(ctx).WithField("path", foundPath).Debug("serving OpenAPI specification from file")
 
 	// Set headers and serve the JSON content directly
 	rw.Header().Set("Content-Type", "application/json")

@@ -45,8 +45,7 @@ func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.
 
 func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "SubmitVerificationEndpoint")
+	logger := util.Log(ctx).WithField("endpoint", "SubmitVerificationEndpoint")
 
 	// Check if this is verification code submission or contact submission
 	verificationCode := req.FormValue("verification_code")
@@ -241,8 +240,7 @@ func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Requ
 // handleVerificationCodeSubmission processes verification code submission
 func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, verificationCode string) error {
 	ctx := req.Context()
-	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "handleVerificationCodeSubmission")
+	logger := util.Log(ctx).WithField("endpoint", "handleVerificationCodeSubmission")
 
 	logger.WithField("login_event_id", loginEventID).
 		WithField("profile_name", profileName).
@@ -320,7 +318,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	loginChallenge := loginEvent.LoginChallengeID
 	logger.WithField("login_challenge_from_event", loginChallenge).Info("DEBUG: Retrieved login_challenge from loginEvent")
 
-	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
+	hydraCli := h.defaultHydraCli
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge:   loginChallenge,
 		SubjectID:        profileObj.GetId(),
@@ -330,7 +328,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	logger.WithField("subject", loginEvent.AccessID).WithField("login_challenge", loginChallenge).Info("DEBUG: Accepting login request")
 
-	redirectUrl, err := defaultHydra.AcceptLoginRequest(ctx, params)
+	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params)
 	if err != nil {
 		logger.WithError(err).Error("failed to accept login request")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login completion failed")

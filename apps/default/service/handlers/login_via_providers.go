@@ -18,6 +18,7 @@ import (
 	"github.com/markbates/goth/providers/facebook"
 	"github.com/markbates/goth/providers/google"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -77,8 +78,7 @@ func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.Authentic
 func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Request, loginChallenge, clientID string) (*models.LoginEvent, error) {
 
 	ctx := req.Context()
-	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
+	logger := util.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
 	user, err := gothic.CompleteUserAuth(rw, req)
 	if err != nil {
@@ -167,8 +167,8 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
+
+	logger := util.Log(ctx).WithField("endpoint", "ProviderCallbackEndpoint")
 
 	// Retrieve loginChallenge from session instead of form values
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
@@ -216,9 +216,8 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	svc := h.service
 
-	logger := svc.Log(ctx).WithField("endpoint", "ProviderLoginEndpoint")
+	logger := util.Log(ctx).WithField("endpoint", "ProviderLoginEndpoint")
 
 	// Parse form data before accessing PostForm
 	if err := req.ParseForm(); err != nil {

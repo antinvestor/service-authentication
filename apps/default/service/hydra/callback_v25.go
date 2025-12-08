@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/util"
 	"github.com/pkg/errors"
 )
 
@@ -48,13 +47,15 @@ type (
 		GetLogoutRequest(ctx context.Context, logoutChallenge string) (*hydraclientgo.OAuth2LogoutRequest, error)
 	}
 	DefaultHydra struct {
-		adminUrl string
+		adminUrl   string
+		httpClient *http.Client
 	}
 )
 
-func NewDefaultHydra(adminUrl string) *DefaultHydra {
+func NewDefaultHydra(httpClient *http.Client, adminUrl string) *DefaultHydra {
 	return &DefaultHydra{
-		adminUrl: adminUrl,
+		httpClient: httpClient,
+		adminUrl:   adminUrl,
 	}
 }
 
@@ -91,6 +92,10 @@ func (h *DefaultHydra) getAdminAPIClient(ctx context.Context) hydraclientgo.OAut
 
 	configuration := hydraclientgo.NewConfiguration()
 	configuration.Servers = hydraclientgo.ServerConfigurations{{URL: url}}
+
+	// Create a client that doesn't follow redirects to properly test redirect responses
+	configuration.HTTPClient = h.httpClient
+
 	return hydraclientgo.NewAPIClient(configuration).OAuth2API
 }
 
@@ -104,13 +109,6 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	alr.Amr = []string{}
 
 	aa := h.getAdminAPIClient(ctx)
-
-	util.Log(ctx).WithFields(map[string]any{
-		"url":        h.getAdminURL(ctx),
-		"subject id": params.SubjectID,
-		"session":    params.SessionID,
-		"challange":  params.LoginChallenge,
-	}).Info("AcceptLoginRequest -- parameters")
 
 	resp, _, err := aa.AcceptOAuth2LoginRequest(ctx).LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 	if err != nil {

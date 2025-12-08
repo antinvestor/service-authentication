@@ -11,6 +11,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/util"
 )
 
 const constApiKeyIDPrefix = "api_key"
@@ -47,7 +48,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	var akey apiKey
 	err := decoder.Decode(&akey)
 	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could not decode request body")
+		util.Log(ctx).WithError(err).Error("could not decode request body")
 		return err
 	}
 
@@ -62,7 +63,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 	// 	jwtServerURL, akey.Name, apiKeyID, apiKeySecret,
 	// 	akey.Scope, akey.Audience, akey.Metadata)
 	// if err != nil {
-	// 	h.service.Log(ctx).WithError(err).Error("could not register jwt params")
+	// 	util.Log(ctx).WithError(err).Error("could not register jwt params")
 	// 	return err
 	// }
 
@@ -101,7 +102,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	audBytes, err := json.Marshal(akey.Audience)
 	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could not marshal audience")
+		util.Log(ctx).WithError(err).Error("could not marshal audience")
 		return err
 	}
 
@@ -115,7 +116,7 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 	err = h.apiKeyRepo.Create(ctx, &apiky)
 	if err != nil {
-		h.service.Log(ctx).WithError(err).Error("could create api key in database")
+		util.Log(ctx).WithError(err).Error("could create api key in database")
 		return err
 	}
 

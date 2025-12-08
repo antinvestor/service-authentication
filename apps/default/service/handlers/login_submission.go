@@ -10,18 +10,18 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-	svc := h.service
 
-	logger := svc.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
+	logger := util.Log(ctx).WithField("endpoint", "SubmitLoginEndpoint")
 	logger.WithField("method", req.Method).WithField("url", req.URL.String()).Info("Request details")
 
-	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
+	hydraCli := h.defaultHydraCli
 
 	// Parse form data before accessing PostForm
 	if err := req.ParseForm(); err != nil {
@@ -60,7 +60,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginEvent.LoginChallengeID,
 		SubjectID: profileObj.GetId(), Remember: true, RememberDuration: h.config.SessionRememberDuration}
 
-	redirectUrl, err := defaultHydra.AcceptLoginRequest(ctx, params)
+	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params)
 	if err != nil {
 		return err
 	}

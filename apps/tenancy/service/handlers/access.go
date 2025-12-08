@@ -6,6 +6,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -28,7 +29,7 @@ func (prtSrv *PartitionServer) CreateAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateAccessRequest],
 ) (*connect.Response[partitionv1.CreateAccessResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	access, err := prtSrv.AccessBusiness.CreateAccess(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access")
@@ -41,7 +42,7 @@ func (prtSrv *PartitionServer) GetAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetAccessRequest],
 ) (*connect.Response[partitionv1.GetAccessResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	access, err := prtSrv.AccessBusiness.GetAccess(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get access")
@@ -54,7 +55,7 @@ func (prtSrv *PartitionServer) RemoveAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveAccessRequest],
 ) (*connect.Response[partitionv1.RemoveAccessResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	err := prtSrv.AccessBusiness.RemoveAccess(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access")
@@ -69,7 +70,7 @@ func (prtSrv *PartitionServer) CreateAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateAccessRoleRequest],
 ) (*connect.Response[partitionv1.CreateAccessRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	accessRole, err := prtSrv.AccessBusiness.CreateAccessRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create new access roles")
@@ -82,7 +83,7 @@ func (prtSrv *PartitionServer) ListAccessRoles(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListAccessRoleRequest],
 ) (*connect.Response[partitionv1.ListAccessRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	accessRoleList, err := prtSrv.AccessBusiness.ListAccessRoles(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get list of access roles")
@@ -95,7 +96,7 @@ func (prtSrv *PartitionServer) RemoveAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveAccessRoleRequest],
 ) (*connect.Response[partitionv1.RemoveAccessRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	err := prtSrv.AccessBusiness.RemoveAccessRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove access role")

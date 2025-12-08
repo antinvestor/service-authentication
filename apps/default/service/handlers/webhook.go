@@ -11,6 +11,7 @@ import (
 
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/security/openid"
+	"github.com/pitabwire/util"
 )
 
 // extractGrantedScopes efficiently extracts granted_scopes from multiple possible locations in the webhook payload
@@ -58,7 +59,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// Use native Go SDK path variable extraction
 	tokenType := req.PathValue("tokenType")
 
-	logger := h.service.Log(ctx)
+	logger := util.Log(ctx)
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -102,7 +103,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		// Check if this is an API key client
 		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)
 		if err0 != nil {
-			h.service.Log(ctx).WithError(err0).Error("could not find api key")
+			util.Log(ctx).WithError(err0).Error("could not find api key")
 			return err0
 		}
 

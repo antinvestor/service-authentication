@@ -10,6 +10,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/util"
 )
 
 const SyncPartitionsHTTPPath = "/_system/sync/partitions"
@@ -65,7 +66,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 
 		rw.Header().Set("Content-Type", "application/json")
 
-		log := prtSrv.svc.Log(ctx).WithError(err)
+		log := util.Log(ctx).WithError(err)
 		log.Error("internal service error synchronising partitions")
 
 		_, err = fmt.Fprintf(rw, " internal processing err message: %s", err.Error())

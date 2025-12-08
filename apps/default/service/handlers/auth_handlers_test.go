@@ -113,8 +113,6 @@ func (suite *AuthHandlersTestSuite) TestSubmitRegisterEndpoint() {
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -182,8 +180,6 @@ func (suite *AuthHandlersTestSuite) TestShowConsentEndpoint() {
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -255,8 +251,6 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
 				assert.Contains(t, resp.Header.Get("Content-Type"), tc.expectedType)
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -324,8 +318,6 @@ func (suite *AuthHandlersTestSuite) TestDeviceIDMiddleware() {
 				require.NoError(t, err)
 				defer util.CloseAndLogOnError(ctx, resp.Body)
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -403,8 +395,6 @@ func (suite *AuthHandlersTestSuite) TestErrorHandling() {
 				bodyStr := string(body[:n])
 				assert.Contains(t, bodyStr, "<title>Error</title>")
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})

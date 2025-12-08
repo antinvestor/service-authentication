@@ -16,7 +16,7 @@ import (
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
-	securityhttp "github.com/pitabwire/frame/security/interceptors/http"
+	securityhttp "github.com/pitabwire/frame/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
 

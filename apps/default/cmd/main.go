@@ -39,7 +39,7 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(), frame.WithDatastore())
 
-	log := svc.Log(ctx)
+	log := util.Log(ctx)
 
 	sm := svc.SecurityManager()
 	dbManager := svc.DatastoreManager()
@@ -79,7 +79,7 @@ func main() {
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, svc, &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
+	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)

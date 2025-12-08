@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	httpInterceptor "github.com/pitabwire/frame/security/interceptors/http"
+	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
+	"github.com/pitabwire/util"
 )
 
 // SetupRouterV1 -
@@ -15,11 +16,9 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	router := http.NewServeMux()
 
-	svc := h.service
-
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
-	serviceName := svc.Name()
+	serviceName := h.Config().Name()
 	isTestEnv := serviceName == "authentication_tests"
 
 	var csrfMiddleware func(http.Handler) http.Handler
@@ -66,7 +65,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		// Handle other paths as not found
 		err := h.NotFoundEndpoint(w, r)
 		if err != nil {
-			log := h.service.Log(r.Context())
+			log := util.Log(r.Context())
 			log.WithError(err).WithField("path", r.URL.Path).WithField("name", "NotFoundEndpoint").Error("handler error")
 			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
 		}
@@ -79,7 +78,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					log := h.service.Log(r.Context())
+					log := util.Log(r.Context())
 					log.WithError(handlerErr).WithField("path", path).WithField("name", name).Error("handler error")
 					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
@@ -112,16 +111,14 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					log := h.service.Log(r.Context())
+					log := util.Log(r.Context())
 					log.WithError(handlerErr).WithField("path", path).WithField("name", name).Error("handler error")
 					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
 			})
 
-			sm := svc.SecurityManager()
-			smAuth := sm.GetAuthenticator(ctx)
 			// Apply authentication middleware
-			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, smAuth)
+			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, h.securityAuth)
 			authMiddleware.ServeHTTP(w, r)
 		})
 	}

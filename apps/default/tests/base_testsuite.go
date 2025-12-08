@@ -222,7 +222,7 @@ func (bs *BaseTestSuite) CreateService(
 	depsBuilder, err := BuildRepos(ctx, svc)
 	require.NoError(t, err)
 
-	authServer := handlers.NewAuthServer(ctx, svc, &cfg,
+	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager().GetAuthenticator(ctx), &cfg,
 		depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
 		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
 

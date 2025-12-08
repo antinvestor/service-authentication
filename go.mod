@@ -23,7 +23,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.68.13
+	github.com/pitabwire/frame v1.68.14
 	github.com/pitabwire/util v0.3.6
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1

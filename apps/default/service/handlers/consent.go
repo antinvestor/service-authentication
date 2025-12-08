@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -17,9 +18,9 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	ctx := req.Context()
 
-	logger := h.service.Log(ctx)
+	logger := util.Log(ctx)
 
-	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
+	hydraCli := h.defaultHydraCli
 
 	consentChallenge, err := hydra.GetConsentChallengeID(req)
 	if err != nil {
@@ -41,7 +42,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		logger.WithError(err).Warn("failed to save session after cleanup")
 	}
 
-	getConseReq, err := defaultHydra.GetConsentRequest(req.Context(), consentChallenge)
+	getConseReq, err := hydraCli.GetConsentRequest(req.Context(), consentChallenge)
 
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		IdTokenExtras:     tokenMap,
 	}
 
-	redirectUrl, err := defaultHydra.AcceptConsentRequest(req.Context(), params)
+	redirectUrl, err := hydraCli.AcceptConsentRequest(req.Context(), params)
 
 	if err != nil {
 		return err

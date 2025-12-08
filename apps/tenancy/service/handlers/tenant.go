@@ -5,12 +5,13 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
+	"github.com/pitabwire/util"
 )
 
 func (prtSrv *PartitionServer) GetTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetTenantRequest]) (*connect.Response[partitionv1.GetTenantResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.GetTenant(ctx, req.Msg.GetId())
 	if err != nil {
 		logger.Debug("could not obtain the specified tenant")
@@ -23,7 +24,7 @@ func (prtSrv *PartitionServer) ListTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListTenantRequest],
 	stream *connect.ServerStream[partitionv1.ListTenantResponse]) error {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	tenants, err := prtSrv.TenantBusiness.ListTenant(ctx, req.Msg)
 	if err != nil {
 		logger.Debug("could not list tenants")
@@ -36,7 +37,7 @@ func (prtSrv *PartitionServer) CreateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateTenantRequest],
 ) (*connect.Response[partitionv1.CreateTenantResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.CreateTenant(ctx, req.Msg)
 	if err != nil {
 		logger.Debug("could not create a new tenant")
@@ -49,7 +50,7 @@ func (prtSrv *PartitionServer) UpdateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateTenantRequest],
 ) (*connect.Response[partitionv1.UpdateTenantResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.UpdateTenant(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not update our tenant")

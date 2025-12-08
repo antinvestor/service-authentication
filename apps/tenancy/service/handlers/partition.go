@@ -12,6 +12,7 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/events"
+	"github.com/pitabwire/util"
 )
 
 type PartitionServer struct {
@@ -59,7 +60,7 @@ func (prtSrv *PartitionServer) ListPartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListPartitionRequest],
 	stream *connect.ServerStream[partitionv1.ListPartitionResponse]) error {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partitions, err := prtSrv.PartitionBusiness.ListPartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not list partition")
@@ -71,7 +72,7 @@ func (prtSrv *PartitionServer) ListPartition(
 func (prtSrv *PartitionServer) CreatePartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePartitionRequest]) (*connect.Response[partitionv1.CreatePartitionResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.CreatePartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create a new partition")
@@ -83,7 +84,7 @@ func (prtSrv *PartitionServer) CreatePartition(
 func (prtSrv *PartitionServer) GetPartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPartitionRequest]) (*connect.Response[partitionv1.GetPartitionResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.GetPartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not obtain the specified partition")
@@ -95,7 +96,7 @@ func (prtSrv *PartitionServer) GetPartition(
 func (prtSrv *PartitionServer) GetPartitionParents(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPartitionParentsRequest]) (*connect.Response[partitionv1.GetPartitionParentsResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.GetPartitionParents(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not obtain the specified partition")
@@ -107,7 +108,7 @@ func (prtSrv *PartitionServer) GetPartitionParents(
 func (prtSrv *PartitionServer) UpdatePartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdatePartitionRequest]) (*connect.Response[partitionv1.UpdatePartitionResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.UpdatePartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not update existing partition")
@@ -119,7 +120,7 @@ func (prtSrv *PartitionServer) UpdatePartition(
 func (prtSrv *PartitionServer) CreatePartitionRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePartitionRoleRequest]) (*connect.Response[partitionv1.CreatePartitionRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.CreatePartitionRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not create a new partition role")
@@ -131,7 +132,7 @@ func (prtSrv *PartitionServer) CreatePartitionRole(
 func (prtSrv *PartitionServer) ListPartitionRoles(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListPartitionRoleRequest]) (*connect.Response[partitionv1.ListPartitionRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not obtain the list of partition roles")
@@ -143,7 +144,7 @@ func (prtSrv *PartitionServer) ListPartitionRoles(
 func (prtSrv *PartitionServer) RemovePartitionRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemovePartitionRoleRequest]) (*connect.Response[partitionv1.RemovePartitionRoleResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	err := prtSrv.PartitionBusiness.RemovePartitionRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove the specified partition role")

@@ -104,8 +104,6 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 				bodyStr := string(body[:n])
 				assert.Contains(t, bodyStr, "<title>Error</title>")
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -166,8 +164,6 @@ func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
 		// Verify response (should be 401 Unauthorised when no JWT token is provided)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -216,8 +212,6 @@ func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
 		// Verify response (should be 401 Unauthorised when no JWT token is provided)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -266,8 +260,6 @@ func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
 		// Verify response (should be 401 Unauthorised when no JWT token is provided)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -316,8 +308,6 @@ func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
 		// Verify response (should be 401 Unauthorised when no JWT token is provided)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -374,8 +364,6 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 		// Verify response (webhook should process but may return error for invalid token)
 		assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 500, "Should return valid HTTP status")
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -425,8 +413,6 @@ func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 		// Verify response (should be 401 Unauthorised for unauthorised access)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
-		// Verify service is working
-		assert.NotNil(t, authServer.Service())
 	})
 }
 
@@ -501,8 +487,6 @@ func (suite *HandlersTestSuite) TestNotFoundEndpoint() {
 				bodyStr := string(body[:n])
 				assert.Contains(t, bodyStr, "Page Not Found")
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})
@@ -579,8 +563,6 @@ func (suite *HandlersTestSuite) TestProviderEndpoints() {
 				// Verify response (should be error due to missing OAuth setup)
 				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
 
-				// Verify service is working
-				assert.NotNil(t, authServer.Service())
 			})
 		}
 	})

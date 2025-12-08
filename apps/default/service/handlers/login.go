@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
+	"github.com/pitabwire/util"
 )
 
 const SessionKeyLoginStorageName = "login-storage"
@@ -12,8 +13,7 @@ const SessionKeyClientID = "client_id"
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	svc := h.service
-	logger := svc.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
+	logger := util.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
 	// Store loginChallenge in session before OAuth redirect
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
@@ -29,7 +29,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 		logger.WithError(err).Warn("failed to save session after cleanup")
 	}
 
-	defaultHydra := hydra.NewDefaultHydra(h.config.GetOauth2ServiceAdminURI())
+	hydraCli := h.defaultHydraCli
 
 	loginChallenge, err := hydra.GetLoginChallengeID(req)
 	if err != nil {
@@ -37,7 +37,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 		return err
 	}
 
-	getLogReq, err := defaultHydra.GetLoginRequest(ctx, loginChallenge)
+	getLogReq, err := hydraCli.GetLoginRequest(ctx, loginChallenge)
 	if err != nil {
 		logger = logger.WithField("login_challenge", loginChallenge)
 
@@ -48,7 +48,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	if getLogReq.Skip {
 		redirectUrl := ""
 		params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: getLogReq.GetSubject()}
-		redirectUrl, err = defaultHydra.AcceptLoginRequest(ctx, params)
+		redirectUrl, err = hydraCli.AcceptLoginRequest(ctx, params)
 
 		if err != nil {
 			return err

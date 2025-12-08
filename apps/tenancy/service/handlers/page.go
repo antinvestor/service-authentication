@@ -5,13 +5,14 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
+	"github.com/pitabwire/util"
 )
 
 func (prtSrv *PartitionServer) CreatePage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePageRequest],
 ) (*connect.Response[partitionv1.CreatePageResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	page, err := prtSrv.PageBusiness.CreatePage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" CreatePage -- could not create a new page")
@@ -24,7 +25,7 @@ func (prtSrv *PartitionServer) GetPage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPageRequest],
 ) (*connect.Response[partitionv1.GetPageResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	page, err := prtSrv.PageBusiness.GetPage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" GetPage -- could not get page")
@@ -37,7 +38,7 @@ func (prtSrv *PartitionServer) RemovePage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemovePageRequest],
 ) (*connect.Response[partitionv1.RemovePageResponse], error) {
-	logger := prtSrv.svc.Log(ctx)
+	logger := util.Log(ctx)
 	err := prtSrv.PageBusiness.RemovePage(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" RemovePage -- could not remove page")
