@@ -119,7 +119,7 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	// This mirrors what the test client does implicitly
 	loginReq, httpResp, err := h.Cli().GetOAuth2LoginRequest(ctx).
 		LoginChallenge(params.LoginChallenge).Execute()
-	
+
 	if err != nil {
 		logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
