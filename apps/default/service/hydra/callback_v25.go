@@ -128,13 +128,13 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 		if httpResp != nil {
 			statusCode = httpResp.StatusCode
 		}
-		
+
 		logger.WithFields(map[string]interface{}{
 			"error":       err.Error(),
 			"status_code": statusCode,
 			"admin_url":   h.adminURL,
 		}).Error("Hydra login request validation failed")
-		
+
 		// Add specific handling for 404 errors
 		if statusCode == 404 {
 			logger.Error("Login challenge not found in Hydra - it may have expired or been already used")
@@ -173,7 +173,7 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 		if httpResp != nil {
 			statusCode = httpResp.StatusCode
 		}
-		
+
 		logger.WithFields(map[string]interface{}{
 			"error":       err.Error(),
 			"status_code": statusCode,
