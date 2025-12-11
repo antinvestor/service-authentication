@@ -103,6 +103,8 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 		"subject_id":      params.SubjectID,
 	})
 
+	logger.Info("AcceptLoginRequest called")
+
 	// Essential OAuth2 validation
 	if params.LoginChallenge == "" {
 		err := fmt.Errorf("login challenge is required")
@@ -117,19 +119,27 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 
 	// First validate the login challenge exists before accepting it
 	// This mirrors what the test client does implicitly
+	logger.Info("Attempting to validate login challenge with Hydra")
 	loginReq, httpResp, err := h.Cli().GetOAuth2LoginRequest(ctx).
 		LoginChallenge(params.LoginChallenge).Execute()
 
 	if err != nil {
+		statusCode := 0
+		if httpResp != nil {
+			statusCode = httpResp.StatusCode
+		}
+		
 		logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-			"status_code": func() int {
-				if httpResp != nil {
-					return httpResp.StatusCode
-				}
-				return 0
-			}(),
+			"error":       err.Error(),
+			"status_code": statusCode,
+			"admin_url":   h.adminURL,
 		}).Error("Hydra login request validation failed")
+		
+		// Add specific handling for 404 errors
+		if statusCode == 404 {
+			logger.Error("Login challenge not found in Hydra - it may have expired or been already used")
+			return "", fmt.Errorf("login challenge '%s' not found in Hydra at %s - it may have expired or been already used", params.LoginChallenge, h.adminURL)
+		}
 		return "", err
 	}
 
@@ -154,18 +164,20 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	alr.SetExtendSessionLifespan(params.ExtendSession)
 	alr.Amr = []string{} // Authentication methods reference
 
+	logger.Info("Attempting to accept login request with Hydra")
 	resp, httpResp, err := h.Cli().AcceptOAuth2LoginRequest(ctx).
 		LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 
 	if err != nil {
+		statusCode := 0
+		if httpResp != nil {
+			statusCode = httpResp.StatusCode
+		}
+		
 		logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-			"status_code": func() int {
-				if httpResp != nil {
-					return httpResp.StatusCode
-				}
-				return 0
-			}(),
+			"error":       err.Error(),
+			"status_code": statusCode,
+			"admin_url":   h.adminURL,
 		}).Error("Hydra login acceptance failed")
 		return "", err
 	}

@@ -76,7 +76,7 @@ func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, aut
 		apiKeyRepo:     apiKeyRepository,
 		loginEventRepo: loginEventRepository,
 
-		defaultHydraCli: hydra.NewDefaultHydra(client.NewHTTPClient(ctx), authConfig.GetOauth2ServiceAdminURI()),
+		defaultHydraCli: hydra.NewDefaultHydra(client.NewHTTPClient(ctx, client.WithHTTPTraceRequests(), client.WithHTTPTraceRequestHeaders()), authConfig.GetOauth2ServiceAdminURI()),
 	}
 
 	err := h.setupCookieSessions(ctx, authConfig)

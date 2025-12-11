@@ -32,6 +32,10 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	verificationCode := req.PostForm.Get("verification_code")
 	loginEventID := req.PostForm.Get("login_event_id")
 
+	logger.WithField("profile_name", profileName).
+		WithField("verification_code", verificationCode != "").
+		WithField("login_event_id", loginEventID).Info("Extracted form parameters")
+
 	if loginEventID == "" {
 		http.Redirect(rw, req, "/error", http.StatusBadRequest)
 		return nil
@@ -46,6 +50,11 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 		return err
 	}
+
+	logger.WithField("login_event_id", loginEvent.GetID()).
+		WithField("login_challenge_id", loginEvent.LoginChallengeID).
+		WithField("verification_id", loginEvent.VerificationID).
+		Info("Retrieved login event from database")
 
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
@@ -64,11 +73,17 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		RememberDuration: h.config.SessionRememberDuration,
 	}
 
+	logger.WithField("login_challenge", params.LoginChallenge).
+		WithField("subject_id", params.SubjectID).
+		Info("Calling AcceptLoginRequest")
+
 	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params)
 	if err != nil {
+		logger.WithError(err).Error("AcceptLoginRequest failed")
 		return err
 	}
 
+	logger.WithField("redirect_url", redirectUrl).Info("Login accepted successfully")
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 	return nil
 }
