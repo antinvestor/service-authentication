@@ -6,13 +6,9 @@ import (
 	"net/http"
 
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/util"
 )
 
 type (
-	Provider interface {
-		Hydra() Hydra
-	}
 	AcceptLoginRequestParams struct {
 		LoginChallenge string
 		SubjectID      string
@@ -52,7 +48,7 @@ type (
 	}
 )
 
-func NewDefaultHydra(httpClient *http.Client, adminUrl string) *DefaultHydra {
+func NewDefaultHydra(httpClient *http.Client, adminUrl string) Hydra {
 	configuration := hydraclientgo.NewConfiguration()
 	configuration.Servers = []hydraclientgo.ServerConfiguration{
 		{
@@ -97,63 +93,6 @@ func (h *DefaultHydra) Cli() hydraclientgo.OAuth2API {
 }
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error) {
-	logger := util.Log(ctx).WithFields(map[string]interface{}{
-		"admin_url":       h.adminURL,
-		"login_challenge": params.LoginChallenge,
-		"subject_id":      params.SubjectID,
-	})
-
-	logger.Info("AcceptLoginRequest called")
-
-	// Essential OAuth2 validation
-	if params.LoginChallenge == "" {
-		err := fmt.Errorf("login challenge is required")
-		logger.WithError(err).Error("missing login challenge")
-		return "", err
-	}
-	if params.SubjectID == "" {
-		err := fmt.Errorf("subject ID is required")
-		logger.WithError(err).Error("missing subject ID")
-		return "", err
-	}
-
-	// First validate the login challenge exists before accepting it
-	// This mirrors what the test client does implicitly
-	logger.Info("Attempting to validate login challenge with Hydra")
-	loginReq, httpResp, err := h.Cli().GetOAuth2LoginRequest(ctx).
-		LoginChallenge(params.LoginChallenge).Execute()
-
-	if err != nil {
-		statusCode := 0
-		if httpResp != nil {
-			statusCode = httpResp.StatusCode
-		}
-
-		logger.WithFields(map[string]interface{}{
-			"error":       err.Error(),
-			"status_code": statusCode,
-			"admin_url":   h.adminURL,
-		}).Error("Hydra login request validation failed")
-
-		// Add specific handling for 404 errors
-		if statusCode == 404 {
-			logger.Error("Login challenge not found in Hydra - it may have expired or been already used")
-			return "", fmt.Errorf("login challenge '%s' not found in Hydra at %s - it may have expired or been already used", params.LoginChallenge, h.adminURL)
-		}
-		return "", err
-	}
-
-	if loginReq == nil {
-		err = fmt.Errorf("hydra returned empty login request")
-		logger.WithError(err).Error("invalid login request validation")
-		return "", err
-	}
-
-	logger.WithFields(map[string]interface{}{
-		"client_id": loginReq.Client.GetClientId(),
-		"skip":      loginReq.Skip,
-		"subject":   loginReq.Subject,
-	}).Debug("login request validated successfully")
 
 	// Build login acceptance request
 	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.SubjectID)
@@ -164,31 +103,13 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	alr.SetExtendSessionLifespan(params.ExtendSession)
 	alr.Amr = []string{} // Authentication methods reference
 
-	logger.Info("Attempting to accept login request with Hydra")
-	resp, httpResp, err := h.Cli().AcceptOAuth2LoginRequest(ctx).
+	resp, _, err := h.Cli().AcceptOAuth2LoginRequest(ctx).
 		LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 
 	if err != nil {
-		statusCode := 0
-		if httpResp != nil {
-			statusCode = httpResp.StatusCode
-		}
-
-		logger.WithFields(map[string]interface{}{
-			"error":       err.Error(),
-			"status_code": statusCode,
-			"admin_url":   h.adminURL,
-		}).Error("Hydra login acceptance failed")
 		return "", err
 	}
 
-	if resp == nil {
-		err = fmt.Errorf("hydra returned empty response")
-		logger.WithError(err).Error("invalid login response")
-		return "", err
-	}
-
-	logger.WithField("redirect_to", resp.RedirectTo).Debug("login request accepted")
 	return resp.RedirectTo, nil
 }
 
@@ -205,7 +126,7 @@ func (h *DefaultHydra) GetLoginRequest(ctx context.Context, loginChallenge strin
 	}
 
 	if hlr == nil {
-		err := fmt.Errorf("hydra returned empty login request")
+		err = fmt.Errorf("hydra returned empty login request")
 		return nil, err
 	}
 
@@ -245,7 +166,7 @@ func (h *DefaultHydra) AcceptConsentRequest(ctx context.Context, params *AcceptC
 	}
 
 	if resp == nil {
-		err := fmt.Errorf("hydra returned empty response")
+		err = fmt.Errorf("hydra returned empty response")
 		return "", err
 	}
 
@@ -265,7 +186,7 @@ func (h *DefaultHydra) GetConsentRequest(ctx context.Context, consentChallenge s
 	}
 
 	if hcr == nil {
-		err := fmt.Errorf("hydra returned empty consent request")
+		err = fmt.Errorf("hydra returned empty consent request")
 		return nil, err
 	}
 

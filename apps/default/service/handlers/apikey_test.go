@@ -698,10 +698,4 @@ func TestAPIKey(t *testing.T) {
 	suite.Run(t, new(APIKeyTestSuite))
 }
 
-// min returns the minimum of two integers (helper function for Go versions < 1.21)
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+

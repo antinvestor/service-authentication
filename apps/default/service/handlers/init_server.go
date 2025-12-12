@@ -51,7 +51,7 @@ type AuthServer struct {
 	// Login options enabled
 	loginOptions map[string]any
 
-	defaultHydraCli *hydra.DefaultHydra
+	defaultHydraCli hydra.Hydra
 }
 
 func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, authConfig *aconfig.AuthenticationConfig,
@@ -60,6 +60,14 @@ func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, aut
 	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
 
 	log := util.Log(ctx)
+
+	var httpOpts []client.HTTPOption
+	if authConfig.TraceReq() {
+		httpOpts = append(httpOpts, client.WithHTTPTraceRequests(), client.WithHTTPTraceRequestHeaders())
+	}
+
+	httpCli := client.NewHTTPClient(ctx, httpOpts...)
+	hydraCli := hydra.NewDefaultHydra(httpCli, authConfig.GetOauth2ServiceAdminURI())
 
 	h := &AuthServer{
 
@@ -76,7 +84,7 @@ func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, aut
 		apiKeyRepo:     apiKeyRepository,
 		loginEventRepo: loginEventRepository,
 
-		defaultHydraCli: hydra.NewDefaultHydra(client.NewHTTPClient(ctx, client.WithHTTPTraceRequests(), client.WithHTTPTraceRequestHeaders()), authConfig.GetOauth2ServiceAdminURI()),
+		defaultHydraCli: hydraCli,
 	}
 
 	err := h.setupCookieSessions(ctx, authConfig)
