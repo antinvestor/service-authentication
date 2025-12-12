@@ -697,5 +697,3 @@ func (suite *APIKeyTestSuite) TestAPIKeyAuthentication() {
 func TestAPIKey(t *testing.T) {
 	suite.Run(t, new(APIKeyTestSuite))
 }
-
-
