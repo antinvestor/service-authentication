@@ -45,57 +45,45 @@ func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.
 
 func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	logger := util.Log(ctx).WithField("endpoint", "SubmitVerificationEndpoint")
 
 	// Check if this is verification code submission or contact submission
 	verificationCode := req.FormValue("verification_code")
 	loginEventID := req.FormValue("login_event_id")
 	profileName := req.FormValue("profile_name")
 
-	logger.WithField("verification_code", verificationCode != "").WithField("login_event_id", loginEventID).WithField("profile_name", profileName).Info("DEBUG: Checking submission type")
-
 	// If verification code is provided, handle verification code submission
 	if verificationCode != "" && loginEventID != "" {
-		logger.Info("DEBUG: Processing verification code submission")
 		return h.handleVerificationCodeSubmission(rw, req, loginEventID, profileName, verificationCode)
 	}
 
 	// Otherwise, handle contact submission (original logic)
-	logger.Info("DEBUG: Processing contact submission")
 	contact := req.PostForm.Get("contact")
-	logger.WithField("contact", contact).WithField("contact_length", len(contact)).Info("DEBUG: Received contact parameter from PostForm")
 
 	// Also check FormValue as fallback
 	contactFormValue := req.FormValue("contact")
-	logger.WithField("contact_form_value", contactFormValue).WithField("form_value_length", len(contactFormValue)).Info("DEBUG: Contact from FormValue")
 
 	// Use FormValue if PostForm is empty
 	if contact == "" && contactFormValue != "" {
 		contact = contactFormValue
-		logger.Info("DEBUG: Using contact from FormValue instead of PostForm")
 	}
 	// Retrieve loginChallenge from session instead of form values
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
-		logger.WithError(err).Error("failed to get session")
+		util.Log(ctx).WithError(err).Error("failed to get session")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
 		return err
 	}
 
-	// Debug: Log all session values to understand what's in the session
-	logger.WithField("session_values", session.Values).Info("DEBUG: Retrieved session values")
-	logger.WithField("session_id", session.ID).Info("DEBUG: Session ID")
-
 	loginChallenge, ok := session.Values[SessionKeyLoginChallenge].(string)
 	if !ok || loginChallenge == "" {
-		logger.WithField("session_values", session.Values).Error("login_challenge not found in session - dumping session contents")
+		util.Log(ctx).Error("login_challenge not found in session")
 		http.Redirect(rw, req, "/error?error=login_challenge_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
 		return fmt.Errorf("login_challenge not found in session")
 	}
 
 	clientID, ok := session.Values[SessionKeyClientID].(string)
 	if !ok || clientID == "" {
-		logger.Error("clientID not found in session")
+		util.Log(ctx).Error("clientID not found in session")
 		http.Redirect(rw, req, "/error?error=client_id_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
 		return fmt.Errorf("client id not found in session")
 	}
@@ -106,9 +94,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	if err != nil {
 
 		if !frame.ErrorIsNotFound(err) {
-			logger.WithError(err).Error("DEBUG: failed to get profile - redirecting to login")
+			util.Log(ctx).WithError(err).Error("failed to get profile - redirecting to login")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
 			return nil
 		}
 	}
@@ -135,9 +122,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 			Contact: contact,
 		}))
 		if err0 != nil {
-			logger.WithError(err0).Error(" could not create/find existing contact")
+			util.Log(ctx).WithError(err0).Error("could not create/find existing contact")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
 			return nil
 		}
 
@@ -150,17 +136,15 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		DurationToExpire: "15m",
 	}))
 	if err != nil {
-		logger.WithError(err).Info("could not create contact verification - redirecting to login")
+		util.Log(ctx).WithError(err).Error("could not create contact verification - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
 		return err
 	}
 
 	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.Msg.GetId(), loginChallenge, nil)
 	if err != nil {
-		logger.WithError(err).Error("could not store login attempt - redirecting to login")
+		util.Log(ctx).WithError(err).Error("could not store login attempt - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
 		return err
 	}
 	// Extract profile name from properties or use a default
@@ -240,16 +224,11 @@ func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Requ
 // handleVerificationCodeSubmission processes verification code submission
 func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, verificationCode string) error {
 	ctx := req.Context()
-	logger := util.Log(ctx).WithField("endpoint", "handleVerificationCodeSubmission")
-
-	logger.WithField("login_event_id", loginEventID).
-		WithField("profile_name", profileName).
-		WithField("verification_code", verificationCode).Info("DEBUG: Processing verification code submission")
 
 	// Get login event to retrieve contact information and login challenge
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
-		logger.WithError(err).Error("failed to get login event")
+		util.Log(ctx).WithError(err).Error("failed to get login event")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login event not found")
 	}
 
@@ -259,25 +238,21 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		Code: verificationCode,
 	}
 
-	logger.WithField("verification_id", loginEvent.VerificationID).WithField("verification_code", verificationCode).Info("DEBUG: Calling CheckVerification")
-
 	verifyResp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(verifyReq))
 	if err != nil {
-		logger.WithError(err).Error("verification code verification failed")
+		util.Log(ctx).WithError(err).Error("verification code verification failed")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
 
 	if verifyResp.Msg.GetCheckAttempts() > 3 {
-		logger.Error("verification code verification failed after too many attempts")
+		util.Log(ctx).Error("verification code verification failed after too many attempts")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts")
 	}
 
 	if !verifyResp.Msg.GetSuccess() {
-		logger.Error("verification code verification returned false")
+		util.Log(ctx).Error("verification code verification returned false")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
-
-	logger.Info("DEBUG: Verification code verified successfully")
 
 	var profileObj *profilev1.ProfileObject
 	resp, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: loginEvent.ContactID}))
@@ -287,10 +262,9 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		// Check if it's a "not found" error, which is expected for new users
 		if frame.ErrorIsNotFound(err) {
 			// Profile not found - this is expected for new users, we'll create one below
-			logger.Debug("Profile not found for contact, will create new profile")
 		} else {
 			// Unexpected error occurred
-			logger.WithError(err).Error("failed to get profile by contact")
+			util.Log(ctx).WithError(err).Error("failed to get profile by contact")
 			return err
 		}
 	}
@@ -307,7 +281,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 			Properties: properties,
 		}))
 		if err0 != nil {
-			logger.WithError(err0).Error("DEBUG: failed to create new profile by contact & name")
+			util.Log(ctx).WithError(err0).Error("failed to create new profile by contact & name")
 			return err0
 		}
 
@@ -316,7 +290,6 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 
 	// Complete OAuth2 login flow using login_challenge from loginEvent
 	loginChallenge := loginEvent.LoginChallengeID
-	logger.WithField("login_challenge_from_event", loginChallenge).Info("DEBUG: Retrieved login_challenge from loginEvent")
 
 	hydraCli := h.defaultHydraCli
 	params := &hydra.AcceptLoginRequestParams{
@@ -326,15 +299,11 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		RememberDuration: h.config.SessionRememberDuration,
 	}
 
-	logger.WithField("subject", loginEvent.AccessID).WithField("login_challenge", loginChallenge).Info("DEBUG: Accepting login request")
-
-	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params)
+	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params, "third party")
 	if err != nil {
-		logger.WithError(err).Error("failed to accept login request")
+		util.Log(ctx).WithError(err).Error("failed to accept login request")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login completion failed")
 	}
-
-	logger.WithField("redirect_to", redirectUrl).Info("DEBUG: Login accepted, redirecting to OAuth2 flow")
 
 	// Redirect to complete OAuth2 flow
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)

@@ -18,20 +18,18 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	ctx := req.Context()
 
-	logger := util.Log(ctx)
-
 	hydraCli := h.defaultHydraCli
 
 	consentChallenge, err := hydra.GetConsentChallengeID(req)
 	if err != nil {
-		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
 		return err
 	}
 
 	// Store loginChallenge in session before OAuth redirect
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
-		logger.WithError(err).Error("failed to get session")
+		util.Log(ctx).WithError(err).Error("failed to get session")
 		return err
 	}
 
@@ -39,7 +37,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	delete(session.Values, SessionKeyLoginChallenge)
 	err = session.Save(req, rw)
 	if err != nil {
-		logger.WithError(err).Warn("failed to save session after cleanup")
+		util.Log(ctx).WithError(err).Error("failed to save session after cleanup")
 	}
 
 	getConseReq, err := hydraCli.GetConsentRequest(req.Context(), consentChallenge)
@@ -50,13 +48,13 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	deviceObj, err := h.processDeviceSession(ctx, getConseReq.GetSubject())
 	if err != nil && deviceObj == nil {
-		logger.WithError(err).Error("could not process device id linkage")
+		util.Log(ctx).WithError(err).Error("could not process device id linkage")
 		return err
 	}
 
 	err = h.storeDeviceID(ctx, rw, deviceObj)
 	if err != nil {
-		logger.WithError(err).Error("could not store device id in cookie")
+		util.Log(ctx).WithError(err).Error("could not store device id in cookie")
 	}
 
 	client := getConseReq.GetClient()
@@ -64,7 +62,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
 	if err != nil {
-		logger.WithError(err).Error("could not get partition by profile id")
+		util.Log(ctx).WithError(err).Error("could not get partition by profile id")
 		return err
 	}
 

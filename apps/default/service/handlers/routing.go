@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
-	"github.com/pitabwire/util"
 )
 
 // SetupRouterV1 -
@@ -65,21 +64,17 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		// Handle other paths as not found
 		err := h.NotFoundEndpoint(w, r)
 		if err != nil {
-			log := util.Log(r.Context())
-			log.WithError(err).WithField("path", r.URL.Path).WithField("name", "NotFoundEndpoint").Error("handler error")
 			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
 		}
 
 	})
 
 	// Secure routes with CSRF protection
-	unAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
+	unAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, _ string, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					log := util.Log(r.Context())
-					log.WithError(handlerErr).WithField("path", path).WithField("name", name).Error("handler error")
 					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
 			})
@@ -106,13 +101,11 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	h.addHandler(router, h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 
 	// API routes with authentication
-	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
+	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, _ string, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					log := util.Log(r.Context())
-					log.WithError(handlerErr).WithField("path", path).WithField("name", name).Error("handler error")
 					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
 				}
 			})

@@ -35,7 +35,7 @@ type (
 	}
 
 	Hydra interface {
-		AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error)
+		AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams, acr string, amr ...string) (string, error)
 		GetLoginRequest(ctx context.Context, loginChallenge string) (*hydraclientgo.OAuth2LoginRequest, error)
 		AcceptConsentRequest(ctx context.Context, params *AcceptConsentRequestParams) (string, error)
 		GetConsentRequest(ctx context.Context, consentChallenge string) (*hydraclientgo.OAuth2ConsentRequest, error)
@@ -92,7 +92,7 @@ func (h *DefaultHydra) Cli() hydraclientgo.OAuth2API {
 	return h.cli.OAuth2API
 }
 
-func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams) (string, error) {
+func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams, acr string, amr ...string) (string, error) {
 
 	// Build login acceptance request
 	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.SubjectID)
@@ -101,7 +101,8 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 	alr.SetRememberFor(params.RememberDuration)
 	alr.SetIdentityProviderSessionId(params.SessionID)
 	alr.SetExtendSessionLifespan(params.ExtendSession)
-	alr.Amr = []string{} // Authentication methods reference
+	alr.SetAcr(acr) // Authentication methods reference
+	alr.SetAmr(amr) // Authentication methods reference
 
 	resp, _, err := h.Cli().AcceptOAuth2LoginRequest(ctx).
 		LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()

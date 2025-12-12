@@ -184,7 +184,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
 		_, err := h.DeviceCli().Log(ctx, connect.NewRequest(&req))
 		if err != nil {
-			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Info("device session log error")
+			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Debug("device session log error")
 		}
 	}
 
@@ -262,11 +262,9 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 
 	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-		log := util.Log(r.Context())
-
 		err := f(w, r)
 		if err != nil {
-			log.WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
+			util.Log(r.Context()).WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
 			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
 		}
 	})
@@ -305,8 +303,6 @@ func (h *AuthServer) SwaggerEndpoint(rw http.ResponseWriter, req *http.Request) 
 		util.Log(ctx).WithError(err).Error("could not find OpenAPI JSON file in any expected location")
 		return fmt.Errorf("OpenAPI specification file not found")
 	}
-
-	util.Log(ctx).WithField("path", foundPath).Debug("serving OpenAPI specification from file")
 
 	// Set headers and serve the JSON content directly
 	rw.Header().Set("Content-Type", "application/json")

@@ -57,23 +57,18 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	ctx := req.Context()
 
 	// Use native Go SDK path variable extraction
-	tokenType := req.PathValue("tokenType")
-
-	logger := util.Log(ctx)
+	// tokenType := req.PathValue("tokenType")
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		logger.WithError(err).Error("could not read request body")
+		util.Log(ctx).WithError(err).Error("could not read request body")
 		return err
 	}
-
-	logger = logger.WithField("tokenType", tokenType).WithField("token_data", string(body))
-	logger.Info("received a request to update id token")
 
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
-		logger.WithError(err).Error("could not unmarshal request body")
+		util.Log(ctx).WithError(err).Error("could not unmarshal request body")
 		return err
 	}
 
@@ -83,7 +78,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	if !ok {
 		sessionData, ok = tokenObject["client"].(map[string]any)
 		if !ok {
-			logger.Error("no session or client data found")
+			util.Log(ctx).Error("no session or client data found")
 			rw.Header().Set("Content-Type", "application/json")
 			rw.WriteHeader(http.StatusBadRequest)
 			return json.NewEncoder(rw).Encode(map[string]string{"error": "client/session data not found"})
@@ -92,7 +87,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	clientID, ok := sessionData["client_id"].(string)
 	if !ok {
-		logger.Error("client_id not found or invalid")
+		util.Log(ctx).Error("client_id not found or invalid")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
@@ -135,7 +130,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// Extract granted_scopes from multiple possible locations efficiently
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantedScopes == nil {
-		logger.Info("granted_scopes not found in any location (top-level, requester, or request)")
+		util.Log(ctx).Error("granted_scopes not found in any location (top-level, requester, or request)")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "granted_scopes not found"})

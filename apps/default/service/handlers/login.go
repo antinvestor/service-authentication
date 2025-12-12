@@ -13,12 +13,11 @@ const SessionKeyClientID = "client_id"
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-	logger := util.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
 
 	// Store loginChallenge in session before OAuth redirect
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
-		logger.WithError(err).Error("failed to get session")
+		util.Log(ctx).WithError(err).Error("failed to get session")
 		return err
 	}
 
@@ -26,29 +25,27 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	delete(session.Values, SessionKeyLoginChallenge)
 	err = session.Save(req, rw)
 	if err != nil {
-		logger.WithError(err).Warn("failed to save session after cleanup")
+		util.Log(ctx).WithError(err).Error("failed to save session after cleanup")
 	}
 
 	hydraCli := h.defaultHydraCli
 
 	loginChallenge, err := hydra.GetLoginChallengeID(req)
 	if err != nil {
-		logger.WithError(err).Warn(" couldn't get a valid login challenge")
+		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
 		return err
 	}
 
 	getLogReq, err := hydraCli.GetLoginRequest(ctx, loginChallenge)
 	if err != nil {
-		logger = logger.WithField("login_challenge", loginChallenge)
-
-		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
 		return err
 	}
 
 	if getLogReq.Skip {
 		redirectUrl := ""
 		params := &hydra.AcceptLoginRequestParams{LoginChallenge: loginChallenge, SubjectID: getLogReq.GetSubject()}
-		redirectUrl, err = hydraCli.AcceptLoginRequest(ctx, params)
+		redirectUrl, err = hydraCli.AcceptLoginRequest(ctx, params, "auto refresh")
 
 		if err != nil {
 			return err
@@ -68,7 +65,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	}
 	err = session.Save(req, rw)
 	if err != nil {
-		logger.WithError(err).Error("failed to save login_challenge to session")
+		util.Log(ctx).WithError(err).Error("failed to save login_challenge to session")
 		return err
 	}
 

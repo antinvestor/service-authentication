@@ -11,13 +11,11 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 
 	ctx := req.Context()
 
-	logger := util.Log(ctx).WithField("endpoint", "ShowLoginEndpoint")
-
 	hydraCli := h.defaultHydraCli
 
 	logoutChallenge, err := hydra.GetLogoutChallengeID(req)
 	if err != nil {
-		logger.WithError(err).Info(" couldn't get a valid login challenge")
+		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
 		return err
 	}
 
