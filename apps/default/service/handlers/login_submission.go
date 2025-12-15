@@ -43,6 +43,10 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
+	// Log login challenge fingerprint when retrieved from LoginEvent
+	util.Log(ctx).WithField("login_challenge_fingerprint", loginChallengeFingerprint(loginEvent.LoginChallengeID)).
+		Info("Retrieved login challenge from LoginEvent")
+
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
 		return h.showVerificationPage(rw, req, loginEventID, profileName, err.Error())

@@ -155,6 +155,9 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 }
 
 func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string, extra map[string]any) (*models.LoginEvent, error) {
+	// Log login challenge fingerprint before storing in LoginEvent
+	util.Log(ctx).WithField("login_challenge_fingerprint", loginChallengeFingerprint(loginChallenge)).
+		Info("Storing login challenge in LoginEvent")
 
 	deviceSessionID := utils.SessionIDFromContext(ctx)
 
