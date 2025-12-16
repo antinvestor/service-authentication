@@ -3,7 +3,7 @@ module github.com/antinvestor/service-authentication
 go 1.25.2
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20251119161617-faec0015998a.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20251216061047-d524d0f6d60c.1
 	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251205175716-147537a63a68.2
 	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20251205175716-147537a63a68.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251205175834-28725063ee3f.2
@@ -11,7 +11,7 @@ require (
 	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251205175911-72c3819c8e9b.2
 	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20251205175911-72c3819c8e9b.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251205175955-9870a37939f7.2
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251205175955-9870a37939f7.1
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251216063931-513b05dc5e70.1
 	connectrpc.com/connect v1.19.1
 	github.com/antinvestor/apis/go/common v1.49.0
 	github.com/antinvestor/apis/go/device v1.49.0
@@ -34,7 +34,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20250912141014-52f32327d4b0.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20251209175733-2a1774d88802.1 // indirect
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.11-20230414000709-087bc8072ce4.1 // indirect
 	buf.build/go/protovalidate v1.1.0 // indirect
 	cel.dev/expr v0.25.1 // indirect
