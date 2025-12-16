@@ -36,7 +36,7 @@ func loginChallengeFingerprint(challenge string) string {
 		last6 = challenge[len(challenge)-6:]
 	}
 
-	return fmt.Sprintf("len=%d, sha256=%s, first6=%s, last6=%s", 
+	return fmt.Sprintf("len=%d, sha256=%s, first6=%s, last6=%s",
 		len(challenge), hashStr, first6, last6)
 }
 
