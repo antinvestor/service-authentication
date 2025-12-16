@@ -4,8 +4,8 @@ go 1.25.2
 
 require (
 	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20251119161617-faec0015998a.1
-	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251205175716-147537a63a68.2
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20251205175716-147537a63a68.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251216061210-6c1f3494376a.2
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20251216061210-6c1f3494376a.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251205175834-28725063ee3f.2
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20251205175834-28725063ee3f.1
 	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251205175911-72c3819c8e9b.2
@@ -13,17 +13,17 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251205175955-9870a37939f7.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251205175955-9870a37939f7.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.49.0
-	github.com/antinvestor/apis/go/device v1.49.0
-	github.com/antinvestor/apis/go/notification v1.49.0
-	github.com/antinvestor/apis/go/partition v1.49.0
-	github.com/antinvestor/apis/go/profile v1.49.0
+	github.com/antinvestor/apis/go/common v1.49.5
+	github.com/antinvestor/apis/go/device v1.49.4
+	github.com/antinvestor/apis/go/notification v1.49.4
+	github.com/antinvestor/apis/go/partition v1.49.4
+	github.com/antinvestor/apis/go/profile v1.49.4
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.69.0
+	github.com/pitabwire/frame v1.69.1
 	github.com/pitabwire/util v0.3.6
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
@@ -34,7 +34,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20250912141014-52f32327d4b0.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20251209175733-2a1774d88802.1 // indirect
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.11-20230414000709-087bc8072ce4.1 // indirect
 	buf.build/go/protovalidate v1.1.0 // indirect
 	cel.dev/expr v0.25.1 // indirect
@@ -158,8 +158,8 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.257.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251213004720-97cd9d5aeac2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251213004720-97cd9d5aeac2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )
