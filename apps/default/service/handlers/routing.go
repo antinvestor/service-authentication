@@ -64,18 +64,17 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		// Handle other paths as not found
 		err := h.NotFoundEndpoint(w, r)
 		if err != nil {
-			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+			h.redirectToErrorPage(w, r, err, "NotFoundEndpoint")
 		}
-
 	})
 
-	// Secure routes with CSRF protection
-	unAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, _ string, method string) {
+	// Secure routes with CSRF protection (HTML endpoints - redirect to error page on failure)
+	unAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
+					h.redirectToErrorPage(w, r, handlerErr, name)
 				}
 			})
 
@@ -100,13 +99,13 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Webhook routes (no auth required)
 	h.addHandler(router, h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 
-	// API routes with authentication
-	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, _ string, method string) {
+	// API routes with authentication (JSON endpoints - return JSON errors)
+	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerErr := f(w, r)
 				if handlerErr != nil {
-					h.writeError(r.Context(), w, handlerErr, http.StatusInternalServerError, "internal processing error")
+					h.writeAPIError(r.Context(), w, handlerErr, http.StatusInternalServerError, name)
 				}
 			})
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -152,6 +153,34 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+const genericErrorMessage = "An unexpected error occurred. Please try again later."
+
+// redirectToErrorPage redirects to the error page with appropriate error details.
+// If ExposeErrors is false, only generic messages are shown to users.
+func (h *AuthServer) redirectToErrorPage(w http.ResponseWriter, r *http.Request, err error, errorTitle string) {
+	log := util.Log(r.Context())
+
+	// Always log the full error details
+	log.WithError(err).WithField("error_title", errorTitle).Error("redirecting to error page")
+
+	// Determine what to show the user
+	var displayTitle, displayDescription string
+	if h.config.ExposeErrors {
+		displayTitle = errorTitle
+		displayDescription = err.Error()
+	} else {
+		displayTitle = "Error"
+		displayDescription = genericErrorMessage
+	}
+
+	// Build redirect URL with error parameters
+	errorURL := fmt.Sprintf("/error?error=%s&error_description=%s",
+		url.QueryEscape(displayTitle),
+		url.QueryEscape(displayDescription))
+
+	http.Redirect(w, r, errorURL, http.StatusSeeOther)
+}
+
 func initTemplatePayload(ctx context.Context) map[string]any {
 	payload := make(map[string]any)
 
@@ -161,23 +190,31 @@ func initTemplatePayload(ctx context.Context) map[string]any {
 	return payload
 }
 
-// nolint: unparam //code has to remain as it is
-func (h *AuthServer) writeError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
-
+// writeAPIError writes a JSON error response for API endpoints.
+// Always logs the full error but only exposes details if ExposeErrors is enabled.
+func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 
 	log := util.Log(ctx).
 		WithField("code", code).
 		WithField("message", msg).WithError(err)
-	log.Error("internal service error")
+	log.Error("API error")
 	w.WriteHeader(code)
 
-	err = json.NewEncoder(w).Encode(&ErrorResponse{
+	// Determine what message to show
+	var displayMessage string
+	if h.config.ExposeErrors {
+		displayMessage = fmt.Sprintf("%s: %s", msg, err.Error())
+	} else {
+		displayMessage = genericErrorMessage
+	}
+
+	encodeErr := json.NewEncoder(w).Encode(&ErrorResponse{
 		Code:    code,
-		Message: fmt.Sprintf(" internal processing err message: %s %s", msg, err),
+		Message: displayMessage,
 	})
-	if err != nil {
-		log.WithError(err).Error("could not write error to response")
+	if encodeErr != nil {
+		log.WithError(encodeErr).Error("could not write error to response")
 	}
 }
 
@@ -290,8 +327,7 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
 		err := f(w, r)
 		if err != nil {
-			util.Log(r.Context()).WithError(err).WithField("path", path).WithField("name", name).Error("handler error")
-			h.writeError(r.Context(), w, err, http.StatusInternalServerError, "internal processing error")
+			h.writeAPIError(r.Context(), w, err, http.StatusInternalServerError, name)
 		}
 	})
 }

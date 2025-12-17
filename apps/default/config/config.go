@@ -7,6 +7,11 @@ import (
 type AuthenticationConfig struct {
 	config.ConfigurationDefault
 
+	// Error handling configuration
+	// When true, detailed error messages are shown to users (useful for development)
+	// When false, generic messages are shown and details are only logged
+	ExposeErrors bool `envDefault:"false" env:"EXPOSE_ERRORS"`
+
 	// Cache configuration (Redis or similar)
 	CacheName            string `envDefault:"defaultCache"           env:"CACHE_NAME"`
 	CacheURI             string `envDefault:"mem://defaultCache" env:"CACHE_URI"`
