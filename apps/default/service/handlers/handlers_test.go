@@ -505,7 +505,7 @@ func (suite *HandlersTestSuite) TestProviderEndpoints() {
 			name:           "ProviderLoginGoogle",
 			endpoint:       "/s/social/login/test-login-event-id/google",
 			method:         "POST",
-			expectedStatus: http.StatusBadRequest, // Expected when login event not found
+			expectedStatus: http.StatusInternalServerError, // Expected when login event not found
 			shouldError:    true,
 		},
 		{

@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
@@ -16,6 +18,15 @@ import (
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
+)
+
+// Verification flow error definitions
+var (
+	ErrContactRequired          = errors.New("contact is required")
+	ErrVerificationCodeRequired = errors.New("verification code is required")
+	ErrVerificationFailed       = errors.New("verification failed")
+	ErrTooManyAttempts          = errors.New("too many verification attempts")
+	ErrProfileCreationFailed    = errors.New("failed to create profile")
 )
 
 const (
@@ -46,109 +57,122 @@ func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.
 
 }
 
+// SubmitVerificationEndpoint handles both contact submission and verification code submission.
+// For contact submission: creates verification and sends code to user's contact.
+// For code submission: validates code and completes the login flow.
 func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
+	start := time.Now()
+	log := util.Log(ctx)
 
-	// Check if this is verification code submission or contact submission
+	loginEventID := req.PathValue(pathValueLoginEventID)
 	verificationCode := req.FormValue("verification_code")
 	profileName := req.FormValue("profile_name")
 
-	loginEventID := req.PathValue(pathValueLoginEventID)
+	log = log.WithField("login_event_id", loginEventID)
 
-	loginEvt, ok, err := h.loginEventCache().Get(ctx, loginEventID)
+	// Step 1: Retrieve login event from cache
+	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("Failed to get login event cache")
+		log.WithError(err).Error("cache lookup failed for login event")
 		return err
 	}
-	if !ok {
-		util.Log(ctx).Error("Login event not found")
-		http.Redirect(rw, req, "/error?error=login_event_not_found&error_description=Ensure that you don't manipulate url data manually", http.StatusSeeOther)
-		return fmt.Errorf("login event not found")
-	}
 
-	// If verification code is provided, handle verification code submission
-	if verificationCode != "" && loginEventID != "" {
+	// Step 2: Route to appropriate handler based on request type
+	if verificationCode != "" {
+		log.Debug("handling verification code submission")
 		return h.handleVerificationCodeSubmission(rw, req, loginEventID, profileName, verificationCode)
 	}
 
-	// Otherwise, handle contact submission (original logic)
-	contact := req.PostForm.Get("contact")
-
-	// Also check FormValue as fallback
-	contactFormValue := req.FormValue("contact")
-
-	// Use FormValue if PostForm is empty
-	if contact == "" && contactFormValue != "" {
-		contact = contactFormValue
+	// Step 3: Handle contact submission
+	contact := req.FormValue("contact")
+	if contact == "" {
+		log.Warn("contact submission missing contact value")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Contact is required")
 	}
 
+	log = log.WithField("contact_prefix", contact[:min(3, len(contact))]+"***")
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginEvt.LoginChallengeID)
 
-	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
-	if err != nil {
-
-		if !frame.ErrorIsNotFound(err) {
-			util.Log(ctx).WithError(err).Error("failed to get profile - redirecting to login")
-			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-			return nil
-		}
-	}
-
+	// Step 4: Look up or create profile for contact
 	var existingProfile *profilev1.ProfileObject
-	contactID := ""
+	var contactID string
+
+	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
+	if err != nil && !frame.ErrorIsNotFound(err) {
+		log.WithError(err).Error("profile lookup failed")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+		return nil
+	}
 
 	if result != nil {
 		existingProfile = result.Msg.GetData()
-
 		if existingProfile != nil {
+			// Find matching contact ID
 			for _, profileContact := range existingProfile.GetContacts() {
 				if strings.EqualFold(contact, profileContact.GetDetail()) {
 					contactID = profileContact.GetId()
+					break
 				}
 			}
 		}
 	}
 
+	// Step 5: Create contact if not found
 	if contactID == "" {
-
-		// don't have this contact in existence so we create it
-		contactResp, err0 := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
+		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
 		}))
-		if err0 != nil {
-			util.Log(ctx).WithError(err0).Error("could not create/find existing contact")
+		if createErr != nil {
+			log.WithError(createErr).Error("failed to create contact")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 			return nil
 		}
-
 		contactID = contactResp.Msg.GetData().GetId()
+		log.WithField("contact_id", contactID).Debug("new contact created")
 	}
 
+	// Step 6: Store login attempt
 	verificationID := util.IDString()
+	profileID := ""
+	if existingProfile != nil {
+		profileID = existingProfile.GetId()
+	}
 
-	loginEvent, err := h.storeLoginAttempt(ctx, &loginEvt, models.LoginSourceDirect, existingProfile.GetId(), contactID, verificationID, nil)
+	loginEvent, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profileID, contactID, verificationID, nil)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not store login attempt - redirecting to login")
+		log.WithError(err).Error("failed to store login attempt")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return err
 	}
 
+	// Step 7: Create verification and send code
 	ctx = common.SetPartitionInfo(ctx, loginEvt)
-
 	_, err = h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               verificationID,
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	}))
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not create contact verification - redirecting to login")
+		log.WithError(err).Error("failed to create contact verification")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return err
 	}
-	// Extract profile name from properties or use a default
-	var properties data.JSONMap
-	properties = properties.FromProtoStruct(existingProfile.GetProperties())
-	profileName = properties.GetString(KeyProfileName)
+
+	// Step 8: Extract profile name and show verification page
+	if existingProfile != nil {
+		var properties data.JSONMap
+		properties = properties.FromProtoStruct(existingProfile.GetProperties())
+		if name := properties.GetString(KeyProfileName); name != "" {
+			profileName = name
+		}
+	}
+
+	log.WithFields(map[string]any{
+		"verification_id": verificationID,
+		"duration_ms":     time.Since(start).Milliseconds(),
+	}).Info("verification code sent")
+
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
@@ -206,91 +230,100 @@ func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Requ
 	return nil
 }
 
-// handleVerificationCodeSubmission processes verification code submission
+// handleVerificationCodeSubmission processes verification code submission and completes the login flow.
 func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, verificationCode string) error {
 	ctx := req.Context()
+	start := time.Now()
+	log := util.Log(ctx).WithField("login_event_id", loginEventID)
 
-	// Get login event to retrieve contact information and login challenge
+	// Step 1: Get login event from database
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to get login event")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login event not found")
+		log.WithError(err).Error("login event not found in database")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Session not found. Please start again.")
 	}
 
-	// Verify the verification code with profile service
-	verifyReq := &profilev1.CheckVerificationRequest{
+	log = log.WithField("verification_id", loginEvent.VerificationID)
+
+	// Step 2: Verify the code with profile service
+	verifyResp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
 		Id:   loginEvent.VerificationID,
 		Code: verificationCode,
-	}
-
-	verifyResp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(verifyReq))
+	}))
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("verification code verification failed")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
+		log.WithError(err).Error("verification service call failed")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Verification failed. Please try again.")
 	}
 
-	if verifyResp.Msg.GetCheckAttempts() > 3 {
-		util.Log(ctx).Error("verification code verification failed after too many attempts")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts")
+	attempts := verifyResp.Msg.GetCheckAttempts()
+	maxAttempts := int32(h.config.AuthProviderContactLoginMaxVerificationAttempts)
+	if maxAttempts == 0 {
+		maxAttempts = 3 // Default fallback
+	}
+
+	if attempts > maxAttempts {
+		log.WithFields(map[string]any{
+			"attempts":     attempts,
+			"max_attempts": maxAttempts,
+		}).Warn("verification attempts exceeded")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts. Please request a new code.")
 	}
 
 	if !verifyResp.Msg.GetSuccess() {
-		util.Log(ctx).Error("verification code verification returned false")
+		log.WithField("attempts", attempts).Debug("verification code incorrect")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
 	}
 
+	log.Debug("verification code validated successfully")
+
+	// Step 3: Get or create profile
 	var profileObj *profilev1.ProfileObject
 	resp, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: loginEvent.ContactID}))
 	if err == nil {
 		profileObj = resp.Msg.GetData()
-	} else {
-		// Check if it's a "not found" error, which is expected for new users
-		if frame.ErrorIsNotFound(err) {
-			// Profile not found - this is expected for new users, we'll create one below
-		} else {
-			// Unexpected error occurred
-			util.Log(ctx).WithError(err).Error("failed to get profile by contact")
-			return err
-		}
+	} else if !frame.ErrorIsNotFound(err) {
+		log.WithError(err).Error("profile lookup failed")
+		return err
 	}
 
 	if profileObj == nil {
-
+		log.Debug("creating new profile for contact")
 		properties, _ := structpb.NewStruct(map[string]any{
 			KeyProfileName: profileName,
 		})
 
-		res, err0 := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+		res, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    loginEvent.ContactID,
 			Properties: properties,
 		}))
-		if err0 != nil {
-			util.Log(ctx).WithError(err0).Error("failed to create new profile by contact & name")
-			return err0
+		if createErr != nil {
+			log.WithError(createErr).Error("profile creation failed")
+			return fmt.Errorf("%w: %v", ErrProfileCreationFailed, createErr)
 		}
-
 		profileObj = res.Msg.GetData()
+		log.WithField("profile_id", profileObj.GetId()).Info("new profile created")
 	}
 
-	// Complete OAuth2 login flow using login_challenge from loginEvent
-	loginChallenge := loginEvent.LoginChallengeID
-
-	hydraCli := h.defaultHydraCli
+	// Step 4: Complete OAuth2 login flow
 	params := &hydra.AcceptLoginRequestParams{
-		LoginChallenge:   loginChallenge,
+		LoginChallenge:   loginEvent.LoginChallengeID,
 		SubjectID:        profileObj.GetId(),
 		Remember:         true,
 		RememberDuration: h.config.SessionRememberDuration,
 	}
 
-	redirectUrl, err := hydraCli.AcceptLoginRequest(ctx, params, "third party")
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, "contact_verification")
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to accept login request")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login completion failed")
+		log.WithError(err).Error("hydra accept login request failed")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login completion failed. Please try again.")
 	}
 
-	// Redirect to complete OAuth2 flow
-	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
+	log.WithFields(map[string]any{
+		"profile_id":  profileObj.GetId(),
+		"duration_ms": time.Since(start).Milliseconds(),
+	}).Info("login completed successfully")
+
+	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil
 }

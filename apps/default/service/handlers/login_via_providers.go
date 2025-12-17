@@ -75,7 +75,7 @@ func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.Authentic
 
 }
 
-func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Request, loginEvt models.LoginEvent) error {
+func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Request, loginEvt *models.LoginEvent) error {
 
 	ctx := req.Context()
 
@@ -144,7 +144,7 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 		return nil
 	}
 
-	_, err = h.storeLoginAttempt(ctx, &loginEvt, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", user.RawData)
+	_, err = h.storeLoginAttempt(ctx, loginEvt, models.LoginSource(user.Provider), existingProfile.GetId(), contactID, "", user.RawData)
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("failed to record login attempt")
 		return err
@@ -172,15 +172,10 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 		return fmt.Errorf("login_challenge not found in session")
 	}
 
-	loginEvt, ok, err := h.loginEventCache().Get(ctx, loginEventID)
+	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("Failed to get login event cache")
 		return err
-	}
-	if !ok {
-		util.Log(ctx).Error("Login event not found")
-		http.Redirect(rw, req, "/error?error=login_event_not_found&error_description=Ensure that you don't manipulate url data manually", http.StatusSeeOther)
-		return fmt.Errorf("login event not found")
 	}
 
 	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginEventID)
@@ -212,15 +207,10 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 
 	loginEventID := req.PathValue(pathValueLoginEventID)
 
-	loginEvt, ok, err := h.loginEventCache().Get(ctx, loginEventID)
+	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("Failed to get login event cache")
 		return err
-	}
-	if !ok {
-		util.Log(ctx).Error("Login event not found")
-		http.Redirect(rw, req, "/error?error=login_event_not_found&error_description=Ensure that you don't manipulate url data manually", http.StatusSeeOther)
-		return fmt.Errorf("login event not found")
 	}
 
 	// try to get the user without re-authenticating

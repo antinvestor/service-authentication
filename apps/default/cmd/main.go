@@ -41,7 +41,14 @@ func main() {
 		cfg.ServiceName = "service_authentication"
 	}
 
-	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(), frame.WithDatastore())
+	rawCache, err := setupCache(ctx, cfg)
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not setup cache")
+	}
+
+	ctx, svc := frame.NewServiceWithContext(ctx,
+		frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(),
+		frame.WithCache(cfg.CacheName, rawCache), frame.WithDatastore())
 
 	log := util.Log(ctx)
 
@@ -79,13 +86,6 @@ func main() {
 
 	serviceTranslations := frame.WithTranslation("/localization", "en")
 	serviceOptions := []frame.Option{serviceTranslations}
-
-	rawCache, err := setupCache(ctx, cfg)
-	if err != nil {
-		log.WithError(err).Fatal("could not setup cache: %v", err)
-	}
-
-	serviceOptions = append(serviceOptions, frame.WithCache(cfg.CacheName, rawCache))
 
 	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)

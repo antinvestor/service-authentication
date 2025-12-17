@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -14,69 +15,94 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// ShowConsentEndpoint handles the OAuth2 consent flow.
+// It retrieves consent challenge, processes device session, and grants consent.
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
-
 	ctx := req.Context()
+	start := time.Now()
+	log := util.Log(ctx)
 
 	hydraCli := h.defaultHydraCli
 
+	// Step 1: Extract consent challenge
 	consentChallenge, err := hydra.GetConsentChallengeID(req)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
-		return err
+		log.WithError(err).Warn("missing or invalid consent_challenge parameter")
+		return fmt.Errorf("consent challenge required: %w", err)
 	}
 
-	// Store loginChallenge in session before OAuth redirect
+	// Use first 16 chars for logging
+	challengePrefix := consentChallenge
+	if len(challengePrefix) > 16 {
+		challengePrefix = challengePrefix[:16]
+	}
+	log = log.WithField("consent_challenge_prefix", challengePrefix)
+
+	// Step 2: Clean up session (remove login event ID)
 	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to get session")
-		return err
+		log.WithError(err).Warn("failed to get session for cleanup")
+		// Continue anyway - session cleanup is not critical
+	} else {
+		delete(session.Values, SessionKeyLoginEventID)
+		if saveErr := session.Save(req, rw); saveErr != nil {
+			log.WithError(saveErr).Debug("failed to save session after cleanup")
+		}
 	}
 
-	// Clean up the session value after retrieving it
-	delete(session.Values, SessionKeyLoginEventID)
-	err = session.Save(req, rw)
+	// Step 3: Get consent request from Hydra
+	getConseReq, err := hydraCli.GetConsentRequest(ctx, consentChallenge)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to save session after cleanup")
+		log.WithError(err).Error("hydra consent request lookup failed")
+		return fmt.Errorf("failed to get consent request: %w", err)
 	}
 
-	getConseReq, err := hydraCli.GetConsentRequest(req.Context(), consentChallenge)
+	subjectID := getConseReq.GetSubject()
+	log = log.WithField("subject_id", subjectID)
 
+	// Step 4: Process device session
+	deviceObj, err := h.processDeviceSession(ctx, subjectID)
 	if err != nil {
-		return err
+		if deviceObj == nil {
+			log.WithError(err).Error("device session processing failed")
+			return fmt.Errorf("failed to process device session: %w", err)
+		}
+		log.WithError(err).Warn("device session processing had non-fatal error")
 	}
 
-	deviceObj, err := h.processDeviceSession(ctx, getConseReq.GetSubject())
-	if err != nil && deviceObj == nil {
-		util.Log(ctx).WithError(err).Error("could not process device id linkage")
-		return err
+	if err = h.storeDeviceID(ctx, rw, deviceObj); err != nil {
+		log.WithError(err).Debug("failed to store device ID cookie")
+		// Continue - device cookie is not critical for consent
 	}
 
-	err = h.storeDeviceID(ctx, rw, deviceObj)
-	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not store device id in cookie")
-	}
-
+	// Step 5: Get partition info for token claims
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
 
 	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not get partition by profile id")
-		return err
+		log.WithError(err).WithField("client_id", clientID).Error("partition lookup failed")
+		return fmt.Errorf("failed to get partition: %w", err)
 	}
 
 	partitionObj := partitionResp.Msg.GetData()
+	if partitionObj == nil {
+		log.WithField("client_id", clientID).Error("partition not found")
+		return fmt.Errorf("partition not found for client: %s", clientID)
+	}
+
+	// Step 6: Build token claims
 	tokenMap := map[string]any{
 		"tenant_id":       partitionObj.GetTenantId(),
 		"partition_id":    partitionObj.GetId(),
 		"roles":           []string{"user"},
 		"device_id":       deviceObj.GetId(),
 		"login_id":        deviceObj.GetSessionId(),
-		"profile_id":      getConseReq.GetSubject(),
-		"profile_contact": getConseReq.GetSubject(),
+		"profile_id":      subjectID,
+		"profile_contact": subjectID,
 	}
 
+	// Step 7: Accept consent and get redirect URL
 	params := &hydra.AcceptConsentRequestParams{
 		ConsentChallenge:  consentChallenge,
 		GrantScope:        getConseReq.GetRequestedScope(),
@@ -85,15 +111,23 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		IdTokenExtras:     tokenMap,
 	}
 
-	redirectUrl, err := hydraCli.AcceptConsentRequest(req.Context(), params)
-
+	redirectURL, err := hydraCli.AcceptConsentRequest(ctx, params)
 	if err != nil {
-		return err
+		log.WithError(err).Error("hydra accept consent request failed")
+		return fmt.Errorf("failed to accept consent: %w", err)
 	}
 
+	// Step 8: Clear session cookie and redirect
 	h.clearDeviceSessionID(rw)
 
-	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
+	log.WithFields(map[string]any{
+		"partition_id": partitionObj.GetId(),
+		"tenant_id":    partitionObj.GetTenantId(),
+		"device_id":    deviceObj.GetId(),
+		"duration_ms":  time.Since(start).Milliseconds(),
+	}).Info("consent granted successfully")
+
+	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil
 }
 
