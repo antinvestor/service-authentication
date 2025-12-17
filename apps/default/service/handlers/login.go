@@ -25,7 +25,8 @@ var (
 )
 
 // Cache key prefix for login events to avoid collisions
-const loginEventCachePrefix = "login_event:"
+// Note: NATS JetStream KV only allows alphanumeric, dash, underscore, slash, equals, and period in keys
+const loginEventCachePrefix = "login_event_"
 
 const SessionKeyLoginStorageName = "login-storage"
 const SessionKeyLoginEventID = "login-event-id"
