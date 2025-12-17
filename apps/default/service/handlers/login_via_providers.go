@@ -167,9 +167,9 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 
 	loginEventID, ok := session.Values[SessionKeyLoginEventID].(string)
 	if !ok || loginEventID == "" {
-		util.Log(ctx).Error("login_challenge not found in session")
+		util.Log(ctx).Error("login event id not found in session cookie")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
-		return fmt.Errorf("login_challenge not found in session")
+		return fmt.Errorf("login event id not found in session cookie")
 	}
 
 	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
@@ -178,7 +178,7 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 		return err
 	}
 
-	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginEventID)
+	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
 	// try to get the user without re-authenticating
 	err = h.providerPostUserLogin(rw, req, loginEvt)
@@ -216,6 +216,20 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 	// try to get the user without re-authenticating
 	err = h.providerPostUserLogin(rw, req, loginEvt)
 	if err != nil {
+
+		session, sessErr := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
+		if sessErr != nil {
+			util.Log(ctx).WithError(sessErr).Error("failed to get session")
+			http.Redirect(rw, req, "/error", http.StatusSeeOther)
+			return err
+		}
+
+		session.Values[SessionKeyLoginEventID] = loginEventID
+		err = session.Save(req, rw)
+		if err != nil {
+			util.Log(ctx).WithError(err).Error("failed to save login event ID to cookie session")
+			return err
+		}
 
 		gothic.BeginAuthHandler(rw, req)
 		return nil

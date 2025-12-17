@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -92,7 +93,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	}
 
 	log = log.WithField("contact_prefix", contact[:min(3, len(contact))]+"***")
-	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginEvt.LoginChallengeID)
+	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
 	// Step 4: Look up or create profile for contact
 	var existingProfile *profilev1.ProfileObject
