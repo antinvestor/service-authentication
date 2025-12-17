@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
+	"github.com/antinvestor/apis/go/common"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -18,11 +18,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const KeyProfileName = "au_name"
+const (
+	KeyProfileName        = "au_name"
+	pathValueLoginEventID = "loginEventId"
+)
 
 func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
-	loginEventID := req.FormValue("login_event_id")
+	loginEventID := req.PathValue(pathValueLoginEventID)
 	profileName := req.FormValue("profile_name")
 	errorMsg := req.FormValue("error")
 
@@ -48,8 +51,20 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	// Check if this is verification code submission or contact submission
 	verificationCode := req.FormValue("verification_code")
-	loginEventID := req.FormValue("login_event_id")
 	profileName := req.FormValue("profile_name")
+
+	loginEventID := req.PathValue(pathValueLoginEventID)
+
+	loginEvt, ok, err := h.loginEventCache().Get(ctx, loginEventID)
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("Failed to get login event cache")
+		return err
+	}
+	if !ok {
+		util.Log(ctx).Error("Login event not found")
+		http.Redirect(rw, req, "/error?error=login_event_not_found&error_description=Ensure that you don't manipulate url data manually", http.StatusSeeOther)
+		return fmt.Errorf("login event not found")
+	}
 
 	// If verification code is provided, handle verification code submission
 	if verificationCode != "" && loginEventID != "" {
@@ -66,29 +81,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	if contact == "" && contactFormValue != "" {
 		contact = contactFormValue
 	}
-	// Retrieve loginChallenge from session instead of form values
-	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
-	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to get session")
-		http.Redirect(rw, req, "/error", http.StatusSeeOther)
-		return err
-	}
 
-	loginChallenge, ok := session.Values[SessionKeyLoginChallenge].(string)
-	if !ok || loginChallenge == "" {
-		util.Log(ctx).Error("login_challenge not found in session")
-		http.Redirect(rw, req, "/error?error=login_challenge_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
-		return fmt.Errorf("login_challenge not found in session")
-	}
-
-	clientID, ok := session.Values[SessionKeyClientID].(string)
-	if !ok || clientID == "" {
-		util.Log(ctx).Error("clientID not found in session")
-		http.Redirect(rw, req, "/error?error=client_id_not_found&error_description=Ensure that cookie storage works with your browser for continuity", http.StatusSeeOther)
-		return fmt.Errorf("client id not found in session")
-	}
-
-	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginChallenge)
+	internalRedirectLinkToSignIn := fmt.Sprintf("/s/login?login_challenge=%s", loginEvt.LoginChallengeID)
 
 	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
 	if err != nil {
@@ -130,20 +124,24 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		contactID = contactResp.Msg.GetData().GetId()
 	}
 
-	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
-		Id:               util.IDString(),
+	verificationID := util.IDString()
+
+	loginEvent, err := h.storeLoginAttempt(ctx, &loginEvt, models.LoginSourceDirect, existingProfile.GetId(), contactID, verificationID, nil)
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("could not store login attempt - redirecting to login")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+		return err
+	}
+
+	ctx = common.SetPartitionInfo(ctx, loginEvt)
+
+	_, err = h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+		Id:               verificationID,
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	}))
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("could not create contact verification - redirecting to login")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return err
-	}
-
-	loginEvent, err := h.storeLoginAttempt(ctx, clientID, models.LoginSourceDirect, existingProfile.GetId(), contactID, resp.Msg.GetId(), loginChallenge, nil)
-	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not store login attempt - redirecting to login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return err
 	}
@@ -154,19 +152,8 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
 }
 
-func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, source models.LoginSource, profileID, contactID string, verificationID string, loginChallenge string, extra map[string]any) (*models.LoginEvent, error) {
-	// Log login challenge fingerprint before storing in LoginEvent
-	util.Log(ctx).WithField("login_challenge_fingerprint", loginChallengeFingerprint(loginChallenge)).
-		Info("Storing login challenge in LoginEvent")
+func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {
 
-	deviceSessionID := utils.SessionIDFromContext(ctx)
-
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
-	if err != nil {
-		return nil, err
-	}
-
-	partitionObj := partitionResp.Msg.GetData()
 	login, err := h.loginRepo.GetByProfileID(ctx, profileID)
 	if err != nil {
 
@@ -179,25 +166,20 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, sou
 			Source:    string(source),
 		}
 		login.GenID(ctx)
-		login.PartitionID = partitionObj.GetId()
-		login.TenantID = partitionObj.GetTenantId()
+		login.PartitionID = loginEvt.PartitionID
+		login.TenantID = loginEvt.TenantID
 		err = h.loginRepo.Create(ctx, login)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	loginEvt := &models.LoginEvent{
-		LoginID:          login.GetID(),
-		LoginChallengeID: loginChallenge,
-		VerificationID:   verificationID,
-		AccessID:         "",
-		ContactID:        contactID,
-	}
+	loginEvt.LoginID = login.GetID()
+	loginEvt.DeviceID = utils.DeviceIDFromContext(ctx)
+	loginEvt.VerificationID = verificationID
+	loginEvt.ContactID = contactID
+
 	loginEvt.Properties = extra
-	loginEvt.PartitionID = partitionObj.GetId()
-	loginEvt.TenantID = partitionObj.GetTenantId()
-	loginEvt.ID = deviceSessionID
 
 	err = h.loginEventRepo.Create(ctx, loginEvt)
 	if err != nil {
@@ -210,7 +192,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, clientID string, sou
 // showVerificationPage displays the login form with an error message
 func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, errorMsg string) error {
 
-	verificationPage := fmt.Sprintf("/s/verify/contact?login_event_id=%s", loginEventID)
+	verificationPage := fmt.Sprintf("/s/verify/contact/%s?login_event_id=%s", loginEventID, loginEventID)
 
 	if profileName != "" {
 		verificationPage = fmt.Sprintf("%s&profile_name=%s", verificationPage, profileName)

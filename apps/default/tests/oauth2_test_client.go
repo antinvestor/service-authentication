@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -239,12 +240,41 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 	return "", fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 }
 
+// extractLoginEventIDFromHTML extracts the loginEventId from the login page HTML
+// It looks for form actions like /s/verify/contact/{loginEventId}/post
+func extractLoginEventIDFromHTML(html string) string {
+	// Look for the form action pattern: /s/verify/contact/{loginEventId}/post
+	re := regexp.MustCompile(`/s/verify/contact/([a-zA-Z0-9_-]+)/post`)
+	matches := re.FindStringSubmatch(html)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+
+	// Also try social login pattern: /s/social/login/{loginEventId}/
+	re2 := regexp.MustCompile(`/s/social/login/([a-zA-Z0-9_-]+)/`)
+	matches2 := re2.FindStringSubmatch(html)
+	if len(matches2) >= 2 {
+		return matches2[1]
+	}
+
+	return ""
+}
+
+// extractLoginEventIDFromPath extracts the loginEventId from a URL path like /s/verify/contact/{loginEventId}
+func extractLoginEventIDFromPath(urlPath string) string {
+	// Pattern: /s/verify/contact/{loginEventId} or /s/verify/contact/{loginEventId}?...
+	re := regexp.MustCompile(`/s/verify/contact/([a-zA-Z0-9_-]+)`)
+	matches := re.FindStringSubmatch(urlPath)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+	return ""
+}
+
 // PerformContactVerification submits contact for verification and returns verification details
 // nolint:gocyclo,nolintlint //This is a test method no need to overthink
 func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, loginPageURL, contact string) (*ContactVerificationResult, error) {
-	// Step 1: First visit the login page to establish the session with the login challenge
-	// Properly URL-encode the login challenge to handle special characters
-
+	// Step 1: First visit the login page to get the loginEventId from the rendered HTML
 	req, err := http.NewRequestWithContext(ctx, "GET", loginPageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create login page request: %w", err)
@@ -256,7 +286,7 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 	}
 	defer util.CloseAndLogOnError(ctx, resp.Body)
 
-	// Debug: Read response body to see what we got
+	// Read response body to extract loginEventId
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	bodyStr := string(bodyBytes)
 
@@ -277,17 +307,33 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 		}
 	}
 
-	// Step 2: Now submit contact for verification
-	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
+	// Extract loginEventId from the login page HTML
+	loginEventID := extractLoginEventIDFromHTML(bodyStr)
+	if loginEventID == "" {
+		if c.t != nil {
+			c.t.Logf("DEBUG: Failed to extract loginEventId from login page HTML")
+			if len(bodyStr) < 2000 {
+				c.t.Logf("DEBUG: HTML body: %s", bodyStr)
+			}
+		}
+		return nil, fmt.Errorf("failed to extract loginEventId from login page")
+	}
 
-	// Prepare form data - DO NOT include login_challenge as it should be retrieved from session
+	if c.t != nil {
+		c.t.Logf("DEBUG: Extracted loginEventId from login page: %s", loginEventID)
+	}
+
+	// Step 2: Now submit contact for verification using the new URL structure with loginEventId in path
+	verificationURL := fmt.Sprintf("%s/s/verify/contact/%s/post", c.AuthServiceURL, loginEventID)
+
+	// Prepare form data - login_challenge is now stored server-side keyed by loginEventId
 	formData := url.Values{}
 	formData.Set("contact", contact)
 
 	if c.t != nil {
 		c.t.Logf("DEBUG: Submitting contact verification to: %s", verificationURL)
 		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
-		c.t.Logf("DEBUG: Login challenge should be retrieved from session (not sent in form)")
+		c.t.Logf("DEBUG: login_challenge is stored server-side, keyed by loginEventId: %s", loginEventID)
 	}
 
 	verifyReq, err := http.NewRequestWithContext(ctx, "POST", verificationURL, strings.NewReader(formData.Encode()))
@@ -330,15 +376,19 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 	case http.StatusSeeOther, http.StatusFound:
 		location := verifyResp.Header.Get("Location")
 		if location != "" {
-			// Should redirect to verification page with login_event_id and profile_name
+			// Should redirect to verification page: /s/verify/contact/{loginEventId}?profile_name=...
 			parsedURL, err := url.Parse(location)
 			if err != nil {
 				result.ErrorMessage = fmt.Sprintf("failed to parse redirect URL: %v", err)
 				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
 			}
 
-			// Extract login_event_id and profile_name from redirect URL
-			result.LoginEventID = parsedURL.Query().Get("login_event_id")
+			// Extract login_event_id from URL path (new structure) or query params (fallback)
+			result.LoginEventID = extractLoginEventIDFromPath(parsedURL.Path)
+			if result.LoginEventID == "" {
+				// Fallback to query param if not in path
+				result.LoginEventID = parsedURL.Query().Get("login_event_id")
+			}
 
 			if parsedURL.Query().Has("profile_name") {
 				result.ProfileName = parsedURL.Query().Get("profile_name")
@@ -398,9 +448,12 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 // PerformCodeVerification completes the contact verification with the verification code
 // nolint:gocyclo,nolintlint //This is a test method no need to overthink
 func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEventID, profileName, verificationCode string) (*VerificationCodeResult, error) {
-	// Step 1: Get the verification form to extract token
-	verificationFormURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=%s&profile_name=%s",
-		c.AuthServiceURL, url.QueryEscape(loginEventID), url.QueryEscape(profileName))
+	// Step 1: Get the verification form (new URL structure with loginEventId in path)
+	verificationFormURL := fmt.Sprintf("%s/s/verify/contact/%s",
+		c.AuthServiceURL, url.PathEscape(loginEventID))
+	if profileName != "" {
+		verificationFormURL = fmt.Sprintf("%s?profile_name=%s", verificationFormURL, url.QueryEscape(profileName))
+	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", verificationFormURL, nil)
 	if err != nil {
@@ -421,12 +474,11 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 		}, fmt.Errorf("unexpected status getting verification form: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	// Step 2: Submit verification code
-	verificationURL := fmt.Sprintf("%s/s/verify/contact/post", c.AuthServiceURL)
+	// Step 2: Submit verification code (new URL structure with loginEventId in path)
+	verificationURL := fmt.Sprintf("%s/s/verify/contact/%s/post", c.AuthServiceURL, url.PathEscape(loginEventID))
 
-	// Prepare form data for login completion
+	// Prepare form data for login completion - loginEventId is now in URL path
 	formData := url.Values{}
-	formData.Set("login_event_id", loginEventID)
 	formData.Set("profile_name", profileName)
 	formData.Set("verification_code", verificationCode)
 

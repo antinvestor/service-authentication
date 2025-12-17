@@ -1,61 +1,79 @@
 package handlers
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
+	"github.com/antinvestor/service-authentication/apps/default/utils"
+	client "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/util"
 )
 
 const SessionKeyLoginStorageName = "login-storage"
-const SessionKeyLoginChallenge = "login_challenge"
-const SessionKeyClientID = "client_id"
+const SessionKeyLoginEventID = "login-event-id"
 
-// loginChallengeFingerprint generates a fingerprint for a login challenge to help track its integrity
-// Returns a string containing length, SHA256 hash, and first/last 6 characters of the challenge
-func loginChallengeFingerprint(challenge string) string {
-	if challenge == "" {
-		return "[empty]"
+func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventID string) {
+
+	loginEvt, ok, err := h.loginEventCache().Get(ctx, loginEventID)
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("Failed to get login event cache")
+		return
+	}
+	if !ok {
+		util.Log(ctx).Error("Login event not found")
+		return
 	}
 
-	// Calculate SHA256 hash
-	h := sha256.Sum256([]byte(challenge))
-	hashStr := hex.EncodeToString(h[:])
-
-	// Get first and last 6 chars (or less if string is shorter)
-	first6 := challenge
-	if len(challenge) > 6 {
-		first6 = challenge[:6]
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: loginEvt.ClientID}))
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("Failed to get partition")
+		return
 	}
 
-	last6 := challenge
-	if len(challenge) > 6 {
-		last6 = challenge[len(challenge)-6:]
+	partitionObj := partitionResp.Msg.GetData()
+
+	loginEvt.PartitionID = partitionObj.GetId()
+	loginEvt.TenantID = partitionObj.GetTenantId()
+
+	err = h.loginEventCache().Set(ctx, loginEvt.GetID(), loginEvt, time.Hour)
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("Failed to set login event cache")
+	}
+}
+
+func (h *AuthServer) createLoginEvent(ctx context.Context, loginReq *client.OAuth2LoginRequest, loginChallenge string) (*models.LoginEvent, error) {
+	// Log login challenge fingerprint before storing in LoginEvent
+	deviceSessionID := utils.SessionIDFromContext(ctx)
+
+	cli, ok := loginReq.GetClientOk()
+	if !ok || cli.GetClientId() == "" {
+		return nil, fmt.Errorf("login can't happen without a client")
 	}
 
-	return fmt.Sprintf("len=%d, sha256=%s, first6=%s, last6=%s",
-		len(challenge), hashStr, first6, last6)
+	loginEvt := models.LoginEvent{
+		ClientID:         cli.GetClientId(),
+		LoginChallengeID: loginChallenge,
+		SessionID:        deviceSessionID,
+		Oauth2SessionID:  loginReq.GetSessionId(),
+	}
+	loginEvt.ID = util.IDString()
+
+	err := h.loginEventCache().Set(ctx, loginEvt.GetID(), loginEvt, time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	return &loginEvt, nil
 }
 
 func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
-
-	// Store loginChallenge in session before OAuth redirect
-	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
-	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to get session")
-		return err
-	}
-
-	// Clean up the session value after retrieving it
-	delete(session.Values, SessionKeyLoginChallenge)
-	err = session.Save(req, rw)
-	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to save session after cleanup")
-	}
 
 	hydraCli := h.defaultHydraCli
 
@@ -64,10 +82,6 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
 		return err
 	}
-
-	// Log login challenge fingerprint for debugging
-	util.Log(ctx).WithField("login_challenge_fingerprint", loginChallengeFingerprint(loginChallenge)).
-		Info("Received login challenge from URL query")
 
 	getLogReq, err := hydraCli.GetLoginRequest(ctx, loginChallenge)
 	if err != nil {
@@ -89,21 +103,14 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 
 	}
 
-	session.Values[SessionKeyLoginChallenge] = loginChallenge
-
-	client := getLogReq.GetClient()
-	clientId, ok := client.GetClientIdOk()
-	if ok {
-		session.Values[SessionKeyClientID] = *clientId
-	}
-	err = session.Save(req, rw)
+	loginEvent, err := h.createLoginEvent(ctx, getLogReq, loginChallenge)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("failed to save login_challenge to session")
 		return err
 	}
+	defer h.updateTenancyForLoginEvent(ctx, loginEvent.GetID())
 
 	payload := initTemplatePayload(req.Context())
-
+	payload[pathValueLoginEventID] = loginEvent.GetID()
 	payload["error"] = ""
 
 	for k, val := range h.loginOptions {

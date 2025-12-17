@@ -24,6 +24,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
@@ -207,7 +208,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
 
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
-		frame.WithDatastore(), frame.WithRegisterServerOauth2Client()}
+		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache()), frame.WithRegisterServerOauth2Client()}
 
 	if bs.handler != nil {
 		opts = append(opts, frametests.WithNoopDriver())
@@ -223,7 +224,7 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager().GetAuthenticator(ctx), &cfg,
-		depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
+		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
 		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)

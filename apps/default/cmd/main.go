@@ -16,7 +16,11 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/cache"
+	"github.com/pitabwire/frame/cache/jetstreamkv"
+	"github.com/pitabwire/frame/cache/valkey"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/openid"
@@ -43,6 +47,7 @@ func main() {
 
 	sm := svc.SecurityManager()
 	dbManager := svc.DatastoreManager()
+	cacheManager := svc.CacheManager()
 
 	workManager := svc.WorkManager()
 	dbPool := dbManager.GetPool(ctx, datastore.DefaultPoolName)
@@ -75,11 +80,18 @@ func main() {
 	serviceTranslations := frame.WithTranslation("/localization", "en")
 	serviceOptions := []frame.Option{serviceTranslations}
 
+	rawCache, err := setupCache(ctx, cfg)
+	if err != nil {
+		log.WithError(err).Fatal("could not setup cache: %v", err)
+	}
+
+	serviceOptions = append(serviceOptions, frame.WithCache(cfg.CacheName, rawCache))
+
 	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), &cfg, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
+	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), &cfg, cacheManager, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
@@ -108,6 +120,27 @@ func handleDatabaseMigration(
 		return true
 	}
 	return false
+}
+
+func setupCache(_ context.Context, cfg aconfig.AuthenticationConfig) (cache.RawCache, error) {
+	cacheDSN := data.DSN(cfg.CacheURI)
+
+	cacheOptions := []cache.Option{
+		cache.WithDSN(cacheDSN),
+	}
+
+	if cfg.CacheCredentialsFile != "" {
+		cacheOptions = append(cacheOptions, cache.WithCredsFile(cfg.CacheCredentialsFile))
+	}
+
+	if cacheDSN.IsNats() {
+		// Setup cache for connection metadata
+		return jetstreamkv.New(cacheOptions...)
+	} else if cacheDSN.IsRedis() {
+		return valkey.New(cacheOptions...)
+	} else {
+		return cache.NewInMemoryCache(), nil
+	}
 }
 
 // setupDeviceClient creates and configures the device client.

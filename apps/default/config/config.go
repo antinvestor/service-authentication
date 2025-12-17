@@ -7,6 +7,11 @@ import (
 type AuthenticationConfig struct {
 	config.ConfigurationDefault
 
+	// Cache configuration (Redis or similar)
+	CacheName            string `envDefault:"defaultCache"           env:"CACHE_NAME"`
+	CacheURI             string `envDefault:"mem://defaultCache" env:"CACHE_URI"`
+	CacheCredentialsFile string `envDefault:""                       env:"CACHE_CREDENTIALS_FILE"`
+
 	SessionRememberDuration int64  `envDefault:"0" env:"SESSION_REMEMBER_DURATION"`
 	PartitionServiceURI     string `envDefault:"127.0.0.1:7003" env:"PARTITION_SERVICE_URI"`
 	ProfileServiceURI       string `envDefault:"127.0.0.1:7020" env:"PROFILE_SERVICE_URI"`

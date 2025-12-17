@@ -16,9 +16,11 @@ import (
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/gorilla/securecookie"
+	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -38,10 +40,14 @@ type AuthServer struct {
 
 	securityAuth security.Authenticator
 
+	cacheMan cache.Manager
+
 	profileCli      profilev1connect.ProfileServiceClient
 	deviceCli       devicev1connect.DeviceServiceClient
 	partitionCli    partitionv1connect.PartitionServiceClient
 	notificationCli notificationv1connect.NotificationServiceClient
+
+	iCache cache.Cache[string, models.LoginEvent]
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
@@ -54,8 +60,11 @@ type AuthServer struct {
 	defaultHydraCli hydra.Hydra
 }
 
-func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, authConfig *aconfig.AuthenticationConfig,
-	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository, apiKeyRepository repository.APIKeyRepository,
+func NewAuthServer(ctx context.Context,
+	securityAuth security.Authenticator, authConfig *aconfig.AuthenticationConfig,
+	cacheMan cache.Manager,
+	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
+	apiKeyRepository repository.APIKeyRepository,
 	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
 
@@ -71,6 +80,7 @@ func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, aut
 
 	h := &AuthServer{
 
+		cacheMan:     cacheMan,
 		securityAuth: securityAuth,
 
 		config:          authConfig,
@@ -95,6 +105,22 @@ func NewAuthServer(ctx context.Context, securityAuth security.Authenticator, aut
 	h.setupAuthProviders(ctx, authConfig)
 
 	return h
+}
+
+func (h *AuthServer) loginEventCache() cache.Cache[string, models.LoginEvent] {
+
+	if h.iCache == nil {
+
+		rCache, ok := h.cacheMan.GetRawCache(h.config.CacheName)
+		if !ok {
+			return nil
+		}
+
+		h.iCache = cache.NewGenericCache[string, models.LoginEvent](rCache, func(k string) string {
+			return k
+		})
+	}
+	return h.iCache
 }
 
 func (h *AuthServer) Config() *aconfig.AuthenticationConfig {

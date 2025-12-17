@@ -34,7 +34,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Clean up the session value after retrieving it
-	delete(session.Values, SessionKeyLoginChallenge)
+	delete(session.Values, SessionKeyLoginEventID)
 	err = session.Save(req, rw)
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("failed to save session after cleanup")

@@ -257,7 +257,7 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		defer opCancel()
 
 		// Test verification page accessibility
-		verificationURL := fmt.Sprintf("%s/s/verify/contact?login_event_id=test-event&profile_name=Test+User", testCtx.TestServer.URL)
+		verificationURL := fmt.Sprintf("%s/s/verify/contact/test-event?login_event_id=test-event&profile_name=Test+User", testCtx.TestServer.URL)
 
 		req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
 		require.NoError(t, err)

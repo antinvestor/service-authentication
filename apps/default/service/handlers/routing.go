@@ -91,9 +91,9 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.SubmitLoginEndpoint, "/s/login/post", "SubmitLoginEndpoint", "POST")
 	unAuthenticatedHandler(h.ShowLogoutEndpoint, "/s/logout", "ShowLogoutEndpoint", "GET")
 	unAuthenticatedHandler(h.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
-	unAuthenticatedHandler(h.ShowVerificationEndpoint, "/s/verify/contact", "ShowVerificationEndpoint", "GET")
-	unAuthenticatedHandler(h.SubmitVerificationEndpoint, "/s/verify/contact/post", "SubmitVerificationEndpoint", "POST")
-	unAuthenticatedHandler(h.ProviderLoginEndpoint, "/s/social/login/{provider}", "SocialLoginEndpoint", "POST")
+	unAuthenticatedHandler(h.ShowVerificationEndpoint, "/s/verify/contact/{loginEventId}", "ShowVerificationEndpoint", "GET")
+	unAuthenticatedHandler(h.SubmitVerificationEndpoint, "/s/verify/contact/{loginEventId}/post", "SubmitVerificationEndpoint", "POST")
+	unAuthenticatedHandler(h.ProviderLoginEndpoint, "/s/social/login/{loginEventId}/{provider}", "SocialLoginEndpoint", "POST")
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "POST")
 
