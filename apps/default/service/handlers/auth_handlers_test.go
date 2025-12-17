@@ -198,7 +198,7 @@ func (suite *AuthHandlersTestSuite) TestShowLogoutEndpoint() {
 			name:           "ShowLogoutPage",
 			endpoint:       "/s/logout",
 			expectedStatus: http.StatusInternalServerError, // Expect error due to missing/invalid logout_challenge
-			expectedType:   "application/json",             // Error response is JSON
+			expectedType:   "text/html",                    // Error response is HTML error page
 			shouldError:    true,
 		},
 	}
