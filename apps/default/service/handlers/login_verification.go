@@ -204,7 +204,6 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 	loginEvt.DeviceID = utils.DeviceIDFromContext(ctx)
 	loginEvt.VerificationID = verificationID
 	loginEvt.ContactID = contactID
-
 	loginEvt.Properties = extra
 
 	err = h.loginEventRepo.Create(ctx, loginEvt)

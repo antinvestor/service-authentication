@@ -80,7 +80,7 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 
 // createLoginEvent creates a new login event and caches it for the OAuth2 flow.
 // Returns the created event or an error if caching fails.
-func (h *AuthServer) createLoginEvent(ctx context.Context, loginReq *client.OAuth2LoginRequest, loginChallenge string) (*models.LoginEvent, error) {
+func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, loginReq *client.OAuth2LoginRequest, loginChallenge string) (*models.LoginEvent, error) {
 	log := util.Log(ctx)
 	start := time.Now()
 
@@ -99,6 +99,7 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, loginReq *client.OAut
 		LoginChallengeID: loginChallenge,
 		SessionID:        deviceSessionID,
 		Oauth2SessionID:  loginReq.GetSessionId(),
+		IP: util.GetIP(req),
 	}
 	loginEvt.ID = util.IDString()
 
@@ -177,7 +178,7 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	}
 
 	// Step 4: Create login event for new authentication
-	loginEvent, err := h.createLoginEvent(ctx, getLogReq, loginChallenge)
+	loginEvent, err := h.createLoginEvent(ctx, req, getLogReq, loginChallenge)
 	if err != nil {
 		log.WithError(err).Error("failed to create login event")
 		return err

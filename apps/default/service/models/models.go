@@ -36,6 +36,7 @@ type LoginEvent struct {
 	DeviceID         string `gorm:"type:varchar(50)"`
 	Properties       data.JSONMap
 	Client           string
+	IP               string
 	Status           int
 }
 
