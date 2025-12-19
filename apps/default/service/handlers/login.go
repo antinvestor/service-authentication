@@ -99,7 +99,7 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 		LoginChallengeID: loginChallenge,
 		SessionID:        deviceSessionID,
 		Oauth2SessionID:  loginReq.GetSessionId(),
-		IP: util.GetIP(req),
+		IP:               util.GetIP(req),
 	}
 	loginEvt.ID = util.IDString()
 
