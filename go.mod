@@ -23,7 +23,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.69.3
+	github.com/pitabwire/frame v1.69.7
 	github.com/pitabwire/util v0.3.6
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
@@ -42,7 +42,7 @@ require (
 	connectrpc.com/otelconnect v0.8.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
-	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -92,14 +92,14 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.1.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/nats.go v1.47.0 // indirect
+	github.com/nats-io/nats.go v1.48.0 // indirect
 	github.com/nats-io/nkeys v0.4.12 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.6.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/panjf2000/ants/v2 v2.11.3 // indirect
-	github.com/pitabwire/natspubsub v0.7.8 // indirect
+	github.com/pitabwire/natspubsub v0.7.11 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
@@ -158,7 +158,7 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/api v0.257.0 // indirect
+	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251213004720-97cd9d5aeac2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251213004720-97cd9d5aeac2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

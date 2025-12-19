@@ -121,6 +121,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	// Step 5: Create contact if not found
 	if contactID == "" {
+		ctx = common.SetPartitionInfo(ctx, loginEvt)
 		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
 		}))
