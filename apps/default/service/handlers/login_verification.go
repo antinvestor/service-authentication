@@ -11,7 +11,6 @@ import (
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/apis/go/common"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -121,7 +120,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	// Step 5: Create contact if not found
 	if contactID == "" {
-		ctx = common.SetPartitionInfo(ctx, loginEvt)
+		ctx = util.SetTenancy(ctx, loginEvt)
 		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
 		}))
@@ -149,7 +148,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	}
 
 	// Step 7: Create verification and send code
-	ctx = common.SetPartitionInfo(ctx, loginEvt)
+	ctx = util.SetTenancy(ctx, loginEvt)
 	_, err = h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               verificationID,
 		ContactId:        contactID,

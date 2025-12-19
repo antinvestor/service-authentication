@@ -13,18 +13,18 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251216063931-513b05dc5e70.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251216063931-513b05dc5e70.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.49.5
-	github.com/antinvestor/apis/go/device v1.49.4
-	github.com/antinvestor/apis/go/notification v1.49.4
-	github.com/antinvestor/apis/go/partition v1.49.4
-	github.com/antinvestor/apis/go/profile v1.49.4
+	github.com/antinvestor/apis/go/common v1.49.7
+	github.com/antinvestor/apis/go/device v1.49.8
+	github.com/antinvestor/apis/go/notification v1.49.8
+	github.com/antinvestor/apis/go/partition v1.49.8
+	github.com/antinvestor/apis/go/profile v1.49.8
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.69.7
-	github.com/pitabwire/util v0.3.6
+	github.com/pitabwire/frame v1.69.8
+	github.com/pitabwire/util v0.3.7
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/crypto v0.46.0
