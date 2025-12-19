@@ -77,6 +77,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		log.WithError(err).Error("cache lookup failed for login event")
 		return err
 	}
+	ctx = util.SetTenancy(ctx, loginEvt)
 
 	// Step 2: Route to appropriate handler based on request type
 	if verificationCode != "" {
@@ -120,7 +121,6 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	// Step 5: Create contact if not found
 	if contactID == "" {
-		ctx = util.SetTenancy(ctx, loginEvt)
 		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
 		}))
