@@ -243,11 +243,7 @@ func prepareRedirectURIs(partition *models.Partition) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		params := parsedURI.Query()
-		if !params.Has("partition_id") {
-			params.Add("partition_id", partition.ID)
-		}
-		parsedURI.RawQuery = params.Encode()
+
 		finalURIList = append(finalURIList, parsedURI.String())
 	}
 
