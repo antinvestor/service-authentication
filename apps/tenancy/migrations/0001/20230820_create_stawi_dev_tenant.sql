@@ -24,7 +24,7 @@ INSERT INTO partitions (id, tenant_id, partition_id, name, description, properti
                "https://localhost:5170/sso/logout"
              ],
             "support_contacts": {
-              "phone_number": "+256757546244",
+              "msisdn": "+256757546244",
               "email": "info@stawi.im"
             }
            }');

@@ -21,7 +21,7 @@ VALUES ('9bsv0s4qlfug02s9at9g', '9bsv0s4qlfug02s9at8g', '9bsv0s4qlfug02s9at9g', 
       "https://mylostid.com/callback.html"
     ],
     "support_contacts": {
-      "phone_number": "+256757546244",
+      "msisdn": "+256757546244",
       "email": "info@lostid.com"
     }
   }');

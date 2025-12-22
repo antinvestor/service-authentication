@@ -25,7 +25,7 @@ VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 
       "https://admin.antinvestor.com/"
     ],
     "support_contacts": {
-      "phone_number": "+256757546244",
+      "msisdn": "+256757546244",
       "email": "info@antinvestor.com"
     }
   }');

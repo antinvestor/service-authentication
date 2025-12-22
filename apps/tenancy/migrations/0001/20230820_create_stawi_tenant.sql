@@ -24,7 +24,7 @@ VALUES ('9bsv0s0hijjg02qk7l1g', '9bsv0s0hijjg02z5lbjg', '9bsv0s0hijjg02qk7l1g',
             "https://app.stawi.im/sso/logout"
           ],
           "support_contacts": {
-            "phone_number": "+256757546244",
+            "msisdn": "+256757546244",
             "email": "info@stawi.im"
           }
         }');

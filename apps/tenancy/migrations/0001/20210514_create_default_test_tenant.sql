@@ -26,7 +26,7 @@ VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 
       "https://admin-dev.antinvestor.com/"
     ],
     "support_contacts": {
-      "phone_number": "+256757546244",
+      "msisdn": "+256757546244",
       "email": "info@antinvestor.com"
     }
   }');
