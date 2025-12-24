@@ -3,21 +3,21 @@ module github.com/antinvestor/service-authentication
 go 1.25.2
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20251216061047-d524d0f6d60c.1
-	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251216061210-6c1f3494376a.2
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20251216061210-6c1f3494376a.1
-	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251216063814-4531d03f5444.2
-	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20251216063814-4531d03f5444.1
-	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251216063854-8a831e5d0734.2
-	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20251216063854-8a831e5d0734.1
-	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251216063931-513b05dc5e70.2
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251216063931-513b05dc5e70.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20251223045135-9b26335aa16d.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20251223045211-95d7117a19a0.2
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20251223045211-95d7117a19a0.1
+	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20251223045331-a80f12f90e68.2
+	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20251223045331-a80f12f90e68.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20251223045413-d42ee3f688ee.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20251223045413-d42ee3f688ee.1
+	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20251223045456-5ee7a5832a2e.2
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20251223045456-5ee7a5832a2e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.49.9
-	github.com/antinvestor/apis/go/device v1.49.10
-	github.com/antinvestor/apis/go/notification v1.49.10
-	github.com/antinvestor/apis/go/partition v1.49.10
-	github.com/antinvestor/apis/go/profile v1.49.10
+	github.com/antinvestor/apis/go/common v1.51.0
+	github.com/antinvestor/apis/go/device v1.51.0
+	github.com/antinvestor/apis/go/notification v1.51.0
+	github.com/antinvestor/apis/go/partition v1.51.0
+	github.com/antinvestor/apis/go/profile v1.51.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
@@ -28,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/crypto v0.46.0
-	google.golang.org/grpc v1.77.0
+	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gorm.io/gorm v1.31.1
 )
@@ -84,7 +84,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/go-archive v0.1.0 // indirect
+	github.com/moby/go-archive v0.2.0 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
@@ -160,7 +160,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251213004720-97cd9d5aeac2 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251213004720-97cd9d5aeac2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )
