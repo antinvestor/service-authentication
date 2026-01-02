@@ -861,9 +861,9 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 		extras, _ := structpb.NewStruct(map[string]any{"template_id": "9bsv0s23l8og00vgjq90"})
 
 		resp, err0 := notifCli.Search(ctx, connect.NewRequest(&commonv1.SearchRequest{
-			Limits: &commonv1.Pagination{
-				Count: 10,
-				Page:  0,
+			Cursor: &commonv1.PageCursor{
+				Limit: 10,
+				Page:  "",
 			},
 			Extras: extras,
 		}))
