@@ -5,6 +5,14 @@
 {{ end }}
 
 {{define "content"}}
+<!-- Full-page overlay shown during verification/redirect -->
+<div id="verificationOverlay" class="verification-overlay" style="display: none;">
+    <div class="overlay-content">
+        <div class="overlay-spinner" aria-hidden="true"></div>
+        <p class="overlay-message">Signing you in...</p>
+    </div>
+</div>
+
 <div class="verification-container">
 
     {{if .error}}

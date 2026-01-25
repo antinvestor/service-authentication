@@ -1,5 +1,5 @@
 /**
- * Authentication Service JavaScript v1.1.0
+ * Authentication Service JavaScript v1.2.0
  * Enhanced client-side functionality for authentication forms
  */
 
@@ -79,6 +79,82 @@
             button.disabled = false;
             button.removeAttribute('aria-busy');
         }
+    }
+
+    /**
+     * Show verification overlay and clear sensitive form data
+     * This prevents the verification page from being visible during redirect
+     * and protects against back-button exposure on mobile devices
+     */
+    function showVerificationOverlay() {
+        const overlay = document.getElementById('verificationOverlay');
+        const codeInput = document.getElementById('verification_code');
+
+        // Show the overlay immediately
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+
+        // Clear the verification code from the input for security
+        if (codeInput) {
+            codeInput.value = '';
+        }
+
+        // Replace current history entry to prevent back-button exposure
+        // This ensures the user can't press back to see the verification page
+        if (window.history && window.history.replaceState) {
+            try {
+                window.history.replaceState(null, '', window.location.href);
+            } catch (e) {
+                // Ignore errors in restricted contexts
+            }
+        }
+
+        // Auto-close tab after 1 minute for security
+        // If redirect hasn't happened by then, something went wrong
+        setTimeout(function() {
+            closeOrClearPage();
+        }, 60000);
+    }
+
+    /**
+     * Attempt to close the tab, or clear the page if closing is not allowed
+     * Browsers only allow window.close() for tabs opened via JavaScript
+     */
+    function closeOrClearPage() {
+        // Clear all sensitive form data first
+        const form = document.getElementById('verificationForm');
+        if (form) {
+            form.remove();
+        }
+
+        // Try to close the tab
+        try {
+            window.close();
+        } catch (e) {
+            // Ignore close errors
+        }
+
+        // If we're still here after 100ms, the tab didn't close
+        // Replace page content with a safe message
+        setTimeout(function() {
+            // Check if page is still open (close might have worked)
+            if (!window.closed) {
+                document.body.innerHTML =
+                    '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;text-align:center;padding:2rem;">' +
+                    '<div>' +
+                    '<h1 style="font-size:1.5rem;margin-bottom:1rem;">Login Succeeded</h1>' +
+                    '<p style="color:#666;margin-bottom:1.5rem;">You can now close this tab.</p>' +
+                    '<button onclick="window.close()" style="padding:0.75rem 1.5rem;background:#0066cc;color:white;border:none;border-radius:0.5rem;cursor:pointer;font-size:1rem;">Close Tab</button>' +
+                    '</div>' +
+                    '</div>';
+
+                // Clear history to prevent back navigation
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', 'about:blank');
+                }
+            }
+        }, 100);
     }
 
     // ==========================================================================
@@ -228,6 +304,8 @@
                             if (submitBtn) {
                                 setButtonLoading(submitBtn, true);
                             }
+                            // Show overlay before form submission
+                            showVerificationOverlay();
                             form.submit();
                         }, 300);
                     } else if (nameInput) {
@@ -277,8 +355,12 @@
                 hasError = true;
             }
 
-            if (!hasError && submitBtn) {
-                setButtonLoading(submitBtn, true);
+            if (!hasError) {
+                if (submitBtn) {
+                    setButtonLoading(submitBtn, true);
+                }
+                // Show overlay to hide sensitive data during redirect
+                showVerificationOverlay();
             }
         });
     }
@@ -478,7 +560,7 @@
         initErrorPage();
 
         // Log initialization (helpful for debugging)
-        console.log('Auth.js v1.1.0 initialized');
+        console.log('Auth.js v1.2.0 initialized');
     }
 
     // Initialize when DOM is ready

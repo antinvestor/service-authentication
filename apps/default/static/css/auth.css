@@ -471,6 +471,45 @@
 }
 
 /* ==========================================================================
+   Verification Overlay (shown during redirect)
+   ========================================================================== */
+
+.verification-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--pico-background-color, white);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.verification-overlay .overlay-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.verification-overlay .overlay-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--pico-muted-border-color, #e5e7eb);
+    border-top-color: var(--auth-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+.verification-overlay .overlay-message {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--pico-color);
+    margin: 0;
+}
+
+/* ==========================================================================
    Utility Classes
    ========================================================================== */
 
