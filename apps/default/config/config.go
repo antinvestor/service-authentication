@@ -38,4 +38,10 @@ type AuthenticationConfig struct {
 	AuthProviderMetaSecret      string   `envDefault:"" env:"AUTH_PROVIDER_META_SECRET"`
 	AuthProviderMetaCallbackURL string   `envDefault:"" env:"AUTH_PROVIDER_META_CALLBACK_URL"`
 	AuthProviderMetaScopes      []string `envDefault:"" env:"AUTH_PROVIDER_META_SCOPES"`
+
+	// RecentLoginDuration is the duration in seconds to remember a successful login.
+	// When a user logs in successfully, subsequent logins from the same device within
+	// this duration will skip verification (trusted device behavior).
+	// Set to 0 to disable this feature. Default is 24 hours (86400 seconds).
+	RecentLoginDuration int64 `envDefault:"86400" env:"RECENT_LOGIN_DURATION"`
 }

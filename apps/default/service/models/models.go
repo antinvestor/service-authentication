@@ -90,3 +90,18 @@ type APIKey struct {
 	Audience  string `gorm:"type:text"`
 	Metadata  data.JSONMap
 }
+
+// RecentLogin stores information about a recent successful login.
+// This is cached to allow skipping verification for users who recently
+// logged in from the same device (trusted device behavior).
+type RecentLogin struct {
+	ProfileID   string    `json:"profile_id"`
+	ContactID   string    `json:"contact_id"`
+	DeviceID    string    `json:"device_id"`
+	SessionID   string    `json:"session_id"`
+	PartitionID string    `json:"partition_id"`
+	TenantID    string    `json:"tenant_id"`
+	LoginAt     time.Time `json:"login_at"`
+	IP          string    `json:"ip"`
+	Source      string    `json:"source"`
+}

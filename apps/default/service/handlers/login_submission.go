@@ -11,6 +11,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
+	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -89,6 +90,32 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed")
 		return err
+	}
+
+	// Step 6: Store recent login for future verification skip
+	// Find the contact detail from profile to use as cache key
+	var contactDetail string
+	for _, c := range profileObj.GetContacts() {
+		if c.GetId() == loginEvent.ContactID {
+			contactDetail = c.GetDetail()
+			break
+		}
+	}
+
+	if contactDetail != "" {
+		recentLogin := &models.RecentLogin{
+			ProfileID:   profileObj.GetId(),
+			ContactID:   loginEvent.ContactID,
+			DeviceID:    utils.DeviceIDFromContext(ctx),
+			PartitionID: loginEvent.PartitionID,
+			TenantID:    loginEvent.TenantID,
+			IP:          util.GetIP(req),
+			Source:      string(models.LoginSourceDirect),
+		}
+		if storeErr := h.StoreRecentLogin(ctx, contactDetail, recentLogin); storeErr != nil {
+			// Log but don't fail the login - this is a nice-to-have feature
+			log.WithError(storeErr).Warn("failed to store recent login for future use")
+		}
 	}
 
 	log.WithFields(map[string]any{

@@ -123,6 +123,24 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
+	// Step 4b: Check for recent successful login (trusted session)
+	// If user recently logged in from this session, skip verification
+	if existingProfile != nil {
+		recentLogin, recentErr := h.GetRecentLogin(ctx, contact)
+		if recentErr != nil {
+			log.WithError(recentErr).Warn("error checking recent login, proceeding with normal verification")
+		} else if recentLogin != nil && recentLogin.ProfileID == existingProfile.GetId() {
+			log.WithFields(map[string]any{
+				"profile_id":      recentLogin.ProfileID,
+				"last_login":      recentLogin.LoginAt,
+				"skipping_verify": true,
+			}).Info("recent login found - skipping verification for trusted session")
+
+			// Complete the login flow directly without verification
+			return h.completeLoginWithRecentSession(rw, req, loginEvt, existingProfile, contact, contactID)
+		}
+	}
+
 	// Step 5: Create contact if not found
 	if contactID == "" {
 		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
@@ -330,10 +348,99 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login completion failed. Please try again.")
 	}
 
+	// Step 5: Store recent login for future verification skip
+	// Find the contact detail from profile to use as cache key
+	var contactDetail string
+	for _, c := range profileObj.GetContacts() {
+		if c.GetId() == loginEvent.ContactID {
+			contactDetail = c.GetDetail()
+			break
+		}
+	}
+
+	if contactDetail != "" {
+		recentLogin := &models.RecentLogin{
+			ProfileID:   profileObj.GetId(),
+			ContactID:   loginEvent.ContactID,
+			DeviceID:    utils.DeviceIDFromContext(ctx),
+			PartitionID: loginEvent.PartitionID,
+			TenantID:    loginEvent.TenantID,
+			IP:          util.GetIP(req),
+			Source:      string(models.LoginSourceDirect),
+		}
+		if storeErr := h.StoreRecentLogin(ctx, contactDetail, recentLogin); storeErr != nil {
+			// Log but don't fail the login - this is a nice-to-have feature
+			log.WithError(storeErr).Warn("failed to store recent login for future use")
+		}
+	}
+
 	log.WithFields(map[string]any{
 		"profile_id":  profileObj.GetId(),
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("login completed successfully")
+
+	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
+	return nil
+}
+
+// completeLoginWithRecentSession completes the login flow when a recent successful login is found.
+// This allows trusted sessions to skip verification for a configurable duration.
+func (h *AuthServer) completeLoginWithRecentSession(
+	rw http.ResponseWriter,
+	req *http.Request,
+	loginEvt *models.LoginEvent,
+	profile *profilev1.ProfileObject,
+	contact, contactID string,
+) error {
+	ctx := req.Context()
+	start := time.Now()
+	log := util.Log(ctx).WithFields(map[string]any{
+		"profile_id":      profile.GetId(),
+		"login_event_id":  loginEvt.GetID(),
+		"trusted_session": true,
+	})
+
+	// Store the login attempt (without verification ID since we're skipping verification)
+	_, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profile.GetId(), contactID, "", map[string]any{
+		"trusted_session": true,
+		"skipped_verify":  true,
+	})
+	if err != nil {
+		log.WithError(err).Error("failed to store login attempt for trusted session")
+		return err
+	}
+
+	// Complete OAuth2 login flow
+	params := &hydra.AcceptLoginRequestParams{
+		LoginChallenge:   loginEvt.LoginChallengeID,
+		SubjectID:        profile.GetId(),
+		Remember:         true,
+		RememberDuration: h.config.SessionRememberDuration,
+	}
+
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, "trusted_session")
+	if err != nil {
+		log.WithError(err).Error("hydra accept login request failed for trusted session")
+		return err
+	}
+
+	// Refresh the recent login cache with new timestamp
+	recentLogin := &models.RecentLogin{
+		ProfileID:   profile.GetId(),
+		ContactID:   contactID,
+		DeviceID:    utils.DeviceIDFromContext(ctx),
+		PartitionID: loginEvt.PartitionID,
+		TenantID:    loginEvt.TenantID,
+		IP:          util.GetIP(req),
+		Source:      string(models.LoginSourceDirect),
+	}
+	if storeErr := h.StoreRecentLogin(ctx, contact, recentLogin); storeErr != nil {
+		log.WithError(storeErr).Warn("failed to refresh recent login cache")
+	}
+
+	log.WithFields(map[string]any{
+		"duration_ms": time.Since(start).Milliseconds(),
+	}).Info("trusted session login completed - verification skipped")
 
 	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil
