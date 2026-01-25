@@ -120,12 +120,12 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
-	// Log the incoming payload structure for debugging (keys only, not values for security)
+	// Log the incoming payload for debugging
 	payloadKeys := make([]string, 0, len(tokenObject))
 	for k := range tokenObject {
 		payloadKeys = append(payloadKeys, k)
 	}
-	log.WithField("payload_keys", payloadKeys).Debug("token enrichment webhook received")
+	log.WithField("payload_keys", payloadKeys).Info("token enrichment webhook received")
 
 	response := tokenObject
 
@@ -135,6 +135,25 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		// Initialise session if not present
 		sessionData = make(map[string]any)
 		response["session"] = sessionData
+		log.Warn("session object not present in webhook payload - initialising empty")
+	} else {
+		// Log session structure for debugging
+		sessionKeys := make([]string, 0, len(sessionData))
+		for k := range sessionData {
+			sessionKeys = append(sessionKeys, k)
+		}
+		log.WithField("session_keys", sessionKeys).Info("webhook session structure")
+
+		// Log access_token keys if present
+		if accessToken, ok := sessionData["access_token"].(map[string]any); ok {
+			atKeys := make([]string, 0, len(accessToken))
+			for k := range accessToken {
+				atKeys = append(atKeys, k)
+			}
+			log.WithField("access_token_keys", atKeys).Info("session.access_token keys")
+		} else {
+			log.Info("session.access_token not present or not a map")
+		}
 	}
 
 	// Extract client_id from multiple possible locations
@@ -146,7 +165,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 
-	log.WithField("client_id", clientID).Debug("processing token enrichment")
+	log.WithField("client_id", clientID).Info("processing token enrichment for client")
 
 	if isClientIDApiKey(clientID) {
 
@@ -182,41 +201,27 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(response)
 	}
 
-	// Extract granted_scopes from multiple possible locations efficiently
+	// Extract granted_scopes from multiple possible locations
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantedScopes == nil {
-		util.Log(ctx).Error("granted_scopes not found in any location (top-level, requester, or request)")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusBadRequest)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "granted_scopes not found"})
-	}
-
-	if isInternalSystemScoped(grantedScopes) {
-
+		// For token refresh, granted_scopes might not be in the expected location
+		// Don't fail - just log and treat as regular user pass-through
+		log.Warn("granted_scopes not found - treating as regular user token refresh")
+	} else if isInternalSystemScoped(grantedScopes) {
 		roles := []string{"system_internal"}
 		// This is an internal system client
 		response["session"].(map[string]any)["access_token"] = map[string]any{"roles": roles}
 		response["session"].(map[string]any)["id_token"] = map[string]any{"roles": roles}
+		log.Info("enriched token with system_internal roles")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		return json.NewEncoder(rw).Encode(response)
-
 	}
 
 	// Handle as regular user - session extras from consent should already be present
 	// The session.access_token and session.id_token contain the extras set at consent time
 	// We pass them through unchanged so Hydra includes them in the refreshed token
-
-	// Log session structure for debugging
-	if accessToken, ok := sessionData["access_token"].(map[string]any); ok {
-		accessTokenKeys := make([]string, 0, len(accessToken))
-		for k := range accessToken {
-			accessTokenKeys = append(accessTokenKeys, k)
-		}
-		log.WithField("access_token_keys", accessTokenKeys).Debug("passing through session extras for regular user")
-	} else {
-		log.Warn("session.access_token not found or not a map - token may be missing custom claims")
-	}
+	log.Info("passing through session for regular user token")
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)

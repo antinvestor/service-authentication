@@ -169,12 +169,16 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Step 7: Accept consent and get redirect URL
+	// Remember=true ensures the consent session (including token extras) is persisted
+	// for subsequent token refreshes
 	params := &hydra.AcceptConsentRequestParams{
 		ConsentChallenge:  consentChallenge,
 		GrantScope:        getConseReq.GetRequestedScope(),
 		GrantAudience:     client.GetAudience(),
 		AccessTokenExtras: tokenMap,
 		IdTokenExtras:     tokenMap,
+		Remember:          true,
+		RememberDuration:  0, // 0 means remember indefinitely (until logout)
 	}
 
 	redirectURL, err := hydraCli.AcceptConsentRequest(ctx, params)
