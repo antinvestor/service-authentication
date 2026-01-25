@@ -11,7 +11,7 @@ import (
 	"github.com/pitabwire/util"
 )
 
-// extractGrantedScopes extracts and normalizes granted_scopes to []string
+// extractGrantedScopes extracts and normalises granted_scopes to []string
 // from the first location found in the payload.
 func extractGrantedScopes(tokenObject map[string]any) []string {
 	var raw []any
