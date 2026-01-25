@@ -69,47 +69,84 @@ func GetOauth2ClientById(ctx context.Context, cl client.Manager,
 	return resultStatus, resultBody, err
 }
 
-// TokenEnrichmentEndpoint handles token enrichment requests
+// extractClientID extracts client_id from multiple possible locations in the Hydra payload
+func extractClientID(tokenObject map[string]any) string {
+	// Try session.client_id first (some Hydra versions)
+	if session, ok := tokenObject["session"].(map[string]any); ok {
+		if clientID, ok := session["client_id"].(string); ok && clientID != "" {
+			return clientID
+		}
+	}
+
+	// Try request.client_id (standard location for token refresh)
+	if request, ok := tokenObject["request"].(map[string]any); ok {
+		if clientID, ok := request["client_id"].(string); ok && clientID != "" {
+			return clientID
+		}
+	}
+
+	// Try requester.client_id (alternative location)
+	if requester, ok := tokenObject["requester"].(map[string]any); ok {
+		if clientID, ok := requester["client_id"].(string); ok && clientID != "" {
+			return clientID
+		}
+	}
+
+	// Try top-level client_id
+	if clientID, ok := tokenObject["client_id"].(string); ok && clientID != "" {
+		return clientID
+	}
+
+	return ""
+}
+
+// TokenEnrichmentEndpoint handles token enrichment requests from Ory Hydra
+// This is called during both initial token issuance and token refresh
 func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
-
-	// Use native Go SDK path variable extraction
-	// tokenType := req.PathValue("tokenType")
+	log := util.Log(ctx)
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not read request body")
+		log.WithError(err).Error("could not read request body")
 		return err
 	}
 
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not unmarshal request body")
+		log.WithError(err).Error("could not unmarshal request body")
 		return err
 	}
 
+	// Log the incoming payload structure for debugging (keys only, not values for security)
+	payloadKeys := make([]string, 0, len(tokenObject))
+	for k := range tokenObject {
+		payloadKeys = append(payloadKeys, k)
+	}
+	log.WithField("payload_keys", payloadKeys).Debug("token enrichment webhook received")
+
 	response := tokenObject
 
+	// Ensure session object exists in the response
 	sessionData, ok := tokenObject["session"].(map[string]any)
 	if !ok {
-		sessionData, ok = tokenObject["client"].(map[string]any)
-		if !ok {
-			util.Log(ctx).Error("no session or client data found")
-			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusBadRequest)
-			return json.NewEncoder(rw).Encode(map[string]string{"error": "client/session data not found"})
-		}
+		// Initialize session if not present
+		sessionData = make(map[string]any)
+		response["session"] = sessionData
 	}
 
-	clientID, ok := sessionData["client_id"].(string)
-	if !ok {
-		util.Log(ctx).Error("client_id not found or invalid")
+	// Extract client_id from multiple possible locations
+	clientID := extractClientID(tokenObject)
+	if clientID == "" {
+		log.Error("client_id not found in any location (session, request, requester, top-level)")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
+
+	log.WithField("client_id", clientID).Debug("processing token enrichment")
 
 	if isClientIDApiKey(clientID) {
 
@@ -166,7 +203,21 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	}
 
-	// Handle as regular user token should already have everything
+	// Handle as regular user - session extras from consent should already be present
+	// The session.access_token and session.id_token contain the extras set at consent time
+	// We pass them through unchanged so Hydra includes them in the refreshed token
+
+	// Log session structure for debugging
+	if accessToken, ok := sessionData["access_token"].(map[string]any); ok {
+		accessTokenKeys := make([]string, 0, len(accessToken))
+		for k := range accessToken {
+			accessTokenKeys = append(accessTokenKeys, k)
+		}
+		log.WithField("access_token_keys", accessTokenKeys).Debug("passing through session extras for regular user")
+	} else {
+		log.Warn("session.access_token not found or not a map - token may be missing custom claims")
+	}
+
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	return json.NewEncoder(rw).Encode(response)
