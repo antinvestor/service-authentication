@@ -1,22 +1,29 @@
-{{ define "title"}}Verify Your Contact{{ end }}
+{{ define "title"}}Check Your Inbox{{ end }}
 
 {{ define "subtitle" }}
-<p>We've sent a verification code to your contact</p>
+<p>Enter the code we sent you</p>
 {{ end }}
 
 {{define "content"}}
 <!-- Full-page overlay shown during verification/redirect -->
-<div id="verificationOverlay" class="verification-overlay" style="display: none;">
+<div id="verificationOverlay" class="verification-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Signing you in">
     <div class="overlay-content">
         <div class="overlay-spinner" aria-hidden="true"></div>
-        <p class="overlay-message">Signing you in...</p>
+        <p class="overlay-message" aria-live="polite">Signing you in...</p>
     </div>
 </div>
 
 <div class="verification-container">
 
+    <!-- Progressive enhancement notice -->
+    <noscript>
+        <div class="noscript-notice" role="alert">
+            Enable JavaScript for the best experience.
+        </div>
+    </noscript>
+
     {{if .error}}
-    <div class="alert alert-error" role="alert">
+    <div class="alert alert-error" role="alert" aria-live="assertive">
         <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
         </svg>
@@ -30,14 +37,14 @@
 
         <div class="form-group">
             <label for="profile_name">
-                Full Name
+                Your Name
                 <span class="required-indicator" aria-hidden="true">*</span>
             </label>
             <input
                 type="text"
                 id="profile_name"
                 name="profile_name"
-                placeholder="Enter your full name"
+                placeholder="John Doe"
                 value="{{ .profile_name }}"
                 required
                 autocomplete="name"
@@ -52,11 +59,12 @@
             </label>
             <input
                 type="text"
+                inputmode="numeric"
                 id="verification_code"
                 name="verification_code"
-                placeholder="Enter the 6-character code"
+                placeholder="123456"
                 maxlength="6"
-                pattern="[a-zA-Z0-9]{6}"
+                pattern="[0-9]{6}"
                 required
                 autocomplete="one-time-code"
                 class="verification-input"
@@ -64,33 +72,43 @@
                 aria-required="true"
             >
             <small id="code-help" class="form-help">
-                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email for the verification code
-                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone for the verification code
-                {{else if eq .contact_type "EMAIL"}}Check your email for the verification code
-                {{else if eq .contact_type "PHONE"}}Check your phone for the verification code
-                {{else}}Check your email or phone for the verification code
+                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email
+                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone
+                {{else if eq .contact_type "EMAIL"}}Check your email
+                {{else if eq .contact_type "PHONE"}}Check your phone
+                {{else}}Check your email or phone
                 {{end}}
             </small>
         </div>
 
         <div class="form-actions">
             <button type="submit" class="btn-primary" id="verifyBtn">
-                <span>Verify & Continue</span>
+                <span>Continue</span>
             </button>
         </div>
     </form>
 
     <div class="verification-help">
-        <span class="help-text">Didn't receive the code?</span>
-        <button type="button" id="resendBtn" class="resend-link" onclick="resendCode()">Resend</button>
-        <span id="resendTimer" class="resend-timer" style="display: none;">
-            (wait <strong id="countdown">60</strong>s)
+        <span class="help-text" id="resend-help">No code?</span>
+        <button
+            type="button"
+            id="resendBtn"
+            class="resend-link"
+            onclick="resendCode()"
+            aria-describedby="resend-help resend-status"
+        >
+            Resend
+        </button>
+        <span id="resendTimer" class="resend-timer" style="display: none;" aria-hidden="true">
+            (<strong id="countdown">60</strong>s)
         </span>
+        <!-- Screen reader only timer status -->
+        <span id="resend-status" class="sr-only" role="status" aria-live="polite"></span>
     </div>
 
     <div class="verification-alt">
         <a href="/s/login?login_challenge={{ .login_challenge }}" class="alt-link">
-            Use a different contact
+            Try a different email or phone
         </a>
     </div>
 </div>

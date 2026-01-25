@@ -1,5 +1,6 @@
-/* Authentication Service Styles v1.1.1 */
+/* Authentication Service Styles v1.2.0 */
 /* Clean, accessible styles for authentication flows */
+/* Auth0-inspired simplicity with full accessibility support */
 
 /* ==========================================================================
    CSS Custom Properties
@@ -9,16 +10,90 @@
     --auth-primary: #0066cc;
     --auth-primary-hover: #0052a3;
     --auth-success: #10b981;
+    --auth-success-light: rgba(16, 185, 129, 0.1);
     --auth-error: #dc2626;
+    --auth-error-light: rgba(220, 38, 38, 0.1);
+    --auth-warning: #f59e0b;
+    --auth-info: #3b82f6;
     --auth-radius: 0.5rem;
     --auth-max-width: 400px;
+    --auth-focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.4);
+    --auth-min-touch-target: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --auth-primary: #3b82f6;
         --auth-primary-hover: #2563eb;
+        --auth-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.4);
     }
+}
+
+/* ==========================================================================
+   Accessibility: Focus Indicators
+   Critical for keyboard navigation - visible on all interactive elements
+   ========================================================================== */
+
+:focus-visible {
+    outline: 2px solid var(--auth-primary);
+    outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users, keep for keyboard */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Enhanced focus for form inputs */
+.form-group input:focus-visible,
+.verification-input:focus-visible {
+    outline: none;
+    border-color: var(--auth-primary);
+    box-shadow: var(--auth-focus-ring);
+}
+
+/* Button focus states */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-social:focus-visible {
+    outline: none;
+    box-shadow: var(--auth-focus-ring);
+}
+
+/* Link focus states */
+a:focus-visible,
+.btn-link:focus-visible,
+.resend-link:focus-visible {
+    outline: 2px solid var(--auth-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   Progressive Enhancement: No-JS Notice
+   ========================================================================== */
+
+.noscript-notice {
+    background: var(--auth-warning);
+    color: #000;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    border-radius: var(--auth-radius);
+}
+
+/* Screen reader only utility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ==========================================================================
@@ -51,11 +126,29 @@
 }
 
 /* ==========================================================================
-   Social Login
+   Contact Login (Primary)
+   ========================================================================== */
+
+.contact-login-section {
+    margin-bottom: 1.5rem;
+}
+
+/* ==========================================================================
+   Social Login (Secondary)
    ========================================================================== */
 
 .social-login-section {
-    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.social-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.social-buttons .social-login-form {
+    flex: 1;
+    margin-bottom: 0;
 }
 
 .social-login-form {
@@ -64,8 +157,9 @@
 
 .btn-social {
     width: 100%;
+    min-height: var(--auth-min-touch-target);
     padding: 0.875rem 1.25rem;
-    border: 1px solid var(--pico-muted-border-color, #ddd);
+    border: 2px solid var(--pico-muted-border-color, #ddd);
     border-radius: var(--auth-radius);
     background: var(--pico-card-background-color, white);
     color: var(--pico-color);
@@ -79,9 +173,14 @@
     transition: all 0.2s ease;
 }
 
-.btn-social:hover {
+.btn-social:hover:not(:disabled) {
     background: var(--pico-card-background-color, #f8f9fa);
     border-color: var(--pico-color);
+    transform: translateY(-1px);
+}
+
+.btn-social:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .btn-facebook {
@@ -150,17 +249,40 @@
 
 .form-group input {
     width: 100%;
+    min-height: var(--auth-min-touch-target);
     padding: 0.75rem 1rem;
-    border: 1px solid var(--pico-muted-border-color, #ddd);
+    border: 2px solid var(--pico-muted-border-color, #ddd);
     border-radius: var(--auth-radius);
     font-size: 1rem;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--auth-primary);
+    box-shadow: var(--auth-focus-ring);
+}
+
+/* Validation states for inputs */
+.form-group input[aria-invalid="true"],
+.form-group input.is-invalid {
+    border-color: var(--auth-error);
+    background-color: var(--auth-error-light);
+}
+
+.form-group input[aria-invalid="true"]:focus,
+.form-group input.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
+}
+
+.form-group input.is-valid {
+    border-color: var(--auth-success);
+    background-color: var(--auth-success-light);
+}
+
+.form-group input.is-valid:focus {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
 }
 
 .form-help {
@@ -185,6 +307,7 @@
 .btn-primary {
     flex: 1;
     max-width: 200px;
+    min-height: var(--auth-min-touch-target);
     padding: 0.875rem 1.5rem;
     background: var(--auth-primary);
     color: white;
@@ -193,7 +316,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -201,13 +324,19 @@
     text-decoration: none;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     background: var(--auth-primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
 }
 
 .btn-secondary {
@@ -274,14 +403,12 @@
     font-weight: 600;
     letter-spacing: 0.4em;
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    text-transform: uppercase;
 }
 
 .verification-input::placeholder {
     letter-spacing: 0.2em;
     font-weight: 400;
     opacity: 0.5;
-    text-transform: none;
 }
 
 /* Verification help section - compact inline layout */
@@ -300,16 +427,27 @@
     background: none;
     border: none;
     color: var(--auth-primary);
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    padding: 0;
+    padding: 0.25rem 0.5rem;
     text-decoration: underline;
     text-underline-offset: 2px;
+    border-radius: 4px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
 }
 
-.resend-link:hover {
+.resend-link:hover:not(:disabled) {
     color: var(--auth-primary-hover);
+    background: rgba(0, 102, 204, 0.05);
+}
+
+.resend-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    text-decoration: none;
 }
 
 .resend-timer {
@@ -321,6 +459,15 @@
 .resend-timer strong {
     color: var(--auth-primary);
     font-weight: 600;
+}
+
+/* Live region for screen reader announcements */
+.live-region {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
 }
 
 /* Alternative action link */
@@ -525,6 +672,10 @@
    Responsive
    ========================================================================== */
 
+/* ==========================================================================
+   Responsive: Mobile First Approach
+   ========================================================================== */
+
 @media (max-width: 480px) {
     .login-container,
     .verification-container,
@@ -551,6 +702,43 @@
     .btn-secondary {
         width: 100%;
         max-width: none;
+    }
+
+    /* Ensure touch targets are large enough on mobile */
+    .form-group input,
+    .btn-primary,
+    .btn-secondary,
+    .btn-social {
+        min-height: 48px; /* Slightly larger on touch devices */
+    }
+
+    /* Stack social buttons on mobile */
+    .social-buttons {
+        flex-direction: column;
+    }
+
+    .social-buttons .social-login-form {
+        margin-bottom: 0.75rem;
+    }
+
+    .social-buttons .social-login-form:last-child {
+        margin-bottom: 0;
+    }
+
+    .verification-help {
+        padding: 0.5rem 0;
+    }
+
+    .resend-link {
+        padding: 0.5rem 0.75rem;
+        min-height: 40px;
+    }
+}
+
+/* Tablet breakpoint for better layout */
+@media (min-width: 481px) and (max-width: 768px) {
+    .auth-container {
+        max-width: 380px;
     }
 }
 

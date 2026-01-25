@@ -5,8 +5,8 @@
 {{ end }}
 
 {{define "content"}}
-<div class="not-found-container">
-    <div class="not-found-code">404</div>
+<div class="not-found-container" role="alert">
+    <div class="not-found-code" aria-label="Error 404">404</div>
 
     <p class="not-found-message">
         The page you're looking for doesn't exist or may have been moved.
@@ -14,7 +14,7 @@
     </p>
 
     <div class="form-actions">
-        <button onclick="history.back()" class="btn-secondary">Go Back</button>
+        <button type="button" onclick="history.back()" class="btn-secondary">Go Back</button>
         <a href="/" class="btn-primary">Go Home</a>
     </div>
 </div>

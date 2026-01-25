@@ -1,6 +1,7 @@
 /**
- * Authentication Service JavaScript v1.2.0
+ * Authentication Service JavaScript v1.3.0
  * Enhanced client-side functionality for authentication forms
+ * Features: Accessibility (WCAG 2.1 AA), Progressive Enhancement, Security
  */
 
 (function() {
@@ -14,6 +15,7 @@
         RESEND_COOLDOWN_SECONDS: 60,
         VERIFICATION_CODE_LENGTH: 6,
         DEBOUNCE_DELAY: 300,
+        SR_ANNOUNCEMENT_DELAY: 100, // Delay before screen reader announcements
     };
 
     // ==========================================================================
@@ -37,8 +39,11 @@
 
     /**
      * Show inline error message for a field
+     * @param {HTMLInputElement} input - The input element
+     * @param {string} message - The error message to display
+     * @param {boolean} announce - Whether to announce to screen readers (default true)
      */
-    function showFieldError(input, message) {
+    function showFieldError(input, message, announce = true) {
         // Remove any existing error
         clearFieldError(input);
 
@@ -47,23 +52,56 @@
         errorEl.setAttribute('role', 'alert');
         errorEl.textContent = message;
         errorEl.style.cssText = 'color: var(--auth-error); font-size: 0.85rem; margin-top: 0.25rem;';
-
-        input.setAttribute('aria-invalid', 'true');
-        input.setAttribute('aria-describedby', input.id + '-error');
         errorEl.id = input.id + '-error';
 
+        input.setAttribute('aria-invalid', 'true');
+        input.classList.add('is-invalid');
+        input.classList.remove('is-valid');
+
+        // Preserve existing aria-describedby and add error
+        const existingDescribedBy = input.getAttribute('aria-describedby') || '';
+        const describedByIds = existingDescribedBy.split(' ').filter(id => id && id !== errorEl.id);
+        describedByIds.push(errorEl.id);
+        input.setAttribute('aria-describedby', describedByIds.join(' '));
+
         input.parentNode.appendChild(errorEl);
+
+        // Announce to screen readers for immediate feedback
+        if (announce) {
+            const label = input.closest('.form-group')?.querySelector('label')?.textContent?.replace('*', '').trim() || 'Field';
+            announceToScreenReader(label + ': ' + message, true);
+        }
+    }
+
+    /**
+     * Show success state for a field
+     * @param {HTMLInputElement} input - The input element
+     */
+    function showFieldSuccess(input) {
+        clearFieldError(input);
+        input.classList.add('is-valid');
+        input.classList.remove('is-invalid');
     }
 
     /**
      * Clear error message for a field
+     * @param {HTMLInputElement} input - The input element
      */
     function clearFieldError(input) {
         const existingError = input.parentNode.querySelector('.field-error');
         if (existingError) {
+            // Remove error id from aria-describedby
+            const existingDescribedBy = input.getAttribute('aria-describedby') || '';
+            const describedByIds = existingDescribedBy.split(' ').filter(id => id && id !== existingError.id);
+            if (describedByIds.length > 0) {
+                input.setAttribute('aria-describedby', describedByIds.join(' '));
+            } else {
+                input.removeAttribute('aria-describedby');
+            }
             existingError.remove();
         }
         input.removeAttribute('aria-invalid');
+        input.classList.remove('is-invalid');
     }
 
     /**
@@ -207,11 +245,11 @@
     }
 
     /**
-     * Validate verification code (alphanumeric, 6 characters)
+     * Validate verification code (numeric, 6 digits)
      */
     function validateVerificationCode(code) {
         const cleaned = code.replace(/\s/g, '');
-        const re = /^[a-zA-Z0-9]{6}$/;
+        const re = /^[0-9]{6}$/;
         return re.test(cleaned);
     }
 
@@ -220,7 +258,7 @@
     // ==========================================================================
 
     /**
-     * Initialize contact login form
+     * Initialize contact login form with enhanced validation feedback
      */
     function initContactLoginForm() {
         const form = document.getElementById('contactLoginForm') || document.querySelector('.contact-login-form');
@@ -231,20 +269,27 @@
 
         if (!contactInput) return;
 
-        // Real-time validation with debounce
+        // Restore aria-describedby if help text exists
+        const helpText = contactInput.parentNode.querySelector('.form-help');
+        if (helpText && helpText.id) {
+            contactInput.setAttribute('aria-describedby', helpText.id);
+        }
+
+        // Real-time validation with debounce - shows success state too
         const debouncedValidate = debounce(() => {
             if (contactInput.value.trim()) {
                 const result = validateContact(contactInput.value);
                 if (!result.valid) {
-                    showFieldError(contactInput, result.message);
+                    showFieldError(contactInput, result.message, false); // Don't announce during typing
                 } else {
-                    clearFieldError(contactInput);
+                    showFieldSuccess(contactInput);
                 }
             }
         }, CONFIG.DEBOUNCE_DELAY);
 
         contactInput.addEventListener('input', () => {
             clearFieldError(contactInput);
+            contactInput.classList.remove('is-valid');
             debouncedValidate();
         });
 
@@ -253,6 +298,8 @@
                 const result = validateContact(contactInput.value);
                 if (!result.valid) {
                     showFieldError(contactInput, result.message);
+                } else {
+                    showFieldSuccess(contactInput);
                 }
             }
         });
@@ -267,9 +314,10 @@
                 return false;
             }
 
-            // Show loading state
+            // Show loading state and announce
             if (submitBtn) {
                 setButtonLoading(submitBtn, true);
+                announceToScreenReader('Sending verification code. Please wait.');
             }
         });
     }
@@ -286,10 +334,10 @@
         const submitBtn = form.querySelector('button[type="submit"]');
 
         if (codeInput) {
-            // Allow alphanumeric input, convert to uppercase for consistency
+            // Allow numeric input only
             codeInput.addEventListener('input', function(e) {
-                // Remove any non-alphanumeric characters and convert to uppercase
-                this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                // Remove any non-numeric characters
+                this.value = this.value.replace(/[^0-9]/g, '');
 
                 // Clear any previous error when user types
                 clearFieldError(this);
@@ -298,7 +346,12 @@
                 if (this.value.length === CONFIG.VERIFICATION_CODE_LENGTH) {
                     if (nameInput && nameInput.value.trim()) {
                         // Visual feedback before auto-submit
+                        this.classList.add('is-valid');
                         this.style.borderColor = 'var(--auth-success)';
+
+                        // Announce auto-submit to screen readers
+                        announceToScreenReader('Verification code complete. Verifying now.');
+
                         // Auto-submit after short delay for visual feedback
                         setTimeout(() => {
                             if (submitBtn) {
@@ -310,24 +363,25 @@
                         }, 300);
                     } else if (nameInput) {
                         nameInput.focus();
+                        announceToScreenReader('Please enter your name to continue.');
                     }
                 }
             });
 
-            // Paste handling - allow alphanumeric characters
+            // Paste handling - allow numeric characters only
             codeInput.addEventListener('paste', function(e) {
                 e.preventDefault();
                 const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                const cleaned = pastedText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
+                const cleaned = pastedText.replace(/[^0-9]/g, '').slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
                 this.value = cleaned;
 
                 // Trigger input event for auto-submit check
                 this.dispatchEvent(new Event('input'));
             });
 
-            // Allow alphanumeric key presses
+            // Allow numeric key presses only
             codeInput.addEventListener('keypress', function(e) {
-                if (!/[a-zA-Z0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+                if (!/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                 }
             });
@@ -348,7 +402,7 @@
             // Validate code
             if (codeInput && !validateVerificationCode(codeInput.value)) {
                 e.preventDefault();
-                showFieldError(codeInput, 'Please enter a valid 6-character code');
+                showFieldError(codeInput, 'Please enter a valid 6-digit code');
                 if (!hasError) {
                     codeInput.focus();
                 }
@@ -366,17 +420,27 @@
     }
 
     /**
-     * Initialize resend code functionality
+     * Initialize resend code functionality with full accessibility support
      */
     function initResendCode() {
         const resendBtn = document.getElementById('resendBtn');
         const resendTimer = document.getElementById('resendTimer');
         const countdown = document.getElementById('countdown');
+        const resendStatus = document.getElementById('resend-status');
 
         if (!resendBtn) return;
 
         let cooldownActive = false;
         let remainingSeconds = 0;
+
+        /**
+         * Update the screen reader status for resend cooldown
+         */
+        function updateResendStatus(message) {
+            if (resendStatus) {
+                resendStatus.textContent = message;
+            }
+        }
 
         window.resendCode = function() {
             if (cooldownActive) return;
@@ -386,11 +450,15 @@
             remainingSeconds = CONFIG.RESEND_COOLDOWN_SECONDS;
 
             resendBtn.disabled = true;
-            resendBtn.style.opacity = '0.5';
+            resendBtn.setAttribute('aria-disabled', 'true');
 
             if (resendTimer) {
-                resendTimer.style.display = 'block';
+                resendTimer.style.display = 'inline';
             }
+
+            // Announce to screen readers
+            announceToScreenReader('Verification code sent. Please wait ' + remainingSeconds + ' seconds before requesting another code.');
+            updateResendStatus('Please wait ' + remainingSeconds + ' seconds');
 
             const timer = setInterval(() => {
                 remainingSeconds--;
@@ -399,15 +467,23 @@
                     countdown.textContent = remainingSeconds;
                 }
 
+                // Announce every 15 seconds to screen readers
+                if (remainingSeconds > 0 && remainingSeconds % 15 === 0) {
+                    updateResendStatus(remainingSeconds + ' seconds remaining');
+                }
+
                 if (remainingSeconds <= 0) {
                     clearInterval(timer);
                     cooldownActive = false;
                     resendBtn.disabled = false;
-                    resendBtn.style.opacity = '1';
+                    resendBtn.removeAttribute('aria-disabled');
 
                     if (resendTimer) {
                         resendTimer.style.display = 'none';
                     }
+
+                    updateResendStatus('You can now request a new code');
+                    announceToScreenReader('You can now request a new verification code.');
                 }
             }, 1000);
 
@@ -418,14 +494,26 @@
                 // In production, this would make an API call to resend the code
                 console.log('Resending verification code for login event:', loginEventId);
 
-                // Show success feedback
-                const footer = document.querySelector('.verification-footer');
-                if (footer) {
+                // Show success feedback in the verification-help section
+                const helpSection = document.querySelector('.verification-help');
+                if (helpSection) {
+                    // Check if success message already exists
+                    const existingMsg = helpSection.querySelector('.resend-success');
+                    if (existingMsg) {
+                        existingMsg.remove();
+                    }
+
                     const successMsg = document.createElement('div');
-                    successMsg.className = 'alert alert-success';
-                    successMsg.style.marginTop = '1rem';
-                    successMsg.innerHTML = '<span>A new verification code has been sent!</span>';
-                    footer.insertBefore(successMsg, footer.firstChild);
+                    successMsg.className = 'alert alert-success resend-success';
+                    successMsg.setAttribute('role', 'status');
+                    successMsg.style.cssText = 'margin-top: 1rem; padding: 0.75rem;';
+                    successMsg.innerHTML = `
+                        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="width:18px;height:18px;flex-shrink:0;">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>A new verification code has been sent!</span>
+                    `;
+                    helpSection.parentNode.insertBefore(successMsg, helpSection);
 
                     // Remove message after 5 seconds
                     setTimeout(() => {
@@ -505,11 +593,34 @@
 
     /**
      * Announce dynamic content changes to screen readers
+     * Uses the dedicated live region from the template for better reliability
+     * @param {string} message - The message to announce
+     * @param {boolean} assertive - Use assertive (immediate) instead of polite (queued)
      */
-    function announceToScreenReader(message) {
+    function announceToScreenReader(message, assertive = false) {
+        // Try to use the dedicated live region first
+        const liveRegion = document.getElementById('liveRegion');
+        if (liveRegion) {
+            // Set the appropriate aria-live value
+            liveRegion.setAttribute('aria-live', assertive ? 'assertive' : 'polite');
+
+            // Clear and set content with a small delay to ensure announcement
+            liveRegion.textContent = '';
+            setTimeout(() => {
+                liveRegion.textContent = message;
+            }, CONFIG.SR_ANNOUNCEMENT_DELAY);
+
+            // Clear after announcement is read
+            setTimeout(() => {
+                liveRegion.textContent = '';
+            }, 3000);
+            return;
+        }
+
+        // Fallback: Create temporary announcer element
         const announcer = document.createElement('div');
         announcer.setAttribute('role', 'status');
-        announcer.setAttribute('aria-live', 'polite');
+        announcer.setAttribute('aria-live', assertive ? 'assertive' : 'polite');
         announcer.setAttribute('aria-atomic', 'true');
         announcer.className = 'sr-only';
         announcer.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
@@ -519,7 +630,7 @@
 
         setTimeout(() => {
             announcer.remove();
-        }, 1000);
+        }, 3000);
     }
 
     // ==========================================================================
@@ -559,8 +670,11 @@
         // Initialize page-specific features
         initErrorPage();
 
+        // Mark body as JS-enabled for progressive enhancement
+        document.body.classList.add('js-enabled');
+
         // Log initialization (helpful for debugging)
-        console.log('Auth.js v1.2.0 initialized');
+        console.log('Auth.js v1.3.0 initialized - Accessibility Enhanced');
     }
 
     // Initialize when DOM is ready
