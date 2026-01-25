@@ -132,7 +132,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// Ensure session object exists in the response
 	sessionData, ok := tokenObject["session"].(map[string]any)
 	if !ok {
-		// Initialize session if not present
+		// Initialise session if not present
 		sessionData = make(map[string]any)
 		response["session"] = sessionData
 	}
