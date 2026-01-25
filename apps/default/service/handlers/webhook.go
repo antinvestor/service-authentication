@@ -6,36 +6,54 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
-	"strings"
 
 	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/security/openid"
 	"github.com/pitabwire/util"
 )
 
-// extractGrantedScopes efficiently extracts granted_scopes from multiple possible locations in the webhook payload
-func extractGrantedScopes(tokenObject map[string]any) []any {
-	var scopes []any
-	var ok bool
-	if scopes, ok = tokenObject["granted_scopes"].([]any); ok {
-		return scopes
-	}
+// extractGrantedScopes extracts and normalizes granted_scopes to []string
+// from the first location found in the payload.
+func extractGrantedScopes(tokenObject map[string]any) []string {
+	var raw []any
 
-	request, ok := tokenObject["request"].(map[string]any)
-	if ok {
-		if scopes, ok = request["granted_scopes"].([]any); ok {
-			return scopes
+	// 1. Top-level
+	if v, ok := tokenObject["granted_scopes"]; ok {
+		if raw, ok = v.([]any); !ok {
+			return nil
+		}
+	} else if v, ok := tokenObject["request"]; ok {
+		// 2. request.granted_scopes
+		if req, ok := v.(map[string]any); ok {
+			if v, ok = req["granted_scopes"]; ok {
+				if raw, ok = v.([]any); !ok {
+					return nil
+				}
+			}
+		}
+	} else if v, ok := tokenObject["requester"]; ok {
+		// 3. requester.granted_scopes
+		if req, ok := v.(map[string]any); ok {
+			if v, ok = req["granted_scopes"]; ok {
+				if raw, ok = v.([]any); !ok {
+					return nil
+				}
+			}
 		}
 	}
 
-	if request, ok = tokenObject["requester"].(map[string]any); ok {
-		if scopes, ok = request["granted_scopes"].([]any); ok {
-			return scopes
+	if raw == nil {
+		return nil
+	}
+
+	// Exact pre-allocation; worst case all entries are strings
+	out := make([]string, 0, len(raw))
+	for i := 0; i < len(raw); i++ {
+		if s, ok := raw[i].(string); ok {
+			out = append(out, s)
 		}
 	}
 
-	return nil
+	return out
 }
 
 // GetOauth2ClientById obtains a client id
@@ -65,9 +83,6 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
-	util.Log(ctx).Info("__________________________________________________________")
-	util.Log(ctx).Info(string(body))
-
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {
@@ -96,7 +111,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 
-	if strings.HasPrefix(clientID, constApiKeyIDPrefix) {
+	if isClientIDApiKey(clientID) {
 
 		// Check if this is an API key client
 		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)
@@ -139,7 +154,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "granted_scopes not found"})
 	}
 
-	if slices.Contains(grantedScopes, openid.ConstSystemScopeInternal) {
+	if isInternalSystemScoped(grantedScopes) {
 
 		roles := []string{"system_internal"}
 		// This is an internal system client

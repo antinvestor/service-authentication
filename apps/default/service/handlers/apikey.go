@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
@@ -26,6 +27,10 @@ type apiKey struct {
 
 	Key       string `json:"apiKey"`
 	KeySecret string `json:"apiKeySecret"`
+}
+
+func isClientIDApiKey(clientID string) bool {
+	return strings.HasPrefix(clientID, constApiKeyIDPrefix)
 }
 
 func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Request) error {

@@ -36,6 +36,19 @@ func (r *loginEventRepository) GetByID(ctx context.Context, id string) (*models.
 	return &loginEvent, nil
 }
 
+// GetByLoginChallenge retrieves a login event by the Hydra login challenge ID
+func (r *loginEventRepository) GetByLoginChallenge(ctx context.Context, loginChallengeID string) (*models.LoginEvent, error) {
+	var loginEvent models.LoginEvent
+	err := r.Pool().DB(ctx, true).First(&loginEvent, "login_challenge_id = ?", loginChallengeID).Error
+	if err != nil {
+		if data.ErrorIsNoRows(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &loginEvent, nil
+}
+
 // Save creates or updates a login event record
 func (r *loginEventRepository) Save(ctx context.Context, loginEvent *models.LoginEvent) error {
 	// Create new record

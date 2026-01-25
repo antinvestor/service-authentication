@@ -30,6 +30,8 @@ type APIKeyRepository interface {
 // LoginEventRepository handles database operations for LoginEvent entities
 type LoginEventRepository interface {
 	datastore.BaseRepository[*models.LoginEvent]
+	// GetByLoginChallenge retrieves a login event by the Hydra login challenge ID
+	GetByLoginChallenge(ctx context.Context, loginChallengeID string) (*models.LoginEvent, error)
 }
 
 // SessionRepository handles database operations for Session entities

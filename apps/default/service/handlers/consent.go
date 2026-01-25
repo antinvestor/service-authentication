@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -57,49 +58,114 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return fmt.Errorf("failed to get consent request: %w", err)
 	}
 
-	subjectID := getConseReq.GetSubject()
-	log = log.WithField("subject_id", subjectID)
+	var tokenMap map[string]any
 
-	// Step 4: Process device session
-	deviceObj, err := h.processDeviceSession(ctx, subjectID)
-	if err != nil {
-		if deviceObj == nil {
-			log.WithError(err).Error("device session processing failed")
-			return fmt.Errorf("failed to process device session: %w", err)
-		}
-		log.WithError(err).Warn("device session processing had non-fatal error")
-	}
-
-	if err = h.storeDeviceID(ctx, rw, deviceObj); err != nil {
-		log.WithError(err).Debug("failed to store device ID cookie")
-		// Continue - device cookie is not critical for consent
-	}
-
-	// Step 5: Get partition info for token claims
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
+	subjectID := getConseReq.GetSubject()
 
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
-	if err != nil {
-		log.WithError(err).WithField("client_id", clientID).Error("partition lookup failed")
-		return fmt.Errorf("failed to get partition: %w", err)
-	}
+	log = log.WithField("subject_id", subjectID)
 
-	partitionObj := partitionResp.Msg.GetData()
-	if partitionObj == nil {
-		log.WithField("client_id", clientID).Error("partition not found")
-		return fmt.Errorf("partition not found for client: %s", clientID)
-	}
+	if isInternalSystemScoped(getConseReq.GetRequestedScope()) {
 
-	// Step 6: Build token claims
-	tokenMap := map[string]any{
-		"tenant_id":       partitionObj.GetTenantId(),
-		"partition_id":    partitionObj.GetId(),
-		"roles":           []string{"user"},
-		"device_id":       deviceObj.GetId(),
-		"login_id":        deviceObj.GetSessionId(),
-		"profile_id":      subjectID,
-		"profile_contact": subjectID,
+		partitionResp, partitionErr := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
+		if partitionErr != nil {
+			log.WithError(partitionErr).WithField("client_id", clientID).Error("partition lookup failed")
+			return fmt.Errorf("failed to get partition: %w", partitionErr)
+		}
+
+		partitionObj := partitionResp.Msg.GetData()
+		if partitionObj == nil {
+			log.WithField("client_id", clientID).Error("partition not found")
+			return fmt.Errorf("partition not found for client: %s", clientID)
+		}
+
+		tokenMap = map[string]any{
+			"tenant_id":    partitionObj.GetTenantId(),
+			"partition_id": partitionObj.GetId(),
+			"roles":        []string{"system_internal"},
+			"profile_id":   subjectID,
+		}
+
+	} else if isClientIDApiKey(clientID) {
+
+		// Check if this is an API key client
+		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)
+		if err0 != nil {
+			util.Log(ctx).WithError(err0).Error("could not find api key")
+			return err0
+		}
+
+		// This is an API key client - handle as external service
+		roles := []string{"system_external"}
+
+		if apiKeyModel.Scope != "" {
+			var scopeList []string
+			err0 = json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList)
+			if err0 == nil {
+				roles = append(roles, scopeList...)
+			}
+		}
+
+		tokenMap = map[string]any{
+			"tenant_id":    apiKeyModel.TenantID,
+			"partition_id": apiKeyModel.PartitionID,
+			"roles":        roles,
+		}
+
+	} else {
+
+		// Step 4: Process device session
+		deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID)
+		if deviceErr != nil {
+			if deviceObj == nil {
+				log.WithError(deviceErr).Error("device session processing failed")
+				return fmt.Errorf("failed to process device session: %w", deviceErr)
+			}
+			log.WithError(deviceErr).Warn("device session processing had non-fatal error")
+		}
+
+		if deviceErr = h.storeDeviceID(ctx, rw, deviceObj); deviceErr != nil {
+			log.WithError(deviceErr).Debug("failed to store device ID cookie")
+			// Continue - device cookie is not critical for consent
+		}
+
+		// Step 5: Get login event for token claims (contains tenant/partition info from login phase)
+		loginContext, ok := getConseReq.GetContext().(map[string]any)
+		if ok {
+
+			loginEventID, iOk := loginContext["login_event_id"]
+			if iOk {
+
+				loginEventIDStr, liOk := loginEventID.(string)
+
+				if liOk {
+					loginEvent, loginEvtErr := h.loginEventRepo.GetByID(ctx, loginEventIDStr)
+					if loginEvtErr != nil {
+						log.WithError(loginEvtErr).WithField("login_event_id", loginEventID).Error("login event lookup failed")
+						return fmt.Errorf("failed to get login event: %w", loginEvtErr)
+					}
+
+					// Step 6: Build token claims from login event (already enriched with tenant/partition during login)
+					tokenMap = map[string]any{
+						"tenant_id":    loginEvent.GetTenantID(),
+						"partition_id": loginEvent.GetPartitionID(),
+						"access_id":    loginEvent.GetAccessID(),
+						"contact_id":   loginEvent.GetContactID(),
+						"session_id":   loginEvent.GetID(),
+						"roles":        []string{"user"},
+						"device_id":    deviceObj.GetId(),
+						"profile_id":   subjectID,
+					}
+				} else {
+
+					util.Log(ctx).Info("We possibly are doing token refresh, explore how to fill it")
+
+				}
+			}
+
+		}
+
 	}
 
 	// Step 7: Accept consent and get redirect URL
@@ -121,9 +187,10 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	h.clearDeviceSessionID(rw)
 
 	log.WithFields(map[string]any{
-		"partition_id": partitionObj.GetId(),
-		"tenant_id":    partitionObj.GetTenantId(),
-		"device_id":    deviceObj.GetId(),
+		"partition_id": tokenMap["partition_id"],
+		"tenant_id":    tokenMap["tenant_id"],
+		"session_id":   tokenMap["session_id"],
+		"device_id":    tokenMap["device_id"],
 		"duration_ms":  time.Since(start).Milliseconds(),
 	}).Info("consent granted successfully")
 

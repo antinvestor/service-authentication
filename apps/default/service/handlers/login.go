@@ -162,7 +162,9 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 			LoginChallenge: loginChallenge,
 			SubjectID:      subjectID,
 		}
-		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, "session_refresh")
+
+		var loginCtx map[string]any
+		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, loginCtx, "session_refresh")
 		if acceptErr != nil {
 			log.WithError(acceptErr).Error("failed to accept login request for session skip")
 			return fmt.Errorf("failed to accept login request: %w", acceptErr)

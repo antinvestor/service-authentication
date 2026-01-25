@@ -324,7 +324,11 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 		RememberDuration: h.config.SessionRememberDuration,
 	}
 
-	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, "contact_verification")
+	loginContext := map[string]any{
+		"login_event_id": loginEvent.GetID(),
+	}
+
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, "contact_verification")
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login completion failed. Please try again.")

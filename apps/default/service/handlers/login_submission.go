@@ -77,15 +77,20 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	// Step 5: Complete OAuth2 login flow
 	params := &hydra.AcceptLoginRequestParams{
-		LoginChallenge:   loginEvent.LoginChallengeID,
-		SubjectID:        profileObj.GetId(),
-		SessionID:        loginEvent.ID,
+		LoginChallenge: loginEvent.LoginChallengeID,
+		SubjectID:      profileObj.GetId(),
+		SessionID:      loginEvent.ID,
+
 		ExtendSession:    true,
 		Remember:         true,
 		RememberDuration: h.config.SessionRememberDuration,
 	}
 
-	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, "2_factor", loginEvent.ContactID)
+	loginContext := map[string]any{
+		"login_event_id": loginEvent.GetID(),
+	}
+
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, "2_factor", loginEvent.ContactID)
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed")
 		return err
