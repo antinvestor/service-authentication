@@ -37,6 +37,20 @@
 }
 
 /* ==========================================================================
+   Section Labels
+   ========================================================================== */
+
+.section-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--pico-muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+/* ==========================================================================
    Social Login
    ========================================================================== */
 
@@ -270,28 +284,62 @@
     text-transform: none;
 }
 
-.verification-footer {
+/* Verification help section - compact inline layout */
+.verification-help {
     text-align: center;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--pico-muted-border-color, #e9ecef);
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
 }
 
-.verification-footer p {
-    font-size: 0.9rem;
-    color: var(--pico-muted-color);
-    margin-bottom: 0.5rem;
+.verification-help .help-text {
+    margin-right: 0.25rem;
+}
+
+.resend-link {
+    background: none;
+    border: none;
+    color: var(--auth-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.resend-link:hover {
+    color: var(--auth-primary-hover);
 }
 
 .resend-timer {
-    text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--pico-muted-color);
-    margin-top: 1rem;
+    margin-left: 0.25rem;
 }
 
 .resend-timer strong {
     color: var(--auth-primary);
+    font-weight: 600;
+}
+
+/* Alternative action link */
+.verification-alt {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--pico-muted-border-color, #e9ecef);
+}
+
+.alt-link {
+    font-size: 0.85rem;
+    color: var(--pico-muted-color);
+    text-decoration: none;
+}
+
+.alt-link:hover {
+    color: var(--pico-color);
+    text-decoration: underline;
 }
 
 /* ==========================================================================

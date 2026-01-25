@@ -19,6 +19,8 @@
 <!-- Social Login Options -->
 {{if or .enableGoogleLogin .enableFacebookLogin}}
 <div class="social-login-section">
+    <p class="section-label">Quick sign in</p>
+
     {{if .enableGoogleLogin}}
     <form method="post" action="/s/social/login/{{.loginEventId}}/google" class="social-login-form">
         <button type="submit" class="btn-social btn-google" aria-label="Continue with Google">
@@ -46,7 +48,7 @@
 
     {{if .enableContactLogin}}
     <div class="divider" role="separator">
-        <span>or</span>
+        <span>or use email / phone</span>
     </div>
     {{end}}
 </div>
@@ -55,6 +57,10 @@
 <!-- Contact Form Login -->
 {{if .enableContactLogin}}
 <div class="contact-login-section">
+    {{if not (or .enableGoogleLogin .enableFacebookLogin)}}
+    <p class="section-label">Sign in with your contact</p>
+    {{end}}
+
     <form method="post" action="/s/verify/contact/{{.loginEventId}}/post" class="contact-login-form" id="contactLoginForm">
         <div class="form-group">
             <label for="contact">

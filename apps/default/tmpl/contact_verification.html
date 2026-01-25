@@ -72,22 +72,18 @@
         </div>
     </form>
 
-    <div class="verification-footer">
-        <p>
-            Didn't receive the code?
-            <button type="button" id="resendBtn" class="btn-link" onclick="resendCode()">
-                Resend code
-            </button>
-        </p>
-        <p class="mt-3">
-            <a href="/s/login?login_challenge={{ .login_challenge }}" class="btn-link-secondary">
-                Use a different contact
-            </a>
-        </p>
+    <div class="verification-help">
+        <span class="help-text">Didn't receive the code?</span>
+        <button type="button" id="resendBtn" class="resend-link" onclick="resendCode()">Resend</button>
+        <span id="resendTimer" class="resend-timer" style="display: none;">
+            (wait <strong id="countdown">60</strong>s)
+        </span>
     </div>
 
-    <div id="resendTimer" class="resend-timer" style="display: none;">
-        <span>You can resend the code in <strong id="countdown">60</strong> seconds</span>
+    <div class="verification-alt">
+        <a href="/s/login?login_challenge={{ .login_challenge }}" class="alt-link">
+            Use a different contact
+        </a>
     </div>
 </div>
 {{end}}
