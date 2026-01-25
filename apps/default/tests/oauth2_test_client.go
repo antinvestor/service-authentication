@@ -160,8 +160,8 @@ func generateCodeChallenge(verifier string) string {
 // InitiateLoginFlow starts an OAuth2 authorization code flow and returns the login challenge
 func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2Client) (string, error) {
 	// Build authorization URL
-	state := util.RandomString(16)
-	nonce := util.RandomString(16)
+	state := util.RandomAlphaNumericString(16)
+	nonce := util.RandomAlphaNumericString(16)
 
 	// Generate PKCE code verifier and challenge
 	codeVerifier := generateCodeVerifier()
