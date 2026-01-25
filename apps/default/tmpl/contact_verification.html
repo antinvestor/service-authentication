@@ -1,36 +1,14 @@
-{{ define "title"}}Verify Your Identity{{ end }}
+{{ define "title"}}Verify Your Contact{{ end }}
 
 {{ define "subtitle" }}
 <p>We've sent a verification code to your contact</p>
 {{ end }}
 
 {{define "content"}}
-<div class="verification-container" role="form" aria-label="Verification form">
-
-    <!-- Progress indicator -->
-    <div class="progress-steps" aria-hidden="true">
-        <div class="step completed">
-            <div class="step-icon">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M13.854 3.646a.5.5 0 010 .708l-7 7a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 11.708-.708L6.5 10.293l6.646-6.647a.5.5 0 01.708 0z"/>
-                </svg>
-            </div>
-            <span>Contact</span>
-        </div>
-        <div class="step-line"></div>
-        <div class="step active">
-            <div class="step-icon">2</div>
-            <span>Verify</span>
-        </div>
-        <div class="step-line"></div>
-        <div class="step">
-            <div class="step-icon">3</div>
-            <span>Done</span>
-        </div>
-    </div>
+<div class="verification-container">
 
     {{if .error}}
-    <div class="alert alert-error" role="alert" aria-live="polite">
+    <div class="alert alert-error" role="alert">
         <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
         </svg>
@@ -38,71 +16,61 @@
     </div>
     {{end}}
 
-    <div class="verification-card">
-        <div class="card-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
-                <path d="M22 7l-10 6L2 7"/>
-            </svg>
+    <form method="post" action="/s/login/post" class="verification-form" id="verificationForm">
+        <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
+        <input type="hidden" name="contact_type" value="{{ .contact_type }}">
+
+        <div class="form-group">
+            <label for="profile_name">
+                Full Name
+                <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+                type="text"
+                id="profile_name"
+                name="profile_name"
+                placeholder="Enter your full name"
+                value="{{ .profile_name }}"
+                required
+                autocomplete="name"
+                aria-required="true"
+            >
         </div>
 
-        <p class="card-description">
-            Check your email or phone for a 6-digit verification code and enter it below.
-        </p>
+        <div class="form-group">
+            <label for="verification_code">
+                Verification Code
+                <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+                type="text"
+                id="verification_code"
+                name="verification_code"
+                placeholder="Enter the 6-character code"
+                maxlength="6"
+                pattern="[a-zA-Z0-9]{6}"
+                required
+                autocomplete="one-time-code"
+                class="verification-input"
+                aria-describedby="code-help"
+                aria-required="true"
+            >
+            <small id="code-help" class="form-help">
+                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email for the verification code
+                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone for the verification code
+                {{else if eq .contact_type "EMAIL"}}Check your email for the verification code
+                {{else if eq .contact_type "PHONE"}}Check your phone for the verification code
+                {{else}}Check your email or phone for the verification code
+                {{end}}
+            </small>
+        </div>
 
-        <form method="post" action="/s/login/post" class="verification-form" id="verificationForm">
-            <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
-
-            <div class="form-group">
-                <label for="profile_name">
-                    Your Name
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <input
-                    type="text"
-                    id="profile_name"
-                    name="profile_name"
-                    placeholder="Enter your full name"
-                    value="{{ .profile_name }}"
-                    required
-                    autocomplete="name"
-                    aria-required="true"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="verification_code">
-                    Verification Code
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <div class="code-input-wrapper">
-                    <input
-                        type="text"
-                        id="verification_code"
-                        name="verification_code"
-                        placeholder="000000"
-                        maxlength="6"
-                        pattern="[0-9]{6}"
-                        inputmode="numeric"
-                        autocomplete="one-time-code"
-                        required
-                        class="verification-input"
-                        aria-describedby="code-help"
-                        aria-required="true"
-                    >
-                </div>
-                <small id="code-help" class="form-help">
-                    Enter the 6-digit code sent to your email or phone
-                </small>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-primary" id="verifyBtn">
-                    <span>Verify & Sign In</span>
-                </button>
-            </div>
-        </form>
-    </div>
+        <div class="form-actions">
+            <button type="submit" class="btn-primary" id="verifyBtn">
+                <span>Verify & Continue</span>
+            </button>
+        </div>
+    </form>
 
     <div class="verification-footer">
         <p>
@@ -113,15 +81,11 @@
         </p>
         <p class="mt-3">
             <a href="/s/login?login_challenge={{ .login_challenge }}" class="btn-link-secondary">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Use a different email or phone
+                Use a different contact
             </a>
         </p>
     </div>
 
-    <!-- Countdown timer for resend -->
     <div id="resendTimer" class="resend-timer" style="display: none;">
         <span>You can resend the code in <strong id="countdown">60</strong> seconds</span>
     </div>

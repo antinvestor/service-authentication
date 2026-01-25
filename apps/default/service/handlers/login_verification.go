@@ -38,11 +38,13 @@ func (h *AuthServer) ShowVerificationEndpoint(rw http.ResponseWriter, req *http.
 
 	loginEventID := req.PathValue(pathValueLoginEventID)
 	profileName := req.FormValue("profile_name")
+	contactType := req.FormValue("contact_type")
 	errorMsg := req.FormValue("error")
 
 	payload := initTemplatePayload(req.Context())
 	payload["login_event_id"] = loginEventID
 	payload["profile_name"] = profileName
+	payload["contact_type"] = contactType
 
 	if errorMsg != "" {
 		payload["error"] = errorMsg
@@ -89,7 +91,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	contact := req.FormValue("contact")
 	if contact == "" {
 		log.Warn("contact submission missing contact value")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Contact is required")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, "", "Contact is required")
 	}
 
 	log = log.WithField("contact_prefix", contact[:min(3, len(contact))]+"***")
@@ -98,6 +100,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 	// Step 4: Look up or create profile for contact
 	var existingProfile *profilev1.ProfileObject
 	var contactID string
+	var contactType profilev1.ContactType
 
 	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contact}))
 	if err != nil && !frame.ErrorIsNotFound(err) {
@@ -113,6 +116,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 			for _, profileContact := range existingProfile.GetContacts() {
 				if strings.EqualFold(contact, profileContact.GetDetail()) {
 					contactID = profileContact.GetId()
+					contactType = profileContact.GetType()
 					break
 				}
 			}
@@ -130,6 +134,7 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 			return nil
 		}
 		contactID = contactResp.Msg.GetData().GetId()
+		contactType = contactResp.Msg.GetData().GetType()
 		log.WithField("contact_id", contactID).Debug("new contact created")
 	}
 
@@ -171,10 +176,11 @@ func (h *AuthServer) SubmitVerificationEndpoint(rw http.ResponseWriter, req *htt
 
 	log.WithFields(map[string]any{
 		"verification_id": verificationID,
+		"contact_type":    contactType.String(),
 		"duration_ms":     time.Since(start).Milliseconds(),
 	}).Info("verification code sent")
 
-	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, "")
+	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, contactType.String(), "")
 }
 
 func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {
@@ -214,16 +220,20 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 }
 
 // showVerificationPage displays the login form with an error message
-func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, errorMsg string) error {
+func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, contactType, errorMsg string) error {
 
 	verificationPage := fmt.Sprintf("/s/verify/contact/%s?login_event_id=%s", loginEventID, loginEventID)
 
 	if profileName != "" {
-		verificationPage = fmt.Sprintf("%s&profile_name=%s", verificationPage, profileName)
+		verificationPage = fmt.Sprintf("%s&profile_name=%s", verificationPage, url.QueryEscape(profileName))
+	}
+
+	if contactType != "" {
+		verificationPage = fmt.Sprintf("%s&contact_type=%s", verificationPage, url.QueryEscape(contactType))
 	}
 
 	if errorMsg != "" {
-		verificationPage = fmt.Sprintf("%s&error=%s", verificationPage, errorMsg)
+		verificationPage = fmt.Sprintf("%s&error=%s", verificationPage, url.QueryEscape(errorMsg))
 	}
 
 	http.Redirect(rw, req, verificationPage, http.StatusSeeOther)
@@ -235,12 +245,13 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	ctx := req.Context()
 	start := time.Now()
 	log := util.Log(ctx).WithField("login_event_id", loginEventID)
+	contactType := req.FormValue("contact_type")
 
 	// Step 1: Get login event from database
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
 		log.WithError(err).Error("login event not found in database")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Session not found. Please start again.")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Session not found. Please start again.")
 	}
 
 	log = log.WithField("verification_id", loginEvent.VerificationID)
@@ -252,7 +263,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	}))
 	if err != nil {
 		log.WithError(err).Error("verification service call failed")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Verification failed. Please try again.")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Verification failed. Please try again.")
 	}
 
 	attempts := verifyResp.Msg.GetCheckAttempts()
@@ -266,12 +277,12 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 			"attempts":     attempts,
 			"max_attempts": maxAttempts,
 		}).Warn("verification attempts exceeded")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Too many failed attempts. Please request a new code.")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Too many failed attempts. Please request a new code.")
 	}
 
 	if !verifyResp.Msg.GetSuccess() {
 		log.WithField("attempts", attempts).Debug("verification code incorrect")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Invalid verification code")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Invalid verification code")
 	}
 
 	log.Debug("verification code validated successfully")
@@ -316,7 +327,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, "contact_verification")
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, "Login completion failed. Please try again.")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login completion failed. Please try again.")
 	}
 
 	log.WithFields(map[string]any{

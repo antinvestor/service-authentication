@@ -1,5 +1,5 @@
-/* Authentication Service Styles v1.1.0 */
-/* Modern, accessible styles for authentication flows */
+/* Authentication Service Styles v1.1.1 */
+/* Clean, accessible styles for authentication flows */
 
 /* ==========================================================================
    CSS Custom Properties
@@ -8,54 +8,40 @@
 :root {
     --auth-primary: #0066cc;
     --auth-primary-hover: #0052a3;
-    --auth-primary-light: rgba(0, 102, 204, 0.1);
     --auth-success: #10b981;
-    --auth-success-light: rgba(16, 185, 129, 0.1);
     --auth-error: #dc2626;
-    --auth-error-light: rgba(220, 38, 38, 0.1);
-    --auth-warning: #f59e0b;
-    --auth-warning-light: rgba(245, 158, 11, 0.1);
     --auth-radius: 0.5rem;
-    --auth-radius-lg: 0.75rem;
-    --auth-transition: all 0.2s ease;
-    --auth-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --auth-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.12);
+    --auth-max-width: 400px;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --auth-primary: #3b82f6;
         --auth-primary-hover: #2563eb;
-        --auth-primary-light: rgba(59, 130, 246, 0.15);
-        --auth-success-light: rgba(16, 185, 129, 0.15);
-        --auth-error-light: rgba(220, 38, 38, 0.15);
-        --auth-warning-light: rgba(245, 158, 11, 0.15);
     }
 }
 
 /* ==========================================================================
-   Login Container
+   Layout Containers
    ========================================================================== */
 
-.login-container {
+.login-container,
+.verification-container,
+.error-container,
+.not-found-container {
     width: 100%;
-    max-width: 400px;
+    max-width: var(--auth-max-width);
     margin: 0 auto;
+    padding: 0 1rem;
+    box-sizing: border-box;
 }
 
 /* ==========================================================================
-   Social Login Components
+   Social Login
    ========================================================================== */
 
 .social-login-section {
     margin-bottom: 1.5rem;
-}
-
-.social-heading {
-    text-align: center;
-    font-size: 0.9rem;
-    color: var(--pico-muted-color);
-    margin-bottom: 1rem;
 }
 
 .social-login-form {
@@ -76,25 +62,10 @@
     justify-content: center;
     gap: 0.75rem;
     cursor: pointer;
-    transition: var(--auth-transition);
-    min-height: 48px;
+    transition: all 0.2s ease;
 }
 
 .btn-social:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--auth-shadow);
-}
-
-.btn-social:focus {
-    outline: 2px solid var(--auth-primary);
-    outline-offset: 2px;
-}
-
-.btn-social:active {
-    transform: translateY(0);
-}
-
-.btn-google:hover {
     background: var(--pico-card-background-color, #f8f9fa);
     border-color: var(--pico-color);
 }
@@ -120,7 +91,7 @@
 
 .divider {
     text-align: center;
-    margin: 1.75rem 0;
+    margin: 1.5rem 0;
     position: relative;
 }
 
@@ -144,25 +115,6 @@
 }
 
 /* ==========================================================================
-   Contact Login Section
-   ========================================================================== */
-
-.contact-login-section {
-    width: 100%;
-}
-
-.section-heading {
-    text-align: center;
-    font-size: 0.9rem;
-    color: var(--pico-muted-color);
-    margin-bottom: 1rem;
-}
-
-.contact-login-form {
-    width: 100%;
-}
-
-/* ==========================================================================
    Form Components
    ========================================================================== */
 
@@ -175,7 +127,6 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
     font-size: 0.9rem;
-    color: var(--pico-color);
 }
 
 .required-indicator {
@@ -185,33 +136,17 @@
 
 .form-group input {
     width: 100%;
-    padding: 0.875rem 1rem;
-    border: 2px solid var(--pico-muted-border-color, #ddd);
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--pico-muted-border-color, #ddd);
     border-radius: var(--auth-radius);
     font-size: 1rem;
-    transition: var(--auth-transition);
-    background: var(--pico-card-background-color, white);
-    color: var(--pico-color);
-    min-height: 48px;
-}
-
-.form-group input::placeholder {
-    color: var(--pico-muted-color);
-    opacity: 0.7;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--auth-primary);
-    box-shadow: 0 0 0 3px var(--auth-primary-light);
-}
-
-.form-group input:invalid:not(:placeholder-shown) {
-    border-color: var(--auth-error);
-}
-
-.form-group input:invalid:not(:placeholder-shown):focus {
-    box-shadow: 0 0 0 3px var(--auth-error-light);
 }
 
 .form-help {
@@ -227,10 +162,15 @@
 
 .form-actions {
     margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .btn-primary {
-    width: 100%;
+    flex: 1;
+    max-width: 200px;
     padding: 0.875rem 1.5rem;
     background: var(--auth-primary);
     color: white;
@@ -239,48 +179,57 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--auth-transition);
-    min-height: 48px;
+    transition: background 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    text-decoration: none;
 }
 
 .btn-primary:hover {
     background: var(--auth-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--auth-shadow);
-}
-
-.btn-primary:focus {
-    outline: 2px solid var(--auth-primary);
-    outline-offset: 2px;
-}
-
-.btn-primary:active {
-    transform: translateY(0);
 }
 
 .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
 }
 
-.btn-arrow {
-    transition: transform 0.2s ease;
+.btn-secondary {
+    flex: 1;
+    max-width: 200px;
+    padding: 0.875rem 1.5rem;
+    background: transparent;
+    color: var(--pico-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--auth-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn-primary:hover .btn-arrow {
-    transform: translateX(2px);
+.btn-secondary:hover {
+    background: var(--pico-card-background-color);
+}
+
+/* Full width button variant for login/verify forms */
+.contact-login-form .btn-primary,
+.verification-form .btn-primary {
+    flex: none;
+    width: 100%;
+    max-width: none;
 }
 
 .btn-link {
     background: none;
     border: none;
     color: var(--auth-primary);
-    font-size: inherit;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -295,9 +244,6 @@
     color: var(--pico-muted-color);
     text-decoration: none;
     font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
 }
 
 .btn-link-secondary:hover {
@@ -305,119 +251,25 @@
 }
 
 /* ==========================================================================
-   Verification Components
+   Verification Input
    ========================================================================== */
-
-.verification-container {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-/* Progress Steps */
-.progress-steps {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 2rem;
-    gap: 0.5rem;
-}
-
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.step-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    font-weight: 600;
-    background: var(--pico-muted-border-color, #e9ecef);
-    color: var(--pico-muted-color);
-    transition: var(--auth-transition);
-}
-
-.step span {
-    font-size: 0.75rem;
-    color: var(--pico-muted-color);
-}
-
-.step.active .step-icon {
-    background: var(--auth-primary);
-    color: white;
-}
-
-.step.active span {
-    color: var(--auth-primary);
-    font-weight: 500;
-}
-
-.step.completed .step-icon {
-    background: var(--auth-success);
-    color: white;
-}
-
-.step.completed span {
-    color: var(--auth-success);
-}
-
-.step-line {
-    width: 40px;
-    height: 2px;
-    background: var(--pico-muted-border-color, #e9ecef);
-    margin-bottom: 1.5rem;
-}
-
-/* Verification Card */
-.verification-card {
-    background: var(--pico-card-background-color, white);
-    border: 1px solid var(--pico-muted-border-color, #e9ecef);
-    border-radius: var(--auth-radius-lg);
-    padding: 2rem;
-    box-shadow: var(--auth-shadow);
-}
-
-.card-icon {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: var(--auth-primary);
-}
-
-.card-description {
-    text-align: center;
-    color: var(--pico-muted-color);
-    font-size: 0.95rem;
-    line-height: 1.5;
-    margin-bottom: 1.5rem;
-}
-
-/* Verification Code Input */
-.code-input-wrapper {
-    position: relative;
-}
 
 .verification-input {
     text-align: center;
     font-size: 1.5rem !important;
     font-weight: 600;
-    letter-spacing: 0.5em;
+    letter-spacing: 0.4em;
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    padding: 1rem !important;
+    text-transform: uppercase;
 }
 
 .verification-input::placeholder {
-    letter-spacing: 0.3em;
+    letter-spacing: 0.2em;
     font-weight: 400;
-    opacity: 0.4;
+    opacity: 0.5;
+    text-transform: none;
 }
 
-/* Verification Footer */
 .verification-footer {
     text-align: center;
     margin-top: 1.5rem;
@@ -429,10 +281,6 @@
     font-size: 0.9rem;
     color: var(--pico-muted-color);
     margin-bottom: 0.5rem;
-}
-
-.verification-footer p:last-child {
-    margin-bottom: 0;
 }
 
 .resend-timer {
@@ -451,7 +299,7 @@
    ========================================================================== */
 
 .alert {
-    padding: 1rem 1.25rem;
+    padding: 1rem;
     margin-bottom: 1.5rem;
     border-radius: var(--auth-radius);
     font-size: 0.9rem;
@@ -467,27 +315,77 @@
 }
 
 .alert-error {
-    background: var(--auth-error-light);
+    background: rgba(220, 38, 38, 0.1);
     border: 1px solid rgba(220, 38, 38, 0.3);
     color: var(--auth-error);
 }
 
 .alert-success {
-    background: var(--auth-success-light);
+    background: rgba(16, 185, 129, 0.1);
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: var(--auth-success);
 }
 
 .alert-info {
-    background: var(--auth-primary-light);
+    background: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.3);
     color: var(--auth-primary);
 }
 
-.alert-warning {
-    background: var(--auth-warning-light);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: var(--auth-warning);
+/* ==========================================================================
+   Error Page
+   ========================================================================== */
+
+.error-container {
+    text-align: center;
+}
+
+.error-details {
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--auth-radius);
+    text-align: left;
+    margin: 1.5rem 0;
+}
+
+.error-details summary {
+    padding: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.error-details-content {
+    padding: 0 1rem 1rem;
+    font-size: 0.9rem;
+    color: var(--pico-muted-color);
+}
+
+.error-details-content p {
+    margin: 0.5rem 0;
+    word-break: break-word;
+}
+
+/* ==========================================================================
+   Not Found Page
+   ========================================================================== */
+
+.not-found-container {
+    text-align: center;
+}
+
+.not-found-code {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--pico-muted-color);
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+.not-found-message {
+    color: var(--pico-muted-color);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
 }
 
 /* ==========================================================================
@@ -497,22 +395,25 @@
 .btn-loading {
     position: relative;
     pointer-events: none;
-    color: transparent !important;
 }
 
 .btn-loading::after {
     content: '';
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     top: 50%;
     left: 50%;
-    margin-left: -10px;
-    margin-top: -10px;
+    margin-left: -9px;
+    margin-top: -9px;
     border: 2px solid transparent;
     border-top-color: white;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
+}
+
+.btn-loading span {
+    visibility: hidden;
 }
 
 @keyframes spin {
@@ -521,53 +422,28 @@
     }
 }
 
-/* Input loading state */
-.input-loading {
-    background-image: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
-}
-
 /* ==========================================================================
-   Focus Visible
+   Utility Classes
    ========================================================================== */
 
-:focus-visible {
-    outline: 2px solid var(--auth-primary);
-    outline-offset: 2px;
+.mt-3 {
+    margin-top: 1.5rem;
+}
+
+.text-center {
+    text-align: center;
 }
 
 /* ==========================================================================
-   Responsive Design
+   Responsive
    ========================================================================== */
 
 @media (max-width: 480px) {
     .login-container,
-    .verification-container {
-        padding: 0 0.5rem;
-    }
-
-    .btn-social {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
-    }
-
-    .verification-card {
-        padding: 1.5rem;
+    .verification-container,
+    .error-container,
+    .not-found-container {
+        padding: 0 0.75rem;
     }
 
     .verification-input {
@@ -575,30 +451,19 @@
         letter-spacing: 0.3em;
     }
 
-    .progress-steps {
-        gap: 0.25rem;
+    .not-found-code {
+        font-size: 3rem;
     }
 
-    .step-icon {
-        width: 28px;
-        height: 28px;
-        font-size: 0.75rem;
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
     }
 
-    .step span {
-        font-size: 0.65rem;
-    }
-
-    .step-line {
-        width: 24px;
-    }
-}
-
-@media (min-width: 768px) {
-    .btn-social:hover,
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--auth-shadow-hover);
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        max-width: none;
     }
 }
 
@@ -614,51 +479,15 @@
 
     .btn-google:hover {
         background: #334155;
-        border-color: var(--pico-color);
-    }
-
-    .verification-card {
-        background: var(--pico-card-background-color, #1e293b);
-        border-color: var(--pico-muted-border-color, #334155);
-    }
-
-    .form-group input {
-        background: var(--pico-card-background-color, #1e293b);
-        border-color: var(--pico-muted-border-color, #334155);
     }
 
     .divider span {
         background: var(--pico-background-color, #0f172a);
     }
 
-    .divider::before {
-        background: var(--pico-muted-border-color, #334155);
-    }
-
-    .step-line {
-        background: var(--pico-muted-border-color, #334155);
-    }
-
-    .step-icon {
-        background: var(--pico-muted-border-color, #334155);
-    }
-}
-
-/* ==========================================================================
-   Print Styles
-   ========================================================================== */
-
-@media print {
-    .login-container,
-    .verification-container {
-        max-width: 100%;
-    }
-
-    .btn-social,
-    .btn-primary {
-        border: 1px solid #000 !important;
-        background: #fff !important;
-        color: #000 !important;
+    .error-details {
+        background: var(--pico-card-background-color, #1e293b);
+        border-color: var(--pico-muted-border-color, #334155);
     }
 }
 
@@ -671,7 +500,6 @@
     *::before,
     *::after {
         animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
 }

@@ -7,36 +7,10 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{{ template "title" .}} | Authentication</title>
 
-    <!-- Pico CSS with SRI -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-          integrity="sha384-AZv0X6vIxLjdgqXcASzR6rSPPwjzF0mJh9cExJXKbzLlMhwOr1NVrFk3fFQeTKBU"
-          crossorigin="anonymous">
-    <link rel="stylesheet" href="/static/css/auth.css?v=1.1.0">
-
-    <!-- Preconnect for performance -->
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/auth.css?v=1.1.1">
 
     <style>
-        /* Core layout */
-        :root {
-            --auth-max-width: 420px;
-            --auth-spacing: 1.5rem;
-            --auth-radius: 0.75rem;
-            --auth-primary: #0066cc;
-            --auth-primary-hover: #0052a3;
-            --auth-success: #10b981;
-            --auth-error: #dc2626;
-            --auth-warning: #f59e0b;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --auth-primary: #3b82f6;
-                --auth-primary-hover: #2563eb;
-            }
-        }
-
         body {
             min-height: 100vh;
             display: flex;
@@ -48,12 +22,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: var(--auth-spacing);
+            padding: 1.5rem;
         }
 
         .auth-container {
             width: 100%;
-            max-width: var(--auth-max-width);
+            max-width: 420px;
         }
 
         .auth-header {
@@ -74,103 +48,6 @@
             margin: 0;
         }
 
-        /* Message alerts */
-        .alert {
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.5rem;
-            border-radius: var(--auth-radius);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-        }
-
-        .alert-icon {
-            flex-shrink: 0;
-            width: 20px;
-            height: 20px;
-        }
-
-        .alert-error {
-            background: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            color: var(--auth-error);
-        }
-
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--auth-success);
-        }
-
-        .alert-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: var(--auth-primary);
-        }
-
-        /* Form improvements */
-        .form-actions {
-            margin-top: 1.5rem;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-muted {
-            color: var(--pico-muted-color);
-        }
-
-        .mt-3 { margin-top: 1.5rem; }
-        .mb-3 { margin-bottom: 1.5rem; }
-
-        /* Loading state */
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-        }
-
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-left: -8px;
-            margin-top: -8px;
-            border: 2px solid transparent;
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        .btn-loading span {
-            visibility: hidden;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Skip link for accessibility */
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: var(--auth-primary);
-            color: white;
-            padding: 8px 16px;
-            z-index: 100;
-            text-decoration: none;
-        }
-
-        .skip-link:focus {
-            top: 0;
-        }
-
-        /* Footer */
         .auth-footer {
             text-align: center;
             padding: 1rem;
@@ -180,6 +57,21 @@
 
         .auth-footer a {
             color: var(--pico-muted-color);
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--pico-primary);
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            top: 0;
         }
     </style>
 </head>
@@ -200,7 +92,7 @@
         <p>Need help? <a href="mailto:support@antinvestor.com">Contact Support</a></p>
     </footer>
 
-    <script src="/static/js/auth.js?v=1.1.0"></script>
+    <script src="/static/js/auth.js?v=1.1.1"></script>
 </body>
 </html>
 

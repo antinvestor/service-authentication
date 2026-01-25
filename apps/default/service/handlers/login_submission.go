@@ -39,6 +39,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	profileName := req.PostForm.Get("profile_name")
 	verificationCode := req.PostForm.Get("verification_code")
 	loginEventID := req.PostForm.Get("login_event_id")
+	contactType := req.PostForm.Get("contact_type")
 
 	if loginEventID == "" {
 		log.Warn("login submission missing login_event_id")
@@ -64,7 +65,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
 		log.WithError(err).Debug("login verification failed")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, err.Error())
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
 	}
 
 	// Step 4: Update profile name if provided

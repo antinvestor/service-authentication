@@ -131,11 +131,11 @@
     }
 
     /**
-     * Validate verification code
+     * Validate verification code (alphanumeric, 6 characters)
      */
     function validateVerificationCode(code) {
         const cleaned = code.replace(/\s/g, '');
-        const re = /^\d{6}$/;
+        const re = /^[a-zA-Z0-9]{6}$/;
         return re.test(cleaned);
     }
 
@@ -210,15 +210,15 @@
         const submitBtn = form.querySelector('button[type="submit"]');
 
         if (codeInput) {
-            // Only allow numeric input
+            // Allow alphanumeric input, convert to uppercase for consistency
             codeInput.addEventListener('input', function(e) {
-                // Remove any non-numeric characters
-                this.value = this.value.replace(/[^0-9]/g, '');
+                // Remove any non-alphanumeric characters and convert to uppercase
+                this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
                 // Clear any previous error when user types
                 clearFieldError(this);
 
-                // Auto-submit when 6 digits are entered and name is filled
+                // Auto-submit when 6 characters are entered and name is filled
                 if (this.value.length === CONFIG.VERIFICATION_CODE_LENGTH) {
                     if (nameInput && nameInput.value.trim()) {
                         // Visual feedback before auto-submit
@@ -236,20 +236,20 @@
                 }
             });
 
-            // Paste handling
+            // Paste handling - allow alphanumeric characters
             codeInput.addEventListener('paste', function(e) {
                 e.preventDefault();
                 const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                const numbers = pastedText.replace(/[^0-9]/g, '').slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
-                this.value = numbers;
+                const cleaned = pastedText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
+                this.value = cleaned;
 
                 // Trigger input event for auto-submit check
                 this.dispatchEvent(new Event('input'));
             });
 
-            // Prevent non-numeric key presses
+            // Allow alphanumeric key presses
             codeInput.addEventListener('keypress', function(e) {
-                if (!/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+                if (!/[a-zA-Z0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                 }
             });
@@ -270,7 +270,7 @@
             // Validate code
             if (codeInput && !validateVerificationCode(codeInput.value)) {
                 e.preventDefault();
-                showFieldError(codeInput, 'Please enter a valid 6-digit code');
+                showFieldError(codeInput, 'Please enter a valid 6-character code');
                 if (!hasError) {
                     codeInput.focus();
                 }

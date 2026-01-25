@@ -1,265 +1,35 @@
 {{ define "title"}}Error{{ end }}
 
-{{ define "subtitle" }}{{ end }}
+{{ define "subtitle" }}
+<p>Something went wrong</p>
+{{ end }}
 
 {{define "content"}}
-<div class="error-page">
-    <div class="error-illustration">
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden="true">
-            <!-- Background circle -->
-            <circle cx="60" cy="60" r="55" fill="currentColor" opacity="0.1"/>
-            <!-- Main icon -->
-            <circle cx="60" cy="60" r="40" stroke="currentColor" stroke-width="3" fill="none" opacity="0.6"/>
-            <path d="M45 45L75 75M75 45L45 75" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+<div class="error-container">
+    <div class="alert alert-error" role="alert">
+        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
         </svg>
+        <span>We encountered an unexpected error while processing your request.</span>
     </div>
 
-    <div class="error-content">
-        <h1 class="error-title">Something went wrong</h1>
-        <p class="error-message">
-            We encountered an unexpected error while processing your request.
-            Please try again or contact support if the problem persists.
-        </p>
-
-        {{if or .error .error_description .errorTitle .errorDescription}}
-        <details class="error-details">
-            <summary>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 3v6M8 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <span>Error Details</span>
-            </summary>
-            <div class="error-details-content">
-                {{if or .error .errorTitle}}
-                <div class="detail-row">
-                    <span class="detail-label">Error:</span>
-                    <span class="detail-value">{{ if .error }}{{ .error }}{{ else }}{{ .errorTitle }}{{ end }}</span>
-                </div>
-                {{end}}
-
-                {{if or .error_description .errorDescription}}
-                <div class="detail-row">
-                    <span class="detail-label">Details:</span>
-                    <span class="detail-value">{{ if .error_description }}{{ .error_description }}{{ else }}{{ .errorDescription }}{{ end }}</span>
-                </div>
-                {{end}}
-            </div>
-        </details>
-        {{end}}
-
-        <div class="error-actions">
-            <button onclick="history.back()" class="btn-secondary">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>Go Back</span>
-            </button>
-            <a href="/" class="btn-primary">
-                <span>Return Home</span>
-            </a>
+    {{if or .error .error_description .errorTitle .errorDescription}}
+    <details class="error-details">
+        <summary>View Error Details</summary>
+        <div class="error-details-content">
+            {{if or .error .errorTitle}}
+            <p><strong>Error:</strong> {{ if .error }}{{ .error }}{{ else }}{{ .errorTitle }}{{ end }}</p>
+            {{end}}
+            {{if or .error_description .errorDescription}}
+            <p><strong>Details:</strong> {{ if .error_description }}{{ .error_description }}{{ else }}{{ .errorDescription }}{{ end }}</p>
+            {{end}}
         </div>
-    </div>
+    </details>
+    {{end}}
 
-    <div class="error-help">
-        <p>
-            Need assistance?
-            <a href="mailto:support@antinvestor.com">Contact our support team</a>
-        </p>
+    <div class="form-actions">
+        <button onclick="history.back()" class="btn-secondary">Go Back</button>
+        <a href="/" class="btn-primary">Return Home</a>
     </div>
 </div>
-
-<style>
-.error-page {
-    text-align: center;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
-
-.error-illustration {
-    color: var(--auth-error, #dc2626);
-    margin-bottom: 2rem;
-}
-
-.error-content {
-    margin-bottom: 2rem;
-}
-
-.error-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--pico-color);
-    margin-bottom: 0.75rem;
-}
-
-.error-message {
-    color: var(--pico-muted-color);
-    font-size: 1rem;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-}
-
-.error-details {
-    background: var(--pico-card-background-color, #f8f9fa);
-    border: 1px solid var(--pico-muted-border-color, #e9ecef);
-    border-radius: 0.5rem;
-    text-align: left;
-    margin-bottom: 2rem;
-}
-
-.error-details summary {
-    padding: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    color: var(--pico-color);
-    list-style: none;
-}
-
-.error-details summary::-webkit-details-marker {
-    display: none;
-}
-
-.error-details summary svg {
-    color: var(--auth-warning, #f59e0b);
-}
-
-.error-details[open] summary {
-    border-bottom: 1px solid var(--pico-muted-border-color, #e9ecef);
-}
-
-.error-details-content {
-    padding: 1rem;
-}
-
-.detail-row {
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-}
-
-.detail-row:last-child {
-    margin-bottom: 0;
-}
-
-.detail-label {
-    font-weight: 600;
-    color: var(--pico-color);
-    display: block;
-    margin-bottom: 0.25rem;
-}
-
-.detail-value {
-    color: var(--pico-muted-color);
-    word-break: break-word;
-}
-
-.error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.error-actions .btn-primary,
-.error-actions .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    min-width: 140px;
-}
-
-.error-actions .btn-primary {
-    background: var(--auth-primary, #0066cc);
-    color: white;
-    border: none;
-}
-
-.error-actions .btn-primary:hover {
-    background: var(--auth-primary-hover, #0052a3);
-    transform: translateY(-1px);
-}
-
-.error-actions .btn-secondary {
-    background: transparent;
-    color: var(--pico-color);
-    border: 1px solid var(--pico-muted-border-color, #e9ecef);
-}
-
-.error-actions .btn-secondary:hover {
-    background: var(--pico-card-background-color, #f8f9fa);
-    border-color: var(--pico-color);
-}
-
-.error-help {
-    padding-top: 2rem;
-    border-top: 1px solid var(--pico-muted-border-color, #e9ecef);
-}
-
-.error-help p {
-    font-size: 0.9rem;
-    color: var(--pico-muted-color);
-    margin: 0;
-}
-
-.error-help a {
-    color: var(--auth-primary, #0066cc);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.error-help a:hover {
-    text-decoration: underline;
-}
-
-@media (max-width: 480px) {
-    .error-title {
-        font-size: 1.5rem;
-    }
-
-    .error-actions {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .error-actions .btn-primary,
-    .error-actions .btn-secondary {
-        width: 100%;
-        max-width: 200px;
-    }
-
-    .error-illustration svg {
-        width: 100px;
-        height: 100px;
-    }
-}
-
-@media (prefers-color-scheme: dark) {
-    .error-details {
-        background: var(--pico-card-background-color, #1e293b);
-        border-color: var(--pico-muted-border-color, #334155);
-    }
-
-    .error-details[open] summary {
-        border-bottom-color: var(--pico-muted-border-color, #334155);
-    }
-
-    .error-actions .btn-secondary {
-        border-color: var(--pico-muted-border-color, #334155);
-    }
-
-    .error-actions .btn-secondary:hover {
-        background: var(--pico-card-background-color, #1e293b);
-    }
-}
-</style>
 {{end}}
