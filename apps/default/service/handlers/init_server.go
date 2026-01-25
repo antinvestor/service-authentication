@@ -314,7 +314,12 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		ctx = utils.SessionIDToContext(ctx, sessionID)
 		r = r.WithContext(ctx)
 
-		performDeviceLog(ctx, r, deviceID, sessionID)
+		// Perform device logging asynchronously to avoid blocking the request
+		go func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			performDeviceLog(bgCtx, r, deviceID, sessionID)
+		}()
 
 		// Continue to the next handler
 		next.ServeHTTP(w, r)

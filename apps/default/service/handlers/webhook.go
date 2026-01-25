@@ -65,6 +65,9 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
+	util.Log(ctx).Info("__________________________________________________________")
+	util.Log(ctx).Info(string(body))
+
 	var tokenObject map[string]any
 	err = json.Unmarshal(body, &tokenObject)
 	if err != nil {

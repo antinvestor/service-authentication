@@ -160,7 +160,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 	if deviceObj == nil {
 
 		resp, err0 := deviceCli.Create(ctx, connect.NewRequest(&devicev1.CreateRequest{
-			Name:       "Error dev",
+			Name:       "Web Browser",
 			Properties: props,
 		}))
 		if err0 != nil {

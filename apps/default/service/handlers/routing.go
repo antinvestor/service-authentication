@@ -36,9 +36,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	// Wrap file server with cache headers
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set cache headers for static assets
-		w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
-		w.Header().Set("Expires", "Thu, 31 Dec 2025 23:59:59 GMT")
+		// Set cache headers for static assets (Cache-Control is preferred over Expires)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable") // 1 year, immutable for versioned assets
 
 		// Set proper content types
 		if filepath.Ext(r.URL.Path) == ".css" {

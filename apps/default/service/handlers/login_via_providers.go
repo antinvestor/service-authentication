@@ -37,9 +37,12 @@ func (h *AuthServer) setupCookieSessions(_ context.Context, cfg *config.Authenti
 	sessionStore := sessions.NewCookieStore(hashKey, blockKey)
 	sessionStore.Options.Path = "/"
 	sessionStore.Options.HttpOnly = true
-	// Disable Secure flag to allow HTTP in test environments
-	// TODO: Make this configurable based on environment in production
-	sessionStore.Options.Secure = false
+	sessionStore.Options.SameSite = http.SameSiteLaxMode
+
+	// Enable Secure flag in production (when not in test environment)
+	// Test environments use HTTP, production should use HTTPS
+	isTestEnv := cfg.Name() == "authentication_tests"
+	sessionStore.Options.Secure = !isTestEnv
 
 	gothic.Store = sessionStore
 	h.loginCookieCodec = sessionStore.Codecs
