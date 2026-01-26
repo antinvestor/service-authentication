@@ -127,32 +127,20 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}
 	log.WithField("payload_keys", payloadKeys).Info("token enrichment webhook received")
 
-	response := tokenObject
-
-	// Ensure session object exists in the response
-	sessionData, ok := tokenObject["session"].(map[string]any)
-	if !ok {
-		// Initialise session if not present
-		sessionData = make(map[string]any)
-		response["session"] = sessionData
-		log.Warn("session object not present in webhook payload - initialising empty")
-	} else {
-		// Log session structure for debugging
+	// Log session structure for debugging
+	if sessionData, ok := tokenObject["session"].(map[string]any); ok {
 		sessionKeys := make([]string, 0, len(sessionData))
 		for k := range sessionData {
 			sessionKeys = append(sessionKeys, k)
 		}
 		log.WithField("session_keys", sessionKeys).Info("webhook session structure")
 
-		// Log access_token keys if present
 		if accessToken, ok := sessionData["access_token"].(map[string]any); ok {
 			atKeys := make([]string, 0, len(accessToken))
 			for k := range accessToken {
 				atKeys = append(atKeys, k)
 			}
 			log.WithField("access_token_keys", atKeys).Info("session.access_token keys")
-		} else {
-			log.Info("session.access_token not present or not a map")
 		}
 	}
 
@@ -193,12 +181,18 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 			"roles":        roles,
 		}
 
-		response["session"].(map[string]any)["access_token"] = tokenMap
-		response["session"].(map[string]any)["id_token"] = tokenMap
+		// Return only the session object per Hydra's expected webhook response format
+		// See: https://www.ory.com/docs/hydra/guides/claims-at-refresh
+		hookResponse := map[string]any{
+			"session": map[string]any{
+				"access_token": tokenMap,
+				"id_token":     tokenMap,
+			},
+		}
 
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
+		return json.NewEncoder(rw).Encode(hookResponse)
 	}
 
 	// Extract granted_scopes from multiple possible locations
@@ -208,23 +202,25 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		// Don't fail - just log and treat as regular user pass-through
 		log.Warn("granted_scopes not found - treating as regular user token refresh")
 	} else if isInternalSystemScoped(grantedScopes) {
-		roles := []string{"system_internal"}
-		// This is an internal system client
-		response["session"].(map[string]any)["access_token"] = map[string]any{"roles": roles}
-		response["session"].(map[string]any)["id_token"] = map[string]any{"roles": roles}
+		tokenMap := map[string]any{"roles": []string{"system_internal"}}
+
+		hookResponse := map[string]any{
+			"session": map[string]any{
+				"access_token": tokenMap,
+				"id_token":     tokenMap,
+			},
+		}
+
 		log.Info("enriched token with system_internal roles")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(response)
+		return json.NewEncoder(rw).Encode(hookResponse)
 	}
 
-	// Handle as regular user - session extras from consent should already be present
-	// The session.access_token and session.id_token contain the extras set at consent time
-	// We pass them through unchanged so Hydra includes them in the refreshed token
-	log.Info("passing through session for regular user token")
-
-	rw.Header().Set("Content-Type", "application/json")
-	rw.WriteHeader(http.StatusOK)
-	return json.NewEncoder(rw).Encode(response)
+	// Regular user: accept without changes so Hydra uses the consent session
+	// claims as-is. Returning 204 tells Hydra to keep existing session data.
+	log.Info("accepting token unchanged for regular user (using consent session claims)")
+	rw.WriteHeader(http.StatusNoContent)
+	return nil
 
 }
