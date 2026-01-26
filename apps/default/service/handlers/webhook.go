@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/util"
 )
 
@@ -54,19 +51,6 @@ func extractGrantedScopes(tokenObject map[string]any) []string {
 	}
 
 	return out
-}
-
-// GetOauth2ClientById obtains a client id
-func GetOauth2ClientById(ctx context.Context, cl client.Manager,
-	oauth2ServiceAdminHost string, clientID string) (int, []byte, error) {
-
-	oauth2AdminURI := fmt.Sprintf("%s%s/%s", oauth2ServiceAdminHost, "/admin/clients", clientID)
-
-	resultStatus, resultBody, err := cl.Invoke(ctx, http.MethodGet, oauth2AdminURI, nil, nil)
-	if err != nil {
-		return 0, nil, err
-	}
-	return resultStatus, resultBody, err
 }
 
 // extractClientID extracts client_id from multiple possible locations in the Hydra payload
@@ -211,7 +195,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 			},
 		}
 
-		log.Info("enriched token with system_internal roles")
+		log.Debug("enriched token with system_internal roles")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		return json.NewEncoder(rw).Encode(hookResponse)
@@ -219,7 +203,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	// Regular user: accept without changes so Hydra uses the consent session
 	// claims as-is. Returning 204 tells Hydra to keep existing session data.
-	log.Info("accepting token unchanged for regular user (using consent session claims)")
+	log.Debug("accepting token unchanged for regular user (using consent session claims)")
 	rw.WriteHeader(http.StatusNoContent)
 	return nil
 

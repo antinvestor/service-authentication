@@ -117,12 +117,14 @@ func SyncPartitionOnHydra(ctx context.Context, cfg config.ConfigurationOAUTH2, c
 	}
 
 	// Check if client exists and update HTTP method/URL accordingly
-	status, _, err := cli.Invoke(ctx, http.MethodGet, hydraIDURL, nil, nil)
+	resp, err := cli.Invoke(ctx, http.MethodGet, hydraIDURL, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	if status == http.StatusOK {
+	util.CloseAndLogOnError(ctx, resp)
+
+	if resp.StatusCode == http.StatusOK {
 		httpMethod = http.MethodPut
 		hydraURL = hydraIDURL
 	}
@@ -133,13 +135,21 @@ func SyncPartitionOnHydra(ctx context.Context, cfg config.ConfigurationOAUTH2, c
 	}
 
 	// Invoke the Hydra service
-	status, result, err := cli.Invoke(ctx, httpMethod, hydraURL, payload, nil)
+	resp, err = cli.Invoke(ctx, httpMethod, hydraURL, payload, nil)
 	if err != nil {
 		return err
 	}
 
-	if status < 200 || status > 299 {
-		return fmt.Errorf("invalid response status %d: %s", status, string(result))
+	defer util.CloseAndLogOnError(ctx, resp)
+
+	result, err := resp.ToContent(ctx)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+
+		return fmt.Errorf("invalid response status %d: %s", resp.StatusCode, string(result))
 	}
 
 	// Update partition with response data
@@ -147,8 +157,12 @@ func SyncPartitionOnHydra(ctx context.Context, cfg config.ConfigurationOAUTH2, c
 }
 
 func deletePartitionOnHydra(ctx context.Context, cli client.Manager, hydraIDURL string) error {
-	_, _, err := cli.Invoke(ctx, http.MethodDelete, hydraIDURL, nil, nil)
-	return err
+	resp, err := cli.Invoke(ctx, http.MethodDelete, hydraIDURL, nil, nil)
+	if err != nil {
+		return err
+	}
+	util.CloseAndLogOnError(ctx, resp)
+	return nil
 }
 
 func preparePayload(clientID string, partition *models.Partition) (map[string]any, error) {
