@@ -292,6 +292,11 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	resp, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: loginEvent.ContactID}))
 	if err == nil {
 		profileObj = resp.Msg.GetData()
+		// Contact may exist without an associated profile (new contact),
+		// in which case GetByContact returns a ProfileObject with an empty ID.
+		if profileObj != nil && profileObj.GetId() == "" {
+			profileObj = nil
+		}
 	} else if !frame.ErrorIsNotFound(err) {
 		log.WithError(err).Error("profile lookup failed")
 		return err
