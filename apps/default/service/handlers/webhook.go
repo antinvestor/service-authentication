@@ -149,7 +149,6 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	}
 
-
 	// Extract client_id from multiple possible locations
 	clientID := extractClientID(tokenObject)
 	if clientID == "" {

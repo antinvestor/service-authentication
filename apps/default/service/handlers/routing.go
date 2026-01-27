@@ -8,9 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pitabwire/util"
-
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
+	"github.com/pitabwire/util"
 )
 
 // SetupRouterV1 -
@@ -113,14 +112,14 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 				if !strings.HasPrefix(auth, bearerPrefix) {
 					log.Warn("webhook request rejected: missing or malformed Authorization header")
-					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					http.Error(w, "unauthorised", http.StatusUnauthorized)
 					return
 				}
 
 				providedToken := strings.TrimSpace(strings.TrimPrefix(auth, bearerPrefix))
 				if subtle.ConstantTimeCompare([]byte(providedToken), []byte(expectedToken)) != 1 {
 					log.Warn("webhook request rejected: invalid bearer token")
-					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					http.Error(w, "unauthorised", http.StatusUnauthorized)
 					return
 				}
 			}
