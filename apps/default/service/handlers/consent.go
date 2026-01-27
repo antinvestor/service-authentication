@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
@@ -196,11 +197,13 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		"duration_ms":  time.Since(start).Milliseconds(),
 	}).Info("consent granted successfully")
 
-	// For regular user flows, render an interstitial page that handles the redirect
-	// client-side. This allows mobile apps using deep links / custom schemes to
-	// intercept the navigation while giving the browser tab a proper "signed in"
-	// landing page instead of a blank or stale page.
-	if !isInternalSystemScoped(getConseReq.GetRequestedScope()) && !isClientIDApiKey(clientID) {
+	// For regular user flows from a browser, render an interstitial page that
+	// handles the redirect client-side. This allows mobile apps using deep links
+	// or custom schemes to intercept the navigation while giving the browser tab
+	// a proper "signed in" landing page instead of a blank or stale page.
+	// Programmatic clients (no Accept: text/html) get a standard HTTP redirect.
+	isBrowser := strings.Contains(req.Header.Get("Accept"), "text/html")
+	if isBrowser && !isInternalSystemScoped(getConseReq.GetRequestedScope()) && !isClientIDApiKey(clientID) {
 		payload := initTemplatePayload(ctx)
 		payload["RedirectURL"] = redirectURL
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
