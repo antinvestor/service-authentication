@@ -13,6 +13,7 @@ var (
 	notFoundTmpl      *template.Template
 	loginTmpl         *template.Template
 	verifyContactTmpl *template.Template
+	loginCompleteTmpl *template.Template
 	templateDir       string
 )
 
@@ -103,4 +104,5 @@ func init() {
 	notFoundTmpl = loadTemplate("not_found")
 	loginTmpl = loadTemplate("login")
 	verifyContactTmpl = loadTemplate("contact_verification")
+	loginCompleteTmpl = loadTemplate("login_complete")
 }

@@ -196,6 +196,17 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		"duration_ms":  time.Since(start).Milliseconds(),
 	}).Info("consent granted successfully")
 
+	// For regular user flows, render an interstitial page that handles the redirect
+	// client-side. This allows mobile apps using deep links / custom schemes to
+	// intercept the navigation while giving the browser tab a proper "signed in"
+	// landing page instead of a blank or stale page.
+	if !isInternalSystemScoped(getConseReq.GetRequestedScope()) && !isClientIDApiKey(clientID) {
+		payload := initTemplatePayload(ctx)
+		payload["RedirectURL"] = redirectURL
+		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+		return loginCompleteTmpl.Execute(rw, payload)
+	}
+
 	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil
 }
@@ -279,7 +290,7 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 		MaxAge:   473040000, // 15 years
 		Secure:   true,      // HTTPS-only
 		HttpOnly: true,      // No JavaScript access
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(473040000 * time.Second),
 	})
 
@@ -296,7 +307,7 @@ func (h *AuthServer) clearDeviceSessionID(w http.ResponseWriter) {
 		MaxAge:   -1, // Negative MaxAge means delete the cookie
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(-1 * time.Hour), // Set to past time
 	})
 }

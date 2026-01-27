@@ -1,5 +1,5 @@
 /**
- * Authentication Service JavaScript v1.3.0
+ * Authentication Service JavaScript v2.0.0
  * Enhanced client-side functionality for authentication forms
  * Features: Accessibility (WCAG 2.1 AA), Progressive Enhancement, Security
  */
@@ -674,7 +674,7 @@
         document.body.classList.add('js-enabled');
 
         // Log initialization (helpful for debugging)
-        console.log('Auth.js v1.3.0 initialized - Accessibility Enhanced');
+        console.log('Auth.js v2.0.0 initialized');
     }
 
     // Initialize when DOM is ready

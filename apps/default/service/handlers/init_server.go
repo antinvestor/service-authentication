@@ -302,7 +302,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 				MaxAge:   1800, // 1 hour for login session
 				Secure:   true, // HTTPS-only
 				HttpOnly: true, // No JavaScript access
-				SameSite: http.SameSiteStrictMode,
+				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(30 * time.Minute),
 			})
 		}

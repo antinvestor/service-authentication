@@ -1,0 +1,55 @@
+{{ define "title"}}Signed In{{ end }}
+
+{{ define "subtitle" }}{{ end }}
+
+{{define "content"}}
+<div class="login-complete-container" data-redirect="{{ .RedirectURL }}">
+    <div class="login-complete-icon" aria-hidden="true">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="32" fill="var(--auth-success, #10b981)" opacity="0.1"/>
+            <circle cx="32" cy="32" r="24" fill="var(--auth-success, #10b981)" opacity="0.2"/>
+            <path d="M22 32l7 7 13-13" stroke="var(--auth-success, #10b981)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+    </div>
+
+    <p class="login-complete-message">You have been signed in successfully.</p>
+
+    <div class="login-complete-wait" id="loginCompleteWait" style="display: none;">
+        <p class="login-complete-close-hint">You can close this tab now.</p>
+        <button type="button" class="btn-primary" onclick="try{window.close()}catch(e){}">
+            Close Tab
+        </button>
+    </div>
+
+    <noscript>
+        <div class="login-complete-noscript">
+            <p>
+                <a href="{{ .RedirectURL }}" class="btn-primary" style="display:inline-block;text-decoration:none;">
+                    Continue
+                </a>
+            </p>
+        </div>
+    </noscript>
+</div>
+
+<script>
+(function() {
+    'use strict';
+    var container = document.querySelector('[data-redirect]');
+    if (!container) return;
+    var url = container.getAttribute('data-redirect');
+    if (!url) return;
+
+    // Redirect after a brief delay so the user sees the success state
+    setTimeout(function() {
+        window.location.replace(url);
+    }, 150);
+
+    // If still on this page after 3 seconds, show the close-tab hint
+    setTimeout(function() {
+        var wait = document.getElementById('loginCompleteWait');
+        if (wait) wait.style.display = 'block';
+    }, 3000);
+})();
+</script>
+{{end}}
