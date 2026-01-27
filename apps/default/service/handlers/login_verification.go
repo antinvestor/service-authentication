@@ -320,6 +320,7 @@ func (h *AuthServer) handleVerificationCodeSubmission(rw http.ResponseWriter, re
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge:   loginEvent.LoginChallengeID,
 		SubjectID:        profileObj.GetId(),
+		ExtendSession:    true,
 		Remember:         true,
 		RememberDuration: h.config.SessionRememberDuration,
 	}

@@ -84,8 +84,17 @@ func extractClientID(tokenObject map[string]any) string {
 	return ""
 }
 
+func extractGrantType(tokenObject map[string]any) string {
+	if request, ok := tokenObject["request"].(map[string]any); ok {
+		if grantTypes, gok := request["grant_types"].([]string); gok && len(grantTypes) == 1 {
+			return grantTypes[0]
+		}
+	}
+	return ""
+}
+
 // TokenEnrichmentEndpoint handles token enrichment requests from Ory Hydra
-// This is called during both initial token issuance and token refresh
+// This is called during initial token issuance
 func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 
 	ctx := req.Context()
@@ -111,29 +120,30 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}
 	log.WithField("payload_keys", payloadKeys).Info("token enrichment webhook received")
 
-	// Log session structure for debugging
-	if sessionData, ok := tokenObject["session"].(map[string]any); ok {
-		sessionKeys := make([]string, 0, len(sessionData))
-		for k := range sessionData {
-			sessionKeys = append(sessionKeys, k)
-		}
-		log.WithField("session_keys", sessionKeys).Info("webhook session structure")
-
-		if accessToken, ok := sessionData["access_token"].(map[string]any); ok {
-			atKeys := make([]string, 0, len(accessToken))
-			for k := range accessToken {
-				atKeys = append(atKeys, k)
-			}
-			log.WithField("access_token_keys", atKeys).Info("session.access_token keys")
-		}
+	grantType := extractGrantType(tokenObject)
+	if grantType == "" {
+		log.WithField("request", body).Error("grant_type not found in any location (session, request, requester, top-level)")
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusForbidden)
+		return json.NewEncoder(rw).Encode(map[string]string{"error": "grant_type not found"})
 	}
+
+	if grantType == "refresh_token" {
+
+		// Refresh token - accept without changes
+		log.Debug("accepting token unchanged for refresh token")
+		rw.WriteHeader(http.StatusNoContent)
+		return nil
+
+	}
+
 
 	// Extract client_id from multiple possible locations
 	clientID := extractClientID(tokenObject)
 	if clientID == "" {
 		log.Error("client_id not found in any location (session, request, requester, top-level)")
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusBadRequest)
+		rw.WriteHeader(http.StatusForbidden)
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
 	}
 

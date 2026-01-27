@@ -161,6 +161,10 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 		params := &hydra.AcceptLoginRequestParams{
 			LoginChallenge: loginChallenge,
 			SubjectID:      subjectID,
+
+			ExtendSession:    true,
+			Remember:         true,
+			RememberDuration: h.config.SessionRememberDuration,
 		}
 
 		var loginCtx map[string]any

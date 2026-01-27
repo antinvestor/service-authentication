@@ -163,9 +163,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 				}
 			}
-
 		}
-
 	}
 
 	// Step 7: Accept consent and get redirect URL
@@ -178,7 +176,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		AccessTokenExtras: tokenMap,
 		IdTokenExtras:     tokenMap,
 		Remember:          true,
-		RememberDuration:  0, // 0 means remember indefinitely (until logout)
+		RememberDuration:  7776000, // remember for ninety days (until logout)
 	}
 
 	redirectURL, err := hydraCli.AcceptConsentRequest(ctx, params)

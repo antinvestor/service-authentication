@@ -95,8 +95,30 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "POST")
 
+	// Webhook routes has internal PSK for its authentication with hydra
+	webhookAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path, name, method string) {
+		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+			const bearerPrefix = "Bearer "
+			auth := r.Header.Get("Authorization")
+
+			hydraWebhookAPIToken := h.Config().HydraWebhookAPIToken
+
+			if hydraWebhookAPIToken != "" {
+
+				if !strings.HasPrefix(auth, bearerPrefix) || strings.TrimSpace(strings.TrimPrefix(auth, bearerPrefix)) != hydraWebhookAPIToken {
+					http.Error(w, "unauthorised", http.StatusForbidden)
+					return
+				}
+			}
+
+			if err := f(w, r); err != nil {
+				h.writeAPIError(r.Context(), w, err, http.StatusInternalServerError, name)
+			}
+		})
+	}
+
 	// Webhook routes (no auth required)
-	h.addHandler(router, h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
+	webhookAuthenticatedHandler(h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 
 	// API routes with authentication (JSON endpoints - return JSON errors)
 	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
