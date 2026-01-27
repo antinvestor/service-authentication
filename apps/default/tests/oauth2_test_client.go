@@ -131,13 +131,30 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 
 	c.clientIdList = append(c.clientIdList, partition.GetId())
 
+	// Extract actual redirect_uris as registered in Hydra by the Partition Service,
+	// which may append query parameters (e.g. ?partition_id=...) to the original URIs.
+	propsMap := partition.GetProperties().AsMap()
+	var actualRedirectURIs []string
+	if rawURIs, ok := propsMap["redirect_uris"]; ok {
+		if uriList, ok := rawURIs.([]any); ok {
+			for _, uri := range uriList {
+				if s, ok := uri.(string); ok {
+					actualRedirectURIs = append(actualRedirectURIs, s)
+				}
+			}
+		}
+	}
+	if len(actualRedirectURIs) == 0 {
+		actualRedirectURIs = []string{redirectURI}
+	}
+
 	client := &OAuth2Client{
 		ClientID:     partition.GetId(),
 		ClientSecret: "",
-		RedirectURIs: []string{redirectURI + "?partition_id=" + partition.GetId()},
+		RedirectURIs: actualRedirectURIs,
 		Scope:        "openid offline_access profile",
 		Audience:     []string{"authentication_tests"},
-		props:        partition.GetProperties().AsMap(),
+		props:        propsMap,
 	}
 
 	return client, nil
