@@ -85,11 +85,23 @@ func extractClientID(tokenObject map[string]any) string {
 }
 
 func extractGrantType(tokenObject map[string]any) string {
-	if request, ok := tokenObject["request"].(map[string]any); ok {
-		if grantTypes, gok := request["grant_types"].([]string); gok && len(grantTypes) == 1 {
-			return grantTypes[0]
+	request, ok := tokenObject["request"].(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	// grant_types is a JSON array which unmarshals to []any, not []string
+	if raw, ok := request["grant_types"].([]any); ok && len(raw) == 1 {
+		if s, ok := raw[0].(string); ok {
+			return s
 		}
 	}
+
+	// Fallback: singular grant_type string
+	if gt, ok := request["grant_type"].(string); ok {
+		return gt
+	}
+
 	return ""
 }
 

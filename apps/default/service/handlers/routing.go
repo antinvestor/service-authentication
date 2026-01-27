@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"github.com/pitabwire/util"
 
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
 )
@@ -95,18 +98,29 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpoint, "/social/callback/{provider}", "SocialLoginCallbackEndpoint", "POST")
 
-	// Webhook routes has internal PSK for its authentication with hydra
+	// Webhook routes has internal PSK for its authentication with hydra.
+	// When HYDRA_WEBHOOK_API_PSK is empty (default), no auth check is performed
+	// and the endpoint relies on network isolation. When set, the Bearer token
+	// in the Authorization header must match exactly.
 	webhookAuthenticatedHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path, name, method string) {
 		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-			const bearerPrefix = "Bearer "
-			auth := r.Header.Get("Authorization")
+			log := util.Log(r.Context())
 
-			hydraWebhookAPIToken := h.Config().HydraWebhookAPIToken
+			expectedToken := strings.TrimSpace(h.Config().HydraWebhookAPIToken)
+			if expectedToken != "" {
+				const bearerPrefix = "Bearer "
+				auth := r.Header.Get("Authorization")
 
-			if hydraWebhookAPIToken != "" {
+				if !strings.HasPrefix(auth, bearerPrefix) {
+					log.Warn("webhook request rejected: missing or malformed Authorization header")
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					return
+				}
 
-				if !strings.HasPrefix(auth, bearerPrefix) || strings.TrimSpace(strings.TrimPrefix(auth, bearerPrefix)) != hydraWebhookAPIToken {
-					http.Error(w, "unauthorised", http.StatusForbidden)
+				providedToken := strings.TrimSpace(strings.TrimPrefix(auth, bearerPrefix))
+				if subtle.ConstantTimeCompare([]byte(providedToken), []byte(expectedToken)) != 1 {
+					log.Warn("webhook request rejected: invalid bearer token")
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
 					return
 				}
 			}
@@ -117,7 +131,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		})
 	}
 
-	// Webhook routes (no auth required)
+	// Webhook routes (PSK auth when HYDRA_WEBHOOK_API_PSK is configured)
 	webhookAuthenticatedHandler(h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 
 	// API routes with authentication (JSON endpoints - return JSON errors)
