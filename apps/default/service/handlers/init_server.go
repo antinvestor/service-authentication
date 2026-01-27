@@ -33,6 +33,9 @@ const (
 	SessionKeySessionStorageName = "session_storage"
 	SessionKeyDeviceIDKey        = "link_id"
 	SessionKeyDeviceSessionIDKey = "sess_id"
+
+	SessionKeyRememberMeStorageName     = "remember_me_storage"
+	SessionKeyRememberMeLoginEventIDKey = "remember_login_event_id"
 )
 
 type AuthServer struct {

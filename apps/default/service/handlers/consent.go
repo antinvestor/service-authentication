@@ -158,6 +158,12 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 						"device_id":    deviceObj.GetId(),
 						"profile_id":   subjectID,
 					}
+
+					// Set remember-me cookie so the user can be auto-logged-in
+					// when their Hydra session expires.
+					if rmErr := h.setRememberMeCookie(rw, loginEvent.GetID()); rmErr != nil {
+						log.WithError(rmErr).Debug("failed to set remember-me cookie")
+					}
 				} else {
 
 					util.Log(ctx).Info("We possibly are doing token refresh, explore how to fill it")
@@ -298,6 +304,42 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 	})
 
 	return nil
+}
+
+// setRememberMeCookie stores the login event ID in a long-lived encrypted cookie
+// so that the user can be auto-logged-in when their Hydra session expires.
+func (h *AuthServer) setRememberMeCookie(w http.ResponseWriter, loginEventID string) error {
+	encoded, err := h.loginCookieCodec[0].Encode(SessionKeyRememberMeLoginEventIDKey, loginEventID)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionKeyRememberMeStorageName,
+		Value:    encoded,
+		Path:     "/",
+		MaxAge:   7776000, // 90 days
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(7776000 * time.Second),
+	})
+
+	return nil
+}
+
+// clearRememberMeCookie removes the remember-me cookie, forcing re-authentication on next visit.
+func (h *AuthServer) clearRememberMeCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionKeyRememberMeStorageName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(-1 * time.Hour),
+	})
 }
 
 // clearDeviceSessionID clears the device session ID cookie, forcing creation of a new session

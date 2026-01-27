@@ -183,6 +183,19 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
+	// Step 3.5: Attempt remember-me auto-login
+	rememberMeLoginEventID := h.getRememberMeLoginEventID(req)
+	if rememberMeLoginEventID != "" {
+		redirectURL, rememberErr := h.attemptRememberMeLogin(ctx, req, loginChallenge, getLogReq, rememberMeLoginEventID)
+		if rememberErr == nil {
+			log.WithField("old_login_event_id", rememberMeLoginEventID).
+				Info("remember-me auto-login successful")
+			http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
+			return nil
+		}
+		log.WithError(rememberErr).Debug("remember-me auto-login failed - showing login form")
+	}
+
 	// Step 4: Create login event for new authentication
 	loginEvent, err := h.createLoginEvent(ctx, req, getLogReq, loginChallenge)
 	if err != nil {
@@ -215,6 +228,86 @@ func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request
 	}).Info("login page rendered")
 
 	return loginTmpl.Execute(rw, payload)
+}
+
+// getRememberMeLoginEventID reads and decodes the remember-me cookie, returning
+// the stored login event ID or an empty string on any failure.
+func (h *AuthServer) getRememberMeLoginEventID(req *http.Request) string {
+	cookie, err := req.Cookie(SessionKeyRememberMeStorageName)
+	if err != nil {
+		return ""
+	}
+
+	var loginEventID string
+	for _, cookieCodec := range h.loginCookieCodec {
+		if decodeErr := cookieCodec.Decode(SessionKeyRememberMeLoginEventIDKey, cookie.Value, &loginEventID); decodeErr == nil {
+			return loginEventID
+		}
+	}
+	return ""
+}
+
+// attemptRememberMeLogin tries to auto-login a returning user by looking up a
+// previous login event (stored in the remember-me cookie) and creating a new
+// login event that copies the profile/tenant context from the old one.
+// Returns the redirect URL on success or an error on any failure.
+func (h *AuthServer) attemptRememberMeLogin(ctx context.Context, req *http.Request,
+	loginChallenge string, loginReq *client.OAuth2LoginRequest, oldLoginEventID string) (string, error) {
+
+	oldLoginEvent, err := h.loginEventRepo.GetByID(ctx, oldLoginEventID)
+	if err != nil || oldLoginEvent == nil {
+		return "", fmt.Errorf("old login event not found: %w", err)
+	}
+
+	if oldLoginEvent.ProfileID == "" {
+		return "", fmt.Errorf("old login event has no profile ID")
+	}
+
+	deviceSessionID := utils.SessionIDFromContext(ctx)
+
+	newLoginEvent := models.LoginEvent{
+		ClientID:         oldLoginEvent.ClientID,
+		LoginID:          oldLoginEvent.LoginID,
+		LoginChallengeID: loginChallenge,
+		ContactID:        oldLoginEvent.ContactID,
+		ProfileID:        oldLoginEvent.ProfileID,
+		SessionID:        deviceSessionID,
+		Oauth2SessionID:  loginReq.GetSessionId(),
+		DeviceID:         oldLoginEvent.DeviceID,
+		IP:               util.GetIP(req),
+		Client:           req.UserAgent(),
+	}
+	newLoginEvent.ID = util.IDString()
+	newLoginEvent.TenantID = oldLoginEvent.TenantID
+	newLoginEvent.PartitionID = oldLoginEvent.PartitionID
+	newLoginEvent.AccessID = oldLoginEvent.AccessID
+
+	if err = h.loginEventRepo.Create(ctx, &newLoginEvent); err != nil {
+		return "", fmt.Errorf("failed to persist remember-me login event: %w", err)
+	}
+
+	if cacheErr := h.setLoginEventToCache(ctx, &newLoginEvent); cacheErr != nil {
+		util.Log(ctx).WithError(cacheErr).Debug("failed to cache remember-me login event")
+	}
+
+	loginContext := map[string]any{
+		"login_event_id": newLoginEvent.GetID(),
+	}
+
+	params := &hydra.AcceptLoginRequestParams{
+		LoginChallenge:   loginChallenge,
+		SubjectID:        oldLoginEvent.ProfileID,
+		ExtendSession:    true,
+		Remember:         true,
+		RememberDuration: h.config.SessionRememberDuration,
+	}
+
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, "remembered", oldLoginEvent.ContactID)
+	if err != nil {
+		return "", fmt.Errorf("failed to accept login request for remember-me: %w", err)
+	}
+
+	return redirectURL, nil
 }
 
 // getLoginEventFromCache retrieves a login event from cache with consistent error handling.
