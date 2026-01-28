@@ -40,4 +40,13 @@ type AuthenticationConfig struct {
 	AuthProviderMetaSecret      string   `envDefault:"" env:"AUTH_PROVIDER_META_SECRET"`
 	AuthProviderMetaCallbackURL string   `envDefault:"" env:"AUTH_PROVIDER_META_CALLBACK_URL"`
 	AuthProviderMetaScopes      []string `envDefault:"" env:"AUTH_PROVIDER_META_SCOPES"`
+
+	AuthProviderAppleClientID        string `envDefault:"" env:"AUTH_PROVIDER_APPLE_CLIENT_ID"`
+	AuthProviderAppleClientSecretJWT string `envDefault:"" env:"AUTH_PROVIDER_APPLE_CLIENT_SECRET_JWT"`
+	AuthProviderAppleCallbackURL     string `envDefault:"" env:"AUTH_PROVIDER_APPLE_CALLBACK_URL"`
+
+	AuthProviderMicrosoftTenant      string `envDefault:"common" env:"AUTH_PROVIDER_MICROSOFT_TENANT"`
+	AuthProviderMicrosoftClientID    string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_CLIENT_ID"`
+	AuthProviderMicrosoftSecret      string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_SECRET"`
+	AuthProviderMicrosoftCallbackURL string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_CALLBACK_URL"`
 }

@@ -232,7 +232,7 @@ go test ./apps/default/service/handlers/login_verification_test.go -v
 
 **File:** `cmd/main.go`
 
-Initializes:
+initialises:
 1. Configuration from environment
 2. Database connection and migrations
 3. Cache manager

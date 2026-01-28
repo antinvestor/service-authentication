@@ -134,8 +134,9 @@
         }
 
         // Clear the verification code from the input for security
+        // Use setTimeout to ensure the browser has captured form data before clearing
         if (codeInput) {
-            codeInput.value = '';
+            setTimeout(function() { codeInput.value = ''; }, 0);
         }
 
         // Replace current history entry to prevent back-button exposure
@@ -258,7 +259,7 @@
     // ==========================================================================
 
     /**
-     * Initialize contact login form with enhanced validation feedback
+     * initialise contact login form with enhanced validation feedback
      */
     function initContactLoginForm() {
         const form = document.getElementById('contactLoginForm') || document.querySelector('.contact-login-form');
@@ -323,7 +324,7 @@
     }
 
     /**
-     * Initialize verification form with name and code fields
+     * initialise verification form with name and code fields
      */
     function initVerificationForm() {
         const form = document.getElementById('verificationForm') || document.querySelector('.verification-form');
@@ -418,7 +419,7 @@
     }
 
     /**
-     * Initialize resend code functionality with full accessibility support
+     * initialise resend code functionality with full accessibility support
      */
     function initResendCode() {
         const resendBtn = document.getElementById('resendBtn');
@@ -523,7 +524,7 @@
     }
 
     /**
-     * Initialize social login buttons
+     * initialise social login buttons
      */
     function initSocialLoginButtons() {
         const socialForms = document.querySelectorAll('.social-login-form');
@@ -562,7 +563,7 @@
     // ==========================================================================
 
     /**
-     * Initialize keyboard navigation enhancements
+     * initialise keyboard navigation enhancements
      */
     function initKeyboardNav() {
         // Allow Enter key to trigger social login buttons
@@ -623,7 +624,7 @@
     // ==========================================================================
 
     /**
-     * Initialize error page functionality
+     * initialise error page functionality
      */
     function initErrorPage() {
         const errorDetails = document.querySelector('.error-details');
@@ -638,31 +639,31 @@
     }
 
     // ==========================================================================
-    // Initialization
+    // initialisation
     // ==========================================================================
 
     function init() {
-        // Initialize form handlers
+        // initialise form handlers
         initContactLoginForm();
         initVerificationForm();
         initResendCode();
         initSocialLoginButtons();
 
-        // Initialize accessibility features
+        // initialise accessibility features
         initAutoFocus();
         initKeyboardNav();
 
-        // Initialize page-specific features
+        // initialise page-specific features
         initErrorPage();
 
         // Mark body as JS-enabled for progressive enhancement
         document.body.classList.add('js-enabled');
 
-        // Log initialization (helpful for debugging)
-        console.log('Auth.js v2.0.0 initialized');
+        // Log initialisation (helpful for debugging)
+        console.log('Auth.js v2.0.0 initialised');
     }
 
-    // Initialize when DOM is ready
+    // initialise when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

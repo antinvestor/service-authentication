@@ -72,6 +72,14 @@ func (h *AuthServer) setupAuthProviders(_ context.Context, cfg *config.Authentic
 		h.loginOptions["enableFacebookLogin"] = true
 	}
 
+	if cfg.AuthProviderAppleClientID != "" {
+		h.loginOptions["enableAppleLogin"] = true
+	}
+
+	if cfg.AuthProviderMicrosoftClientID != "" {
+		h.loginOptions["enableMicrosoftLogin"] = true
+	}
+
 	if len(providers) > 0 {
 		goth.UseProviders(providers...)
 	}

@@ -16,6 +16,7 @@ import (
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
@@ -60,6 +61,8 @@ type AuthServer struct {
 
 	// Login options enabled
 	loginOptions map[string]any
+
+	loginAuthProviders map[string]providers.AuthProvider
 
 	defaultHydraCli hydra.Hydra
 }
@@ -107,6 +110,16 @@ func NewAuthServer(ctx context.Context,
 	}
 
 	h.setupAuthProviders(ctx, authConfig)
+
+	v2Providers, v2Err := providers.SetupAuthProviders(ctx, authConfig)
+	if v2Err != nil {
+		log.WithError(v2Err).Error("failed to setup v2 auth providers - provider login will be unavailable")
+	} else {
+		h.loginAuthProviders = v2Providers
+		for name := range v2Providers {
+			log.WithField("provider", name).Info("v2 auth provider registered")
+		}
+	}
 
 	return h
 }
