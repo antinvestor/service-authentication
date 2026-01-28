@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
@@ -54,10 +55,11 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	}
 
 	profileName := req.PostForm.Get("profile_name")
-	verificationCode := req.PostForm.Get("verification_code")
+	verificationCode := strings.TrimSpace(req.PostForm.Get("verification_code"))
 	contactType := req.PostForm.Get("contact_type")
 
 	log = log.WithField("login_event_id", loginEventID)
+	log.WithField("code_length", len(verificationCode)).Debug("verification code received")
 
 	// Step 3: Retrieve login event from database
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
@@ -169,6 +171,11 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	// Step 4: Verify the code for direct logins
+	log.WithFields(map[string]any{
+		"verification_id": event.VerificationID,
+		"code_length":     len(code),
+	}).Debug("checking verification code")
+
 	resp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
 		Id:   event.VerificationID,
 		Code: code,
