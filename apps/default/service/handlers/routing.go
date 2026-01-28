@@ -117,8 +117,13 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.VerificationEndpointShow, "/s/verify/contact/{loginEventId}", "VerificationEndpointShow", "GET")
 	unAuthenticatedHandler(h.VerificationEndpointSubmit, "/s/verify/contact/{loginEventId}/post", "VerificationEndpointSubmit", "POST")
 	unAuthenticatedHandler(h.ProviderLoginEndpointV2, "/s/social/login/{loginEventId}", "SocialLoginEndpoint", "POST")
+
+	// Social login callback - provider is determined from signed auth state cookie, not URL
+	// Support both /s/social/callback and /s/social/callback/{provider} for flexibility
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "POST")
+	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback/{provider}", "SocialLoginCallbackEndpointWithProvider", "GET")
+	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback/{provider}", "SocialLoginCallbackEndpointWithProvider", "POST")
 
 	// Webhook routes has internal PSK for its authentication with hydra.
 	// When HYDRA_WEBHOOK_API_PSK is empty (default), no auth check is performed
