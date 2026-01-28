@@ -316,6 +316,7 @@
 
     /**
      * initialise verification form with name and code fields
+     * Designed to work WITHOUT JavaScript - JS only adds enhancements
      */
     function initVerificationForm() {
         const form = document.getElementById('verificationForm') || document.querySelector('.verification-form');
@@ -326,86 +327,57 @@
         const submitBtn = document.getElementById('verifyBtn');
 
         if (codeInput) {
-            // Allow numeric input only
-            codeInput.addEventListener('input', function(e) {
+            // Enhancement: Filter to numeric input only (form still works without this)
+            codeInput.addEventListener('input', function() {
                 // Remove any non-numeric characters
-                this.value = this.value.replace(/[^0-9]/g, '');
-
+                const cleaned = this.value.replace(/[^0-9]/g, '');
+                if (cleaned !== this.value) {
+                    this.value = cleaned;
+                }
                 // Clear any previous error when user types
                 clearFieldError(this);
 
-                // Auto-submit when 6 characters are entered and name is filled (or not required)
+                // Visual feedback when code is complete
                 if (this.value.length === CONFIG.VERIFICATION_CODE_LENGTH) {
-                    var nameOk = !nameInput || nameInput.value.trim();
-                    if (nameOk) {
-                        // Visual feedback before auto-submit
-                        this.classList.add('is-valid');
-                        this.style.borderColor = 'var(--auth-success)';
-
-                        // Announce auto-submit to screen readers
-                        announceToScreenReader('Verification code complete. Verifying now.');
-
-                        // Auto-submit after short delay for visual feedback
-                        setTimeout(() => {
-                            if (submitBtn) {
-                                setButtonLoading(submitBtn, true);
-                            }
-                            // Show overlay before form submission
-                            showVerificationOverlay();
-                            form.submit();
-                        }, 300);
-                    }
+                    this.classList.add('is-valid');
                 }
             });
 
-            // Paste handling - allow numeric characters only
+            // Enhancement: Handle paste with cleanup
             codeInput.addEventListener('paste', function(e) {
-                e.preventDefault();
-                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                const cleaned = pastedText.replace(/[^0-9]/g, '').slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
-                this.value = cleaned;
-
-                // Trigger input event for auto-submit check
-                this.dispatchEvent(new Event('input'));
+                // Let the paste happen, then clean up
+                setTimeout(() => {
+                    const cleaned = this.value.replace(/[^0-9]/g, '').slice(0, CONFIG.VERIFICATION_CODE_LENGTH);
+                    if (cleaned !== this.value) {
+                        this.value = cleaned;
+                    }
+                }, 0);
             });
 
-            // Allow numeric key presses only
+            // Enhancement: Filter non-numeric keypress (form still works without this)
             codeInput.addEventListener('keypress', function(e) {
-                if (!/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+                // Allow control keys (backspace, delete, etc.)
+                if (e.ctrlKey || e.metaKey || e.key.length > 1) {
+                    return;
+                }
+                // Block non-numeric
+                if (!/[0-9]/.test(e.key)) {
                     e.preventDefault();
                 }
             });
         }
 
-        // Form submission validation
+        // Enhancement: Show loading state on submit (form works without this)
         form.addEventListener('submit', function(e) {
-            let hasError = false;
+            // Let the browser handle validation via required/pattern attributes
+            // Only add visual enhancements here
 
-            // Validate name field if visible
-            if (nameInput && !nameInput.value.trim()) {
-                e.preventDefault();
-                showFieldError(nameInput, 'Please enter your name');
-                nameInput.focus();
-                hasError = true;
+            if (submitBtn) {
+                setButtonLoading(submitBtn, true);
             }
+            showVerificationOverlay();
 
-            // Validate code
-            if (codeInput && !validateVerificationCode(codeInput.value)) {
-                e.preventDefault();
-                showFieldError(codeInput, 'Please enter a valid 6-digit code');
-                if (!hasError) {
-                    codeInput.focus();
-                }
-                hasError = true;
-            }
-
-            if (!hasError) {
-                if (submitBtn) {
-                    setButtonLoading(submitBtn, true);
-                }
-                // Show overlay to hide sensitive data during redirect
-                showVerificationOverlay();
-            }
+            // Don't prevent default - let the form submit normally
         });
     }
 

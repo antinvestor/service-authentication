@@ -54,12 +54,24 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("failed to parse form: %w", err)
 	}
 
+	// Debug: Log all form fields received
+	log.WithFields(map[string]any{
+		"form_keys":      getFormKeys(req.Form),
+		"post_form_keys": getFormKeys(req.PostForm),
+		"content_type":   req.Header.Get("Content-Type"),
+		"method":         req.Method,
+	}).Debug("form data received")
+
 	profileName := req.PostForm.Get("profile_name")
 	verificationCode := strings.TrimSpace(req.PostForm.Get("verification_code"))
 	contactType := req.PostForm.Get("contact_type")
 
 	log = log.WithField("login_event_id", loginEventID)
-	log.WithField("code_length", len(verificationCode)).Debug("verification code received")
+	log.WithFields(map[string]any{
+		"code_length":        len(verificationCode),
+		"profile_name_empty": profileName == "",
+		"contact_type":       contactType,
+	}).Debug("verification code received")
 
 	// Step 3: Retrieve login event from database
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
@@ -248,4 +260,13 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	return login.ProfileID, nil
+}
+
+// getFormKeys returns a slice of all keys in the form values for debugging
+func getFormKeys(values map[string][]string) []string {
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	return keys
 }
