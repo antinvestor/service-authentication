@@ -68,8 +68,14 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
 	}
 
-	// Step 4: Update profile name if provided
-	if profileName != "" && profileID != "" {
+	// Step 4: Validate profile ID before proceeding
+	if profileID == "" {
+		log.Error("profile ID is empty after verification - cannot complete login")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
+	}
+
+	// Step 5: Update profile name if provided
+	if profileName != "" {
 		_, err = h.updateProfileName(ctx, profileID, profileName)
 		if err != nil {
 			log.WithError(err).Error("failed to update profile name")
@@ -77,7 +83,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 		}
 	}
 
-	// Step 5: Complete OAuth2 login flow
+	// Step 6: Complete OAuth2 login flow
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge: loginEvent.LoginChallengeID,
 		SubjectID:      profileID,

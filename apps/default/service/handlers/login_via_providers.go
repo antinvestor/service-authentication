@@ -100,13 +100,16 @@ func (h *AuthServer) providerPostUserLogin(rw http.ResponseWriter, req *http.Req
 
 	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
 	if err != nil {
-		if frame.ErrorIsNotFound(err) {
+		if !frame.ErrorIsNotFound(err) {
 			util.Log(ctx).WithError(err).Error("failed to lookup profile by contact")
 			return err
 		}
 	}
 
-	existingProfile := result.Msg.GetData()
+	var existingProfile *profilev1.ProfileObject
+	if result != nil {
+		existingProfile = result.Msg.GetData()
+	}
 	if existingProfile == nil {
 
 		userName := user.Name
