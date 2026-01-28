@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"time"
 
@@ -213,9 +214,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	payload[pathValueLoginEventID] = loginEvent.GetID()
 	payload["error"] = ""
 
-	for k, val := range h.loginOptions {
-		payload[k] = val
-	}
+	maps.Copy(payload, h.loginOptions)
 
 	log.WithFields(map[string]any{
 		"login_event_id": loginEvent.GetID(),

@@ -51,10 +51,7 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 		// Calculate resends left from login event properties
 		if loginEvent != nil && loginEvent.Properties != nil {
 			resendCount := getResendCount(loginEvent.Properties)
-			resendsLeft = maxResendAttempts - resendCount
-			if resendsLeft < 0 {
-				resendsLeft = 0
-			}
+			resendsLeft = max(0, maxResendAttempts-resendCount)
 
 			// If there have been resends, adjust initial cooldown based on last resend
 			if resendCount > 0 {
