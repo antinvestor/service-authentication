@@ -176,15 +176,22 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	// Step 4: Verify the code for direct logins
 	log.WithFields(map[string]any{
 		"verification_id": event.VerificationID,
+		"contact_id":      event.ContactID,
 		"code_length":     len(code),
-	}).Debug("checking verification code")
+		"tenant_id":       event.TenantID,
+		"partition_id":    event.PartitionID,
+	}).Debug("checking verification code with profile service")
 
 	resp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
 		Id:   event.VerificationID,
 		Code: code,
 	}))
 	if err != nil {
-		log.WithError(err).Error("verification service call failed")
+		log.WithError(err).WithFields(map[string]any{
+			"verification_id": event.VerificationID,
+			"tenant_id":       event.TenantID,
+			"partition_id":    event.PartitionID,
+		}).Error("verification service call failed")
 		return "", fmt.Errorf("verification failed: %w", err)
 	}
 
@@ -203,7 +210,11 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 	}
 
 	if !resp.Msg.GetSuccess() {
-		log.WithField("attempts", attempts).Debug("verification code incorrect")
+		log.WithFields(map[string]any{
+			"attempts":        attempts,
+			"verification_id": event.VerificationID,
+			"response_id":     resp.Msg.GetId(),
+		}).Warn("verification code incorrect - check if verification ID matches")
 		return "", ErrVerificationCodeIncorrect
 	}
 

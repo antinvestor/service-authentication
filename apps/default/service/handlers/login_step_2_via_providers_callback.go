@@ -150,8 +150,12 @@ func (h *AuthServer) postUserLogin(
 		existingProfile = result.Msg.GetData()
 	}
 
-	// Step 2: Create profile if not found
-	if existingProfile == nil {
+	// Step 2: Create profile if not found or if returned profile has empty ID
+	if existingProfile == nil || existingProfile.GetId() == "" {
+		if existingProfile != nil && existingProfile.GetId() == "" {
+			log.Warn("profile service returned profile with empty ID - will create new profile")
+			existingProfile = nil // Reset to trigger profile creation
+		}
 		userName := loggedInUser.Name
 		if userName == "" {
 			userName = strings.TrimSpace(strings.Join([]string{loggedInUser.FirstName, loggedInUser.LastName}, " "))

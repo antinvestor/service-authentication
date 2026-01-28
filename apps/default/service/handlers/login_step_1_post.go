@@ -144,7 +144,11 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	log.WithFields(map[string]any{
 		"verification_id": resp.Msg.GetId(),
+		"contact_id":      contactID,
 		"contact_type":    contactType.String(),
+		"tenant_id":       loginEvt.TenantID,
+		"partition_id":    loginEvt.PartitionID,
+		"login_event_id":  loginEvent.GetID(),
 		"duration_ms":     time.Since(start).Milliseconds(),
 	}).Info("verification code sent")
 
