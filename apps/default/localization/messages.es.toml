@@ -1,0 +1,228 @@
+# Spanish (Español) translations
+
+# Page titles
+[page_title_sign_in]
+one = "Iniciar Sesión"
+
+[page_title_verification]
+one = "Ingrese el Código de Verificación"
+
+[page_title_complete_sign_in]
+one = "Complete Su Inicio de Sesión"
+
+[page_title_signed_in]
+one = "Sesión Iniciada"
+
+[page_title_error]
+one = "Error"
+
+[page_title_not_found]
+one = "Página No Encontrada"
+
+[page_title_suffix]
+one = "Autenticación"
+
+# Notices
+[noscript_notice]
+one = "Habilite JavaScript para una mejor experiencia."
+
+# Labels
+[label_email_or_phone]
+one = "Correo Electrónico o Teléfono"
+
+[label_your_name]
+one = "Su Nombre"
+
+[label_verification_code]
+one = "Código de Verificación"
+
+[label_error]
+one = "Error:"
+
+[label_details]
+one = "Detalles:"
+
+# Placeholders
+[placeholder_email_phone]
+one = "correo@ejemplo.com o +34123456789"
+
+[placeholder_name]
+one = "Juan García"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "Le enviaremos un código de verificación para iniciar sesión"
+
+[help_check_email]
+one = "Revise su correo electrónico"
+
+[help_check_phone]
+one = "Revise su teléfono"
+
+[help_check_email_or_phone]
+one = "Revise su correo electrónico o teléfono"
+
+[help_code_sent]
+one = "Revise su correo electrónico o teléfono para ver el código que enviamos"
+
+[help_enter_name_and_code]
+one = "Ingrese su nombre y el código de verificación que enviamos"
+
+[help_no_code]
+one = "¿No recibió el código?"
+
+[help_contact_support]
+one = "¿Necesita ayuda?"
+
+# Buttons
+[btn_continue]
+one = "Continuar"
+
+[btn_verify]
+one = "Verificar"
+
+[btn_resend]
+one = "Reenviar"
+
+[btn_resend_with_count]
+one = "Reenviar ({{.Count}} restante(s))"
+
+[btn_no_resends_left]
+one = "Sin reenvíos disponibles"
+
+[btn_close_tab]
+one = "Cerrar Pestaña"
+
+[btn_sending]
+one = "Enviando..."
+
+# Dividers
+[divider_or_continue_with]
+one = "o continúe con"
+
+# Providers
+[provider_google]
+one = "Google"
+
+[provider_facebook]
+one = "Facebook"
+
+[provider_apple]
+one = "Apple"
+
+[provider_microsoft]
+one = "Microsoft"
+
+[aria_continue_with_provider]
+one = "Continuar con {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "Iniciando sesión..."
+
+# Success messages
+[success_signed_in]
+one = "Ha iniciado sesión exitosamente."
+
+[success_close_tab]
+one = "Puede cerrar esta pestaña ahora."
+
+[success_code_sent]
+one = "¡Se ha enviado un nuevo código de verificación!"
+
+[success_verification_sent]
+one = "Código de verificación enviado."
+
+# Error messages
+[error_generic]
+one = "Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde."
+
+[error_something_wrong]
+one = "Algo salió mal"
+
+[error_unexpected]
+one = "Encontramos un error inesperado al procesar su solicitud."
+
+[error_page_not_found]
+one = "La página que busca no existe o ha sido movida."
+
+[error_close_and_retry]
+one = "Por favor, cierre esta página e inténtelo de nuevo."
+
+[error_no_signin_methods]
+one = "No hay métodos de inicio de sesión configurados. Por favor, contacte al soporte."
+
+[error_contact_required]
+one = "Por favor, ingrese su correo electrónico o número de teléfono"
+
+[error_invalid_phone]
+one = "Por favor, ingrese un número de teléfono válido (ej., +34123456789)"
+
+[error_invalid_email]
+one = "Por favor, ingrese una dirección de correo electrónico válida"
+
+[error_invalid_code]
+one = "Por favor, ingrese un código válido de 6 dígitos"
+
+[error_enter_name]
+one = "Por favor, ingrese su nombre"
+
+[error_rate_limit]
+one = "Demasiados intentos de inicio de sesión. Por favor, inténtelo de nuevo más tarde."
+
+[error_rate_limit_wait]
+one = "Por favor, inténtelo de nuevo en {{.Minutes}} minutos"
+
+[error_session_expired]
+one = "Su sesión ha expirado. Por favor, comience de nuevo."
+
+[error_session_not_found]
+one = "Sesión de inicio no encontrada o expirada"
+
+[error_login_failed]
+one = "Error al iniciar sesión. Por favor, inténtelo de nuevo."
+
+[error_verification_incorrect]
+one = "El código de verificación es incorrecto"
+
+[error_verification_failed]
+one = "La verificación falló. Por favor, inténtelo de nuevo."
+
+[error_max_resends]
+one = "Se alcanzó el máximo de reenvíos. Por favor, inicie una nueva sesión."
+
+[error_resend_wait]
+one = "Por favor, espere {{.Seconds}} segundos antes de solicitar otro código"
+
+[error_resend_failed]
+one = "Error al enviar el código de verificación. Por favor, inténtelo de nuevo."
+
+[error_unable_resend]
+one = "No se puede reenviar el código. Por favor, actualice la página."
+
+[error_network]
+one = "Error de red. Por favor, inténtelo de nuevo."
+
+# Accessibility
+[aria_resend_wait]
+one = "Por favor, espere {{.Seconds}} segundos"
+
+[aria_seconds_remaining]
+one = "{{.Seconds}} segundos restantes"
+
+[aria_can_resend]
+one = "Ahora puede solicitar un nuevo código de verificación."
+
+[aria_sending_code]
+one = "Enviando código de verificación. Por favor, espere."
+
+# Footer
+[footer_contact_support]
+one = "Contactar Soporte"
+
+# Codes
+[code_404]
+one = "404"

@@ -19,6 +19,32 @@
     };
 
     // ==========================================================================
+    // Internationalization (i18n)
+    // ==========================================================================
+
+    /**
+     * Get a translated message by key
+     * Falls back to provided default if translation not found
+     * @param {string} key - The translation key
+     * @param {string} defaultValue - The fallback value
+     * @param {Object} data - Optional data for placeholder replacement
+     * @returns {string}
+     */
+    function t(key, defaultValue, data) {
+        const i18n = window.authI18n || {};
+        let message = i18n[key] || defaultValue;
+
+        // Replace placeholders like {{.Name}} with values from data
+        if (data) {
+            Object.keys(data).forEach(function(k) {
+                message = message.replace(new RegExp('\\{\\{\\.' + k + '\\}\\}', 'g'), data[k]);
+            });
+        }
+
+        return message;
+    }
+
+    // ==========================================================================
     // Utility Functions
     // ==========================================================================
 
@@ -216,7 +242,7 @@
     function validateContact(value) {
         const trimmed = value.trim();
         if (!trimmed) {
-            return { valid: false, message: 'Please enter your email or phone number' };
+            return { valid: false, message: t('error_contact_required', 'Please enter your email or phone number') };
         }
 
         // Check if it looks like a phone number (starts with + or contains mostly digits)
@@ -226,14 +252,14 @@
             if (validatePhone(trimmed)) {
                 return { valid: true };
             }
-            return { valid: false, message: 'Please enter a valid phone number (e.g., +1234567890)' };
+            return { valid: false, message: t('error_invalid_phone', 'Please enter a valid phone number (e.g., +1234567890)') };
         }
 
         if (validateEmail(trimmed)) {
             return { valid: true };
         }
 
-        return { valid: false, message: 'Please enter a valid email address' };
+        return { valid: false, message: t('error_invalid_email', 'Please enter a valid email address') };
     }
 
     /**
@@ -309,7 +335,7 @@
             // Show loading state and announce
             if (submitBtn) {
                 setButtonLoading(submitBtn, true);
-                announceToScreenReader('Sending verification code. Please wait.');
+                announceToScreenReader(t('aria_sending_code', 'Sending verification code. Please wait.'));
             }
         });
     }
@@ -405,7 +431,7 @@
 
             // Update button text if limited resends
             if (resendsRemaining < 3) {
-                resendBtn.textContent = 'Resend (' + resendsRemaining + ' left)';
+                resendBtn.textContent = t('btn_resend_with_count', 'Resend ({{.Count}} left)', {Count: resendsRemaining});
             }
 
             // Start initial cooldown when page loads (code was just sent)
@@ -453,7 +479,7 @@
                 countdown.textContent = remainingSeconds;
             }
 
-            updateResendStatus('Please wait ' + remainingSeconds + ' seconds');
+            updateResendStatus(t('aria_resend_wait', 'Please wait {{.Seconds}} seconds', {Seconds: remainingSeconds}));
 
             cooldownTimer = setInterval(() => {
                 remainingSeconds--;
@@ -464,7 +490,7 @@
 
                 // Announce every 15 seconds to screen readers
                 if (remainingSeconds > 0 && remainingSeconds % 15 === 0) {
-                    updateResendStatus(remainingSeconds + ' seconds remaining');
+                    updateResendStatus(t('aria_seconds_remaining', '{{.Seconds}} seconds remaining', {Seconds: remainingSeconds}));
                 }
 
                 if (remainingSeconds <= 0) {
@@ -478,8 +504,8 @@
                         resendTimer.style.display = 'none';
                     }
 
-                    updateResendStatus('You can now request a new code');
-                    announceToScreenReader('You can now request a new verification code.');
+                    updateResendStatus(t('aria_can_resend', 'You can now request a new code'));
+                    announceToScreenReader(t('aria_can_resend', 'You can now request a new verification code.'));
                 }
             }, 1000);
         }
@@ -528,13 +554,13 @@
 
             const loginEventId = getLoginEventId();
             if (!loginEventId) {
-                showFeedback('Unable to resend code. Please refresh the page.', false);
+                showFeedback(t('error_unable_resend', 'Unable to resend code. Please refresh the page.'), false);
                 return;
             }
 
             // Disable button during request
             resendBtn.disabled = true;
-            resendBtn.textContent = 'Sending...';
+            resendBtn.textContent = t('btn_sending', 'Sending...');
 
             try {
                 const response = await fetch('/s/verify/contact/' + encodeURIComponent(loginEventId) + '/resend', {
@@ -548,8 +574,8 @@
 
                 if (data.success) {
                     resendsRemaining = data.resends_left;
-                    showFeedback('A new verification code has been sent!', true);
-                    announceToScreenReader('Verification code sent.');
+                    showFeedback(t('success_code_sent', 'A new verification code has been sent!'), true);
+                    announceToScreenReader(t('success_verification_sent', 'Verification code sent.'));
 
                     // Clear the code input for new code entry
                     const codeInput = document.getElementById('verification_code');
@@ -560,10 +586,10 @@
 
                     // Update button text based on resends left
                     if (resendsRemaining === 0) {
-                        resendBtn.textContent = 'No resends left';
+                        resendBtn.textContent = t('btn_no_resends_left', 'No resends left');
                         resendBtn.disabled = true;
                     } else {
-                        resendBtn.textContent = 'Resend (' + resendsRemaining + ' left)';
+                        resendBtn.textContent = t('btn_resend_with_count', 'Resend ({{.Count}} left)', {Count: resendsRemaining});
                         // Start cooldown based on server response
                         if (data.wait_seconds > 0) {
                             startCooldown(data.wait_seconds);
@@ -574,27 +600,27 @@
                 } else {
                     // Handle rate limiting or errors
                     if (response.status === 429 && data.wait_seconds > 0) {
-                        showFeedback(data.message || 'Please wait before requesting another code.', false);
+                        showFeedback(data.message || t('error_resend_wait', 'Please wait {{.Seconds}} seconds before requesting another code', {Seconds: data.wait_seconds}), false);
                         startCooldown(data.wait_seconds);
-                        resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
+                        resendBtn.textContent = resendsRemaining > 0 ? t('btn_resend_with_count', 'Resend ({{.Count}} left)', {Count: resendsRemaining}) : t('btn_resend', 'Resend');
                     } else if (data.resends_left === 0) {
                         resendsRemaining = 0;
-                        showFeedback(data.message || 'Maximum resend attempts reached.', false);
-                        resendBtn.textContent = 'No resends left';
+                        showFeedback(data.message || t('error_max_resends', 'Maximum resend attempts reached.'), false);
+                        resendBtn.textContent = t('btn_no_resends_left', 'No resends left');
                         resendBtn.disabled = true;
                     } else {
-                        showFeedback(data.message || 'Failed to resend code. Please try again.', false);
-                        resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
+                        showFeedback(data.message || t('error_resend_failed', 'Failed to resend code. Please try again.'), false);
+                        resendBtn.textContent = resendsRemaining > 0 ? t('btn_resend_with_count', 'Resend ({{.Count}} left)', {Count: resendsRemaining}) : t('btn_resend', 'Resend');
                         resendBtn.disabled = false;
                     }
-                    announceToScreenReader(data.message || 'Failed to resend code.');
+                    announceToScreenReader(data.message || t('error_resend_failed', 'Failed to resend code.'));
                 }
             } catch (error) {
                 console.error('Resend error:', error);
-                resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
+                resendBtn.textContent = resendsRemaining > 0 ? t('btn_resend_with_count', 'Resend ({{.Count}} left)', {Count: resendsRemaining}) : t('btn_resend', 'Resend');
                 resendBtn.disabled = false;
-                showFeedback('Network error. Please try again.', false);
-                announceToScreenReader('Network error. Please try again.');
+                showFeedback(t('error_network', 'Network error. Please try again.'), false);
+                announceToScreenReader(t('error_network', 'Network error. Please try again.'));
             }
         }
 

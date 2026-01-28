@@ -1,7 +1,236 @@
+# Page titles
+[page_title_sign_in]
+one = "Sign In"
 
+[page_title_verification]
+one = "Enter Verification Code"
+
+[page_title_complete_sign_in]
+one = "Complete Your Sign In"
+
+[page_title_signed_in]
+one = "Signed In"
+
+[page_title_error]
+one = "Error"
+
+[page_title_not_found]
+one = "Page Not Found"
+
+[page_title_suffix]
+one = "Authentication"
+
+# Notices
+[noscript_notice]
+one = "Enable JavaScript for the best experience."
+
+# Labels
+[label_email_or_phone]
+one = "Email or Phone"
+
+[label_your_name]
+one = "Your Name"
+
+[label_verification_code]
+one = "Verification Code"
+
+[label_error]
+one = "Error:"
+
+[label_details]
+one = "Details:"
+
+# Placeholders
+[placeholder_email_phone]
+one = "email@example.com or +1234567890"
+
+[placeholder_name]
+one = "John Doe"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "We'll send a verification code to sign you in"
+
+[help_check_email]
+one = "Check your email"
+
+[help_check_phone]
+one = "Check your phone"
+
+[help_check_email_or_phone]
+one = "Check your email or phone"
+
+[help_code_sent]
+one = "Check your email or phone for the code we sent"
+
+[help_enter_name_and_code]
+one = "Enter your name and the verification code we sent"
+
+[help_no_code]
+one = "No code?"
+
+[help_contact_support]
+one = "Need help?"
+
+# Buttons
+[btn_continue]
+one = "Continue"
+
+[btn_verify]
+one = "Verify"
+
+[btn_resend]
+one = "Resend"
+
+[btn_resend_with_count]
+one = "Resend ({{.Count}} left)"
+
+[btn_no_resends_left]
+one = "No resends left"
+
+[btn_close_tab]
+one = "Close Tab"
+
+[btn_sending]
+one = "Sending..."
+
+# Dividers
+[divider_or_continue_with]
+one = "or continue with"
+
+# Providers
+[provider_google]
+one = "Google"
+
+[provider_facebook]
+one = "Facebook"
+
+[provider_apple]
+one = "Apple"
+
+[provider_microsoft]
+one = "Microsoft"
+
+[aria_continue_with_provider]
+one = "Continue with {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "Signing you in..."
+
+# Success messages
+[success_signed_in]
+one = "You have been signed in successfully."
+
+[success_close_tab]
+one = "You can close this tab now."
+
+[success_code_sent]
+one = "A new verification code has been sent!"
+
+[success_verification_sent]
+one = "Verification code sent."
+
+# Error messages
+[error_generic]
+one = "An unexpected error occurred. Please try again later."
+
+[error_something_wrong]
+one = "Something went wrong"
+
+[error_unexpected]
+one = "We encountered an unexpected error while processing your request."
+
+[error_page_not_found]
+one = "The page you're looking for doesn't exist or may have been moved."
+
+[error_close_and_retry]
+one = "Please close this page and try again."
+
+[error_no_signin_methods]
+one = "No sign-in methods configured. Please contact support."
+
+[error_contact_required]
+one = "Please enter your email or phone number"
+
+[error_invalid_phone]
+one = "Please enter a valid phone number (e.g., +1234567890)"
+
+[error_invalid_email]
+one = "Please enter a valid email address"
+
+[error_invalid_code]
+one = "Please enter a valid 6-digit code"
+
+[error_enter_name]
+one = "Please enter your name"
+
+[error_rate_limit]
+one = "Too many login attempts. Please try again later."
+
+[error_rate_limit_wait]
+one = "Please try again in {{.Minutes}} minutes"
+
+[error_session_expired]
+one = "Your session has expired. Please start again."
+
+[error_session_not_found]
+one = "Login session not found or expired"
+
+[error_login_failed]
+one = "Login failed. Please try again."
+
+[error_verification_incorrect]
+one = "Verification code is incorrect"
+
+[error_verification_failed]
+one = "Verification failed. Please try again."
+
+[error_max_resends]
+one = "Maximum resend attempts reached. Please start a new login."
+
+[error_resend_wait]
+one = "Please wait {{.Seconds}} seconds before requesting another code"
+
+[error_resend_failed]
+one = "Failed to send verification code. Please try again."
+
+[error_unable_resend]
+one = "Unable to resend code. Please refresh the page."
+
+[error_network]
+one = "Network error. Please try again."
+
+# Accessibility
+[aria_resend_wait]
+one = "Please wait {{.Seconds}} seconds"
+
+[aria_seconds_remaining]
+one = "{{.Seconds}} seconds remaining"
+
+[aria_can_resend]
+one = "You can now request a new verification code."
+
+[aria_sending_code]
+one = "Sending verification code. Please wait."
+
+# Footer
+[footer_contact_support]
+one = "Contact Support"
+
+# Codes
+[code_404]
+one = "404"
+
+# Legacy messages (kept for backwards compatibility)
 [CouldNotCheckContactExists]
-one="Could not check contact exists"
+one = "Could not check contact exists"
+
 [CouldNotCreateProfileByContact]
-one="Could not create profile by contact provided"
+one = "Could not create profile by contact provided"
+
 [CouldNotCreateLoginDetails]
-one="Could not create login details"
+one = "Could not create login details"

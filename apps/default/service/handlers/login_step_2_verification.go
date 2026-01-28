@@ -69,7 +69,7 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 		}
 	}
 
-	payload := initTemplatePayload(ctx)
+	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload["login_event_id"] = loginEventID
 	payload["profile_name"] = profileName
 	payload["contact_type"] = contactType

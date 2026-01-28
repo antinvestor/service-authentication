@@ -1,0 +1,228 @@
+# Swahili (Kiswahili) translations
+
+# Page titles
+[page_title_sign_in]
+one = "Ingia"
+
+[page_title_verification]
+one = "Weka Nambari ya Uthibitisho"
+
+[page_title_complete_sign_in]
+one = "Kamilisha Kuingia Kwako"
+
+[page_title_signed_in]
+one = "Umeingia"
+
+[page_title_error]
+one = "Hitilafu"
+
+[page_title_not_found]
+one = "Ukurasa Haujapatikana"
+
+[page_title_suffix]
+one = "Uthibitishaji"
+
+# Notices
+[noscript_notice]
+one = "Washa JavaScript kwa uzoefu bora."
+
+# Labels
+[label_email_or_phone]
+one = "Barua pepe au Simu"
+
+[label_your_name]
+one = "Jina Lako"
+
+[label_verification_code]
+one = "Nambari ya Uthibitisho"
+
+[label_error]
+one = "Hitilafu:"
+
+[label_details]
+one = "Maelezo:"
+
+# Placeholders
+[placeholder_email_phone]
+one = "barua@mfano.com au +255123456789"
+
+[placeholder_name]
+one = "Juma Mohamed"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "Tutakutumia nambari ya uthibitisho ili uingie"
+
+[help_check_email]
+one = "Angalia barua pepe yako"
+
+[help_check_phone]
+one = "Angalia simu yako"
+
+[help_check_email_or_phone]
+one = "Angalia barua pepe au simu yako"
+
+[help_code_sent]
+one = "Angalia barua pepe au simu yako kwa nambari tuliyokutumia"
+
+[help_enter_name_and_code]
+one = "Weka jina lako na nambari ya uthibitisho tuliyokutumia"
+
+[help_no_code]
+one = "Hukupata nambari?"
+
+[help_contact_support]
+one = "Unahitaji msaada?"
+
+# Buttons
+[btn_continue]
+one = "Endelea"
+
+[btn_verify]
+one = "Thibitisha"
+
+[btn_resend]
+one = "Tuma Tena"
+
+[btn_resend_with_count]
+one = "Tuma Tena (zimebaki {{.Count}})"
+
+[btn_no_resends_left]
+one = "Hakuna kutuma tena"
+
+[btn_close_tab]
+one = "Funga Kichupo"
+
+[btn_sending]
+one = "Inatuma..."
+
+# Dividers
+[divider_or_continue_with]
+one = "au endelea na"
+
+# Providers
+[provider_google]
+one = "Google"
+
+[provider_facebook]
+one = "Facebook"
+
+[provider_apple]
+one = "Apple"
+
+[provider_microsoft]
+one = "Microsoft"
+
+[aria_continue_with_provider]
+one = "Endelea na {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "Unaingia..."
+
+# Success messages
+[success_signed_in]
+one = "Umeingia kwa mafanikio."
+
+[success_close_tab]
+one = "Unaweza kufunga kichupo hiki sasa."
+
+[success_code_sent]
+one = "Nambari mpya ya uthibitisho imetumwa!"
+
+[success_verification_sent]
+one = "Nambari ya uthibitisho imetumwa."
+
+# Error messages
+[error_generic]
+one = "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena baadaye."
+
+[error_something_wrong]
+one = "Kitu kimeenda vibaya"
+
+[error_unexpected]
+one = "Tumekutana na hitilafu isiyotarajiwa wakati wa kushughulikia ombi lako."
+
+[error_page_not_found]
+one = "Ukurasa unaoutafuta haupo au umehamishwa."
+
+[error_close_and_retry]
+one = "Tafadhali funga ukurasa huu na jaribu tena."
+
+[error_no_signin_methods]
+one = "Hakuna njia za kuingia zilizosanidiwa. Tafadhali wasiliana na msaada."
+
+[error_contact_required]
+one = "Tafadhali weka barua pepe au nambari yako ya simu"
+
+[error_invalid_phone]
+one = "Tafadhali weka nambari sahihi ya simu (mf., +255123456789)"
+
+[error_invalid_email]
+one = "Tafadhali weka anwani sahihi ya barua pepe"
+
+[error_invalid_code]
+one = "Tafadhali weka nambari sahihi ya tarakimu 6"
+
+[error_enter_name]
+one = "Tafadhali weka jina lako"
+
+[error_rate_limit]
+one = "Majaribio mengi ya kuingia. Tafadhali jaribu tena baadaye."
+
+[error_rate_limit_wait]
+one = "Tafadhali jaribu tena baada ya dakika {{.Minutes}}"
+
+[error_session_expired]
+one = "Kipindi chako kimeisha. Tafadhali anza upya."
+
+[error_session_not_found]
+one = "Kipindi cha kuingia hakijapatikana au kimeisha"
+
+[error_login_failed]
+one = "Kuingia kumeshindikana. Tafadhali jaribu tena."
+
+[error_verification_incorrect]
+one = "Nambari ya uthibitisho si sahihi"
+
+[error_verification_failed]
+one = "Uthibitisho umeshindikana. Tafadhali jaribu tena."
+
+[error_max_resends]
+one = "Umefikia kikomo cha kutuma tena. Tafadhali anza kuingia upya."
+
+[error_resend_wait]
+one = "Tafadhali subiri sekunde {{.Seconds}} kabla ya kuomba nambari nyingine"
+
+[error_resend_failed]
+one = "Imeshindikana kutuma nambari ya uthibitisho. Tafadhali jaribu tena."
+
+[error_unable_resend]
+one = "Haiwezekani kutuma tena nambari. Tafadhali onyesha upya ukurasa."
+
+[error_network]
+one = "Hitilafu ya mtandao. Tafadhali jaribu tena."
+
+# Accessibility
+[aria_resend_wait]
+one = "Tafadhali subiri sekunde {{.Seconds}}"
+
+[aria_seconds_remaining]
+one = "Sekunde {{.Seconds}} zimebaki"
+
+[aria_can_resend]
+one = "Sasa unaweza kuomba nambari mpya ya uthibitisho."
+
+[aria_sending_code]
+one = "Inatuma nambari ya uthibitisho. Tafadhali subiri."
+
+# Footer
+[footer_contact_support]
+one = "Wasiliana na Msaada"
+
+# Codes
+[code_404]
+one = "404"

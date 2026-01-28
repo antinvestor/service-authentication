@@ -82,7 +82,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	// For regular user flows from a browser, render an interstitial page
 	if h.shouldRenderBrowserInterstitial(req, getConseReq.GetRequestedScope(), clientID) {
-		payload := initTemplatePayload(ctx)
+		payload := h.initTemplatePayloadWithI18n(ctx, req)
 		payload["RedirectURL"] = redirectURL
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 		return loginCompleteTmpl.Execute(rw, payload)

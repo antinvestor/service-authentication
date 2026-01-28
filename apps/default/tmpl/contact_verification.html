@@ -1,18 +1,18 @@
-{{ define "title"}}{{ if .profile_name }}Enter Verification Code{{ else }}Complete Your Sign In{{ end }}{{ end }}
+{{ define "title"}}{{ if .profile_name }}{{ if .t.page_title_verification }}{{ .t.page_title_verification }}{{ else }}Enter Verification Code{{ end }}{{ else }}{{ if .t.page_title_complete_sign_in }}{{ .t.page_title_complete_sign_in }}{{ else }}Complete Your Sign In{{ end }}{{ end }}{{ end }}
 
 {{ define "subtitle" }}
 <p id="pageSubtitle">
-{{ if .profile_name }}Check your email or phone for the code we sent
-{{ else }}Enter your name and the verification code we sent{{ end }}
+{{ if .profile_name }}{{ if .t.help_code_sent }}{{ .t.help_code_sent }}{{ else }}Check your email or phone for the code we sent{{ end }}
+{{ else }}{{ if .t.help_enter_name_and_code }}{{ .t.help_enter_name_and_code }}{{ else }}Enter your name and the verification code we sent{{ end }}{{ end }}
 </p>
 {{ end }}
 
 {{define "content"}}
 <!-- Full-page overlay shown during verification/redirect -->
-<div id="verificationOverlay" class="verification-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Signing you in">
+<div id="verificationOverlay" class="verification-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="{{ if .t.overlay_signing_in }}{{ .t.overlay_signing_in }}{{ else }}Signing you in...{{ end }}">
     <div class="overlay-content">
         <div class="overlay-spinner" aria-hidden="true"></div>
-        <p class="overlay-message" aria-live="polite">Signing you in...</p>
+        <p class="overlay-message" aria-live="polite">{{ if .t.overlay_signing_in }}{{ .t.overlay_signing_in }}{{ else }}Signing you in...{{ end }}</p>
     </div>
 </div>
 
@@ -21,7 +21,7 @@
     <!-- Progressive enhancement notice -->
     <noscript>
         <div class="noscript-notice" role="alert">
-            Enable JavaScript for the best experience.
+            {{ if .t.noscript_notice }}{{ .t.noscript_notice }}{{ else }}Enable JavaScript for the best experience.{{ end }}
         </div>
     </noscript>
 
@@ -42,14 +42,14 @@
         <!-- Name field shown only for new users without a profile name -->
         <div class="form-group">
             <label for="profile_name_input">
-                Your Name
+                {{ if .t.label_your_name }}{{ .t.label_your_name }}{{ else }}Your Name{{ end }}
                 <span class="required-indicator" aria-hidden="true">*</span>
             </label>
             <input
                 type="text"
                 id="profile_name_input"
                 name="profile_name"
-                placeholder="John Doe"
+                placeholder="{{ if .t.placeholder_name }}{{ .t.placeholder_name }}{{ else }}John Doe{{ end }}"
                 required
                 autocomplete="name"
                 aria-required="true"
@@ -61,7 +61,7 @@
 
         <div class="form-group">
             <label for="verification_code">
-                Verification Code
+                {{ if .t.label_verification_code }}{{ .t.label_verification_code }}{{ else }}Verification Code{{ end }}
                 <span class="required-indicator" aria-hidden="true">*</span>
             </label>
             <input
@@ -69,7 +69,7 @@
                 inputmode="numeric"
                 id="verification_code"
                 name="verification_code"
-                placeholder="123456"
+                placeholder="{{ if .t.placeholder_code }}{{ .t.placeholder_code }}{{ else }}123456{{ end }}"
                 maxlength="6"
                 pattern="[0-9]{6}"
                 required
@@ -79,18 +79,18 @@
                 aria-required="true"
             >
             <small id="code-help" class="form-help">
-                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email
-                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone
-                {{else if eq .contact_type "EMAIL"}}Check your email
-                {{else if eq .contact_type "PHONE"}}Check your phone
-                {{else}}Check your email or phone
+                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}{{ if .t.help_check_email }}{{ .t.help_check_email }}{{ else }}Check your email{{ end }}
+                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}{{ if .t.help_check_phone }}{{ .t.help_check_phone }}{{ else }}Check your phone{{ end }}
+                {{else if eq .contact_type "EMAIL"}}{{ if .t.help_check_email }}{{ .t.help_check_email }}{{ else }}Check your email{{ end }}
+                {{else if eq .contact_type "PHONE"}}{{ if .t.help_check_phone }}{{ .t.help_check_phone }}{{ else }}Check your phone{{ end }}
+                {{else}}{{ if .t.help_check_email_or_phone }}{{ .t.help_check_email_or_phone }}{{ else }}Check your email or phone{{ end }}
                 {{end}}
             </small>
         </div>
 
         <div class="form-actions">
             <button type="submit" class="btn-primary" id="verifyBtn">
-                <span>Verify</span>
+                <span>{{ if .t.btn_verify }}{{ .t.btn_verify }}{{ else }}Verify{{ end }}</span>
             </button>
         </div>
     </form>
@@ -98,14 +98,14 @@
     <div id="verificationHelp" class="verification-help"
          data-initial-cooldown="{{ if .initial_cooldown }}{{ .initial_cooldown }}{{ else }}30{{ end }}"
          data-resends-left="{{ if .resends_left }}{{ .resends_left }}{{ else }}3{{ end }}">
-        <span class="help-text" id="resend-help">No code?</span>
+        <span class="help-text" id="resend-help">{{ if .t.help_no_code }}{{ .t.help_no_code }}{{ else }}No code?{{ end }}</span>
         <button
             type="button"
             id="resendBtn"
             class="resend-link"
             aria-describedby="resend-help resend-status"
         >
-            Resend
+            {{ if .t.btn_resend }}{{ .t.btn_resend }}{{ else }}Resend{{ end }}
         </button>
         <span id="resendTimer" class="resend-timer" style="display: none;" aria-hidden="true">
             (<strong id="countdown">60</strong>s)

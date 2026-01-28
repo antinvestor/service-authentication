@@ -84,14 +84,18 @@ func main() {
 		log.WithError(err).Fatal("could not setup devices service : %v", err)
 	}
 
-	serviceTranslations := frame.WithTranslation("/localization", "en")
+	serviceTranslations := frame.WithTranslation("/localization", "en", "sw", "lg", "fr", "ar", "es")
 	serviceOptions := []frame.Option{serviceTranslations}
+
+	// Initialize service early to get localization manager
+	svc.Init(ctx, serviceTranslations)
+	localizationMan := svc.LocalizationManager()
 
 	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), &cfg, cacheManager, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli)
+	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), &cfg, cacheManager, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)

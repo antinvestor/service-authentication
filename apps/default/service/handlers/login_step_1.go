@@ -210,7 +210,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	h.updateTenancyForLoginEvent(ctx, loginEvent.GetID())
 
 	// Step 6: Prepare and render login template
-	payload := initTemplatePayload(ctx)
+	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()
 	payload["error"] = ""
 

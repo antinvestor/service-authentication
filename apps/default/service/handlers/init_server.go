@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
@@ -24,6 +25,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/client"
+	"github.com/pitabwire/frame/localization"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -69,6 +71,9 @@ type AuthServer struct {
 	// Rate limiter cache and config for login attempts
 	rateLimitICache      cache.Cache[string, RateLimitEntry]
 	loginRateLimitConfig RateLimitConfig
+
+	// Localization manager for i18n support
+	localizationManager localization.Manager
 }
 
 func NewAuthServer(ctx context.Context,
@@ -77,7 +82,8 @@ func NewAuthServer(ctx context.Context,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
 	apiKeyRepository repository.APIKeyRepository,
 	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
-	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient) *AuthServer {
+	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient,
+	localizationMan localization.Manager) *AuthServer {
 
 	log := util.Log(ctx)
 
@@ -109,6 +115,9 @@ func NewAuthServer(ctx context.Context,
 
 		// Initialise rate limit config (7 per hour, cache is lazily initialised)
 		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
+
+		// Localization manager for i18n
+		localizationManager: localizationMan,
 	}
 
 	err := h.setupSecureCookies(ctx, authConfig)
@@ -235,6 +244,86 @@ func initTemplatePayload(ctx context.Context) map[string]any {
 	return payload
 }
 
+// initTemplatePayloadWithI18n creates a template payload with i18n support
+func (h *AuthServer) initTemplatePayloadWithI18n(ctx context.Context, req *http.Request) map[string]any {
+	payload := initTemplatePayload(ctx)
+
+	// Detect language from request (ui_locales query param for Hydra, Accept-Language header, or default)
+	lang := h.detectLanguage(req)
+	payload["lang"] = lang
+
+	// Build translation map for templates
+	payload["t"] = h.buildTranslationMap(ctx, req)
+
+	return payload
+}
+
+// detectLanguage extracts the preferred language from the request
+// Priority: 1) ui_locales query param (from Hydra), 2) Accept-Language header, 3) default "en"
+func (h *AuthServer) detectLanguage(req *http.Request) string {
+	// Check ui_locales from Hydra (space-separated list of BCP47 tags)
+	if uiLocales := req.URL.Query().Get("ui_locales"); uiLocales != "" {
+		// Return the first locale
+		locales := strings.Fields(uiLocales)
+		if len(locales) > 0 {
+			// Extract base language (e.g., "en" from "en-US")
+			parts := strings.Split(locales[0], "-")
+			return parts[0]
+		}
+	}
+
+	// Use frame's language extraction from Accept-Language header
+	langs := localization.ExtractLanguageFromHTTPRequest(req)
+	if len(langs) > 0 && langs[0] != "" {
+		// Extract base language
+		parts := strings.Split(langs[0], "-")
+		return parts[0]
+	}
+
+	return "en"
+}
+
+// buildTranslationMap creates a map of all translations for templates
+func (h *AuthServer) buildTranslationMap(ctx context.Context, req *http.Request) map[string]string {
+	translations := make(map[string]string)
+
+	if h.localizationManager == nil {
+		return translations
+	}
+
+	// List of all translation keys used in templates
+	keys := []string{
+		"page_title_sign_in", "page_title_verification", "page_title_complete_sign_in",
+		"page_title_signed_in", "page_title_error", "page_title_not_found", "page_title_suffix",
+		"noscript_notice",
+		"label_email_or_phone", "label_your_name", "label_verification_code", "label_error", "label_details",
+		"placeholder_email_phone", "placeholder_name", "placeholder_code",
+		"help_send_verification", "help_check_email", "help_check_phone", "help_check_email_or_phone",
+		"help_code_sent", "help_enter_name_and_code", "help_no_code", "help_contact_support",
+		"btn_continue", "btn_verify", "btn_resend", "btn_resend_with_count", "btn_no_resends_left",
+		"btn_close_tab", "btn_sending",
+		"divider_or_continue_with",
+		"provider_google", "provider_facebook", "provider_apple", "provider_microsoft",
+		"aria_continue_with_provider",
+		"overlay_signing_in",
+		"success_signed_in", "success_close_tab", "success_code_sent", "success_verification_sent",
+		"error_generic", "error_something_wrong", "error_unexpected", "error_page_not_found",
+		"error_close_and_retry", "error_no_signin_methods", "error_contact_required",
+		"error_invalid_phone", "error_invalid_email", "error_invalid_code", "error_enter_name",
+		"error_rate_limit", "error_rate_limit_wait", "error_session_expired", "error_session_not_found",
+		"error_login_failed", "error_verification_incorrect", "error_verification_failed",
+		"error_max_resends", "error_resend_wait", "error_resend_failed", "error_unable_resend", "error_network",
+		"aria_resend_wait", "aria_seconds_remaining", "aria_can_resend", "aria_sending_code",
+		"footer_contact_support", "code_404",
+	}
+
+	for _, key := range keys {
+		translations[key] = h.localizationManager.Translate(ctx, req, key)
+	}
+
+	return translations
+}
+
 // writeAPIError writes a JSON error response for API endpoints.
 // Always logs the full error but only exposes details if ExposeErrors is enabled.
 func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
@@ -266,7 +355,7 @@ func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, e
 func (h *AuthServer) NotFoundEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	rw.Header().Set("Content-Type", "text/html")
 	rw.WriteHeader(http.StatusNotFound)
-	return notFoundTmpl.Execute(rw, initTemplatePayload(req.Context()))
+	return notFoundTmpl.Execute(rw, h.initTemplatePayloadWithI18n(req.Context(), req))
 }
 
 // deviceIDMiddleware to ensure secure cookie and session handling

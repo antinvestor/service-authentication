@@ -1,0 +1,228 @@
+# Arabic (العربية) translations
+
+# Page titles
+[page_title_sign_in]
+one = "تسجيل الدخول"
+
+[page_title_verification]
+one = "أدخل رمز التحقق"
+
+[page_title_complete_sign_in]
+one = "أكمل تسجيل الدخول"
+
+[page_title_signed_in]
+one = "تم تسجيل الدخول"
+
+[page_title_error]
+one = "خطأ"
+
+[page_title_not_found]
+one = "الصفحة غير موجودة"
+
+[page_title_suffix]
+one = "المصادقة"
+
+# Notices
+[noscript_notice]
+one = "قم بتفعيل JavaScript للحصول على أفضل تجربة."
+
+# Labels
+[label_email_or_phone]
+one = "البريد الإلكتروني أو الهاتف"
+
+[label_your_name]
+one = "اسمك"
+
+[label_verification_code]
+one = "رمز التحقق"
+
+[label_error]
+one = "خطأ:"
+
+[label_details]
+one = "التفاصيل:"
+
+# Placeholders
+[placeholder_email_phone]
+one = "email@example.com أو +966123456789"
+
+[placeholder_name]
+one = "محمد أحمد"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "سنرسل لك رمز تحقق لتسجيل الدخول"
+
+[help_check_email]
+one = "تحقق من بريدك الإلكتروني"
+
+[help_check_phone]
+one = "تحقق من هاتفك"
+
+[help_check_email_or_phone]
+one = "تحقق من بريدك الإلكتروني أو هاتفك"
+
+[help_code_sent]
+one = "تحقق من بريدك الإلكتروني أو هاتفك للرمز الذي أرسلناه"
+
+[help_enter_name_and_code]
+one = "أدخل اسمك ورمز التحقق الذي أرسلناه"
+
+[help_no_code]
+one = "لم تستلم الرمز؟"
+
+[help_contact_support]
+one = "تحتاج مساعدة؟"
+
+# Buttons
+[btn_continue]
+one = "متابعة"
+
+[btn_verify]
+one = "تحقق"
+
+[btn_resend]
+one = "إعادة الإرسال"
+
+[btn_resend_with_count]
+one = "إعادة الإرسال ({{.Count}} متبقية)"
+
+[btn_no_resends_left]
+one = "لا توجد محاولات إرسال متبقية"
+
+[btn_close_tab]
+one = "إغلاق علامة التبويب"
+
+[btn_sending]
+one = "جارٍ الإرسال..."
+
+# Dividers
+[divider_or_continue_with]
+one = "أو تابع باستخدام"
+
+# Providers
+[provider_google]
+one = "جوجل"
+
+[provider_facebook]
+one = "فيسبوك"
+
+[provider_apple]
+one = "أبل"
+
+[provider_microsoft]
+one = "مايكروسوفت"
+
+[aria_continue_with_provider]
+one = "تابع باستخدام {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "جارٍ تسجيل دخولك..."
+
+# Success messages
+[success_signed_in]
+one = "تم تسجيل دخولك بنجاح."
+
+[success_close_tab]
+one = "يمكنك إغلاق علامة التبويب هذه الآن."
+
+[success_code_sent]
+one = "تم إرسال رمز تحقق جديد!"
+
+[success_verification_sent]
+one = "تم إرسال رمز التحقق."
+
+# Error messages
+[error_generic]
+one = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً."
+
+[error_something_wrong]
+one = "حدث خطأ ما"
+
+[error_unexpected]
+one = "واجهنا خطأً غير متوقع أثناء معالجة طلبك."
+
+[error_page_not_found]
+one = "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها."
+
+[error_close_and_retry]
+one = "يرجى إغلاق هذه الصفحة والمحاولة مرة أخرى."
+
+[error_no_signin_methods]
+one = "لم يتم تكوين طرق تسجيل الدخول. يرجى الاتصال بالدعم."
+
+[error_contact_required]
+one = "يرجى إدخال بريدك الإلكتروني أو رقم هاتفك"
+
+[error_invalid_phone]
+one = "يرجى إدخال رقم هاتف صحيح (مثال: +966123456789)"
+
+[error_invalid_email]
+one = "يرجى إدخال عنوان بريد إلكتروني صحيح"
+
+[error_invalid_code]
+one = "يرجى إدخال رمز صحيح مكون من 6 أرقام"
+
+[error_enter_name]
+one = "يرجى إدخال اسمك"
+
+[error_rate_limit]
+one = "محاولات تسجيل دخول كثيرة جداً. يرجى المحاولة مرة أخرى لاحقاً."
+
+[error_rate_limit_wait]
+one = "يرجى المحاولة مرة أخرى خلال {{.Minutes}} دقيقة"
+
+[error_session_expired]
+one = "انتهت صلاحية جلستك. يرجى البدء من جديد."
+
+[error_session_not_found]
+one = "جلسة تسجيل الدخول غير موجودة أو منتهية الصلاحية"
+
+[error_login_failed]
+one = "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى."
+
+[error_verification_incorrect]
+one = "رمز التحقق غير صحيح"
+
+[error_verification_failed]
+one = "فشل التحقق. يرجى المحاولة مرة أخرى."
+
+[error_max_resends]
+one = "تم الوصول للحد الأقصى من محاولات إعادة الإرسال. يرجى بدء تسجيل دخول جديد."
+
+[error_resend_wait]
+one = "يرجى الانتظار {{.Seconds}} ثانية قبل طلب رمز آخر"
+
+[error_resend_failed]
+one = "فشل إرسال رمز التحقق. يرجى المحاولة مرة أخرى."
+
+[error_unable_resend]
+one = "تعذر إعادة إرسال الرمز. يرجى تحديث الصفحة."
+
+[error_network]
+one = "خطأ في الشبكة. يرجى المحاولة مرة أخرى."
+
+# Accessibility
+[aria_resend_wait]
+one = "يرجى الانتظار {{.Seconds}} ثانية"
+
+[aria_seconds_remaining]
+one = "{{.Seconds}} ثانية متبقية"
+
+[aria_can_resend]
+one = "يمكنك الآن طلب رمز تحقق جديد."
+
+[aria_sending_code]
+one = "جارٍ إرسال رمز التحقق. يرجى الانتظار."
+
+# Footer
+[footer_contact_support]
+one = "اتصل بالدعم"
+
+# Codes
+[code_404]
+one = "404"

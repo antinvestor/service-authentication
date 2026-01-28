@@ -231,7 +231,7 @@ func (bs *BaseTestSuite) CreateService(
 
 	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager().GetAuthenticator(ctx), &cfg,
 		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
-		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli)
+		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli, nil)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 

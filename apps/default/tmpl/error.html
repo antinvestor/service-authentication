@@ -1,7 +1,7 @@
-{{ define "title"}}Error{{ end }}
+{{ define "title"}}{{ if .t.page_title_error }}{{ .t.page_title_error }}{{ else }}Error{{ end }}{{ end }}
 
 {{ define "subtitle" }}
-<p>Something went wrong</p>
+<p>{{ if .t.error_something_wrong }}{{ .t.error_something_wrong }}{{ else }}Something went wrong{{ end }}</p>
 {{ end }}
 
 {{define "content"}}
@@ -10,7 +10,7 @@
         <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
         </svg>
-        <span>We encountered an unexpected error while processing your request.</span>
+        <span>{{ if .t.error_unexpected }}{{ .t.error_unexpected }}{{ else }}We encountered an unexpected error while processing your request.{{ end }}</span>
     </div>
 
     {{if or .error .error_description .errorTitle .errorDescription}}
@@ -18,15 +18,15 @@
         <summary>View Error Details</summary>
         <div class="error-details-content">
             {{if or .error .errorTitle}}
-            <p><strong>Error:</strong> {{ if .error }}{{ .error }}{{ else }}{{ .errorTitle }}{{ end }}</p>
+            <p><strong>{{ if .t.label_error }}{{ .t.label_error }}{{ else }}Error:{{ end }}</strong> {{ if .error }}{{ .error }}{{ else }}{{ .errorTitle }}{{ end }}</p>
             {{end}}
             {{if or .error_description .errorDescription}}
-            <p><strong>Details:</strong> {{ if .error_description }}{{ .error_description }}{{ else }}{{ .errorDescription }}{{ end }}</p>
+            <p><strong>{{ if .t.label_details }}{{ .t.label_details }}{{ else }}Details:{{ end }}</strong> {{ if .error_description }}{{ .error_description }}{{ else }}{{ .errorDescription }}{{ end }}</p>
             {{end}}
         </div>
     </details>
     {{end}}
 
-    <p class="error-close-hint">Please close this page and try again.</p>
+    <p class="error-close-hint">{{ if .t.error_close_and_retry }}{{ .t.error_close_and_retry }}{{ else }}Please close this page and try again.{{ end }}</p>
 </div>
 {{end}}

@@ -1,17 +1,17 @@
-{{ define "title"}}Page Not Found{{ end }}
+{{ define "title"}}{{ if .t.page_title_not_found }}{{ .t.page_title_not_found }}{{ else }}Page Not Found{{ end }}{{ end }}
 
 {{ define "subtitle" }}
-<p>The page you're looking for doesn't exist</p>
+<p>{{ if .t.error_page_not_found }}{{ .t.error_page_not_found }}{{ else }}The page you're looking for doesn't exist{{ end }}</p>
 {{ end }}
 
 {{define "content"}}
 <div class="not-found-container" role="alert">
-    <div class="not-found-code" aria-label="Error 404">404</div>
+    <div class="not-found-code" aria-label="Error 404">{{ if .t.code_404 }}{{ .t.code_404 }}{{ else }}404{{ end }}</div>
 
     <p class="not-found-message">
-        The page you're looking for doesn't exist or may have been moved.
+        {{ if .t.error_page_not_found }}{{ .t.error_page_not_found }}{{ else }}The page you're looking for doesn't exist or may have been moved.{{ end }}
     </p>
 
-    <p class="error-close-hint">Please close this page and try again.</p>
+    <p class="error-close-hint">{{ if .t.error_close_and_retry }}{{ .t.error_close_and_retry }}{{ else }}Please close this page and try again.{{ end }}</p>
 </div>
 {{end}}

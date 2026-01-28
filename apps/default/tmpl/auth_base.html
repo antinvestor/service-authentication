@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="{{ if .lang }}{{ .lang }}{{ else }}en{{ end }}" data-theme="auto">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Secure authentication portal">
     <meta name="robots" content="noindex, nofollow">
-    <title>{{ template "title" .}} | Authentication</title>
+    <title>{{ template "title" .}} | {{ if .t.page_title_suffix }}{{ .t.page_title_suffix }}{{ else }}Authentication{{ end }}</title>
 
     <link rel="stylesheet" href="/static/css/auth.css?v=2.0.0">
 
@@ -165,9 +165,20 @@
     </main>
 
     <footer class="auth-footer">
-        <p>Need help? <a href="mailto:support@antinvestor.com">Contact Support</a></p>
+        <p>{{ if .t.help_contact_support }}{{ .t.help_contact_support }}{{ else }}Need help?{{ end }} <a href="mailto:support@antinvestor.com">{{ if .t.footer_contact_support }}{{ .t.footer_contact_support }}{{ else }}Contact Support{{ end }}</a></p>
     </footer>
 
+    <!-- Pass translations to JavaScript -->
+    <script>
+        window.authI18n = {
+            {{- if .t }}
+            {{- range $key, $value := .t }}
+            "{{ $key }}": "{{ $value }}",
+            {{- end }}
+            {{- end }}
+            "_lang": "{{ if .lang }}{{ .lang }}{{ else }}en{{ end }}"
+        };
+    </script>
     <script src="/static/js/auth.js?v=2.0.0"></script>
 </body>
 </html>

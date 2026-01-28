@@ -1,0 +1,228 @@
+# French (Français) translations
+
+# Page titles
+[page_title_sign_in]
+one = "Connexion"
+
+[page_title_verification]
+one = "Entrez le Code de Vérification"
+
+[page_title_complete_sign_in]
+one = "Terminez Votre Connexion"
+
+[page_title_signed_in]
+one = "Connecté"
+
+[page_title_error]
+one = "Erreur"
+
+[page_title_not_found]
+one = "Page Non Trouvée"
+
+[page_title_suffix]
+one = "Authentification"
+
+# Notices
+[noscript_notice]
+one = "Activez JavaScript pour une meilleure expérience."
+
+# Labels
+[label_email_or_phone]
+one = "E-mail ou Téléphone"
+
+[label_your_name]
+one = "Votre Nom"
+
+[label_verification_code]
+one = "Code de Vérification"
+
+[label_error]
+one = "Erreur :"
+
+[label_details]
+one = "Détails :"
+
+# Placeholders
+[placeholder_email_phone]
+one = "email@exemple.com ou +33123456789"
+
+[placeholder_name]
+one = "Jean Dupont"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "Nous vous enverrons un code de vérification pour vous connecter"
+
+[help_check_email]
+one = "Vérifiez votre e-mail"
+
+[help_check_phone]
+one = "Vérifiez votre téléphone"
+
+[help_check_email_or_phone]
+one = "Vérifiez votre e-mail ou téléphone"
+
+[help_code_sent]
+one = "Vérifiez votre e-mail ou téléphone pour le code que nous avons envoyé"
+
+[help_enter_name_and_code]
+one = "Entrez votre nom et le code de vérification que nous avons envoyé"
+
+[help_no_code]
+one = "Pas de code ?"
+
+[help_contact_support]
+one = "Besoin d'aide ?"
+
+# Buttons
+[btn_continue]
+one = "Continuer"
+
+[btn_verify]
+one = "Vérifier"
+
+[btn_resend]
+one = "Renvoyer"
+
+[btn_resend_with_count]
+one = "Renvoyer ({{.Count}} restant(s))"
+
+[btn_no_resends_left]
+one = "Plus de renvois disponibles"
+
+[btn_close_tab]
+one = "Fermer l'Onglet"
+
+[btn_sending]
+one = "Envoi en cours..."
+
+# Dividers
+[divider_or_continue_with]
+one = "ou continuez avec"
+
+# Providers
+[provider_google]
+one = "Google"
+
+[provider_facebook]
+one = "Facebook"
+
+[provider_apple]
+one = "Apple"
+
+[provider_microsoft]
+one = "Microsoft"
+
+[aria_continue_with_provider]
+one = "Continuer avec {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "Connexion en cours..."
+
+# Success messages
+[success_signed_in]
+one = "Vous êtes connecté avec succès."
+
+[success_close_tab]
+one = "Vous pouvez fermer cet onglet maintenant."
+
+[success_code_sent]
+one = "Un nouveau code de vérification a été envoyé !"
+
+[success_verification_sent]
+one = "Code de vérification envoyé."
+
+# Error messages
+[error_generic]
+one = "Une erreur inattendue s'est produite. Veuillez réessayer plus tard."
+
+[error_something_wrong]
+one = "Une erreur s'est produite"
+
+[error_unexpected]
+one = "Nous avons rencontré une erreur inattendue lors du traitement de votre demande."
+
+[error_page_not_found]
+one = "La page que vous recherchez n'existe pas ou a été déplacée."
+
+[error_close_and_retry]
+one = "Veuillez fermer cette page et réessayer."
+
+[error_no_signin_methods]
+one = "Aucune méthode de connexion configurée. Veuillez contacter le support."
+
+[error_contact_required]
+one = "Veuillez entrer votre e-mail ou numéro de téléphone"
+
+[error_invalid_phone]
+one = "Veuillez entrer un numéro de téléphone valide (ex., +33123456789)"
+
+[error_invalid_email]
+one = "Veuillez entrer une adresse e-mail valide"
+
+[error_invalid_code]
+one = "Veuillez entrer un code valide à 6 chiffres"
+
+[error_enter_name]
+one = "Veuillez entrer votre nom"
+
+[error_rate_limit]
+one = "Trop de tentatives de connexion. Veuillez réessayer plus tard."
+
+[error_rate_limit_wait]
+one = "Veuillez réessayer dans {{.Minutes}} minutes"
+
+[error_session_expired]
+one = "Votre session a expiré. Veuillez recommencer."
+
+[error_session_not_found]
+one = "Session de connexion introuvable ou expirée"
+
+[error_login_failed]
+one = "Échec de la connexion. Veuillez réessayer."
+
+[error_verification_incorrect]
+one = "Le code de vérification est incorrect"
+
+[error_verification_failed]
+one = "La vérification a échoué. Veuillez réessayer."
+
+[error_max_resends]
+one = "Nombre maximum de renvois atteint. Veuillez recommencer une nouvelle connexion."
+
+[error_resend_wait]
+one = "Veuillez attendre {{.Seconds}} secondes avant de demander un autre code"
+
+[error_resend_failed]
+one = "Échec de l'envoi du code de vérification. Veuillez réessayer."
+
+[error_unable_resend]
+one = "Impossible de renvoyer le code. Veuillez actualiser la page."
+
+[error_network]
+one = "Erreur réseau. Veuillez réessayer."
+
+# Accessibility
+[aria_resend_wait]
+one = "Veuillez attendre {{.Seconds}} secondes"
+
+[aria_seconds_remaining]
+one = "{{.Seconds}} secondes restantes"
+
+[aria_can_resend]
+one = "Vous pouvez maintenant demander un nouveau code de vérification."
+
+[aria_sending_code]
+one = "Envoi du code de vérification. Veuillez patienter."
+
+# Footer
+[footer_contact_support]
+one = "Contacter le Support"
+
+# Codes
+[code_404]
+one = "404"

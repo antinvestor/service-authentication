@@ -9,7 +9,7 @@ func (h *AuthServer) ErrorEndpoint(rw http.ResponseWriter, req *http.Request) er
 	errorTitle := req.FormValue("error")
 	errorDescription := req.FormValue("error_description")
 
-	payload := initTemplatePayload(req.Context())
+	payload := h.initTemplatePayloadWithI18n(req.Context(), req)
 	payload["errorTitle"] = errorTitle
 	payload["errorDescription"] = errorDescription
 

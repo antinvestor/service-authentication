@@ -1,0 +1,228 @@
+# Luganda translations
+
+# Page titles
+[page_title_sign_in]
+one = "Yingira"
+
+[page_title_verification]
+one = "Yingiza Ennamba y'Okukakasa"
+
+[page_title_complete_sign_in]
+one = "Maliriza Okuyingira Kwo"
+
+[page_title_signed_in]
+one = "Oyingidde"
+
+[page_title_error]
+one = "Ensobi"
+
+[page_title_not_found]
+one = "Omuko Tegusangiddwa"
+
+[page_title_suffix]
+one = "Okukakasa"
+
+# Notices
+[noscript_notice]
+one = "Kwekukiza JavaScript okusobola okufuna obumanyirivu obulungi."
+
+# Labels
+[label_email_or_phone]
+one = "Email oba Essimu"
+
+[label_your_name]
+one = "Erinnya Lyo"
+
+[label_verification_code]
+one = "Ennamba y'Okukakasa"
+
+[label_error]
+one = "Ensobi:"
+
+[label_details]
+one = "Ebisingawo:"
+
+# Placeholders
+[placeholder_email_phone]
+one = "email@ekyokulabirako.com oba +256123456789"
+
+[placeholder_name]
+one = "Mukasa John"
+
+[placeholder_code]
+one = "123456"
+
+# Help text
+[help_send_verification]
+one = "Tujja kukusindikira ennamba y'okukakasa oyingire"
+
+[help_check_email]
+one = "Kebera email yo"
+
+[help_check_phone]
+one = "Kebera essimu yo"
+
+[help_check_email_or_phone]
+one = "Kebera email oba essimu yo"
+
+[help_code_sent]
+one = "Kebera email oba essimu yo olabe ennamba gye tukusindikidde"
+
+[help_enter_name_and_code]
+one = "Yingiza erinnya lyo n'ennamba y'okukakasa gye tukusindikidde"
+
+[help_no_code]
+one = "Tofunye nnamba?"
+
+[help_contact_support]
+one = "Oyagala obuyambi?"
+
+# Buttons
+[btn_continue]
+one = "Weyongere"
+
+[btn_verify]
+one = "Kakasa"
+
+[btn_resend]
+one = "Ddamu Osindike"
+
+[btn_resend_with_count]
+one = "Ddamu Osindike (zisigadde {{.Count}})"
+
+[btn_no_resends_left]
+one = "Tewali kusindika kwasigadde"
+
+[btn_close_tab]
+one = "Ggalawo Tab"
+
+[btn_sending]
+one = "Kisindikibwa..."
+
+# Dividers
+[divider_or_continue_with]
+one = "oba weyongerenga ne"
+
+# Providers
+[provider_google]
+one = "Google"
+
+[provider_facebook]
+one = "Facebook"
+
+[provider_apple]
+one = "Apple"
+
+[provider_microsoft]
+one = "Microsoft"
+
+[aria_continue_with_provider]
+one = "Weyongere ne {{.Provider}}"
+
+# Overlay
+[overlay_signing_in]
+one = "Tukuyingiza..."
+
+# Success messages
+[success_signed_in]
+one = "Oyingidde bulungi."
+
+[success_close_tab]
+one = "Osobola okuggalawo tab eno kati."
+
+[success_code_sent]
+one = "Ennamba empya ey'okukakasa esindikiddwa!"
+
+[success_verification_sent]
+one = "Ennamba y'okukakasa esindikiddwa."
+
+# Error messages
+[error_generic]
+one = "Wabaddewo ensobi etasuubirwa. Gezaako nate oluvannyuma."
+
+[error_something_wrong]
+one = "Waliwo ekyakyamu"
+
+[error_unexpected]
+one = "Tusanze ensobi etasuubirwa nga tukola ku kusaba kwo."
+
+[error_page_not_found]
+one = "Omuko gw'onoonya teguli oba gusengeddwa."
+
+[error_close_and_retry]
+one = "Nsaba ggalawo omuko guno ogezeeko nate."
+
+[error_no_signin_methods]
+one = "Tewali ngeri z'okuyingiramu zitegekeddwa. Nsaba otuukirire abo abayamba."
+
+[error_contact_required]
+one = "Nsaba oyingize email yo oba ennamba y'essimu yo"
+
+[error_invalid_phone]
+one = "Nsaba oyingize ennamba y'essimu entuufu (okugeza, +256123456789)"
+
+[error_invalid_email]
+one = "Nsaba oyingize endagiriro y'email entuufu"
+
+[error_invalid_code]
+one = "Nsaba oyingize ennamba entuufu ey'obungi 6"
+
+[error_enter_name]
+one = "Nsaba oyingize erinnya lyo"
+
+[error_rate_limit]
+one = "Okugezaako okuyingira kungi ennyo. Nsaba ogezeeko nate oluvannyuma."
+
+[error_rate_limit_wait]
+one = "Nsaba ogezeeko nate mu ddakiika {{.Minutes}}"
+
+[error_session_expired]
+one = "Obudde bwo buggwaako. Nsaba otandike buuya."
+
+[error_session_not_found]
+one = "Okuyingira tekusangiddwa oba kuggwaako"
+
+[error_login_failed]
+one = "Okuyingira kulemye. Nsaba ogezeeko nate."
+
+[error_verification_incorrect]
+one = "Ennamba y'okukakasa si ntuufu"
+
+[error_verification_failed]
+one = "Okukakasa kulemye. Nsaba ogezeeko nate."
+
+[error_max_resends]
+one = "Otuuse ku nkomo ey'okusindika nate. Nsaba otandike okuyingira okubuuya."
+
+[error_resend_wait]
+one = "Nsaba olinde sekondi {{.Seconds}} nga tonasaba nnamba ndala"
+
+[error_resend_failed]
+one = "Kulemye okusindika ennamba y'okukakasa. Nsaba ogezeeko nate."
+
+[error_unable_resend]
+one = "Tekisoboka kusindika nate nnamba. Nsaba oddemu olaade omuko."
+
+[error_network]
+one = "Ensobi y'omukutu. Nsaba ogezeeko nate."
+
+# Accessibility
+[aria_resend_wait]
+one = "Nsaba olinde sekondi {{.Seconds}}"
+
+[aria_seconds_remaining]
+one = "Sekondi {{.Seconds}} zisigadde"
+
+[aria_can_resend]
+one = "Kati osobola okusaba ennamba empya ey'okukakasa."
+
+[aria_sending_code]
+one = "Ennamba y'okukakasa esindikibwa. Nsaba olinde."
+
+# Footer
+[footer_contact_support]
+one = "Tuukirira Abayamba"
+
+# Codes
+[code_404]
+one = "404"
