@@ -30,16 +30,16 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	start := time.Now()
 	log := util.Log(ctx)
 
-	// Step 1: Parse form data
-	if err := req.ParseForm(); err != nil {
-		log.WithError(err).Error("failed to parse form data")
-		return fmt.Errorf("failed to parse form: %w", err)
+	// Step 1: Get loginEventID from URL path (primary) with form fallback
+	loginEventID := req.PathValue(pathValueLoginEventID)
+	if loginEventID == "" {
+		// Fallback to form data for backwards compatibility
+		if err := req.ParseForm(); err != nil {
+			log.WithError(err).Error("failed to parse form data")
+			return fmt.Errorf("failed to parse form: %w", err)
+		}
+		loginEventID = req.PostForm.Get("login_event_id")
 	}
-
-	profileName := req.PostForm.Get("profile_name")
-	verificationCode := req.PostForm.Get("verification_code")
-	loginEventID := req.PostForm.Get("login_event_id")
-	contactType := req.PostForm.Get("contact_type")
 
 	if loginEventID == "" {
 		log.Warn("login submission missing login_event_id")
@@ -47,9 +47,19 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return nil
 	}
 
+	// Step 2: Parse remaining form data
+	if err := req.ParseForm(); err != nil {
+		log.WithError(err).Error("failed to parse form data")
+		return fmt.Errorf("failed to parse form: %w", err)
+	}
+
+	profileName := req.PostForm.Get("profile_name")
+	verificationCode := req.PostForm.Get("verification_code")
+	contactType := req.PostForm.Get("contact_type")
+
 	log = log.WithField("login_event_id", loginEventID)
 
-	// Step 2: Retrieve login event from database
+	// Step 3: Retrieve login event from database
 	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
 	if err != nil {
 		if data.ErrorIsNoRows(err) {
@@ -61,20 +71,20 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return err
 	}
 
-	// Step 3: Verify the login credentials
+	// Step 4: Verify the login credentials
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
 		log.WithError(err).Debug("login verification failed")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
 	}
 
-	// Step 4: Validate profile ID before proceeding
+	// Step 5: Validate profile ID before proceeding
 	if profileID == "" {
 		log.Error("profile ID is empty after verification - cannot complete login")
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
 	}
 
-	// Step 5: Update profile name if provided
+	// Step 6: Update profile name if provided
 	if profileName != "" {
 		_, err = h.updateProfileName(ctx, profileID, profileName)
 		if err != nil {
@@ -83,7 +93,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	// Step 6: Complete OAuth2 login flow
+	// Step 7: Complete OAuth2 login flow
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge: loginEvent.LoginChallengeID,
 		SubjectID:      profileID,

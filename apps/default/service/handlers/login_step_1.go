@@ -261,6 +261,20 @@ func (h *AuthServer) attemptRememberMeLogin(ctx context.Context, req *http.Reque
 		return "", fmt.Errorf("old login event has no profile ID")
 	}
 
+	// Security: Verify the old login event was for the same OAuth2 client
+	// This prevents session reuse across different OAuth2 clients
+	cli, ok := loginReq.GetClientOk()
+	if !ok || cli.GetClientId() == "" {
+		return "", fmt.Errorf("current login request missing client_id")
+	}
+	if oldLoginEvent.ClientID != cli.GetClientId() {
+		util.Log(ctx).WithFields(map[string]any{
+			"old_client_id": oldLoginEvent.ClientID,
+			"new_client_id": cli.GetClientId(),
+		}).Warn("remember-me session rejected: client_id mismatch")
+		return "", fmt.Errorf("session client mismatch")
+	}
+
 	deviceSessionID := utils.SessionIDFromContext(ctx)
 
 	newLoginEvent := models.LoginEvent{

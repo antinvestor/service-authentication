@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/pitabwire/util"
 )
 
 // Verification flow error definitions
@@ -22,13 +24,27 @@ const (
 )
 
 func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
 
 	loginEventID := req.PathValue(pathValueLoginEventID)
 	profileName := req.FormValue("profile_name")
 	contactType := req.FormValue("contact_type")
 	errorMsg := req.FormValue("error")
 
-	payload := initTemplatePayload(req.Context())
+	// Validate login event exists (either in cache or database)
+	if loginEventID != "" {
+		_, err := h.getLoginEventFromCache(ctx, loginEventID)
+		if err != nil {
+			// Try database as fallback
+			_, dbErr := h.loginEventRepo.GetByID(ctx, loginEventID)
+			if dbErr != nil {
+				http.Redirect(rw, req, "/error?error=session_expired", http.StatusSeeOther)
+				return nil
+			}
+		}
+	}
+
+	payload := initTemplatePayload(ctx)
 	payload["login_event_id"] = loginEventID
 	payload["profile_name"] = profileName
 	payload["contact_type"] = contactType
@@ -37,31 +53,29 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 		payload["error"] = errorMsg
 	}
 
-	err := verifyContactTmpl.Execute(rw, payload)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
+	return verifyContactTmpl.Execute(rw, payload)
 }
 
-// showVerificationPage displays the login form with an error message
+// showVerificationPage redirects to the verification form with optional error message
 func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, contactType, errorMsg string) error {
-
-	verificationPage := fmt.Sprintf("/s/verify/contact/%s?login_event_id=%s", loginEventID, loginEventID)
+	// Build query parameters using url.Values for proper encoding
+	params := url.Values{}
+	params.Set("login_event_id", loginEventID)
 
 	if profileName != "" {
-		verificationPage = fmt.Sprintf("%s&profile_name=%s", verificationPage, url.QueryEscape(profileName))
+		params.Set("profile_name", profileName)
 	}
-
 	if contactType != "" {
-		verificationPage = fmt.Sprintf("%s&contact_type=%s", verificationPage, url.QueryEscape(contactType))
+		params.Set("contact_type", contactType)
+	}
+	if errorMsg != "" {
+		params.Set("error", errorMsg)
 	}
 
-	if errorMsg != "" {
-		verificationPage = fmt.Sprintf("%s&error=%s", verificationPage, url.QueryEscape(errorMsg))
-	}
+	verificationPage := fmt.Sprintf("/s/verify/contact/%s?%s", url.PathEscape(loginEventID), params.Encode())
+
+	log := util.Log(req.Context())
+	log.WithField("redirect_url", verificationPage).Info("Redirecting to :", verificationPage)
 
 	http.Redirect(rw, req, verificationPage, http.StatusSeeOther)
 	return nil

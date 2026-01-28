@@ -37,7 +37,18 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	// Step 2: Handle contactDetail submission
 	contactDetail := req.FormValue("contactDetail")
-	log = log.WithField("contact_prefix", contactDetail[:min(3, len(contactDetail))]+"***")
+	if contactDetail == "" {
+		log.Warn("empty contact detail submitted")
+		http.Redirect(rw, req, "/s/login?login_challenge="+url.QueryEscape(loginEvt.LoginChallengeID)+"&error=contact_required", http.StatusSeeOther)
+		return nil
+	}
+
+	// Log prefix safely (avoid panic on short strings)
+	contactPrefix := contactDetail
+	if len(contactPrefix) > 3 {
+		contactPrefix = contactPrefix[:3]
+	}
+	log = log.WithField("contact_prefix", contactPrefix+"***")
 	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
 	// Step 3: Look up or create contact for contactDetail

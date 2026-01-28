@@ -153,15 +153,19 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 						log.WithError(rmErr).Debug("failed to set remember-me cookie")
 					}
 				} else {
-
-					util.Log(ctx).Info("We possibly are doing token refresh, explore how to fill it")
-
+					log.Debug("login_event_id in context is not a string - possible token refresh")
 				}
 			}
 		}
 	}
 
-	// Step 7: Accept consent and get redirect URL
+	// Ensure tokenMap is initialized (defensive - should not normally be nil)
+	if tokenMap == nil {
+		log.Warn("tokenMap is nil - consent flow may be incomplete, using empty claims")
+		tokenMap = map[string]any{}
+	}
+
+	// Step 6: Accept consent and get redirect URL
 	// Remember=true ensures the consent session (including token extras) is persisted
 	// for subsequent token refreshes
 	params := &hydra.AcceptConsentRequestParams{
@@ -180,16 +184,26 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return fmt.Errorf("failed to accept consent: %w", err)
 	}
 
-	// Step 8: Clear session cookie and redirect
+	// Step 7: Clear session cookie and redirect
 	h.clearDeviceSessionID(rw)
 
-	log.WithFields(map[string]any{
-		"partition_id": tokenMap["partition_id"],
-		"tenant_id":    tokenMap["tenant_id"],
-		"session_id":   tokenMap["session_id"],
-		"device_id":    tokenMap["device_id"],
-		"duration_ms":  time.Since(start).Milliseconds(),
-	}).Info("consent granted successfully")
+	// Safe logging - tokenMap may have missing keys
+	logFields := map[string]any{
+		"duration_ms": time.Since(start).Milliseconds(),
+	}
+	if v, ok := tokenMap["partition_id"]; ok {
+		logFields["partition_id"] = v
+	}
+	if v, ok := tokenMap["tenant_id"]; ok {
+		logFields["tenant_id"] = v
+	}
+	if v, ok := tokenMap["session_id"]; ok {
+		logFields["session_id"] = v
+	}
+	if v, ok := tokenMap["device_id"]; ok {
+		logFields["device_id"] = v
+	}
+	log.WithFields(logFields).Info("consent granted successfully")
 
 	// For regular user flows from a browser, render an interstitial page that
 	// handles the redirect client-side. This allows mobile apps using deep links
