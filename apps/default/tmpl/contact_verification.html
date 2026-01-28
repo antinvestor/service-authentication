@@ -1,9 +1,9 @@
-{{ define "title"}}{{ if .profile_name }}Enter Verification Code{{ else }}What's your name?{{ end }}{{ end }}
+{{ define "title"}}{{ if .profile_name }}Enter Verification Code{{ else }}Complete Your Sign In{{ end }}{{ end }}
 
 {{ define "subtitle" }}
 <p id="pageSubtitle">
 {{ if .profile_name }}Check your email or phone for the code we sent
-{{ else }}We need your name to create your account{{ end }}
+{{ else }}Enter your name and the verification code we sent{{ end }}
 </p>
 {{ end }}
 
@@ -38,71 +38,64 @@
         <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
         <input type="hidden" name="contact_type" value="{{ .contact_type }}">
 
-        <!-- Step 1: Name (only shown when no profile_name) -->
-        <div id="stepName"{{ if .profile_name }} style="display:none"{{ end }}>
-            <div class="form-group">
-                <label for="profile_name_input">
-                    Your Name
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <input
-                    type="text"
-                    id="profile_name_input"
-                    placeholder="John Doe"
-                    required
-                    autocomplete="name"
-                    aria-required="true"
-                >
-            </div>
-            <div class="form-actions">
-                <button type="button" id="nameNextBtn" class="btn-primary">
-                    <span>Continue</span>
-                </button>
-            </div>
+        {{ if not .profile_name }}
+        <!-- Name field shown only for new users without a profile name -->
+        <div class="form-group">
+            <label for="profile_name_input">
+                Your Name
+                <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+                type="text"
+                id="profile_name_input"
+                name="profile_name"
+                placeholder="John Doe"
+                required
+                autocomplete="name"
+                aria-required="true"
+            >
+        </div>
+        {{ else }}
+        <input type="hidden" name="profile_name" value="{{ .profile_name }}">
+        {{ end }}
+
+        <div class="form-group">
+            <label for="verification_code">
+                Verification Code
+                <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+                type="text"
+                inputmode="numeric"
+                id="verification_code"
+                name="verification_code"
+                placeholder="123456"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+                autocomplete="one-time-code"
+                class="verification-input"
+                aria-describedby="code-help"
+                aria-required="true"
+            >
+            <small id="code-help" class="form-help">
+                {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email
+                {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone
+                {{else if eq .contact_type "EMAIL"}}Check your email
+                {{else if eq .contact_type "PHONE"}}Check your phone
+                {{else}}Check your email or phone
+                {{end}}
+            </small>
         </div>
 
-        <!-- Step 2: Code -->
-        <div id="stepCode"{{ if not .profile_name }} style="display:none"{{ end }}>
-            <input type="hidden" name="profile_name" id="profile_name_hidden" value="{{ .profile_name }}">
-
-            <div class="form-group">
-                <label for="verification_code">
-                    Verification Code
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <input
-                    type="text"
-                    inputmode="numeric"
-                    id="verification_code"
-                    name="verification_code"
-                    placeholder="123456"
-                    maxlength="6"
-                    pattern="[0-9]{6}"
-                    required
-                    autocomplete="one-time-code"
-                    class="verification-input"
-                    aria-describedby="code-help"
-                    aria-required="true"
-                >
-                <small id="code-help" class="form-help">
-                    {{if eq .contact_type "CONTACT_TYPE_EMAIL"}}Check your email
-                    {{else if eq .contact_type "CONTACT_TYPE_PHONE"}}Check your phone
-                    {{else if eq .contact_type "EMAIL"}}Check your email
-                    {{else if eq .contact_type "PHONE"}}Check your phone
-                    {{else}}Check your email or phone
-                    {{end}}
-                </small>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-primary" id="verifyBtn">
-                    <span>Verify</span>
-                </button>
-            </div>
+        <div class="form-actions">
+            <button type="submit" class="btn-primary" id="verifyBtn">
+                <span>Verify</span>
+            </button>
         </div>
     </form>
 
-    <div id="verificationHelp" class="verification-help"{{ if not .profile_name }} style="display:none"{{ end }}>
+    <div id="verificationHelp" class="verification-help">
         <span class="help-text" id="resend-help">No code?</span>
         <button
             type="button"

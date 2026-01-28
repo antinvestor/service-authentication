@@ -5,12 +5,35 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
+
+// findStaticDirectory searches for the static assets directory in common locations
+func findStaticDirectory() string {
+	searchPaths := []string{
+		"static",
+		"apps/default/static",
+		"../static",
+		"../../static",
+	}
+
+	for _, path := range searchPaths {
+		info, err := os.Stat(path)
+		if err == nil && info.IsDir() {
+			absPath, err := filepath.Abs(path)
+			if err == nil {
+				return absPath
+			}
+		}
+	}
+
+	return "static"
+}
 
 // SetupRouterV1 -
 func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
@@ -33,8 +56,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	}
 
 	// Static file serving (no auth, no CSRF) with cache headers
-	staticDir := filepath.Join("static")
-	fileServer := http.FileServer(http.Dir(staticDir))
+	staticDir := findStaticDirectory()
+	fileServer := http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir)))
 
 	// Wrap file server with cache headers
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

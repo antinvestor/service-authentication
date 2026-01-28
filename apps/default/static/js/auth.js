@@ -323,77 +323,15 @@
     }
 
     /**
-     * Update the page heading and subtitle during step transitions
-     */
-    function updateStepHeading(title, subtitle) {
-        var heading = document.querySelector('.auth-header h1');
-        var subtitleEl = document.getElementById('pageSubtitle');
-        if (heading) {
-            heading.textContent = title;
-        }
-        if (subtitleEl) {
-            subtitleEl.textContent = subtitle;
-        }
-    }
-
-    /**
-     * Initialize verification form with two-step name/code flow
+     * Initialize verification form with name and code fields
      */
     function initVerificationForm() {
         const form = document.getElementById('verificationForm') || document.querySelector('.verification-form');
         if (!form) return;
 
         const codeInput = document.getElementById('verification_code');
-        const nameHidden = document.getElementById('profile_name_hidden');
-        const submitBtn = document.getElementById('verifyBtn');
-
-        // Step transition elements
-        const stepName = document.getElementById('stepName');
-        const stepCode = document.getElementById('stepCode');
-        const nameNextBtn = document.getElementById('nameNextBtn');
         const nameInput = document.getElementById('profile_name_input');
-        const verificationHelp = document.getElementById('verificationHelp');
-
-        // Handle name step -> code step transition
-        if (nameNextBtn && stepName && stepCode) {
-            nameNextBtn.addEventListener('click', function() {
-                if (!nameInput || !nameInput.value.trim()) {
-                    if (nameInput) {
-                        showFieldError(nameInput, 'Please enter your name');
-                        nameInput.focus();
-                    }
-                    return;
-                }
-                // Copy name to hidden field
-                if (nameHidden) {
-                    nameHidden.value = nameInput.value.trim();
-                }
-                // Transition steps
-                stepName.style.display = 'none';
-                stepCode.style.display = '';
-                if (verificationHelp) {
-                    verificationHelp.style.display = '';
-                }
-                // Update heading text
-                updateStepHeading('Enter Verification Code', 'Check your email or phone for the code we sent');
-                // Announce step change to screen readers
-                announceToScreenReader('Enter the verification code sent to your email or phone.');
-                // Focus code input
-                if (codeInput) {
-                    codeInput.focus();
-                }
-            });
-
-            // Allow Enter key to advance from name step
-            if (nameInput) {
-                nameInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        nameNextBtn.click();
-                    }
-                });
-            }
-        }
+        const submitBtn = document.getElementById('verifyBtn');
 
         if (codeInput) {
             // Allow numeric input only
@@ -404,9 +342,10 @@
                 // Clear any previous error when user types
                 clearFieldError(this);
 
-                // Auto-submit when 6 characters are entered (name is already in hidden field)
+                // Auto-submit when 6 characters are entered and name is filled (or not required)
                 if (this.value.length === CONFIG.VERIFICATION_CODE_LENGTH) {
-                    if (nameHidden && nameHidden.value.trim()) {
+                    var nameOk = !nameInput || nameInput.value.trim();
+                    if (nameOk) {
                         // Visual feedback before auto-submit
                         this.classList.add('is-valid');
                         this.style.borderColor = 'var(--auth-success)';
@@ -450,14 +389,11 @@
         form.addEventListener('submit', function(e) {
             let hasError = false;
 
-            // Validate hidden name field
-            if (nameHidden && !nameHidden.value.trim()) {
+            // Validate name field if visible
+            if (nameInput && !nameInput.value.trim()) {
                 e.preventDefault();
-                // If name step is visible, show error there
-                if (nameInput && stepName && stepName.style.display !== 'none') {
-                    showFieldError(nameInput, 'Please enter your name');
-                    nameInput.focus();
-                }
+                showFieldError(nameInput, 'Please enter your name');
+                nameInput.focus();
                 hasError = true;
             }
 
@@ -611,22 +547,7 @@
             return;
         }
 
-        // Two-step verification page: focus based on which step is visible
-        const stepName = document.getElementById('stepName');
-        const stepCode = document.getElementById('stepCode');
-        const nameInput = document.getElementById('profile_name_input');
-        const codeInput = document.getElementById('verification_code');
-
-        if (stepName && stepCode) {
-            if (stepName.style.display !== 'none' && nameInput) {
-                nameInput.focus();
-            } else if (stepCode.style.display !== 'none' && codeInput) {
-                codeInput.focus();
-            }
-            return;
-        }
-
-        // Otherwise focus first empty required input
+        // Focus first empty required input
         const inputs = document.querySelectorAll('input[required]:not([type="hidden"])');
         for (const input of inputs) {
             if (!input.value) {

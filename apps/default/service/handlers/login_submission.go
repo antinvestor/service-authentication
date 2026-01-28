@@ -69,16 +69,18 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Step 4: Update profile name if provided
-	profileObj, err := h.updateProfileName(ctx, profileID, profileName)
-	if err != nil {
-		log.WithError(err).Error("failed to update profile name")
-		return err
+	if profileName != "" && profileID != "" {
+		_, err = h.updateProfileName(ctx, profileID, profileName)
+		if err != nil {
+			log.WithError(err).Error("failed to update profile name")
+			return err
+		}
 	}
 
 	// Step 5: Complete OAuth2 login flow
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge: loginEvent.LoginChallengeID,
-		SubjectID:      profileObj.GetId(),
+		SubjectID:      profileID,
 		SessionID:      loginEvent.ID,
 
 		ExtendSession:    true,
@@ -97,7 +99,7 @@ func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	log.WithFields(map[string]any{
-		"profile_id":  profileObj.GetId(),
+		"profile_id":  profileID,
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("login submission completed successfully")
 
