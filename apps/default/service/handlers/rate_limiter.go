@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"context"
-	"fmt"
-	"sync"
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
+	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/util"
 )
+
+// Rate limit cache key prefix - uses alphanumeric and underscore (NATS-safe)
+const rateLimitCachePrefix = "login_rl_ip_"
 
 // RateLimitConfig holds configuration for rate limiting
 type RateLimitConfig struct {
@@ -30,43 +34,6 @@ type RateLimitEntry struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// RateLimiter provides rate limiting functionality
-type RateLimiter struct {
-	config RateLimitConfig
-	mu     sync.RWMutex
-	store  map[string]*RateLimitEntry
-}
-
-// NewRateLimiter creates a new rate limiter with the given config
-func NewRateLimiter(config RateLimitConfig) *RateLimiter {
-	rl := &RateLimiter{
-		config: config,
-		store:  make(map[string]*RateLimitEntry),
-	}
-
-	// Start cleanup goroutine
-	go rl.cleanup()
-
-	return rl
-}
-
-// cleanup periodically removes expired entries
-func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mu.Lock()
-		now := time.Now()
-		for key, entry := range rl.store {
-			if now.After(entry.ExpiresAt) {
-				delete(rl.store, key)
-			}
-		}
-		rl.mu.Unlock()
-	}
-}
-
 // RateLimitResult contains the result of a rate limit check
 type RateLimitResult struct {
 	Allowed       bool
@@ -76,31 +43,88 @@ type RateLimitResult struct {
 	RetryAfterSec int
 }
 
-// Check checks if an action is allowed for the given key and increments the counter
-func (rl *RateLimiter) Check(ctx context.Context, key string) RateLimitResult {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
+// hashIP creates a SHA256 hash of the IP address for privacy
+func hashIP(ip string) string {
+	hash := sha256.Sum256([]byte(ip))
+	return hex.EncodeToString(hash[:])
+}
 
+// rateLimitCacheKey generates a cache key for rate limiting by IP
+func rateLimitCacheKey(ip string) string {
+	return rateLimitCachePrefix + hashIP(ip)
+}
+
+// rateLimitCache returns the generic cache for rate limit entries
+func (h *AuthServer) rateLimitCache() cache.Cache[string, RateLimitEntry] {
+	if h.rateLimitICache == nil {
+		rCache, ok := h.cacheMan.GetRawCache(h.config.CacheName)
+		if !ok {
+			return nil
+		}
+
+		h.rateLimitICache = cache.NewGenericCache[string, RateLimitEntry](rCache, func(k string) string {
+			return k
+		})
+	}
+	return h.rateLimitICache
+}
+
+// CheckLoginRateLimit checks rate limits for the given IP address
+// Returns the result indicating if the request is allowed
+func (h *AuthServer) CheckLoginRateLimit(ctx context.Context, ip string) RateLimitResult {
+	log := util.Log(ctx)
 	now := time.Now()
-	entry, exists := rl.store[key]
+
+	cacheInst := h.rateLimitCache()
+	if cacheInst == nil {
+		// Cache not available, allow request but log warning
+		log.Warn("rate limit cache not available, allowing request")
+		return RateLimitResult{
+			Allowed:      true,
+			AttemptsUsed: 0,
+			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts,
+		}
+	}
+
+	cacheKey := rateLimitCacheKey(ip)
+	entry, found, err := cacheInst.Get(ctx, cacheKey)
+	if err != nil {
+		log.WithError(err).Warn("rate limit cache read error, allowing request")
+		return RateLimitResult{
+			Allowed:      true,
+			AttemptsUsed: 0,
+			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts,
+		}
+	}
 
 	// If entry doesn't exist or has expired, create a new one
-	if !exists || now.After(entry.ExpiresAt) {
-		rl.store[key] = &RateLimitEntry{
+	if !found || now.After(entry.ExpiresAt) {
+		newEntry := RateLimitEntry{
 			Attempts:  1,
 			FirstAt:   now,
-			ExpiresAt: now.Add(rl.config.Window),
+			ExpiresAt: now.Add(h.loginRateLimitConfig.Window),
 		}
+
+		if setErr := cacheInst.Set(ctx, cacheKey, newEntry, h.loginRateLimitConfig.Window); setErr != nil {
+			log.WithError(setErr).Warn("failed to set rate limit entry in cache")
+		}
+
 		return RateLimitResult{
 			Allowed:      true,
 			AttemptsUsed: 1,
-			AttemptsLeft: rl.config.MaxAttempts - 1,
+			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts - 1,
 		}
 	}
 
 	// Check if limit exceeded
-	if entry.Attempts >= rl.config.MaxAttempts {
+	if entry.Attempts >= h.loginRateLimitConfig.MaxAttempts {
 		retryAfter := entry.ExpiresAt.Sub(now)
+		log.WithFields(map[string]any{
+			"ip_hash":       hashIP(ip)[:16] + "...",
+			"attempts":      entry.Attempts,
+			"retry_after_s": int(retryAfter.Seconds()),
+		}).Warn("login rate limit exceeded for IP")
+
 		return RateLimitResult{
 			Allowed:       false,
 			AttemptsUsed:  entry.Attempts,
@@ -112,121 +136,34 @@ func (rl *RateLimiter) Check(ctx context.Context, key string) RateLimitResult {
 
 	// Increment counter
 	entry.Attempts++
-	return RateLimitResult{
-		Allowed:      true,
-		AttemptsUsed: entry.Attempts,
-		AttemptsLeft: rl.config.MaxAttempts - entry.Attempts,
-	}
-}
-
-// Peek checks the current state without incrementing the counter
-func (rl *RateLimiter) Peek(ctx context.Context, key string) RateLimitResult {
-	rl.mu.RLock()
-	defer rl.mu.RUnlock()
-
-	now := time.Now()
-	entry, exists := rl.store[key]
-
-	if !exists || now.After(entry.ExpiresAt) {
-		return RateLimitResult{
-			Allowed:      true,
-			AttemptsUsed: 0,
-			AttemptsLeft: rl.config.MaxAttempts,
-		}
-	}
-
-	if entry.Attempts >= rl.config.MaxAttempts {
-		retryAfter := entry.ExpiresAt.Sub(now)
-		return RateLimitResult{
-			Allowed:       false,
-			AttemptsUsed:  entry.Attempts,
-			AttemptsLeft:  0,
-			RetryAfter:    retryAfter,
-			RetryAfterSec: int(retryAfter.Seconds()),
-		}
+	ttlRemaining := entry.ExpiresAt.Sub(now)
+	if setErr := cacheInst.Set(ctx, cacheKey, entry, ttlRemaining); setErr != nil {
+		log.WithError(setErr).Warn("failed to update rate limit entry in cache")
 	}
 
 	return RateLimitResult{
 		Allowed:      true,
 		AttemptsUsed: entry.Attempts,
-		AttemptsLeft: rl.config.MaxAttempts - entry.Attempts,
+		AttemptsLeft: h.loginRateLimitConfig.MaxAttempts - entry.Attempts,
 	}
 }
 
-// Reset resets the rate limit for a key (e.g., after successful login)
-func (rl *RateLimiter) Reset(ctx context.Context, key string) {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-	delete(rl.store, key)
-}
-
-// ResetAll clears all rate limit entries (useful for testing)
-func (rl *RateLimiter) ResetAll() {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-	rl.store = make(map[string]*RateLimitEntry)
-}
-
-// loginRateLimitKey generates a rate limit key for login attempts
-func loginRateLimitKey(keyType, value string) string {
-	return fmt.Sprintf("login_rl:%s:%s", keyType, value)
-}
-
-// CheckLoginRateLimit checks rate limits for both IP and contact
-// Returns the most restrictive result
-func (h *AuthServer) CheckLoginRateLimit(ctx context.Context, ip, contact string) RateLimitResult {
-	log := util.Log(ctx)
-
-	// Check IP rate limit
-	ipKey := loginRateLimitKey("ip", ip)
-	ipResult := h.loginRateLimiter.Check(ctx, ipKey)
-
-	if !ipResult.Allowed {
-		log.WithFields(map[string]any{
-			"ip":            ip,
-			"attempts":      ipResult.AttemptsUsed,
-			"retry_after_s": ipResult.RetryAfterSec,
-		}).Warn("login rate limit exceeded for IP")
-		return ipResult
+// ResetLoginRateLimit resets rate limits after successful login for the given IP
+func (h *AuthServer) ResetLoginRateLimit(ctx context.Context, ip string) {
+	cacheInst := h.rateLimitCache()
+	if cacheInst == nil {
+		return
 	}
 
-	// Check contact rate limit (if provided)
-	if contact != "" {
-		contactKey := loginRateLimitKey("contact", contact)
-		contactResult := h.loginRateLimiter.Check(ctx, contactKey)
-
-		if !contactResult.Allowed {
-			log.WithFields(map[string]any{
-				"contact_prefix": contact[:min(3, len(contact))] + "***",
-				"attempts":       contactResult.AttemptsUsed,
-				"retry_after_s":  contactResult.RetryAfterSec,
-			}).Warn("login rate limit exceeded for contact")
-			return contactResult
-		}
-
-		// Return the more restrictive result
-		if contactResult.AttemptsLeft < ipResult.AttemptsLeft {
-			return contactResult
-		}
-	}
-
-	return ipResult
-}
-
-// ResetLoginRateLimit resets rate limits after successful login
-func (h *AuthServer) ResetLoginRateLimit(ctx context.Context, ip, contact string) {
-	ipKey := loginRateLimitKey("ip", ip)
-	h.loginRateLimiter.Reset(ctx, ipKey)
-
-	if contact != "" {
-		contactKey := loginRateLimitKey("contact", contact)
-		h.loginRateLimiter.Reset(ctx, contactKey)
+	cacheKey := rateLimitCacheKey(ip)
+	if err := cacheInst.Delete(ctx, cacheKey); err != nil {
+		util.Log(ctx).WithError(err).Debug("failed to delete rate limit entry from cache")
 	}
 }
 
-// ResetAllLoginRateLimits clears all login rate limits (useful for testing)
+// ResetAllLoginRateLimits is a no-op for cache-based rate limiting
+// as cache entries will naturally expire. This is kept for test compatibility.
 func (h *AuthServer) ResetAllLoginRateLimits() {
-	if h.loginRateLimiter != nil {
-		h.loginRateLimiter.ResetAll()
-	}
+	// Cache entries expire naturally based on TTL.
+	// For testing purposes, individual entries can be reset via ResetLoginRateLimit.
 }

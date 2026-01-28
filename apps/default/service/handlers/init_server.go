@@ -66,8 +66,9 @@ type AuthServer struct {
 
 	defaultHydraCli hydra.Hydra
 
-	// Rate limiter for login attempts
-	loginRateLimiter *RateLimiter
+	// Rate limiter cache and config for login attempts
+	rateLimitICache      cache.Cache[string, RateLimitEntry]
+	loginRateLimitConfig RateLimitConfig
 }
 
 func NewAuthServer(ctx context.Context,
@@ -106,8 +107,8 @@ func NewAuthServer(ctx context.Context,
 
 		defaultHydraCli: hydraCli,
 
-		// Initialise rate limiter for login attempts (7 per hour)
-		loginRateLimiter: NewRateLimiter(DefaultLoginRateLimitConfig()),
+		// Initialise rate limit config (7 per hour, cache is lazily initialised)
+		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
 	}
 
 	err := h.setupSecureCookies(ctx, authConfig)

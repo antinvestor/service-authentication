@@ -51,12 +51,11 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	log = log.WithField("contact_prefix", contactPrefix+"***")
 	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
-	// Step 2.5: Check rate limits for IP and contact
+	// Step 2.5: Check rate limits for IP
 	ipAddr := util.GetIP(req)
-	rateLimitResult := h.CheckLoginRateLimit(ctx, ipAddr, contactDetail)
+	rateLimitResult := h.CheckLoginRateLimit(ctx, ipAddr)
 	if !rateLimitResult.Allowed {
 		log.WithFields(map[string]any{
-			"ip":              ipAddr,
 			"attempts_used":   rateLimitResult.AttemptsUsed,
 			"retry_after_sec": rateLimitResult.RetryAfterSec,
 		}).Warn("login rate limit exceeded")
