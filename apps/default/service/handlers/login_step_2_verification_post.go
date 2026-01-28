@@ -73,6 +73,9 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return err
 	}
 
+	// Step 3.5: Set tenancy context for profile service calls
+	ctx = util.SetTenancy(ctx, loginEvent)
+
 	// Step 4: Verify the login credentials
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
@@ -219,7 +222,12 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 			return "", fmt.Errorf("failed to create profile: %w", createErr)
 		}
 
-		login.ProfileID = results.Msg.GetData().GetId()
+		createdProfile := results.Msg.GetData()
+		if createdProfile == nil || createdProfile.GetId() == "" {
+			log.Error("profile service returned invalid profile after creation")
+			return "", fmt.Errorf("profile creation returned invalid response")
+		}
+		login.ProfileID = createdProfile.GetId()
 		if _, updateErr := h.loginRepo.Update(ctx, login, "profile_id"); updateErr != nil {
 			log.WithError(updateErr).Error("failed to update login with profile_id")
 			return "", fmt.Errorf("failed to update login: %w", updateErr)

@@ -172,6 +172,14 @@ func (h *AuthServer) postUserLogin(
 			return fmt.Errorf("profile creation failed: %w", createErr)
 		}
 		existingProfile = createResult.Msg.GetData()
+		if existingProfile == nil {
+			log.Error("profile service returned nil profile after creation")
+			return fmt.Errorf("profile creation returned invalid response")
+		}
+		if existingProfile.GetId() == "" {
+			log.Error("profile service returned profile with empty ID")
+			return fmt.Errorf("created profile has empty ID")
+		}
 		log.WithField("profile_id", existingProfile.GetId()).Info("new profile created for provider login")
 	} else {
 		log.WithField("profile_id", existingProfile.GetId()).Debug("existing profile found for contact")
@@ -212,12 +220,20 @@ func (h *AuthServer) postUserLogin(
 		return fmt.Errorf("login attempt storage failed: %w", err)
 	}
 
-	// Step 5: Accept the Hydra login request to complete the OAuth2 flow
+	// Step 5: Validate profile ID before accepting login
+	profileID := existingProfile.GetId()
+	if profileID == "" {
+		log.Error("profile ID is empty - cannot complete provider login")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error=profile_error", http.StatusSeeOther)
+		return nil
+	}
+
+	// Step 6: Accept the Hydra login request to complete the OAuth2 flow
 	log.Debug("accepting Hydra login request")
 
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge:   loginEvt.LoginChallengeID,
-		SubjectID:        existingProfile.GetId(),
+		SubjectID:        profileID,
 		SessionID:        loginEvent.GetID(),
 		ExtendSession:    true,
 		Remember:         true,
@@ -235,7 +251,7 @@ func (h *AuthServer) postUserLogin(
 	}
 
 	log.WithFields(map[string]any{
-		"profile_id":  existingProfile.GetId(),
+		"profile_id":  profileID,
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("provider login completed successfully")
 

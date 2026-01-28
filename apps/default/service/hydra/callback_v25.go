@@ -94,6 +94,13 @@ func (h *DefaultHydra) Cli() hydraclientgo.OAuth2API {
 }
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams, loginCtx map[string]any, acr string, amr ...string) (string, error) {
+	// Validate required parameters
+	if params.LoginChallenge == "" {
+		return "", fmt.Errorf("login challenge is required")
+	}
+	if params.SubjectID == "" {
+		return "", fmt.Errorf("subject (profile ID) is required")
+	}
 
 	// Build login acceptance request
 	alr := hydraclientgo.NewAcceptOAuth2LoginRequest(params.SubjectID)
