@@ -23,9 +23,9 @@ var (
 	ErrVerificationCodeIncorrect    = errors.New("verification code is incorrect")
 )
 
-// SubmitLoginEndpoint handles the final login submission after verification.
+// VerificationEndpointSubmit handles the final login submission of verification results.
 // This is called after the user has verified their contact via code.
-func (h *AuthServer) SubmitLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	start := time.Now()
 	log := util.Log(ctx)

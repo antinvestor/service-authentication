@@ -122,9 +122,9 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 	return &loginEvt, nil
 }
 
-// ShowLoginEndpoint displays the login page for OAuth2 authorization flow.
+// LoginEndpointShow displays the login page for OAuth2 authorization flow.
 // It validates the login challenge, checks for session skip, and renders the login form.
-func (h *AuthServer) ShowLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
+func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	start := time.Now()
 	log := util.Log(ctx)

@@ -110,12 +110,12 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		})
 	}
 
-	unAuthenticatedHandler(h.ShowLoginEndpoint, "/s/login", "ShowLoginEndpoint", "GET")
-	unAuthenticatedHandler(h.SubmitLoginEndpoint, "/s/login/post", "SubmitLoginEndpoint", "POST")
+	unAuthenticatedHandler(h.LoginEndpointShow, "/s/login", "LoginEndpointShow", "GET")
+	unAuthenticatedHandler(h.LoginEndpointSubmit, "/s/login/{loginEventId}/post", "SubmitLoginEndpoint", "POST")
 	unAuthenticatedHandler(h.ShowLogoutEndpoint, "/s/logout", "ShowLogoutEndpoint", "GET")
 	unAuthenticatedHandler(h.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
-	unAuthenticatedHandler(h.ShowVerificationEndpoint, "/s/verify/contact/{loginEventId}", "ShowVerificationEndpoint", "GET")
-	unAuthenticatedHandler(h.SubmitVerificationEndpoint, "/s/verify/contact/{loginEventId}/post", "SubmitVerificationEndpoint", "POST")
+	unAuthenticatedHandler(h.VerificationEndpointShow, "/s/verify/contact/{loginEventId}", "VerificationEndpointShow", "GET")
+	unAuthenticatedHandler(h.VerificationEndpointSubmit, "/s/verify/contact/{loginEventId}/post", "VerificationEndpointSubmit", "POST")
 	unAuthenticatedHandler(h.ProviderLoginEndpointV2, "/s/social/login/{loginEventId}", "SocialLoginEndpoint", "POST")
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "POST")
