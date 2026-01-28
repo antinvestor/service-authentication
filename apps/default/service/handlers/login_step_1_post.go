@@ -51,6 +51,21 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	log = log.WithField("contact_prefix", contactPrefix+"***")
 	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
+	// Step 2.5: Check rate limits for IP and contact
+	ipAddr := util.GetIP(req)
+	rateLimitResult := h.CheckLoginRateLimit(ctx, ipAddr, contactDetail)
+	if !rateLimitResult.Allowed {
+		log.WithFields(map[string]any{
+			"ip":              ipAddr,
+			"attempts_used":   rateLimitResult.AttemptsUsed,
+			"retry_after_sec": rateLimitResult.RetryAfterSec,
+		}).Warn("login rate limit exceeded")
+
+		errorMsg := url.QueryEscape("Too many login attempts. Please try again later.")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error="+errorMsg, http.StatusSeeOther)
+		return nil
+	}
+
 	// Step 3: Look up or create contact for contactDetail
 	var existingProfile *profilev1.ProfileObject
 	var contactID string
@@ -93,28 +108,27 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Step 6: Store login attempt
-	verificationID := util.IDString()
 	profileID := ""
 	if existingProfile != nil {
 		profileID = existingProfile.GetId()
 	}
 
-	loginEvent, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profileID, contactID, verificationID, nil)
-	if err != nil {
-		log.WithError(err).Error("failed to store login attempt")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return err
-	}
-
 	// Step 7: Create verification and send code
 	ctx = util.SetTenancy(ctx, loginEvt)
-	_, err = h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
-		Id:               verificationID,
+	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	}))
 	if err != nil {
 		log.WithError(err).Error("failed to create contactDetail verification")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+		return err
+	}
+
+	loginEvent, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profileID, contactID, resp.Msg.GetId(), nil)
+	if err != nil {
+		log.WithError(err).Error("failed to store login attempt")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return err
 	}
@@ -130,7 +144,7 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	}
 
 	log.WithFields(map[string]any{
-		"verification_id": verificationID,
+		"verification_id": resp.Msg.GetId(),
 		"contact_type":    contactType.String(),
 		"duration_ms":     time.Since(start).Milliseconds(),
 	}).Info("verification code sent")

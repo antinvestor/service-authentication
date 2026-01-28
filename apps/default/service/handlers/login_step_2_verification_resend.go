@@ -127,7 +127,7 @@ func (h *AuthServer) VerificationResendEndpoint(rw http.ResponseWriter, req *htt
 	ctx = util.SetTenancy(ctx, loginEvent)
 	newVerificationID := util.IDString()
 
-	_, err = h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               newVerificationID,
 		ContactId:        loginEvent.ContactID,
 		DurationToExpire: "15m",
@@ -141,7 +141,7 @@ func (h *AuthServer) VerificationResendEndpoint(rw http.ResponseWriter, req *htt
 	}
 
 	// Step 5: Update login event with new verification ID and resend tracking
-	loginEvent.VerificationID = newVerificationID
+	loginEvent.VerificationID = resp.Msg.GetId()
 	loginEvent.Properties = updateResendTracking(loginEvent.Properties, resendCount+1)
 
 	_, err = h.loginEventRepo.Update(ctx, loginEvent, "verification_id", "properties")

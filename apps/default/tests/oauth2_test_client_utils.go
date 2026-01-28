@@ -26,6 +26,9 @@ type AccessTokenResult struct {
 func (c *OAuth2TestClient) AcquireAccessTokenForContact(ctx context.Context, t *testing.T, authServer *handlers.AuthServer, contact, userName string) (*AccessTokenResult, error) {
 	t.Helper()
 
+	// Reset rate limits to ensure tests don't get blocked
+	authServer.ResetAllLoginRateLimits()
+
 	// Step 1: Create OAuth2 client for this test
 	c.SetTestingT(t) // Enable debug logging
 	oauth2Client, err := c.CreateOAuth2Client(ctx, "test_client_"+userName)
