@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/pitabwire/util"
 )
@@ -31,15 +32,42 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 	contactType := req.FormValue("contact_type")
 	errorMsg := req.FormValue("error")
 
-	// Validate login event exists (either in cache or database)
+	// Default resend values
+	initialCooldown := 30 // seconds
+	resendsLeft := 3
+
+	// Validate login event exists and get resend info
 	if loginEventID != "" {
-		_, err := h.getLoginEventFromCache(ctx, loginEventID)
+		loginEvent, err := h.getLoginEventFromCache(ctx, loginEventID)
 		if err != nil {
 			// Try database as fallback
-			_, dbErr := h.loginEventRepo.GetByID(ctx, loginEventID)
-			if dbErr != nil {
+			loginEvent, err = h.loginEventRepo.GetByID(ctx, loginEventID)
+			if err != nil {
 				http.Redirect(rw, req, "/error?error=session_expired", http.StatusSeeOther)
 				return nil
+			}
+		}
+
+		// Calculate resends left from login event properties
+		if loginEvent != nil && loginEvent.Properties != nil {
+			resendCount := getResendCount(loginEvent.Properties)
+			resendsLeft = maxResendAttempts - resendCount
+			if resendsLeft < 0 {
+				resendsLeft = 0
+			}
+
+			// If there have been resends, adjust initial cooldown based on last resend
+			if resendCount > 0 {
+				lastResendAt := getLastResendAt(loginEvent.Properties)
+				if !lastResendAt.IsZero() {
+					waitDuration := resendWaitDurations[min(resendCount-1, len(resendWaitDurations)-1)]
+					nextAllowedTime := lastResendAt.Add(waitDuration)
+					if nextAllowedTime.After(time.Now()) {
+						initialCooldown = int(time.Until(nextAllowedTime).Seconds())
+					} else {
+						initialCooldown = 0 // Can resend immediately
+					}
+				}
 			}
 		}
 	}
@@ -48,6 +76,8 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 	payload["login_event_id"] = loginEventID
 	payload["profile_name"] = profileName
 	payload["contact_type"] = contactType
+	payload["initial_cooldown"] = initialCooldown
+	payload["resends_left"] = resendsLeft
 
 	if errorMsg != "" {
 		payload["error"] = errorMsg

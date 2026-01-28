@@ -95,13 +95,14 @@
         </div>
     </form>
 
-    <div id="verificationHelp" class="verification-help">
+    <div id="verificationHelp" class="verification-help"
+         data-initial-cooldown="{{ if .initial_cooldown }}{{ .initial_cooldown }}{{ else }}30{{ end }}"
+         data-resends-left="{{ if .resends_left }}{{ .resends_left }}{{ else }}3{{ end }}">
         <span class="help-text" id="resend-help">No code?</span>
         <button
             type="button"
             id="resendBtn"
             class="resend-link"
-            onclick="resendCode()"
             aria-describedby="resend-help resend-status"
         >
             Resend

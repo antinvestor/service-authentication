@@ -426,12 +426,39 @@
         const resendTimer = document.getElementById('resendTimer');
         const countdown = document.getElementById('countdown');
         const resendStatus = document.getElementById('resend-status');
+        const verificationHelp = document.getElementById('verificationHelp');
 
         if (!resendBtn) return;
 
         let cooldownActive = false;
         let remainingSeconds = 0;
         let cooldownTimer = null;
+        let resendsRemaining = 3;
+
+        // Read initial state from data attributes
+        if (verificationHelp) {
+            const initialCooldown = parseInt(verificationHelp.dataset.initialCooldown, 10) || 30;
+            resendsRemaining = parseInt(verificationHelp.dataset.resendsLeft, 10) || 3;
+
+            // Update button text if limited resends
+            if (resendsRemaining < 3) {
+                resendBtn.textContent = 'Resend (' + resendsRemaining + ' left)';
+            }
+
+            // Start initial cooldown when page loads (code was just sent)
+            if (initialCooldown > 0 && !sessionStorage.getItem('resend_cooldown_' + getLoginEventId())) {
+                // Mark that we've started the initial cooldown for this login event
+                sessionStorage.setItem('resend_cooldown_' + getLoginEventId(), 'started');
+                startCooldown(initialCooldown);
+            }
+        }
+
+        /**
+         * Get the login event ID from the form
+         */
+        function getLoginEventId() {
+            return document.querySelector('input[name="login_event_id"]')?.value || '';
+        }
 
         /**
          * Update the screen reader status for resend cooldown
@@ -530,10 +557,13 @@
             }, 5000);
         }
 
-        window.resendCode = async function() {
-            if (cooldownActive) return;
+        /**
+         * Handle resend button click
+         */
+        async function handleResendClick() {
+            if (cooldownActive || resendsRemaining <= 0) return;
 
-            const loginEventId = document.querySelector('input[name="login_event_id"]')?.value;
+            const loginEventId = getLoginEventId();
             if (!loginEventId) {
                 showFeedback('Unable to resend code. Please refresh the page.', false);
                 return;
@@ -553,50 +583,63 @@
 
                 const data = await response.json();
 
-                resendBtn.textContent = 'Resend';
-
                 if (data.success) {
+                    resendsRemaining = data.resends_left;
                     showFeedback('A new verification code has been sent!', true);
                     announceToScreenReader('Verification code sent.');
 
-                    // Start cooldown based on server response
-                    if (data.wait_seconds > 0) {
-                        startCooldown(data.wait_seconds);
-                    } else if (data.resends_left > 0) {
-                        // Default cooldown if server doesn't specify
-                        startCooldown(CONFIG.RESEND_COOLDOWN_SECONDS);
+                    // Clear the code input for new code entry
+                    const codeInput = document.getElementById('verification_code');
+                    if (codeInput) {
+                        codeInput.value = '';
+                        codeInput.focus();
                     }
 
-                    // Update resend button text if limited resends left
-                    if (data.resends_left === 0) {
+                    // Update button text based on resends left
+                    if (resendsRemaining === 0) {
                         resendBtn.textContent = 'No resends left';
                         resendBtn.disabled = true;
-                    } else if (data.resends_left <= 2) {
-                        resendBtn.textContent = 'Resend (' + data.resends_left + ' left)';
+                    } else {
+                        resendBtn.textContent = 'Resend (' + resendsRemaining + ' left)';
+                        // Start cooldown based on server response
+                        if (data.wait_seconds > 0) {
+                            startCooldown(data.wait_seconds);
+                        } else {
+                            startCooldown(CONFIG.RESEND_COOLDOWN_SECONDS);
+                        }
                     }
                 } else {
-                    // Handle rate limiting
+                    // Handle rate limiting or errors
                     if (response.status === 429 && data.wait_seconds > 0) {
                         showFeedback(data.message || 'Please wait before requesting another code.', false);
                         startCooldown(data.wait_seconds);
+                        resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
                     } else if (data.resends_left === 0) {
+                        resendsRemaining = 0;
                         showFeedback(data.message || 'Maximum resend attempts reached.', false);
                         resendBtn.textContent = 'No resends left';
                         resendBtn.disabled = true;
                     } else {
                         showFeedback(data.message || 'Failed to resend code. Please try again.', false);
+                        resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
                         resendBtn.disabled = false;
                     }
                     announceToScreenReader(data.message || 'Failed to resend code.');
                 }
             } catch (error) {
                 console.error('Resend error:', error);
-                resendBtn.textContent = 'Resend';
+                resendBtn.textContent = resendsRemaining > 0 ? 'Resend (' + resendsRemaining + ' left)' : 'Resend';
                 resendBtn.disabled = false;
                 showFeedback('Network error. Please try again.', false);
                 announceToScreenReader('Network error. Please try again.');
             }
-        };
+        }
+
+        // Set up click handler
+        resendBtn.addEventListener('click', handleResendClick);
+
+        // Expose for backwards compatibility with onclick attribute
+        window.resendCode = handleResendClick;
     }
 
     /**
