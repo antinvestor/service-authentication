@@ -101,6 +101,7 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("login session not found: %w", err)
 	}
 
+	ctx = util.SetTenancy(ctx, loginEvt)
 	log.WithFields(map[string]any{
 		"client_id":   loginEvt.ClientID,
 		"duration_ms": time.Since(start).Milliseconds(),
@@ -190,7 +191,7 @@ func (h *AuthServer) postUserLogin(
 	profileContacts := existingProfile.GetContacts()
 
 	for _, profileContact := range profileContacts {
-		if strings.EqualFold(contactDetail, profileContact.GetDetail()) {
+		if strings.EqualFold(strings.TrimSpace(contactDetail), profileContact.GetDetail()) {
 			contactID = profileContact.GetId()
 			break
 		}
