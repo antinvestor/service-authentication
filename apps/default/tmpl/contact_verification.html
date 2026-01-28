@@ -34,7 +34,7 @@
     </div>
     {{end}}
 
-    <form method="post" action="/s/login/post" class="verification-form" id="verificationForm">
+    <form method="post" action="/s/verify/contact/{{ .login_event_id }}/post" class="verification-form" id="verificationForm">
         <input type="hidden" name="login_event_id" value="{{ .login_event_id }}">
         <input type="hidden" name="contact_type" value="{{ .contact_type }}">
 
