@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -41,7 +40,6 @@ type VerificationTestContext struct {
 	Cancel       context.CancelFunc
 	OAuth2Client *tests.OAuth2TestClient
 	LoginRepo    repository.LoginRepository
-	TestServer   *httptest.Server
 }
 
 // SetupVerificationTest creates a common test setup for verification tests with timeout handling
@@ -53,14 +51,12 @@ func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep
 	ctx, cancel := context.WithTimeout(context.Background(), VerificationTestTimeout)
 
 	baseCtx, authServer, deps := suite.CreateService(t, dep)
+	_ = baseCtx
 
-	// Set up HTTP test server
-	router := authServer.SetupRouterV1(baseCtx)
-	testServer := httptest.NewServer(router)
-
-	// Create OAuth2 test client with test server URL
+	// Use the suite's server URL since Hydra is configured to call webhooks there
+	// Creating a new httptest server would cause webhook calls to fail
 	oauth2Client := tests.NewOAuth2TestClient(authServer)
-	oauth2Client.AuthServiceURL = testServer.URL
+	oauth2Client.AuthServiceURL = suite.ServerUrl()
 
 	// Create login repository
 	return &VerificationTestContext{
@@ -69,7 +65,6 @@ func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep
 		Cancel:       cancel,
 		OAuth2Client: oauth2Client,
 		LoginRepo:    deps.LoginRepo,
-		TestServer:   testServer,
 	}
 }
 
@@ -88,10 +83,6 @@ func (suite *LoginVerificationTestSuite) TeardownVerificationTest(testCtx *Verif
 
 	if testCtx.OAuth2Client != nil {
 		testCtx.OAuth2Client.Cleanup(cleanupCtx)
-	}
-
-	if testCtx.TestServer != nil {
-		testCtx.TestServer.Close()
 	}
 
 	if testCtx.Cancel != nil {
@@ -207,7 +198,8 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 				require.True(t, contactVerificationResult.Success, "Contact verification submission should succeed")
 
 				// Step 2: Get verification code from database (in real scenario, user would receive this via contact/SMS)
-				verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, testCtx.AuthServer, contactVerificationResult.LoginEventID)
+				// Use suite.Handler() which accesses the same database as the HTTP handlers
+				verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, suite.Handler(), contactVerificationResult.LoginEventID)
 				require.NoError(t, err)
 				require.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
@@ -257,7 +249,7 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		defer opCancel()
 
 		// Test verification page accessibility
-		verificationURL := fmt.Sprintf("%s/s/verify/contact/test-event?login_event_id=test-event&profile_name=Test+User", testCtx.TestServer.URL)
+		verificationURL := fmt.Sprintf("%s/s/verify/contact/test-event?login_event_id=test-event&profile_name=Test+User", suite.ServerUrl())
 
 		req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
 		require.NoError(t, err)

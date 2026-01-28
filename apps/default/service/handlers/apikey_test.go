@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -35,7 +34,6 @@ type APIKeyTestContext struct {
 	Context      context.Context
 	Cancel       context.CancelFunc
 	OAuth2Client *tests.OAuth2TestClient
-	TestServer   *httptest.Server
 	AccessToken  *tests.AccessTokenResult
 }
 
@@ -44,27 +42,20 @@ func (suite *APIKeyTestSuite) SetupAPIKeyTest(t *testing.T, dep *definition.Depe
 
 	ctx, authServer, _ := suite.CreateService(t, dep)
 
-	// Set up HTTP test server
-	router := authServer.SetupRouterV1(ctx)
-	testServer := httptest.NewServer(router)
-
-	// Create OAuth2 test client with test server URL
+	// Use the suite's server URL since Hydra is configured to call webhooks there
+	// Creating a new httptest server would cause webhook calls to fail
 	oauth2Client := tests.NewOAuth2TestClient(authServer)
-	oauth2Client.AuthServiceURL = testServer.URL
+	oauth2Client.AuthServiceURL = suite.ServerUrl()
 
 	return &APIKeyTestContext{
 		AuthServer:   authServer,
 		Context:      ctx,
 		OAuth2Client: oauth2Client,
-		TestServer:   testServer,
 	}
 }
 
 // TeardownAPIKeyTest cleans up test resources
 func (suite *APIKeyTestSuite) TeardownAPIKeyTest(testCtx *APIKeyTestContext) {
-	if testCtx.TestServer != nil {
-		testCtx.TestServer.Close()
-	}
 	if testCtx.Cancel != nil {
 		testCtx.Cancel()
 	}
@@ -75,7 +66,9 @@ func (suite *APIKeyTestSuite) AcquireTestAccessToken(t *testing.T, testCtx *APIK
 	opCtx, opCancel := context.WithTimeout(testCtx.Context, APIKeyOperationTimeout)
 	defer opCancel()
 
-	accessToken, err := testCtx.OAuth2Client.AcquireAccessTokenForContact(opCtx, t, testCtx.AuthServer, "test@example.com", "TestUser")
+	// Use suite.Handler() which accesses the same database as the HTTP handlers
+	// (not testCtx.AuthServer which has its own separate database)
+	accessToken, err := testCtx.OAuth2Client.AcquireAccessTokenForContact(opCtx, t, suite.Handler(), "test@example.com", "TestUser")
 	require.NoError(t, err, "Should successfully acquire access token")
 	require.NotNil(t, accessToken, "Access token result should not be nil")
 
@@ -166,7 +159,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyCreation() {
 				require.NoError(t, err)
 
 				// Create API key request
-				url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+				url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 				req, err := http.NewRequestWithContext(testCtx.Context, "PUT", url, bytes.NewBuffer(reqBody))
 				require.NoError(t, err)
 
@@ -238,7 +231,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyListing() {
 			reqBody, err := json.Marshal(keyReq)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+			url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 			req, err := http.NewRequestWithContext(testCtx.Context, "PUT", url, bytes.NewBuffer(reqBody))
 			require.NoError(t, err)
 
@@ -260,7 +253,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyListing() {
 		}
 
 		// Now test listing API keys
-		url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+		url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 		req, err := http.NewRequestWithContext(testCtx.Context, "GET", url, nil)
 		require.NoError(t, err)
 
@@ -323,7 +316,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyRetrieval() {
 		require.NoError(t, err)
 
 		// Create API key
-		url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+		url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 		req, err := http.NewRequestWithContext(testCtx.Context, "PUT", url, bytes.NewBuffer(reqBody))
 		require.NoError(t, err)
 
@@ -342,7 +335,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyRetrieval() {
 		require.NoError(t, err)
 
 		// Now test retrieving the specific API key
-		url = fmt.Sprintf("%s/api/key/%s", testCtx.TestServer.URL, createdKey.ID)
+		url = fmt.Sprintf("%s/api/key/%s", suite.ServerUrl(), createdKey.ID)
 		req, err = http.NewRequestWithContext(testCtx.Context, "GET", url, nil)
 		require.NoError(t, err)
 
@@ -380,7 +373,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
 		require.NoError(t, err)
 
 		// Create API key
-		url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+		url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 		req, err := http.NewRequestWithContext(testCtx.Context, "PUT", url, bytes.NewBuffer(reqBody))
 		require.NoError(t, err)
 
@@ -401,7 +394,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyDeletion() {
 		t.Logf("DEBUG: Starting deletion test for API key: %s", createdKey.ID)
 
 		// Now test deleting the API key
-		url = fmt.Sprintf("%s/api/key/%s", testCtx.TestServer.URL, createdKey.ID)
+		url = fmt.Sprintf("%s/api/key/%s", suite.ServerUrl(), createdKey.ID)
 		t.Logf("DEBUG: Sending DELETE request to: %s", url)
 		req, err = http.NewRequestWithContext(testCtx.Context, "DELETE", url, nil)
 		require.NoError(t, err)
@@ -531,7 +524,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyErrorScenarios() {
 				}
 
 				// Create request
-				url := fmt.Sprintf("%s%s", testCtx.TestServer.URL, tc.endpoint)
+				url := fmt.Sprintf("%s%s", suite.ServerUrl(), tc.endpoint)
 				var req *http.Request
 				var err error
 
@@ -572,7 +565,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyAuthentication() {
 
 		testCtx := suite.SetupAPIKeyTest(t, dep)
 		defer suite.TeardownAPIKeyTest(testCtx)
-		t.Logf("DEBUG: Test context setup completed, test server URL: %s", testCtx.TestServer.URL)
+		t.Logf("DEBUG: Test context setup completed, test server URL: %s", suite.ServerUrl())
 
 		// Acquire access token for authentication
 		t.Logf("DEBUG: Starting OAuth2 access token acquisition")
@@ -595,7 +588,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyAuthentication() {
 		t.Logf("DEBUG: Request body marshalled, size: %d bytes", len(reqBody))
 
 		// Create API key
-		url := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+		url := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 		t.Logf("DEBUG: Creating API key request to URL: %s", url)
 
 		req, err := http.NewRequestWithContext(testCtx.Context, "PUT", url, bytes.NewBuffer(reqBody))
@@ -662,7 +655,7 @@ func (suite *APIKeyTestSuite) TestAPIKeyAuthentication() {
 
 		// Test 1: Try to list API keys using the created API key for authentication
 		t.Logf("DEBUG: Test 1 - Attempting to list API keys using created API key")
-		listURL := fmt.Sprintf("%s/api/key", testCtx.TestServer.URL)
+		listURL := fmt.Sprintf("%s/api/key", suite.ServerUrl())
 		listReq, err := http.NewRequestWithContext(testCtx.Context, "GET", listURL, nil)
 		require.NoError(t, err)
 

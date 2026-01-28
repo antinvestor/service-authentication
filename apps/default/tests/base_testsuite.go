@@ -98,6 +98,12 @@ func (bs *BaseTestSuite) ServerUrl() string {
 	return fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
 }
 
+// Handler returns the main AuthServer handler created in SetupSuite.
+// Use this when you need to query the same database that the HTTP handlers use.
+func (bs *BaseTestSuite) Handler() *handlers.AuthServer {
+	return bs.handler
+}
+
 func initResources(_ context.Context, loginUrl string) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_authentication",
 		definition.WithUserName("ant"), definition.WithPassword("s3cr3t"),

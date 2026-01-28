@@ -258,17 +258,17 @@ func (c *OAuth2TestClient) InitiateLoginFlow(ctx context.Context, client *OAuth2
 }
 
 // extractLoginEventIDFromHTML extracts the loginEventId from the login page HTML
-// It looks for form actions like /s/verify/contact/{loginEventId}/post
+// It looks for form actions like /s/login/{loginEventId}/post or /s/social/login/{loginEventId}
 func extractLoginEventIDFromHTML(html string) string {
-	// Look for the form action pattern: /s/verify/contact/{loginEventId}/post
-	re := regexp.MustCompile(`/s/verify/contact/([a-zA-Z0-9_-]+)/post`)
+	// Look for the contact login form action pattern: /s/login/{loginEventId}/post
+	re := regexp.MustCompile(`/s/login/([a-zA-Z0-9_-]+)/post`)
 	matches := re.FindStringSubmatch(html)
 	if len(matches) >= 2 {
 		return matches[1]
 	}
 
-	// Also try social login pattern: /s/social/login/{loginEventId}/
-	re2 := regexp.MustCompile(`/s/social/login/([a-zA-Z0-9_-]+)/`)
+	// Also try social login pattern: /s/social/login/{loginEventId}
+	re2 := regexp.MustCompile(`/s/social/login/([a-zA-Z0-9_-]+)`)
 	matches2 := re2.FindStringSubmatch(html)
 	if len(matches2) >= 2 {
 		return matches2[1]
@@ -340,20 +340,21 @@ func (c *OAuth2TestClient) PerformContactVerification(ctx context.Context, login
 		c.t.Logf("DEBUG: Extracted loginEventId from login page: %s", loginEventID)
 	}
 
-	// Step 2: Now submit contact for verification using the new URL structure with loginEventId in path
-	verificationURL := fmt.Sprintf("%s/s/verify/contact/%s/post", c.AuthServiceURL, loginEventID)
+	// Step 2: Submit contact to the login endpoint (not verification endpoint)
+	// The login endpoint handles the initial contact submission and creates a verification
+	loginSubmitURL := fmt.Sprintf("%s/s/login/%s/post", c.AuthServiceURL, loginEventID)
 
-	// Prepare form data - login_challenge is now stored server-side keyed by loginEventId
+	// Prepare form data - the handler expects "contactDetail" field name
 	formData := url.Values{}
-	formData.Set("contact", contact)
+	formData.Set("contactDetail", contact)
 
 	if c.t != nil {
-		c.t.Logf("DEBUG: Submitting contact verification to: %s", verificationURL)
+		c.t.Logf("DEBUG: Submitting contact to login endpoint: %s", loginSubmitURL)
 		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
 		c.t.Logf("DEBUG: login_challenge is stored server-side, keyed by loginEventId: %s", loginEventID)
 	}
 
-	verifyReq, err := http.NewRequestWithContext(ctx, "POST", verificationURL, strings.NewReader(formData.Encode()))
+	verifyReq, err := http.NewRequestWithContext(ctx, "POST", loginSubmitURL, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create verification request: %w", err)
 	}
@@ -492,19 +493,21 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 	}
 
 	// Step 2: Submit verification code (new URL structure with loginEventId in path)
-	verificationURL := fmt.Sprintf("%s/s/verify/contact/%s/post", c.AuthServiceURL, url.PathEscape(loginEventID))
+	loginSubmitURL := fmt.Sprintf("%s/s/verify/contact/%s/post", c.AuthServiceURL, url.PathEscape(loginEventID))
 
-	// Prepare form data for login completion - loginEventId is now in URL path
+	// Prepare form data for login completion
+	// The handler expects both the path parameter and form fields
 	formData := url.Values{}
+	formData.Set("login_event_id", loginEventID)
 	formData.Set("profile_name", profileName)
 	formData.Set("verification_code", verificationCode)
 
 	if c.t != nil {
-		c.t.Logf("DEBUG: Submitting verification code to: %s", verificationURL)
+		c.t.Logf("DEBUG: Submitting verification code to: %s", loginSubmitURL)
 		c.t.Logf("DEBUG: Form data: %s", formData.Encode())
 	}
 
-	req, err = http.NewRequestWithContext(ctx, "POST", verificationURL, strings.NewReader(formData.Encode()))
+	req, err = http.NewRequestWithContext(ctx, "POST", loginSubmitURL, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create verification request: %w", err)
 	}
@@ -866,9 +869,17 @@ func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID str
 func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
 
 	loginEventRepo := authServer.LoginEventRepo()
+	if loginEventRepo == nil {
+		return "", fmt.Errorf("login event repository is nil - authServer may not be properly initialised")
+	}
+
 	loginEvt, err := loginEventRepo.GetByID(ctx, LoginEventID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get login event: %w", err)
+	}
+
+	if loginEvt.VerificationID == "" {
+		return "", fmt.Errorf("login event has no verification ID")
 	}
 
 	notifCli := authServer.NotificationCli()
@@ -896,7 +907,13 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 
 			nmsg := resp.Msg()
 			for _, n := range nmsg.GetData() {
-				if n.GetPayload().AsMap()["verification_id"].(string) == loginEvt.VerificationID {
+				payload := n.GetPayload()
+				if payload == nil {
+					continue
+				}
+				payloadMap := payload.AsMap()
+				verificationID, ok := payloadMap["verification_id"].(string)
+				if ok && verificationID == loginEvt.VerificationID {
 					return n, nil
 				}
 			}
@@ -906,10 +923,24 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 	}, 5*time.Second, 300*time.Millisecond)
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to find verification notification: %w", err)
 	}
 
-	return notif.GetPayload().AsMap()["code"].(string), nil
+	if notif == nil {
+		return "", fmt.Errorf("verification notification not found for verification ID: %s", loginEvt.VerificationID)
+	}
+
+	payload := notif.GetPayload()
+	if payload == nil {
+		return "", fmt.Errorf("notification has no payload")
+	}
+
+	code, ok := payload.AsMap()["code"].(string)
+	if !ok || code == "" {
+		return "", fmt.Errorf("verification code not found in notification payload")
+	}
+
+	return code, nil
 }
 
 // Cleanup performs general cleanup of OAuth2 test client resources
