@@ -145,8 +145,9 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 		return "", ErrLoginLocked
 	}
 
-	// Step 3: For non-direct logins (providers), skip verification
-	if models.LoginSource(login.Source) != models.LoginSourceDirect {
+	// Step 3: For provider logins (no verification ID on the event), skip code verification.
+	// The verification ID is only set for direct (contact-based) login flows.
+	if event.VerificationID == "" {
 		log.WithField("source", login.Source).Debug("provider login - skipping verification")
 		return login.ProfileID, nil
 	}

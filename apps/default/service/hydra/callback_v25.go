@@ -2,6 +2,7 @@ package hydra
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -109,7 +110,12 @@ func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLog
 		LoginChallenge(params.LoginChallenge).AcceptOAuth2LoginRequest(*alr).Execute()
 
 	if err != nil {
-		return "", err
+		var apiErr *hydraclientgo.GenericOpenAPIError
+		if errors.As(err, &apiErr) {
+			return "", fmt.Errorf("accept login request failed (challenge=%s): %w, response: %s",
+				params.LoginChallenge, err, string(apiErr.Body()))
+		}
+		return "", fmt.Errorf("accept login request failed (challenge=%s): %w", params.LoginChallenge, err)
 	}
 
 	return resp.RedirectTo, nil
