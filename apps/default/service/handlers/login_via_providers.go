@@ -165,15 +165,19 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("failed to get session")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
-		return err
+		return nil
 	}
 
 	loginEventID, ok := session.Values[SessionKeyLoginEventID].(string)
 	if !ok || loginEventID == "" {
 		util.Log(ctx).Error("login event id not found in session cookie")
 		http.Redirect(rw, req, "/error", http.StatusSeeOther)
-		return fmt.Errorf("login event id not found in session cookie")
+		return nil
 	}
+
+	// Clear login event ID from session to prevent replay on browser retry
+	delete(session.Values, SessionKeyLoginEventID)
+	_ = session.Save(req, rw)
 
 	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
 	if err != nil {
@@ -186,16 +190,19 @@ func (h *AuthServer) ProviderCallbackEndpoint(rw http.ResponseWriter, req *http.
 	// try to get the user without re-authenticating
 	err = h.providerPostUserLogin(rw, req, loginEvt)
 	if err != nil {
-
-		util.Log(ctx).WithError(err).Error("user login attempt failed")
+		util.Log(ctx).WithError(err).Warn("provider auth failed - redirecting to login page")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-
-		return err
+		return nil
 	}
 
 	req.PostForm = url.Values{}
 	req.PostForm.Set("login_event_id", loginEventID)
-	return h.SubmitLoginEndpoint(rw, req)
+	if err = h.SubmitLoginEndpoint(rw, req); err != nil {
+		util.Log(ctx).WithError(err).Warn("login submission failed after provider auth - redirecting to login page")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+		return nil
+	}
+	return nil
 }
 
 func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -224,7 +231,7 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 		if sessErr != nil {
 			util.Log(ctx).WithError(sessErr).Error("failed to get session")
 			http.Redirect(rw, req, "/error", http.StatusSeeOther)
-			return err
+			return nil
 		}
 
 		session.Values[SessionKeyLoginEventID] = loginEventID
@@ -238,7 +245,13 @@ func (h *AuthServer) ProviderLoginEndpoint(rw http.ResponseWriter, req *http.Req
 		return nil
 	}
 
+	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 	req.PostForm = url.Values{}
 	req.PostForm.Set("login_event_id", loginEventID)
-	return h.SubmitLoginEndpoint(rw, req)
+	if err = h.SubmitLoginEndpoint(rw, req); err != nil {
+		util.Log(ctx).WithError(err).Warn("login submission failed - redirecting to login page")
+		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
+		return nil
+	}
+	return nil
 }

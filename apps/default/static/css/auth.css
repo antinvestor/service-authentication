@@ -600,6 +600,12 @@ a:focus-visible,
     word-break: break-word;
 }
 
+.error-close-hint {
+    font-size: 0.9375rem;
+    color: var(--auth-text-secondary);
+    margin-top: 1.5rem;
+}
+
 /* ==========================================================================
    Not Found Page
    ========================================================================== */
