@@ -203,14 +203,10 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		return err
 	}
 
-	// Step 5: Enrich login event with partition info asynchronously
-	// This runs in background to avoid blocking the login page response
-	go func() {
-
-		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		h.updateTenancyForLoginEvent(bgCtx, loginEvent.GetID())
-	}()
+	// Step 5: Enrich login event with partition info synchronously
+	// This must complete before the user can submit their contact to ensure
+	// proper tenancy context for verification creation
+	h.updateTenancyForLoginEvent(ctx, loginEvent.GetID())
 
 	// Step 6: Prepare and render login template
 	payload := initTemplatePayload(ctx)
