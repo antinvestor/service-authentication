@@ -120,23 +120,16 @@
     }
 
     /**
-     * Show verification overlay and clear sensitive form data
+     * Show verification overlay during form submission
      * This prevents the verification page from being visible during redirect
      * and protects against back-button exposure on mobile devices
      */
     function showVerificationOverlay() {
         const overlay = document.getElementById('verificationOverlay');
-        const codeInput = document.getElementById('verification_code');
 
         // Show the overlay immediately
         if (overlay) {
             overlay.style.display = 'flex';
-        }
-
-        // Clear the verification code from the input for security
-        // Use setTimeout to ensure the browser has captured form data before clearing
-        if (codeInput) {
-            setTimeout(function() { codeInput.value = ''; }, 0);
         }
 
         // Replace current history entry to prevent back-button exposure
@@ -149,11 +142,9 @@
             }
         }
 
-        // Auto-close tab after 1 minute for security
-        // If redirect hasn't happened by then, something went wrong
-        setTimeout(function() {
-            closeOrClearPage();
-        }, 60000);
+        // Note: We do NOT clear the verification code here as it races with form submission.
+        // The code will be cleared naturally when the page redirects after successful verification,
+        // or if the user returns to this page, they'll need to enter a new code anyway.
     }
 
     /**
