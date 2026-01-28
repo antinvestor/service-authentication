@@ -87,7 +87,7 @@ func main() {
 	serviceTranslations := frame.WithTranslation("/localization", "en", "sw", "lg", "fr", "ar", "es")
 	serviceOptions := []frame.Option{serviceTranslations}
 
-	// Initialize service early to get localization manager
+	// Initialise service early to get localization manager
 	svc.Init(ctx, serviceTranslations)
 	localizationMan := svc.LocalizationManager()
 
