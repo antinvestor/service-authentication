@@ -431,6 +431,7 @@
 
         let cooldownActive = false;
         let remainingSeconds = 0;
+        let cooldownTimer = null;
 
         /**
          * Update the screen reader status for resend cooldown
@@ -441,12 +442,16 @@
             }
         }
 
-        window.resendCode = function() {
-            if (cooldownActive) return;
+        /**
+         * Start a cooldown timer
+         */
+        function startCooldown(seconds) {
+            if (cooldownTimer) {
+                clearInterval(cooldownTimer);
+            }
 
-            // Start cooldown
             cooldownActive = true;
-            remainingSeconds = CONFIG.RESEND_COOLDOWN_SECONDS;
+            remainingSeconds = seconds;
 
             resendBtn.disabled = true;
             resendBtn.setAttribute('aria-disabled', 'true');
@@ -454,12 +459,13 @@
             if (resendTimer) {
                 resendTimer.style.display = 'inline';
             }
+            if (countdown) {
+                countdown.textContent = remainingSeconds;
+            }
 
-            // Announce to screen readers
-            announceToScreenReader('Verification code sent. Please wait ' + remainingSeconds + ' seconds before requesting another code.');
             updateResendStatus('Please wait ' + remainingSeconds + ' seconds');
 
-            const timer = setInterval(() => {
+            cooldownTimer = setInterval(() => {
                 remainingSeconds--;
 
                 if (countdown) {
@@ -472,7 +478,8 @@
                 }
 
                 if (remainingSeconds <= 0) {
-                    clearInterval(timer);
+                    clearInterval(cooldownTimer);
+                    cooldownTimer = null;
                     cooldownActive = false;
                     resendBtn.disabled = false;
                     resendBtn.removeAttribute('aria-disabled');
@@ -485,40 +492,109 @@
                     announceToScreenReader('You can now request a new verification code.');
                 }
             }, 1000);
+        }
 
-            // TODO: Implement actual resend API call
-            // For now, show a message indicating the feature
+        /**
+         * Show feedback message
+         */
+        function showFeedback(message, isSuccess) {
+            const helpSection = document.querySelector('.verification-help');
+            if (!helpSection) return;
+
+            // Remove any existing feedback message
+            const existingMsg = helpSection.parentNode.querySelector('.resend-feedback');
+            if (existingMsg) {
+                existingMsg.remove();
+            }
+
+            const feedbackMsg = document.createElement('div');
+            feedbackMsg.className = 'alert resend-feedback ' + (isSuccess ? 'alert-success' : 'alert-error');
+            feedbackMsg.setAttribute('role', 'status');
+            feedbackMsg.style.cssText = 'margin-top: 1rem; padding: 0.75rem; display: flex; align-items: center; gap: 0.5rem;';
+
+            const iconPath = isSuccess
+                ? 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                : 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z';
+
+            feedbackMsg.innerHTML =
+                '<svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="width:18px;height:18px;flex-shrink:0;">' +
+                '<path fill-rule="evenodd" d="' + iconPath + '" clip-rule="evenodd"/>' +
+                '</svg>' +
+                '<span>' + message + '</span>';
+
+            helpSection.parentNode.insertBefore(feedbackMsg, helpSection);
+
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                feedbackMsg.remove();
+            }, 5000);
+        }
+
+        window.resendCode = async function() {
+            if (cooldownActive) return;
+
             const loginEventId = document.querySelector('input[name="login_event_id"]')?.value;
-            if (loginEventId) {
-                // In production, this would make an API call to resend the code
-                console.log('Resending verification code for login event:', loginEventId);
+            if (!loginEventId) {
+                showFeedback('Unable to resend code. Please refresh the page.', false);
+                return;
+            }
 
-                // Show success feedback in the verification-help section
-                const helpSection = document.querySelector('.verification-help');
-                if (helpSection) {
-                    // Check if success message already exists
-                    const existingMsg = helpSection.querySelector('.resend-success');
-                    if (existingMsg) {
-                        existingMsg.remove();
+            // Disable button during request
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/s/verify/contact/' + encodeURIComponent(loginEventId) + '/resend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                resendBtn.textContent = 'Resend';
+
+                if (data.success) {
+                    showFeedback('A new verification code has been sent!', true);
+                    announceToScreenReader('Verification code sent.');
+
+                    // Start cooldown based on server response
+                    if (data.wait_seconds > 0) {
+                        startCooldown(data.wait_seconds);
+                    } else if (data.resends_left > 0) {
+                        // Default cooldown if server doesn't specify
+                        startCooldown(CONFIG.RESEND_COOLDOWN_SECONDS);
                     }
 
-                    const successMsg = document.createElement('div');
-                    successMsg.className = 'alert alert-success resend-success';
-                    successMsg.setAttribute('role', 'status');
-                    successMsg.style.cssText = 'margin-top: 1rem; padding: 0.75rem;';
-                    successMsg.innerHTML = `
-                        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="width:18px;height:18px;flex-shrink:0;">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>A new verification code has been sent!</span>
-                    `;
-                    helpSection.parentNode.insertBefore(successMsg, helpSection);
-
-                    // Remove message after 5 seconds
-                    setTimeout(() => {
-                        successMsg.remove();
-                    }, 5000);
+                    // Update resend button text if limited resends left
+                    if (data.resends_left === 0) {
+                        resendBtn.textContent = 'No resends left';
+                        resendBtn.disabled = true;
+                    } else if (data.resends_left <= 2) {
+                        resendBtn.textContent = 'Resend (' + data.resends_left + ' left)';
+                    }
+                } else {
+                    // Handle rate limiting
+                    if (response.status === 429 && data.wait_seconds > 0) {
+                        showFeedback(data.message || 'Please wait before requesting another code.', false);
+                        startCooldown(data.wait_seconds);
+                    } else if (data.resends_left === 0) {
+                        showFeedback(data.message || 'Maximum resend attempts reached.', false);
+                        resendBtn.textContent = 'No resends left';
+                        resendBtn.disabled = true;
+                    } else {
+                        showFeedback(data.message || 'Failed to resend code. Please try again.', false);
+                        resendBtn.disabled = false;
+                    }
+                    announceToScreenReader(data.message || 'Failed to resend code.');
                 }
+            } catch (error) {
+                console.error('Resend error:', error);
+                resendBtn.textContent = 'Resend';
+                resendBtn.disabled = false;
+                showFeedback('Network error. Please try again.', false);
+                announceToScreenReader('Network error. Please try again.');
             }
         };
     }
