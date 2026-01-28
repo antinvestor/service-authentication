@@ -22,11 +22,11 @@ type AuthProvider interface {
 }
 
 type AuthenticatedUser struct {
-	Contact string
-	Name    string
-	FirstName    string
-	LastName    string
-	Raw     map[string]any
+	Contact   string
+	Name      string
+	FirstName string
+	LastName  string
+	Raw       map[string]any
 }
 
 type PKCE struct {

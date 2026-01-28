@@ -10,6 +10,7 @@ import (
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
+	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -21,6 +22,28 @@ import (
 const (
 	loginSessionProviderAuth = "l_provider_sess"
 )
+
+// setupLoginOptions configures which login methods are enabled for the login page template.
+func (h *AuthServer) setupLoginOptions(cfg *config.AuthenticationConfig) {
+
+	h.loginOptions = map[string]any{"enableContactLogin": !cfg.AuthProviderContactLoginDisabled}
+
+	if cfg.AuthProviderGoogleClientID != "" {
+		h.loginOptions["enableGoogleLogin"] = true
+	}
+
+	if cfg.AuthProviderMetaClientID != "" {
+		h.loginOptions["enableFacebookLogin"] = true
+	}
+
+	if cfg.AuthProviderAppleClientID != "" {
+		h.loginOptions["enableAppleLogin"] = true
+	}
+
+	if cfg.AuthProviderMicrosoftClientID != "" {
+		h.loginOptions["enableMicrosoftLogin"] = true
+	}
+}
 
 func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
@@ -61,7 +84,7 @@ func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.R
 		ExpiresAt:    time.Now().Add(5 * time.Minute),
 	}
 
-	encoded, err := h.loginCookieCodec[0].Encode(loginSessionProviderAuth, authState)
+	encoded, err := h.cookiesCodec.Encode(loginSessionProviderAuth, authState)
 	if err != nil {
 		log.WithError(err).Error("failed to encode auth state cookie")
 		return fmt.Errorf("failed to encode auth state: %w", err)
@@ -88,8 +111,8 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	if errParam := req.URL.Query().Get("error"); errParam != "" {
 		errDesc := req.URL.Query().Get("error_description")
 		log.WithFields(map[string]any{
-			"provider_error":       errParam,
-			"provider_error_desc":  errDesc,
+			"provider_error":      errParam,
+			"provider_error_desc": errDesc,
 		}).Error("external provider returned an error during authentication")
 		return fmt.Errorf("provider authentication error: %s - %s", errParam, errDesc)
 	}
@@ -102,17 +125,10 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	}
 	providers.ClearAuthStateCookie(rw)
 
-	var authState *providers.AuthState
-	for _, cookieCodec := range h.loginCookieCodec {
-		decodeErr := cookieCodec.Decode(loginSessionProviderAuth, cookie.Value, &authState)
-		if decodeErr == nil {
-			break
-		}
-	}
-
-	if authState == nil {
-		log.Error("failed to decode auth state cookie - all codecs failed")
-		return fmt.Errorf("failed to decode authentication state")
+	var authState providers.AuthState
+	if decodeErr := h.cookiesCodec.Decode(loginSessionProviderAuth, cookie.Value, &authState); decodeErr != nil {
+		log.WithError(decodeErr).Error("failed to decode auth state cookie")
+		return fmt.Errorf("failed to decode authentication state: %w", decodeErr)
 	}
 
 	log = log.WithFields(map[string]any{
@@ -170,8 +186,8 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	}
 
 	log.WithFields(map[string]any{
-		"client_id":    loginEvt.ClientID,
-		"duration_ms":  time.Since(start).Milliseconds(),
+		"client_id":   loginEvt.ClientID,
+		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("provider callback processed, completing user login")
 
 	// Step 7: Complete the login flow

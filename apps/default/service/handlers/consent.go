@@ -40,18 +40,6 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 	log = log.WithField("consent_challenge_prefix", challengePrefix)
 
-	// Step 2: Clean up session (remove login event ID)
-	session, err := h.getLogginSession().Get(req, SessionKeyLoginStorageName)
-	if err != nil {
-		log.WithError(err).Warn("failed to get session for cleanup")
-		// Continue anyway - session cleanup is not critical
-	} else {
-		delete(session.Values, SessionKeyLoginEventID)
-		if saveErr := session.Save(req, rw); saveErr != nil {
-			log.WithError(saveErr).Debug("failed to save session after cleanup")
-		}
-	}
-
 	// Step 3: Get consent request from Hydra
 	getConseReq, err := hydraCli.GetConsentRequest(ctx, consentChallenge)
 	if err != nil {
@@ -286,7 +274,7 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 	}
 
 	// Encode and sign the device ID cookie
-	encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceIDKey, deviceObj.GetId())
+	encoded, encodeErr := h.cookiesCodec.Encode(SessionKeyDeviceIDKey, deviceObj.GetId())
 	if encodeErr != nil {
 		return encodeErr
 	}
@@ -309,7 +297,7 @@ func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, d
 // setRememberMeCookie stores the login event ID in a long-lived encrypted cookie
 // so that the user can be auto-logged-in when their Hydra session expires.
 func (h *AuthServer) setRememberMeCookie(w http.ResponseWriter, loginEventID string) error {
-	encoded, err := h.loginCookieCodec[0].Encode(SessionKeyRememberMeLoginEventIDKey, loginEventID)
+	encoded, err := h.cookiesCodec.Encode(SessionKeyRememberMeLoginEventIDKey, loginEventID)
 	if err != nil {
 		return err
 	}

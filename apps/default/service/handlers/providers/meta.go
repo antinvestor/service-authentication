@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pitabwire/util"
 	"golang.org/x/oauth2"
 )
 
@@ -73,7 +74,7 @@ func (f *FacebookProvider) CompleteLogin(
 	if err != nil {
 		return nil, fmt.Errorf("facebook: graph API request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer util.CloseAndLogOnError(ctx, resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("facebook: graph API returned HTTP %d", resp.StatusCode)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"golang.org/x/oauth2"
 	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
 )
 
 type MicrosoftProvider struct {
@@ -20,7 +20,7 @@ func NewMicrosoftProvider(
 
 	issuer := fmt.Sprintf(
 		"https://login.microsoftonline.com/%s/v2.0",
-		tenant, // "common", "organizations", or tenant ID
+		tenant, // "common", "organisations", or tenant ID
 	)
 
 	p, err := oidc.NewProvider(ctx, issuer)

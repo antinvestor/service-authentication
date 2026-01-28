@@ -503,16 +503,16 @@ func (suite *HandlersTestSuite) TestProviderEndpoints() {
 	}{
 		{
 			name:           "ProviderLoginGoogle",
-			endpoint:       "/s/social/login/test-login-event-id/google",
+			endpoint:       "/s/social/login/test-login-event-id?provider=google",
 			method:         "POST",
-			expectedStatus: http.StatusInternalServerError, // Expected when login event not found
+			expectedStatus: http.StatusInternalServerError, // Redirects to error page which returns 500
 			shouldError:    true,
 		},
 		{
 			name:           "ProviderCallbackGoogle",
-			endpoint:       "/social/callback/google",
+			endpoint:       "/s/social/callback",
 			method:         "POST",
-			expectedStatus: http.StatusInternalServerError, // Expected without proper OAuth setup
+			expectedStatus: http.StatusInternalServerError, // Redirects to error page which returns 500
 			shouldError:    true,
 		},
 	}

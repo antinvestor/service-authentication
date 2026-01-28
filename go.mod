@@ -20,9 +20,6 @@ require (
 	github.com/antinvestor/apis/go/profile v1.52.4
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/securecookie v1.1.2
-	github.com/gorilla/sessions v1.4.0
-	github.com/markbates/goth v1.82.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.70.2
 	github.com/pitabwire/util v0.4.0
@@ -40,7 +37,6 @@ require (
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.11-20230414000709-087bc8072ce4.1 // indirect
 	buf.build/go/protovalidate v1.1.0 // indirect
 	cel.dev/expr v0.25.1 // indirect
-	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	connectrpc.com/otelconnect v0.9.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
@@ -65,7 +61,6 @@ require (
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/exaring/otelpgx v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-chi/chi/v5 v5.2.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -74,7 +69,6 @@ require (
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.5 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

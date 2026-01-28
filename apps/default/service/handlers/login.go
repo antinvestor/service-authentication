@@ -239,10 +239,8 @@ func (h *AuthServer) getRememberMeLoginEventID(req *http.Request) string {
 	}
 
 	var loginEventID string
-	for _, cookieCodec := range h.loginCookieCodec {
-		if decodeErr := cookieCodec.Decode(SessionKeyRememberMeLoginEventIDKey, cookie.Value, &loginEventID); decodeErr == nil {
-			return loginEventID
-		}
+	if decodeErr := h.cookiesCodec.Decode(SessionKeyRememberMeLoginEventIDKey, cookie.Value, &loginEventID); decodeErr == nil {
+		return loginEventID
 	}
 	return ""
 }

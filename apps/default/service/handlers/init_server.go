@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/gorilla/securecookie"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/security"
@@ -40,8 +40,8 @@ const (
 )
 
 type AuthServer struct {
-	loginCookieCodec []securecookie.Codec
-	config           *aconfig.AuthenticationConfig
+	cookiesCodec *providers.StateCodec
+	config       *aconfig.AuthenticationConfig
 
 	securityAuth security.Authenticator
 
@@ -104,20 +104,20 @@ func NewAuthServer(ctx context.Context,
 		defaultHydraCli: hydraCli,
 	}
 
-	err := h.setupCookieSessions(ctx, authConfig)
+	err := h.setupSecureCookies(ctx, authConfig)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to setup cookie sessions")
+		log.WithError(err).Fatal("Failed to setup secure cookies")
 	}
 
-	h.setupAuthProviders(ctx, authConfig)
+	h.setupLoginOptions(authConfig)
 
-	v2Providers, v2Err := providers.SetupAuthProviders(ctx, authConfig)
-	if v2Err != nil {
-		log.WithError(v2Err).Error("failed to setup v2 auth providers - provider login will be unavailable")
+	authProviders, provErr := providers.SetupAuthProviders(ctx, authConfig)
+	if provErr != nil {
+		log.WithError(provErr).Error("failed to setup auth providers - provider login will be unavailable")
 	} else {
-		h.loginAuthProviders = v2Providers
-		for name := range v2Providers {
-			log.WithField("provider", name).Info("v2 auth provider registered")
+		h.loginAuthProviders = authProviders
+		for name := range authProviders {
+			log.WithField("provider", name).Info("auth provider registered")
 		}
 	}
 
@@ -162,6 +162,28 @@ func (h *AuthServer) NotificationCli() notificationv1connect.NotificationService
 
 func (h *AuthServer) LoginEventRepo() repository.LoginEventRepository {
 	return h.loginEventRepo
+}
+
+// setupSecureCookies initialises the StateCodec used for encrypting cookie values.
+// It uses the SecureCookieBlockKey from config as the AES-256-GCM encryption key.
+func (h *AuthServer) setupSecureCookies(_ context.Context, cfg *aconfig.AuthenticationConfig) error {
+	blockKey, err := hex.DecodeString(cfg.SecureCookieBlockKey)
+	if err != nil {
+		return fmt.Errorf("failed to decode secure cookie block key: %w", err)
+	}
+
+	// AES-256 requires exactly 32 bytes
+	if len(blockKey) != 32 {
+		return fmt.Errorf("secure cookie block key must be 32 bytes (64 hex chars), got %d bytes", len(blockKey))
+	}
+
+	codec, err := providers.NewStateCodec(blockKey)
+	if err != nil {
+		return fmt.Errorf("failed to create state codec: %w", err)
+	}
+
+	h.cookiesCodec = codec
+	return nil
 }
 
 type ErrorResponse struct {
@@ -278,11 +300,8 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		deviceCookie, err := r.Cookie(SessionKeyDeviceStorageName)
 		if err == nil {
 			// Decode and verify the device ID cookie
-			for _, cookieCodec := range h.loginCookieCodec {
-				decodeErr := cookieCodec.Decode(SessionKeyDeviceIDKey, deviceCookie.Value, &deviceID)
-				if decodeErr == nil {
-					break
-				}
+			if decodeErr := h.cookiesCodec.Decode(SessionKeyDeviceIDKey, deviceCookie.Value, &deviceID); decodeErr != nil {
+				util.Log(ctx).WithError(decodeErr).Debug("failed to decode device ID cookie")
 			}
 		}
 
@@ -290,12 +309,8 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 		sessionCookie, err := r.Cookie(SessionKeySessionStorageName)
 		if err == nil {
 			// Decode and verify the session ID cookie
-			for _, cookieCodec := range h.loginCookieCodec {
-				decodeErr := cookieCodec.Decode(SessionKeyDeviceSessionIDKey, sessionCookie.Value, &sessionID)
-				if decodeErr == nil {
-					sessionIDExists = true
-					break
-				}
+			if decodeErr := h.cookiesCodec.Decode(SessionKeyDeviceSessionIDKey, sessionCookie.Value, &sessionID); decodeErr == nil {
+				sessionIDExists = true
 			}
 		}
 
@@ -304,7 +319,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 			sessionID = util.IDString()
 
 			// Encode and sign the session ID cookie
-			encoded, encodeErr := h.loginCookieCodec[0].Encode(SessionKeyDeviceSessionIDKey, sessionID)
+			encoded, encodeErr := h.cookiesCodec.Encode(SessionKeyDeviceSessionIDKey, sessionID)
 			if encodeErr != nil {
 				http.Error(w, "failed to encode session cookie", http.StatusInternalServerError)
 				return
