@@ -141,12 +141,27 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}
 
 	if grantType == "refresh_token" {
+		// Extract existing session claims and pass them through to preserve them
+		session, _ := tokenObject["session"].(map[string]any)
+		accessToken, _ := session["access_token"].(map[string]any)
+		idToken, _ := session["id_token"].(map[string]any)
 
-		// Refresh token - accept without changes
-		log.Debug("accepting token unchanged for refresh token")
+		if accessToken != nil || idToken != nil {
+			hookResponse := map[string]any{
+				"session": map[string]any{
+					"access_token": accessToken,
+					"id_token":     idToken,
+				},
+			}
+			log.Debug("preserving existing claims for refresh token")
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			return json.NewEncoder(rw).Encode(hookResponse)
+		}
+
+		log.Warn("no session claims found in refresh token request")
 		rw.WriteHeader(http.StatusNoContent)
 		return nil
-
 	}
 
 	// Extract client_id from multiple possible locations
