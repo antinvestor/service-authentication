@@ -224,16 +224,31 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		log.WithField("session_keys", getMapKeys(session)).Debug("session structure")
 	}
 
+	// Hydra v2 stores claims in multiple possible locations:
+	// 1. session.access_token / session.id_token (standard)
+	// 2. session.extra (Hydra v2 alternative)
 	accessTokenClaims, _ := session["access_token"].(map[string]any)
 	idTokenClaims, _ := session["id_token"].(map[string]any)
+	extraClaims, _ := session["extra"].(map[string]any)
 
-	// Log what we found in the session
+	// Log what we found in all locations
 	log.WithFields(map[string]any{
 		"access_token_keys": getMapKeys(accessTokenClaims),
 		"id_token_keys":     getMapKeys(idTokenClaims),
+		"extra_keys":        getMapKeys(extraClaims),
 		"access_token_nil":  accessTokenClaims == nil,
 		"id_token_nil":      idTokenClaims == nil,
-	}).Debug("extracted session claims")
+		"extra_nil":         extraClaims == nil,
+	}).Debug("extracted session claims from all locations")
+
+	// If access_token claims are empty but extra has claims, use extra
+	if accessTokenClaims == nil && extraClaims != nil && len(extraClaims) > 0 {
+		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as access_token claims")
+		accessTokenClaims = extraClaims
+		if idTokenClaims == nil {
+			idTokenClaims = extraClaims
+		}
+	}
 
 	// If we have session claims from consent, return them so Hydra includes them in the token
 	if accessTokenClaims != nil || idTokenClaims != nil {
