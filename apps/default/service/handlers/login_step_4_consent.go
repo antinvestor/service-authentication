@@ -205,15 +205,14 @@ func (h *AuthServer) buildUserTokenClaims(ctx context.Context, rw http.ResponseW
 	}
 
 	return map[string]any{
-		"tenant_id":          loginEvent.GetTenantID(),
-		"partition_id":       loginEvent.GetPartitionID(),
-		"access_id":          loginEvent.GetAccessID(),
-		"contact_id":         loginEvent.GetContactID(),
-		"session_id":         loginEvent.GetID(),
-		"oauth2_session_id":  loginEvent.Oauth2SessionID, // Hydra session ID for lookup during refresh
-		"roles":              []string{"user"},
-		"device_id":          deviceObj.GetId(),
-		"profile_id":         subjectID,
+		"tenant_id":    loginEvent.GetTenantID(),
+		"partition_id": loginEvent.GetPartitionID(),
+		"access_id":    loginEvent.GetAccessID(),
+		"contact_id":   loginEvent.GetContactID(),
+		"session_id":   loginEvent.GetID(), // Login event ID - used for lookup during refresh
+		"roles":        []string{"user"},
+		"device_id":    deviceObj.GetId(),
+		"profile_id":   subjectID,
 	}, nil
 }
 

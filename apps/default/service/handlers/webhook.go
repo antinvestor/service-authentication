@@ -54,6 +54,49 @@ func extractGrantedScopes(tokenObject map[string]any) []string {
 	return out
 }
 
+// extractLoginEventIDFromWebhook extracts the login event ID (session_id claim) from the webhook payload.
+// This is the most direct way to look up the login event during token refresh.
+func extractLoginEventIDFromWebhook(tokenObject map[string]any) string {
+	session, ok := tokenObject["session"].(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	// Check session.access_token.session_id (our custom claim from consent)
+	if accessToken, ok := session["access_token"].(map[string]any); ok {
+		if sessionID, ok := accessToken["session_id"].(string); ok && sessionID != "" {
+			return sessionID
+		}
+	}
+
+	// Check session.id_token structure (Hydra v2)
+	if idToken, ok := session["id_token"].(map[string]any); ok {
+		// Check id_token.id_token_claims.ext.session_id
+		if idTokenClaims, ok := idToken["id_token_claims"].(map[string]any); ok {
+			if ext, ok := idTokenClaims["ext"].(map[string]any); ok {
+				if sessionID, ok := ext["session_id"].(string); ok && sessionID != "" {
+					return sessionID
+				}
+				// Also try ext.id_token_claims.session_id (deep nesting)
+				if deepClaims, ok := ext["id_token_claims"].(map[string]any); ok {
+					if sessionID, ok := deepClaims["session_id"].(string); ok && sessionID != "" {
+						return sessionID
+					}
+				}
+			}
+		}
+	}
+
+	// Check session.extra.session_id (Hydra v2 alternative)
+	if extra, ok := session["extra"].(map[string]any); ok {
+		if sessionID, ok := extra["session_id"].(string); ok && sessionID != "" {
+			return sessionID
+		}
+	}
+
+	return ""
+}
+
 // extractOAuth2SessionID extracts the Hydra OAuth2 session ID from the webhook payload.
 // It checks multiple locations where the session ID might be stored:
 // 1. Our custom oauth2_session_id claim set during consent (in session.access_token or nested locations)
@@ -353,18 +396,13 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 			}
 		}
 
-		// Extract OAuth2 session ID for precise lookup (no profile fallback)
-		oauth2SessionID := extractOAuth2SessionID(tokenObject)
+		// Try to extract login event ID (session_id) from existing claims first
+		// This is the most direct lookup method
+		loginEventID := extractLoginEventIDFromWebhook(tokenObject)
 
-		if oauth2SessionID == "" {
-			log.WithFields(map[string]any{
-				"subject":        subject,
-				"payload_keys":   getMapKeys(tokenObject),
-				"session_keys":   getMapKeys(session),
-			}).Warn("Hydra webhook payload missing OAuth2 session ID - cannot look up login event")
-		} else {
-			log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
-			loginEvent, lookupErr := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+		if loginEventID != "" {
+			log.WithField("login_event_id", loginEventID).Debug("attempting login event lookup by ID from claims")
+			loginEvent, lookupErr := h.loginEventRepo.GetByID(ctx, loginEventID)
 			if lookupErr == nil && loginEvent != nil {
 				finalClaims = map[string]any{
 					"tenant_id":    loginEvent.TenantID,
@@ -376,15 +414,42 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 					"profile_id":   subject,
 					"roles":        []string{"user"},
 				}
-				log.WithFields(map[string]any{
-					"login_event_id":    loginEvent.GetID(),
-					"oauth2_session_id": oauth2SessionID,
-				}).Info("enriched token with claims from database lookup via session ID")
+				log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
 			} else {
-				log.WithError(lookupErr).WithFields(map[string]any{
-					"subject":           subject,
-					"oauth2_session_id": oauth2SessionID,
-				}).Warn("login event not found for Hydra session ID - token will be missing claims")
+				log.WithError(lookupErr).WithField("login_event_id", loginEventID).
+					Warn("login event not found by ID - token will be missing claims")
+			}
+		} else {
+			// Fallback: try OAuth2 session ID lookup
+			oauth2SessionID := extractOAuth2SessionID(tokenObject)
+			if oauth2SessionID != "" {
+				log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
+				loginEvent, lookupErr := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+				if lookupErr == nil && loginEvent != nil {
+					finalClaims = map[string]any{
+						"tenant_id":    loginEvent.TenantID,
+						"partition_id": loginEvent.PartitionID,
+						"access_id":    loginEvent.AccessID,
+						"contact_id":   loginEvent.ContactID,
+						"session_id":   loginEvent.GetID(),
+						"device_id":    loginEvent.DeviceID,
+						"profile_id":   subject,
+						"roles":        []string{"user"},
+					}
+					log.WithFields(map[string]any{
+						"login_event_id":    loginEvent.GetID(),
+						"oauth2_session_id": oauth2SessionID,
+					}).Info("enriched token with claims from OAuth2 session ID lookup")
+				} else {
+					log.WithError(lookupErr).WithField("oauth2_session_id", oauth2SessionID).
+						Warn("login event not found for Hydra session ID - token will be missing claims")
+				}
+			} else {
+				log.WithFields(map[string]any{
+					"subject":      subject,
+					"payload_keys": getMapKeys(tokenObject),
+					"session_keys": getMapKeys(session),
+				}).Warn("no login_event_id or oauth2_session_id found - cannot look up login event")
 			}
 		}
 	}
