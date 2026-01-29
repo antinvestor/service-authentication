@@ -32,6 +32,8 @@ type LoginEventRepository interface {
 	datastore.BaseRepository[*models.LoginEvent]
 	// GetByLoginChallenge retrieves a login event by the Hydra login challenge ID
 	GetByLoginChallenge(ctx context.Context, loginChallengeID string) (*models.LoginEvent, error)
+	// GetMostRecentByProfileID retrieves the most recent login event for a profile
+	GetMostRecentByProfileID(ctx context.Context, profileID string) (*models.LoginEvent, error)
 }
 
 // SessionRepository handles database operations for Session entities

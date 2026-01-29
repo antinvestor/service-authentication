@@ -59,3 +59,19 @@ func (r *loginEventRepository) Save(ctx context.Context, loginEvent *models.Logi
 func (r *loginEventRepository) Delete(ctx context.Context, id string) error {
 	return r.Pool().DB(ctx, false).Delete(&models.LoginEvent{}, "id = ?", id).Error
 }
+
+// GetMostRecentByProfileID retrieves the most recent login event for a profile
+func (r *loginEventRepository) GetMostRecentByProfileID(ctx context.Context, profileID string) (*models.LoginEvent, error) {
+	var loginEvent models.LoginEvent
+	err := r.Pool().DB(ctx, true).
+		Where("profile_id = ?", profileID).
+		Order("created_at DESC").
+		First(&loginEvent).Error
+	if err != nil {
+		if data.ErrorIsNoRows(err) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &loginEvent, nil
+}

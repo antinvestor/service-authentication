@@ -12,6 +12,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/util"
@@ -172,15 +173,30 @@ func (h *AuthServer) buildUserTokenClaims(ctx context.Context, rw http.ResponseW
 
 	// Extract login event ID from consent context
 	loginEventIDStr := extractLoginEventID(consentReq.GetContext())
-	if loginEventIDStr == "" {
-		log.Debug("login_event_id not found in context - possible token refresh")
-		return map[string]any{}, nil
-	}
 
-	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventIDStr)
-	if err != nil {
-		log.WithError(err).WithField("login_event_id", loginEventIDStr).Error("login event lookup failed")
-		return nil, fmt.Errorf("failed to get login event: %w", err)
+	var loginEvent *models.LoginEvent
+	var err error
+
+	if loginEventIDStr != "" {
+		// Normal flow: login_event_id is in context
+		loginEvent, err = h.loginEventRepo.GetByID(ctx, loginEventIDStr)
+		if err != nil {
+			log.WithError(err).WithField("login_event_id", loginEventIDStr).Error("login event lookup failed")
+			return nil, fmt.Errorf("failed to get login event: %w", err)
+		}
+	} else {
+		// Fallback: login was skipped (session exists), look up most recent login event for this profile
+		log.Debug("login_event_id not found in context - looking up most recent login event")
+		loginEvent, err = h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
+		if err != nil {
+			log.WithError(err).WithField("profile_id", subjectID).Warn("no login event found for profile - returning minimal claims")
+			return map[string]any{
+				"profile_id": subjectID,
+				"device_id":  deviceObj.GetId(),
+				"roles":      []string{"user"},
+			}, nil
+		}
+		log.WithField("login_event_id", loginEvent.GetID()).Debug("retrieved login event via profile fallback")
 	}
 
 	// Set remember-me cookie
