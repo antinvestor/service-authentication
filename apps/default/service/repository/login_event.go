@@ -75,3 +75,19 @@ func (r *loginEventRepository) GetMostRecentByProfileID(ctx context.Context, pro
 	}
 	return &loginEvent, nil
 }
+
+// GetByOauth2SessionID retrieves the login event linked to a Hydra OAuth2 session
+func (r *loginEventRepository) GetByOauth2SessionID(ctx context.Context, oauth2SessionID string) (*models.LoginEvent, error) {
+	var loginEvent models.LoginEvent
+	err := r.Pool().DB(ctx, true).
+		Where("oauth2_session_id = ?", oauth2SessionID).
+		Order("created_at DESC").
+		First(&loginEvent).Error
+	if err != nil {
+		if data.ErrorIsNoRows(err) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &loginEvent, nil
+}

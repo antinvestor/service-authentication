@@ -34,6 +34,8 @@ type LoginEventRepository interface {
 	GetByLoginChallenge(ctx context.Context, loginChallengeID string) (*models.LoginEvent, error)
 	// GetMostRecentByProfileID retrieves the most recent login event for a profile
 	GetMostRecentByProfileID(ctx context.Context, profileID string) (*models.LoginEvent, error)
+	// GetByOauth2SessionID retrieves the login event linked to a Hydra OAuth2 session
+	GetByOauth2SessionID(ctx context.Context, oauth2SessionID string) (*models.LoginEvent, error)
 }
 
 // SessionRepository handles database operations for Session entities

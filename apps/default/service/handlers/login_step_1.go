@@ -157,12 +157,28 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	// Step 3: Handle session skip (already authenticated)
 	if getLogReq.Skip {
 		subjectID := getLogReq.GetSubject()
-		log.WithField("subject_id", subjectID).Debug("skipping login - session already exists")
+		oauth2SessionID := getLogReq.GetSessionId()
+		log.WithFields(map[string]any{
+			"subject_id":       subjectID,
+			"oauth2_session_id": oauth2SessionID,
+		}).Debug("skipping login - session already exists")
 
-		// Try to find an existing login event for this profile to include in context
+		// Try to find the login event linked to this Hydra session
 		// This ensures consent can access the claims even when login is skipped
 		var loginCtx map[string]any
-		existingLoginEvent, lookupErr := h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
+		var existingLoginEvent *models.LoginEvent
+		var lookupErr error
+
+		// First try by Hydra session ID (more precise)
+		if oauth2SessionID != "" {
+			existingLoginEvent, lookupErr = h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+		}
+
+		// Fallback to most recent by profile if session lookup fails
+		if existingLoginEvent == nil && subjectID != "" {
+			existingLoginEvent, lookupErr = h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
+		}
+
 		if lookupErr == nil && existingLoginEvent != nil {
 			loginCtx = map[string]any{
 				"login_event_id": existingLoginEvent.GetID(),
