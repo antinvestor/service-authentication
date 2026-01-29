@@ -225,40 +225,52 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}
 
 	// Hydra v2 stores claims in multiple possible locations:
-	// 1. session.access_token / session.id_token (standard)
+	// 1. session.access_token / session.id_token (standard - but often empty in v2)
 	// 2. session.extra (Hydra v2 alternative)
+	// 3. session.id_token.id_token_claims (nested structure in v2)
 	accessTokenClaims, _ := session["access_token"].(map[string]any)
-	idTokenClaims, _ := session["id_token"].(map[string]any)
+	idTokenWrapper, _ := session["id_token"].(map[string]any)
 	extraClaims, _ := session["extra"].(map[string]any)
+
+	// Check for nested id_token_claims within session.id_token
+	var nestedIdTokenClaims map[string]any
+	if idTokenWrapper != nil {
+		nestedIdTokenClaims, _ = idTokenWrapper["id_token_claims"].(map[string]any)
+	}
 
 	// Log what we found in all locations
 	log.WithFields(map[string]any{
-		"access_token_keys": getMapKeys(accessTokenClaims),
-		"id_token_keys":     getMapKeys(idTokenClaims),
-		"extra_keys":        getMapKeys(extraClaims),
-		"access_token_nil":  accessTokenClaims == nil,
-		"id_token_nil":      idTokenClaims == nil,
-		"extra_nil":         extraClaims == nil,
+		"access_token_keys":        getMapKeys(accessTokenClaims),
+		"id_token_wrapper_keys":    getMapKeys(idTokenWrapper),
+		"nested_id_token_keys":     getMapKeys(nestedIdTokenClaims),
+		"extra_keys":               getMapKeys(extraClaims),
+		"access_token_nil":         accessTokenClaims == nil,
+		"nested_id_token_nil":      nestedIdTokenClaims == nil,
+		"extra_nil":                extraClaims == nil,
 	}).Debug("extracted session claims from all locations")
 
-	// If access_token claims are empty but extra has claims, use extra
-	if accessTokenClaims == nil && extraClaims != nil && len(extraClaims) > 0 {
-		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as access_token claims")
-		accessTokenClaims = extraClaims
-		if idTokenClaims == nil {
-			idTokenClaims = extraClaims
-		}
+	// Determine which claims to use (check multiple locations)
+	var finalClaims map[string]any
+	if accessTokenClaims != nil && len(accessTokenClaims) > 0 {
+		finalClaims = accessTokenClaims
+		log.Debug("using session.access_token claims")
+	} else if nestedIdTokenClaims != nil && len(nestedIdTokenClaims) > 0 {
+		finalClaims = nestedIdTokenClaims
+		log.WithField("nested_keys", getMapKeys(nestedIdTokenClaims)).Info("using session.id_token.id_token_claims")
+	} else if extraClaims != nil && len(extraClaims) > 0 {
+		finalClaims = extraClaims
+		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as claims")
 	}
 
 	// If we have session claims from consent, return them so Hydra includes them in the token
-	if accessTokenClaims != nil || idTokenClaims != nil {
+	if finalClaims != nil && len(finalClaims) > 0 {
 		hookResponse := map[string]any{
 			"session": map[string]any{
-				"access_token": accessTokenClaims,
-				"id_token":     idTokenClaims,
+				"access_token": finalClaims,
+				"id_token":     finalClaims,
 			},
 		}
-		log.WithField("claims_keys", getMapKeys(accessTokenClaims)).Debug("enriching token with consent session claims")
+		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("enriching token with consent session claims")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		return json.NewEncoder(rw).Encode(hookResponse)
