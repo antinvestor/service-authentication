@@ -159,6 +159,19 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		subjectID := getLogReq.GetSubject()
 		log.WithField("subject_id", subjectID).Debug("skipping login - session already exists")
 
+		// Try to find an existing login event for this profile to include in context
+		// This ensures consent can access the claims even when login is skipped
+		var loginCtx map[string]any
+		existingLoginEvent, lookupErr := h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
+		if lookupErr == nil && existingLoginEvent != nil {
+			loginCtx = map[string]any{
+				"login_event_id": existingLoginEvent.GetID(),
+			}
+			log.WithField("login_event_id", existingLoginEvent.GetID()).Debug("found existing login event for skip")
+		} else {
+			log.WithError(lookupErr).Debug("no existing login event found for skip - consent will have empty claims")
+		}
+
 		params := &hydra.AcceptLoginRequestParams{
 			LoginChallenge: loginChallenge,
 			SubjectID:      subjectID,
@@ -168,7 +181,6 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			RememberDuration: h.config.SessionRememberDuration,
 		}
 
-		var loginCtx map[string]any
 		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, loginCtx, "session_refresh")
 		if acceptErr != nil {
 			log.WithError(acceptErr).Error("failed to accept login request for session skip")
