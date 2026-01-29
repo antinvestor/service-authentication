@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -216,9 +217,23 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// Regular user: extract session claims and return them explicitly.
 	// With mirror_top_level_claims: false, we must actively return claims
 	// for them to appear in the access token.
-	session, _ := tokenObject["session"].(map[string]any)
+	session, sessionOk := tokenObject["session"].(map[string]any)
+	if !sessionOk {
+		log.WithField("session_type", fmt.Sprintf("%T", tokenObject["session"])).Warn("session is not a map")
+	} else {
+		log.WithField("session_keys", getMapKeys(session)).Debug("session structure")
+	}
+
 	accessTokenClaims, _ := session["access_token"].(map[string]any)
 	idTokenClaims, _ := session["id_token"].(map[string]any)
+
+	// Log what we found in the session
+	log.WithFields(map[string]any{
+		"access_token_keys": getMapKeys(accessTokenClaims),
+		"id_token_keys":     getMapKeys(idTokenClaims),
+		"access_token_nil":  accessTokenClaims == nil,
+		"id_token_nil":      idTokenClaims == nil,
+	}).Debug("extracted session claims")
 
 	// If we have session claims from consent, return them so Hydra includes them in the token
 	if accessTokenClaims != nil || idTokenClaims != nil {
