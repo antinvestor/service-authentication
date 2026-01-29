@@ -259,7 +259,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}).Debug("extracted session claims from all locations")
 
 	// Determine which claims to use (check multiple locations)
-	// Priority: access_token > ext.id_token_claims > ext > session.extra
+	// Priority: access_token > ext.id_token_claims > ext > session.extra > DB lookup
 	var finalClaims map[string]any
 	if accessTokenClaims != nil && len(accessTokenClaims) > 0 {
 		finalClaims = accessTokenClaims
@@ -276,6 +276,45 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	} else if extraClaims != nil && len(extraClaims) > 0 {
 		finalClaims = extraClaims
 		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as claims")
+	}
+
+	// Fallback: if no claims found, look up from database using profile_id (subject)
+	if finalClaims == nil || len(finalClaims) == 0 {
+		// Try to get subject from session.id_token.subject
+		subject := ""
+		if idTokenWrapper != nil {
+			if s, ok := idTokenWrapper["subject"].(string); ok {
+				subject = s
+			}
+		}
+		if subject == "" {
+			// Try from nested id_token_claims.sub
+			if nestedIdTokenClaims != nil {
+				if s, ok := nestedIdTokenClaims["sub"].(string); ok {
+					subject = s
+				}
+			}
+		}
+
+		if subject != "" {
+			log.WithField("subject", subject).Debug("session claims empty - looking up login event from database")
+			loginEvent, lookupErr := h.loginEventRepo.GetMostRecentByProfileID(ctx, subject)
+			if lookupErr == nil && loginEvent != nil {
+				finalClaims = map[string]any{
+					"tenant_id":    loginEvent.TenantID,
+					"partition_id": loginEvent.PartitionID,
+					"access_id":    loginEvent.AccessID,
+					"contact_id":   loginEvent.ContactID,
+					"session_id":   loginEvent.GetID(),
+					"device_id":    loginEvent.DeviceID,
+					"profile_id":   subject,
+					"roles":        []string{"user"},
+				}
+				log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from database lookup")
+			} else {
+				log.WithError(lookupErr).WithField("subject", subject).Warn("failed to look up login event from database")
+			}
+		}
 	}
 
 	// If we have session claims from consent, return them so Hydra includes them in the token
