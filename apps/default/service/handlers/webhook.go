@@ -140,30 +140,6 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(map[string]string{"error": "grant_type not found"})
 	}
 
-	if grantType == "refresh_token" {
-		// Extract existing session claims and pass them through to preserve them
-		session, _ := tokenObject["session"].(map[string]any)
-		accessToken, _ := session["access_token"].(map[string]any)
-		idToken, _ := session["id_token"].(map[string]any)
-
-		if accessToken != nil || idToken != nil {
-			hookResponse := map[string]any{
-				"session": map[string]any{
-					"access_token": accessToken,
-					"id_token":     idToken,
-				},
-			}
-			log.Debug("preserving existing claims for refresh token")
-			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusOK)
-			return json.NewEncoder(rw).Encode(hookResponse)
-		}
-
-		log.Warn("no session claims found in refresh token request")
-		rw.WriteHeader(http.StatusNoContent)
-		return nil
-	}
-
 	// Extract client_id from multiple possible locations
 	clientID := extractClientID(tokenObject)
 	if clientID == "" {
@@ -237,10 +213,42 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return json.NewEncoder(rw).Encode(hookResponse)
 	}
 
-	// Regular user: accept without changes so Hydra uses the consent session
-	// claims as-is. Returning 204 tells Hydra to keep existing session data.
-	log.Debug("accepting token unchanged for regular user (using consent session claims)")
+	// Regular user: extract session claims and return them explicitly.
+	// With mirror_top_level_claims: false, we must actively return claims
+	// for them to appear in the access token.
+	session, _ := tokenObject["session"].(map[string]any)
+	accessTokenClaims, _ := session["access_token"].(map[string]any)
+	idTokenClaims, _ := session["id_token"].(map[string]any)
+
+	// If we have session claims from consent, return them so Hydra includes them in the token
+	if accessTokenClaims != nil || idTokenClaims != nil {
+		hookResponse := map[string]any{
+			"session": map[string]any{
+				"access_token": accessTokenClaims,
+				"id_token":     idTokenClaims,
+			},
+		}
+		log.WithField("claims_keys", getMapKeys(accessTokenClaims)).Debug("enriching token with consent session claims")
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		return json.NewEncoder(rw).Encode(hookResponse)
+	}
+
+	// No session claims found - this shouldn't happen for a valid consent flow
+	log.Warn("no session claims found for regular user - token will be missing custom claims")
 	rw.WriteHeader(http.StatusNoContent)
 	return nil
 
+}
+
+// getMapKeys returns the keys of a map for logging purposes.
+func getMapKeys(m map[string]any) []string {
+	if m == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
