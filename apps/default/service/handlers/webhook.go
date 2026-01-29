@@ -54,31 +54,56 @@ func extractGrantedScopes(tokenObject map[string]any) []string {
 	return out
 }
 
-// extractOAuth2SessionID extracts the Hydra OAuth2 session ID from the webhook payload
+// extractOAuth2SessionID extracts the Hydra OAuth2 session ID from the webhook payload.
+// It checks multiple locations where the session ID might be stored:
+// 1. Our custom oauth2_session_id claim set during consent (in session.access_token or nested locations)
+// 2. session.id_token.id_token_claims.ext.oauth2_session_id
+// 3. session.id (Hydra v2 internal)
+// See: https://www.ory.com/docs/hydra/guides/claims-at-refresh
 func extractOAuth2SessionID(tokenObject map[string]any) string {
-	// Try session.id (standard Hydra v2 location)
-	if session, ok := tokenObject["session"].(map[string]any); ok {
-		if sessionID, ok := session["id"].(string); ok && sessionID != "" {
+	session, ok := tokenObject["session"].(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	// Check session.access_token.oauth2_session_id (our custom claim from consent)
+	if accessToken, ok := session["access_token"].(map[string]any); ok {
+		if sessionID, ok := accessToken["oauth2_session_id"].(string); ok && sessionID != "" {
 			return sessionID
 		}
 	}
 
-	// Try request.session (token refresh flow)
-	if request, ok := tokenObject["request"].(map[string]any); ok {
-		if sessionID, ok := request["session"].(string); ok && sessionID != "" {
+	// Check session.id_token structure (Hydra v2)
+	if idToken, ok := session["id_token"].(map[string]any); ok {
+		// Check id_token.id_token_claims.ext.oauth2_session_id
+		if idTokenClaims, ok := idToken["id_token_claims"].(map[string]any); ok {
+			if ext, ok := idTokenClaims["ext"].(map[string]any); ok {
+				if sessionID, ok := ext["oauth2_session_id"].(string); ok && sessionID != "" {
+					return sessionID
+				}
+				// Also try ext.id_token_claims.oauth2_session_id (deep nesting in Hydra v2)
+				if deepClaims, ok := ext["id_token_claims"].(map[string]any); ok {
+					if sessionID, ok := deepClaims["oauth2_session_id"].(string); ok && sessionID != "" {
+						return sessionID
+					}
+				}
+			}
+		}
+		// Check id_token.oauth2_session_id directly
+		if sessionID, ok := idToken["oauth2_session_id"].(string); ok && sessionID != "" {
 			return sessionID
 		}
 	}
 
-	// Try requester.session (alternative location)
-	if requester, ok := tokenObject["requester"].(map[string]any); ok {
-		if sessionID, ok := requester["session"].(string); ok && sessionID != "" {
+	// Check session.extra.oauth2_session_id (Hydra v2 alternative)
+	if extra, ok := session["extra"].(map[string]any); ok {
+		if sessionID, ok := extra["oauth2_session_id"].(string); ok && sessionID != "" {
 			return sessionID
 		}
 	}
 
-	// Try top-level session_id
-	if sessionID, ok := tokenObject["session_id"].(string); ok && sessionID != "" {
+	// Try session.id (Hydra internal session ID)
+	if sessionID, ok := session["id"].(string); ok && sessionID != "" {
 		return sessionID
 	}
 
