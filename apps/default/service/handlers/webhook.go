@@ -233,13 +233,18 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	extraClaims, _ := session["extra"].(map[string]any)
 
 	// Check for nested id_token_claims within session.id_token
+	// Hydra v2 has deep nesting: session.id_token.id_token_claims.ext.id_token_claims
 	var nestedIdTokenClaims map[string]any
 	var extClaims map[string]any
+	var deepNestedClaims map[string]any
 	if idTokenWrapper != nil {
 		nestedIdTokenClaims, _ = idTokenWrapper["id_token_claims"].(map[string]any)
-		// Custom claims from consent are stored in id_token_claims.ext
 		if nestedIdTokenClaims != nil {
 			extClaims, _ = nestedIdTokenClaims["ext"].(map[string]any)
+			if extClaims != nil {
+				// Check for even deeper nesting: ext.id_token_claims
+				deepNestedClaims, _ = extClaims["id_token_claims"].(map[string]any)
+			}
 		}
 	}
 
@@ -249,21 +254,25 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		"id_token_wrapper_keys":    getMapKeys(idTokenWrapper),
 		"nested_id_token_keys":     getMapKeys(nestedIdTokenClaims),
 		"ext_claims_keys":          getMapKeys(extClaims),
+		"deep_nested_keys":         getMapKeys(deepNestedClaims),
 		"extra_keys":               getMapKeys(extraClaims),
-		"access_token_nil":         accessTokenClaims == nil,
-		"ext_claims_nil":           extClaims == nil,
-		"extra_nil":                extraClaims == nil,
 	}).Debug("extracted session claims from all locations")
 
 	// Determine which claims to use (check multiple locations)
-	// Priority: access_token > id_token_claims.ext > session.extra
+	// Priority: access_token > ext.id_token_claims > ext > session.extra
 	var finalClaims map[string]any
 	if accessTokenClaims != nil && len(accessTokenClaims) > 0 {
 		finalClaims = accessTokenClaims
 		log.Debug("using session.access_token claims")
+	} else if deepNestedClaims != nil && len(deepNestedClaims) > 0 {
+		finalClaims = deepNestedClaims
+		log.WithField("deep_keys", getMapKeys(deepNestedClaims)).Info("using session.id_token.id_token_claims.ext.id_token_claims")
 	} else if extClaims != nil && len(extClaims) > 0 {
-		finalClaims = extClaims
-		log.WithField("ext_keys", getMapKeys(extClaims)).Info("using session.id_token.id_token_claims.ext")
+		// Check if extClaims has our target keys (contact_id, tenant_id)
+		if _, hasContactID := extClaims["contact_id"]; hasContactID {
+			finalClaims = extClaims
+			log.WithField("ext_keys", getMapKeys(extClaims)).Info("using session.id_token.id_token_claims.ext")
+		}
 	} else if extraClaims != nil && len(extraClaims) > 0 {
 		finalClaims = extraClaims
 		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as claims")
