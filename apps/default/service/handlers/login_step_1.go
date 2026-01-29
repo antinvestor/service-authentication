@@ -169,23 +169,20 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		var existingLoginEvent *models.LoginEvent
 		var lookupErr error
 
-		// First try by Hydra session ID (more precise)
+		// Look up login event by Hydra OAuth2 session ID (precise mapping)
 		if oauth2SessionID != "" {
 			existingLoginEvent, lookupErr = h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-		}
-
-		// Fallback to most recent by profile if session lookup fails
-		if existingLoginEvent == nil && subjectID != "" {
-			existingLoginEvent, lookupErr = h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
-		}
-
-		if lookupErr == nil && existingLoginEvent != nil {
-			loginCtx = map[string]any{
-				"login_event_id": existingLoginEvent.GetID(),
+			if lookupErr == nil && existingLoginEvent != nil {
+				loginCtx = map[string]any{
+					"login_event_id": existingLoginEvent.GetID(),
+				}
+				log.WithField("login_event_id", existingLoginEvent.GetID()).Debug("found existing login event for skip via session ID")
+			} else {
+				log.WithError(lookupErr).WithField("oauth2_session_id", oauth2SessionID).
+					Warn("login event not found for Hydra session - consent will have empty claims")
 			}
-			log.WithField("login_event_id", existingLoginEvent.GetID()).Debug("found existing login event for skip")
 		} else {
-			log.WithError(lookupErr).Debug("no existing login event found for skip - consent will have empty claims")
+			log.Warn("Hydra login request missing session_id - cannot look up login event for skip")
 		}
 
 		params := &hydra.AcceptLoginRequestParams{

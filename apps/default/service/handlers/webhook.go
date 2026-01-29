@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/util"
 )
 
@@ -329,48 +328,39 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 			}
 		}
 
-		// Extract OAuth2 session ID for precise lookup
+		// Extract OAuth2 session ID for precise lookup (no profile fallback)
 		oauth2SessionID := extractOAuth2SessionID(tokenObject)
 
-		var loginEvent *models.LoginEvent
-		var lookupErr error
-
-		// First try lookup by OAuth2 session ID (more precise - links to exact login event)
-		if oauth2SessionID != "" {
-			log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
-			loginEvent, lookupErr = h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-			if lookupErr != nil {
-				log.WithError(lookupErr).WithField("oauth2_session_id", oauth2SessionID).Debug("session ID lookup failed - will try profile fallback")
-			}
-		}
-
-		// Fallback to most recent by profile_id if session lookup fails
-		if loginEvent == nil && subject != "" {
-			log.WithField("subject", subject).Debug("session claims empty - looking up login event by profile_id")
-			loginEvent, lookupErr = h.loginEventRepo.GetMostRecentByProfileID(ctx, subject)
-		}
-
-		if lookupErr == nil && loginEvent != nil {
-			finalClaims = map[string]any{
-				"tenant_id":    loginEvent.TenantID,
-				"partition_id": loginEvent.PartitionID,
-				"access_id":    loginEvent.AccessID,
-				"contact_id":   loginEvent.ContactID,
-				"session_id":   loginEvent.GetID(),
-				"device_id":    loginEvent.DeviceID,
-				"profile_id":   subject,
-				"roles":        []string{"user"},
-			}
+		if oauth2SessionID == "" {
 			log.WithFields(map[string]any{
-				"login_event_id":    loginEvent.GetID(),
-				"oauth2_session_id": oauth2SessionID,
-				"lookup_method":     lookupMethod(oauth2SessionID, loginEvent.Oauth2SessionID),
-			}).Info("enriched token with claims from database lookup")
+				"subject":        subject,
+				"payload_keys":   getMapKeys(tokenObject),
+				"session_keys":   getMapKeys(session),
+			}).Warn("Hydra webhook payload missing OAuth2 session ID - cannot look up login event")
 		} else {
-			log.WithError(lookupErr).WithFields(map[string]any{
-				"subject":           subject,
-				"oauth2_session_id": oauth2SessionID,
-			}).Warn("failed to look up login event from database")
+			log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
+			loginEvent, lookupErr := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+			if lookupErr == nil && loginEvent != nil {
+				finalClaims = map[string]any{
+					"tenant_id":    loginEvent.TenantID,
+					"partition_id": loginEvent.PartitionID,
+					"access_id":    loginEvent.AccessID,
+					"contact_id":   loginEvent.ContactID,
+					"session_id":   loginEvent.GetID(),
+					"device_id":    loginEvent.DeviceID,
+					"profile_id":   subject,
+					"roles":        []string{"user"},
+				}
+				log.WithFields(map[string]any{
+					"login_event_id":    loginEvent.GetID(),
+					"oauth2_session_id": oauth2SessionID,
+				}).Info("enriched token with claims from database lookup via session ID")
+			} else {
+				log.WithError(lookupErr).WithFields(map[string]any{
+					"subject":           subject,
+					"oauth2_session_id": oauth2SessionID,
+				}).Warn("login event not found for Hydra session ID - token will be missing claims")
+			}
 		}
 	}
 
@@ -393,14 +383,6 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	rw.WriteHeader(http.StatusNoContent)
 	return nil
 
-}
-
-// lookupMethod returns a string describing how the login event was found
-func lookupMethod(requestSessionID, eventSessionID string) string {
-	if requestSessionID != "" && requestSessionID == eventSessionID {
-		return "oauth2_session_id"
-	}
-	return "profile_id_fallback"
 }
 
 // getMapKeys returns the keys of a map for logging purposes.
