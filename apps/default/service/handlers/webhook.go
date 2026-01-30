@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -205,117 +206,181 @@ func extractGrantType(tokenObject map[string]any) string {
 	return ""
 }
 
+// extractSubjectFromSession extracts the subject from id_token or nested claims.
+func extractSubjectFromSession(idTokenWrapper, nestedIdTokenClaims map[string]any) string {
+	if idTokenWrapper != nil {
+		if s, ok := idTokenWrapper["subject"].(string); ok {
+			return s
+		}
+	}
+	if nestedIdTokenClaims != nil {
+		if s, ok := nestedIdTokenClaims["sub"].(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+// extractNestedClaims extracts nested claims from the id_token wrapper structure.
+// Returns nestedIdTokenClaims, extClaims, deepNestedClaims
+func extractNestedClaims(idTokenWrapper map[string]any) (map[string]any, map[string]any, map[string]any) {
+	if idTokenWrapper == nil {
+		return nil, nil, nil
+	}
+	nestedIdTokenClaims, _ := idTokenWrapper["id_token_claims"].(map[string]any)
+	if nestedIdTokenClaims == nil {
+		return nil, nil, nil
+	}
+	extClaims, _ := nestedIdTokenClaims["ext"].(map[string]any)
+	if extClaims == nil {
+		return nestedIdTokenClaims, nil, nil
+	}
+	deepNestedClaims, _ := extClaims["id_token_claims"].(map[string]any)
+	return nestedIdTokenClaims, extClaims, deepNestedClaims
+}
+
+// selectFinalClaims selects the best available claims from multiple sources.
+// Priority: access_token > ext.id_token_claims > ext (with contact_id) > session.extra
+func selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims map[string]any) map[string]any {
+	if len(accessTokenClaims) > 0 {
+		return accessTokenClaims
+	}
+	if len(deepNestedClaims) > 0 {
+		return deepNestedClaims
+	}
+	if len(extClaims) > 0 {
+		if _, hasContactID := extClaims["contact_id"]; hasContactID {
+			return extClaims
+		}
+	}
+	if len(extraClaims) > 0 {
+		return extraClaims
+	}
+	return nil
+}
+
+// writeTokenHookResponse writes a token enrichment response with the given claims.
+func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error {
+	hookResponse := map[string]any{
+		"session": map[string]any{
+			"access_token": claims,
+			"id_token":     claims,
+		},
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	return json.NewEncoder(rw).Encode(hookResponse)
+}
+
+// buildClaimsFromLoginEvent creates a claims map from a login event and subject.
+func buildClaimsFromLoginEvent(loginEvent interface{ GetID() string }, tenantID, partitionID, accessID, contactID, deviceID, subject string) map[string]any {
+	return map[string]any{
+		"tenant_id":    tenantID,
+		"partition_id": partitionID,
+		"access_id":    accessID,
+		"contact_id":   contactID,
+		"session_id":   loginEvent.GetID(),
+		"device_id":    deviceID,
+		"profile_id":   subject,
+		"roles":        []string{"user"},
+	}
+}
+
 // TokenEnrichmentEndpoint handles token enrichment requests from Ory Hydra
 // This is called during initial token issuance
 func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
-
 	ctx := req.Context()
 	log := util.Log(ctx)
 
+	tokenObject, err := h.parseTokenWebhookRequest(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	// Validate grant_type
+	if grantType := extractGrantType(tokenObject); grantType == "" {
+		log.Error("grant_type not found in any location")
+		return h.writeWebhookError(rw, "grant_type not found")
+	}
+
+	// Extract and validate client_id
+	clientID := extractClientID(tokenObject)
+	if clientID == "" {
+		log.Error("client_id not found in any location")
+		return h.writeWebhookError(rw, "client_id not found")
+	}
+	log.WithField("client_id", clientID).Info("processing token enrichment for client")
+
+	// Handle API key clients
+	if isClientIDApiKey(clientID) {
+		return h.handleAPIKeyEnrichment(ctx, rw, clientID)
+	}
+
+	// Handle system internal scoped tokens
+	grantedScopes := extractGrantedScopes(tokenObject)
+	if grantedScopes == nil {
+		log.Warn("granted_scopes not found - treating as regular user token refresh")
+	} else if isInternalSystemScoped(grantedScopes) {
+		log.Debug("enriched token with system_internal roles")
+		return writeTokenHookResponse(rw, map[string]any{"roles": []string{"system_internal"}})
+	}
+
+	// Handle regular user tokens
+	return h.handleUserTokenEnrichment(ctx, rw, tokenObject)
+}
+
+// parseTokenWebhookRequest reads and parses the webhook request body.
+func (h *AuthServer) parseTokenWebhookRequest(ctx context.Context, req *http.Request) (map[string]any, error) {
+	log := util.Log(ctx)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.WithError(err).Error("could not read request body")
-		return err
+		return nil, err
 	}
 
 	var tokenObject map[string]any
-	err = json.Unmarshal(body, &tokenObject)
-	if err != nil {
+	if err = json.Unmarshal(body, &tokenObject); err != nil {
 		log.WithError(err).Error("could not unmarshal request body")
+		return nil, err
+	}
+
+	log.WithField("payload_keys", getMapKeys(tokenObject)).Info("token enrichment webhook received")
+	return tokenObject, nil
+}
+
+// writeWebhookError writes a JSON error response.
+func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) error {
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusForbidden)
+	return json.NewEncoder(rw).Encode(map[string]string{"error": errMsg})
+}
+
+// handleAPIKeyEnrichment handles token enrichment for API key clients.
+func (h *AuthServer) handleAPIKeyEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string) error {
+	apiKeyModel, err := h.apiKeyRepo.GetByKey(ctx, clientID)
+	if err != nil {
+		util.Log(ctx).WithError(err).Error("could not find api key")
 		return err
 	}
 
-	// Log the incoming payload for debugging
-	payloadKeys := make([]string, 0, len(tokenObject))
-	for k := range tokenObject {
-		payloadKeys = append(payloadKeys, k)
-	}
-	log.WithField("payload_keys", payloadKeys).Info("token enrichment webhook received")
-
-	grantType := extractGrantType(tokenObject)
-	if grantType == "" {
-		log.WithField("request", body).Error("grant_type not found in any location (session, request, requester, top-level)")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusForbidden)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "grant_type not found"})
+	roles := []string{"system_external"}
+	if apiKeyModel.Scope != "" {
+		var scopeList []string
+		if json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList) == nil {
+			roles = scopeList
+		}
 	}
 
-	// Extract client_id from multiple possible locations
-	clientID := extractClientID(tokenObject)
-	if clientID == "" {
-		log.Error("client_id not found in any location (session, request, requester, top-level)")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusForbidden)
-		return json.NewEncoder(rw).Encode(map[string]string{"error": "client_id not found"})
-	}
+	return writeTokenHookResponse(rw, map[string]any{
+		"tenant_id":    apiKeyModel.TenantID,
+		"partition_id": apiKeyModel.PartitionID,
+		"roles":        roles,
+	})
+}
 
-	log.WithField("client_id", clientID).Info("processing token enrichment for client")
-
-	if isClientIDApiKey(clientID) {
-
-		// Check if this is an API key client
-		apiKeyModel, err0 := h.apiKeyRepo.GetByKey(ctx, clientID)
-		if err0 != nil {
-			util.Log(ctx).WithError(err0).Error("could not find api key")
-			return err0
-		}
-
-		// This is an API key client - handle as external service
-		roles := []string{"system_external"}
-
-		if apiKeyModel.Scope != "" {
-			var scopeList []string
-			err0 = json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList)
-			if err0 == nil {
-				roles = scopeList
-			}
-		}
-
-		tokenMap := map[string]any{
-			"tenant_id":    apiKeyModel.TenantID,
-			"partition_id": apiKeyModel.PartitionID,
-			"roles":        roles,
-		}
-
-		// Return only the session object per Hydra's expected webhook response format
-		// See: https://www.ory.com/docs/hydra/guides/claims-at-refresh
-		hookResponse := map[string]any{
-			"session": map[string]any{
-				"access_token": tokenMap,
-				"id_token":     tokenMap,
-			},
-		}
-
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(hookResponse)
-	}
-
-	// Extract granted_scopes from multiple possible locations
-	grantedScopes := extractGrantedScopes(tokenObject)
-	if grantedScopes == nil {
-		// For token refresh, granted_scopes might not be in the expected location
-		// Don't fail - just log and treat as regular user pass-through
-		log.Warn("granted_scopes not found - treating as regular user token refresh")
-	} else if isInternalSystemScoped(grantedScopes) {
-		tokenMap := map[string]any{"roles": []string{"system_internal"}}
-
-		hookResponse := map[string]any{
-			"session": map[string]any{
-				"access_token": tokenMap,
-				"id_token":     tokenMap,
-			},
-		}
-
-		log.Debug("enriched token with system_internal roles")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(hookResponse)
-	}
-
-	// Regular user: extract session claims and return them explicitly.
-	// With mirror_top_level_claims: false, we must actively return claims
-	// for them to appear in the access token.
+// handleUserTokenEnrichment handles token enrichment for regular user tokens.
+func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any) error {
+	log := util.Log(ctx)
 	session, sessionOk := tokenObject["session"].(map[string]any)
 	if !sessionOk {
 		log.WithField("session_type", fmt.Sprintf("%T", tokenObject["session"])).Warn("session is not a map")
@@ -323,156 +388,77 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		log.WithField("session_keys", getMapKeys(session)).Debug("session structure")
 	}
 
-	// Hydra v2 stores claims in multiple possible locations:
-	// 1. session.access_token / session.id_token (standard - but often empty in v2)
-	// 2. session.extra (Hydra v2 alternative)
-	// 3. session.id_token.id_token_claims (nested structure in v2)
+	// Extract claims from various Hydra v2 locations
 	accessTokenClaims, _ := session["access_token"].(map[string]any)
 	idTokenWrapper, _ := session["id_token"].(map[string]any)
 	extraClaims, _ := session["extra"].(map[string]any)
+	nestedIdTokenClaims, extClaims, deepNestedClaims := extractNestedClaims(idTokenWrapper)
 
-	// Check for nested id_token_claims within session.id_token
-	// Hydra v2 has deep nesting: session.id_token.id_token_claims.ext.id_token_claims
-	var nestedIdTokenClaims map[string]any
-	var extClaims map[string]any
-	var deepNestedClaims map[string]any
-	if idTokenWrapper != nil {
-		nestedIdTokenClaims, _ = idTokenWrapper["id_token_claims"].(map[string]any)
-		if nestedIdTokenClaims != nil {
-			extClaims, _ = nestedIdTokenClaims["ext"].(map[string]any)
-			if extClaims != nil {
-				// Check for even deeper nesting: ext.id_token_claims
-				deepNestedClaims, _ = extClaims["id_token_claims"].(map[string]any)
-			}
-		}
-	}
-
-	// Log what we found in all locations
 	log.WithFields(map[string]any{
-		"access_token_keys":        getMapKeys(accessTokenClaims),
-		"id_token_wrapper_keys":    getMapKeys(idTokenWrapper),
-		"nested_id_token_keys":     getMapKeys(nestedIdTokenClaims),
-		"ext_claims_keys":          getMapKeys(extClaims),
-		"deep_nested_keys":         getMapKeys(deepNestedClaims),
-		"extra_keys":               getMapKeys(extraClaims),
+		"access_token_keys":     getMapKeys(accessTokenClaims),
+		"id_token_wrapper_keys": getMapKeys(idTokenWrapper),
+		"nested_id_token_keys":  getMapKeys(nestedIdTokenClaims),
+		"ext_claims_keys":       getMapKeys(extClaims),
+		"deep_nested_keys":      getMapKeys(deepNestedClaims),
+		"extra_keys":            getMapKeys(extraClaims),
 	}).Debug("extracted session claims from all locations")
 
-	// Determine which claims to use (check multiple locations)
-	// Priority: access_token > ext.id_token_claims > ext > session.extra > DB lookup
-	var finalClaims map[string]any
-	if accessTokenClaims != nil && len(accessTokenClaims) > 0 {
-		finalClaims = accessTokenClaims
-		log.Debug("using session.access_token claims")
-	} else if deepNestedClaims != nil && len(deepNestedClaims) > 0 {
-		finalClaims = deepNestedClaims
-		log.WithField("deep_keys", getMapKeys(deepNestedClaims)).Info("using session.id_token.id_token_claims.ext.id_token_claims")
-	} else if extClaims != nil && len(extClaims) > 0 {
-		// Check if extClaims has our target keys (contact_id, tenant_id)
-		if _, hasContactID := extClaims["contact_id"]; hasContactID {
-			finalClaims = extClaims
-			log.WithField("ext_keys", getMapKeys(extClaims)).Info("using session.id_token.id_token_claims.ext")
-		}
-	} else if extraClaims != nil && len(extraClaims) > 0 {
-		finalClaims = extraClaims
-		log.WithField("extra_keys", getMapKeys(extraClaims)).Info("using session.extra as claims")
+	// Select claims from session or fall back to database lookup
+	finalClaims := selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims)
+	if finalClaims == nil {
+		finalClaims = h.lookupClaimsFromDB(ctx, tokenObject, idTokenWrapper, nestedIdTokenClaims, session)
+	} else {
+		log.Debug("using claims from session")
 	}
 
-	// Fallback: if no claims found, look up from database
-	// Priority: OAuth2 session ID (precise) > profile_id (most recent)
-	if finalClaims == nil || len(finalClaims) == 0 {
-		// Try to get subject from session.id_token.subject
-		subject := ""
-		if idTokenWrapper != nil {
-			if s, ok := idTokenWrapper["subject"].(string); ok {
-				subject = s
-			}
-		}
-		if subject == "" {
-			// Try from nested id_token_claims.sub
-			if nestedIdTokenClaims != nil {
-				if s, ok := nestedIdTokenClaims["sub"].(string); ok {
-					subject = s
-				}
-			}
-		}
-
-		// Try to extract login event ID (session_id) from existing claims first
-		// This is the most direct lookup method
-		loginEventID := extractLoginEventIDFromWebhook(tokenObject)
-
-		if loginEventID != "" {
-			log.WithField("login_event_id", loginEventID).Debug("attempting login event lookup by ID from claims")
-			loginEvent, lookupErr := h.loginEventRepo.GetByID(ctx, loginEventID)
-			if lookupErr == nil && loginEvent != nil {
-				finalClaims = map[string]any{
-					"tenant_id":    loginEvent.TenantID,
-					"partition_id": loginEvent.PartitionID,
-					"access_id":    loginEvent.AccessID,
-					"contact_id":   loginEvent.ContactID,
-					"session_id":   loginEvent.GetID(),
-					"device_id":    loginEvent.DeviceID,
-					"profile_id":   subject,
-					"roles":        []string{"user"},
-				}
-				log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
-			} else {
-				log.WithError(lookupErr).WithField("login_event_id", loginEventID).
-					Warn("login event not found by ID - token will be missing claims")
-			}
-		} else {
-			// Fallback: try OAuth2 session ID lookup
-			oauth2SessionID := extractOAuth2SessionID(tokenObject)
-			if oauth2SessionID != "" {
-				log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
-				loginEvent, lookupErr := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-				if lookupErr == nil && loginEvent != nil {
-					finalClaims = map[string]any{
-						"tenant_id":    loginEvent.TenantID,
-						"partition_id": loginEvent.PartitionID,
-						"access_id":    loginEvent.AccessID,
-						"contact_id":   loginEvent.ContactID,
-						"session_id":   loginEvent.GetID(),
-						"device_id":    loginEvent.DeviceID,
-						"profile_id":   subject,
-						"roles":        []string{"user"},
-					}
-					log.WithFields(map[string]any{
-						"login_event_id":    loginEvent.GetID(),
-						"oauth2_session_id": oauth2SessionID,
-					}).Info("enriched token with claims from OAuth2 session ID lookup")
-				} else {
-					log.WithError(lookupErr).WithField("oauth2_session_id", oauth2SessionID).
-						Warn("login event not found for Hydra session ID - token will be missing claims")
-				}
-			} else {
-				log.WithFields(map[string]any{
-					"subject":      subject,
-					"payload_keys": getMapKeys(tokenObject),
-					"session_keys": getMapKeys(session),
-				}).Warn("no login_event_id or oauth2_session_id found - cannot look up login event")
-			}
-		}
-	}
-
-	// If we have session claims from consent, return them so Hydra includes them in the token
-	if finalClaims != nil && len(finalClaims) > 0 {
-		hookResponse := map[string]any{
-			"session": map[string]any{
-				"access_token": finalClaims,
-				"id_token":     finalClaims,
-			},
-		}
+	if len(finalClaims) > 0 {
 		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("enriching token with consent session claims")
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		return json.NewEncoder(rw).Encode(hookResponse)
+		return writeTokenHookResponse(rw, finalClaims)
 	}
 
-	// No session claims found - this shouldn't happen for a valid consent flow
 	log.Warn("no session claims found for regular user - token will be missing custom claims")
 	rw.WriteHeader(http.StatusNoContent)
 	return nil
+}
 
+// lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.
+func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idTokenWrapper, nestedIdTokenClaims, session map[string]any) map[string]any {
+	log := util.Log(ctx)
+	subject := extractSubjectFromSession(idTokenWrapper, nestedIdTokenClaims)
+
+	// Try login event ID first (most direct)
+	if loginEventID := extractLoginEventIDFromWebhook(tokenObject); loginEventID != "" {
+		log.WithField("login_event_id", loginEventID).Debug("attempting login event lookup by ID from claims")
+		if loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID); err == nil && loginEvent != nil {
+			log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
+			return buildClaimsFromLoginEvent(loginEvent, loginEvent.TenantID, loginEvent.PartitionID, loginEvent.AccessID, loginEvent.ContactID, loginEvent.DeviceID, subject)
+		} else {
+			log.WithError(err).WithField("login_event_id", loginEventID).Warn("login event not found by ID - token will be missing claims")
+		}
+		return nil
+	}
+
+	// Fallback: try OAuth2 session ID lookup
+	if oauth2SessionID := extractOAuth2SessionID(tokenObject); oauth2SessionID != "" {
+		log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
+		if loginEvent, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID); err == nil && loginEvent != nil {
+			log.WithFields(map[string]any{
+				"login_event_id":    loginEvent.GetID(),
+				"oauth2_session_id": oauth2SessionID,
+			}).Info("enriched token with claims from OAuth2 session ID lookup")
+			return buildClaimsFromLoginEvent(loginEvent, loginEvent.TenantID, loginEvent.PartitionID, loginEvent.AccessID, loginEvent.ContactID, loginEvent.DeviceID, subject)
+		} else {
+			log.WithError(err).WithField("oauth2_session_id", oauth2SessionID).Warn("login event not found for Hydra session ID - token will be missing claims")
+		}
+		return nil
+	}
+
+	log.WithFields(map[string]any{
+		"subject":      subject,
+		"payload_keys": getMapKeys(tokenObject),
+		"session_keys": getMapKeys(session),
+	}).Warn("no login_event_id or oauth2_session_id found - cannot look up login event")
+	return nil
 }
 
 // getMapKeys returns the keys of a map for logging purposes.

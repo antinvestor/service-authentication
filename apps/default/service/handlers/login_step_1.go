@@ -159,7 +159,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		subjectID := getLogReq.GetSubject()
 		oauth2SessionID := getLogReq.GetSessionId()
 		log.WithFields(map[string]any{
-			"subject_id":       subjectID,
+			"subject_id":        subjectID,
 			"oauth2_session_id": oauth2SessionID,
 		}).Debug("skipping login - session already exists")
 
