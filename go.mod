@@ -14,10 +14,10 @@ require (
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260102123445-62e44f8dd82b.1
 	connectrpc.com/connect v1.19.1
 	github.com/antinvestor/apis/go/common v1.53.1
-	github.com/antinvestor/apis/go/device v1.53.3
-	github.com/antinvestor/apis/go/notification v1.53.3
-	github.com/antinvestor/apis/go/partition v1.53.3
-	github.com/antinvestor/apis/go/profile v1.53.3
+	github.com/antinvestor/apis/go/device v1.53.4
+	github.com/antinvestor/apis/go/notification v1.53.4
+	github.com/antinvestor/apis/go/partition v1.53.4
+	github.com/antinvestor/apis/go/profile v1.53.4
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
@@ -68,7 +68,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
