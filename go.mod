@@ -21,7 +21,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.71.0
+	github.com/pitabwire/frame v1.71.1
 	github.com/pitabwire/util v0.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
