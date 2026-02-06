@@ -13,15 +13,15 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260102123445-62e44f8dd82b.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260102123445-62e44f8dd82b.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.53.1
-	github.com/antinvestor/apis/go/device v1.53.4
-	github.com/antinvestor/apis/go/notification v1.53.4
-	github.com/antinvestor/apis/go/partition v1.53.4
-	github.com/antinvestor/apis/go/profile v1.53.4
+	github.com/antinvestor/apis/go/common v1.53.5
+	github.com/antinvestor/apis/go/device v1.53.6
+	github.com/antinvestor/apis/go/notification v1.53.6
+	github.com/antinvestor/apis/go/partition v1.53.6
+	github.com/antinvestor/apis/go/profile v1.53.6
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.71.1
+	github.com/pitabwire/frame v1.72.0
 	github.com/pitabwire/util v0.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
@@ -95,6 +95,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.6.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
+	github.com/ory/keto/proto v0.13.0-alpha.0 // indirect
 	github.com/panjf2000/ants/v2 v2.11.4 // indirect
 	github.com/pitabwire/natspubsub v0.7.12 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
