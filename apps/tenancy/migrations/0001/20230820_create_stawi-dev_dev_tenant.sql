@@ -1,0 +1,28 @@
+-- Default base partition
+INSERT INTO tenants (id, tenant_id, partition_id, name, description) VALUES('9bsv0s0hijjghdbz96dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi AI Builder Development', 'Default base tenant for testing and building stawi');
+INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
+    VALUES('9bsv0s0hijjb83qksr20', '9bsv0s0hijjghdbz96dg', '9bsv0s0hijjb83qksr20',
+           'Stawi AI Builder Development', 'Default Stawi development partition',
+           '{
+             "scope": "openid offline offline_access profile contact",
+             "audience": [
+               "service_trustage",
+               "service_foundry",
+               "service_devices",
+               "service_profile",
+               "service_files"
+             ],
+             "logo_uri": "https://static.stawi.dev/logo.png",
+             "redirect_uris": [
+               "https://dev.stawi.dev/auth/callback",
+               "https://localhost:5170/auth/callback"
+             ],
+             "post_logout_redirect_uris": [
+               "https://dev.stawi.dev",
+               "https://localhost:5170"
+             ],
+            "support_contacts": {
+              "msisdn": "+256757546244",
+              "email": "info@stawi.dev"
+            }
+           }');
