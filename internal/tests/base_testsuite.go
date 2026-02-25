@@ -20,7 +20,7 @@ type BaseTestSuite struct {
 
 func initResources(_ context.Context) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_authentication",
-		definition.WithUserName("ant"), definition.WithPassword("s3cr3t"))
+		definition.WithUserName("ant"), definition.WithCredential("s3cr3t"))
 	resources := []definition.TestResource{pg}
 	return resources
 }

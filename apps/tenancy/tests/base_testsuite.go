@@ -68,12 +68,12 @@ type BaseTestSuite struct {
 
 func initResources(_ context.Context) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_tenancy",
-		definition.WithUserName("ant"), definition.WithPassword("s3cr3t"),
+		definition.WithUserName("ant"), definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
 	queue := testnats.NewWithOpts("partition",
 		definition.WithUserName("ant"),
-		definition.WithPassword("s3cr3t"),
+		definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false))
 
 	hydra := testoryhydra.NewWithOpts(
