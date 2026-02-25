@@ -106,7 +106,7 @@ func (bs *BaseTestSuite) Handler() *handlers.AuthServer {
 
 func initResources(_ context.Context, loginUrl string) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_authentication",
-		definition.WithUserName("ant"), definition.WithPassword("s3cr3t"),
+		definition.WithUserName("ant"), definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
 	localHydraConfig := strings.Replace(testoryhydra.HydraConfiguration, "http://127.0.0.1:3000/", loginUrl+"/s/", 3)
