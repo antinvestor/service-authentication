@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -169,7 +170,8 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 			ctx, svc, _ := suite.CreateService(t, dep)
 
 			// Create partition server
-			partitionServer := handlers.NewPartitionServer(ctx, svc)
+			authzMiddleware := authz.NewMiddleware(svc.SecurityManager().GetAuthorizer(ctx))
+			partitionServer := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
 
 			// Get router
 			router := partitionServer.NewSecureRouterV1()

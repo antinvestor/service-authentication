@@ -2,13 +2,17 @@ package tests
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"testing"
 
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/antinvestor/service-authentication/apps/tenancy/tests/testketo"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
@@ -19,6 +23,7 @@ import (
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,7 +61,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Partiti
 
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, nil, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
 
 	return depBuilder
@@ -64,6 +69,9 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Partiti
 
 type BaseTestSuite struct {
 	internaltests.BaseTestSuite
+
+	ketoReadURI  string
+	ketoWriteURI string
 }
 
 func initResources(_ context.Context) []definition.TestResource {
@@ -82,7 +90,12 @@ func initResources(_ context.Context) []definition.TestResource {
 
 	auth := internaltests.NewAuthentication(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
 
-	resources := []definition.TestResource{pg, queue, hydra, auth}
+	keto := testketo.NewWithOpts(
+		definition.WithDependancies(pg),
+		definition.WithEnableLogging(false),
+	)
+
+	resources := []definition.TestResource{pg, queue, hydra, auth, keto}
 	return resources
 }
 
@@ -90,6 +103,25 @@ func (bs *BaseTestSuite) SetupSuite() {
 
 	bs.InitResourceFunc = initResources
 	bs.BaseTestSuite.SetupSuite()
+
+	ctx := bs.T().Context()
+
+	var ketoDep definition.DependancyConn
+	for _, res := range bs.Resources() {
+		if res.Name() == testketo.ImageName {
+			ketoDep = res
+			break
+		}
+	}
+	bs.Require().NotNil(ketoDep, "keto dependency should be available")
+
+	writeURL, err := url.Parse(string(ketoDep.GetDS(ctx)))
+	bs.Require().NoError(err)
+	bs.ketoWriteURI = writeURL.Host
+
+	readPort, err := ketoDep.PortMapping(ctx, "4466/tcp")
+	bs.Require().NoError(err)
+	bs.ketoReadURI = fmt.Sprintf("%s:%s", writeURL.Hostname(), readPort)
 }
 
 func (bs *BaseTestSuite) CreateService(
@@ -162,10 +194,14 @@ func (bs *BaseTestSuite) CreateService(
 		String()
 	cfg.SynchronizePrimaryPartitions = true
 
+	cfg.AuthorizationServiceReadURI = bs.ketoReadURI
+	cfg.AuthorizationServiceWriteURI = bs.ketoWriteURI
+
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
-	implementation := handlers.NewPartitionServer(ctx, svc)
+	authzMiddleware := authz.NewMiddleware(svc.SecurityManager().GetAuthorizer(ctx))
+	implementation := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
@@ -182,5 +218,27 @@ func (bs *BaseTestSuite) CreateService(
 
 	deps := BuildDeps(ctx, svc, implementation)
 
-	return security.SkipTenancyChecksOnClaims(ctx), svc, deps
+	return ctx, svc, deps
+}
+
+func (bs *BaseTestSuite) WithAuthClaims(ctx context.Context, tenantID, profileID string) context.Context {
+	claims := &security.AuthenticationClaims{
+		TenantID:  tenantID,
+		AccessID:  util.IDString(),
+		ContactID: profileID,
+		SessionID: util.IDString(),
+		DeviceID:  "test-device",
+	}
+	claims.Subject = profileID
+	return claims.ClaimsToContext(ctx)
+}
+
+func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service, tenantID, profileID, role string) {
+	auth := svc.SecurityManager().GetAuthorizer(ctx)
+	err := auth.WriteTuple(ctx, security.RelationTuple{
+		Object:   security.ObjectRef{Namespace: authz.NamespaceTenant, ID: tenantID},
+		Relation: role,
+		Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
+	})
+	bs.Require().NoError(err, "failed to seed tenant role")
 }

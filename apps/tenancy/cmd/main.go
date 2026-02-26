@@ -8,6 +8,7 @@ import (
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -43,7 +44,8 @@ func main() {
 	sm := svc.SecurityManager()
 	cliMan := svc.HTTPClientManager()
 
-	partSrv := handlers.NewPartitionServer(ctx, svc)
+	authzMiddleware := authz.NewMiddleware(sm.GetAuthorizer(ctx))
+	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)

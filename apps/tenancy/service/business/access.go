@@ -2,12 +2,16 @@ package business
 
 import (
 	"context"
+	"fmt"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/util"
 )
 
 type AccessBusiness interface {
@@ -26,6 +30,7 @@ type AccessBusiness interface {
 
 func NewAccessBusiness(
 	service *frame.Service,
+	auth security.Authorizer,
 	accessRepo repository.AccessRepository,
 	accessRoleRepo repository.AccessRoleRepository,
 	partitionRepo repository.PartitionRepository,
@@ -33,6 +38,7 @@ func NewAccessBusiness(
 ) AccessBusiness {
 	return &accessBusiness{
 		service:           service,
+		authorizer:        auth,
 		accessRepo:        accessRepo,
 		accessRoleRepo:    accessRoleRepo,
 		partitionRepo:     partitionRepo,
@@ -42,6 +48,7 @@ func NewAccessBusiness(
 
 type accessBusiness struct {
 	service           *frame.Service
+	authorizer        security.Authorizer
 	accessRepo        repository.AccessRepository
 	accessRoleRepo    repository.AccessRoleRepository
 	partitionRepo     repository.PartitionRepository
@@ -188,9 +195,34 @@ func (ab *accessBusiness) ListAccessRoles(
 func (ab *accessBusiness) RemoveAccessRole(
 	ctx context.Context,
 	request *partitionv1.RemoveAccessRoleRequest) error {
-	err := ab.accessRoleRepo.Delete(ctx, request.GetId())
+	// Look up the access role to get the profile and role info before deleting
+	accessRole, err := ab.accessRoleRepo.GetByID(ctx, request.GetId())
 	if err != nil {
 		return err
+	}
+
+	access, accessErr := ab.accessRepo.GetByID(ctx, accessRole.AccessID)
+	if accessErr != nil {
+		return accessErr
+	}
+
+	partitionRoles, roleErr := ab.partitionRoleRepo.GetRolesByID(ctx, accessRole.PartitionRoleID)
+	if roleErr != nil {
+		return roleErr
+	}
+
+	err = ab.accessRoleRepo.Delete(ctx, request.GetId())
+	if err != nil {
+		return err
+	}
+
+	// Delete cross-service Keto tuples
+	if ab.authorizer != nil && len(partitionRoles) > 0 {
+		roleName := partitionRoles[0].Name
+		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
+		if deleteErr := ab.authorizer.DeleteTuples(ctx, tuples); deleteErr != nil {
+			util.Log(ctx).WithError(deleteErr).Warn("failed to delete cross-service authorization tuples")
+		}
 	}
 
 	return nil
@@ -217,6 +249,15 @@ func (ab *accessBusiness) CreateAccessRole(
 	err = ab.accessRoleRepo.Create(ctx, accessRole)
 	if err != nil {
 		return nil, err
+	}
+
+	// Write cross-service Keto tuples for all service namespaces
+	if ab.authorizer != nil {
+		roleName := partitionRoles[0].Name
+		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
+		if writeErr := ab.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
+			return nil, fmt.Errorf("failed to write authorization tuples: %w", writeErr)
+		}
 	}
 
 	partitionRoleObj := toAPIPartitionRole(partitionRoles[0])
