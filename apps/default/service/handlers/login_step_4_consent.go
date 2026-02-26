@@ -12,7 +12,6 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/util"
@@ -101,7 +100,7 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 	if isClientIDApiKey(clientID) {
 		return h.buildAPIKeyTokenClaims(ctx, clientID)
 	}
-	return h.buildUserTokenClaims(ctx, rw, consentReq, subjectID)
+	return h.buildUserTokenClaims(ctx, rw, consentReq, clientID, subjectID)
 }
 
 // buildInternalSystemTokenClaims builds token claims for internal system clients.
@@ -149,13 +148,26 @@ func (h *AuthServer) buildAPIKeyTokenClaims(ctx context.Context, clientID string
 	return map[string]any{
 		"tenant_id":    apiKeyModel.TenantID,
 		"partition_id": apiKeyModel.PartitionID,
+		"access_id":    apiKeyModel.AccessID,
 		"roles":        roles,
 	}, nil
 }
 
 // buildUserTokenClaims builds token claims for regular user logins.
-func (h *AuthServer) buildUserTokenClaims(ctx context.Context, rw http.ResponseWriter, consentReq *hydraclientgo.OAuth2ConsentRequest, subjectID string) (map[string]any, error) {
+func (h *AuthServer) buildUserTokenClaims(
+	ctx context.Context,
+	rw http.ResponseWriter,
+	consentReq *hydraclientgo.OAuth2ConsentRequest,
+	clientID string,
+	subjectID string,
+) (map[string]any, error) {
 	log := util.Log(ctx)
+	if clientID == "" {
+		return nil, fmt.Errorf("client_id is required for user token claims")
+	}
+	if subjectID == "" {
+		return nil, fmt.Errorf("subject_id is required for user token claims")
+	}
 
 	// Process device session
 	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID)
@@ -171,32 +183,43 @@ func (h *AuthServer) buildUserTokenClaims(ctx context.Context, rw http.ResponseW
 		log.WithError(err).Debug("failed to store device ID cookie")
 	}
 
-	// Extract login event ID from consent context
+	// Extract login event ID from consent context.
+	// This is required for a strict 1:1 mapping between user access tokens and login events.
 	loginEventIDStr := extractLoginEventID(consentReq.GetContext())
+	if loginEventIDStr == "" {
+		return nil, fmt.Errorf("missing login_event_id in consent context")
+	}
 
-	var loginEvent *models.LoginEvent
-	var err error
+	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventIDStr)
+	if err != nil {
+		log.WithError(err).WithField("login_event_id", loginEventIDStr).Error("login event lookup failed")
+		return nil, fmt.Errorf("failed to get login event: %w", err)
+	}
+	if loginEvent == nil {
+		return nil, fmt.Errorf("login event not found")
+	}
 
-	if loginEventIDStr != "" {
-		// Normal flow: login_event_id is in context
-		loginEvent, err = h.loginEventRepo.GetByID(ctx, loginEventIDStr)
-		if err != nil {
-			log.WithError(err).WithField("login_event_id", loginEventIDStr).Error("login event lookup failed")
-			return nil, fmt.Errorf("failed to get login event: %w", err)
+	if loginEvent.ClientID != "" && loginEvent.ClientID != clientID {
+		return nil, fmt.Errorf("login event client mismatch")
+	}
+	if loginEvent.ProfileID != "" && loginEvent.ProfileID != subjectID {
+		return nil, fmt.Errorf("login event subject mismatch")
+	}
+
+	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, subjectID)
+	if err != nil {
+		log.WithError(err).WithField("login_event_id", loginEvent.GetID()).Error("failed to ensure tenancy access for consent")
+		return nil, err
+	}
+
+	if loginEvent.DeviceID != deviceObj.GetId() && deviceObj.GetId() != "" {
+		loginEvent.DeviceID = deviceObj.GetId()
+		if _, err = h.loginEventRepo.Update(ctx, loginEvent, "device_id"); err != nil {
+			log.WithError(err).Debug("failed to update login event device_id")
 		}
-	} else {
-		// Fallback: login was skipped (session exists), look up most recent login event for this profile
-		log.Debug("login_event_id not found in context - looking up most recent login event")
-		loginEvent, err = h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
-		if err != nil {
-			log.WithError(err).WithField("profile_id", subjectID).Warn("no login event found for profile - returning minimal claims")
-			return map[string]any{
-				"profile_id": subjectID,
-				"device_id":  deviceObj.GetId(),
-				"roles":      []string{"user"},
-			}, nil
+		if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
+			log.WithError(cacheErr).Debug("failed to update login event cache after device update")
 		}
-		log.WithField("login_event_id", loginEvent.GetID()).Debug("retrieved login event via profile fallback")
 	}
 
 	// Set remember-me cookie
@@ -205,14 +228,16 @@ func (h *AuthServer) buildUserTokenClaims(ctx context.Context, rw http.ResponseW
 	}
 
 	return map[string]any{
-		"tenant_id":    loginEvent.GetTenantID(),
-		"partition_id": loginEvent.GetPartitionID(),
-		"access_id":    loginEvent.GetAccessID(),
-		"contact_id":   loginEvent.GetContactID(),
-		"session_id":   loginEvent.GetID(), // Login event ID - used for lookup during refresh
-		"roles":        []string{"user"},
-		"device_id":    deviceObj.GetId(),
-		"profile_id":   subjectID,
+		"tenant_id":         loginEvent.GetTenantID(),
+		"partition_id":      loginEvent.GetPartitionID(),
+		"access_id":         loginEvent.GetAccessID(),
+		"contact_id":        loginEvent.GetContactID(),
+		"session_id":        loginEvent.GetID(),
+		"login_event_id":    loginEvent.GetID(),
+		"oauth2_session_id": loginEvent.Oauth2SessionID,
+		"roles":             []string{"user"},
+		"device_id":         deviceObj.GetId(),
+		"profile_id":        subjectID,
 	}, nil
 }
 

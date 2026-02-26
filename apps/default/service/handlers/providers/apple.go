@@ -40,19 +40,30 @@ func (a *AppleProvider) Name() string {
 	return "apple"
 }
 
-func (a *AppleProvider) AuthCodeURL(state, challenge string) string {
-	return a.oauth2.AuthCodeURL(
+func (a *AppleProvider) AuthCodeURL(state, challenge, nonce string) string {
+	authURL := a.oauth2.AuthCodeURL(
 		state,
 		oauth2.SetAuthURLParam("response_mode", "form_post"),
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
 	)
+	if nonce != "" {
+		authURL = a.oauth2.AuthCodeURL(
+			state,
+			oauth2.SetAuthURLParam("response_mode", "form_post"),
+			oauth2.SetAuthURLParam("code_challenge", challenge),
+			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+			oauth2.SetAuthURLParam("nonce", nonce),
+		)
+	}
+	return authURL
 }
 
 func (a *AppleProvider) CompleteLogin(
 	ctx context.Context,
 	code string,
 	verifier string,
+	nonce string,
 ) (*AuthenticatedUser, error) {
 
 	token, err := a.oauth2.Exchange(
@@ -81,6 +92,13 @@ func (a *AppleProvider) CompleteLogin(
 	var claims map[string]any
 	if claimErr := idToken.Claims(&claims); claimErr != nil {
 		return nil, fmt.Errorf("apple: failed to parse id_token claims: %w", claimErr)
+	}
+
+	if nonce != "" {
+		tokenNonce, _ := claims["nonce"].(string)
+		if tokenNonce == "" || tokenNonce != nonce {
+			return nil, fmt.Errorf("apple: nonce verification failed")
+		}
 	}
 
 	email, _ := claims["email"].(string)

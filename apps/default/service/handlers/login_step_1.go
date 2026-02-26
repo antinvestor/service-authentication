@@ -14,6 +14,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	client "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 )
 
@@ -101,6 +102,7 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 		SessionID:        deviceSessionID,
 		Oauth2SessionID:  loginReq.GetSessionId(),
 		IP:               util.GetIP(req),
+		Client:           req.UserAgent(),
 	}
 	loginEvt.ID = util.IDString()
 
@@ -163,35 +165,24 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			"oauth2_session_id": oauth2SessionID,
 		}).Debug("skipping login - session already exists")
 
-		// Try to find the login event linked to this Hydra session
-		// This ensures consent can access the claims even when login is skipped
-		var loginCtx map[string]any
-		var existingLoginEvent *models.LoginEvent
-		var lookupErr error
-
-		// Look up login event by Hydra OAuth2 session ID (precise mapping)
-		if oauth2SessionID != "" {
-			existingLoginEvent, lookupErr = h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-			if lookupErr == nil && existingLoginEvent != nil {
-				loginCtx = map[string]any{
-					"login_event_id": existingLoginEvent.GetID(),
-				}
-				log.WithField("login_event_id", existingLoginEvent.GetID()).Debug("found existing login event for skip via session ID")
-			} else {
-				log.WithError(lookupErr).WithField("oauth2_session_id", oauth2SessionID).
-					Warn("login event not found for Hydra session - consent will have empty claims")
-			}
-		} else {
-			log.Warn("Hydra login request missing session_id - cannot look up login event for skip")
+		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(ctx, req, getLogReq, loginChallenge, subjectID)
+		if skipErr != nil {
+			log.WithError(skipErr).Error("failed to resolve login event for skipped login")
+			return fmt.Errorf("failed to resolve skipped-login event: %w", skipErr)
 		}
 
 		params := &hydra.AcceptLoginRequestParams{
 			LoginChallenge: loginChallenge,
 			SubjectID:      subjectID,
+			SessionID:      skipLoginEvent.GetID(),
 
 			ExtendSession:    true,
 			Remember:         true,
 			RememberDuration: h.config.SessionRememberDuration,
+		}
+
+		loginCtx := map[string]any{
+			"login_event_id": skipLoginEvent.GetID(),
 		}
 
 		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, loginCtx, "session_refresh")
@@ -201,8 +192,9 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		}
 
 		log.WithFields(map[string]any{
-			"subject_id":  subjectID,
-			"duration_ms": time.Since(start).Milliseconds(),
+			"subject_id":     subjectID,
+			"login_event_id": skipLoginEvent.GetID(),
+			"duration_ms":    time.Since(start).Milliseconds(),
 		}).Info("login skipped - redirecting to OAuth2 flow")
 
 		http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
@@ -248,6 +240,91 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	}).Info("login page rendered")
 
 	return loginTmpl.Execute(rw, payload)
+}
+
+// ensureLoginEventForSkippedLogin guarantees that Hydra skip flows still carry a
+// durable login_event record and tenancy access context.
+func (h *AuthServer) ensureLoginEventForSkippedLogin(
+	ctx context.Context,
+	req *http.Request,
+	loginReq *client.OAuth2LoginRequest,
+	loginChallenge string,
+	subjectID string,
+) (*models.LoginEvent, error) {
+	if loginReq == nil {
+		return nil, fmt.Errorf("login request is required")
+	}
+	if subjectID == "" {
+		return nil, fmt.Errorf("subject_id is required for skipped login")
+	}
+
+	cli, ok := loginReq.GetClientOk()
+	if !ok || cli.GetClientId() == "" {
+		return nil, fmt.Errorf("client_id is required for skipped login")
+	}
+	clientID := cli.GetClientId()
+	oauth2SessionID := loginReq.GetSessionId()
+
+	if oauth2SessionID != "" {
+		existing, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+		if err == nil && existing != nil {
+			if existing.ClientID != "" && existing.ClientID != clientID {
+				return nil, fmt.Errorf("existing login event client mismatch")
+			}
+			if existing.ProfileID != "" && existing.ProfileID != subjectID {
+				return nil, fmt.Errorf("existing login event subject mismatch")
+			}
+			return h.ensureLoginEventTenancyAccess(ctx, existing, clientID, subjectID)
+		}
+		if err != nil && !data.ErrorIsNoRows(err) {
+			return nil, fmt.Errorf("failed to resolve login event by oauth2_session_id: %w", err)
+		}
+	}
+
+	var loginRecord *models.Login
+	loginRecord, err := h.loginRepo.GetByProfileID(ctx, subjectID)
+	if err != nil {
+		if !data.ErrorIsNoRows(err) {
+			return nil, fmt.Errorf("failed to resolve login record: %w", err)
+		}
+		loginRecord = &models.Login{
+			ProfileID: subjectID,
+			ClientID:  clientID,
+			Source:    "session_refresh",
+		}
+		loginRecord.GenID(ctx)
+		if createErr := h.loginRepo.Create(ctx, loginRecord); createErr != nil {
+			return nil, fmt.Errorf("failed to create login record for skipped login: %w", createErr)
+		}
+	}
+
+	newLoginEvent := &models.LoginEvent{
+		ClientID:         clientID,
+		LoginID:          loginRecord.GetID(),
+		LoginChallengeID: loginChallenge,
+		ProfileID:        subjectID,
+		SessionID:        utils.SessionIDFromContext(ctx),
+		Oauth2SessionID:  oauth2SessionID,
+		DeviceID:         utils.DeviceIDFromContext(ctx),
+		IP:               util.GetIP(req),
+		Client:           req.UserAgent(),
+	}
+	newLoginEvent.ID = util.IDString()
+
+	if err = h.loginEventRepo.Create(ctx, newLoginEvent); err != nil {
+		return nil, fmt.Errorf("failed to create login event for skipped login: %w", err)
+	}
+
+	newLoginEvent, err = h.ensureLoginEventTenancyAccess(ctx, newLoginEvent, clientID, subjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply tenancy context to skipped login event: %w", err)
+	}
+
+	if cacheErr := h.setLoginEventToCache(ctx, newLoginEvent); cacheErr != nil {
+		util.Log(ctx).WithError(cacheErr).Debug("failed to cache skipped-login event")
+	}
+
+	return newLoginEvent, nil
 }
 
 // getRememberMeLoginEventID reads and decodes the remember-me cookie, returning
@@ -329,6 +406,7 @@ func (h *AuthServer) attemptRememberMeLogin(ctx context.Context, req *http.Reque
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge:   loginChallenge,
 		SubjectID:        oldLoginEvent.ProfileID,
+		SessionID:        newLoginEvent.GetID(),
 		ExtendSession:    true,
 		Remember:         true,
 		RememberDuration: h.config.SessionRememberDuration,

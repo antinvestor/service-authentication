@@ -4,6 +4,11 @@ import (
 	"github.com/pitabwire/frame/config"
 )
 
+const (
+	DefaultSecureCookieHashKey  = "d1f4f1a3b8d84f79e6d4b8b5c3f04725a8a7d6b4c2f9a987d5e4f3a2b1c086d1"
+	DefaultSecureCookieBlockKey = "a7e7b4f8d2e5a3c1f0b6d9d4f3a5c20798d1c1e7c4f6a3e4b0e5c2f4a7d6b301"
+)
+
 type AuthenticationConfig struct {
 	config.ConfigurationDefault
 

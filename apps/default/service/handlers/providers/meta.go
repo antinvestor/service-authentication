@@ -36,18 +36,28 @@ func (f *FacebookProvider) Name() string {
 	return "facebook"
 }
 
-func (f *FacebookProvider) AuthCodeURL(state, challenge string) string {
-	return f.oauth2.AuthCodeURL(
+func (f *FacebookProvider) AuthCodeURL(state, challenge, nonce string) string {
+	authURL := f.oauth2.AuthCodeURL(
 		state,
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
 	)
+	if nonce != "" {
+		authURL = f.oauth2.AuthCodeURL(
+			state,
+			oauth2.SetAuthURLParam("code_challenge", challenge),
+			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+			oauth2.SetAuthURLParam("nonce", nonce),
+		)
+	}
+	return authURL
 }
 
 func (f *FacebookProvider) CompleteLogin(
 	ctx context.Context,
 	code string,
 	verifier string,
+	_ string,
 ) (*AuthenticatedUser, error) {
 
 	token, err := f.oauth2.Exchange(

@@ -44,18 +44,28 @@ func (m *MicrosoftProvider) Name() string {
 	return "microsoft"
 }
 
-func (m *MicrosoftProvider) AuthCodeURL(state, challenge string) string {
-	return m.oauth2.AuthCodeURL(
+func (m *MicrosoftProvider) AuthCodeURL(state, challenge, nonce string) string {
+	authURL := m.oauth2.AuthCodeURL(
 		state,
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
 	)
+	if nonce != "" {
+		authURL = m.oauth2.AuthCodeURL(
+			state,
+			oauth2.SetAuthURLParam("code_challenge", challenge),
+			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+			oauth2.SetAuthURLParam("nonce", nonce),
+		)
+	}
+	return authURL
 }
 
 func (m *MicrosoftProvider) CompleteLogin(
 	ctx context.Context,
 	code string,
 	verifier string,
+	nonce string,
 ) (*AuthenticatedUser, error) {
 
 	token, err := m.oauth2.Exchange(
@@ -84,6 +94,13 @@ func (m *MicrosoftProvider) CompleteLogin(
 	var claims map[string]any
 	if claimErr := idToken.Claims(&claims); claimErr != nil {
 		return nil, fmt.Errorf("microsoft: failed to parse id_token claims: %w", claimErr)
+	}
+
+	if nonce != "" {
+		tokenNonce, _ := claims["nonce"].(string)
+		if tokenNonce == "" || tokenNonce != nonce {
+			return nil, fmt.Errorf("microsoft: nonce verification failed")
+		}
 	}
 
 	email, _ := claims["preferred_username"].(string)

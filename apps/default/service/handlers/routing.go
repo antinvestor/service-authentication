@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
@@ -43,7 +44,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
 	serviceName := h.Config().Name()
-	isTestEnv := serviceName == "authentication_tests"
+	isTestEnv := serviceName == "authentication_tests" || slices.Contains(h.Config().Oauth2JwtVerifyAudience, "authentication_tests")
 
 	var csrfMiddleware func(http.Handler) http.Handler
 	if isTestEnv {
@@ -132,6 +133,12 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			log := util.Log(r.Context())
 
 			expectedToken := strings.TrimSpace(h.Config().HydraWebhookAPIToken)
+			if expectedToken == "" && !isTestEnv {
+				log.Error("webhook request rejected: HYDRA_WEBHOOK_API_PSK is not configured")
+				http.Error(w, "webhook authentication is not configured", http.StatusServiceUnavailable)
+				return
+			}
+
 			if expectedToken != "" {
 				const bearerPrefix = "Bearer "
 				auth := r.Header.Get("Authorization")

@@ -71,6 +71,7 @@ func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.R
 		Provider:     providerName,
 		State:        util.RandomAlphaNumericString(32),
 		PKCEVerifier: pkce.Verifier,
+		Nonce:        util.RandomAlphaNumericString(32),
 		LoginEventID: loginEventID,
 		ExpiresAt:    time.Now().Add(5 * time.Minute),
 	}
@@ -83,7 +84,7 @@ func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.R
 
 	providers.SetAuthStateCookie(rw, encoded)
 
-	authURL := provider.AuthCodeURL(authState.State, pkce.Challenge)
+	authURL := provider.AuthCodeURL(authState.State, pkce.Challenge, authState.Nonce)
 
 	log.WithFields(map[string]any{
 		"duration_ms": time.Since(start).Milliseconds(),

@@ -85,7 +85,7 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 
 	log.Debug("exchanging authorization code with external provider")
 
-	user, err := provider.CompleteLogin(ctx, code, authState.PKCEVerifier)
+	user, err := provider.CompleteLogin(ctx, code, authState.PKCEVerifier, authState.Nonce)
 	if err != nil {
 		log.WithError(err).Error("failed to complete login with external provider - token exchange or user info retrieval failed")
 		return fmt.Errorf("provider login completion failed: %w", err)
@@ -231,6 +231,12 @@ func (h *AuthServer) postUserLogin(
 		log.Error("profile ID is empty - cannot complete provider login")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error=profile_error", http.StatusSeeOther)
 		return nil
+	}
+
+	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvt.ClientID, profileID)
+	if err != nil {
+		log.WithError(err).Error("failed to ensure tenancy access for provider login")
+		return fmt.Errorf("provider login tenancy access failed: %w", err)
 	}
 
 	// Step 6: Accept the Hydra login request to complete the OAuth2 flow

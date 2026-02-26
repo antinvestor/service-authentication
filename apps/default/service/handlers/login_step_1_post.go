@@ -157,15 +157,24 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {
 
-	login, err := h.loginRepo.GetByProfileID(ctx, profileID)
-	if err != nil {
+	var (
+		login *models.Login
+		err   error
+	)
 
-		if !data.ErrorIsNoRows(err) {
+	// Important: do not re-use records for empty profile IDs.
+	// Re-using an "unbound" login row can couple independent login attempts.
+	if profileID != "" {
+		login, err = h.loginRepo.GetByProfileID(ctx, profileID)
+		if err != nil && !data.ErrorIsNoRows(err) {
 			return nil, err
 		}
+	}
 
+	if login == nil {
 		login = &models.Login{
 			ProfileID: profileID,
+			ClientID:  loginEvt.ClientID,
 			Source:    string(source),
 		}
 		login.GenID(ctx)
@@ -178,6 +187,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 	}
 
 	loginEvt.LoginID = login.GetID()
+	loginEvt.ProfileID = profileID
 	loginEvt.DeviceID = utils.DeviceIDFromContext(ctx)
 	loginEvt.VerificationID = verificationID
 	loginEvt.ContactID = contactID

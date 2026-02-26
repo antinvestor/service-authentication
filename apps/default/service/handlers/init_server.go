@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -183,6 +184,13 @@ func (h *AuthServer) LoginEventRepo() repository.LoginEventRepository {
 // setupSecureCookies initialises the StateCodec used for encrypting cookie values.
 // It uses the SecureCookieBlockKey from config as the AES-256-GCM encryption key.
 func (h *AuthServer) setupSecureCookies(_ context.Context, cfg *aconfig.AuthenticationConfig) error {
+	isTestEnv := cfg.Name() == "authentication_tests" || slices.Contains(cfg.Oauth2JwtVerifyAudience, "authentication_tests")
+	if !isTestEnv {
+		if cfg.SecureCookieBlockKey == aconfig.DefaultSecureCookieBlockKey || cfg.SecureCookieHashKey == aconfig.DefaultSecureCookieHashKey {
+			return fmt.Errorf("insecure default cookie keys are not allowed outside test environments")
+		}
+	}
+
 	blockKey, err := hex.DecodeString(cfg.SecureCookieBlockKey)
 	if err != nil {
 		return fmt.Errorf("failed to decode secure cookie block key: %w", err)

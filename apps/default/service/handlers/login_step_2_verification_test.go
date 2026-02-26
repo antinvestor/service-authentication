@@ -2,8 +2,13 @@ package handlers_test
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -262,6 +267,165 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		require.Contains(t, resp.Header.Get("Content-Type"), "text/html")
 
 		t.Log("Verification endpoint basics test completed")
+	})
+}
+
+func decodeJWTClaims(token string) (map[string]any, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("token is not a JWT")
+	}
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode JWT payload: %w", err)
+	}
+
+	claims := make(map[string]any)
+	if err = json.Unmarshal(payloadBytes, &claims); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JWT claims: %w", err)
+	}
+
+	return claims, nil
+}
+
+func claimAsString(claims map[string]any, key string) string {
+	raw, ok := claims[key]
+	if !ok {
+		return ""
+	}
+	val, ok := raw.(string)
+	if !ok {
+		return ""
+	}
+	return val
+}
+
+func refreshTokenExchange(
+	ctx context.Context,
+	oauth2TestClient *tests.OAuth2TestClient,
+	oauth2Client *tests.OAuth2Client,
+	refreshToken string,
+) (*tests.TokenResult, error) {
+	tokenURL := fmt.Sprintf("%s/oauth2/token", oauth2TestClient.HydraPublicURL)
+
+	formData := url.Values{}
+	formData.Set("grant_type", "refresh_token")
+	formData.Set("refresh_token", refreshToken)
+	formData.Set("client_id", oauth2Client.ClientID)
+	formData.Set("client_secret", oauth2Client.ClientSecret)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", tokenURL, strings.NewReader(formData.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create refresh token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := oauth2TestClient.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("refresh token request failed: %w", err)
+	}
+	defer util.CloseAndLogOnError(ctx, resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("refresh token exchange failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResult tests.TokenResult
+	if err = json.NewDecoder(resp.Body).Decode(&tokenResult); err != nil {
+		return nil, fmt.Errorf("failed to decode refresh token response: %w", err)
+	}
+
+	return &tokenResult, nil
+}
+
+func (suite *LoginVerificationTestSuite) TestAccessTokenClaimsAreBoundToLoginEventAndTenancyAccess() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx := suite.SetupVerificationTest(t, dep)
+		defer suite.TeardownVerificationTest(testCtx)
+
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+		defer opCancel()
+
+		contact := fmt.Sprintf("claims-%d@example.com", time.Now().UnixNano())
+		tokenResult, err := testCtx.OAuth2Client.AcquireAccessTokenForContact(opCtx, t, suite.Handler(), contact, "Claims User")
+		require.NoError(t, err)
+		require.NotNil(t, tokenResult)
+
+		claims, err := decodeJWTClaims(tokenResult.AccessToken)
+		require.NoError(t, err)
+
+		require.NotEmpty(t, claimAsString(claims, "tenant_id"), "tenant_id claim should be present")
+		require.NotEmpty(t, claimAsString(claims, "partition_id"), "partition_id claim should be present")
+		require.NotEmpty(t, claimAsString(claims, "access_id"), "access_id claim should be present")
+
+		loginEvent, err := suite.Handler().LoginEventRepo().GetByID(opCtx, tokenResult.LoginEventID)
+		require.NoError(t, err)
+		require.NotNil(t, loginEvent, "token flow login_event must be persisted")
+		require.Equal(t, claimAsString(claims, "access_id"), loginEvent.AccessID)
+		require.Equal(t, claimAsString(claims, "tenant_id"), loginEvent.TenantID)
+		require.Equal(t, claimAsString(claims, "partition_id"), loginEvent.PartitionID)
+
+		refreshed, err := refreshTokenExchange(opCtx, testCtx.OAuth2Client, tokenResult.OAuth2Client, tokenResult.RefreshToken)
+		require.NoError(t, err)
+		require.NotNil(t, refreshed)
+
+		refreshClaims, err := decodeJWTClaims(refreshed.AccessToken)
+		require.NoError(t, err)
+		require.NotEmpty(t, claimAsString(refreshClaims, "tenant_id"), "refreshed token tenant_id claim should be present")
+		require.NotEmpty(t, claimAsString(refreshClaims, "partition_id"), "refreshed token partition_id claim should be present")
+		require.NotEmpty(t, claimAsString(refreshClaims, "access_id"), "refreshed token access_id claim should be present")
+		require.Equal(t, loginEvent.AccessID, claimAsString(refreshClaims, "access_id"))
+		require.Equal(t, loginEvent.TenantID, claimAsString(refreshClaims, "tenant_id"))
+		require.Equal(t, loginEvent.PartitionID, claimAsString(refreshClaims, "partition_id"))
+	})
+}
+
+func (suite *LoginVerificationTestSuite) TestPendingUnknownProfileLoginsDoNotShareLoginRecord() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx := suite.SetupVerificationTest(t, dep)
+		defer suite.TeardownVerificationTest(testCtx)
+
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+		defer opCancel()
+
+		// Keep this test isolated from rate-limit state leaked across other integration flows.
+		suite.Handler().ResetLoginRateLimit(opCtx, "127.0.0.1")
+		suite.Handler().ResetLoginRateLimit(opCtx, "::1")
+
+		oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, "pending_login_record_isolation")
+		require.NoError(t, err)
+		require.NotNil(t, oauth2Client)
+
+		loginRedirectA, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
+		require.NoError(t, err)
+		contactA := fmt.Sprintf("pending-a-%d@example.com", time.Now().UnixNano())
+		submitA, err := testCtx.OAuth2Client.PerformContactVerification(opCtx, loginRedirectA, contactA)
+		require.NoError(t, err)
+		require.True(t, submitA.Success)
+		require.NotEmpty(t, submitA.LoginEventID)
+
+		loginRedirectB, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
+		require.NoError(t, err)
+		contactB := fmt.Sprintf("pending-b-%d@example.com", time.Now().UnixNano())
+		submitB, err := testCtx.OAuth2Client.PerformContactVerification(opCtx, loginRedirectB, contactB)
+		require.NoError(t, err)
+		require.True(t, submitB.Success)
+		require.NotEmpty(t, submitB.LoginEventID)
+
+		loginEventA, err := suite.Handler().LoginEventRepo().GetByID(opCtx, submitA.LoginEventID)
+		require.NoError(t, err)
+		require.NotNil(t, loginEventA)
+		require.NotEmpty(t, loginEventA.LoginID)
+
+		loginEventB, err := suite.Handler().LoginEventRepo().GetByID(opCtx, submitB.LoginEventID)
+		require.NoError(t, err)
+		require.NotNil(t, loginEventB)
+		require.NotEmpty(t, loginEventB.LoginID)
+
+		require.NotEqual(t, loginEventA.LoginID, loginEventB.LoginID, "distinct pending contacts must not share login records")
 	})
 }
 

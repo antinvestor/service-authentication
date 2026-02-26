@@ -11,13 +11,14 @@ type AuthProvider interface {
 	Name() string
 
 	// Builds the authorization redirect URL
-	AuthCodeURL(state, codeChallenge string) string
+	AuthCodeURL(state, codeChallenge, nonce string) string
 
 	// Completes the login after callback
 	CompleteLogin(
 		ctx context.Context,
 		code string,
 		codeVerifier string,
+		nonce string,
 	) (*AuthenticatedUser, error)
 }
 

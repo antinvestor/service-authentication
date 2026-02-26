@@ -100,7 +100,14 @@ func (h *AuthServer) CreateAPIKeyEndpoint(rw http.ResponseWriter, req *http.Requ
 
 		for _, parent := range resp.Msg.Data {
 			if parent.Id == apiky.PartitionID {
-				apiky.PartitionID = childPartitionID
+
+				accessObj, apiErr := h.getOrCreateTenancyAccessByPartitionID(ctx, childPartitionID, subject)
+				if apiErr != nil {
+					return apiErr
+				}
+
+				apiky.PartitionID = accessObj.GetPartition().GetId()
+				apiky.AccessID = accessObj.GetId()
 			}
 		}
 	}

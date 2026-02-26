@@ -16,28 +16,28 @@ const (
 
 type Login struct {
 	data.BaseModel
-	ProfileID string `gorm:"type:varchar(255)"`
-	ClientID  string `gorm:"type:varchar(255)"`
-	Source    string `gorm:"type:varchar(255)"`
-	Locked    time.Time
+	ProfileID string    `gorm:"type:varchar(255);index"`
+	ClientID  string    `gorm:"type:varchar(255);index"`
+	Source    string    `gorm:"type:varchar(255)"`
+	Locked    time.Time `gorm:"index"`
 }
 
 type LoginEvent struct {
 	data.BaseModel
-	ClientID         string `gorm:"type:varchar(50)"`
-	LoginID          string `gorm:"type:varchar(50)"`
-	LoginChallengeID string `gorm:"type:TEXT"`
-	VerificationID   string `gorm:"type:varchar(50)"`
-	AccessID         string `gorm:"type:varchar(50)"`
-	ContactID        string `gorm:"type:varchar(50)"`
-	ProfileID        string `gorm:"type:varchar(50)"`
-	SessionID        string `gorm:"type:varchar(50)"`
-	Oauth2SessionID  string `gorm:"type:varchar(250)"`
-	DeviceID         string `gorm:"type:varchar(50)"`
+	ClientID         string `gorm:"type:varchar(50);index"`
+	LoginID          string `gorm:"type:varchar(50);index"`
+	LoginChallengeID string `gorm:"type:TEXT;index"`
+	VerificationID   string `gorm:"type:varchar(50);index"`
+	AccessID         string `gorm:"type:varchar(50);index"`
+	ContactID        string `gorm:"type:varchar(50);index"`
+	ProfileID        string `gorm:"type:varchar(50);index"`
+	SessionID        string `gorm:"type:varchar(50);index"`
+	Oauth2SessionID  string `gorm:"type:varchar(250);index"`
+	DeviceID         string `gorm:"type:varchar(50);index"`
 	Properties       data.JSONMap
 	Client           string
 	IP               string
-	Status           int
+	Status           int `gorm:"index"`
 }
 
 func (l LoginEvent) GetTenantID() string {

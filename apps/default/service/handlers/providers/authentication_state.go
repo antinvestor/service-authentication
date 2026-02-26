@@ -24,6 +24,7 @@ type AuthState struct {
 	Provider     string    `json:"provider"`
 	State        string    `json:"state"`
 	PKCEVerifier string    `json:"pkce_verifier"`
+	Nonce        string    `json:"nonce"`
 	LoginEventID string    `json:"login_event_id"`
 	ExpiresAt    time.Time `json:"expires_at"`
 }

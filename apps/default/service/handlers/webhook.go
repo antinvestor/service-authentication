@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/util"
 )
 
@@ -186,24 +188,63 @@ func extractClientID(tokenObject map[string]any) string {
 }
 
 func extractGrantType(tokenObject map[string]any) string {
-	request, ok := tokenObject["request"].(map[string]any)
-	if !ok {
+	parseGrantType := func(v any) string {
+		switch typed := v.(type) {
+		case string:
+			return strings.TrimSpace(typed)
+		case []string:
+			for i := 0; i < len(typed); i++ {
+				if gt := strings.TrimSpace(typed[i]); gt != "" {
+					return gt
+				}
+			}
+		case []any:
+			for i := 0; i < len(typed); i++ {
+				if gt, ok := typed[i].(string); ok {
+					gt = strings.TrimSpace(gt)
+					if gt != "" {
+						return gt
+					}
+				}
+			}
+		}
 		return ""
 	}
 
-	// grant_types is a JSON array which unmarshals to []any, not []string
-	if raw, ok := request["grant_types"].([]any); ok && len(raw) == 1 {
-		if s, ok := raw[0].(string); ok {
-			return s
+	resolveFromContainer := func(container map[string]any) string {
+		if container == nil {
+			return ""
+		}
+		if gt := parseGrantType(container["grant_type"]); gt != "" {
+			return gt
+		}
+		if gt := parseGrantType(container["grant_types"]); gt != "" {
+			return gt
+		}
+		return ""
+	}
+
+	if request, ok := tokenObject["request"].(map[string]any); ok {
+		if gt := resolveFromContainer(request); gt != "" {
+			return gt
+		}
+	}
+	if requester, ok := tokenObject["requester"].(map[string]any); ok {
+		if gt := resolveFromContainer(requester); gt != "" {
+			return gt
 		}
 	}
 
-	// Fallback: singular grant_type string
-	if gt, ok := request["grant_type"].(string); ok {
-		return gt
-	}
+	return resolveFromContainer(tokenObject)
+}
 
-	return ""
+func inferGrantTypeFromTokenType(tokenType string) string {
+	switch strings.ToLower(strings.TrimSpace(tokenType)) {
+	case "refresh-token", "refresh_token":
+		return "refresh_token"
+	default:
+		return ""
+	}
 }
 
 // extractSubjectFromSession extracts the subject from id_token or nested claims.
@@ -272,18 +313,137 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 	return json.NewEncoder(rw).Encode(hookResponse)
 }
 
-// buildClaimsFromLoginEvent creates a claims map from a login event and subject.
-func buildClaimsFromLoginEvent(loginEvent interface{ GetID() string }, tenantID, partitionID, accessID, contactID, deviceID, subject string) map[string]any {
+// buildClaimsFromLoginEvent creates a canonical claims map from a login event.
+func buildClaimsFromLoginEvent(
+	loginEventID string,
+	tenantID string,
+	partitionID string,
+	accessID string,
+	contactID string,
+	deviceID string,
+	profileID string,
+	oauth2SessionID string,
+) map[string]any {
 	return map[string]any{
-		"tenant_id":    tenantID,
-		"partition_id": partitionID,
-		"access_id":    accessID,
-		"contact_id":   contactID,
-		"session_id":   loginEvent.GetID(),
-		"device_id":    deviceID,
-		"profile_id":   subject,
-		"roles":        []string{"user"},
+		"tenant_id":         tenantID,
+		"partition_id":      partitionID,
+		"access_id":         accessID,
+		"contact_id":        contactID,
+		"session_id":        loginEventID,
+		"login_event_id":    loginEventID,
+		"oauth2_session_id": oauth2SessionID,
+		"device_id":         deviceID,
+		"profile_id":        profileID,
+		"roles":             []string{"user"},
 	}
+}
+
+func claimString(claims map[string]any, key string) string {
+	if claims == nil {
+		return ""
+	}
+	raw, ok := claims[key]
+	if !ok {
+		return ""
+	}
+	value, ok := raw.(string)
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func missingRequiredUserClaims(claims map[string]any) []string {
+	required := []string{"tenant_id", "partition_id", "access_id", "session_id", "profile_id"}
+	missing := make([]string, 0, len(required))
+	for _, key := range required {
+		if claimString(claims, key) == "" {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+// buildCanonicalClaimsFromLoginEvent enforces strict login_event linkage before token issuance.
+func (h *AuthServer) buildCanonicalClaimsFromLoginEvent(
+	ctx context.Context,
+	tokenObject map[string]any,
+	claims map[string]any,
+) (map[string]any, error) {
+	clientID := extractClientID(tokenObject)
+	if clientID == "" {
+		return nil, fmt.Errorf("client_id not found")
+	}
+
+	var (
+		loginEvent *models.LoginEvent
+		err        error
+	)
+
+	loginEventID := claimString(claims, "session_id")
+	if loginEventID == "" {
+		loginEventID = extractLoginEventIDFromWebhook(tokenObject)
+	}
+	if loginEventID != "" {
+		loginEvent, err = h.loginEventRepo.GetByID(ctx, loginEventID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to look up login event by session_id: %w", err)
+		}
+	}
+
+	if loginEvent == nil {
+		oauth2SessionID := extractOAuth2SessionID(tokenObject)
+		if oauth2SessionID == "" {
+			return nil, fmt.Errorf("missing session_id and oauth2_session_id")
+		}
+		loginEvent, err = h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to look up login event by oauth2_session_id: %w", err)
+		}
+	}
+
+	if loginEvent == nil {
+		return nil, fmt.Errorf("login event not found")
+	}
+
+	profileID := claimString(claims, "profile_id")
+	if profileID == "" {
+		profileID = loginEvent.ProfileID
+	}
+	if profileID == "" {
+		return nil, fmt.Errorf("profile_id could not be resolved for login event")
+	}
+
+	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, profileID)
+	if err != nil {
+		return nil, err
+	}
+
+	canonical := buildClaimsFromLoginEvent(
+		loginEvent.GetID(),
+		loginEvent.TenantID,
+		loginEvent.PartitionID,
+		loginEvent.AccessID,
+		loginEvent.ContactID,
+		loginEvent.DeviceID,
+		profileID,
+		loginEvent.Oauth2SessionID,
+	)
+	if roles, ok := claims["roles"]; ok {
+		canonical["roles"] = roles
+	}
+	if canonical["device_id"] == "" {
+		if deviceID := claimString(claims, "device_id"); deviceID != "" {
+			canonical["device_id"] = deviceID
+		}
+	}
+	if canonical["contact_id"] == "" {
+		if contactID := claimString(claims, "contact_id"); contactID != "" {
+			canonical["contact_id"] = contactID
+		}
+	}
+
+	return canonical, nil
 }
 
 // TokenEnrichmentEndpoint handles token enrichment requests from Ory Hydra
@@ -297,9 +457,15 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
+	tokenType := req.PathValue("tokenType")
+
 	// Validate grant_type
-	if grantType := extractGrantType(tokenObject); grantType == "" {
-		log.Error("grant_type not found in any location")
+	grantType := extractGrantType(tokenObject)
+	if grantType == "" {
+		grantType = inferGrantTypeFromTokenType(tokenType)
+	}
+	if grantType == "" {
+		log.WithField("token_type", tokenType).Error("grant_type not found in any location")
 		return h.writeWebhookError(rw, "grant_type not found")
 	}
 
@@ -411,14 +577,24 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		log.Debug("using claims from session")
 	}
 
-	if len(finalClaims) > 0 {
-		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("enriching token with consent session claims")
-		return writeTokenHookResponse(rw, finalClaims)
+	if len(finalClaims) == 0 {
+		log.Warn("no session claims found for regular user token")
+		return h.writeWebhookError(rw, "missing user claims in consent session")
 	}
 
-	log.Warn("no session claims found for regular user - token will be missing custom claims")
-	rw.WriteHeader(http.StatusNoContent)
-	return nil
+	canonicalClaims, err := h.buildCanonicalClaimsFromLoginEvent(ctx, tokenObject, finalClaims)
+	if err != nil {
+		log.WithError(err).Warn("token enrichment rejected: login_event mapping failed")
+		return h.writeWebhookError(rw, "unable to map token to login event")
+	}
+
+	if missing := missingRequiredUserClaims(canonicalClaims); len(missing) > 0 {
+		log.WithField("missing_claims", missing).Warn("token enrichment rejected: required claims missing")
+		return h.writeWebhookError(rw, "required user claims missing")
+	}
+
+	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Info("enriching token with canonical user claims")
+	return writeTokenHookResponse(rw, canonicalClaims)
 }
 
 // lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.
@@ -430,8 +606,20 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 	if loginEventID := extractLoginEventIDFromWebhook(tokenObject); loginEventID != "" {
 		log.WithField("login_event_id", loginEventID).Debug("attempting login event lookup by ID from claims")
 		if loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID); err == nil && loginEvent != nil {
+			if subject == "" {
+				subject = loginEvent.ProfileID
+			}
 			log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
-			return buildClaimsFromLoginEvent(loginEvent, loginEvent.TenantID, loginEvent.PartitionID, loginEvent.AccessID, loginEvent.ContactID, loginEvent.DeviceID, subject)
+			return buildClaimsFromLoginEvent(
+				loginEvent.GetID(),
+				loginEvent.TenantID,
+				loginEvent.PartitionID,
+				loginEvent.AccessID,
+				loginEvent.ContactID,
+				loginEvent.DeviceID,
+				subject,
+				loginEvent.Oauth2SessionID,
+			)
 		} else {
 			log.WithError(err).WithField("login_event_id", loginEventID).Warn("login event not found by ID - token will be missing claims")
 		}
@@ -442,11 +630,23 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 	if oauth2SessionID := extractOAuth2SessionID(tokenObject); oauth2SessionID != "" {
 		log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
 		if loginEvent, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID); err == nil && loginEvent != nil {
+			if subject == "" {
+				subject = loginEvent.ProfileID
+			}
 			log.WithFields(map[string]any{
 				"login_event_id":    loginEvent.GetID(),
 				"oauth2_session_id": oauth2SessionID,
 			}).Info("enriched token with claims from OAuth2 session ID lookup")
-			return buildClaimsFromLoginEvent(loginEvent, loginEvent.TenantID, loginEvent.PartitionID, loginEvent.AccessID, loginEvent.ContactID, loginEvent.DeviceID, subject)
+			return buildClaimsFromLoginEvent(
+				loginEvent.GetID(),
+				loginEvent.TenantID,
+				loginEvent.PartitionID,
+				loginEvent.AccessID,
+				loginEvent.ContactID,
+				loginEvent.DeviceID,
+				subject,
+				loginEvent.Oauth2SessionID,
+			)
 		} else {
 			log.WithError(err).WithField("oauth2_session_id", oauth2SessionID).Warn("login event not found for Hydra session ID - token will be missing claims")
 		}

@@ -101,6 +101,21 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
 	}
 
+	// Step 5.5: Ensure login event is bound to the authenticated profile and tenancy access.
+	if loginEvent.ProfileID != profileID {
+		loginEvent.ProfileID = profileID
+		if _, err = h.loginEventRepo.Update(ctx, loginEvent, "profile_id"); err != nil {
+			log.WithError(err).Error("failed to update login event with profile_id")
+			return err
+		}
+	}
+
+	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvent.ClientID, profileID)
+	if err != nil {
+		log.WithError(err).Error("failed to ensure tenancy access for login event")
+		return err
+	}
+
 	// Step 6: Update profile name if provided
 	if profileName != "" {
 		_, err = h.updateProfileName(ctx, profileID, profileName)
