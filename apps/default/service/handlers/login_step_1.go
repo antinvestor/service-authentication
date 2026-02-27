@@ -298,6 +298,18 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 		}
 	}
 
+	// Ensure device tracking for the skip flow. Non-browser clients (mobile apps, bots)
+	// won't have device cookies, so we create/find a device using the session or User-Agent.
+	userAgent := req.UserAgent()
+	deviceID := utils.DeviceIDFromContext(ctx)
+	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID, userAgent)
+	if deviceErr != nil {
+		util.Log(ctx).WithError(deviceErr).Warn("device session processing failed during skip-login")
+	}
+	if deviceObj != nil && deviceObj.GetId() != "" {
+		deviceID = deviceObj.GetId()
+	}
+
 	newLoginEvent := &models.LoginEvent{
 		ClientID:         clientID,
 		LoginID:          loginRecord.GetID(),
@@ -305,9 +317,9 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 		ProfileID:        subjectID,
 		SessionID:        utils.SessionIDFromContext(ctx),
 		Oauth2SessionID:  oauth2SessionID,
-		DeviceID:         utils.DeviceIDFromContext(ctx),
+		DeviceID:         deviceID,
 		IP:               util.GetIP(req),
-		Client:           req.UserAgent(),
+		Client:           userAgent,
 	}
 	newLoginEvent.ID = util.IDString()
 
@@ -427,8 +439,14 @@ func (h *AuthServer) getLoginEventFromCache(ctx context.Context, loginEventID st
 		return nil, ErrLoginEventNotFound
 	}
 
+	eventCache := h.loginEventCache()
+	if eventCache == nil {
+		util.Log(ctx).Warn("login event cache unavailable - falling back to database lookup")
+		return h.loginEventRepo.GetByID(ctx, loginEventID)
+	}
+
 	cacheKey := loginEventCachePrefix + loginEventID
-	loginEvt, ok, err := h.loginEventCache().Get(ctx, cacheKey)
+	loginEvt, ok, err := eventCache.Get(ctx, cacheKey)
 	if err != nil {
 		util.Log(ctx).WithError(err).WithFields(map[string]any{
 			"login_event_id": loginEventID,
@@ -446,8 +464,14 @@ func (h *AuthServer) getLoginEventFromCache(ctx context.Context, loginEventID st
 }
 
 func (h *AuthServer) setLoginEventToCache(ctx context.Context, loginEvent *models.LoginEvent) error {
+	eventCache := h.loginEventCache()
+	if eventCache == nil {
+		util.Log(ctx).Debug("login event cache unavailable - skipping cache update")
+		return nil
+	}
+
 	cacheKey := loginEventCachePrefix + loginEvent.GetID()
-	if err := h.loginEventCache().Set(ctx, cacheKey, *loginEvent, time.Hour); err != nil {
+	if err := eventCache.Set(ctx, cacheKey, *loginEvent, time.Hour); err != nil {
 		util.Log(ctx).WithError(err).Error("failed to update login event cache with partition info")
 		return err
 	}

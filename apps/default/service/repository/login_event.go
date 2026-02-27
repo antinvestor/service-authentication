@@ -69,7 +69,7 @@ func (r *loginEventRepository) GetMostRecentByProfileID(ctx context.Context, pro
 		First(&loginEvent).Error
 	if err != nil {
 		if data.ErrorIsNoRows(err) {
-			return nil, err
+			return nil, nil
 		}
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (r *loginEventRepository) GetByOauth2SessionID(ctx context.Context, oauth2S
 		First(&loginEvent).Error
 	if err != nil {
 		if data.ErrorIsNoRows(err) {
-			return nil, err
+			return nil, nil
 		}
 		return nil, err
 	}

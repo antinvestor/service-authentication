@@ -54,7 +54,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	log = log.WithField("subject_id", subjectID)
 
 	// Step 3: Build token claims based on client type
-	tokenMap, err := h.buildConsentTokenClaims(ctx, rw, getConseReq, clientID, subjectID)
+	tokenMap, err := h.buildConsentTokenClaims(ctx, rw, req, getConseReq, clientID, subjectID)
 	if err != nil {
 		return err
 	}
@@ -93,14 +93,14 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 }
 
 // buildConsentTokenClaims builds token claims based on the client type (internal system, API key, or user).
-func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, consentReq *hydraclientgo.OAuth2ConsentRequest, clientID, subjectID string) (map[string]any, error) {
+func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientID, subjectID string) (map[string]any, error) {
 	if isInternalSystemScoped(consentReq.GetRequestedScope()) {
 		return h.buildInternalSystemTokenClaims(ctx, clientID, subjectID)
 	}
 	if isClientIDApiKey(clientID) {
 		return h.buildAPIKeyTokenClaims(ctx, clientID)
 	}
-	return h.buildUserTokenClaims(ctx, rw, consentReq, clientID, subjectID)
+	return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientID, subjectID)
 }
 
 // buildInternalSystemTokenClaims builds token claims for internal system clients.
@@ -157,6 +157,7 @@ func (h *AuthServer) buildAPIKeyTokenClaims(ctx context.Context, clientID string
 func (h *AuthServer) buildUserTokenClaims(
 	ctx context.Context,
 	rw http.ResponseWriter,
+	req *http.Request,
 	consentReq *hydraclientgo.OAuth2ConsentRequest,
 	clientID string,
 	subjectID string,
@@ -169,8 +170,9 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("subject_id is required for user token claims")
 	}
 
-	// Process device session
-	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID)
+	// Process device session with User-Agent for proper device labelling
+	userAgent := req.UserAgent()
+	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID, userAgent)
 	if deviceErr != nil {
 		if deviceObj == nil {
 			log.WithError(deviceErr).Error("device session processing failed")
@@ -277,7 +279,42 @@ func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, requeste
 	return isBrowser && !isInternalSystemScoped(requestedScope) && !isClientIDApiKey(clientID)
 }
 
-func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string) (*devicev1.DeviceObject, error) {
+// inferDeviceName returns a human-readable device name based on the User-Agent string.
+// This ensures non-browser clients (mobile apps, bots, CLI tools) get meaningful device labels.
+func inferDeviceName(userAgent string) string {
+	if userAgent == "" {
+		return "Unknown Client"
+	}
+
+	ua := strings.ToLower(userAgent)
+
+	switch {
+	case strings.Contains(ua, "dart") || strings.Contains(ua, "flutter"):
+		return "Mobile App (Flutter)"
+	case strings.Contains(ua, "okhttp") || strings.Contains(ua, "android"):
+		return "Mobile App (Android)"
+	case strings.Contains(ua, "cfnetwork") || strings.Contains(ua, "darwin") || strings.Contains(ua, "ios"):
+		return "Mobile App (iOS)"
+	case strings.Contains(ua, "python") || strings.Contains(ua, "requests"):
+		return "API Client (Python)"
+	case strings.Contains(ua, "go-http-client") || strings.Contains(ua, "golang"):
+		return "API Client (Go)"
+	case strings.Contains(ua, "node") || strings.Contains(ua, "axios"):
+		return "API Client (Node)"
+	case strings.Contains(ua, "curl"):
+		return "API Client (cURL)"
+	case strings.Contains(ua, "postman"):
+		return "API Client (Postman)"
+	case strings.Contains(ua, "bot") || strings.Contains(ua, "crawler") || strings.Contains(ua, "spider"):
+		return "Bot"
+	case strings.Contains(ua, "mozilla") || strings.Contains(ua, "chrome") || strings.Contains(ua, "safari") || strings.Contains(ua, "firefox"):
+		return "Web Browser"
+	default:
+		return "API Client"
+	}
+}
+
+func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string, userAgent string) (*devicev1.DeviceObject, error) {
 
 	deviceID := utils.DeviceIDFromContext(ctx)
 	deviceSessionID := utils.SessionIDFromContext(ctx)
@@ -293,7 +330,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 		}
 	}
 
-	if deviceSessionID != "" {
+	if deviceObj == nil && deviceSessionID != "" {
 
 		session, err := deviceCli.GetBySessionId(ctx, connect.NewRequest(&devicev1.GetBySessionIdRequest{Id: deviceSessionID}))
 		if err == nil {
@@ -302,11 +339,15 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string)
 
 	}
 
-	props, _ := structpb.NewStruct(map[string]any{"source": "consent"})
+	deviceName := inferDeviceName(userAgent)
+	props, _ := structpb.NewStruct(map[string]any{
+		"source":     "consent",
+		"user_agent": userAgent,
+	})
 	if deviceObj == nil {
 
 		resp, err0 := deviceCli.Create(ctx, connect.NewRequest(&devicev1.CreateRequest{
-			Name:       "Web Browser",
+			Name:       deviceName,
 			Properties: props,
 		}))
 		if err0 != nil {
