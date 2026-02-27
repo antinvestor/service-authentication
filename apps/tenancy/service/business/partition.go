@@ -7,7 +7,6 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -201,32 +200,9 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	tenancyPath := fmt.Sprintf("%s/%s", tenant.GetID(), partition.GetID())
-
-	// Emit service inheritance bridge tuples so that any service account
-	// with tenancy_access:path#service automatically gets the service role
-	// in all per-service namespaces for this partition path.
-	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, authz.AllServiceNamespaces)
-	if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, events.TuplesToPayload(bridgeTuples)); emitErr != nil {
-		util.Log(ctx).WithError(emitErr).Warn("failed to emit service inheritance tuples")
-	}
-
-	// Emit partition inheritance tuple if this partition has a parent.
-	// This creates a Keto subject set so members of the parent partition
-	// automatically get access to the child partition.
-	if request.GetParentId() != "" {
-		parentPartition, parentErr := pb.partitionRepo.GetByID(ctx, request.GetParentId())
-		if parentErr != nil {
-			util.Log(ctx).WithError(parentErr).Warn("failed to look up parent partition for inheritance tuple")
-		} else {
-			parentPath := fmt.Sprintf("%s/%s", parentPartition.TenantID, parentPartition.GetID())
-			tuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
-			payload := events.TuplesToPayload([]security.RelationTuple{tuple})
-
-			if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
-				util.Log(ctx).WithError(emitErr).Warn("failed to emit partition inheritance tuple")
-			}
-		}
+	// Emit authz partition sync to write inheritance tuples for partitions with parents.
+	if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); emitErr != nil {
+		util.Log(ctx).WithError(emitErr).Warn("failed to emit authz partition sync event")
 	}
 
 	return partition.ToAPI(), nil
@@ -343,6 +319,10 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, partitionRepo reposito
 			err = eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
 			if err != nil {
 				return err
+			}
+
+			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); emitErr != nil {
+				util.Log(ctx).WithError(emitErr).Warn("failed to emit authz partition sync event")
 			}
 		}
 	}
