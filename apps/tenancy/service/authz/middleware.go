@@ -21,79 +21,52 @@ type Middleware interface {
 }
 
 type middleware struct {
-	authorizer security.Authorizer
+	checker *authorizer.TenancyAccessChecker
 }
 
 // NewMiddleware creates a new tenancy authorization middleware.
+// All permission checks are resolved entirely through Keto subject set composition.
+// Service bots get access via: tenancy_access:path#service → ns:path#service → ns:path#permission.
+// Tuples must be provisioned at partition creation and consent time — there is no
+// self-healing fallback. Missing tuples indicate misconfiguration or unauthorised access.
 func NewMiddleware(auth security.Authorizer) Middleware {
-	return &middleware{authorizer: auth}
+	return &middleware{
+		checker: authorizer.NewTenancyAccessChecker(auth, NamespaceTenancy),
+	}
 }
 
 func (m *middleware) CanManageTenant(ctx context.Context) error {
-	return m.check(ctx, PermissionManageTenant)
+	return m.checker.Check(ctx, PermissionManageTenant)
 }
 
 func (m *middleware) CanViewTenant(ctx context.Context) error {
-	return m.check(ctx, PermissionViewTenant)
+	return m.checker.Check(ctx, PermissionViewTenant)
 }
 
 func (m *middleware) CanManagePartition(ctx context.Context) error {
-	return m.check(ctx, PermissionManagePartition)
+	return m.checker.Check(ctx, PermissionManagePartition)
 }
 
 func (m *middleware) CanViewPartition(ctx context.Context) error {
-	return m.check(ctx, PermissionViewPartition)
+	return m.checker.Check(ctx, PermissionViewPartition)
 }
 
 func (m *middleware) CanManageAccess(ctx context.Context) error {
-	return m.check(ctx, PermissionManageAccess)
+	return m.checker.Check(ctx, PermissionManageAccess)
 }
 
 func (m *middleware) CanManageRoles(ctx context.Context) error {
-	return m.check(ctx, PermissionManageRoles)
+	return m.checker.Check(ctx, PermissionManageRoles)
 }
 
 func (m *middleware) CanManagePages(ctx context.Context) error {
-	return m.check(ctx, PermissionManagePages)
+	return m.checker.Check(ctx, PermissionManagePages)
 }
 
 func (m *middleware) CanViewPages(ctx context.Context) error {
-	return m.check(ctx, PermissionViewPages)
+	return m.checker.Check(ctx, PermissionViewPages)
 }
 
 func (m *middleware) CanGrantPermission(ctx context.Context) error {
-	return m.check(ctx, PermissionGrantPermission)
-}
-
-func (m *middleware) check(ctx context.Context, permission string) error {
-	claims := security.ClaimsFromContext(ctx)
-	if claims == nil {
-		return authorizer.ErrInvalidSubject
-	}
-
-	subjectID, err := claims.GetSubject()
-	if err != nil || subjectID == "" {
-		return authorizer.ErrInvalidSubject
-	}
-
-	tenantID := claims.GetTenantID()
-	if tenantID == "" {
-		return authorizer.ErrInvalidObject
-	}
-
-	req := security.CheckRequest{
-		Object:     security.ObjectRef{Namespace: NamespaceTenant, ID: tenantID},
-		Permission: permission,
-		Subject:    security.SubjectRef{Namespace: NamespaceProfile, ID: subjectID},
-	}
-
-	result, err := m.authorizer.Check(ctx, req)
-	if err != nil {
-		return err
-	}
-	if !result.Allowed {
-		return authorizer.NewPermissionDeniedError(req.Object, permission, req.Subject, result.Reason)
-	}
-
-	return nil
+	return m.checker.Check(ctx, PermissionGrantPermission)
 }

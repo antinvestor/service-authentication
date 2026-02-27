@@ -5,6 +5,7 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
+	"github.com/pitabwire/frame/security/authorizer"
 	"github.com/pitabwire/util"
 )
 
@@ -13,7 +14,7 @@ func (prtSrv *PartitionServer) CreatePage(
 	req *connect.Request[partitionv1.CreatePageRequest],
 ) (*connect.Response[partitionv1.CreatePageResponse], error) {
 	if err := prtSrv.authz.CanManagePages(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	page, err := prtSrv.PageBusiness.CreatePage(ctx, req.Msg)
@@ -29,7 +30,7 @@ func (prtSrv *PartitionServer) GetPage(
 	req *connect.Request[partitionv1.GetPageRequest],
 ) (*connect.Response[partitionv1.GetPageResponse], error) {
 	if err := prtSrv.authz.CanViewPages(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	page, err := prtSrv.PageBusiness.GetPage(ctx, req.Msg)
@@ -45,7 +46,7 @@ func (prtSrv *PartitionServer) RemovePage(
 	req *connect.Request[partitionv1.RemovePageRequest],
 ) (*connect.Response[partitionv1.RemovePageResponse], error) {
 	if err := prtSrv.authz.CanManagePages(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	err := prtSrv.PageBusiness.RemovePage(ctx, req.Msg)

@@ -6,10 +6,12 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
+	fevents "github.com/pitabwire/frame/events"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 )
@@ -30,7 +32,7 @@ type AccessBusiness interface {
 
 func NewAccessBusiness(
 	service *frame.Service,
-	auth security.Authorizer,
+	eventsMan fevents.Manager,
 	accessRepo repository.AccessRepository,
 	accessRoleRepo repository.AccessRoleRepository,
 	partitionRepo repository.PartitionRepository,
@@ -38,7 +40,7 @@ func NewAccessBusiness(
 ) AccessBusiness {
 	return &accessBusiness{
 		service:           service,
-		authorizer:        auth,
+		eventsMan:         eventsMan,
 		accessRepo:        accessRepo,
 		accessRoleRepo:    accessRoleRepo,
 		partitionRepo:     partitionRepo,
@@ -48,7 +50,7 @@ func NewAccessBusiness(
 
 type accessBusiness struct {
 	service           *frame.Service
-	authorizer        security.Authorizer
+	eventsMan         fevents.Manager
 	accessRepo        repository.AccessRepository
 	accessRoleRepo    repository.AccessRoleRepository
 	partitionRepo     repository.PartitionRepository
@@ -101,9 +103,25 @@ func (ab *accessBusiness) GetAccess(
 func (ab *accessBusiness) RemoveAccess(
 	ctx context.Context,
 	request *partitionv1.RemoveAccessRequest) error {
-	err := ab.accessRepo.Delete(ctx, request.GetId())
+	// Look up the access record before deleting to get tenant/partition info
+	access, err := ab.accessRepo.GetByID(ctx, request.GetId())
 	if err != nil {
 		return err
+	}
+
+	err = ab.accessRepo.Delete(ctx, request.GetId())
+	if err != nil {
+		return err
+	}
+
+	// Emit event to delete the tenancy_access tuple asynchronously
+	if ab.eventsMan != nil {
+		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
+		accessTuple := authz.BuildAccessTuple(tenancyPath, access.ProfileID)
+		payload := events.TuplesToPayload([]security.RelationTuple{accessTuple})
+		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); emitErr != nil {
+			util.Log(ctx).WithError(emitErr).Warn("failed to emit tenancy_access tuple delete event")
+		}
 	}
 
 	return nil
@@ -149,6 +167,16 @@ func (ab *accessBusiness) CreateAccess(
 	err = ab.accessRepo.Create(ctx, access)
 	if err != nil {
 		return nil, err
+	}
+
+	// Emit event to write tenancy_access tuple asynchronously
+	if ab.eventsMan != nil {
+		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
+		accessTuple := authz.BuildAccessTuple(tenancyPath, request.GetProfileId())
+		payload := events.TuplesToPayload([]security.RelationTuple{accessTuple})
+		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
+			util.Log(ctx).WithError(emitErr).Warn("failed to emit tenancy_access tuple write event")
+		}
 	}
 
 	logger.WithField("access", access).Debug(" access created")
@@ -216,12 +244,13 @@ func (ab *accessBusiness) RemoveAccessRole(
 		return err
 	}
 
-	// Delete cross-service Keto tuples
-	if ab.authorizer != nil && len(partitionRoles) > 0 {
+	// Emit event to delete cross-service Keto tuples asynchronously
+	if ab.eventsMan != nil && len(partitionRoles) > 0 {
 		roleName := partitionRoles[0].Name
 		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
-		if deleteErr := ab.authorizer.DeleteTuples(ctx, tuples); deleteErr != nil {
-			util.Log(ctx).WithError(deleteErr).Warn("failed to delete cross-service authorization tuples")
+		payload := events.TuplesToPayload(tuples)
+		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); emitErr != nil {
+			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple delete event")
 		}
 	}
 
@@ -251,12 +280,13 @@ func (ab *accessBusiness) CreateAccessRole(
 		return nil, err
 	}
 
-	// Write cross-service Keto tuples for all service namespaces
-	if ab.authorizer != nil {
+	// Emit event to write cross-service Keto tuples asynchronously
+	if ab.eventsMan != nil {
 		roleName := partitionRoles[0].Name
 		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
-		if writeErr := ab.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
-			return nil, fmt.Errorf("failed to write authorization tuples: %w", writeErr)
+		payload := events.TuplesToPayload(tuples)
+		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
+			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple write event")
 		}
 	}
 

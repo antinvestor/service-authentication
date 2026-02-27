@@ -1,8 +1,9 @@
 package authz
 
 const (
-	NamespaceTenant  = "tenancy_tenant"
-	NamespaceProfile = "profile"
+	NamespaceTenancy       = "service_tenancy"
+	NamespaceTenancyAccess = "tenancy_access"
+	NamespaceProfile       = "default/profile"
 )
 
 // Permission constants for tenancy operations.
@@ -21,7 +22,8 @@ const (
 
 // Role constants.
 const (
-	RoleOwner  = "owner"
-	RoleAdmin  = "admin"
-	RoleMember = "member"
+	RoleOwner   = "owner"
+	RoleAdmin   = "admin"
+	RoleMember  = "member"
+	RoleService = "service"
 )

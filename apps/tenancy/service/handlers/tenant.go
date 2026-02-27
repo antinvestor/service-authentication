@@ -5,6 +5,7 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
+	"github.com/pitabwire/frame/security/authorizer"
 	"github.com/pitabwire/util"
 )
 
@@ -12,7 +13,7 @@ func (prtSrv *PartitionServer) GetTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetTenantRequest]) (*connect.Response[partitionv1.GetTenantResponse], error) {
 	if err := prtSrv.authz.CanViewTenant(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.GetTenant(ctx, req.Msg.GetId())
@@ -28,7 +29,7 @@ func (prtSrv *PartitionServer) ListTenant(
 	req *connect.Request[partitionv1.ListTenantRequest],
 	stream *connect.ServerStream[partitionv1.ListTenantResponse]) error {
 	if err := prtSrv.authz.CanViewTenant(ctx); err != nil {
-		return toConnectError(err)
+		return authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	tenants, err := prtSrv.TenantBusiness.ListTenant(ctx, req.Msg)
@@ -44,7 +45,7 @@ func (prtSrv *PartitionServer) CreateTenant(
 	req *connect.Request[partitionv1.CreateTenantRequest],
 ) (*connect.Response[partitionv1.CreateTenantResponse], error) {
 	if err := prtSrv.authz.CanManageTenant(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.CreateTenant(ctx, req.Msg)
@@ -60,7 +61,7 @@ func (prtSrv *PartitionServer) UpdateTenant(
 	req *connect.Request[partitionv1.UpdateTenantRequest],
 ) (*connect.Response[partitionv1.UpdateTenantResponse], error) {
 	if err := prtSrv.authz.CanManageTenant(ctx); err != nil {
-		return nil, toConnectError(err)
+		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.UpdateTenant(ctx, req.Msg)

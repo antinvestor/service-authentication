@@ -61,7 +61,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Partiti
 
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, nil, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
 
 	return depBuilder
@@ -205,6 +205,8 @@ func (bs *BaseTestSuite) CreateService(
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
+		events.NewTupleWriteEventHandler(svc.SecurityManager().GetAuthorizer(ctx)),
+		events.NewTupleDeleteEventHandler(svc.SecurityManager().GetAuthorizer(ctx)),
 	)}
 
 	serviceOptions = append(serviceOptions, frame.WithHTTPHandler(implementation.NewSecureRouterV1()))
@@ -236,7 +238,7 @@ func (bs *BaseTestSuite) WithAuthClaims(ctx context.Context, tenantID, profileID
 func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service, tenantID, profileID, role string) {
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	err := auth.WriteTuple(ctx, security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: authz.NamespaceTenant, ID: tenantID},
+		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: tenantID},
 		Relation: role,
 		Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
 	})

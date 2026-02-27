@@ -47,6 +47,7 @@ type AuthServer struct {
 	config       *aconfig.AuthenticationConfig
 
 	securityAuth security.Authenticator
+	authorizer   security.Authorizer
 
 	cacheMan cache.Manager
 
@@ -78,7 +79,8 @@ type AuthServer struct {
 }
 
 func NewAuthServer(ctx context.Context,
-	securityAuth security.Authenticator, authConfig *aconfig.AuthenticationConfig,
+	securityAuth security.Authenticator, securityAuthorizer security.Authorizer,
+	authConfig *aconfig.AuthenticationConfig,
 	cacheMan cache.Manager,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
 	apiKeyRepository repository.APIKeyRepository,
@@ -100,6 +102,7 @@ func NewAuthServer(ctx context.Context,
 
 		cacheMan:     cacheMan,
 		securityAuth: securityAuth,
+		authorizer:   securityAuthorizer,
 
 		config:          authConfig,
 		profileCli:      profileCli,

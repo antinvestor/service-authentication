@@ -56,6 +56,8 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithRegisterEvents(
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.PartitionRepo),
+			events.NewTupleWriteEventHandler(sm.GetAuthorizer(ctx)),
+			events.NewTupleDeleteEventHandler(sm.GetAuthorizer(ctx)),
 		),
 	}
 

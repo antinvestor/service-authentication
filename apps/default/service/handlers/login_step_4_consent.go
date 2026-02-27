@@ -13,7 +13,9 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -95,7 +97,10 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 // buildConsentTokenClaims builds token claims based on the client type (internal system, API key, or user).
 func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientID, subjectID string) (map[string]any, error) {
 	if isInternalSystemScoped(consentReq.GetRequestedScope()) {
-		return h.buildInternalSystemTokenClaims(ctx, clientID, subjectID)
+
+		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
+
+		return h.buildInternalSystemTokenClaims(ctx, clientID, subjectID, requestedAudiences)
 	}
 	if isClientIDApiKey(clientID) {
 		return h.buildAPIKeyTokenClaims(ctx, clientID)
@@ -104,7 +109,7 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 }
 
 // buildInternalSystemTokenClaims builds token claims for internal system clients.
-func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientID, subjectID string) (map[string]any, error) {
+func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientID, subjectID string, requesteAudiences []string) (map[string]any, error) {
 	log := util.Log(ctx)
 
 	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
@@ -119,8 +124,33 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 		return nil, fmt.Errorf("partition not found for client: %s", clientID)
 	}
 
+	tenantID := partitionObj.GetTenantId()
+
+	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionObj.GetId())
+
+	// Write the per-bot service access tuple in tenancy_access so Keto can
+	// resolve the subject set chain: botID → tenancy_access:path#service →
+	// ns:path#service → ns:path#permission.
+	// Bridge tuples (ns#service ← tenancy_access#service and ns#perm ← ns#service)
+	// are written at partition creation for AllServiceNamespaces.  Here we only
+	// write them for the specific audiences the bot is granted access to, in case
+	// the partition was created before the bot's audiences were known.
+	tuples := []security.RelationTuple{
+		authz.BuildAccessTuple(tenancyPath, subjectID),
+		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
+	}
+	if len(requesteAudiences) > 0 {
+		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, requesteAudiences)...)
+	}
+	if writeErr := h.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
+		log.WithError(writeErr).
+			WithField("tenant_id", tenantID).
+			WithField("subject_id", subjectID).
+			Warn("failed to write service tuples at consent time")
+	}
+
 	return map[string]any{
-		"tenant_id":    partitionObj.GetTenantId(),
+		"tenant_id":    tenantID,
 		"partition_id": partitionObj.GetId(),
 		"roles":        []string{"system_internal"},
 		"profile_id":   subjectID,
@@ -128,6 +158,7 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 }
 
 // buildAPIKeyTokenClaims builds token claims for API key clients.
+// TODO there should be a way to refine/limit the access this api key has
 func (h *AuthServer) buildAPIKeyTokenClaims(ctx context.Context, clientID string) (map[string]any, error) {
 	log := util.Log(ctx)
 
