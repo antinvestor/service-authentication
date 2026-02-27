@@ -10,8 +10,9 @@ var AllServiceNamespaces = []string{ //nolint:gochecknoglobals // cross-service 
 	"service_ledger",
 	"service_commerce",
 	"service_trustage",
-	"service_notification",
+	"service_notifications",
 	"service_profile",
+	"service_devices",
 }
 
 // RolePermissions maps each role to the permissions it grants.

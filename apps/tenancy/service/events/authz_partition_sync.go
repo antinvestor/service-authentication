@@ -15,12 +15,14 @@ import (
 
 const EventKeyAuthzPartitionSync = "authorization.partition.sync"
 
-// AuthzPartitionSyncEvent writes partition inheritance tuples to Keto after
-// a partition is created or synced. This is separate from the Hydra sync event
-// so that authorization concerns are decoupled from OAuth2 client management.
+// AuthzPartitionSyncEvent writes authorization tuples to Keto after a partition
+// is created or synced. This is separate from the Hydra sync event so that
+// authorization concerns are decoupled from OAuth2 client management.
 //
-// It handles partitions created via migrations that never go through
-// CreatePartition's code path, ensuring they still get inheritance tuples.
+// For every partition it writes bridge tuples for the service_tenancy namespace
+// so that service bots can access the partition service. For partitions with a
+// parent, it also writes an inheritance tuple so members of the parent get
+// automatic access to the child.
 type AuthzPartitionSyncEvent struct {
 	partitionRepo repository.PartitionRepository
 	authorizer    security.Authorizer
@@ -73,11 +75,24 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		return fmt.Errorf("failed to get partition %s: %w", partitionID, err)
 	}
 
+	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
+
+	// Write bridge tuples for service_tenancy namespace so service bots can
+	// access this partition via the partition service. These tuples create the
+	// subject set chain: tenancy_access:path#service → service_tenancy:path#service
+	// → service_tenancy:path#permission.
+	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, []string{authz.NamespaceTenancy})
+	if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
+		return fmt.Errorf("failed to write service_tenancy bridge tuples: %w", writeErr)
+	}
+
+	logger.WithField("tenancy_path", tenancyPath).
+		Info("wrote service_tenancy bridge tuples")
+
 	// Write partition inheritance tuple if this partition has a parent.
 	// This creates a Keto subject set so members of the parent partition
 	// automatically get access to the child partition.
 	if partition.ParentID == "" {
-		logger.Debug("partition has no parent, skipping inheritance tuple")
 		return nil
 	}
 
@@ -86,7 +101,6 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		return fmt.Errorf("failed to get parent partition %s: %w", partition.ParentID, err)
 	}
 
-	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 	parentPath := fmt.Sprintf("%s/%s", parentPartition.TenantID, parentPartition.GetID())
 	tuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
 

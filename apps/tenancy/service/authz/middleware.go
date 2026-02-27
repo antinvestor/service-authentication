@@ -7,7 +7,10 @@ import (
 	"github.com/pitabwire/frame/security/authorizer"
 )
 
-// Middleware defines permission checks for tenancy operations.
+// Middleware defines functional permission checks for tenancy operations.
+// Data access (tenancy_access) is verified by the TenancyAccessInterceptor
+// in the Connect/HTTP middleware chain. This middleware only checks functional
+// permissions in the service_tenancy namespace.
 type Middleware interface {
 	CanManageTenant(ctx context.Context) error
 	CanViewTenant(ctx context.Context) error
@@ -21,17 +24,14 @@ type Middleware interface {
 }
 
 type middleware struct {
-	checker *authorizer.TenancyAccessChecker
+	checker *authorizer.FunctionChecker
 }
 
-// NewMiddleware creates a new tenancy authorization middleware.
-// All permission checks are resolved entirely through Keto subject set composition.
-// Service bots get access via: tenancy_access:path#service → ns:path#service → ns:path#permission.
-// Tuples must be provisioned at partition creation and consent time — there is no
-// self-healing fallback. Missing tuples indicate misconfiguration or unauthorised access.
+// NewMiddleware creates a new functional permission middleware that checks
+// application-specific permissions in the service_tenancy namespace.
 func NewMiddleware(auth security.Authorizer) Middleware {
 	return &middleware{
-		checker: authorizer.NewTenancyAccessChecker(auth, NamespaceTenancy),
+		checker: authorizer.NewFunctionChecker(auth, NamespaceTenancy),
 	}
 }
 

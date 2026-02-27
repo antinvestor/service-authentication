@@ -3,7 +3,7 @@ package authz
 const (
 	NamespaceTenancy       = "service_tenancy"
 	NamespaceTenancyAccess = "tenancy_access"
-	NamespaceProfile       = "default/profile"
+	NamespaceProfile       = "profile/user"
 )
 
 // Permission constants for tenancy operations.

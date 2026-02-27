@@ -88,10 +88,18 @@ func (s *MiddlewareTestSuite) ctxWithClaims(subjectID string) context.Context {
 	return claims.ClaimsToContext(context.Background())
 }
 
+func (s *MiddlewareTestSuite) ctxWithSystemInternalClaims(subjectID string) context.Context {
+	claims := &security.AuthenticationClaims{
+		TenantID:    testTenantID,
+		PartitionID: testPartitionID,
+		Roles:       []string{"system_internal"},
+	}
+	claims.Subject = subjectID
+	return claims.ClaimsToContext(context.Background())
+}
+
+// seedRole writes functional permission tuples in service_tenancy namespace.
 func (s *MiddlewareTestSuite) seedRole(auth security.Authorizer, tenancyPath, profileID, role string) {
-	// Write the role tuple and all materialised permission tuples.
-	// We only write to the tenancy namespace (not all service namespaces)
-	// since these tests only check tenancy permissions.
 	permissions := authz.RolePermissions[role]
 	tuples := make([]security.RelationTuple, 0, 1+len(permissions))
 
@@ -118,7 +126,7 @@ func TestMiddlewareSuite(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Tests
+// FunctionChecker (middleware) tests — only checks service_tenancy permissions
 // ---------------------------------------------------------------------------
 
 func (s *MiddlewareTestSuite) TestOwnerHasAllPermissions() {
@@ -200,31 +208,48 @@ func (s *MiddlewareTestSuite) TestNoTenant() {
 	s.ErrorIs(err, authorizer.ErrInvalidObject)
 }
 
+// ---------------------------------------------------------------------------
+// TenancyAccessChecker tests — data access layer
+// ---------------------------------------------------------------------------
+
+func (s *MiddlewareTestSuite) TestAccessChecker_MemberAllowed() {
+	auth := s.newAuthorizer()
+	checker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
+
+	// Seed member tuple in tenancy_access
+	err := auth.WriteTuple(s.T().Context(), authz.BuildAccessTuple(testTenancyPath, "member-user"))
+	s.Require().NoError(err)
+
+	ctx := s.ctxWithClaims("member-user")
+	s.NoError(checker.CheckAccess(ctx))
+}
+
+func (s *MiddlewareTestSuite) TestAccessChecker_ServiceBotAllowed() {
+	auth := s.newAuthorizer()
+	checker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
+
+	// Seed service tuple in tenancy_access
+	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath, "bot-user"))
+	s.Require().NoError(err)
+
+	ctx := s.ctxWithSystemInternalClaims("bot-user")
+	s.NoError(checker.CheckAccess(ctx))
+}
+
+func (s *MiddlewareTestSuite) TestAccessChecker_NoTupleDenied() {
+	auth := s.newAuthorizer()
+	checker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
+
+	ctx := s.ctxWithClaims("unknown-user")
+	s.Error(checker.CheckAccess(ctx))
+}
+
+// ---------------------------------------------------------------------------
+// Service bot via subject sets — full two-layer check
+// ---------------------------------------------------------------------------
+
 func (s *MiddlewareTestSuite) seedServiceBridgeTuples(auth security.Authorizer, tenancyPath string) {
-	// Write the tenancy-namespace bridge tuples only (test Keto doesn't have
-	// payment, ledger, etc.). This mirrors what BuildServiceInheritanceTuples
-	// does for the tenancy namespace specifically.
-	servicePermissions := authz.RolePermissions[authz.RoleService]
-	ns := authz.NamespaceTenancy
-
-	tuples := make([]security.RelationTuple, 0, 1+len(servicePermissions))
-
-	// Cross-namespace bridge: tenancy#service ← tenancy_access#service
-	tuples = append(tuples, security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
-		Relation: authz.RoleService,
-		Subject:  security.SubjectRef{Namespace: authz.NamespaceTenancyAccess, ID: tenancyPath, Relation: authz.RoleService},
-	})
-
-	// Permission bridges: tenancy#perm ← tenancy#service
-	for _, perm := range servicePermissions {
-		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
-			Relation: perm,
-			Subject:  security.SubjectRef{Namespace: ns, ID: tenancyPath, Relation: authz.RoleService},
-		})
-	}
-
+	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, []string{authz.NamespaceTenancy})
 	err := auth.WriteTuples(s.T().Context(), tuples)
 	s.Require().NoError(err)
 }
@@ -232,18 +257,21 @@ func (s *MiddlewareTestSuite) seedServiceBridgeTuples(auth security.Authorizer, 
 func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
 	auth := s.newAuthorizer()
 	mw := authz.NewMiddleware(auth)
+	accessChecker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
-	// Step 1: Write bridge tuples (normally done at partition creation).
-	// These link tenancy_access#service → tenancy#service → tenancy#permission.
+	// Step 1: Write bridge tuples (normally done at partition sync).
 	s.seedServiceBridgeTuples(auth, testTenancyPath)
 
-	// Step 2: Grant the bot service access in tenancy_access (one tuple per bot).
+	// Step 2: Grant the bot service access in tenancy_access.
 	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath, "service-bot"))
 	s.Require().NoError(err)
 
-	// Step 3: Verify the bot gets all permissions through Keto subject set resolution.
-	botCtx := s.ctxWithClaims("service-bot")
+	botCtx := s.ctxWithSystemInternalClaims("service-bot")
 
+	// Layer 1: Access check passes
+	s.NoError(accessChecker.CheckAccess(botCtx))
+
+	// Layer 2: Functional permissions resolved through subject sets
 	s.NoError(mw.CanManageTenant(botCtx))
 	s.NoError(mw.CanViewTenant(botCtx))
 	s.NoError(mw.CanManagePartition(botCtx))
@@ -259,7 +287,7 @@ func (s *MiddlewareTestSuite) TestDirectPermissionGrant() {
 	auth := s.newAuthorizer()
 	mw := authz.NewMiddleware(auth)
 
-	// User has no role but a direct permission grant
+	// User has a direct permission grant
 	err := auth.WriteTuple(s.T().Context(), security.RelationTuple{
 		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: testTenancyPath},
 		Relation: authz.PermissionManagePages,

@@ -1,32 +1,32 @@
 import { Namespace, Context } from "@ory/keto-namespace-types"
 
-class default_profile implements Namespace {}
+class profile_user implements Namespace {}
 
 class tenancy_access implements Namespace {
   related: {
-    member: (default_profile | tenancy_access)[]
-    service: default_profile[]
+    member: (profile_user | tenancy_access)[]
+    service: profile_user[]
   }
 }
 
 class service_tenancy implements Namespace {
   related: {
-    owner: default_profile[]
-    admin: default_profile[]
-    member: default_profile[]
-    service: (default_profile | tenancy_access)[]
+    owner: profile_user[]
+    admin: profile_user[]
+    member: profile_user[]
+    service: (profile_user | tenancy_access)[]
 
     // Direct permission grants (accept service_tenancy subject sets for service role bridging)
-    manage_tenant: (default_profile | service_tenancy)[]
-    view_tenant: (default_profile | service_tenancy)[]
-    manage_partition: (default_profile | service_tenancy)[]
-    view_partition: (default_profile | service_tenancy)[]
-    manage_access: (default_profile | service_tenancy)[]
-    view_access: (default_profile | service_tenancy)[]
-    manage_roles: (default_profile | service_tenancy)[]
-    manage_pages: (default_profile | service_tenancy)[]
-    view_pages: (default_profile | service_tenancy)[]
-    grant_permission: (default_profile | service_tenancy)[]
+    manage_tenant: (profile_user | service_tenancy)[]
+    view_tenant: (profile_user | service_tenancy)[]
+    manage_partition: (profile_user | service_tenancy)[]
+    view_partition: (profile_user | service_tenancy)[]
+    manage_access: (profile_user | service_tenancy)[]
+    view_access: (profile_user | service_tenancy)[]
+    manage_roles: (profile_user | service_tenancy)[]
+    manage_pages: (profile_user | service_tenancy)[]
+    view_pages: (profile_user | service_tenancy)[]
+    grant_permission: (profile_user | service_tenancy)[]
   }
 
   permits = {

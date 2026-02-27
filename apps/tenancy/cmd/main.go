@@ -16,6 +16,7 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
 	securityhttp "github.com/pitabwire/frame/security/interceptors/httptor"
 	"github.com/pitabwire/util"
@@ -102,8 +103,12 @@ func setupConnectServer(
 ) http.Handler {
 
 	authenticator := sm.GetAuthenticator(ctx)
+	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(sm.GetAuthorizer(ctx), authz.NamespaceTenancyAccess)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, sm.GetAuthenticator(ctx))
+	// Connect: tenancy access interceptor runs after authentication to verify data access.
+	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, sm.GetAuthenticator(ctx), tenancyAccessInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("main -- Could not create default interceptors")
 	}
@@ -111,7 +116,10 @@ func setupConnectServer(
 	_, serverHandler := partitionv1connect.NewPartitionServiceHandler(
 		implementation, connect.WithInterceptors(defaultInterceptorList...))
 
-	publicRestHandler := securityhttp.AuthenticationMiddleware(implementation.NewSecureRouterV1(), authenticator)
+	// HTTP: auth middleware (outer) populates claims → tenancy access (inner) verifies data access → handler.
+	publicRestHandler := securityhttp.AuthenticationMiddleware(
+		securityhttp.TenancyAccessMiddleware(implementation.NewSecureRouterV1(), tenancyAccessChecker),
+		authenticator)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", serverHandler)

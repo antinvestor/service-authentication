@@ -21,7 +21,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.75.0
+	github.com/pitabwire/frame v1.76.1
 	github.com/pitabwire/util v0.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
@@ -161,5 +161,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )
-
-replace github.com/pitabwire/frame => /home/j/code/pitabwire/frame
