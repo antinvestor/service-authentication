@@ -13,11 +13,11 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260219062039-499f582dea7e.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.53.11
-	github.com/antinvestor/apis/go/device v1.53.15
-	github.com/antinvestor/apis/go/notification v1.53.13
-	github.com/antinvestor/apis/go/partition v1.53.13
-	github.com/antinvestor/apis/go/profile v1.53.13
+	github.com/antinvestor/apis/go/common v1.53.17
+	github.com/antinvestor/apis/go/device v1.53.18
+	github.com/antinvestor/apis/go/notification v1.53.18
+	github.com/antinvestor/apis/go/partition v1.53.18
+	github.com/antinvestor/apis/go/profile v1.53.18
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
@@ -157,7 +157,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.269.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260223185530-2f722ef697dc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260223185530-2f722ef697dc // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )
