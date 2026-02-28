@@ -16,77 +16,79 @@ class service_tenancy implements Namespace {
     member: profile_user[]
     service: (profile_user | tenancy_access)[]
 
-    // Direct permission grants (accept service_tenancy subject sets for service role bridging)
-    manage_tenant: (profile_user | service_tenancy)[]
-    view_tenant: (profile_user | service_tenancy)[]
-    manage_partition: (profile_user | service_tenancy)[]
-    view_partition: (profile_user | service_tenancy)[]
-    manage_access: (profile_user | service_tenancy)[]
-    view_access: (profile_user | service_tenancy)[]
-    manage_roles: (profile_user | service_tenancy)[]
-    manage_pages: (profile_user | service_tenancy)[]
-    view_pages: (profile_user | service_tenancy)[]
-    grant_permission: (profile_user | service_tenancy)[]
+    // Direct permission grants (prefixed with granted_ to avoid
+    // name conflict with permits — Keto skips permit evaluation
+    // when a relation with the same name exists)
+    granted_tenant_manage: (profile_user | service_tenancy)[]
+    granted_tenant_view: (profile_user | service_tenancy)[]
+    granted_partition_manage: (profile_user | service_tenancy)[]
+    granted_partition_view: (profile_user | service_tenancy)[]
+    granted_access_manage: (profile_user | service_tenancy)[]
+    granted_access_view: (profile_user | service_tenancy)[]
+    granted_roles_manage: (profile_user | service_tenancy)[]
+    granted_pages_manage: (profile_user | service_tenancy)[]
+    granted_pages_view: (profile_user | service_tenancy)[]
+    granted_permission_grant: (profile_user | service_tenancy)[]
   }
 
   permits = {
-    manage_tenant: (ctx: Context): boolean =>
+    tenant_manage: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
-      this.related.manage_tenant.includes(ctx.subject),
+      this.related.granted_tenant_manage.includes(ctx.subject),
 
-    view_tenant: (ctx: Context): boolean =>
+    tenant_view: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
-      this.permits.manage_tenant(ctx) ||
+      this.permits.tenant_manage(ctx) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.member.includes(ctx.subject) ||
-      this.related.view_tenant.includes(ctx.subject),
+      this.related.granted_tenant_view.includes(ctx.subject),
 
-    manage_partition: (ctx: Context): boolean =>
+    partition_manage: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
-      this.related.manage_partition.includes(ctx.subject),
+      this.related.granted_partition_manage.includes(ctx.subject),
 
-    view_partition: (ctx: Context): boolean =>
+    partition_view: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
-      this.permits.manage_partition(ctx) ||
+      this.permits.partition_manage(ctx) ||
       this.related.member.includes(ctx.subject) ||
-      this.related.view_partition.includes(ctx.subject),
+      this.related.granted_partition_view.includes(ctx.subject),
 
-    manage_access: (ctx: Context): boolean =>
+    access_manage: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
-      this.related.manage_access.includes(ctx.subject),
+      this.related.granted_access_manage.includes(ctx.subject),
 
-    view_access: (ctx: Context): boolean =>
+    access_view: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
-      this.permits.manage_access(ctx) ||
-      this.related.view_access.includes(ctx.subject),
+      this.permits.access_manage(ctx) ||
+      this.related.granted_access_view.includes(ctx.subject),
 
-    manage_roles: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.manage_roles.includes(ctx.subject),
-
-    manage_pages: (ctx: Context): boolean =>
+    roles_manage: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
-      this.related.manage_pages.includes(ctx.subject),
+      this.related.granted_roles_manage.includes(ctx.subject),
 
-    view_pages: (ctx: Context): boolean =>
+    pages_manage: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
-      this.permits.manage_pages(ctx) ||
+      this.related.owner.includes(ctx.subject) ||
+      this.related.admin.includes(ctx.subject) ||
+      this.related.granted_pages_manage.includes(ctx.subject),
+
+    pages_view: (ctx: Context): boolean =>
+      this.related.service.includes(ctx.subject) ||
+      this.permits.pages_manage(ctx) ||
       this.related.member.includes(ctx.subject) ||
-      this.related.view_pages.includes(ctx.subject),
+      this.related.granted_pages_view.includes(ctx.subject),
 
-    grant_permission: (ctx: Context): boolean =>
+    permission_grant: (ctx: Context): boolean =>
       this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
-      this.related.grant_permission.includes(ctx.subject),
+      this.related.granted_permission_grant.includes(ctx.subject),
   }
 }
