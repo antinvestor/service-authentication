@@ -3,21 +3,40 @@ package authz
 const (
 	NamespaceTenancy       = "service_tenancy"
 	NamespaceTenancyAccess = "tenancy_access"
-	NamespaceProfile       = "profile/user"
+	NamespaceProfile       = "profile_user"
 )
 
 // Permission constants for tenancy operations.
+// These names match the OPL permits functions and are used with Keto's Check API.
+// Named as noun_verb (e.g. tenant_manage) so related permissions group together.
 const (
-	PermissionManageTenant    = "manage_tenant"
-	PermissionViewTenant      = "view_tenant"
-	PermissionManagePartition = "manage_partition"
-	PermissionViewPartition   = "view_partition"
-	PermissionManageAccess    = "manage_access"
-	PermissionViewAccess      = "view_access"
-	PermissionManageRoles     = "manage_roles"
-	PermissionManagePages     = "manage_pages"
-	PermissionViewPages       = "view_pages"
-	PermissionGrantPermission = "grant_permission"
+	PermissionTenantManage    = "tenant_manage"
+	PermissionTenantView      = "tenant_view"
+	PermissionPartitionManage = "partition_manage"
+	PermissionPartitionView   = "partition_view"
+	PermissionAccessManage    = "access_manage"
+	PermissionAccessView      = "access_view"
+	PermissionRolesManage     = "roles_manage"
+	PermissionPagesManage     = "pages_manage"
+	PermissionPagesView       = "pages_view"
+	PermissionPermissionGrant = "permission_grant"
+)
+
+// Granted relation constants for direct permission grants in the OPL.
+// These are prefixed with "granted_" to avoid name conflicts with the OPL
+// permits functions — Keto skips permit evaluation when a relation with
+// the same name exists.
+const (
+	GrantedTenantManage    = "granted_tenant_manage"
+	GrantedTenantView      = "granted_tenant_view"
+	GrantedPartitionManage = "granted_partition_manage"
+	GrantedPartitionView   = "granted_partition_view"
+	GrantedAccessManage    = "granted_access_manage"
+	GrantedAccessView      = "granted_access_view"
+	GrantedRolesManage     = "granted_roles_manage"
+	GrantedPagesManage     = "granted_pages_manage"
+	GrantedPagesView       = "granted_pages_view"
+	GrantedPermissionGrant = "granted_permission_grant"
 )
 
 // Role constants.

@@ -12,15 +12,15 @@ import (
 // in the Connect/HTTP middleware chain. This middleware only checks functional
 // permissions in the service_tenancy namespace.
 type Middleware interface {
-	CanManageTenant(ctx context.Context) error
-	CanViewTenant(ctx context.Context) error
-	CanManagePartition(ctx context.Context) error
-	CanViewPartition(ctx context.Context) error
-	CanManageAccess(ctx context.Context) error
-	CanManageRoles(ctx context.Context) error
-	CanManagePages(ctx context.Context) error
-	CanViewPages(ctx context.Context) error
-	CanGrantPermission(ctx context.Context) error
+	CanTenantManage(ctx context.Context) error
+	CanTenantView(ctx context.Context) error
+	CanPartitionManage(ctx context.Context) error
+	CanPartitionView(ctx context.Context) error
+	CanAccessManage(ctx context.Context) error
+	CanRolesManage(ctx context.Context) error
+	CanPagesManage(ctx context.Context) error
+	CanPagesView(ctx context.Context) error
+	CanPermissionGrant(ctx context.Context) error
 }
 
 type middleware struct {
@@ -35,38 +35,38 @@ func NewMiddleware(auth security.Authorizer) Middleware {
 	}
 }
 
-func (m *middleware) CanManageTenant(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionManageTenant)
+func (m *middleware) CanTenantManage(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionTenantManage)
 }
 
-func (m *middleware) CanViewTenant(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionViewTenant)
+func (m *middleware) CanTenantView(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionTenantView)
 }
 
-func (m *middleware) CanManagePartition(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionManagePartition)
+func (m *middleware) CanPartitionManage(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionPartitionManage)
 }
 
-func (m *middleware) CanViewPartition(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionViewPartition)
+func (m *middleware) CanPartitionView(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionPartitionView)
 }
 
-func (m *middleware) CanManageAccess(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionManageAccess)
+func (m *middleware) CanAccessManage(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionAccessManage)
 }
 
-func (m *middleware) CanManageRoles(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionManageRoles)
+func (m *middleware) CanRolesManage(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionRolesManage)
 }
 
-func (m *middleware) CanManagePages(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionManagePages)
+func (m *middleware) CanPagesManage(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionPagesManage)
 }
 
-func (m *middleware) CanViewPages(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionViewPages)
+func (m *middleware) CanPagesView(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionPagesView)
 }
 
-func (m *middleware) CanGrantPermission(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionGrantPermission)
+func (m *middleware) CanPermissionGrant(ctx context.Context) error {
+	return m.checker.Check(ctx, PermissionPermissionGrant)
 }

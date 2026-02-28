@@ -64,7 +64,7 @@ func (prtSrv *PartitionServer) ListPartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListPartitionRequest],
 	stream *connect.ServerStream[partitionv1.ListPartitionResponse]) error {
-	if err := prtSrv.authz.CanViewPartition(ctx); err != nil {
+	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
 		return authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -79,7 +79,7 @@ func (prtSrv *PartitionServer) ListPartition(
 func (prtSrv *PartitionServer) CreatePartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePartitionRequest]) (*connect.Response[partitionv1.CreatePartitionResponse], error) {
-	if err := prtSrv.authz.CanManagePartition(ctx); err != nil {
+	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -94,7 +94,7 @@ func (prtSrv *PartitionServer) CreatePartition(
 func (prtSrv *PartitionServer) GetPartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPartitionRequest]) (*connect.Response[partitionv1.GetPartitionResponse], error) {
-	if err := prtSrv.authz.CanViewPartition(ctx); err != nil {
+	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -109,7 +109,7 @@ func (prtSrv *PartitionServer) GetPartition(
 func (prtSrv *PartitionServer) GetPartitionParents(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPartitionParentsRequest]) (*connect.Response[partitionv1.GetPartitionParentsResponse], error) {
-	if err := prtSrv.authz.CanViewPartition(ctx); err != nil {
+	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -124,7 +124,7 @@ func (prtSrv *PartitionServer) GetPartitionParents(
 func (prtSrv *PartitionServer) UpdatePartition(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdatePartitionRequest]) (*connect.Response[partitionv1.UpdatePartitionResponse], error) {
-	if err := prtSrv.authz.CanManagePartition(ctx); err != nil {
+	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -139,7 +139,7 @@ func (prtSrv *PartitionServer) UpdatePartition(
 func (prtSrv *PartitionServer) CreatePartitionRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePartitionRoleRequest]) (*connect.Response[partitionv1.CreatePartitionRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -154,7 +154,7 @@ func (prtSrv *PartitionServer) CreatePartitionRole(
 func (prtSrv *PartitionServer) ListPartitionRoles(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListPartitionRoleRequest]) (*connect.Response[partitionv1.ListPartitionRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -169,7 +169,7 @@ func (prtSrv *PartitionServer) ListPartitionRoles(
 func (prtSrv *PartitionServer) RemovePartitionRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemovePartitionRoleRequest]) (*connect.Response[partitionv1.RemovePartitionRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)

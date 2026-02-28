@@ -12,7 +12,7 @@ import (
 func (prtSrv *PartitionServer) GetTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetTenantRequest]) (*connect.Response[partitionv1.GetTenantResponse], error) {
-	if err := prtSrv.authz.CanViewTenant(ctx); err != nil {
+	if err := prtSrv.authz.CanTenantView(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -28,7 +28,7 @@ func (prtSrv *PartitionServer) ListTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListTenantRequest],
 	stream *connect.ServerStream[partitionv1.ListTenantResponse]) error {
-	if err := prtSrv.authz.CanViewTenant(ctx); err != nil {
+	if err := prtSrv.authz.CanTenantView(ctx); err != nil {
 		return authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -44,7 +44,7 @@ func (prtSrv *PartitionServer) CreateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateTenantRequest],
 ) (*connect.Response[partitionv1.CreateTenantResponse], error) {
-	if err := prtSrv.authz.CanManageTenant(ctx); err != nil {
+	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -60,7 +60,7 @@ func (prtSrv *PartitionServer) UpdateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateTenantRequest],
 ) (*connect.Response[partitionv1.UpdateTenantResponse], error) {
-	if err := prtSrv.authz.CanManageTenant(ctx); err != nil {
+	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)

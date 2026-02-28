@@ -30,7 +30,7 @@ func (prtSrv *PartitionServer) CreateAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateAccessRequest],
 ) (*connect.Response[partitionv1.CreateAccessResponse], error) {
-	if err := prtSrv.authz.CanManageAccess(ctx); err != nil {
+	if err := prtSrv.authz.CanAccessManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -46,7 +46,7 @@ func (prtSrv *PartitionServer) GetAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetAccessRequest],
 ) (*connect.Response[partitionv1.GetAccessResponse], error) {
-	if err := prtSrv.authz.CanManageAccess(ctx); err != nil {
+	if err := prtSrv.authz.CanAccessManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -62,7 +62,7 @@ func (prtSrv *PartitionServer) RemoveAccess(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveAccessRequest],
 ) (*connect.Response[partitionv1.RemoveAccessResponse], error) {
-	if err := prtSrv.authz.CanManageAccess(ctx); err != nil {
+	if err := prtSrv.authz.CanAccessManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -80,7 +80,7 @@ func (prtSrv *PartitionServer) CreateAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateAccessRoleRequest],
 ) (*connect.Response[partitionv1.CreateAccessRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -96,7 +96,7 @@ func (prtSrv *PartitionServer) ListAccessRoles(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListAccessRoleRequest],
 ) (*connect.Response[partitionv1.ListAccessRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -112,7 +112,7 @@ func (prtSrv *PartitionServer) RemoveAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveAccessRoleRequest],
 ) (*connect.Response[partitionv1.RemoveAccessRoleResponse], error) {
-	if err := prtSrv.authz.CanManageRoles(ctx); err != nil {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)

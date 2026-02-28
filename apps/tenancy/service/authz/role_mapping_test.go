@@ -9,28 +9,16 @@ import (
 
 func TestBuildRoleTuples_TenancyNamespaceOnly(t *testing.T) {
 	role := authz.RoleAdmin
-	tuples := authz.BuildRoleTuples("tenant1", "profile1", role)
+	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role)
 
-	permissions := authz.RolePermissions[role]
-	// 1 role tuple + N permission tuples, all in service_tenancy namespace
-	expectedCount := 1 + len(permissions)
-	assert.Len(t, tuples, expectedCount)
+	// Only 1 role tuple — OPL permits handle permission resolution
+	assert.Len(t, tuples, 1)
 
-	// Verify all tuples are in the service_tenancy namespace
-	for _, tuple := range tuples {
-		assert.Equal(t, authz.NamespaceTenancy, tuple.Object.Namespace)
-		assert.Equal(t, "tenant1", tuple.Object.ID)
-		assert.Equal(t, authz.NamespaceProfile, tuple.Subject.Namespace)
-		assert.Equal(t, "profile1", tuple.Subject.ID)
-	}
-
-	// First tuple is the role assignment
+	assert.Equal(t, authz.NamespaceTenancy, tuples[0].Object.Namespace)
+	assert.Equal(t, "tenant1/partition1", tuples[0].Object.ID)
 	assert.Equal(t, role, tuples[0].Relation)
-
-	// Remaining tuples are the permissions granted by the role
-	for i, perm := range permissions {
-		assert.Equal(t, perm, tuples[i+1].Relation)
-	}
+	assert.Equal(t, authz.NamespaceProfile, tuples[0].Subject.Namespace)
+	assert.Equal(t, "profile1", tuples[0].Subject.ID)
 }
 
 func TestBuildPermissionTuple(t *testing.T) {
@@ -38,7 +26,7 @@ func TestBuildPermissionTuple(t *testing.T) {
 
 	assert.Equal(t, "service_payment", tuple.Object.Namespace)
 	assert.Equal(t, "tenant1", tuple.Object.ID)
-	assert.Equal(t, "send_payment", tuple.Relation)
+	assert.Equal(t, "granted_send_payment", tuple.Relation)
 	assert.Equal(t, authz.NamespaceProfile, tuple.Subject.Namespace)
 	assert.Equal(t, "profile1", tuple.Subject.ID)
 }
@@ -79,26 +67,15 @@ func TestBuildServiceInheritanceTuples(t *testing.T) {
 	namespaces := []string{"service_commerce", "service_payment"}
 	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
 
-	servicePermissions := authz.RolePermissions[authz.RoleService]
-	// Per namespace: 1 cross-namespace bridge + N permission bridges
-	expectedCount := len(namespaces) * (1 + len(servicePermissions))
-	assert.Len(t, tuples, expectedCount)
+	// 1 cross-namespace bridge per namespace — OPL permits handle permission resolution
+	assert.Len(t, tuples, len(namespaces))
 
-	// Group tuples by namespace for verification
-	byNamespace := make(map[string][]string) // namespace -> list of relations
-	for _, tuple := range tuples {
-		assert.Equal(t, tenancyPath, tuple.Object.ID)
-		byNamespace[tuple.Object.Namespace] = append(byNamespace[tuple.Object.Namespace], tuple.Relation)
-	}
-
-	for _, ns := range namespaces {
-		relations := byNamespace[ns]
-		// Must have the cross-namespace bridge (service role)
-		assert.Contains(t, relations, authz.RoleService, "namespace %s missing service bridge", ns)
-
-		// Must have all permission bridges
-		for _, perm := range servicePermissions {
-			assert.Contains(t, relations, perm, "namespace %s missing permission bridge %s", ns, perm)
-		}
+	for i, ns := range namespaces {
+		assert.Equal(t, ns, tuples[i].Object.Namespace)
+		assert.Equal(t, tenancyPath, tuples[i].Object.ID)
+		assert.Equal(t, authz.RoleService, tuples[i].Relation)
+		assert.Equal(t, authz.NamespaceTenancyAccess, tuples[i].Subject.Namespace)
+		assert.Equal(t, tenancyPath, tuples[i].Subject.ID)
+		assert.Equal(t, authz.RoleService, tuples[i].Subject.Relation)
 	}
 }

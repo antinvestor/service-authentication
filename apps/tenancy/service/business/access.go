@@ -247,7 +247,8 @@ func (ab *accessBusiness) RemoveAccessRole(
 	// Emit event to delete cross-service Keto tuples asynchronously
 	if ab.eventsMan != nil && len(partitionRoles) > 0 {
 		roleName := partitionRoles[0].Name
-		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
+		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
+		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
 		payload := events.TuplesToPayload(tuples)
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); emitErr != nil {
 			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple delete event")
@@ -283,7 +284,8 @@ func (ab *accessBusiness) CreateAccessRole(
 	// Emit event to write cross-service Keto tuples asynchronously
 	if ab.eventsMan != nil {
 		roleName := partitionRoles[0].Name
-		tuples := authz.BuildRoleTuples(access.TenantID, access.ProfileID, roleName)
+		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
+		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
 		payload := events.TuplesToPayload(tuples)
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple write event")

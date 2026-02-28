@@ -2,89 +2,85 @@ package authz
 
 import "github.com/pitabwire/frame/security"
 
-// RolePermissions maps each role to the tenancy-specific permissions it grants.
-// This materialises the permission model defined in the OPL namespace config,
-// since the Keto v1alpha2 gRPC API does not evaluate OPL permits.
+// RolePermissions documents the permission model defined in the OPL namespace config.
+// Keto's Check API evaluates OPL permits, so only role tuples need to be written;
+// permission resolution happens automatically through the OPL model.
 //
 // These permissions are scoped to the service_tenancy namespace only.
 // Each downstream service manages its own functional permissions independently.
 var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permission model registry
 	RoleOwner: {
-		PermissionManageTenant,
-		PermissionViewTenant,
-		PermissionManagePartition,
-		PermissionViewPartition,
-		PermissionManageAccess,
-		PermissionViewAccess,
-		PermissionManageRoles,
-		PermissionManagePages,
-		PermissionViewPages,
-		PermissionGrantPermission,
+		PermissionTenantManage,
+		PermissionTenantView,
+		PermissionPartitionManage,
+		PermissionPartitionView,
+		PermissionAccessManage,
+		PermissionAccessView,
+		PermissionRolesManage,
+		PermissionPagesManage,
+		PermissionPagesView,
+		PermissionPermissionGrant,
 	},
 	RoleAdmin: {
-		PermissionViewTenant,
-		PermissionManagePartition,
-		PermissionViewPartition,
-		PermissionManageAccess,
-		PermissionViewAccess,
-		PermissionManageRoles,
-		PermissionManagePages,
-		PermissionViewPages,
-		PermissionGrantPermission,
+		PermissionTenantView,
+		PermissionPartitionManage,
+		PermissionPartitionView,
+		PermissionAccessManage,
+		PermissionAccessView,
+		PermissionRolesManage,
+		PermissionPagesManage,
+		PermissionPagesView,
+		PermissionPermissionGrant,
 	},
 	RoleMember: {
-		PermissionViewTenant,
-		PermissionViewPartition,
-		PermissionViewPages,
+		PermissionTenantView,
+		PermissionPartitionView,
+		PermissionPagesView,
 	},
 	RoleService: {
-		PermissionManageTenant,
-		PermissionViewTenant,
-		PermissionManagePartition,
-		PermissionViewPartition,
-		PermissionManageAccess,
-		PermissionViewAccess,
-		PermissionManageRoles,
-		PermissionManagePages,
-		PermissionViewPages,
-		PermissionGrantPermission,
+		PermissionTenantManage,
+		PermissionTenantView,
+		PermissionPartitionManage,
+		PermissionPartitionView,
+		PermissionAccessManage,
+		PermissionAccessView,
+		PermissionRolesManage,
+		PermissionPagesManage,
+		PermissionPagesView,
+		PermissionPermissionGrant,
 	},
 }
 
-// BuildRoleTuples creates relation tuples in the service_tenancy namespace for
-// a given role assignment. It writes both the role tuple and all the permission
-// tuples that the role grants.
+// BuildRoleTuples creates a role relation tuple in the service_tenancy namespace.
+// Only the role tuple is written; Keto evaluates OPL permits to resolve the
+// individual permissions granted by the role.
 //
-// Only service_tenancy permissions are written here. Each downstream service
-// (commerce, payment, etc.) manages its own functional permissions independently.
-func BuildRoleTuples(tenantID, profileID, role string) []security.RelationTuple {
-	permissions := RolePermissions[role]
-	tuples := make([]security.RelationTuple, 0, 1+len(permissions))
-
-	// Write the role tuple
-	tuples = append(tuples, security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenantID},
-		Relation: role,
-		Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
-	})
-
-	// Write all permission tuples granted by this role
-	for _, perm := range permissions {
-		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenantID},
-			Relation: perm,
+// The tenancyPath should be "tenantID/partitionID" to match the object ID
+// format used by FunctionChecker.Check().
+func BuildRoleTuples(tenancyPath, profileID, role string) []security.RelationTuple {
+	return []security.RelationTuple{
+		{
+			Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenancyPath},
+			Relation: role,
 			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
-		})
+		},
 	}
+}
 
-	return tuples
+// GrantedRelation returns the OPL relation name for a direct permission grant.
+// OPL relations are prefixed with "granted_" to avoid name conflicts with
+// the permits functions (Keto skips permit evaluation when a relation with
+// the same name exists).
+func GrantedRelation(permission string) string {
+	return "granted_" + permission
 }
 
 // BuildPermissionTuple creates a single direct permission grant tuple.
+// The relation is automatically prefixed with "granted_" to match the OPL schema.
 func BuildPermissionTuple(namespace, tenantID, permission, profileID string) security.RelationTuple {
 	return security.RelationTuple{
 		Object:   security.ObjectRef{Namespace: namespace, ID: tenantID},
-		Relation: permission,
+		Relation: GrantedRelation(permission),
 		Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
 	}
 }
@@ -130,16 +126,18 @@ func BuildServiceAccessTuple(tenancyPath, profileID string) security.RelationTup
 // Callers pass only the specific namespaces the service bot needs access to
 // (e.g. the audiences requested during credential registration).
 //
-// For each namespace it writes:
-//  1. Cross-namespace bridge: ns:path#service ← tenancy_access:path#service
-//  2. Permission bridges: ns:path#perm ← ns:path#service (for every permission the service role grants)
+// For each namespace it writes a single cross-namespace bridge:
 //
-// The resolution chain is: botID → tenancy_access:path#service → ns:path#service → ns:path#manage_tenant etc.
+//	ns:path#service ← tenancy_access:path#service
+//
+// Permission resolution from service role to individual permissions is handled
+// by Keto's OPL permits evaluation.
+//
+// The resolution chain is: botID → tenancy_access:path#service → ns:path#service → OPL permits
 // These tuples are written once per partition path (not per bot). Each new service
 // bot only needs a single tenancy_access:path#service tuple to get full access.
 func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []security.RelationTuple {
-	servicePermissions := RolePermissions[RoleService]
-	tuples := make([]security.RelationTuple, 0, len(namespaces)*(1+len(servicePermissions)))
+	tuples := make([]security.RelationTuple, 0, len(namespaces))
 
 	for _, ns := range namespaces {
 		// Cross-namespace bridge: ns#service ← tenancy_access#service
@@ -148,15 +146,6 @@ func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []se
 			Relation: RoleService,
 			Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath, Relation: RoleService},
 		})
-
-		// Permission bridges: ns#perm ← ns#service
-		for _, perm := range servicePermissions {
-			tuples = append(tuples, security.RelationTuple{
-				Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
-				Relation: perm,
-				Subject:  security.SubjectRef{Namespace: ns, ID: tenancyPath, Relation: RoleService},
-			})
-		}
 	}
 	return tuples
 }

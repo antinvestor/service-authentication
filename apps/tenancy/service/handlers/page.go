@@ -13,7 +13,7 @@ func (prtSrv *PartitionServer) CreatePage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreatePageRequest],
 ) (*connect.Response[partitionv1.CreatePageResponse], error) {
-	if err := prtSrv.authz.CanManagePages(ctx); err != nil {
+	if err := prtSrv.authz.CanPagesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -29,7 +29,7 @@ func (prtSrv *PartitionServer) GetPage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPageRequest],
 ) (*connect.Response[partitionv1.GetPageResponse], error) {
-	if err := prtSrv.authz.CanViewPages(ctx); err != nil {
+	if err := prtSrv.authz.CanPagesView(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -45,7 +45,7 @@ func (prtSrv *PartitionServer) RemovePage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemovePageRequest],
 ) (*connect.Response[partitionv1.RemovePageResponse], error) {
-	if err := prtSrv.authz.CanManagePages(ctx); err != nil {
+	if err := prtSrv.authz.CanPagesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)

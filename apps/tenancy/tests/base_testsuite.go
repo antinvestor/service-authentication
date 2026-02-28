@@ -246,28 +246,13 @@ func (bs *BaseTestSuite) SeedTenantAccess(ctx context.Context, svc *frame.Servic
 	bs.Require().NoError(err, "failed to seed tenant access")
 }
 
-// SeedTenantRole writes functional permission tuples in the service_tenancy
-// namespace for the given role. The tenancyPath should be "tenantID/partitionID".
+// SeedTenantRole writes a role tuple in the service_tenancy namespace.
+// Only the role tuple is needed — Keto evaluates OPL permits for permission resolution.
 func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service, tenantID, partitionID, profileID, role string) {
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
 
-	permissions := authz.RolePermissions[role]
-	tuples := make([]security.RelationTuple, 0, 1+len(permissions))
-
-	tuples = append(tuples, security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: tenancyPath},
-		Relation: role,
-		Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
-	})
-	for _, perm := range permissions {
-		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: tenancyPath},
-			Relation: perm,
-			Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
-		})
-	}
-
+	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role)
 	err := auth.WriteTuples(ctx, tuples)
 	bs.Require().NoError(err, "failed to seed tenant role")
 }

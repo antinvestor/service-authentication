@@ -17,12 +17,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	testTenantID    = "tenant1"
-	testPartitionID = "partition1"
-)
-
-var testTenancyPath = fmt.Sprintf("%s/%s", testTenantID, testPartitionID)
+func testTenancyPath() string {
+	return fmt.Sprintf("%s/%s", "tenant1", "partition1")
+}
 
 // ---------------------------------------------------------------------------
 // Test suite with real Keto
@@ -35,15 +32,10 @@ type MiddlewareTestSuite struct {
 }
 
 func initMiddlewareResources(_ context.Context) []definition.TestResource {
-	pg := testpostgres.NewWithOpts("authz_middleware_test",
-		definition.WithUserName("ant"),
-		definition.WithCredential("s3cr3t"),
-		definition.WithEnableLogging(false),
-		definition.WithUseHostMode(false),
-	)
+	pg := testpostgres.New()
 	keto := testketo.NewWithOpts(
-		definition.WithDependancies(pg),
 		definition.WithEnableLogging(false),
+		definition.WithDependancies(pg),
 	)
 	return []definition.TestResource{pg, keto}
 }
@@ -81,8 +73,8 @@ func (s *MiddlewareTestSuite) newAuthorizer() security.Authorizer {
 
 func (s *MiddlewareTestSuite) ctxWithClaims(subjectID string) context.Context {
 	claims := &security.AuthenticationClaims{
-		TenantID:    testTenantID,
-		PartitionID: testPartitionID,
+		TenantID:    "tenant1",
+		PartitionID: "partition1",
 	}
 	claims.Subject = subjectID
 	return claims.ClaimsToContext(context.Background())
@@ -90,33 +82,18 @@ func (s *MiddlewareTestSuite) ctxWithClaims(subjectID string) context.Context {
 
 func (s *MiddlewareTestSuite) ctxWithSystemInternalClaims(subjectID string) context.Context {
 	claims := &security.AuthenticationClaims{
-		TenantID:    testTenantID,
-		PartitionID: testPartitionID,
+		TenantID:    "tenant1",
+		PartitionID: "partition1",
 		Roles:       []string{"system_internal"},
 	}
 	claims.Subject = subjectID
 	return claims.ClaimsToContext(context.Background())
 }
 
-// seedRole writes functional permission tuples in service_tenancy namespace.
+// seedRole writes a role tuple in service_tenancy namespace.
+// Only the role tuple is needed — Keto evaluates OPL permits for permission resolution.
 func (s *MiddlewareTestSuite) seedRole(auth security.Authorizer, tenancyPath, profileID, role string) {
-	permissions := authz.RolePermissions[role]
-	tuples := make([]security.RelationTuple, 0, 1+len(permissions))
-
-	tuples = append(tuples, security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: tenancyPath},
-		Relation: role,
-		Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
-	})
-
-	for _, perm := range permissions {
-		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: tenancyPath},
-			Relation: perm,
-			Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID},
-		})
-	}
-
+	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role)
 	err := auth.WriteTuples(s.T().Context(), tuples)
 	s.Require().NoError(err)
 }
@@ -131,69 +108,69 @@ func TestMiddlewareSuite(t *testing.T) {
 
 func (s *MiddlewareTestSuite) TestOwnerHasAllPermissions() {
 	auth := s.newAuthorizer()
-	s.seedRole(auth, testTenancyPath, "user1", authz.RoleOwner)
+	s.seedRole(auth, testTenancyPath(), "user1", authz.RoleOwner)
 
 	mw := authz.NewMiddleware(auth)
 	ctx := s.ctxWithClaims("user1")
 
-	s.NoError(mw.CanManageTenant(ctx))
-	s.NoError(mw.CanViewTenant(ctx))
-	s.NoError(mw.CanManagePartition(ctx))
-	s.NoError(mw.CanViewPartition(ctx))
-	s.NoError(mw.CanManageAccess(ctx))
-	s.NoError(mw.CanManageRoles(ctx))
-	s.NoError(mw.CanManagePages(ctx))
-	s.NoError(mw.CanViewPages(ctx))
-	s.NoError(mw.CanGrantPermission(ctx))
+	s.NoError(mw.CanTenantManage(ctx))
+	s.NoError(mw.CanTenantView(ctx))
+	s.NoError(mw.CanPartitionManage(ctx))
+	s.NoError(mw.CanPartitionView(ctx))
+	s.NoError(mw.CanAccessManage(ctx))
+	s.NoError(mw.CanRolesManage(ctx))
+	s.NoError(mw.CanPagesManage(ctx))
+	s.NoError(mw.CanPagesView(ctx))
+	s.NoError(mw.CanPermissionGrant(ctx))
 }
 
 func (s *MiddlewareTestSuite) TestAdminPermissions() {
 	auth := s.newAuthorizer()
-	s.seedRole(auth, testTenancyPath, "user2", authz.RoleAdmin)
+	s.seedRole(auth, testTenancyPath(), "user2", authz.RoleAdmin)
 
 	mw := authz.NewMiddleware(auth)
 	ctx := s.ctxWithClaims("user2")
 
 	// Admin cannot manage tenant
-	s.Error(mw.CanManageTenant(ctx))
+	s.Error(mw.CanTenantManage(ctx))
 
 	// Admin can do everything else
-	s.NoError(mw.CanViewTenant(ctx))
-	s.NoError(mw.CanManagePartition(ctx))
-	s.NoError(mw.CanViewPartition(ctx))
-	s.NoError(mw.CanManageAccess(ctx))
-	s.NoError(mw.CanManageRoles(ctx))
-	s.NoError(mw.CanManagePages(ctx))
-	s.NoError(mw.CanViewPages(ctx))
-	s.NoError(mw.CanGrantPermission(ctx))
+	s.NoError(mw.CanTenantView(ctx))
+	s.NoError(mw.CanPartitionManage(ctx))
+	s.NoError(mw.CanPartitionView(ctx))
+	s.NoError(mw.CanAccessManage(ctx))
+	s.NoError(mw.CanRolesManage(ctx))
+	s.NoError(mw.CanPagesManage(ctx))
+	s.NoError(mw.CanPagesView(ctx))
+	s.NoError(mw.CanPermissionGrant(ctx))
 }
 
 func (s *MiddlewareTestSuite) TestMemberPermissions() {
 	auth := s.newAuthorizer()
-	s.seedRole(auth, testTenancyPath, "user3", authz.RoleMember)
+	s.seedRole(auth, testTenancyPath(), "user3", authz.RoleMember)
 
 	mw := authz.NewMiddleware(auth)
 	ctx := s.ctxWithClaims("user3")
 
 	// Member can only view
-	s.NoError(mw.CanViewTenant(ctx))
-	s.NoError(mw.CanViewPartition(ctx))
-	s.NoError(mw.CanViewPages(ctx))
+	s.NoError(mw.CanTenantView(ctx))
+	s.NoError(mw.CanPartitionView(ctx))
+	s.NoError(mw.CanPagesView(ctx))
 
 	// Member cannot manage
-	s.Error(mw.CanManageTenant(ctx))
-	s.Error(mw.CanManagePartition(ctx))
-	s.Error(mw.CanManageAccess(ctx))
-	s.Error(mw.CanManageRoles(ctx))
-	s.Error(mw.CanManagePages(ctx))
-	s.Error(mw.CanGrantPermission(ctx))
+	s.Error(mw.CanTenantManage(ctx))
+	s.Error(mw.CanPartitionManage(ctx))
+	s.Error(mw.CanAccessManage(ctx))
+	s.Error(mw.CanRolesManage(ctx))
+	s.Error(mw.CanPagesManage(ctx))
+	s.Error(mw.CanPermissionGrant(ctx))
 }
 
 func (s *MiddlewareTestSuite) TestNoClaims() {
 	auth := s.newAuthorizer()
 	mw := authz.NewMiddleware(auth)
 
-	err := mw.CanViewTenant(context.Background())
+	err := mw.CanTenantView(context.Background())
 	s.ErrorIs(err, authorizer.ErrInvalidSubject)
 }
 
@@ -204,7 +181,7 @@ func (s *MiddlewareTestSuite) TestNoTenant() {
 	claims := &security.AuthenticationClaims{}
 	claims.Subject = "user1"
 	ctx := claims.ClaimsToContext(context.Background())
-	err := mw.CanViewTenant(ctx)
+	err := mw.CanTenantView(ctx)
 	s.ErrorIs(err, authorizer.ErrInvalidObject)
 }
 
@@ -217,7 +194,7 @@ func (s *MiddlewareTestSuite) TestAccessChecker_MemberAllowed() {
 	checker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
 	// Seed member tuple in tenancy_access
-	err := auth.WriteTuple(s.T().Context(), authz.BuildAccessTuple(testTenancyPath, "member-user"))
+	err := auth.WriteTuple(s.T().Context(), authz.BuildAccessTuple(testTenancyPath(), "member-user"))
 	s.Require().NoError(err)
 
 	ctx := s.ctxWithClaims("member-user")
@@ -229,7 +206,7 @@ func (s *MiddlewareTestSuite) TestAccessChecker_ServiceBotAllowed() {
 	checker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
 	// Seed service tuple in tenancy_access
-	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath, "bot-user"))
+	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath(), "bot-user"))
 	s.Require().NoError(err)
 
 	ctx := s.ctxWithSystemInternalClaims("bot-user")
@@ -260,10 +237,10 @@ func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
 	accessChecker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
 	// Step 1: Write bridge tuples (normally done at partition sync).
-	s.seedServiceBridgeTuples(auth, testTenancyPath)
+	s.seedServiceBridgeTuples(auth, testTenancyPath())
 
 	// Step 2: Grant the bot service access in tenancy_access.
-	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath, "service-bot"))
+	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath(), "service-bot"))
 	s.Require().NoError(err)
 
 	botCtx := s.ctxWithSystemInternalClaims("service-bot")
@@ -272,35 +249,35 @@ func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
 	s.NoError(accessChecker.CheckAccess(botCtx))
 
 	// Layer 2: Functional permissions resolved through subject sets
-	s.NoError(mw.CanManageTenant(botCtx))
-	s.NoError(mw.CanViewTenant(botCtx))
-	s.NoError(mw.CanManagePartition(botCtx))
-	s.NoError(mw.CanViewPartition(botCtx))
-	s.NoError(mw.CanManageAccess(botCtx))
-	s.NoError(mw.CanManageRoles(botCtx))
-	s.NoError(mw.CanManagePages(botCtx))
-	s.NoError(mw.CanViewPages(botCtx))
-	s.NoError(mw.CanGrantPermission(botCtx))
+	s.NoError(mw.CanTenantManage(botCtx))
+	s.NoError(mw.CanTenantView(botCtx))
+	s.NoError(mw.CanPartitionManage(botCtx))
+	s.NoError(mw.CanPartitionView(botCtx))
+	s.NoError(mw.CanAccessManage(botCtx))
+	s.NoError(mw.CanRolesManage(botCtx))
+	s.NoError(mw.CanPagesManage(botCtx))
+	s.NoError(mw.CanPagesView(botCtx))
+	s.NoError(mw.CanPermissionGrant(botCtx))
 }
 
 func (s *MiddlewareTestSuite) TestDirectPermissionGrant() {
 	auth := s.newAuthorizer()
 	mw := authz.NewMiddleware(auth)
 
-	// User has a direct permission grant
+	// User has a direct permission grant (uses granted_ prefix relation)
 	err := auth.WriteTuple(s.T().Context(), security.RelationTuple{
-		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: testTenancyPath},
-		Relation: authz.PermissionManagePages,
+		Object:   security.ObjectRef{Namespace: authz.NamespaceTenancy, ID: testTenancyPath()},
+		Relation: authz.GrantedPagesManage,
 		Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: "user4"},
 	})
 	s.Require().NoError(err)
 
 	ctx := s.ctxWithClaims("user4")
 
-	// Direct grant works
-	s.NoError(mw.CanManagePages(ctx))
+	// Direct grant works (OPL permit checks granted_pages_manage relation)
+	s.NoError(mw.CanPagesManage(ctx))
 
 	// Other permissions still denied
-	s.Error(mw.CanManageTenant(ctx))
-	s.Error(mw.CanManageAccess(ctx))
+	s.Error(mw.CanTenantManage(ctx))
+	s.Error(mw.CanAccessManage(ctx))
 }
