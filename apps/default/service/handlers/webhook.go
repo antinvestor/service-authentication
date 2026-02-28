@@ -487,8 +487,13 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	if grantedScopes == nil {
 		log.Warn("granted_scopes not found - treating as regular user token refresh")
 	} else if isInternalSystemScoped(grantedScopes) {
+		cfg := h.Config()
 		log.Debug("enriched token with system_internal roles")
-		return writeTokenHookResponse(rw, map[string]any{"roles": []string{"system_internal"}})
+		return writeTokenHookResponse(rw, map[string]any{
+			"tenant_id":    cfg.DefaultTenantID,
+			"partition_id": cfg.DefaultPartitionID,
+			"roles":        []string{"system_internal"},
+		})
 	}
 
 	// Handle regular user tokens
