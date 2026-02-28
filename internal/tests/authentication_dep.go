@@ -108,7 +108,7 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkCyJroO9cDGleFnuaAZ",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_devices,service_notifications,service_tenancy,service_profile",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_tenancy",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_tenancy,authentication_tests",
 			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
 		},
 		WaitingFor: wait.ForLog("Initiating server operations"),
