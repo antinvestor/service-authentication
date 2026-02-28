@@ -2,6 +2,7 @@ package authz
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
@@ -24,6 +25,7 @@ type Middleware interface {
 }
 
 type middleware struct {
+	auth    security.Authorizer
 	checker *authorizer.FunctionChecker
 }
 
@@ -31,42 +33,87 @@ type middleware struct {
 // application-specific permissions in the service_tenancy namespace.
 func NewMiddleware(auth security.Authorizer) Middleware {
 	return &middleware{
+		auth:    auth,
 		checker: authorizer.NewFunctionChecker(auth, NamespaceTenancy),
 	}
 }
 
+// check verifies the given permission. For system_internal callers whose tokens
+// lack tenant/partition context, it queries the authorizer directly using the
+// caller's subject ID — the authorizer decides (returning allowed in permissive
+// mode, or checking Keto tuples when configured).
+func (m *middleware) check(ctx context.Context, permission string) error {
+	claims := security.ClaimsFromContext(ctx)
+	if claims == nil {
+		return authorizer.ErrInvalidSubject
+	}
+
+	subjectID, err := claims.GetSubject()
+	if err != nil || subjectID == "" {
+		return authorizer.ErrInvalidSubject
+	}
+
+	tenantID := claims.GetTenantID()
+	partitionID := claims.GetPartitionID()
+
+	// System_internal callers don't carry tenant/partition in their token.
+	// Query the authorizer directly so it can decide (permissive when Keto
+	// is unconfigured, or resolve via Keto subject sets when configured).
+	if claims.IsInternalSystem() && (tenantID == "" || partitionID == "") {
+		result, chkErr := m.auth.Check(ctx, security.CheckRequest{
+			Object:     security.ObjectRef{Namespace: NamespaceTenancy, ID: fmt.Sprintf("%s/%s", tenantID, partitionID)},
+			Permission: permission,
+			Subject:    security.SubjectRef{Namespace: NamespaceProfile, ID: subjectID},
+		})
+		if chkErr != nil {
+			return chkErr
+		}
+		if result.Allowed {
+			return nil
+		}
+		return authorizer.NewPermissionDeniedError(
+			security.ObjectRef{Namespace: NamespaceTenancy, ID: fmt.Sprintf("%s/%s", tenantID, partitionID)},
+			permission,
+			security.SubjectRef{Namespace: NamespaceProfile, ID: subjectID},
+			result.Reason,
+		)
+	}
+
+	return m.checker.Check(ctx, permission)
+}
+
 func (m *middleware) CanTenantManage(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionTenantManage)
+	return m.check(ctx, PermissionTenantManage)
 }
 
 func (m *middleware) CanTenantView(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionTenantView)
+	return m.check(ctx, PermissionTenantView)
 }
 
 func (m *middleware) CanPartitionManage(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionPartitionManage)
+	return m.check(ctx, PermissionPartitionManage)
 }
 
 func (m *middleware) CanPartitionView(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionPartitionView)
+	return m.check(ctx, PermissionPartitionView)
 }
 
 func (m *middleware) CanAccessManage(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionAccessManage)
+	return m.check(ctx, PermissionAccessManage)
 }
 
 func (m *middleware) CanRolesManage(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionRolesManage)
+	return m.check(ctx, PermissionRolesManage)
 }
 
 func (m *middleware) CanPagesManage(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionPagesManage)
+	return m.check(ctx, PermissionPagesManage)
 }
 
 func (m *middleware) CanPagesView(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionPagesView)
+	return m.check(ctx, PermissionPagesView)
 }
 
 func (m *middleware) CanPermissionGrant(ctx context.Context) error {
-	return m.checker.Check(ctx, PermissionPermissionGrant)
+	return m.check(ctx, PermissionPermissionGrant)
 }
