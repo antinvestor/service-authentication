@@ -2,22 +2,12 @@ package authz
 
 import "github.com/pitabwire/frame/security"
 
-// AllServiceNamespaces lists all tenant-scoped namespaces across services.
-// When a role is assigned in tenancy, tuples are written to each of these namespaces.
-var AllServiceNamespaces = []string{ //nolint:gochecknoglobals // cross-service namespace registry
-	NamespaceTenancy,
-	"service_payment",
-	"service_ledger",
-	"service_commerce",
-	"service_trustage",
-	"service_notifications",
-	"service_profile",
-	"service_devices",
-}
-
-// RolePermissions maps each role to the permissions it grants.
+// RolePermissions maps each role to the tenancy-specific permissions it grants.
 // This materialises the permission model defined in the OPL namespace config,
 // since the Keto v1alpha2 gRPC API does not evaluate OPL permits.
+//
+// These permissions are scoped to the service_tenancy namespace only.
+// Each downstream service manages its own functional permissions independently.
 var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permission model registry
 	RoleOwner: {
 		PermissionManageTenant,
@@ -61,28 +51,30 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 	},
 }
 
-// BuildRoleTuples creates relation tuples for all service namespaces for a given role assignment.
-// It writes both the role tuple and all the permission tuples that the role grants.
+// BuildRoleTuples creates relation tuples in the service_tenancy namespace for
+// a given role assignment. It writes both the role tuple and all the permission
+// tuples that the role grants.
+//
+// Only service_tenancy permissions are written here. Each downstream service
+// (commerce, payment, etc.) manages its own functional permissions independently.
 func BuildRoleTuples(tenantID, profileID, role string) []security.RelationTuple {
 	permissions := RolePermissions[role]
-	tuples := make([]security.RelationTuple, 0, len(AllServiceNamespaces)*(1+len(permissions)))
+	tuples := make([]security.RelationTuple, 0, 1+len(permissions))
 
-	for _, ns := range AllServiceNamespaces {
-		// Write the role tuple
+	// Write the role tuple
+	tuples = append(tuples, security.RelationTuple{
+		Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenantID},
+		Relation: role,
+		Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
+	})
+
+	// Write all permission tuples granted by this role
+	for _, perm := range permissions {
 		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: ns, ID: tenantID},
-			Relation: role,
+			Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenantID},
+			Relation: perm,
 			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
 		})
-
-		// Write all permission tuples granted by this role
-		for _, perm := range permissions {
-			tuples = append(tuples, security.RelationTuple{
-				Object:   security.ObjectRef{Namespace: ns, ID: tenantID},
-				Relation: perm,
-				Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
-			})
-		}
 	}
 
 	return tuples
@@ -135,8 +127,8 @@ func BuildServiceAccessTuple(tenancyPath, profileID string) security.RelationTup
 // accounts automatic access to functional roles via Keto composition.
 //
 // The namespaces parameter controls which service namespaces get bridge tuples.
-// At partition creation, pass AllServiceNamespaces to cover all services.
-// At consent time, pass only the audiences the bot is granted access to.
+// Callers pass only the specific namespaces the service bot needs access to
+// (e.g. the audiences requested during credential registration).
 //
 // For each namespace it writes:
 //  1. Cross-namespace bridge: ns:path#service ← tenancy_access:path#service

@@ -7,29 +7,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildRoleTuples_AllNamespaces(t *testing.T) {
+func TestBuildRoleTuples_TenancyNamespaceOnly(t *testing.T) {
 	role := authz.RoleAdmin
 	tuples := authz.BuildRoleTuples("tenant1", "profile1", role)
 
 	permissions := authz.RolePermissions[role]
-	expectedCount := len(authz.AllServiceNamespaces) * (1 + len(permissions))
+	// 1 role tuple + N permission tuples, all in service_tenancy namespace
+	expectedCount := 1 + len(permissions)
 	assert.Len(t, tuples, expectedCount)
 
-	// Verify each namespace gets a role tuple and all permission tuples
-	namespaceSeen := make(map[string][]string) // namespace -> list of relations
+	// Verify all tuples are in the service_tenancy namespace
 	for _, tuple := range tuples {
+		assert.Equal(t, authz.NamespaceTenancy, tuple.Object.Namespace)
 		assert.Equal(t, "tenant1", tuple.Object.ID)
 		assert.Equal(t, authz.NamespaceProfile, tuple.Subject.Namespace)
 		assert.Equal(t, "profile1", tuple.Subject.ID)
-		namespaceSeen[tuple.Object.Namespace] = append(namespaceSeen[tuple.Object.Namespace], tuple.Relation)
 	}
 
-	for _, ns := range authz.AllServiceNamespaces {
-		relations := namespaceSeen[ns]
-		assert.Contains(t, relations, role, "namespace %s missing role tuple", ns)
-		for _, perm := range permissions {
-			assert.Contains(t, relations, perm, "namespace %s missing permission %s", ns, perm)
-		}
+	// First tuple is the role assignment
+	assert.Equal(t, role, tuples[0].Relation)
+
+	// Remaining tuples are the permissions granted by the role
+	for i, perm := range permissions {
+		assert.Equal(t, perm, tuples[i+1].Relation)
 	}
 }
 
@@ -75,11 +75,13 @@ func TestBuildServiceAccessTuple(t *testing.T) {
 
 func TestBuildServiceInheritanceTuples(t *testing.T) {
 	tenancyPath := "tenant1/partition1"
-	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, authz.AllServiceNamespaces)
+	// Only specific namespaces the bot needs, not all services
+	namespaces := []string{"service_commerce", "service_payment"}
+	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
 
 	servicePermissions := authz.RolePermissions[authz.RoleService]
 	// Per namespace: 1 cross-namespace bridge + N permission bridges
-	expectedCount := len(authz.AllServiceNamespaces) * (1 + len(servicePermissions))
+	expectedCount := len(namespaces) * (1 + len(servicePermissions))
 	assert.Len(t, tuples, expectedCount)
 
 	// Group tuples by namespace for verification
@@ -89,7 +91,7 @@ func TestBuildServiceInheritanceTuples(t *testing.T) {
 		byNamespace[tuple.Object.Namespace] = append(byNamespace[tuple.Object.Namespace], tuple.Relation)
 	}
 
-	for _, ns := range authz.AllServiceNamespaces {
+	for _, ns := range namespaces {
 		relations := byNamespace[ns]
 		// Must have the cross-namespace bridge (service role)
 		assert.Contains(t, relations, authz.RoleService, "namespace %s missing service bridge", ns)

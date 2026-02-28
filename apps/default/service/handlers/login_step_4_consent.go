@@ -132,9 +132,8 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 	// resolve the subject set chain: botID → tenancy_access:path#service →
 	// ns:path#service → ns:path#permission.
 	// Bridge tuples (ns#service ← tenancy_access#service and ns#perm ← ns#service)
-	// are written at partition creation for AllServiceNamespaces.  Here we only
-	// write them for the specific audiences the bot is granted access to, in case
-	// the partition was created before the bot's audiences were known.
+	// Bridge tuples are written for the specific audiences the bot is granted
+	// access to, scoping service bot access to only the services it needs.
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, subjectID),
 		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
