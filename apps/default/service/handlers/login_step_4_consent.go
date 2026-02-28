@@ -131,7 +131,6 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 	// Write the per-bot service access tuple in tenancy_access so Keto can
 	// resolve the subject set chain: botID → tenancy_access:path#service →
 	// ns:path#service → ns:path#permission.
-	// Bridge tuples (ns#service ← tenancy_access#service and ns#perm ← ns#service)
 	// Bridge tuples are written for the specific audiences the bot is granted
 	// access to, scoping service bot access to only the services it needs.
 	tuples := []security.RelationTuple{
