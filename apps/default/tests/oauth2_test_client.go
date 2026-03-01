@@ -868,6 +868,10 @@ func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID str
 // GetVerificationCodeByLoginEventID retrieves the actual verification code from the database
 func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context, authServer *handlers.AuthServer, LoginEventID string) (string, error) {
 
+	if LoginEventID == "" {
+		return "", fmt.Errorf("login event ID is empty - contact verification may have failed")
+	}
+
 	loginEventRepo := authServer.LoginEventRepo()
 	if loginEventRepo == nil {
 		return "", fmt.Errorf("login event repository is nil - authServer may not be properly initialised")
@@ -878,7 +882,7 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 		return "", fmt.Errorf("failed to get login event: %w", err)
 	}
 
-	if loginEvt.VerificationID == "" {
+	if loginEvt == nil || loginEvt.VerificationID == "" {
 		return "", fmt.Errorf("login event has no verification ID")
 	}
 
