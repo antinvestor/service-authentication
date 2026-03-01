@@ -17,6 +17,7 @@ RUN go mod download
 
 # Copy project files
 COPY ./apps/default ./apps/default
+COPY ./apps/tenancy/service/authz ./apps/tenancy/service/authz
 COPY ./internal ./internal
 
 # Build static binary for target platform
