@@ -367,6 +367,258 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 	})
 }
 
+func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				panic(r)
+			}
+		}()
+
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+
+		// Send webhook payload with system_int scope (ConstSystemScopeInternal) and valid client_id
+		webhookReq := map[string]any{
+			"granted_scopes": []string{"openid", "offline", "system_int"},
+			"client_id":      "test-system-client",
+			"grant_type":     "client_credentials",
+			"session":        map[string]any{},
+		}
+		jsonData, err := json.Marshal(webhookReq)
+		require.NoError(t, err)
+
+		req, err := http.NewRequestWithContext(opCtx, "POST", server.URL+"/webhook/enrich/access-token", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "system_internal token enrichment should succeed")
+
+		var response map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		session, ok := response["session"].(map[string]any)
+		require.True(t, ok, "response should have session key")
+
+		accessToken, ok := session["access_token"].(map[string]any)
+		require.True(t, ok, "session should have access_token")
+
+		roles, ok := accessToken["roles"].([]any)
+		require.True(t, ok, "access_token should have roles")
+		assert.Contains(t, roles, "system_internal")
+	})
+}
+
+func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				panic(r)
+			}
+		}()
+
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+
+		// client_credentials with no granted_scopes but session claims containing system_internal roles.
+		// This tests the guard that prevents falling through to user-token path.
+		webhookReq := map[string]any{
+			"client_id":  "test-system-client",
+			"grant_type": "client_credentials",
+			"session": map[string]any{
+				"access_token": map[string]any{
+					"tenant_id":    "tenant-1",
+					"partition_id": "part-1",
+					"roles":        []string{"system_internal"},
+				},
+			},
+		}
+		jsonData, err := json.Marshal(webhookReq)
+		require.NoError(t, err)
+
+		req, err := http.NewRequestWithContext(opCtx, "POST", server.URL+"/webhook/enrich/access-token", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		// Should succeed by passing through session claims
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "client_credentials with session claims should succeed")
+
+		var response map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		session, ok := response["session"].(map[string]any)
+		require.True(t, ok)
+
+		accessToken, ok := session["access_token"].(map[string]any)
+		require.True(t, ok)
+
+		assert.Equal(t, "tenant-1", accessToken["tenant_id"])
+		assert.Equal(t, "part-1", accessToken["partition_id"])
+	})
+}
+
+func (suite *HandlersTestSuite) TestTokenEnrichmentMissingClaims() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				panic(r)
+			}
+		}()
+
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+
+		// Send minimal payload with grant_type and client_id but no useful claims.
+		// Should return 403 error, not panic.
+		webhookReq := map[string]any{
+			"client_id":      "test-regular-client",
+			"grant_type":     "authorization_code",
+			"granted_scopes": []string{"openid"},
+			"session":        map[string]any{},
+		}
+		jsonData, err := json.Marshal(webhookReq)
+		require.NoError(t, err)
+
+		req, err := http.NewRequestWithContext(opCtx, "POST", server.URL+"/webhook/enrich/access-token", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		// Should return 403 with error message, not panic or 500
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "missing claims should return 403")
+	})
+}
+
+func (suite *HandlersTestSuite) TestTokenEnrichmentWithLoginEvent() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		handlerTestMutex.Lock()
+		defer func() {
+			handlerTestMutex.Unlock()
+			if r := recover(); r != nil {
+				panic(r)
+			}
+		}()
+
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+
+		// Send webhook with session claims containing non-user roles (system_external).
+		// This simulates a token refresh for a non-interactive flow where the
+		// original consent set the session claims.
+		webhookReq := map[string]any{
+			"client_id":      "test-api-client",
+			"grant_type":     "refresh_token",
+			"granted_scopes": []string{"openid", "offline"},
+			"session": map[string]any{
+				"access_token": map[string]any{
+					"tenant_id":    "tenant-2",
+					"partition_id": "part-2",
+					"access_id":    "access-2",
+					"roles":        []string{"system_external"},
+					"session_id":   "evt-test-123",
+				},
+			},
+		}
+		jsonData, err := json.Marshal(webhookReq)
+		require.NoError(t, err)
+
+		req, err := http.NewRequestWithContext(opCtx, "POST", server.URL+"/webhook/enrich/refresh-token", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		// Non-user roles should pass through without login event lookup
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "non-user role token refresh should succeed")
+
+		var response map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		session, ok := response["session"].(map[string]any)
+		require.True(t, ok)
+
+		accessToken, ok := session["access_token"].(map[string]any)
+		require.True(t, ok)
+
+		assert.Equal(t, "tenant-2", accessToken["tenant_id"])
+		assert.Equal(t, "part-2", accessToken["partition_id"])
+	})
+}
+
 func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection

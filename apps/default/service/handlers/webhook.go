@@ -338,6 +338,20 @@ func buildClaimsFromLoginEvent(
 	}
 }
 
+// extractSessionAccessTokenClaims extracts the access_token claims from the session object.
+// These claims were set server-side during consent and are trusted.
+func extractSessionAccessTokenClaims(tokenObject map[string]any) map[string]any {
+	session, ok := tokenObject["session"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	claims, ok := session["access_token"].(map[string]any)
+	if !ok || len(claims) == 0 {
+		return nil
+	}
+	return claims
+}
+
 func claimString(claims map[string]any, key string) string {
 	if claims == nil {
 		return ""
@@ -485,7 +499,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// Handle system internal scoped tokens
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantedScopes == nil {
-		log.Warn("granted_scopes not found - treating as regular user token refresh")
+		log.Warn("granted_scopes not found - checking session claims for non-user roles")
 	} else if isInternalSystemScoped(grantedScopes) {
 		cfg := h.Config()
 		log.Debug("enriched token with system_internal roles")
@@ -494,6 +508,20 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 			"partition_id": cfg.DefaultPartitionID,
 			"roles":        []string{"system_internal"},
 		})
+	}
+
+	// Guard: if scopes were nil and this is a client_credentials flow,
+	// check session claims for non-user roles before falling through to
+	// the user-token path which requires a login event.
+	if grantedScopes == nil && grantType == "client_credentials" {
+		sessionClaims := extractSessionAccessTokenClaims(tokenObject)
+		if sessionClaims != nil && isNonUserRole(sessionClaims["roles"]) {
+			log.WithField("grant_type", grantType).
+				Info("client_credentials with non-user session roles - passing through session claims")
+			return writeTokenHookResponse(rw, sessionClaims)
+		}
+		log.WithField("grant_type", grantType).
+			Warn("client_credentials flow with no scopes and no non-user session roles")
 	}
 
 	// Handle regular user tokens
@@ -585,6 +613,14 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	if len(finalClaims) == 0 {
 		log.Warn("no session claims found for regular user token")
 		return h.writeWebhookError(rw, "missing user claims in consent session")
+	}
+
+	// If the session claims contain non-user roles (system_internal/system_external),
+	// pass them through directly. These tokens were set server-side during consent
+	// and do not require login event lookup.
+	if isNonUserRole(finalClaims["roles"]) {
+		log.Info("non-user role detected in session claims - passing through without login event lookup")
+		return writeTokenHookResponse(rw, finalClaims)
 	}
 
 	canonicalClaims, err := h.buildCanonicalClaimsFromLoginEvent(ctx, tokenObject, finalClaims)

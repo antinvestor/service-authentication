@@ -76,8 +76,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	})
 
 	// Public routes (no auth, no CSRF)
-	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint", "GET")
-	h.addHandler(router, h.SwaggerEndpoint, "/swagger.json", "SwaggerEndpoint", "GET")
+	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint")
+	h.addHandler(router, h.SwaggerEndpoint, "/swagger.json", "SwaggerEndpoint")
 
 	// Custom root handler that handles both static files and index
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

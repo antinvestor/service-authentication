@@ -57,6 +57,9 @@ func rateLimitCacheKey(ip string) string {
 // rateLimitCache returns the generic cache for rate limit entries
 func (h *AuthServer) rateLimitCache() cache.Cache[string, RateLimitEntry] {
 	if h.rateLimitICache == nil {
+		if h.cacheMan == nil {
+			return nil
+		}
 		rCache, ok := h.cacheMan.GetRawCache(h.config.CacheName)
 		if !ok {
 			return nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"testing"
+	"time"
 
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
@@ -176,8 +177,12 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 
-	cfg.DatabasePrimaryURL = []string{testDS.String()}
-	cfg.DatabaseReplicaURL = []string{testDS.String()}
+	testDSLimited := testDS.
+		ExtendQuery("pool_max_conns", "2").
+		ExtendQuery("pool_max_conn_idle_time", "200ms").
+		ExtendQuery("pool_health_check_period", "200ms")
+	cfg.DatabasePrimaryURL = []string{testDSLimited.String()}
+	cfg.DatabaseReplicaURL = []string{}
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.EventsQueueURL = qDS.
 		ExtendQuery("jetstream", "true").
@@ -218,6 +223,14 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	_ = svc.Run(ctx, "")
+
+	t.Cleanup(func() {
+		bgCtx := context.Background()
+		svc.Stop(bgCtx)
+		// Allow leaked pgxpool health checks to close idle connections
+		// before the next test tries to open new ones.
+		time.Sleep(500 * time.Millisecond)
+	})
 
 	deps := BuildDeps(ctx, svc, implementation)
 

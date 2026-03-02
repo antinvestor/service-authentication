@@ -3,6 +3,7 @@ package business
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
@@ -217,9 +218,10 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 
 	jsonMap := partition.Properties
-	for k, v := range request.GetProperties().AsMap() {
-		jsonMap[k] = v
+	if jsonMap == nil {
+		jsonMap = make(data.JSONMap)
 	}
+	maps.Copy(jsonMap, request.GetProperties().AsMap())
 
 	if request.GetName() != "" {
 		partition.Name = request.GetName()

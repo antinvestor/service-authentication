@@ -148,6 +148,10 @@ func (h *AuthServer) loginEventCache() cache.Cache[string, models.LoginEvent] {
 
 	if h.iCache == nil {
 
+		if h.cacheMan == nil {
+			return nil
+		}
+
 		rCache, ok := h.cacheMan.GetRawCache(h.config.CacheName)
 		if !ok {
 			return nil
@@ -465,9 +469,9 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 }
 
 func (h *AuthServer) addHandler(router *http.ServeMux,
-	f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
+	f func(w http.ResponseWriter, r *http.Request) error, path string, name string) {
 
-	router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc(fmt.Sprintf("GET %s", path), func(w http.ResponseWriter, r *http.Request) {
 		err := f(w, r)
 		if err != nil {
 			h.writeAPIError(r.Context(), w, err, http.StatusInternalServerError, name)

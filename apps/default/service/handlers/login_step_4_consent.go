@@ -12,6 +12,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
@@ -147,11 +148,30 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 			Warn("failed to write service tuples at consent time")
 	}
 
+	// Create a LoginEvent for auditability and webhook fallback.
+	// Uses default tenant/partition IDs consistent with how the webhook
+	// handles system_internal tokens, not from the partition lookup.
+	cfg := h.Config()
+	loginEvt := &models.LoginEvent{
+		ClientID:  clientID,
+		ProfileID: subjectID,
+	}
+	loginEvt.ID = util.IDString()
+	loginEvt.TenantID = cfg.DefaultTenantID
+	loginEvt.PartitionID = cfg.DefaultPartitionID
+
+	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
+		log.WithError(createErr).WithField("client_id", clientID).
+			Warn("failed to create login event for system_internal consent (non-fatal)")
+	}
+
 	return map[string]any{
-		"tenant_id":    tenantID,
-		"partition_id": partitionObj.GetId(),
-		"roles":        []string{"system_internal"},
-		"profile_id":   subjectID,
+		"tenant_id":      tenantID,
+		"partition_id":   partitionObj.GetId(),
+		"roles":          []string{"system_internal"},
+		"profile_id":     subjectID,
+		"session_id":     loginEvt.GetID(),
+		"login_event_id": loginEvt.GetID(),
 	}, nil
 }
 
@@ -174,11 +194,30 @@ func (h *AuthServer) buildAPIKeyTokenClaims(ctx context.Context, clientID string
 		}
 	}
 
+	// Create a LoginEvent for auditability and webhook fallback.
+	// This ensures non-interactive flows have a login event that the webhook
+	// can look up if scope-based routing fails.
+	loginEvt := &models.LoginEvent{
+		ClientID:  clientID,
+		ProfileID: apiKeyModel.ProfileID,
+	}
+	loginEvt.ID = util.IDString()
+	loginEvt.TenantID = apiKeyModel.TenantID
+	loginEvt.PartitionID = apiKeyModel.PartitionID
+	loginEvt.AccessID = apiKeyModel.AccessID
+
+	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
+		log.WithError(createErr).WithField("client_id", clientID).
+			Warn("failed to create login event for API key consent (non-fatal)")
+	}
+
 	return map[string]any{
-		"tenant_id":    apiKeyModel.TenantID,
-		"partition_id": apiKeyModel.PartitionID,
-		"access_id":    apiKeyModel.AccessID,
-		"roles":        roles,
+		"tenant_id":      apiKeyModel.TenantID,
+		"partition_id":   apiKeyModel.PartitionID,
+		"access_id":      apiKeyModel.AccessID,
+		"roles":          roles,
+		"session_id":     loginEvt.GetID(),
+		"login_event_id": loginEvt.GetID(),
 	}, nil
 }
 
@@ -237,11 +276,12 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("login event subject mismatch")
 	}
 
-	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, subjectID)
+	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, subjectID)
 	if err != nil {
 		log.WithError(err).WithField("login_event_id", loginEvent.GetID()).Error("failed to ensure tenancy access for consent")
 		return nil, err
 	}
+	loginEvent = loginEventUpdated
 
 	if loginEvent.DeviceID != deviceObj.GetId() && deviceObj.GetId() != "" {
 		loginEvent.DeviceID = deviceObj.GetId()
