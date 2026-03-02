@@ -93,9 +93,8 @@ func main() {
 
 	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
-	apiKeyRepo := repository.NewAPIKeyRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), sm.GetAuthorizer(ctx), &cfg, cacheManager, loginRepo, loginEventRepo, apiKeyRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
+	srv := handlers.NewAuthServer(ctx, sm.GetAuthenticator(ctx), sm.GetAuthorizer(ctx), &cfg, cacheManager, loginRepo, loginEventRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)

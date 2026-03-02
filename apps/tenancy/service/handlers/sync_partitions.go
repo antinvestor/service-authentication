@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -16,15 +15,6 @@ import (
 const SyncPartitionsHTTPPath = "/_system/sync/partitions"
 
 func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
-
-	// if req.Method != http.MethodPost {
-	// 	http.Error(rw,
-	// 		http.StatusText(http.StatusMethodNotAllowed),
-	// 		http.StatusMethodNotAllowed,
-	// 	)
-	// 	return
-	// }
-
 	ctx := security.SkipTenancyChecksOnClaims(req.Context())
 
 	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
@@ -46,8 +36,6 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 
 	response["triggered"] = true
 
-	queryStr := req.URL.Query().Get("q")
-	_ = queryStr
 	pageStr := req.URL.Query().Get("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil {
@@ -61,19 +49,22 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 
 	query := data.NewSearchQuery(
 		data.WithSearchLimit(count), data.WithSearchOffset(page))
+
+	log := util.Log(ctx)
+
 	err = business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, query)
 	if err != nil {
+		log.WithError(err).Error("internal service error synchronising partitions")
+		response["partition_sync_error"] = err.Error()
+	}
 
-		rw.Header().Set("Content-Type", "application/json")
-
-		log := util.Log(ctx).WithError(err)
-		log.Error("internal service error synchronising partitions")
-
-		_, err = fmt.Fprintf(rw, " internal processing err message: %s", err.Error())
-		if err != nil {
-			log.Error("could not write error to response")
-		}
-
+	// Also sync service accounts — re-writes Keto tuples for all service bots
+	saQuery := data.NewSearchQuery(
+		data.WithSearchLimit(count), data.WithSearchOffset(page))
+	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saQuery)
+	if err != nil {
+		log.WithError(err).Error("internal service error synchronising service accounts")
+		response["service_account_sync_error"] = err.Error()
 	}
 
 	rw.Header().Set("Content-Type", "application/json")

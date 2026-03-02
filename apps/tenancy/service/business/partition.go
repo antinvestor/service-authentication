@@ -282,8 +282,12 @@ func (pb *partitionBusiness) CreatePartitionRole(
 
 	jsonMap := request.GetProperties().AsMap()
 
+	isDefault, _ := jsonMap["is_default"].(bool)
+	delete(jsonMap, "is_default")
+
 	partitionRole := &models.PartitionRole{
 		Name:       request.GetName(),
+		IsDefault:  isDefault,
 		Properties: jsonMap,
 		BaseModel: data.BaseModel{
 			PartitionID: partition.PartitionID,

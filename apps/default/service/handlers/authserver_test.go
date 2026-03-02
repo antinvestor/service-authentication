@@ -32,6 +32,7 @@ import (
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 )
 
@@ -138,100 +139,6 @@ func (m *mockLoginEventRepo) GetByOauth2SessionID(_ context.Context, sessID stri
 		return nil, gorm.ErrRecordNotFound
 	}
 	return evt, nil
-}
-
-// --- Mock APIKeyRepository ---
-
-type mockAPIKeyRepo struct {
-	keys      map[string]*models.APIKey
-	getErr    error
-	createErr error
-}
-
-func newMockAPIKeyRepo() *mockAPIKeyRepo {
-	return &mockAPIKeyRepo{
-		keys: make(map[string]*models.APIKey),
-	}
-}
-
-func (m *mockAPIKeyRepo) Pool() pool.Pool                        { return nil }
-func (m *mockAPIKeyRepo) WorkManager() workerpool.Manager        { return nil }
-func (m *mockAPIKeyRepo) Count(_ context.Context) (int64, error) { return 0, nil }
-func (m *mockAPIKeyRepo) CountBy(_ context.Context, _ map[string]any) (int64, error) {
-	return 0, nil
-}
-func (m *mockAPIKeyRepo) GetByID(_ context.Context, id string) (*models.APIKey, error) {
-	key, ok := m.keys[id]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	return key, nil
-}
-func (m *mockAPIKeyRepo) GetLastestBy(_ context.Context, _ map[string]any) (*models.APIKey, error) {
-	return nil, errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) GetAllBy(_ context.Context, _ map[string]any, _, _ int) ([]*models.APIKey, error) {
-	return nil, errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) Search(_ context.Context, _ *data.SearchQuery) (workerpool.JobResultPipe[[]*models.APIKey], error) {
-	return nil, errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) BatchSize() int { return 100 }
-func (m *mockAPIKeyRepo) BulkCreate(_ context.Context, _ []*models.APIKey) error {
-	return errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) FieldsImmutable() []string          { return nil }
-func (m *mockAPIKeyRepo) FieldsAllowed() map[string]struct{} { return nil }
-func (m *mockAPIKeyRepo) ExtendFieldsAllowed(_ ...string)    {}
-func (m *mockAPIKeyRepo) IsFieldAllowed(_ string) error      { return nil }
-func (m *mockAPIKeyRepo) Create(_ context.Context, key *models.APIKey) error {
-	if m.createErr != nil {
-		return m.createErr
-	}
-	m.keys[key.ID] = key
-	return nil
-}
-func (m *mockAPIKeyRepo) Update(_ context.Context, _ *models.APIKey, _ ...string) (int64, error) {
-	return 0, errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) BulkUpdate(_ context.Context, _ []string, _ map[string]any) (int64, error) {
-	return 0, errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) Delete(_ context.Context, _ string) error {
-	return errors.New("not implemented")
-}
-func (m *mockAPIKeyRepo) DeleteBatch(_ context.Context, _ []string) error {
-	return errors.New("not implemented")
-}
-
-func (m *mockAPIKeyRepo) GetByKey(_ context.Context, key string) (*models.APIKey, error) {
-	if m.getErr != nil {
-		return nil, m.getErr
-	}
-	apiKey, ok := m.keys[key]
-	if !ok {
-		return nil, fmt.Errorf("api key not found: %s", key)
-	}
-	return apiKey, nil
-}
-
-func (m *mockAPIKeyRepo) GetByIDAndProfile(_ context.Context, id, _ string) (*models.APIKey, error) {
-	return m.GetByID(context.Background(), id)
-}
-
-func (m *mockAPIKeyRepo) GetByProfileID(_ context.Context, profileID string) ([]*models.APIKey, error) {
-	var result []*models.APIKey
-	for _, k := range m.keys {
-		if k.ProfileID == profileID {
-			result = append(result, k)
-		}
-	}
-	return result, nil
-}
-
-func (m *mockAPIKeyRepo) DeleteByProfile(_ context.Context, id, _ string) error {
-	delete(m.keys, id)
-	return nil
 }
 
 // --- Mock Hydra Client ---
@@ -525,6 +432,10 @@ type mockPartitionCli struct {
 	createAccessErr  error
 }
 
+func (m *mockPartitionCli) ListAccessRole(_ context.Context, _ *connect.Request[partitionv1.ListAccessRoleRequest]) (*connect.ServerStreamForClient[partitionv1.ListAccessRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("not implemented in mock"))
+}
+
 func (m *mockPartitionCli) GetPartition(_ context.Context, _ *connect.Request[partitionv1.GetPartitionRequest]) (*connect.Response[partitionv1.GetPartitionResponse], error) {
 	return m.getPartitionResp, m.getPartitionErr
 }
@@ -589,7 +500,7 @@ func (m *mockDeviceCli) Link(_ context.Context, _ *connect.Request[devicev1.Link
 
 // --- Helper to create test AuthServer ---
 
-func newTestAuthServer(loginEventRepo *mockLoginEventRepo, apiKeyRepo *mockAPIKeyRepo) *AuthServer {
+func newTestAuthServer(loginEventRepo *mockLoginEventRepo) *AuthServer {
 	cfg := &aconfig.AuthenticationConfig{
 		SecureCookieBlockKey: aconfig.DefaultSecureCookieBlockKey,
 		SecureCookieHashKey:  aconfig.DefaultSecureCookieHashKey,
@@ -599,7 +510,6 @@ func newTestAuthServer(loginEventRepo *mockLoginEventRepo, apiKeyRepo *mockAPIKe
 	h := &AuthServer{
 		config:               cfg,
 		loginEventRepo:       loginEventRepo,
-		apiKeyRepo:           apiKeyRepo,
 		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
 	}
 	_ = h.setupSecureCookies(context.Background(), cfg)
@@ -609,7 +519,6 @@ func newTestAuthServer(loginEventRepo *mockLoginEventRepo, apiKeyRepo *mockAPIKe
 // newFullTestAuthServer creates an AuthServer with mock Hydra and all service clients.
 func newFullTestAuthServer(
 	loginEventRepo *mockLoginEventRepo,
-	apiKeyRepo *mockAPIKeyRepo,
 	hydraCli *mockHydra,
 	partCli *mockPartitionCli,
 	devCli *mockDeviceCli,
@@ -624,7 +533,6 @@ func newFullTestAuthServer(
 	h := &AuthServer{
 		config:               cfg,
 		loginEventRepo:       loginEventRepo,
-		apiKeyRepo:           apiKeyRepo,
 		loginRepo:            newMockLoginRepo(),
 		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
 		defaultHydraCli:      hydraCli,
@@ -639,7 +547,7 @@ func newFullTestAuthServer(
 // --- Tests for parseTokenWebhookRequest ---
 
 func TestParseTokenWebhookRequest(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("valid JSON body", func(t *testing.T) {
 		body := `{"grant_type": "authorization_code", "client_id": "my-client"}`
@@ -682,7 +590,7 @@ func (e *errorReader) Read(_ []byte) (int, error) {
 // --- Tests for writeWebhookError ---
 
 func TestWriteWebhookError(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	err := h.writeWebhookError(rr, "test error message")
@@ -696,89 +604,6 @@ func TestWriteWebhookError(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test error message", resp["error"])
 }
-
-// --- Tests for handleAPIKeyEnrichment ---
-
-func TestHandleAPIKeyEnrichment(t *testing.T) {
-	t.Run("valid API key with default roles", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_test123"] = &models.APIKey{
-			Key:       "api_key_test123",
-			ProfileID: "profile-1",
-		}
-		apiKeyRepo.keys["api_key_test123"].TenantID = "tenant-1"
-		apiKeyRepo.keys["api_key_test123"].PartitionID = "partition-1"
-
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		rr := httptest.NewRecorder()
-		err := h.handleAPIKeyEnrichment(context.Background(), rr, "api_key_test123")
-		require.NoError(t, err)
-
-		assert.Equal(t, http.StatusOK, rr.Code)
-		var resp map[string]any
-		err = json.Unmarshal(rr.Body.Bytes(), &resp)
-		require.NoError(t, err)
-
-		session := resp["session"].(map[string]any)
-		at := session["access_token"].(map[string]any)
-		assert.Equal(t, "tenant-1", at["tenant_id"])
-		assert.Equal(t, "partition-1", at["partition_id"])
-
-		roles, ok := at["roles"].([]any)
-		require.True(t, ok)
-		assert.Contains(t, roles, "system_external")
-	})
-
-	t.Run("valid API key with custom scope roles", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_custom"] = &models.APIKey{
-			Key:       "api_key_custom",
-			Scope:     `["admin","editor"]`,
-			ProfileID: "profile-2",
-		}
-		apiKeyRepo.keys["api_key_custom"].TenantID = "tenant-2"
-		apiKeyRepo.keys["api_key_custom"].PartitionID = "partition-2"
-
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		rr := httptest.NewRecorder()
-		err := h.handleAPIKeyEnrichment(context.Background(), rr, "api_key_custom")
-		require.NoError(t, err)
-
-		var resp map[string]any
-		err = json.Unmarshal(rr.Body.Bytes(), &resp)
-		require.NoError(t, err)
-
-		session := resp["session"].(map[string]any)
-		at := session["access_token"].(map[string]any)
-		roles := at["roles"].([]any)
-		assert.Contains(t, roles, "admin")
-		assert.Contains(t, roles, "editor")
-	})
-
-	t.Run("API key not found", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		rr := httptest.NewRecorder()
-		err := h.handleAPIKeyEnrichment(context.Background(), rr, "api_key_nonexistent")
-		require.Error(t, err)
-	})
-
-	t.Run("repo error", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.getErr = errors.New("db connection failed")
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		rr := httptest.NewRecorder()
-		err := h.handleAPIKeyEnrichment(context.Background(), rr, "api_key_any")
-		require.Error(t, err)
-	})
-}
-
-// --- Tests for lookupClaimsFromDB ---
-
 func TestLookupClaimsFromDB(t *testing.T) {
 	t.Run("lookup by login event ID", func(t *testing.T) {
 		loginEventRepo := newMockLoginEventRepo()
@@ -794,7 +619,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 		evt.AccessID = "access-1"
 		loginEventRepo.events["evt-123"] = evt
 
-		h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+		h := newTestAuthServer(loginEventRepo)
 
 		tokenObject := map[string]any{
 			"session": map[string]any{
@@ -826,7 +651,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 		loginEventRepo.events["evt-456"] = evt
 		loginEventRepo.byOauth2Sess["hydra-sess-1"] = evt
 
-		h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+		h := newTestAuthServer(loginEventRepo)
 
 		tokenObject := map[string]any{
 			"session": map[string]any{
@@ -843,7 +668,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 	})
 
 	t.Run("no login event ID or oauth2 session ID", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{
 			"session": map[string]any{},
@@ -854,7 +679,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 	})
 
 	t.Run("login event not found by ID", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{
 			"session": map[string]any{
@@ -869,7 +694,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 	})
 
 	t.Run("oauth2 session not found", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{
 			"session": map[string]any{
@@ -895,7 +720,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 		evt.AccessID = "a"
 		loginEventRepo.events["evt-sub"] = evt
 
-		h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+		h := newTestAuthServer(loginEventRepo)
 
 		tokenObject := map[string]any{
 			"session": map[string]any{
@@ -916,7 +741,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 
 func TestHandleUserTokenEnrichment(t *testing.T) {
 	t.Run("non-user role passthrough", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		rr := httptest.NewRecorder()
 		tokenObject := map[string]any{
@@ -943,7 +768,7 @@ func TestHandleUserTokenEnrichment(t *testing.T) {
 	})
 
 	t.Run("no session at all", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		rr := httptest.NewRecorder()
 		tokenObject := map[string]any{}
@@ -955,7 +780,7 @@ func TestHandleUserTokenEnrichment(t *testing.T) {
 	})
 
 	t.Run("empty session claims", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		rr := httptest.NewRecorder()
 		tokenObject := map[string]any{
@@ -973,7 +798,7 @@ func TestHandleUserTokenEnrichment(t *testing.T) {
 
 func TestTokenEnrichmentEndpointFull(t *testing.T) {
 	t.Run("missing grant_type returns error", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		body := `{"foo": "bar"}`
 		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader(body))
@@ -985,7 +810,7 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 	})
 
 	t.Run("missing client_id returns error", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		body := `{"grant_type": "authorization_code"}`
 		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader(body))
@@ -996,32 +821,59 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, rr.Code)
 	})
 
-	t.Run("API key client routes to handleAPIKeyEnrichment", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_test1"] = &models.APIKey{
-			Key:       "api_key_test1",
-			ProfileID: "p1",
+	t.Run("system internal scope returns session claims from consent", func(t *testing.T) {
+		h := newTestAuthServer(newMockLoginEventRepo())
+
+		payload := map[string]any{
+			"grant_type":     "client_credentials",
+			"client_id":      "some-client",
+			"granted_scopes": []string{"system_int"},
+			"session": map[string]any{
+				"access_token": map[string]any{
+					"tenant_id":    "actual-tenant",
+					"partition_id": "actual-partition",
+					"roles":        []any{"system_internal"},
+					"profile_id":   "service_bot",
+				},
+			},
 		}
-		apiKeyRepo.keys["api_key_test1"].TenantID = "t1"
-		apiKeyRepo.keys["api_key_test1"].PartitionID = "pt1"
-
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		body := `{"grant_type": "client_credentials", "client_id": "api_key_test1"}`
-		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader(body))
+		body, _ := json.Marshal(payload)
+		req := httptest.NewRequest("POST", "/webhook/enrich/token", bytes.NewReader(body))
 		rr := httptest.NewRecorder()
 
 		err := h.TokenEnrichmentEndpoint(rr, req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var resp map[string]any
+		err = json.Unmarshal(rr.Body.Bytes(), &resp)
+		require.NoError(t, err)
+
+		session := resp["session"].(map[string]any)
+		at := session["access_token"].(map[string]any)
+		assert.Equal(t, "actual-tenant", at["tenant_id"])
+		assert.Equal(t, "actual-partition", at["partition_id"])
+		roles := at["roles"].([]any)
+		assert.Contains(t, roles, "system_internal")
 	})
 
-	t.Run("system internal scope returns system_internal roles", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-		h.config.DefaultTenantID = "default-tenant"
-		h.config.DefaultPartitionID = "default-partition"
+	t.Run("system internal scope without session claims does partition lookup", func(t *testing.T) {
+		partProps, _ := structpb.NewStruct(map[string]any{
+			"subject":     "service_bot",
+			"grant_types": []any{"client_credentials"},
+		})
+		partCli := &mockPartitionCli{
+			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
+				Data: &partitionv1.PartitionObject{
+					Id:         "svc-partition",
+					TenantId:   "lookup-tenant",
+					Properties: partProps,
+				},
+			}),
+		}
+		h := newFullTestAuthServer(newMockLoginEventRepo(), nil, partCli, nil, nil)
 
-		body := `{"grant_type": "client_credentials", "client_id": "some-client", "granted_scopes": ["system_int"]}`
+		body := `{"grant_type": "client_credentials", "client_id": "svc-partition", "granted_scopes": ["system_int"]}`
 		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader(body))
 		rr := httptest.NewRecorder()
 
@@ -1035,14 +887,29 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 
 		session := resp["session"].(map[string]any)
 		at := session["access_token"].(map[string]any)
-		assert.Equal(t, "default-tenant", at["tenant_id"])
-		assert.Equal(t, "default-partition", at["partition_id"])
+		assert.Equal(t, "lookup-tenant", at["tenant_id"])
+		assert.Equal(t, "svc-partition", at["partition_id"])
 		roles := at["roles"].([]any)
 		assert.Contains(t, roles, "system_internal")
 	})
 
+	t.Run("system internal scope with unregistered client is rejected", func(t *testing.T) {
+		partCli := &mockPartitionCli{
+			getPartitionErr: connect.NewError(connect.CodeNotFound, errors.New("partition not found")),
+		}
+		h := newFullTestAuthServer(newMockLoginEventRepo(), nil, partCli, nil, nil)
+
+		body := `{"grant_type": "client_credentials", "client_id": "unknown-client", "granted_scopes": ["system_int"]}`
+		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader(body))
+		rr := httptest.NewRecorder()
+
+		err := h.TokenEnrichmentEndpoint(rr, req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusForbidden, rr.Code)
+	})
+
 	t.Run("client_credentials nil scopes with system_internal session claims", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		payload := map[string]any{
 			"grant_type": "client_credentials",
@@ -1073,7 +940,7 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 	})
 
 	t.Run("infer grant_type from token type refresh-token", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		// No grant_type in body, but tokenType path value is "refresh-token"
 		payload := map[string]any{
@@ -1097,7 +964,7 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 	})
 
 	t.Run("invalid JSON body", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		req := httptest.NewRequest("POST", "/webhook/enrich/token", strings.NewReader("not json"))
 		rr := httptest.NewRecorder()
@@ -1111,11 +978,11 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 
 func TestWriteAPIError(t *testing.T) {
 	t.Run("expose errors enabled", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 		h.config.ExposeErrors = true
 
 		rr := httptest.NewRecorder()
-		h.writeAPIError(context.Background(), rr, errors.New("db failure"), http.StatusInternalServerError, "CreateAPIKey")
+		h.writeAPIError(context.Background(), rr, errors.New("db failure"), http.StatusInternalServerError, "TestEndpoint")
 
 		assert.Equal(t, http.StatusInternalServerError, rr.Code)
 		assert.Contains(t, rr.Header().Get("Content-Type"), "application/json")
@@ -1125,11 +992,11 @@ func TestWriteAPIError(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, resp.Code)
 		assert.Contains(t, resp.Message, "db failure")
-		assert.Contains(t, resp.Message, "CreateAPIKey")
+		assert.Contains(t, resp.Message, "TestEndpoint")
 	})
 
 	t.Run("expose errors disabled", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 		h.config.ExposeErrors = false
 
 		rr := httptest.NewRecorder()
@@ -1150,7 +1017,7 @@ func TestWriteAPIError(t *testing.T) {
 
 func TestRedirectToErrorPage(t *testing.T) {
 	t.Run("expose errors enabled", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 		h.config.ExposeErrors = true
 
 		rr := httptest.NewRecorder()
@@ -1166,7 +1033,7 @@ func TestRedirectToErrorPage(t *testing.T) {
 	})
 
 	t.Run("expose errors disabled", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 		h.config.ExposeErrors = false
 
 		rr := httptest.NewRecorder()
@@ -1185,7 +1052,7 @@ func TestRedirectToErrorPage(t *testing.T) {
 // --- Tests for detectLanguage ---
 
 func TestDetectLanguage(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("ui_locales query param", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test?ui_locales=fr-FR%20en-US", nil)
@@ -1211,7 +1078,7 @@ func TestDetectLanguage(t *testing.T) {
 
 func TestBuildTranslationMap(t *testing.T) {
 	t.Run("nil localization manager returns empty map", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 		h.localizationManager = nil
 
 		req := httptest.NewRequest("GET", "/test", nil)
@@ -1224,7 +1091,7 @@ func TestBuildTranslationMap(t *testing.T) {
 // --- Tests for shouldRenderBrowserInterstitial ---
 
 func TestShouldRenderBrowserInterstitial(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("browser with user scope", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
@@ -1244,17 +1111,12 @@ func TestShouldRenderBrowserInterstitial(t *testing.T) {
 		assert.False(t, h.shouldRenderBrowserInterstitial(req, []string{"system_int"}, "my-client"))
 	})
 
-	t.Run("browser with api_key client", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/test", nil)
-		req.Header.Set("Accept", "text/html")
-		assert.False(t, h.shouldRenderBrowserInterstitial(req, []string{"openid"}, "api_key_test"))
-	})
 }
 
 // --- Tests for ResetAllLoginRateLimits ---
 
 func TestResetAllLoginRateLimits(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	// Should not panic - it's a no-op
 	h.ResetAllLoginRateLimits()
 }
@@ -1266,7 +1128,7 @@ func TestResetAllLoginRateLimits(t *testing.T) {
 // --- Tests for clearRememberMeCookie ---
 
 func TestClearRememberMeCookie(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	h.clearRememberMeCookie(rr)
@@ -1281,7 +1143,7 @@ func TestClearRememberMeCookie(t *testing.T) {
 // --- Tests for clearDeviceSessionID ---
 
 func TestClearDeviceSessionID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	h.clearDeviceSessionID(rr)
@@ -1295,7 +1157,7 @@ func TestClearDeviceSessionID(t *testing.T) {
 // --- Tests for ProfileCli accessor ---
 
 func TestProfileCli(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	assert.Nil(t, h.ProfileCli())
 }
 
@@ -1311,7 +1173,7 @@ func TestProfileCli(t *testing.T) {
 // --- Tests for addHandler ---
 
 func TestAddHandler(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	router := http.NewServeMux()
 	h.addHandler(router, func(w http.ResponseWriter, _ *http.Request) error {
@@ -1339,7 +1201,7 @@ func TestAddHandler(t *testing.T) {
 // --- Tests for logConsentSuccess ---
 
 func TestLogConsentSuccess(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	log := util.Log(context.Background())
 
 	tokenMap := map[string]any{
@@ -1358,7 +1220,7 @@ func TestLogConsentSuccess(t *testing.T) {
 // --- Tests for getRememberMeLoginEventID ---
 
 func TestGetRememberMeLoginEventID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	// Setup cookies codec for this test
 	_ = h.setupSecureCookies(context.Background(), h.config)
 
@@ -1379,7 +1241,7 @@ func TestGetRememberMeLoginEventID(t *testing.T) {
 // --- Tests for setupSecureCookies ---
 
 func TestSetupSecureCookies(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("non-test env with default keys fails", func(t *testing.T) {
 		cfg := &aconfig.AuthenticationConfig{
@@ -1432,7 +1294,7 @@ func TestSetupSecureCookies(t *testing.T) {
 // --- Tests for ensureLoginEventTenancyAccess ---
 
 func TestEnsureLoginEventTenancyAccess(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("nil login event", func(t *testing.T) {
 		_, err := h.ensureLoginEventTenancyAccess(context.Background(), nil, "client", "profile")
@@ -1458,7 +1320,7 @@ func TestEnsureLoginEventTenancyAccess(t *testing.T) {
 // --- Tests for getOrCreateTenancyAccessByClientID ---
 
 func TestGetOrCreateTenancyAccessByClientID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("empty client_id", func(t *testing.T) {
 		_, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "", "profile")
@@ -1474,7 +1336,7 @@ func TestGetOrCreateTenancyAccessByClientID(t *testing.T) {
 // --- Tests for getOrCreateTenancyAccessByPartitionID ---
 
 func TestGetOrCreateTenancyAccessByPartitionID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("empty partition_id", func(t *testing.T) {
 		_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "", "profile")
@@ -1491,7 +1353,7 @@ func TestGetOrCreateTenancyAccessByPartitionID(t *testing.T) {
 
 func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 	t.Run("missing client_id", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{} // no client_id
 		claims := map[string]any{"session_id": "evt-1", "profile_id": "p1"}
@@ -1502,7 +1364,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 	})
 
 	t.Run("missing session_id and oauth2_session_id", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{"client_id": "my-client"}
 		claims := map[string]any{"profile_id": "p1"}
@@ -1513,7 +1375,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 	})
 
 	t.Run("login event not found by session_id", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{"client_id": "my-client"}
 		claims := map[string]any{"session_id": "nonexistent", "profile_id": "p1"}
@@ -1547,7 +1409,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 				},
 			}),
 		}
-		h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+		h := newFullTestAuthServer(eventRepo, &mockHydra{},
 			partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 		tokenObject := map[string]any{
@@ -1564,7 +1426,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 
 	t.Run("oauth2_session_id not found", func(t *testing.T) {
 		eventRepo := newMockLoginEventRepo()
-		h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+		h := newFullTestAuthServer(eventRepo, &mockHydra{},
 			&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 		tokenObject := map[string]any{
@@ -1600,7 +1462,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 				},
 			}),
 		}
-		h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+		h := newFullTestAuthServer(eventRepo, &mockHydra{},
 			partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 		tokenObject := map[string]any{"client_id": "client-1"}
@@ -1620,7 +1482,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 		evt.ID = "evt-1"
 		eventRepo.events["evt-1"] = evt
 
-		h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+		h := newFullTestAuthServer(eventRepo, &mockHydra{},
 			&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 		tokenObject := map[string]any{"client_id": "client-1"}
@@ -1652,7 +1514,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 				},
 			}),
 		}
-		h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+		h := newFullTestAuthServer(eventRepo, &mockHydra{},
 			partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 		tokenObject := map[string]any{"client_id": "client-1"}
@@ -1675,7 +1537,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 // --- Tests for SwaggerEndpoint ---
 
 func TestSwaggerEndpoint(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/swagger.json", nil)
@@ -1693,7 +1555,7 @@ func TestSwaggerEndpoint(t *testing.T) {
 // --- Tests for getLoginEventFromCache ---
 
 func TestGetLoginEventFromCacheEmptyID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("empty ID returns error", func(t *testing.T) {
 		_, err := h.getLoginEventFromCache(context.Background(), "")
@@ -1773,7 +1635,7 @@ func TestUpdateResendTracking(t *testing.T) {
 }
 
 func TestWriteResendResponse(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	err := h.writeResendResponse(rr, http.StatusOK, ResendVerificationResponse{
@@ -1795,7 +1657,7 @@ func TestWriteResendResponse(t *testing.T) {
 // --- Tests for VerificationResendEndpoint ---
 
 func TestVerificationResendEndpointMissingID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("POST", "/s/verify/contact//resend", nil)
 	rr := httptest.NewRecorder()
@@ -1806,7 +1668,7 @@ func TestVerificationResendEndpointMissingID(t *testing.T) {
 }
 
 func TestVerificationResendEndpointNotFound(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/nonexistent/resend", nil)
 	req.SetPathValue("loginEventId", "nonexistent")
@@ -1822,7 +1684,7 @@ func TestVerificationResendEndpointNoVerification(t *testing.T) {
 	evt.ID = "evt-no-verify"
 	loginEventRepo.events["evt-no-verify"] = evt
 
-	h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(loginEventRepo)
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/evt-no-verify/resend", nil)
 	req.SetPathValue("loginEventId", "evt-no-verify")
@@ -1843,7 +1705,7 @@ func TestVerificationResendEndpointMaxReached(t *testing.T) {
 	evt.Properties = map[string]any{propKeyResendCount: maxResendAttempts}
 	loginEventRepo.events["evt-max"] = evt
 
-	h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(loginEventRepo)
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/evt-max/resend", nil)
 	req.SetPathValue("loginEventId", "evt-max")
@@ -1867,7 +1729,7 @@ func TestVerificationResendEndpointTooSoon(t *testing.T) {
 	}
 	loginEventRepo.events["evt-soon"] = evt
 
-	h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(loginEventRepo)
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/evt-soon/resend", nil)
 	req.SetPathValue("loginEventId", "evt-soon")
@@ -1892,7 +1754,7 @@ func TestVerificationResendEndpointMissingContact(t *testing.T) {
 	evt.ID = "evt-no-contact"
 	loginEventRepo.events["evt-no-contact"] = evt
 
-	h := newTestAuthServer(loginEventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(loginEventRepo)
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/evt-no-contact/resend", nil)
 	req.SetPathValue("loginEventId", "evt-no-contact")
@@ -1902,86 +1764,6 @@ func TestVerificationResendEndpointMissingContact(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
-
-// --- Tests for buildAPIKeyTokenClaims ---
-
-func TestBuildAPIKeyTokenClaims(t *testing.T) {
-	t.Run("API key found with no scope", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_test"] = &models.APIKey{
-			Key:       "api_key_test",
-			ProfileID: "profile-1",
-		}
-		apiKeyRepo.keys["api_key_test"].TenantID = "tenant-1"
-		apiKeyRepo.keys["api_key_test"].PartitionID = "partition-1"
-		apiKeyRepo.keys["api_key_test"].AccessID = "access-1"
-
-		loginEventRepo := newMockLoginEventRepo()
-		h := newTestAuthServer(loginEventRepo, apiKeyRepo)
-
-		claims, err := h.buildAPIKeyTokenClaims(context.Background(), "api_key_test")
-		require.NoError(t, err)
-		assert.Equal(t, "tenant-1", claims["tenant_id"])
-		assert.Equal(t, "partition-1", claims["partition_id"])
-		assert.Equal(t, "access-1", claims["access_id"])
-		assert.NotEmpty(t, claims["session_id"])
-		assert.NotEmpty(t, claims["login_event_id"])
-
-		roles := claims["roles"].([]string)
-		assert.Contains(t, roles, "system_external")
-	})
-
-	t.Run("API key with custom scope", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_custom"] = &models.APIKey{
-			Key:       "api_key_custom",
-			Scope:     `["admin","viewer"]`,
-			ProfileID: "profile-2",
-		}
-		apiKeyRepo.keys["api_key_custom"].TenantID = "t2"
-		apiKeyRepo.keys["api_key_custom"].PartitionID = "p2"
-		apiKeyRepo.keys["api_key_custom"].AccessID = "a2"
-
-		h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-		claims, err := h.buildAPIKeyTokenClaims(context.Background(), "api_key_custom")
-		require.NoError(t, err)
-
-		roles := claims["roles"].([]string)
-		assert.Contains(t, roles, "system_external")
-		assert.Contains(t, roles, "admin")
-		assert.Contains(t, roles, "viewer")
-	})
-
-	t.Run("API key not found", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-		_, err := h.buildAPIKeyTokenClaims(context.Background(), "api_key_missing")
-		require.Error(t, err)
-	})
-
-	t.Run("LoginEvent creation failure is non-fatal", func(t *testing.T) {
-		apiKeyRepo := newMockAPIKeyRepo()
-		apiKeyRepo.keys["api_key_fail"] = &models.APIKey{
-			Key:       "api_key_fail",
-			ProfileID: "p",
-		}
-		apiKeyRepo.keys["api_key_fail"].TenantID = "t"
-		apiKeyRepo.keys["api_key_fail"].PartitionID = "p"
-
-		loginEventRepo := newMockLoginEventRepo()
-		loginEventRepo.createErr = errors.New("db write failed")
-
-		h := newTestAuthServer(loginEventRepo, apiKeyRepo)
-
-		claims, err := h.buildAPIKeyTokenClaims(context.Background(), "api_key_fail")
-		require.NoError(t, err) // creation failure is non-fatal
-		assert.NotNil(t, claims)
-	})
-}
-
-// --- Tests for findStaticDirectory ---
-
 func TestFindStaticDirectory(t *testing.T) {
 	dir := findStaticDirectory()
 	// Should return a non-empty string (either found or default)
@@ -2006,7 +1788,7 @@ func TestHasHTMLFiles(t *testing.T) {
 // --- Tests for setupLoginOptions ---
 
 func TestSetupLoginOptions(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	t.Run("contact login enabled by default", func(t *testing.T) {
 		cfg := &aconfig.AuthenticationConfig{}
@@ -2067,14 +1849,14 @@ func TestDefaultLoginRateLimitConfigValues(t *testing.T) {
 // --- Tests for ResetAllLoginRateLimits ---
 
 func TestResetAllLoginRateLimitsNoOp(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.ResetAllLoginRateLimits() // no-op, should not panic
 }
 
 // --- Tests for setRememberMeCookie ---
 
 func TestSetRememberMeCookie(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	err := h.setRememberMeCookie(rr, "evt-123")
@@ -2091,7 +1873,7 @@ func TestSetRememberMeCookie(t *testing.T) {
 // --- Tests for NotFoundEndpoint ---
 
 func TestNotFoundEndpoint(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/nonexistent", nil)
@@ -2105,7 +1887,7 @@ func TestNotFoundEndpoint(t *testing.T) {
 // --- Tests for ErrorEndpoint ---
 
 func TestErrorEndpoint(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/error?error=TestError&error_description=Something+went+wrong", nil)
@@ -2123,7 +1905,7 @@ func TestErrorEndpoint(t *testing.T) {
 
 func TestShowLogoutEndpoint_EmptyChallenge(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{getLogoutErr: errors.New("invalid challenge")}, nil, nil, nil,
 	)
 
@@ -2137,7 +1919,7 @@ func TestShowLogoutEndpoint_EmptyChallenge(t *testing.T) {
 
 func TestShowLogoutEndpoint_HydraGetError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{getLogoutErr: errors.New("hydra down")}, nil, nil, nil,
 	)
 
@@ -2150,7 +1932,7 @@ func TestShowLogoutEndpoint_HydraGetError(t *testing.T) {
 
 func TestShowLogoutEndpoint_HydraAcceptError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{
 			getLogoutReq:    &hydraclientgo.OAuth2LogoutRequest{},
 			acceptLogoutErr: errors.New("accept failed"),
@@ -2166,7 +1948,7 @@ func TestShowLogoutEndpoint_HydraAcceptError(t *testing.T) {
 
 func TestShowLogoutEndpoint_Success(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{
 			getLogoutReq:    &hydraclientgo.OAuth2LogoutRequest{},
 			acceptLogoutURL: "https://example.com/callback",
@@ -2182,26 +1964,30 @@ func TestShowLogoutEndpoint_Success(t *testing.T) {
 	assert.Contains(t, rr.Header().Get("Location"), "https://example.com/callback")
 }
 
-// --- Tests for buildInternalSystemTokenClaims ---
+// --- Tests for buildServiceAccountConsentClaims ---
 
-func TestBuildInternalSystemTokenClaims_Success(t *testing.T) {
+func TestBuildServiceAccountConsentClaims_Success(t *testing.T) {
 	leRepo := newMockLoginEventRepo()
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		nil,
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{
-					Id:       "partition-1",
-					TenantId: "tenant-1",
-				},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
+					return &partitionv1.PartitionObject{
+						Id:         "partition-1",
+						TenantId:   "tenant-1",
+						Properties: props,
+					}
+				}(),
 			}),
 		},
 		nil,
 		&mockAuthorizer{},
 	)
 
-	claims, err := h.buildInternalSystemTokenClaims(context.Background(), "partition-1", "subject-1", []string{"svc_chat"})
+	claims, err := h.buildServiceAccountConsentClaims(context.Background(), "partition-1", "subject-1", []string{"system_int"}, []string{"svc_chat"})
 	require.NoError(t, err)
 	assert.Equal(t, "tenant-1", claims["tenant_id"])
 	assert.Equal(t, "partition-1", claims["partition_id"])
@@ -2211,23 +1997,23 @@ func TestBuildInternalSystemTokenClaims_Success(t *testing.T) {
 	assert.NotEmpty(t, claims["login_event_id"])
 }
 
-func TestBuildInternalSystemTokenClaims_PartitionLookupFails(t *testing.T) {
+func TestBuildServiceAccountConsentClaims_PartitionLookupFails(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil,
 		&mockPartitionCli{getPartitionErr: errors.New("not found")},
 		nil,
 		&mockAuthorizer{},
 	)
 
-	_, err := h.buildInternalSystemTokenClaims(context.Background(), "bad-client", "subject-1", nil)
+	_, err := h.buildServiceAccountConsentClaims(context.Background(), "bad-client", "subject-1", []string{"system_int"}, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get partition")
 }
 
-func TestBuildInternalSystemTokenClaims_NilPartitionData(t *testing.T) {
+func TestBuildServiceAccountConsentClaims_NilPartitionData(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil,
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{Data: nil}),
@@ -2236,19 +2022,22 @@ func TestBuildInternalSystemTokenClaims_NilPartitionData(t *testing.T) {
 		&mockAuthorizer{},
 	)
 
-	_, err := h.buildInternalSystemTokenClaims(context.Background(), "client-1", "subject-1", nil)
+	_, err := h.buildServiceAccountConsentClaims(context.Background(), "client-1", "subject-1", []string{"system_int"}, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "partition not found")
 }
 
-func TestBuildInternalSystemTokenClaims_WriteTuplesError(t *testing.T) {
+func TestBuildServiceAccountConsentClaims_WriteTuplesError(t *testing.T) {
 	leRepo := newMockLoginEventRepo()
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		nil,
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
+					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
+				}(),
 			}),
 		},
 		nil,
@@ -2256,42 +2045,48 @@ func TestBuildInternalSystemTokenClaims_WriteTuplesError(t *testing.T) {
 	)
 
 	// Should succeed despite write error (non-fatal)
-	claims, err := h.buildInternalSystemTokenClaims(context.Background(), "p1", "sub1", nil)
+	claims, err := h.buildServiceAccountConsentClaims(context.Background(), "p1", "sub1", []string{"system_int"}, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, claims)
 }
 
-func TestBuildInternalSystemTokenClaims_LoginEventCreateError(t *testing.T) {
+func TestBuildServiceAccountConsentClaims_LoginEventCreateError(t *testing.T) {
 	leRepo := newMockLoginEventRepo()
 	leRepo.createErr = errors.New("db error")
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		nil,
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
+					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
+				}(),
 			}),
 		},
 		nil,
 		&mockAuthorizer{},
 	)
 
-	// Should succeed despite login event create error (non-fatal)
-	claims, err := h.buildInternalSystemTokenClaims(context.Background(), "p1", "sub1", nil)
-	require.NoError(t, err)
-	assert.NotNil(t, claims)
+	// Login event creation is now fatal — should return error
+	_, err := h.buildServiceAccountConsentClaims(context.Background(), "p1", "sub1", []string{"system_int"}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create login event")
 }
 
 // --- Tests for buildConsentTokenClaims ---
 
-func TestBuildConsentTokenClaims_InternalSystem(t *testing.T) {
+func TestBuildConsentTokenClaims_ServiceAccount(t *testing.T) {
 	leRepo := newMockLoginEventRepo()
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		nil,
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
+					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
+				}(),
 			}),
 		},
 		nil,
@@ -2309,38 +2104,9 @@ func TestBuildConsentTokenClaims_InternalSystem(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"system_internal"}, claims["roles"])
 }
-
-func TestBuildConsentTokenClaims_APIKey(t *testing.T) {
-	leRepo := newMockLoginEventRepo()
-	apiRepo := newMockAPIKeyRepo()
-	apiRepo.keys["api_key_test123"] = &models.APIKey{
-		BaseModel: data.BaseModel{ID: "ak-1", TenantID: "t1", PartitionID: "p1"},
-		Key:       "api_key_test123",
-		ProfileID: "profile-1",
-	}
-
-	h := newFullTestAuthServer(leRepo, apiRepo, nil, nil, nil, nil)
-
-	consentReq := hydraclientgo.NewOAuth2ConsentRequest("challenge")
-	consentReq.SetRequestedScope([]string{"openid"})
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/s/consent", nil)
-
-	claims, err := h.buildConsentTokenClaims(context.Background(), rr, req, consentReq, "api_key_test123", "sub1")
-	require.NoError(t, err)
-	assert.Equal(t, "t1", claims["tenant_id"])
-	assert.Equal(t, "p1", claims["partition_id"])
-	roles, ok := claims["roles"].([]string)
-	require.True(t, ok)
-	assert.Contains(t, roles, "system_external")
-}
-
-// --- Tests for ShowConsentEndpoint ---
-
 func TestShowConsentEndpoint_EmptyChallenge(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{}, nil, nil, nil,
 	)
 
@@ -2353,7 +2119,7 @@ func TestShowConsentEndpoint_EmptyChallenge(t *testing.T) {
 
 func TestShowConsentEndpoint_HydraGetError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{getConsentErr: errors.New("hydra error")}, nil, nil, nil,
 	)
 
@@ -2378,14 +2144,17 @@ func TestShowConsentEndpoint_InternalSystem_Success(t *testing.T) {
 	consentReq.SetRequestedAccessTokenAudience([]string{"svc_chat"})
 
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		&mockHydra{
 			getConsentReq:    consentReq,
 			acceptConsentURL: "https://example.com/callback",
 		},
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1"},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
+					return &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1", Properties: props}
+				}(),
 			}),
 		},
 		nil,
@@ -2411,14 +2180,17 @@ func TestShowConsentEndpoint_AcceptConsentError(t *testing.T) {
 	consentReq.SetRequestedScope([]string{"system_int"})
 
 	h := newFullTestAuthServer(
-		leRepo, newMockAPIKeyRepo(),
+		leRepo,
 		&mockHydra{
 			getConsentReq:    consentReq,
 			acceptConsentErr: errors.New("accept failed"),
 		},
 		&mockPartitionCli{
 			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1"},
+				Data: func() *partitionv1.PartitionObject {
+					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
+					return &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1", Properties: props}
+				}(),
 			}),
 		},
 		nil,
@@ -2437,7 +2209,7 @@ func TestShowConsentEndpoint_AcceptConsentError(t *testing.T) {
 
 func TestLoginEndpointShow_EmptyChallenge(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{}, nil, nil, nil,
 	)
 
@@ -2450,7 +2222,7 @@ func TestLoginEndpointShow_EmptyChallenge(t *testing.T) {
 
 func TestLoginEndpointShow_HydraGetError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		&mockHydra{getLoginErr: errors.New("hydra down")}, nil, nil, nil,
 	)
 
@@ -2470,7 +2242,7 @@ func TestLoginEndpointShow_HydraGetError(t *testing.T) {
 func TestProcessDeviceSession_CreateNew(t *testing.T) {
 	deviceObj := &devicev1.DeviceObject{Id: "dev-new", ProfileId: "prof-1"}
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil,
 		&mockDeviceCli{
 			getByIdErr:      errors.New("not found"),
@@ -2489,7 +2261,7 @@ func TestProcessDeviceSession_CreateNew(t *testing.T) {
 
 func TestProcessDeviceSession_CreateError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil,
 		&mockDeviceCli{
 			getByIdErr:      errors.New("not found"),
@@ -2507,7 +2279,7 @@ func TestProcessDeviceSession_LinkToProfile(t *testing.T) {
 	deviceObj := &devicev1.DeviceObject{Id: "dev-1", ProfileId: ""}
 	linkedObj := &devicev1.DeviceObject{Id: "dev-1", ProfileId: "prof-1"}
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil,
 		&mockDeviceCli{
 			getByIdErr:      errors.New("not found"),
@@ -2526,7 +2298,7 @@ func TestProcessDeviceSession_LinkToProfile(t *testing.T) {
 // --- Tests for storeDeviceID ---
 
 func TestStoreDeviceID_SameDevice(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	deviceObj := &devicev1.DeviceObject{Id: ""}
@@ -2538,7 +2310,7 @@ func TestStoreDeviceID_SameDevice(t *testing.T) {
 }
 
 func TestStoreDeviceID_NewDevice(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	rr := httptest.NewRecorder()
 	deviceObj := &devicev1.DeviceObject{Id: "dev-new-123"}
@@ -2554,7 +2326,7 @@ func TestStoreDeviceID_NewDevice(t *testing.T) {
 
 func TestBuildUserTokenClaims_EmptyClientID(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil, nil, nil,
 	)
 
@@ -2570,7 +2342,7 @@ func TestBuildUserTokenClaims_EmptyClientID(t *testing.T) {
 
 func TestBuildUserTokenClaims_EmptySubjectID(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil, nil, nil,
 	)
 
@@ -2586,7 +2358,7 @@ func TestBuildUserTokenClaims_EmptySubjectID(t *testing.T) {
 
 func TestBuildUserTokenClaims_DeviceSessionError(t *testing.T) {
 	h := newFullTestAuthServer(
-		newMockLoginEventRepo(), newMockAPIKeyRepo(),
+		newMockLoginEventRepo(),
 		nil, nil,
 		&mockDeviceCli{
 			getByIdErr:      errors.New("not found"),
@@ -2684,21 +2456,6 @@ func TestIsInternalSystemScoped_EdgeCases(t *testing.T) {
 	assert.False(t, isInternalSystemScoped(nil))
 	assert.False(t, isInternalSystemScoped([]string{}))
 }
-
-// --- Tests for isClientIDApiKey (edge cases) ---
-
-func TestIsClientIDApiKey_EdgeCases(t *testing.T) {
-	assert.True(t, isClientIDApiKey("api_key_abc123"))
-	assert.False(t, isClientIDApiKey("regular-client"))
-	assert.False(t, isClientIDApiKey(""))
-	// "api_key" has prefix "api_key" so it returns true
-	assert.True(t, isClientIDApiKey("api_key"))
-	assert.True(t, isClientIDApiKey("api_key_"))
-	assert.True(t, isClientIDApiKey("api_keyXYZ"))
-}
-
-// --- Tests for inferDeviceName (edge cases) ---
-
 func TestInferDeviceName_Cases(t *testing.T) {
 	tests := []struct {
 		ua       string
@@ -2806,7 +2563,7 @@ func TestSelectFinalClaims_AllLayers(t *testing.T) {
 // --- Tests for buildTranslationMap ---
 
 func TestBuildTranslationMap_NilLocalization(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("GET", "/", nil)
 	translations := h.buildTranslationMap(context.Background(), req)
@@ -3003,7 +2760,7 @@ func TestWriteTokenHookResponse_Structure(t *testing.T) {
 // --- Tests for getOrCreateTenancyAccessByClientID ---
 
 func TestGetOrCreateTenancyAccessByClientID_EmptyClientID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	_, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "", "profile-1")
 	assert.Error(t, err)
@@ -3011,7 +2768,7 @@ func TestGetOrCreateTenancyAccessByClientID_EmptyClientID(t *testing.T) {
 }
 
 func TestGetOrCreateTenancyAccessByClientID_EmptyProfileID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	_, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "client-1", "")
 	assert.Error(t, err)
@@ -3030,7 +2787,7 @@ func TestGetOrCreateTenancyAccessByClientID_GetAccessSuccess(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	access, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "client-1", "profile-1")
@@ -3042,7 +2799,7 @@ func TestGetOrCreateTenancyAccessByClientID_GetAccessNilData(t *testing.T) {
 	partCli := &mockPartitionCli{
 		getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	_, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "client-1", "profile-1")
@@ -3063,7 +2820,7 @@ func TestGetOrCreateTenancyAccessByClientID_CreatesFallback(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	access, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "client-1", "profile-1")
@@ -3074,7 +2831,7 @@ func TestGetOrCreateTenancyAccessByClientID_CreatesFallback(t *testing.T) {
 // --- Tests for getOrCreateTenancyAccessByPartitionID ---
 
 func TestGetOrCreateTenancyAccessByPartitionID_EmptyPartitionID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "", "profile-1")
 	assert.Error(t, err)
@@ -3082,7 +2839,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_EmptyPartitionID(t *testing.T) {
 }
 
 func TestGetOrCreateTenancyAccessByPartitionID_EmptyProfileID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "part-1", "")
 	assert.Error(t, err)
@@ -3101,7 +2858,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_GetSuccess(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	access, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "part-1", "profile-1")
@@ -3113,7 +2870,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_NonNotFoundError(t *testing.T) {
 	partCli := &mockPartitionCli{
 		getAccessErr: connect.NewError(connect.CodeInternal, errors.New("db error")),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "part-1", "profile-1")
@@ -3128,7 +2885,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_CreateError(t *testing.T) {
 		createAccessResp: nil,
 	}
 	// Override CreateAccess to return error
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "part-1", "profile-1")
@@ -3140,7 +2897,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_CreateNilData(t *testing.T) {
 		getAccessErr:     connect.NewError(connect.CodeNotFound, errors.New("not found")),
 		createAccessResp: connect.NewResponse(&partitionv1.CreateAccessResponse{}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	_, err := h.getOrCreateTenancyAccessByPartitionID(context.Background(), "part-1", "profile-1")
@@ -3151,7 +2908,7 @@ func TestGetOrCreateTenancyAccessByPartitionID_CreateNilData(t *testing.T) {
 // --- Tests for setupLoginOptions ---
 
 func TestSetupLoginOptions_NoProviders(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.setupLoginOptions(&aconfig.AuthenticationConfig{})
 	assert.Equal(t, true, h.loginOptions["enableContactLogin"])
 	assert.Nil(t, h.loginOptions["enableGoogleLogin"])
@@ -3159,7 +2916,7 @@ func TestSetupLoginOptions_NoProviders(t *testing.T) {
 }
 
 func TestSetupLoginOptions_AllProviders(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	cfg := &aconfig.AuthenticationConfig{
 		AuthProviderGoogleClientID:    "google-id",
 		AuthProviderMetaClientID:      "meta-id",
@@ -3174,7 +2931,7 @@ func TestSetupLoginOptions_AllProviders(t *testing.T) {
 }
 
 func TestSetupLoginOptions_ContactLoginDisabled(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	cfg := &aconfig.AuthenticationConfig{
 		AuthProviderContactLoginDisabled: true,
 	}
@@ -3185,7 +2942,7 @@ func TestSetupLoginOptions_ContactLoginDisabled(t *testing.T) {
 // --- Tests for ProviderLoginEndpointV2 ---
 
 func TestProviderLoginEndpointV2_EmptyProviderName(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 	req := httptest.NewRequest("GET", "/s/social/login/evt1?provider=", nil)
 	rr := httptest.NewRecorder()
@@ -3196,7 +2953,7 @@ func TestProviderLoginEndpointV2_EmptyProviderName(t *testing.T) {
 }
 
 func TestProviderLoginEndpointV2_UnknownProvider(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 	req := httptest.NewRequest("GET", "/s/social/login/evt1?provider=unknown", nil)
 	rr := httptest.NewRecorder()
@@ -3367,7 +3124,7 @@ func TestUpdateProfileName_Success(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profileClient
 
@@ -3382,7 +3139,7 @@ func TestUpdateProfileName_Error(t *testing.T) {
 		updateErr: errors.New("profile service unavailable"),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profileClient
 
@@ -3395,7 +3152,7 @@ func TestUpdateProfileName_Error(t *testing.T) {
 
 func TestAttemptRememberMeLogin_OldEventNotFound(t *testing.T) {
 	repo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(repo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(repo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	client := hydraclientgo.NewOAuth2Client()
@@ -3416,7 +3173,7 @@ func TestAttemptRememberMeLogin_OldEventNoProfileID(t *testing.T) {
 	oldEvt.ID = "old-event"
 	repo.events["old-event"] = oldEvt
 
-	h := newFullTestAuthServer(repo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(repo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	client := hydraclientgo.NewOAuth2Client()
@@ -3438,7 +3195,7 @@ func TestAttemptRememberMeLogin_ClientIDMismatch(t *testing.T) {
 	oldEvt.ID = "old-event"
 	repo.events["old-event"] = oldEvt
 
-	h := newFullTestAuthServer(repo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(repo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	client := hydraclientgo.NewOAuth2Client()
@@ -3466,7 +3223,7 @@ func TestAttemptRememberMeLogin_Success(t *testing.T) {
 	oldEvt.AccessID = "access-1"
 	repo.events["old-event"] = oldEvt
 
-	h := newFullTestAuthServer(repo, newMockAPIKeyRepo(), &mockHydra{
+	h := newFullTestAuthServer(repo, &mockHydra{
 		acceptLoginURL: "https://redirect-url",
 	}, &mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
@@ -3492,7 +3249,7 @@ func TestAttemptRememberMeLogin_AcceptFails(t *testing.T) {
 	oldEvt.ID = "old-event"
 	repo.events["old-event"] = oldEvt
 
-	h := newFullTestAuthServer(repo, newMockAPIKeyRepo(), &mockHydra{
+	h := newFullTestAuthServer(repo, &mockHydra{
 		acceptLoginErr: errors.New("hydra unavailable"),
 	}, &mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
@@ -3536,7 +3293,7 @@ func (m *mockAuthProvider) CompleteLogin(_ context.Context, _, _, _ string) (*pr
 }
 
 func TestProviderLoginEndpointV2_ValidProvider(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{
 		"test": &mockAuthProvider{name: "test"},
 	}
@@ -3567,7 +3324,7 @@ func TestProviderLoginEndpointV2_ValidProvider(t *testing.T) {
 // --- Tests for ProviderCallbackEndpointV2 error paths ---
 
 func TestProviderCallbackEndpointV2_ProviderError(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 
 	req := httptest.NewRequest("GET", "/s/social/callback/evt1?error=access_denied&error_description=user+denied", nil)
@@ -3579,7 +3336,7 @@ func TestProviderCallbackEndpointV2_ProviderError(t *testing.T) {
 }
 
 func TestProviderCallbackEndpointV2_NoCookie(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 
 	req := httptest.NewRequest("GET", "/s/social/callback/evt1?code=abc123", nil)
@@ -3596,7 +3353,7 @@ func TestStoreLoginAttempt_NewProfile(t *testing.T) {
 	loginRepo := newMockLoginRepo()
 	eventRepo := newMockLoginEventRepo()
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -3624,7 +3381,7 @@ func TestStoreLoginAttempt_ExistingLogin(t *testing.T) {
 
 	eventRepo := newMockLoginEventRepo()
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -3643,7 +3400,7 @@ func TestStoreLoginAttempt_ExistingLogin(t *testing.T) {
 // --- Tests for ensureLoginEventForSkippedLogin ---
 
 func TestEnsureLoginEventForSkippedLogin_NilLoginReq(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = newMockLoginRepo()
 
@@ -3654,7 +3411,7 @@ func TestEnsureLoginEventForSkippedLogin_NilLoginReq(t *testing.T) {
 }
 
 func TestEnsureLoginEventForSkippedLogin_EmptySubject(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = newMockLoginRepo()
 
@@ -3666,7 +3423,7 @@ func TestEnsureLoginEventForSkippedLogin_EmptySubject(t *testing.T) {
 }
 
 func TestEnsureLoginEventForSkippedLogin_NoClientID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = newMockLoginRepo()
 
@@ -3705,7 +3462,7 @@ func TestEnsureLoginEventForSkippedLogin_ExistingByOauth2Session(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = newMockLoginRepo()
 
@@ -3731,7 +3488,7 @@ func TestEnsureLoginEventForSkippedLogin_ExistingClientMismatch(t *testing.T) {
 	eventRepo.events["evt-existing"] = existingEvt
 	eventRepo.byOauth2Sess["oauth2-sess-1"] = existingEvt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = newMockLoginRepo()
 
@@ -3770,7 +3527,7 @@ func TestEnsureLoginEventForSkippedLogin_CreatesNew(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, devCli, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -3790,14 +3547,14 @@ func TestEnsureLoginEventForSkippedLogin_CreatesNew(t *testing.T) {
 // --- Tests for updateTenancyForLoginEvent ---
 
 func TestUpdateTenancyForLoginEvent_EmptyLoginEventID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	// Should not panic, just logs error
 	h.updateTenancyForLoginEvent(context.Background(), "")
 }
 
 func TestUpdateTenancyForLoginEvent_EventNotInCache(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	// Event not found, should log error and return
 	h.updateTenancyForLoginEvent(context.Background(), "nonexistent")
@@ -3809,7 +3566,7 @@ func TestUpdateTenancyForLoginEvent_EmptyClientID(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	// No cache, falls back to repo. ClientID is empty, should log warn and return.
 	h.updateTenancyForLoginEvent(context.Background(), "evt-1")
@@ -3824,7 +3581,7 @@ func TestUpdateTenancyForLoginEvent_PartitionLookupFails(t *testing.T) {
 	partCli := &mockPartitionCli{
 		getPartitionErr: connect.NewError(connect.CodeInternal, errors.New("db error")),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	// Should log error and return
 	h.updateTenancyForLoginEvent(context.Background(), "evt-1")
@@ -3844,7 +3601,7 @@ func TestUpdateTenancyForLoginEvent_Success(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	h.updateTenancyForLoginEvent(context.Background(), "evt-1")
@@ -3856,7 +3613,7 @@ func TestUpdateTenancyForLoginEvent_Success(t *testing.T) {
 // --- Tests for createLoginEvent ---
 
 func TestCreateLoginEvent_MissingClientID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	client := hydraclientgo.NewOAuth2Client()
@@ -3871,7 +3628,7 @@ func TestCreateLoginEvent_MissingClientID(t *testing.T) {
 
 func TestCreateLoginEvent_Success(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	client := hydraclientgo.NewOAuth2Client()
@@ -3917,7 +3674,7 @@ func TestExtractLoginEventID_NonStringValue(t *testing.T) {
 // --- Tests for logConsentSuccess ---
 
 func TestLogConsentSuccess_WithFields(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	log := util.Log(context.Background())
 	tokenMap := map[string]any{
 		"partition_id": "p1",
@@ -3930,7 +3687,7 @@ func TestLogConsentSuccess_WithFields(t *testing.T) {
 }
 
 func TestLogConsentSuccess_Empty(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	log := util.Log(context.Background())
 	h.logConsentSuccess(log, map[string]any{}, time.Now())
 }
@@ -3938,35 +3695,25 @@ func TestLogConsentSuccess_Empty(t *testing.T) {
 // --- Tests for shouldRenderBrowserInterstitial ---
 
 func TestShouldRenderBrowserInterstitial_BrowserUserToken(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
 	assert.True(t, h.shouldRenderBrowserInterstitial(req, []string{"openid"}, "my-client"))
 }
 
 func TestShouldRenderBrowserInterstitial_NonBrowser(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Accept", "application/json")
 	assert.False(t, h.shouldRenderBrowserInterstitial(req, []string{"openid"}, "my-client"))
 }
 
 func TestShouldRenderBrowserInterstitial_SystemScope(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Accept", "text/html")
 	assert.False(t, h.shouldRenderBrowserInterstitial(req, []string{"system_int"}, "my-client"))
 }
-
-func TestShouldRenderBrowserInterstitial_APIKey(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Accept", "text/html")
-	assert.False(t, h.shouldRenderBrowserInterstitial(req, []string{"openid"}, "api_key_client1"))
-}
-
-// --- Tests for inferDeviceName ---
-
 func TestInferDeviceName_AllCases(t *testing.T) {
 	tests := []struct {
 		ua       string
@@ -4010,7 +3757,7 @@ func TestProcessDeviceSession_CreateAndLink(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-new", ProfileId: "profile-1"},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	result, err := h.processDeviceSession(context.Background(), "profile-1", "Mozilla/5.0")
@@ -4025,7 +3772,7 @@ func TestProcessDeviceSession_ExistingByID(t *testing.T) {
 			Data: []*devicev1.DeviceObject{{Id: "dev-1", ProfileId: "profile-1"}},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	// Must set device ID in context so processDeviceSession calls GetById
@@ -4043,7 +3790,7 @@ func TestProcessDeviceSession_ExistingBySession(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-sess", ProfileId: "profile-1"},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	// Must set session ID in context so processDeviceSession calls GetBySessionId
@@ -4058,7 +3805,7 @@ func TestProcessDeviceSession_CreateFails(t *testing.T) {
 	devCli := &mockDeviceCli{
 		createErr: connect.NewError(connect.CodeInternal, errors.New("device create failed")),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	_, err := h.processDeviceSession(context.Background(), "profile-1", "curl/7.0")
@@ -4068,7 +3815,7 @@ func TestProcessDeviceSession_CreateFails(t *testing.T) {
 // --- Tests for storeDeviceID ---
 
 func TestStoreDeviceID_SameID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 	device := &devicev1.DeviceObject{Id: "same-id"}
 	// When device ID matches context, no cookie should be set
@@ -4077,7 +3824,7 @@ func TestStoreDeviceID_SameID(t *testing.T) {
 }
 
 func TestStoreDeviceID_NewID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 	device := &devicev1.DeviceObject{Id: "new-device-id"}
 	err := h.storeDeviceID(context.Background(), rr, device)
@@ -4090,7 +3837,7 @@ func TestStoreDeviceID_NewID(t *testing.T) {
 // --- Tests for setRememberMeCookie / clearRememberMeCookie ---
 
 func TestSetRememberMeCookie_Value(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 	err := h.setRememberMeCookie(rr, "evt-123")
 	require.NoError(t, err)
@@ -4108,7 +3855,7 @@ func TestSetRememberMeCookie_Value(t *testing.T) {
 }
 
 func TestClearRememberMeCookie_Expiry(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 	h.clearRememberMeCookie(rr)
 	cookies := rr.Result().Cookies()
@@ -4125,7 +3872,7 @@ func TestClearRememberMeCookie_Expiry(t *testing.T) {
 // --- Tests for ensureLoginEventTenancyAccess ---
 
 func TestEnsureLoginEventTenancyAccess_NilEvent(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	_, err := h.ensureLoginEventTenancyAccess(context.Background(), nil, "c1", "p1")
 	assert.Error(t, err)
@@ -4133,7 +3880,7 @@ func TestEnsureLoginEventTenancyAccess_NilEvent(t *testing.T) {
 }
 
 func TestEnsureLoginEventTenancyAccess_EmptyClientID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	evt := &models.LoginEvent{}
 	evt.ID = "evt-1"
@@ -4143,7 +3890,7 @@ func TestEnsureLoginEventTenancyAccess_EmptyClientID(t *testing.T) {
 }
 
 func TestEnsureLoginEventTenancyAccess_EmptyProfileID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	evt := &models.LoginEvent{}
 	evt.ID = "evt-1"
@@ -4162,7 +3909,7 @@ func TestEnsureLoginEventTenancyAccess_ProfileMismatch(t *testing.T) {
 		}),
 	}
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	evt := &models.LoginEvent{ProfileID: "different-profile"}
 	evt.ID = "evt-1"
@@ -4183,7 +3930,7 @@ func TestEnsureLoginEventTenancyAccess_Success(t *testing.T) {
 		}),
 	}
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	evt := &models.LoginEvent{}
 	evt.ID = "evt-1"
@@ -4208,7 +3955,7 @@ func TestEnsureLoginEventTenancyAccess_NoChanges(t *testing.T) {
 		}),
 	}
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	evt := &models.LoginEvent{
 		ClientID:  "c1",
@@ -4228,7 +3975,7 @@ func TestEnsureLoginEventTenancyAccess_NoChanges(t *testing.T) {
 // --- Tests for getLoginEventFromCache ---
 
 func TestGetLoginEventFromCache_EmptyID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	_, err := h.getLoginEventFromCache(context.Background(), "")
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrLoginEventNotFound)
@@ -4240,7 +3987,7 @@ func TestGetLoginEventFromCache_NilCacheFallsBackToRepo(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newTestAuthServer(eventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(eventRepo)
 	// cacheMan is nil, should fallback to repo
 	result, err := h.getLoginEventFromCache(context.Background(), "evt-1")
 	require.NoError(t, err)
@@ -4248,7 +3995,7 @@ func TestGetLoginEventFromCache_NilCacheFallsBackToRepo(t *testing.T) {
 }
 
 func TestGetLoginEventFromCache_NotFoundInRepoFallback(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	_, err := h.getLoginEventFromCache(context.Background(), "nonexistent")
 	assert.Error(t, err)
 }
@@ -4256,7 +4003,7 @@ func TestGetLoginEventFromCache_NotFoundInRepoFallback(t *testing.T) {
 // --- Tests for setLoginEventToCache ---
 
 func TestSetLoginEventToCache_NilCache(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	evt := &models.LoginEvent{}
 	evt.ID = "evt-1"
 	// Should be a no-op when cache is nil
@@ -4267,7 +4014,7 @@ func TestSetLoginEventToCache_NilCache(t *testing.T) {
 // --- Tests for ProviderCallbackEndpointV2 deeper paths ---
 
 func TestProviderCallbackEndpointV2_ExpiredState(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{
 		"test": &mockAuthProvider{name: "test"},
 	}
@@ -4291,7 +4038,7 @@ func TestProviderCallbackEndpointV2_ExpiredState(t *testing.T) {
 }
 
 func TestProviderCallbackEndpointV2_StateMismatch(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{
 		"test": &mockAuthProvider{name: "test"},
 	}
@@ -4314,7 +4061,7 @@ func TestProviderCallbackEndpointV2_StateMismatch(t *testing.T) {
 }
 
 func TestProviderCallbackEndpointV2_UnknownProvider(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 
 	state := &providers.AuthState{
@@ -4335,7 +4082,7 @@ func TestProviderCallbackEndpointV2_UnknownProvider(t *testing.T) {
 }
 
 func TestProviderCallbackEndpointV2_MissingCode(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.loginAuthProviders = map[string]providers.AuthProvider{
 		"test": &mockAuthProvider{name: "test"},
 	}
@@ -4363,7 +4110,7 @@ func TestBuildUserTokenClaims_DeviceSessionFails(t *testing.T) {
 	devCli := &mockDeviceCli{
 		createErr: connect.NewError(connect.CodeInternal, errors.New("device error")),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4383,7 +4130,7 @@ func TestBuildUserTokenClaims_MissingLoginEventID(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-1", ProfileId: "subject-1"},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4420,7 +4167,7 @@ func TestBuildUserTokenClaims_Success(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4450,7 +4197,7 @@ func TestBuildUserTokenClaims_LoginEventLookupFails(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-1", ProfileId: "subject-1"},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4481,7 +4228,7 @@ func TestBuildUserTokenClaims_ClientMismatch(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-1", ProfileId: "subject-1"},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4512,7 +4259,7 @@ func TestBuildUserTokenClaims_SubjectMismatch(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-1", ProfileId: "subject-1"},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4546,7 +4293,7 @@ func TestBuildUserTokenClaims_TenancyAccessFails(t *testing.T) {
 	partCli := &mockPartitionCli{
 		getAccessErr: connect.NewError(connect.CodeInternal, errors.New("partition down")),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -4562,7 +4309,7 @@ func TestBuildUserTokenClaims_TenancyAccessFails(t *testing.T) {
 // --- Tests for postUserLogin error paths ---
 
 func TestPostUserLogin_EmptyContact(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	loginEvt := &models.LoginEvent{ClientID: "c1", LoginChallengeID: "challenge-1"}
@@ -4582,7 +4329,7 @@ func TestPostUserLogin_ProfileLookupError(t *testing.T) {
 		getByContactErr: connect.NewError(connect.CodeInternal, errors.New("profile service down")),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 
@@ -4624,7 +4371,7 @@ func TestPostUserLogin_ProfileNotFoundCreatesNew(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -4657,7 +4404,7 @@ func TestPostUserLogin_ExistingProfileContactMissing(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 
@@ -4699,7 +4446,7 @@ func TestPostUserLogin_FullSuccess(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -4746,7 +4493,7 @@ func TestPostUserLogin_AcceptLoginFails(t *testing.T) {
 		acceptLoginErr: errors.New("hydra down"),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -4772,7 +4519,7 @@ func TestPostUserLogin_CreateProfileFails(t *testing.T) {
 		createErr:       connect.NewError(connect.CodeInternal, errors.New("create failed")),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 
@@ -4791,7 +4538,7 @@ func TestPostUserLogin_CreateProfileFails(t *testing.T) {
 // --- Tests for LoginEndpointShow ---
 
 func TestLoginEndpointShow_MissingChallenge(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{
 		getLoginErr: errors.New("invalid challenge"),
 	}, &mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
@@ -4805,7 +4552,7 @@ func TestLoginEndpointShow_MissingChallenge(t *testing.T) {
 }
 
 func TestLoginEndpointShow_HydraGetLoginFails(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{
 		getLoginErr: errors.New("hydra error"),
 	}, &mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
@@ -4848,7 +4595,7 @@ func TestLoginEndpointShow_SkipFlow(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, devCli, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
@@ -4878,7 +4625,7 @@ func TestLoginEndpointShow_RenderLoginForm(t *testing.T) {
 		getLoginReq: loginReq,
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginAuthProviders = map[string]providers.AuthProvider{}
 	h.loginOptions = map[string]any{"has_contact_login": true}
@@ -4896,7 +4643,7 @@ func TestLoginEndpointShow_RenderLoginForm(t *testing.T) {
 // --- Tests for LoginEndpointSubmit ---
 
 func TestLoginEndpointSubmit_EventNotFound(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/login/nonexistent", nil)
@@ -4913,7 +4660,7 @@ func TestLoginEndpointSubmit_EmptyContact(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/login/evt-1", strings.NewReader("contactDetail="))
@@ -4930,7 +4677,7 @@ func TestLoginEndpointSubmit_EmptyContact(t *testing.T) {
 // --- Tests for VerificationEndpointShow ---
 
 func TestVerificationEndpointShow_EmptyID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("GET", "/s/verify/contact", nil)
 	req.SetPathValue(pathValueLoginEventID, "")
@@ -4948,7 +4695,7 @@ func TestVerificationEndpointShow_ValidEvent(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1", nil)
@@ -4964,7 +4711,7 @@ func TestVerificationEndpointShow_SessionExpired(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = errors.New("db error")
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/nonexistent", nil)
@@ -4980,7 +4727,7 @@ func TestVerificationEndpointShow_SessionExpired(t *testing.T) {
 // --- Tests for VerificationEndpointSubmit ---
 
 func TestVerificationEndpointSubmit_EmptyEventID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/", strings.NewReader(""))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -4996,7 +4743,7 @@ func TestVerificationEndpointSubmit_EventNotFound(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = gorm.ErrRecordNotFound
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/nonexistent",
@@ -5053,7 +4800,7 @@ func TestVerificationEndpointSubmit_VerifyProviderLogin(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5117,7 +4864,7 @@ func TestVerificationEndpointSubmit_VerifyDirectLogin(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5161,7 +4908,7 @@ func TestVerificationEndpointSubmit_VerificationCodeIncorrect(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5201,7 +4948,7 @@ func TestVerificationEndpointSubmit_AttemptsExceeded(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5235,7 +4982,7 @@ func TestVerificationEndpointSubmit_LoginLocked(t *testing.T) {
 	loginRepo.logins["login-1"] = login
 	evt.LoginID = "login-1"
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5304,7 +5051,7 @@ func TestVerificationEndpointSubmit_FirstTimeLogin(t *testing.T) {
 		acceptLoginURL: "https://hydra.example.com/redirect",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5342,7 +5089,7 @@ func TestVerificationEndpointSubmit_CheckVerificationError(t *testing.T) {
 		checkVerificationErr: errors.New("service unavailable"),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = loginRepo
@@ -5362,30 +5109,12 @@ func TestVerificationEndpointSubmit_CheckVerificationError(t *testing.T) {
 // --- Tests for CheckLoginRateLimit ---
 
 func TestCheckLoginRateLimit_NilCache(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	result := h.CheckLoginRateLimit(context.Background(), "192.168.1.1")
 	assert.True(t, result.Allowed)
 }
-
-// --- Tests for CreateAPIKeyEndpoint ---
-
-func TestCreateAPIKeyEndpoint_NoAuth(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	body := `{"scope": ["user"]}`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	// Should fail because no JWT/auth claims
-	assert.Error(t, err)
-}
-
-// --- Tests for showVerificationPage redirect ---
-
 func TestShowVerificationPage(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1", nil)
 	rr := httptest.NewRecorder()
@@ -5396,7 +5125,7 @@ func TestShowVerificationPage(t *testing.T) {
 }
 
 func TestShowVerificationPage_WithError(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1", nil)
 	rr := httptest.NewRecorder()
@@ -5418,7 +5147,7 @@ func TestExtractLoginEventID_InterfaceMap(t *testing.T) {
 // --- Tests for VerificationResendEndpoint ---
 
 func TestVerificationResendEndpoint_MissingEventID(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/", nil)
 	req.SetPathValue(pathValueLoginEventID, "")
@@ -5437,7 +5166,7 @@ func TestVerificationResendEndpoint_MissingEventID(t *testing.T) {
 func TestVerificationResendEndpoint_EventNotFound(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = gorm.ErrRecordNotFound
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/nonexistent", nil)
@@ -5455,7 +5184,7 @@ func TestVerificationResendEndpoint_NoVerificationID(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/evt-1", nil)
@@ -5477,7 +5206,7 @@ func TestVerificationResendEndpoint_MaxResendsExceeded(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/evt-1", nil)
@@ -5504,7 +5233,7 @@ func TestVerificationResendEndpoint_Success(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 
@@ -5531,7 +5260,7 @@ func TestVerificationResendEndpoint_MissingContactID(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/evt-1", nil)
@@ -5556,7 +5285,7 @@ func TestVerificationResendEndpoint_CreateVerificationError(t *testing.T) {
 		createContactVerificationErr: errors.New("service down"),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 
@@ -5568,183 +5297,6 @@ func TestVerificationResendEndpoint_CreateVerificationError(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 }
-
-// --- Tests for API Key Endpoints with auth ---
-
-func TestCreateAPIKeyEndpoint_Success(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	h := newFullTestAuthServer(newMockLoginEventRepo(), apiKeyRepo, &mockHydra{},
-		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
-
-	body := `{"name":"test-key","scope":"read","audience":["api"],"metadata":{"env":"test"}}`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	// Add claims to context
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rr.Code)
-
-	var resp apiKey
-	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
-	assert.NotEmpty(t, resp.Key)
-	assert.NotEmpty(t, resp.KeySecret)
-	assert.Equal(t, "test-key", resp.Name)
-}
-
-func TestCreateAPIKeyEndpoint_InvalidJSON(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
-		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
-
-	body := `{invalid json`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	assert.Error(t, err)
-}
-
-func TestListAPIKeyEndpoint_NoAuth(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("GET", "/api/key", nil)
-	rr := httptest.NewRecorder()
-
-	err := h.ListAPIKeyEndpoint(rr, req)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no credentials")
-}
-
-func TestListAPIKeyEndpoint_Success(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	key := &models.APIKey{Name: "test-key", ProfileID: "profile-1", Scope: "read"}
-	key.ID = "k1"
-	apiKeyRepo.keys["k1"] = key
-
-	h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-	req := httptest.NewRequest("GET", "/api/key", nil)
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.ListAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	var resp []apiKey
-	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
-	assert.Len(t, resp, 1)
-	assert.Equal(t, "test-key", resp[0].Name)
-}
-
-func TestGetAPIKeyEndpoint_NoAuth(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("GET", "/api/key/k1", nil)
-	req.SetPathValue("ApiKeyId", "k1")
-	rr := httptest.NewRecorder()
-
-	err := h.GetAPIKeyEndpoint(rr, req)
-	assert.Error(t, err)
-}
-
-func TestGetAPIKeyEndpoint_NotFound(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("GET", "/api/key/nonexistent", nil)
-	req.SetPathValue("ApiKeyId", "nonexistent")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.GetAPIKeyEndpoint(rr, req)
-	// mockAPIKeyRepo.GetByID returns generic error, not gorm.ErrRecordNotFound
-	// so it falls through to the error path
-	assert.Error(t, err)
-}
-
-func TestGetAPIKeyEndpoint_Success(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	key := &models.APIKey{
-		Name:      "test-key",
-		ProfileID: "profile-1",
-		Scope:     "read",
-		Audience:  `["api","admin"]`,
-		Metadata:  data.JSONMap{"env": "test"},
-	}
-	key.ID = "k1"
-	apiKeyRepo.keys["k1"] = key
-
-	h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-	req := httptest.NewRequest("GET", "/api/key/k1", nil)
-	req.SetPathValue("ApiKeyId", "k1")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.GetAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	var resp apiKey
-	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
-	assert.Equal(t, "test-key", resp.Name)
-	assert.Equal(t, "read", resp.Scope)
-	assert.Contains(t, resp.Audience, "api")
-	assert.Equal(t, "test", resp.Metadata["env"])
-}
-
-func TestDeleteAPIKeyEndpoint_NoAuth(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("DELETE", "/api/key/k1", nil)
-	req.SetPathValue("ApiKeyId", "k1")
-	rr := httptest.NewRecorder()
-
-	err := h.DeleteAPIKeyEndpoint(rr, req)
-	assert.Error(t, err)
-}
-
-func TestDeleteAPIKeyEndpoint_Success(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	key := &models.APIKey{
-		Name:      "test-key",
-		ProfileID: "profile-1",
-	}
-	key.ID = "k1"
-	apiKeyRepo.keys["k1"] = key
-
-	h := newTestAuthServer(newMockLoginEventRepo(), apiKeyRepo)
-
-	req := httptest.NewRequest("DELETE", "/api/key/k1", nil)
-	req.SetPathValue("ApiKeyId", "k1")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.DeleteAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusAccepted, rr.Code)
-}
-
-// --- Tests for VerificationEndpointShow deeper paths ---
-
 func TestVerificationEndpointShow_WithResendInfo(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	evt := &models.LoginEvent{
@@ -5757,7 +5309,7 @@ func TestVerificationEndpointShow_WithResendInfo(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1?login_event_id=evt-1&profile_name=Test", nil)
@@ -5773,7 +5325,7 @@ func TestVerificationEndpointShow_EventNotFoundFallsToRedirect(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = gorm.ErrRecordNotFound
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/unknown-id", nil)
@@ -5798,7 +5350,7 @@ func TestStoreLoginAttempt_NewLogin(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	loginRepo := newMockLoginRepo()
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5829,7 +5381,7 @@ func TestStoreLoginAttempt_ReusesExistingLogin(t *testing.T) {
 	loginRepo.logins["login-existing"] = existingLogin
 	loginRepo.byProfileID["profile-1"] = existingLogin
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5846,7 +5398,7 @@ func TestStoreLoginAttempt_CreateLoginEventError(t *testing.T) {
 	eventRepo.createErr = errors.New("db error")
 	loginRepo := newMockLoginRepo()
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5862,7 +5414,7 @@ func TestStoreLoginAttempt_CreateLoginRecordError(t *testing.T) {
 	loginRepo := newMockLoginRepo()
 	loginRepo.createErr = errors.New("login create failed")
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5877,7 +5429,7 @@ func TestStoreLoginAttempt_CreateLoginRecordError(t *testing.T) {
 
 func TestLoginEndpointSubmit_CacheMiss(t *testing.T) {
 	// No event in cache -> error
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	req := httptest.NewRequest("POST", "/s/login/nonexistent/post",
 		strings.NewReader("contactDetail=user@example.com"))
@@ -5899,7 +5451,7 @@ func TestLoginEndpointSubmit_EmptyContact_NoCacheFallback(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/login/evt-1/post",
@@ -5947,7 +5499,7 @@ func TestVerificationEndpointSubmit_FormFallback(t *testing.T) {
 	}
 	hydraCli := &mockHydra{acceptLoginURL: "https://hydra.example.com/redirect"}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -5993,7 +5545,7 @@ func TestVerificationEndpointSubmit_HydraAcceptError(t *testing.T) {
 	}
 	hydraCli := &mockHydra{acceptLoginErr: errors.New("hydra unavailable")}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -6039,7 +5591,7 @@ func TestVerificationEndpointSubmit_UpdateProfileError(t *testing.T) {
 		updateErr: errors.New("profile service down"), // profile name update fails
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.profileCli = profCli
@@ -6054,69 +5606,6 @@ func TestVerificationEndpointSubmit_UpdateProfileError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "profile service down")
 }
-
-// --- Tests for CreateAPIKeyEndpoint with partition_id query ---
-
-func TestCreateAPIKeyEndpoint_WithPartitionID(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	h := newFullTestAuthServer(newMockLoginEventRepo(), apiKeyRepo, &mockHydra{},
-		&mockPartitionCli{
-			getPartitionErr: errors.New("partition not found"),
-		}, &mockDeviceCli{}, &mockAuthorizer{})
-
-	body := `{"name":"test-key","scope":"read","audience":["api"],"metadata":{}}`
-	req := httptest.NewRequest("POST", "/api/key?partition_id=child-p1", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	// GetPartition fails -> error
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "partition not found")
-}
-
-func TestCreateAPIKeyEndpoint_DBCreateError(t *testing.T) {
-	apiKeyRepo := newMockAPIKeyRepo()
-	apiKeyRepo.createErr = errors.New("db write error")
-
-	h := newFullTestAuthServer(newMockLoginEventRepo(), apiKeyRepo, &mockHydra{},
-		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
-
-	body := `{"name":"test-key","scope":"read","audience":["api"],"metadata":{}}`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "db write error")
-}
-
-func TestDeleteAPIKeyEndpoint_NotFound(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("DELETE", "/api/key/nonexistent", nil)
-	req.SetPathValue("ApiKeyId", "nonexistent")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "profile-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.DeleteAPIKeyEndpoint(rr, req)
-	// GetByIDAndProfile returns generic error (not gorm.ErrRecordNotFound)
-	assert.Error(t, err)
-}
-
-// --- Tests for VerificationEndpointShow with expired resend cooldown ---
-
 func TestVerificationEndpointShow_ResendCooldownExpired(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	evt := &models.LoginEvent{
@@ -6129,7 +5618,7 @@ func TestVerificationEndpointShow_ResendCooldownExpired(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1", nil)
@@ -6185,7 +5674,7 @@ func TestVerificationResendEndpoint_ResendTooSoon(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("POST", "/s/verify/contact/resend/evt-1", nil)
@@ -6207,7 +5696,7 @@ func TestVerificationResendEndpoint_ResendTooSoon(t *testing.T) {
 func TestVerifyProfileLogin_LoginNotFound(t *testing.T) {
 	loginRepo := newMockLoginRepo()
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -6236,7 +5725,7 @@ func TestVerifyProfileLogin_CreateProfileError(t *testing.T) {
 		createErr: errors.New("profile service unavailable"),
 	}
 
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.profileCli = profCli
@@ -6262,7 +5751,7 @@ func TestPostUserLogin_CreateProfileReturnsNilProfile(t *testing.T) {
 			Data: nil, // nil profile
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6286,7 +5775,7 @@ func TestPostUserLogin_CreateProfileReturnsEmptyID(t *testing.T) {
 			Data: &profilev1.ProfileObject{Id: ""}, // empty ID
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6333,7 +5822,7 @@ func TestPostUserLogin_GetByContactReturnsEmptyIDProfile(t *testing.T) {
 	hydraCli := &mockHydra{acceptLoginURL: "https://hydra/redirect"}
 
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6365,7 +5854,7 @@ func TestPostUserLogin_StoreLoginAttemptFails(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.createErr = errors.New("db error") // storeLoginAttempt will fail
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6399,7 +5888,7 @@ func TestPostUserLogin_EnsureTenancyAccessFails(t *testing.T) {
 	}
 
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6442,7 +5931,7 @@ func TestPostUserLogin_NameFromFirstAndLastName(t *testing.T) {
 	hydraCli := &mockHydra{acceptLoginURL: "https://hydra/redirect"}
 
 	eventRepo := newMockLoginEventRepo()
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.profileCli = profCli
 	h.loginRepo = newMockLoginRepo()
@@ -6477,7 +5966,7 @@ func TestUpdateTenancyForLoginEvent_NilPartition(t *testing.T) {
 			Data: nil, // nil partition
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	// Should not panic, just log warning and return
@@ -6494,7 +5983,7 @@ func TestVerificationEndpointShow_WithErrorParam(t *testing.T) {
 	evt.ID = "evt-1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/s/verify/contact/evt-1?error=invalid+code&contact_type=email", nil)
@@ -6506,29 +5995,6 @@ func TestVerificationEndpointShow_WithErrorParam(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Contains(t, rr.Body.String(), "invalid code")
 }
-
-// --- Test for API Key list returns empty for unknown profile ---
-
-func TestListAPIKeyEndpoint_EmptyList(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-
-	req := httptest.NewRequest("GET", "/api/key", nil)
-	claims := security.ClaimsFromMap(map[string]string{"sub": "unknown-profile", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.ListAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	var resp []apiKey
-	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
-	assert.Empty(t, resp)
-}
-
-// --- Tests for ensureLoginEventTenancyAccess edge cases ---
-
 func TestEnsureLoginEventTenancyAccess_NilPartition(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	partCli := &mockPartitionCli{
@@ -6539,7 +6005,7 @@ func TestEnsureLoginEventTenancyAccess_NilPartition(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	evt := &models.LoginEvent{ClientID: "c1", ProfileID: "p1"}
@@ -6560,7 +6026,7 @@ func TestEnsureLoginEventTenancyAccess_EmptyAccessID(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	evt := &models.LoginEvent{ClientID: "c1", ProfileID: "p1"}
@@ -6581,7 +6047,7 @@ func TestEnsureLoginEventTenancyAccess_IncompletePartition(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	evt := &models.LoginEvent{ClientID: "c1", ProfileID: "p1"}
@@ -6602,7 +6068,7 @@ func TestEnsureLoginEventTenancyAccess_NoChangesNeeded(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	// Set all fields to match what partition service returns
@@ -6637,7 +6103,7 @@ func TestVerificationEndpointSubmit_EmptyProfileAfterVerify(t *testing.T) {
 	login.ID = "login-1"
 	loginRepo.logins["login-1"] = login
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -6657,7 +6123,7 @@ func TestVerificationEndpointSubmit_LoginEventNotFound(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	// No events in repo — mock returns generic error (not gorm.ErrRecordNotFound)
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	form := strings.NewReader("verification_code=123456")
@@ -6673,7 +6139,7 @@ func TestVerificationEndpointSubmit_LoginEventNotFound(t *testing.T) {
 }
 
 func TestVerificationEndpointSubmit_MissingLoginEventID(t *testing.T) {
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 
 	form := strings.NewReader("")
@@ -6705,7 +6171,7 @@ func TestVerificationEndpointSubmit_TenancyAccessFails(t *testing.T) {
 	partCli := &mockPartitionCli{
 		getAccessErr: connect.NewError(connect.CodeInternal, errors.New("partition error")),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -6748,7 +6214,7 @@ func TestVerificationEndpointSubmit_UpdateProfileName(t *testing.T) {
 		updateErr: errors.New("profile update failed"),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.profileCli = profileCli
@@ -6784,7 +6250,7 @@ func TestVerifyProfileLogin_FirstTimeLoginCreateProfile(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.profileCli = profileCli
@@ -6819,7 +6285,7 @@ func TestVerifyProfileLogin_CreateProfileNilResponse(t *testing.T) {
 		}),
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 	h.profileCli = profileCli
@@ -6864,7 +6330,7 @@ func TestBuildUserTokenClaims_DeviceIDUpdate(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -6883,7 +6349,7 @@ func TestBuildUserTokenClaims_DeviceCreateFails(t *testing.T) {
 	devCli := &mockDeviceCli{
 		createErr: errors.New("device service down"),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -6899,7 +6365,7 @@ func TestBuildUserTokenClaims_DeviceCreateFails(t *testing.T) {
 // --- Tests for handleUserTokenEnrichment edge cases ---
 
 func TestHandleUserTokenEnrichment_SessionNotMap(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 
 	tokenObj := map[string]any{
@@ -6912,7 +6378,7 @@ func TestHandleUserTokenEnrichment_SessionNotMap(t *testing.T) {
 }
 
 func TestHandleUserTokenEnrichment_NonUserRolesPassthrough(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 
 	tokenObj := map[string]any{
@@ -6960,7 +6426,7 @@ func TestHandleUserTokenEnrichment_WithCompleteSessionClaims(t *testing.T) {
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	rr := httptest.NewRecorder()
 
@@ -7031,7 +6497,7 @@ func TestGetOrCreateTenancyAccessByClientID_EmptyAccess(t *testing.T) {
 			Data: nil, // nil access object
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 
 	_, err := h.getOrCreateTenancyAccessByClientID(context.Background(), "c1", "p1")
@@ -7049,7 +6515,7 @@ func TestProcessDeviceSession_ExistingDevice(t *testing.T) {
 			Data: []*devicev1.DeviceObject{{Id: "dev-1", ProfileId: "prof-1"}},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	ctx := utils.DeviceIDToContext(context.Background(), "dev-1")
@@ -7064,7 +6530,7 @@ func TestProcessDeviceSession_GetBySessionID(t *testing.T) {
 			Data: &devicev1.DeviceObject{Id: "dev-2", ProfileId: "prof-1"},
 		}),
 	}
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, devCli, &mockAuthorizer{})
 
 	ctx := utils.SessionIDToContext(context.Background(), "session-1")
@@ -7098,7 +6564,7 @@ func TestIsNonUserRole_Integer(t *testing.T) {
 // --- Tests for setRememberMeCookie ---
 
 func TestSetRememberMeCookie_Success(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 
 	err := h.setRememberMeCookie(rr, "evt-123")
@@ -7110,14 +6576,14 @@ func TestSetRememberMeCookie_Success(t *testing.T) {
 // --- Tests for detectLanguage edge cases ---
 
 func TestDetectLanguage_UILocalesWithRegion(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	req := httptest.NewRequest("GET", "/?ui_locales=fr-FR+en-US", nil)
 	lang := h.detectLanguage(req)
 	assert.Equal(t, "fr", lang)
 }
 
 func TestDetectLanguage_AcceptLanguageHeader(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
 	lang := h.detectLanguage(req)
@@ -7127,7 +6593,7 @@ func TestDetectLanguage_AcceptLanguageHeader(t *testing.T) {
 // --- Tests for buildTranslationMap ---
 
 func TestBuildTranslationMap_NilManager(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	// localizationManager is nil by default
 	req := httptest.NewRequest("GET", "/", nil)
 	translations := h.buildTranslationMap(context.Background(), req)
@@ -7165,7 +6631,7 @@ func TestVerificationEndpointSubmit_FormFallbackLoginEventID(t *testing.T) {
 		acceptLoginURL: "https://example.com/callback",
 	}
 
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), hydraCli,
+	h := newFullTestAuthServer(eventRepo, hydraCli,
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = loginRepo
 
@@ -7220,7 +6686,7 @@ func TestExtractNestedClaims_WithIDTokenClaims(t *testing.T) {
 // --- Test for lookupClaimsFromDB ---
 
 func TestLookupClaimsFromDB_NoIdentifiers(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 
 	result := h.lookupClaimsFromDB(context.Background(),
 		map[string]any{}, // tokenObject
@@ -7245,7 +6711,7 @@ func TestLookupClaimsFromDB_WithSessionID(t *testing.T) {
 	evt.AccessID = "a1"
 	eventRepo.events["evt-1"] = evt
 
-	h := newTestAuthServer(eventRepo, newMockAPIKeyRepo())
+	h := newTestAuthServer(eventRepo)
 
 	tokenObj := map[string]any{
 		"session": map[string]any{
@@ -7274,7 +6740,7 @@ func TestInferDeviceName_Empty(t *testing.T) {
 // --- Tests for writeAPIError ---
 
 func TestWriteAPIError_ExposeErrors(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.config.ExposeErrors = true
 
 	rr := httptest.NewRecorder()
@@ -7288,7 +6754,7 @@ func TestWriteAPIError_ExposeErrors(t *testing.T) {
 }
 
 func TestWriteAPIError_HideErrors(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.config.ExposeErrors = false
 
 	rr := httptest.NewRecorder()
@@ -7327,14 +6793,12 @@ func TestSelectFinalClaims_DeepNestedPriority(t *testing.T) {
 	assert.Equal(t, "p1", result["profile_id"]) // deep takes priority over extra
 }
 
-// --- Tests for CreateAPIKeyEndpoint deeper paths ---
-
 func TestHandleUserTokenEnrichment_LoginEventLookupFails(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = errors.New("db down")
 
 	partCli := &mockPartitionCli{}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	rr := httptest.NewRecorder()
 
@@ -7376,7 +6840,7 @@ func TestHandleUserTokenEnrichment_MissingRequiredClaimsAfterLookup(t *testing.T
 			},
 		}),
 	}
-	h := newFullTestAuthServer(eventRepo, newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
 	rr := httptest.NewRecorder()
 
@@ -7419,7 +6883,7 @@ func TestVerifyProfileLogin_LoginUpdateFails(t *testing.T) {
 	}
 
 	// Make login repo Update fail
-	h := newFullTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo(), &mockHydra{},
+	h := newFullTestAuthServer(newMockLoginEventRepo(), &mockHydra{},
 		&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
 	h.loginRepo = &failUpdateLoginRepo{mockLoginRepo: loginRepo}
 	h.profileCli = profileCli
@@ -7442,7 +6906,7 @@ func TestCheckLoginRateLimit_CacheError(t *testing.T) {
 	mockCache := newMockRateLimitCache()
 	mockCache.getErr = errors.New("cache read error")
 
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	result := h.CheckLoginRateLimit(context.Background(), "192.168.1.1")
@@ -7452,7 +6916,7 @@ func TestCheckLoginRateLimit_CacheError(t *testing.T) {
 
 func TestCheckLoginRateLimit_RateLimitExceeded(t *testing.T) {
 	mockCache := newMockRateLimitCache()
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	cacheKey := rateLimitCacheKey("192.168.1.1")
@@ -7470,7 +6934,7 @@ func TestCheckLoginRateLimit_RateLimitExceeded(t *testing.T) {
 
 func TestCheckLoginRateLimit_IncrementCounter(t *testing.T) {
 	mockCache := newMockRateLimitCache()
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	cacheKey := rateLimitCacheKey("192.168.1.1")
@@ -7488,7 +6952,7 @@ func TestCheckLoginRateLimit_IncrementCounter(t *testing.T) {
 
 func TestCheckLoginRateLimit_ExpiredEntry(t *testing.T) {
 	mockCache := newMockRateLimitCache()
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	cacheKey := rateLimitCacheKey("192.168.1.1")
@@ -7505,7 +6969,7 @@ func TestCheckLoginRateLimit_ExpiredEntry(t *testing.T) {
 
 func TestResetLoginRateLimit_WithCache(t *testing.T) {
 	mockCache := newMockRateLimitCache()
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	cacheKey := rateLimitCacheKey("192.168.1.1")
@@ -7519,7 +6983,7 @@ func TestResetLoginRateLimit_WithCache(t *testing.T) {
 func TestResetLoginRateLimit_CacheDeleteError(t *testing.T) {
 	mockCache := newMockRateLimitCache()
 	mockCache.delErr = errors.New("cache delete error")
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	// Should not panic, just log
@@ -7529,41 +6993,10 @@ func TestResetLoginRateLimit_CacheDeleteError(t *testing.T) {
 func TestCheckLoginRateLimit_SetError(t *testing.T) {
 	mockCache := newMockRateLimitCache()
 	mockCache.setErr = errors.New("cache set error")
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
+	h := newTestAuthServer(newMockLoginEventRepo())
 	h.rateLimitICache = mockCache
 
 	// First request with set error — should still allow
 	result := h.CheckLoginRateLimit(context.Background(), "10.0.0.1")
 	assert.True(t, result.Allowed)
-}
-
-func TestCreateAPIKeyEndpoint_AudienceMarshalError(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-	// This actually can't fail with json.Marshal on a slice, but test the flow
-	body := `{"name":"test-key","scope":"read","audience":["aud1","aud2"]}`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "prof-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rr.Code)
-}
-
-func TestCreateAPIKeyEndpoint_WithMetadata(t *testing.T) {
-	h := newTestAuthServer(newMockLoginEventRepo(), newMockAPIKeyRepo())
-	body := `{"name":"test-key","scope":"read","audience":["aud1"],"metadata":{"env":"prod","team":"backend"}}`
-	req := httptest.NewRequest("POST", "/api/key", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	claims := security.ClaimsFromMap(map[string]string{"sub": "prof-1", "tenant_id": "t1", "partition_id": "p1"})
-	ctx := claims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-
-	err := h.CreateAPIKeyEndpoint(rr, req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rr.Code)
 }

@@ -5,7 +5,7 @@ class profile_user implements Namespace {}
 class tenancy_access implements Namespace {
   related: {
     member: (profile_user | tenancy_access)[]
-    service: profile_user[]
+    service: (profile_user | tenancy_access)[]
   }
 }
 

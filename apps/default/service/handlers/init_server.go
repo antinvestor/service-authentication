@@ -60,7 +60,6 @@ type AuthServer struct {
 
 	// Repository dependencies
 	loginRepo      repository.LoginRepository
-	apiKeyRepo     repository.APIKeyRepository
 	loginEventRepo repository.LoginEventRepository
 
 	// Login options enabled
@@ -83,7 +82,6 @@ func NewAuthServer(ctx context.Context,
 	authConfig *aconfig.AuthenticationConfig,
 	cacheMan cache.Manager,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
-	apiKeyRepository repository.APIKeyRepository,
 	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient,
 	localizationMan localization.Manager) *AuthServer {
@@ -112,7 +110,6 @@ func NewAuthServer(ctx context.Context,
 
 		// Initialise repositories
 		loginRepo:      loginRepository,
-		apiKeyRepo:     apiKeyRepository,
 		loginEventRepo: loginEventRepository,
 
 		defaultHydraCli: hydraCli,

@@ -19,6 +19,12 @@ func (pr *partitionRoleRepository) GetByPartitionID(ctx context.Context, partiti
 	return partitionRoles, err
 }
 
+func (pr *partitionRoleRepository) GetDefaultByPartitionID(ctx context.Context, partitionID string) ([]*models.PartitionRole, error) {
+	partitionRoles := make([]*models.PartitionRole, 0)
+	err := pr.Pool().DB(ctx, true).Find(&partitionRoles, "partition_id = ? AND is_default = ?", partitionID, true).Error
+	return partitionRoles, err
+}
+
 func (pr *partitionRoleRepository) GetRolesByID(ctx context.Context, idList ...string) ([]*models.PartitionRole, error) {
 	partitionRoles := make([]*models.PartitionRole, 0)
 	err := pr.Pool().DB(ctx, true).Find(&partitionRoles, "id IN ?", idList).Error

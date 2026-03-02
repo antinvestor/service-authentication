@@ -109,208 +109,6 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 	})
 }
 
-func (suite *HandlersTestSuite) TestCreateAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		// Acquire mutex to ensure sequential execution with timeout protection
-		handlerTestMutex.Lock()
-		defer func() {
-			handlerTestMutex.Unlock()
-			if r := recover(); r != nil {
-				// Re-panic after cleanup
-				panic(r)
-			}
-		}()
-
-		// Create timeout context for the entire test
-		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
-		defer testCancel()
-
-		ctx, authServer, _ := suite.CreateService(t, dep)
-
-		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		// Create operation context with timeout
-		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
-		defer opCancel()
-
-		// Create HTTP client with timeout
-		client := &http.Client{
-			Timeout: HandlerOperationTimeout,
-		}
-
-		// Create test API key request
-		apiKeyReq := map[string]any{
-			"name":     "test-api-key",
-			"scope":    "read",
-			"audience": []string{"test"},
-		}
-		jsonData, err := json.Marshal(apiKeyReq)
-		require.NoError(t, err)
-
-		// Test PUT request to create API key endpoint (should return 401 without JWT)
-		req, err := http.NewRequestWithContext(opCtx, "PUT", server.URL+"/api/key", bytes.NewBuffer(jsonData))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer util.CloseAndLogOnError(ctx, resp.Body)
-
-		// Verify response (should be 401 Unauthorised when no JWT token is provided)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	})
-}
-
-func (suite *HandlersTestSuite) TestListAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		// Acquire mutex to ensure sequential execution with timeout protection
-		handlerTestMutex.Lock()
-		defer func() {
-			handlerTestMutex.Unlock()
-			if r := recover(); r != nil {
-				// Re-panic after cleanup
-				panic(r)
-			}
-		}()
-
-		// Create timeout context for the entire test
-		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
-		defer testCancel()
-
-		ctx, authServer, _ := suite.CreateService(t, dep)
-
-		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		// Create operation context with timeout
-		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
-		defer opCancel()
-
-		// Create HTTP client with timeout
-		client := &http.Client{
-			Timeout: HandlerOperationTimeout,
-		}
-
-		// Test GET request to list API keys endpoint (should return 401 without JWT)
-		req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+"/api/key", nil)
-		require.NoError(t, err)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer util.CloseAndLogOnError(ctx, resp.Body)
-
-		// Verify response (should be 401 Unauthorised when no JWT token is provided)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	})
-}
-
-func (suite *HandlersTestSuite) TestGetAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		// Acquire mutex to ensure sequential execution with timeout protection
-		handlerTestMutex.Lock()
-		defer func() {
-			handlerTestMutex.Unlock()
-			if r := recover(); r != nil {
-				// Re-panic after cleanup
-				panic(r)
-			}
-		}()
-
-		// Create timeout context for the entire test
-		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
-		defer testCancel()
-
-		ctx, authServer, _ := suite.CreateService(t, dep)
-
-		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		// Create operation context with timeout
-		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
-		defer opCancel()
-
-		// Create HTTP client with timeout
-		client := &http.Client{
-			Timeout: HandlerOperationTimeout,
-		}
-
-		// Test GET request to get specific API key endpoint (should return 401 without JWT)
-		req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+"/api/key/test-key-id", nil)
-		require.NoError(t, err)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer util.CloseAndLogOnError(ctx, resp.Body)
-
-		// Verify response (should be 401 Unauthorised when no JWT token is provided)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	})
-}
-
-func (suite *HandlersTestSuite) TestDeleteAPIKeyEndpoint() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		// Acquire mutex to ensure sequential execution with timeout protection
-		handlerTestMutex.Lock()
-		defer func() {
-			handlerTestMutex.Unlock()
-			if r := recover(); r != nil {
-				// Re-panic after cleanup
-				panic(r)
-			}
-		}()
-
-		// Create timeout context for the entire test
-		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
-		defer testCancel()
-
-		ctx, authServer, _ := suite.CreateService(t, dep)
-
-		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		// Create operation context with timeout
-		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
-		defer opCancel()
-
-		// Create HTTP client with timeout
-		client := &http.Client{
-			Timeout: HandlerOperationTimeout,
-		}
-
-		// Test DELETE request to delete API key endpoint (should return 401 without JWT)
-		req, err := http.NewRequestWithContext(opCtx, "DELETE", server.URL+"/api/key/test-key-id", nil)
-		require.NoError(t, err)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer util.CloseAndLogOnError(ctx, resp.Body)
-
-		// Verify response (should be 401 Unauthorised when no JWT token is provided)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	})
-}
-
 func (suite *HandlersTestSuite) TestTokenEnrichmentEndpoint() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		// Acquire mutex to ensure sequential execution with timeout protection
@@ -393,12 +191,22 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 
 		client := &http.Client{Timeout: HandlerOperationTimeout}
 
-		// Send webhook payload with system_int scope (ConstSystemScopeInternal) and valid client_id
+		// Test the service account token refresh path: system_int scoped with
+		// existing session claims. This is the typical path after initial
+		// client_credentials grant, where Hydra stores session claims from the
+		// first webhook response and sends them on subsequent token requests.
 		webhookReq := map[string]any{
 			"granted_scopes": []string{"openid", "offline", "system_int"},
 			"client_id":      "test-system-client",
 			"grant_type":     "client_credentials",
-			"session":        map[string]any{},
+			"session": map[string]any{
+				"access_token": map[string]any{
+					"tenant_id":    "tenant-sa-1",
+					"partition_id": "part-sa-1",
+					"roles":        []string{"system_internal"},
+					"profile_id":   "service-bot-profile-1",
+				},
+			},
 		}
 		jsonData, err := json.Marshal(webhookReq)
 		require.NoError(t, err)
@@ -426,6 +234,10 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 		roles, ok := accessToken["roles"].([]any)
 		require.True(t, ok, "access_token should have roles")
 		assert.Contains(t, roles, "system_internal")
+
+		assert.Equal(t, "service-bot-profile-1", accessToken["profile_id"])
+		assert.Equal(t, "tenant-sa-1", accessToken["tenant_id"])
+		assert.Equal(t, "part-sa-1", accessToken["partition_id"])
 	})
 }
 
@@ -616,55 +428,6 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithLoginEvent() {
 
 		assert.Equal(t, "tenant-2", accessToken["tenant_id"])
 		assert.Equal(t, "part-2", accessToken["partition_id"])
-	})
-}
-
-func (suite *HandlersTestSuite) TestAPIKeyEndpointErrors() {
-	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
-		// Acquire mutex to ensure sequential execution with timeout protection
-		handlerTestMutex.Lock()
-		defer func() {
-			handlerTestMutex.Unlock()
-			if r := recover(); r != nil {
-				// Re-panic after cleanup
-				panic(r)
-			}
-		}()
-
-		// Create timeout context for the entire test
-		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
-		defer testCancel()
-
-		ctx, authServer, _ := suite.CreateService(t, dep)
-
-		// Create HTTP test server using AuthServer's SetupRouterV1
-		handler := handlers2.RecoveryHandler(
-			handlers2.PrintRecoveryStack(true))(
-			authServer.SetupRouterV1(ctx))
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		// Create operation context with timeout
-		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
-		defer opCancel()
-
-		// Create HTTP client with timeout
-		client := &http.Client{
-			Timeout: HandlerOperationTimeout,
-		}
-
-		// Test unauthorised access to API key endpoint (no JWT token)
-		// This should return 401 Unauthorised as authentication middleware is working correctly
-		req, err := http.NewRequestWithContext(opCtx, "GET", server.URL+"/api/key", nil)
-		require.NoError(t, err)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer util.CloseAndLogOnError(ctx, resp.Body)
-
-		// Verify response (should be 401 Unauthorised for unauthorised access)
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
 	})
 }
 

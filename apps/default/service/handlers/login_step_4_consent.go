@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,9 +13,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -95,22 +92,21 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-// buildConsentTokenClaims builds token claims based on the client type (internal system, API key, or user).
+// buildConsentTokenClaims builds token claims based on the client type (service account or user).
 func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientID, subjectID string) (map[string]any, error) {
-	if isInternalSystemScoped(consentReq.GetRequestedScope()) {
-
+	requestedScope := consentReq.GetRequestedScope()
+	if isServiceAccountScoped(requestedScope) {
 		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
-
-		return h.buildInternalSystemTokenClaims(ctx, clientID, subjectID, requestedAudiences)
-	}
-	if isClientIDApiKey(clientID) {
-		return h.buildAPIKeyTokenClaims(ctx, clientID)
+		return h.buildServiceAccountConsentClaims(ctx, clientID, subjectID, requestedScope, requestedAudiences)
 	}
 	return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientID, subjectID)
 }
 
-// buildInternalSystemTokenClaims builds token claims for internal system clients.
-func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientID, subjectID string, requesteAudiences []string) (map[string]any, error) {
+// buildServiceAccountConsentClaims builds token claims for service account clients
+// (both system_internal and system_external).
+// Service accounts must be pre-registered via CreateServiceAccount — the partition's
+// Properties["subject"] must match the authenticating bot's profileID.
+func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clientID, subjectID string, requestedScope, _ []string) (map[string]any, error) {
 	log := util.Log(ctx)
 
 	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
@@ -125,97 +121,50 @@ func (h *AuthServer) buildInternalSystemTokenClaims(ctx context.Context, clientI
 		return nil, fmt.Errorf("partition not found for client: %s", clientID)
 	}
 
+	// Validate pre-registration: the partition's Properties["subject"] must match
+	// the authenticating bot's profileID. This property is set during service
+	// account registration (or in migration SQL).
+	if props := partitionObj.GetProperties(); props != nil {
+		propsMap := props.AsMap()
+		if registeredSubject, ok := propsMap["subject"].(string); ok && registeredSubject == subjectID {
+			// Pre-registered — tuples already exist from registration/sync.
+		} else {
+			log.WithField("client_id", clientID).
+				WithField("subject_id", subjectID).
+				Error("service account not pre-registered")
+			return nil, fmt.Errorf("service account not pre-registered for client %s", clientID)
+		}
+	} else {
+		log.WithField("client_id", clientID).Error("partition has no properties")
+		return nil, fmt.Errorf("service account not pre-registered for client %s", clientID)
+	}
+
 	tenantID := partitionObj.GetTenantId()
 
-	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionObj.GetId())
-
-	// Write the per-bot service access tuple in tenancy_access so Keto can
-	// resolve the subject set chain: botID → tenancy_access:path#service →
-	// ns:path#service → ns:path#permission.
-	// Bridge tuples are written for the specific audiences the bot is granted
-	// access to, scoping service bot access to only the services it needs.
-	tuples := []security.RelationTuple{
-		authz.BuildAccessTuple(tenancyPath, subjectID),
-		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
-	}
-	if len(requesteAudiences) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, requesteAudiences)...)
-	}
-	if writeErr := h.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
-		log.WithError(writeErr).
-			WithField("tenant_id", tenantID).
-			WithField("subject_id", subjectID).
-			Warn("failed to write service tuples at consent time")
-	}
+	// Determine role based on requested scope (see utilities.go for convention)
+	role := scopeToRole(requestedScope)
 
 	// Create a LoginEvent for auditability and webhook fallback.
-	// Uses default tenant/partition IDs consistent with how the webhook
-	// handles system_internal tokens, not from the partition lookup.
-	cfg := h.Config()
+	// This must succeed — without it, token refresh will fail to find the login event.
 	loginEvt := &models.LoginEvent{
 		ClientID:  clientID,
 		ProfileID: subjectID,
 	}
 	loginEvt.ID = util.IDString()
-	loginEvt.TenantID = cfg.DefaultTenantID
-	loginEvt.PartitionID = cfg.DefaultPartitionID
+	loginEvt.TenantID = tenantID
+	loginEvt.PartitionID = partitionObj.GetId()
 
 	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
 		log.WithError(createErr).WithField("client_id", clientID).
-			Warn("failed to create login event for system_internal consent (non-fatal)")
+			Error("failed to create login event for service account consent")
+		return nil, fmt.Errorf("failed to create login event: %w", createErr)
 	}
 
 	return map[string]any{
 		"tenant_id":      tenantID,
 		"partition_id":   partitionObj.GetId(),
-		"roles":          []string{"system_internal"},
+		"roles":          []string{role},
 		"profile_id":     subjectID,
-		"session_id":     loginEvt.GetID(),
-		"login_event_id": loginEvt.GetID(),
-	}, nil
-}
-
-// buildAPIKeyTokenClaims builds token claims for API key clients.
-// TODO there should be a way to refine/limit the access this api key has
-func (h *AuthServer) buildAPIKeyTokenClaims(ctx context.Context, clientID string) (map[string]any, error) {
-	log := util.Log(ctx)
-
-	apiKeyModel, err := h.apiKeyRepo.GetByKey(ctx, clientID)
-	if err != nil {
-		log.WithError(err).Error("could not find api key")
-		return nil, err
-	}
-
-	roles := []string{"system_external"}
-	if apiKeyModel.Scope != "" {
-		var scopeList []string
-		if json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList) == nil {
-			roles = append(roles, scopeList...)
-		}
-	}
-
-	// Create a LoginEvent for auditability and webhook fallback.
-	// This ensures non-interactive flows have a login event that the webhook
-	// can look up if scope-based routing fails.
-	loginEvt := &models.LoginEvent{
-		ClientID:  clientID,
-		ProfileID: apiKeyModel.ProfileID,
-	}
-	loginEvt.ID = util.IDString()
-	loginEvt.TenantID = apiKeyModel.TenantID
-	loginEvt.PartitionID = apiKeyModel.PartitionID
-	loginEvt.AccessID = apiKeyModel.AccessID
-
-	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
-		log.WithError(createErr).WithField("client_id", clientID).
-			Warn("failed to create login event for API key consent (non-fatal)")
-	}
-
-	return map[string]any{
-		"tenant_id":      apiKeyModel.TenantID,
-		"partition_id":   apiKeyModel.PartitionID,
-		"access_id":      apiKeyModel.AccessID,
-		"roles":          roles,
 		"session_id":     loginEvt.GetID(),
 		"login_event_id": loginEvt.GetID(),
 	}, nil
@@ -306,7 +255,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		"session_id":        loginEvent.GetID(),
 		"login_event_id":    loginEvent.GetID(),
 		"oauth2_session_id": loginEvent.Oauth2SessionID,
-		"roles":             []string{"user"},
+		"roles":             h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID()),
 		"device_id":         deviceObj.GetId(),
 		"profile_id":        subjectID,
 	}, nil
@@ -343,9 +292,9 @@ func (h *AuthServer) logConsentSuccess(log *util.LogEntry, tokenMap map[string]a
 }
 
 // shouldRenderBrowserInterstitial determines if we should render an HTML interstitial page.
-func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, requestedScope []string, clientID string) bool {
+func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, requestedScope []string, _ string) bool {
 	isBrowser := strings.Contains(req.Header.Get("Accept"), "text/html")
-	return isBrowser && !isInternalSystemScoped(requestedScope) && !isClientIDApiKey(clientID)
+	return isBrowser && !isServiceAccountScoped(requestedScope)
 }
 
 // inferDeviceName returns a human-readable device name based on the User-Agent string.

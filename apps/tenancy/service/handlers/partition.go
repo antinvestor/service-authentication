@@ -13,6 +13,7 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/events"
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	"github.com/pitabwire/util"
 )
@@ -22,17 +23,19 @@ type PartitionServer struct {
 	eventsMan events.Manager
 	authz     authz.Middleware
 
-	PartitionRepo repository.PartitionRepository
+	PartitionRepo      repository.PartitionRepository
+	ServiceAccountRepo repository.ServiceAccountRepository
 
-	PartitionBusiness business.PartitionBusiness
-	TenantBusiness    business.TenantBusiness
-	AccessBusiness    business.AccessBusiness
-	PageBusiness      business.PageBusiness
+	PartitionBusiness      business.PartitionBusiness
+	TenantBusiness         business.TenantBusiness
+	AccessBusiness         business.AccessBusiness
+	PageBusiness           business.PageBusiness
+	ServiceAccountBusiness business.ServiceAccountBusiness
 	partitionv1connect.UnimplementedPartitionServiceHandler
 }
 
 // NewPartitionServer creates a new PartitionServer with injected dependencies
-func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddleware authz.Middleware) *PartitionServer {
+func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddleware authz.Middleware, auth security.Authorizer) *PartitionServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -43,20 +46,23 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 	accessRepo := repository.NewAccessRepository(ctx, dbPool, workMan)
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
+	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
 
 	cfg := service.Config().(*config.PartitionConfig)
 	eventsMan := service.EventsManager()
 
 	// Create business layers with repository dependencies
 	return &PartitionServer{
-		svc:               service,
-		eventsMan:         eventsMan,
-		authz:             authzMiddleware,
-		PartitionRepo:     partitionRepo,
-		PartitionBusiness: business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
-		TenantBusiness:    business.NewTenantBusiness(service, tenantRepo),
-		AccessBusiness:    business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
-		PageBusiness:      business.NewPageBusiness(service, pageRepo, partitionRepo),
+		svc:                    service,
+		eventsMan:              eventsMan,
+		authz:                  authzMiddleware,
+		PartitionRepo:          partitionRepo,
+		ServiceAccountRepo:     serviceAccountRepo,
+		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
+		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo),
+		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
+		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
+		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, serviceAccountRepo),
 	}
 }
 

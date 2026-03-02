@@ -184,11 +184,21 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 		return nil, err
 	}
 
+	grantTypes := []string{"authorization_code", "refresh_token"}
+	if gt := extractStringList(partition.Properties, "grant_types"); len(gt) > 0 {
+		grantTypes = gt
+	}
+
+	responseTypes := []string{"token", "id_token", "code", "token id_token", "token code id_token"}
+	if rt := extractStringList(partition.Properties, "response_types"); len(rt) > 0 {
+		responseTypes = rt
+	}
+
 	payload := map[string]any{
 		"client_name":               partition.Name,
 		"client_id":                 clientID,
-		"grant_types":               []string{"authorization_code", "refresh_token"},
-		"response_types":            []string{"token", "id_token", "code", "token id_token", "token code id_token"},
+		"grant_types":               grantTypes,
+		"response_types":            responseTypes,
 		"scope":                     strings.Join(scopeList, " "),
 		"redirect_uris":             uriList,
 		"post_logout_redirect_uris": postLogoutRedirectUriList,
@@ -204,6 +214,11 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 			payload["client_secret"] = partition.ClientSecret
 			payload["token_endpoint_auth_method"] = "client_secret_post"
 		}
+	}
+
+	// Pass subject through to Hydra for client_credentials flow
+	if subject, ok := partition.Properties["subject"].(string); ok && subject != "" {
+		payload["subject"] = subject
 	}
 
 	return payload, nil

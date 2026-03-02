@@ -170,8 +170,9 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 			ctx, svc, _ := suite.CreateService(t, dep)
 
 			// Create partition server
-			authzMiddleware := authz.NewMiddleware(svc.SecurityManager().GetAuthorizer(ctx))
-			partitionServer := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
+			auth := svc.SecurityManager().GetAuthorizer(ctx)
+			authzMiddleware := authz.NewMiddleware(auth)
+			partitionServer := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth)
 
 			// Get router
 			router := partitionServer.NewSecureRouterV1()

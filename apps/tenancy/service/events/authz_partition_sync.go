@@ -102,16 +102,23 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	}
 
 	parentPath := fmt.Sprintf("%s/%s", parentPartition.TenantID, parentPartition.GetID())
-	tuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
+	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
 
-	if writeErr := e.authorizer.WriteTuple(ctx, tuple); writeErr != nil {
+	if writeErr := e.authorizer.WriteTuple(ctx, memberTuple); writeErr != nil {
 		return fmt.Errorf("failed to write partition inheritance tuple: %w", writeErr)
+	}
+
+	// Write service inheritance tuple so service bots registered on the parent
+	// partition automatically get service access to the child partition.
+	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
+	if writeErr := e.authorizer.WriteTuple(ctx, serviceTuple); writeErr != nil {
+		return fmt.Errorf("failed to write service partition inheritance tuple: %w", writeErr)
 	}
 
 	logger.
 		WithField("parent_path", parentPath).
 		WithField("child_path", tenancyPath).
-		Info("wrote partition inheritance tuple")
+		Info("wrote partition inheritance and service inheritance tuples")
 
 	return nil
 }

@@ -179,6 +179,32 @@ func (ab *accessBusiness) CreateAccess(
 		}
 	}
 
+	// Auto-assign default partition roles
+	defaultRoles, defaultErr := ab.partitionRoleRepo.GetDefaultByPartitionID(ctx, partition.GetID())
+	if defaultErr != nil {
+		logger.WithError(defaultErr).Warn("failed to query default partition roles")
+	}
+	if len(defaultRoles) > 0 {
+		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
+		for _, role := range defaultRoles {
+			accessRole := &models.AccessRole{
+				AccessID:        access.GetID(),
+				PartitionRoleID: role.GetID(),
+			}
+			if createErr := ab.accessRoleRepo.Create(ctx, accessRole); createErr != nil {
+				logger.WithError(createErr).Warn("failed to create default access role")
+				continue
+			}
+			if ab.eventsMan != nil {
+				tuples := authz.BuildRoleTuples(tenancyPath, request.GetProfileId(), role.Name)
+				payload := events.TuplesToPayload(tuples)
+				if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
+					logger.WithError(emitErr).Warn("failed to emit default role tuple write")
+				}
+			}
+		}
+	}
+
 	logger.WithField("access", access).Debug(" access created")
 	partitionObject := partition.ToAPI()
 

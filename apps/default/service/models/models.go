@@ -79,14 +79,3 @@ type Session struct {
 	ProfileID    string `gorm:"type:varchar(50)"`
 	data.BaseModel
 }
-
-type APIKey struct {
-	data.BaseModel
-	Name      string `gorm:"type:varchar(255)"`
-	ProfileID string `gorm:"type:varchar(50)"`
-	Key       string `gorm:"type:varchar(255);uniqueIndex"`
-	Hash      string `gorm:"type:TEXT"`
-	Scope     string `gorm:"type:text"`
-	Audience  string `gorm:"type:text"`
-	Metadata  data.JSONMap
-}

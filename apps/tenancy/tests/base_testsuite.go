@@ -205,14 +205,16 @@ func (bs *BaseTestSuite) CreateService(
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
-	authzMiddleware := authz.NewMiddleware(svc.SecurityManager().GetAuthorizer(ctx))
-	implementation := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
+	auth := svc.SecurityManager().GetAuthorizer(ctx)
+	authzMiddleware := authz.NewMiddleware(auth)
+	implementation := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth)
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
-		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, svc.SecurityManager().GetAuthorizer(ctx)),
-		events.NewTupleWriteEventHandler(svc.SecurityManager().GetAuthorizer(ctx)),
-		events.NewTupleDeleteEventHandler(svc.SecurityManager().GetAuthorizer(ctx)),
+		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, auth),
+		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
+		events.NewTupleWriteEventHandler(auth),
+		events.NewTupleDeleteEventHandler(auth),
 	)}
 
 	serviceOptions = append(serviceOptions, frame.WithHTTPHandler(implementation.NewSecureRouterV1()))

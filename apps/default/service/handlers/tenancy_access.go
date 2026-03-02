@@ -11,6 +11,36 @@ import (
 	"github.com/pitabwire/util"
 )
 
+// fetchAccessRoleNames calls ListAccessRole for the given access ID and collects role names.
+// Always includes "user" as a base role. Non-fatal: falls back to ["user"] on error.
+func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) []string {
+	roles := []string{"user"}
+	if accessID == "" || h.partitionCli == nil {
+		return roles
+	}
+
+	stream, err := h.partitionCli.ListAccessRole(ctx, connect.NewRequest(
+		&partitionv1.ListAccessRoleRequest{AccessId: accessID}))
+	if err != nil {
+		util.Log(ctx).WithError(err).Warn("failed to list access roles")
+		return roles
+	}
+
+	seen := map[string]bool{"user": true}
+	for stream.Receive() {
+		for _, ar := range stream.Msg().GetRole() {
+			if r := ar.GetRole(); r != nil && r.GetName() != "" && !seen[r.GetName()] {
+				seen[r.GetName()] = true
+				roles = append(roles, r.GetName())
+			}
+		}
+	}
+	if err := stream.Err(); err != nil {
+		util.Log(ctx).WithError(err).Warn("error reading access role stream")
+	}
+	return roles
+}
+
 // getOrCreateTenancyAccess resolves a tenancy access object for the given profile/client.
 // If no access exists, it creates one via the partition service.
 func (h *AuthServer) getOrCreateTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*partitionv1.AccessObject, error) {

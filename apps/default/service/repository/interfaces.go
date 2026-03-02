@@ -14,19 +14,6 @@ type LoginRepository interface {
 	GetByProfileID(ctx context.Context, profileID string) (*models.Login, error)
 }
 
-// APIKeyRepository handles database operations for APIKey entities
-type APIKeyRepository interface {
-	datastore.BaseRepository[*models.APIKey]
-	// GetByIDAndProfile retrieves an API key by ID and profile ID
-	GetByIDAndProfile(ctx context.Context, id, profileID string) (*models.APIKey, error)
-	// GetByKey retrieves an API key by key value
-	GetByKey(ctx context.Context, key string) (*models.APIKey, error)
-	// GetByProfileID retrieves all API keys for a profile
-	GetByProfileID(ctx context.Context, profileID string) ([]*models.APIKey, error)
-
-	DeleteByProfile(ctx context.Context, id, profileID string) error
-}
-
 // LoginEventRepository handles database operations for LoginEvent entities
 type LoginEventRepository interface {
 	datastore.BaseRepository[*models.LoginEvent]

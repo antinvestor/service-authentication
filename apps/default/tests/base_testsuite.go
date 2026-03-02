@@ -39,7 +39,6 @@ import (
 )
 
 type DepsBuilder struct {
-	APIKeyRepo     repository.APIKeyRepository
 	LoginRepo      repository.LoginRepository
 	LoginEventRepo repository.LoginEventRepository
 
@@ -58,7 +57,6 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
 
 	depBuilder := &DepsBuilder{
-		APIKeyRepo:     repository.NewAPIKeyRepository(ctx, dbPool, workMan),
 		LoginRepo:      repository.NewLoginRepository(ctx, dbPool, workMan),
 		LoginEventRepo: repository.NewLoginEventRepository(ctx, dbPool, workMan),
 	}
@@ -230,7 +228,7 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 
 	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager().GetAuthenticator(ctx), svc.SecurityManager().GetAuthorizer(ctx), &cfg,
-		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo, depsBuilder.APIKeyRepo,
+		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo,
 		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli, nil)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)

@@ -19,6 +19,7 @@ type PartitionRepository interface {
 type PartitionRoleRepository interface {
 	datastore.BaseRepository[*models.PartitionRole]
 	GetByPartitionID(ctx context.Context, partitionID string) ([]*models.PartitionRole, error)
+	GetDefaultByPartitionID(ctx context.Context, partitionID string) ([]*models.PartitionRole, error)
 	GetRolesByID(ctx context.Context, id ...string) ([]*models.PartitionRole, error)
 }
 
@@ -34,4 +35,12 @@ type AccessRepository interface {
 type AccessRoleRepository interface {
 	datastore.BaseRepository[*models.AccessRole]
 	GetByAccessID(ctx context.Context, accessID string) ([]*models.AccessRole, error)
+}
+
+type ServiceAccountRepository interface {
+	datastore.BaseRepository[*models.ServiceAccount]
+	GetByPartitionAndProfile(ctx context.Context, partitionID, profileID string) (*models.ServiceAccount, error)
+	GetByClientAndProfile(ctx context.Context, clientID, profileID string) (*models.ServiceAccount, error)
+	GetByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
+	ListByPartition(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the main authentication application that serves as the Login & Consent Provider for Ory Hydra. It handles user authentication, token enrichment, and API key management.
+This is the main authentication application that serves as the Login & Consent Provider for Ory Hydra. It handles user authentication and token enrichment for both user tokens and service account tokens.
 
 ## Directory Structure
 
@@ -123,19 +123,6 @@ type Login struct {
 }
 ```
 
-### APIKey
-
-API keys for service-to-service authentication.
-
-```go
-type APIKey struct {
-    BaseModel
-    Key        string     // The API key (hashed)
-    Scope      string     // JSON array of roles
-    ProfileID  string     // Owner's profile ID
-}
-```
-
 ## Repositories
 
 **Directory:** `service/repository/`
@@ -151,13 +138,6 @@ type LoginRepository interface {
 type LoginEventRepository interface {
     Create(ctx context.Context, event *models.LoginEvent) error
     GetByID(ctx context.Context, id string) (*models.LoginEvent, error)
-}
-
-type APIKeyRepository interface {
-    Create(ctx context.Context, key *models.APIKey) error
-    GetByKey(ctx context.Context, key string) (*models.APIKey, error)
-    GetByProfileID(ctx context.Context, profileID string) ([]*models.APIKey, error)
-    Delete(ctx context.Context, id string) error
 }
 ```
 
@@ -247,11 +227,10 @@ Claims added to tokens at consent time:
 |-------|------|--------|
 | `tenant_id` | string | Partition Service |
 | `partition_id` | string | Partition Service |
-| `roles` | []string | Hardcoded `["user"]` |
-| `device_id` | string | Device Service |
-| `login_id` | string | Session cookie |
+| `roles` | []string | `["user"]` for users, `["system_internal"]` or `["system_external"]` for service accounts |
+| `device_id` | string | Device Service (user tokens only) |
+| `login_id` | string | Session cookie (user tokens only) |
 | `profile_id` | string | OAuth2 subject |
-| `profile_contact` | string | OAuth2 subject |
 
 ## Common Tasks
 

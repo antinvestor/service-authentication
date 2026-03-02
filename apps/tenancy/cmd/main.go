@@ -45,8 +45,9 @@ func main() {
 	sm := svc.SecurityManager()
 	cliMan := svc.HTTPClientManager()
 
-	authzMiddleware := authz.NewMiddleware(sm.GetAuthorizer(ctx))
-	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware)
+	auth := sm.GetAuthorizer(ctx)
+	authzMiddleware := authz.NewMiddleware(auth)
+	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth)
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)
@@ -57,9 +58,10 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithRegisterEvents(
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.PartitionRepo),
-			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, sm.GetAuthorizer(ctx)),
-			events.NewTupleWriteEventHandler(sm.GetAuthorizer(ctx)),
-			events.NewTupleDeleteEventHandler(sm.GetAuthorizer(ctx)),
+			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, auth),
+			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
+			events.NewTupleWriteEventHandler(auth),
+			events.NewTupleDeleteEventHandler(auth),
 		),
 	}
 

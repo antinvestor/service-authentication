@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 
-	httpInterceptor "github.com/pitabwire/frame/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
 
@@ -165,27 +164,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	// Webhook routes (PSK auth when HYDRA_WEBHOOK_API_PSK is configured)
 	webhookAuthenticatedHandler(h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
-
-	// API routes with authentication (JSON endpoints - return JSON errors)
-	apiAuthenticatedHandlers := func(f func(w http.ResponseWriter, r *http.Request) error, path string, name string, method string) {
-		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				handlerErr := f(w, r)
-				if handlerErr != nil {
-					h.writeAPIError(r.Context(), w, handlerErr, http.StatusInternalServerError, name)
-				}
-			})
-
-			// Apply authentication middleware
-			authMiddleware := httpInterceptor.AuthenticationMiddleware(handler, h.securityAuth)
-			authMiddleware.ServeHTTP(w, r)
-		})
-	}
-
-	apiAuthenticatedHandlers(h.CreateAPIKeyEndpoint, "/api/key", "CreateAPIKeyEndpoint", "PUT")
-	apiAuthenticatedHandlers(h.ListAPIKeyEndpoint, "/api/key", "ListApiKeyEndpoint", "GET")
-	apiAuthenticatedHandlers(h.DeleteAPIKeyEndpoint, "/api/key/{ApiKeyId}", "DeleteApiKeyEndpoint", "DELETE")
-	apiAuthenticatedHandlers(h.GetAPIKeyEndpoint, "/api/key/{ApiKeyId}", "GetApiKeyEndpoint", "GET")
 
 	return router
 }

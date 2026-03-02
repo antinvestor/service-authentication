@@ -16,5 +16,5 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	}
 
 	return dbManager.Migrate(ctx, pool, migrationPath,
-		&models.APIKey{}, &models.Login{}, &models.LoginEvent{})
+		&models.Login{}, &models.LoginEvent{})
 }

@@ -451,7 +451,7 @@ func TestBuildClaimsFromLoginEvent(t *testing.T) {
 	assert.Equal(t, "oauth2-sess-1", claims["oauth2_session_id"])
 	assert.Equal(t, "device-1", claims["device_id"])
 	assert.Equal(t, "profile-1", claims["profile_id"])
-	assert.Equal(t, []string{"user"}, claims["roles"])
+	assert.Nil(t, claims["roles"], "roles are set by callers, not buildClaimsFromLoginEvent")
 }
 
 func TestMissingRequiredUserClaims(t *testing.T) {
@@ -817,13 +817,6 @@ func TestIsInternalSystemScoped(t *testing.T) {
 	assert.False(t, isInternalSystemScoped([]string{"openid", "offline"}))
 	assert.False(t, isInternalSystemScoped([]string{}))
 	assert.False(t, isInternalSystemScoped(nil))
-}
-
-func TestIsClientIDApiKey(t *testing.T) {
-	assert.True(t, isClientIDApiKey("api_key_abc123"))
-	assert.False(t, isClientIDApiKey("regular-client-id"))
-	assert.False(t, isClientIDApiKey(""))
-	assert.False(t, isClientIDApiKey("api_ke"))
 }
 
 func TestWriteWebhookErrorResponse(t *testing.T) {

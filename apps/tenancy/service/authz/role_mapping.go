@@ -119,6 +119,18 @@ func BuildServiceAccessTuple(tenancyPath, profileID string) security.RelationTup
 	}
 }
 
+// BuildServicePartitionInheritanceTuple creates a subject set tuple that grants all
+// service accounts of a parent partition automatic service access to a child partition.
+// This enables transitive service bot access: a bot registered on the parent partition
+// can also access child partitions, resolved by Keto through the subject set chain.
+func BuildServicePartitionInheritanceTuple(parentTenancyPath, childTenancyPath string) security.RelationTuple {
+	return security.RelationTuple{
+		Object:   security.ObjectRef{Namespace: NamespaceTenancyAccess, ID: childTenancyPath},
+		Relation: RoleService,
+		Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: parentTenancyPath, Relation: RoleService},
+	}
+}
+
 // BuildServiceInheritanceTuples creates the subject set chain that gives service
 // accounts automatic access to functional roles via Keto composition.
 //

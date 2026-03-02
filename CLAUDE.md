@@ -7,7 +7,7 @@ This is a multi-tenant OAuth2/OpenID Connect authentication service built on **O
 - **OAuth2 Authorization Code Flow** with PKCE support
 - **Contact-based authentication** (email/phone verification codes)
 - **Social login** (Google, Facebook)
-- **API Key authentication** for service-to-service communication
+- **Service Account authentication** for machine-to-machine communication (managed via tenancy service)
 - **Multi-tenancy** with tenant/partition isolation
 - **Device tracking** for session management
 
@@ -45,9 +45,6 @@ This is a multi-tenant OAuth2/OpenID Connect authentication service built on **O
 │                                                                              │
 │  Webhook endpoints:                                                          │
 │  • /webhook/enrich/{tokenType} - Token enrichment (called by Hydra)         │
-│                                                                              │
-│  API endpoints:                                                              │
-│  • /api/key           - API key management                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
           │                         │                         │
           ▼                         ▼                         ▼
@@ -77,8 +74,10 @@ service-authentication/
 │   │
 │   └── tenancy/                    # Tenancy management service
 │       └── service/
-│           ├── business/           # Business logic
-│           └── handlers/           # gRPC handlers
+│           ├── business/           # Business logic (incl. service accounts)
+│           ├── handlers/           # gRPC handlers
+│           ├── authz/              # Keto ReBAC authorization
+│           └── events/             # Event handlers (partition sync, authz sync)
 │
 └── internal/
     └── tests/                      # Shared test utilities
@@ -90,8 +89,21 @@ service-authentication/
 
 Token claims are added at two points:
 
-1. **Consent Stage** (`/s/consent`) - Primary enrichment for user tokens
-2. **Webhook Stage** (`/webhook/enrich`) - Additional enrichment and API key handling
+1. **Consent Stage** (`/s/consent`) - Primary enrichment for user tokens and service account tokens
+2. **Webhook Stage** (`/webhook/enrich`) - Additional enrichment and service account handling
+
+### Scope-to-Role Mapping Convention
+
+Service accounts use a two-layer naming convention:
+
+- **Scopes** (Hydra/OAuth2 level): Short form from frame constants
+  - `system_int` (`openid.ConstSystemScopeInternal`) for internal service accounts
+  - `system_ext` (`openid.ConstSystemScopeExternal`) for external service accounts
+- **Roles** (token claims): Long form for semantic clarity
+  - `system_internal` for internal service accounts
+  - `system_external` for external service accounts
+
+The scope determines which role is assigned in the token claims.
 
 ### Claims Added to Tokens
 
@@ -99,11 +111,10 @@ Token claims are added at two points:
 |-------|--------|-------------|----------|
 | `tenant_id` | Partition Service | Tenant identifier for multi-tenancy | Consent |
 | `partition_id` | Partition Service | Partition (OAuth2 client) identifier | Consent |
-| `roles` | Hardcoded / APIKey | User roles (`["user"]` for regular users) | Consent/Webhook |
-| `device_id` | Device Service | Unique device identifier | Consent |
-| `login_id` | Device Session | Session ID that created the token | Consent |
-| `profile_id` | Subject | User's profile identifier | Consent |
-| `profile_contact` | Subject | User's profile contact | Consent |
+| `roles` | Hardcoded / SA type | User roles (`["user"]`, `["system_internal"]`, or `["system_external"]`) | Consent/Webhook |
+| `device_id` | Device Service | Unique device identifier | Consent (user only) |
+| `login_id` | Device Session | Session ID that created the token | Consent (user only) |
+| `profile_id` | Subject | User's or service account's profile identifier | Consent |
 
 ### Token Refresh Behavior
 
@@ -111,13 +122,29 @@ Token claims are added at two points:
 
 During token refresh:
 - **Regular users**: Claims pass through unchanged (device_id, login_id represent original session)
-- **API keys**: Claims are re-fetched from database (tenant_id, partition_id, roles)
-- **System internal**: Roles are set to `["system_internal"]`
+- **Service accounts**: Claims pass through from session; webhook validates non-user roles
+- **System internal/external**: Roles are set to `["system_internal"]` or `["system_external"]`
 
 This means:
 - Role changes for users require re-authentication
 - Device/session binding remains constant (this is intentional for security)
 - Tenancy claims are stable (tied to OAuth2 client)
+
+## Service Accounts
+
+Service accounts are managed by the **tenancy service** (`apps/tenancy`). They provide machine-to-machine authentication via OAuth2 `client_credentials` grant.
+
+### Types
+
+- **internal** (`system_int` scope) - For service-to-service communication within the platform
+- **external** (`system_ext` scope) - For external API consumers (replaces the legacy API key system)
+
+### How Service Accounts Work
+
+1. **Creation**: `CreateServiceAccount` in the tenancy business layer creates a child partition as a Hydra OAuth2 client with `client_credentials` grant type
+2. **Authentication**: The service account authenticates via `client_credentials` grant to get an access token
+3. **Token Enrichment**: The webhook enriches the token with `tenant_id`, `partition_id`, `profile_id`, and the appropriate role
+4. **Authorization**: Keto ReBAC tuples grant the service account permissions per audience namespace
 
 ## Key Configuration
 
@@ -143,6 +170,9 @@ go test ./...
 # Run handler tests (requires Docker for containers)
 go test ./apps/default/service/handlers/... -v
 
+# Run tenancy tests
+go test ./apps/tenancy/... -v
+
 # Run with coverage
 go test ./... -coverprofile=coverage.out
 go tool cover -html=coverage.out
@@ -158,16 +188,15 @@ go tool cover -html=coverage.out
 
 ### Modifying Token Claims
 
-1. **For consent-time claims**: Edit `handlers/consent.go` `ShowConsentEndpoint()`
+1. **For consent-time claims**: Edit `handlers/login_step_4_consent.go`
 2. **For webhook enrichment**: Edit `handlers/webhook.go` `TokenEnrichmentEndpoint()`
-3. **For API key claims**: Edit the API key section in `webhook.go`
+3. **For service account claims**: Edit `buildServiceAccountConsentClaims()` or `handleServiceAccountEnrichment()`
 
 ### Adding New Roles
 
 Currently roles are hardcoded. To make them dynamic:
 1. Add role fetching service client to `AuthServer`
-2. Fetch roles at consent time in `consent.go`
-3. Optionally refresh roles in webhook for API keys
+2. Fetch roles at consent time in `login_step_4_consent.go`
 
 ## Security Considerations
 
@@ -186,5 +215,5 @@ External services (gRPC/Connect):
 
 Internal:
 - **Ory Hydra**: OAuth2/OIDC authorization server
-- **PostgreSQL**: Persistent storage (login events, API keys)
+- **PostgreSQL**: Persistent storage (login events)
 - **Cache (NATS/Memory)**: Login event caching

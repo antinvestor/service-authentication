@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/util"
 )
@@ -334,7 +336,6 @@ func buildClaimsFromLoginEvent(
 		"oauth2_session_id": oauth2SessionID,
 		"device_id":         deviceID,
 		"profile_id":        profileID,
-		"roles":             []string{"user"},
 	}
 }
 
@@ -443,9 +444,7 @@ func (h *AuthServer) buildCanonicalClaimsFromLoginEvent(
 		profileID,
 		loginEvent.Oauth2SessionID,
 	)
-	if roles, ok := claims["roles"]; ok {
-		canonical["roles"] = roles
-	}
+	canonical["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
 	if canonical["device_id"] == "" {
 		if deviceID := claimString(claims, "device_id"); deviceID != "" {
 			canonical["device_id"] = deviceID
@@ -491,23 +490,22 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	}
 	log.WithField("client_id", clientID).Info("processing token enrichment for client")
 
-	// Handle API key clients
-	if isClientIDApiKey(clientID) {
-		return h.handleAPIKeyEnrichment(ctx, rw, clientID)
-	}
-
-	// Handle system internal scoped tokens
+	// Handle service account scoped tokens (system_internal or system_external).
+	// For client_credentials grants Hydra does NOT call consent — only this webhook.
+	// If session claims exist (e.g. from a previous consent or hook response),
+	// use them directly. Otherwise look up the partition to get tenant/partition
+	// and validate the pre-registered subject.
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantedScopes == nil {
 		log.Warn("granted_scopes not found - checking session claims for non-user roles")
-	} else if isInternalSystemScoped(grantedScopes) {
-		cfg := h.Config()
-		log.Debug("enriched token with system_internal roles")
-		return writeTokenHookResponse(rw, map[string]any{
-			"tenant_id":    cfg.DefaultTenantID,
-			"partition_id": cfg.DefaultPartitionID,
-			"roles":        []string{"system_internal"},
-		})
+	} else if isServiceAccountScoped(grantedScopes) {
+		sessionClaims := extractSessionAccessTokenClaims(tokenObject)
+		if len(sessionClaims) > 0 {
+			log.Debug("enriched service account token with existing session claims")
+			return writeTokenHookResponse(rw, sessionClaims)
+		}
+		// No session claims — initial client_credentials grant. Look up partition.
+		return h.handleServiceAccountEnrichment(ctx, rw, clientID, grantedScopes)
 	}
 
 	// Guard: if scopes were nil and this is a client_credentials flow,
@@ -554,26 +552,47 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 	return json.NewEncoder(rw).Encode(map[string]string{"error": errMsg})
 }
 
-// handleAPIKeyEnrichment handles token enrichment for API key clients.
-func (h *AuthServer) handleAPIKeyEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string) error {
-	apiKeyModel, err := h.apiKeyRepo.GetByKey(ctx, clientID)
+// handleServiceAccountEnrichment handles token enrichment for service account
+// client_credentials tokens (both system_internal and system_external).
+// It looks up the partition by client_id, validates the pre-registered subject,
+// and returns enriched claims with the appropriate role.
+func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string, grantedScopes []string) error {
+	log := util.Log(ctx).WithField("client_id", clientID)
+
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("could not find api key")
-		return err
+		log.WithError(err).Error("service account partition lookup failed")
+		return h.writeWebhookError(rw, "partition not found for service account client")
 	}
 
-	roles := []string{"system_external"}
-	if apiKeyModel.Scope != "" {
-		var scopeList []string
-		if json.Unmarshal([]byte(apiKeyModel.Scope), &scopeList) == nil {
-			roles = scopeList
+	partitionObj := partitionResp.Msg.GetData()
+	if partitionObj == nil {
+		log.Error("service account partition not found")
+		return h.writeWebhookError(rw, "partition not found for service account client")
+	}
+
+	// Validate pre-registration: Properties["subject"] must be set and be a string.
+	var subject string
+	if props := partitionObj.GetProperties(); props != nil {
+		propsMap := props.AsMap()
+		if s, ok := propsMap["subject"].(string); ok && s != "" {
+			subject = s
 		}
 	}
+	if subject == "" {
+		log.Error("service account partition has no registered subject")
+		return h.writeWebhookError(rw, "service account not pre-registered")
+	}
 
+	// Determine role based on granted scopes (see utilities.go for convention)
+	role := scopeToRole(grantedScopes)
+
+	log.WithField("role", role).Debug("enriched service account token via partition lookup")
 	return writeTokenHookResponse(rw, map[string]any{
-		"tenant_id":    apiKeyModel.TenantID,
-		"partition_id": apiKeyModel.PartitionID,
-		"roles":        roles,
+		"tenant_id":    partitionObj.GetTenantId(),
+		"partition_id": partitionObj.GetId(),
+		"roles":        []string{role},
+		"profile_id":   subject,
 	})
 }
 
@@ -651,7 +670,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject = loginEvent.ProfileID
 			}
 			log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
-			return buildClaimsFromLoginEvent(
+			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
 				loginEvent.PartitionID,
@@ -661,6 +680,8 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
+			claims["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
+			return claims
 		} else {
 			log.WithError(err).WithField("login_event_id", loginEventID).Warn("login event not found by ID - token will be missing claims")
 		}
@@ -678,7 +699,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				"login_event_id":    loginEvent.GetID(),
 				"oauth2_session_id": oauth2SessionID,
 			}).Info("enriched token with claims from OAuth2 session ID lookup")
-			return buildClaimsFromLoginEvent(
+			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
 				loginEvent.PartitionID,
@@ -688,6 +709,8 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
+			claims["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
+			return claims
 		} else {
 			log.WithError(err).WithField("oauth2_session_id", oauth2SessionID).Warn("login event not found for Hydra session ID - token will be missing claims")
 		}
