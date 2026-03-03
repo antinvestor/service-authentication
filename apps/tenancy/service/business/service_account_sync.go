@@ -19,6 +19,27 @@ func ReQueueServiceAccountsForSync(
 	eventsMan fevents.Manager,
 	query *data.SearchQuery,
 ) error {
+	return reQueueServiceAccounts(ctx, serviceAccountRepo, eventsMan, query, events.EventKeyAuthzServiceAccountSync)
+}
+
+// ReQueueServiceAccountsForHydraSync emits SA synchronisation events for all
+// service accounts, ensuring each SA's Hydra OAuth2 client matches the database state.
+func ReQueueServiceAccountsForHydraSync(
+	ctx context.Context,
+	serviceAccountRepo repository.ServiceAccountRepository,
+	eventsMan fevents.Manager,
+	query *data.SearchQuery,
+) error {
+	return reQueueServiceAccounts(ctx, serviceAccountRepo, eventsMan, query, events.EventKeyServiceAccountSynchronization)
+}
+
+func reQueueServiceAccounts(
+	ctx context.Context,
+	serviceAccountRepo repository.ServiceAccountRepository,
+	eventsMan fevents.Manager,
+	query *data.SearchQuery,
+	eventKey string,
+) error {
 	jobResult, err := serviceAccountRepo.Search(ctx, query)
 	if err != nil {
 		return err
@@ -35,10 +56,11 @@ func ReQueueServiceAccountsForSync(
 		}
 
 		for _, sa := range result.Item() {
-			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
+			if emitErr := eventsMan.Emit(ctx, eventKey, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
 				util.Log(ctx).WithError(emitErr).
 					WithField("service_account_id", sa.GetID()).
-					Warn("failed to emit service account authz sync event")
+					WithField("event", eventKey).
+					Warn("failed to emit service account sync event")
 			}
 		}
 	}

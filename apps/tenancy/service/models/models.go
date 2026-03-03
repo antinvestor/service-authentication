@@ -120,37 +120,44 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 
 type ServiceAccount struct {
 	data.BaseModel
-	ProfileID  string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
-	ClientID   string `gorm:"type:varchar(50);uniqueIndex"`
-	Type       string `gorm:"type:varchar(20);not null;default:'internal'"` // "internal" or "external"
-	State      int32
-	Audiences  data.JSONMap // {"namespaces": ["service_tenancy", "service_profile", ...]}
-	PublicKeys data.JSONMap // {"keys": [{"kid":"k1","kty":"EC","crv":"P-256","x":"...","y":"..."}]}
-	Properties data.JSONMap
+	ProfileID    string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
+	ClientID     string `gorm:"type:varchar(100);uniqueIndex"`
+	ClientSecret string `gorm:"type:varchar(250);"`
+	Type         string `gorm:"type:varchar(20);not null;default:'internal'"` // "internal" or "external"
+	State        int32
+	Audiences    data.JSONMap // {"namespaces": ["service_tenancy", "service_profile", ...]}
+	PublicKeys   data.JSONMap // {"keys": [{"kid":"k1","kty":"EC","crv":"P-256","x":"...","y":"..."}]}
+	Properties   data.JSONMap
 }
 
-// ToAPIMap returns the service account as a map for API responses.
-// This will be replaced with a proper proto-based ToAPI() once
-// ServiceAccountObject is generated and published to BSR.
-func (sa *ServiceAccount) ToAPIMap() map[string]any {
-	result := map[string]any{
-		"id":         sa.ID,
-		"profile_id": sa.ProfileID,
-		"client_id":  sa.ClientID,
-		"type":       sa.Type,
-		"state":      sa.State,
-		"created_at": sa.CreatedAt,
+func (sa *ServiceAccount) ToAPI() *partitionv1.ServiceAccountObject {
+	state := commonv1.STATE_ACTIVE
+	if sa.DeletedAt.Valid {
+		state = commonv1.STATE_DELETED
 	}
+
+	obj := &partitionv1.ServiceAccountObject{
+		Id:          sa.ID,
+		TenantId:    sa.TenantID,
+		PartitionId: sa.PartitionID,
+		ProfileId:   sa.ProfileID,
+		ClientId:    sa.ClientID,
+		State:       state,
+		CreatedAt:   timestamppb.New(sa.CreatedAt),
+	}
+
 	if sa.Audiences != nil {
-		result["audiences"] = sa.Audiences
+		obj.Audiences = sa.Audiences.ToProtoStruct()
 	}
-	if sa.PublicKeys != nil {
-		result["public_keys"] = sa.PublicKeys
+
+	props := sa.Properties
+	if props == nil {
+		props = make(data.JSONMap)
 	}
-	if sa.Properties != nil {
-		result["properties"] = sa.Properties
-	}
-	return result
+	props["type"] = sa.Type
+	obj.Properties = props.ToProtoStruct()
+
+	return obj
 }
 
 type AccessRole struct {

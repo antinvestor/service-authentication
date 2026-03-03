@@ -409,6 +409,168 @@ func TestPreparePayload_WithRedirectURIs(t *testing.T) {
 	assert.Len(t, uris, 2)
 }
 
+// --- ServiceAccountSyncEvent ---
+
+func TestServiceAccountSyncEvent_Name(t *testing.T) {
+	e := NewServiceAccountSynchronizationEventHandler(context.Background(), nil, nil, nil, nil)
+	assert.Equal(t, EventKeyServiceAccountSynchronization, e.Name())
+}
+
+func TestServiceAccountSyncEvent_PayloadType(t *testing.T) {
+	e := NewServiceAccountSynchronizationEventHandler(context.Background(), nil, nil, nil, nil)
+	_, ok := e.PayloadType().(*map[string]any)
+	assert.True(t, ok)
+}
+
+func TestServiceAccountSyncEvent_Validate_Valid(t *testing.T) {
+	e := NewServiceAccountSynchronizationEventHandler(context.Background(), nil, nil, nil, nil)
+	m := map[string]any{"id": "sa-123"}
+	assert.NoError(t, e.Validate(context.Background(), &m))
+}
+
+func TestServiceAccountSyncEvent_Validate_MissingID(t *testing.T) {
+	e := NewServiceAccountSynchronizationEventHandler(context.Background(), nil, nil, nil, nil)
+	m := map[string]any{"other": "value"}
+	err := e.Validate(context.Background(), &m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "service account id is required")
+}
+
+func TestServiceAccountSyncEvent_Validate_WrongType(t *testing.T) {
+	e := NewServiceAccountSynchronizationEventHandler(context.Background(), nil, nil, nil, nil)
+	assert.Error(t, e.Validate(context.Background(), "invalid"))
+}
+
+// --- AuthzServiceAccountSyncEvent ---
+
+func TestAuthzServiceAccountSyncEvent_Name(t *testing.T) {
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil)
+	assert.Equal(t, EventKeyAuthzServiceAccountSync, e.Name())
+}
+
+func TestAuthzServiceAccountSyncEvent_PayloadType(t *testing.T) {
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil)
+	_, ok := e.PayloadType().(*map[string]any)
+	assert.True(t, ok)
+}
+
+func TestAuthzServiceAccountSyncEvent_Validate_Valid(t *testing.T) {
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil)
+	m := map[string]any{"id": "sa-456"}
+	assert.NoError(t, e.Validate(context.Background(), &m))
+}
+
+func TestAuthzServiceAccountSyncEvent_Validate_MissingID(t *testing.T) {
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil)
+	m := map[string]any{"other": "value"}
+	err := e.Validate(context.Background(), &m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "service account id is required")
+}
+
+func TestAuthzServiceAccountSyncEvent_Validate_WrongType(t *testing.T) {
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil)
+	assert.Error(t, e.Validate(context.Background(), 42))
+}
+
+// --- buildServiceAccountHydraPayload ---
+
+func TestBuildServiceAccountHydraPayload_Internal(t *testing.T) {
+	sa := &models.ServiceAccount{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-secret",
+		Type:         "internal",
+		ProfileID:    "profile-123",
+		Audiences:    data.JSONMap{"namespaces": []any{"svc1", "svc2"}},
+	}
+
+	payload := buildServiceAccountHydraPayload(sa)
+
+	assert.Equal(t, "sa-test-client-id", payload["client_name"])
+	assert.Equal(t, "test-client-id", payload["client_id"])
+	assert.Equal(t, "test-secret", payload["client_secret"])
+	assert.Equal(t, "system_int openid", payload["scope"])
+	assert.Equal(t, []string{"client_credentials"}, payload["grant_types"])
+	assert.Equal(t, []string{"token"}, payload["response_types"])
+	assert.Equal(t, "profile-123", payload["subject"])
+	assert.Equal(t, "client_secret_post", payload["token_endpoint_auth_method"])
+
+	aud, ok := payload["audience"].([]string)
+	require.True(t, ok)
+	assert.Equal(t, []string{"svc1", "svc2"}, aud)
+}
+
+func TestBuildServiceAccountHydraPayload_External(t *testing.T) {
+	sa := &models.ServiceAccount{
+		ClientID:  "ext-client",
+		Type:      "external",
+		ProfileID: "profile-456",
+	}
+
+	payload := buildServiceAccountHydraPayload(sa)
+
+	assert.Equal(t, "system_ext openid", payload["scope"])
+	assert.Equal(t, "none", payload["token_endpoint_auth_method"])
+	_, hasSecret := payload["client_secret"]
+	assert.False(t, hasSecret)
+}
+
+func TestBuildServiceAccountHydraPayload_NoAudiences(t *testing.T) {
+	sa := &models.ServiceAccount{
+		ClientID:     "no-aud",
+		ClientSecret: "secret",
+		Type:         "internal",
+		ProfileID:    "profile",
+	}
+
+	payload := buildServiceAccountHydraPayload(sa)
+
+	assert.Nil(t, payload["audience"])
+}
+
+// --- extractAudienceNamespaces ---
+
+func TestExtractAudienceNamespaces_SliceAny(t *testing.T) {
+	audiences := data.JSONMap{"namespaces": []any{"svc1", "svc2", "svc3"}}
+	result := extractAudienceNamespaces(audiences)
+	assert.Equal(t, []string{"svc1", "svc2", "svc3"}, result)
+}
+
+func TestExtractAudienceNamespaces_SliceString(t *testing.T) {
+	audiences := data.JSONMap{"namespaces": []string{"svc1", "svc2"}}
+	result := extractAudienceNamespaces(audiences)
+	assert.Equal(t, []string{"svc1", "svc2"}, result)
+}
+
+func TestExtractAudienceNamespaces_CommaSeparated(t *testing.T) {
+	audiences := data.JSONMap{"namespaces": "svc1,svc2,svc3"}
+	result := extractAudienceNamespaces(audiences)
+	assert.Equal(t, []string{"svc1", "svc2", "svc3"}, result)
+}
+
+func TestExtractAudienceNamespaces_SingleString(t *testing.T) {
+	audiences := data.JSONMap{"namespaces": "svc1"}
+	result := extractAudienceNamespaces(audiences)
+	assert.Equal(t, []string{"svc1"}, result)
+}
+
+func TestExtractAudienceNamespaces_Nil(t *testing.T) {
+	result := extractAudienceNamespaces(nil)
+	assert.Nil(t, result)
+}
+
+func TestExtractAudienceNamespaces_NoNamespacesKey(t *testing.T) {
+	audiences := data.JSONMap{"other": "value"}
+	result := extractAudienceNamespaces(audiences)
+	assert.Nil(t, result)
+}
+
+func TestExtractAudienceNamespaces_MixedTypes(t *testing.T) {
+	audiences := data.JSONMap{"namespaces": []any{"svc1", 42, "svc2"}}
+	result := extractAudienceNamespaces(audiences)
+	assert.Equal(t, []string{"svc1", "svc2"}, result)
+}
+
 // --- Event Key Constants ---
 
 func TestEventKeyConstants(t *testing.T) {
@@ -416,4 +578,6 @@ func TestEventKeyConstants(t *testing.T) {
 	assert.Equal(t, "authorization.tuple.delete", EventKeyAuthzTupleDelete)
 	assert.Equal(t, "authorization.partition.sync", EventKeyAuthzPartitionSync)
 	assert.Equal(t, "partition.synchronization.event", EventKeyPartitionSynchronization)
+	assert.Equal(t, "service_account.synchronization.event", EventKeyServiceAccountSynchronization)
+	assert.Equal(t, "authorization.service_account.sync", EventKeyAuthzServiceAccountSync)
 }

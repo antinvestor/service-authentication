@@ -85,71 +85,15 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		}
 	}
 
-	// Generate client secret
+	// Generate client ID and client secret
+	clientID := util.IDString()
 	clientSecret, err := generateClientSecret()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate client secret: %w", err)
 	}
 
-	// Derive name if not provided
-	if name == "" {
-		suffix := profileID
-		if len(suffix) > 8 {
-			suffix = suffix[:8]
-		}
-		name = fmt.Sprintf("svc-%s", suffix)
-	}
-
-	// Build child partition properties for client_credentials
+	// Build audience map
 	audienceInterfaces := toAnySlice(audiences)
-
-	scope := "system_int openid"
-	if saType == "external" {
-		scope = "system_ext openid"
-	}
-
-	childProps := data.JSONMap{
-		"grant_types":    []string{"client_credentials"},
-		"response_types": []string{"token"},
-		"scope":          scope,
-		"subject":        profileID,
-	}
-	if len(audienceInterfaces) > 0 {
-		childProps["audience"] = audienceInterfaces
-	}
-
-	// Create the child partition
-	childPartition := &models.Partition{
-		ParentID:     partitionID,
-		Name:         name,
-		Description:  fmt.Sprintf("Service account for %s", profileID),
-		ClientSecret: clientSecret,
-		Properties:   childProps,
-	}
-	childPartition.GenID(ctx)
-	childPartition.TenantID = tenantID
-	childPartition.PartitionID = partition.PartitionID
-
-	if createErr := sb.partitionRepo.Create(ctx, childPartition); createErr != nil {
-		return nil, fmt.Errorf("failed to create child partition: %w", createErr)
-	}
-
-	childPartitionID := childPartition.GetID()
-	log = log.WithField("child_partition_id", childPartitionID)
-
-	// Emit partition sync event → creates Hydra OAuth2 client with client_credentials.
-	// This is critical — without it the service account has no Hydra client and cannot authenticate.
-	if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": childPartitionID}); emitErr != nil {
-		return nil, fmt.Errorf("failed to emit partition sync event: %w", emitErr)
-	}
-
-	// Emit authz partition sync → writes bridge + inheritance tuples for the child partition.
-	// Non-fatal: can be recovered via bulk sync endpoint.
-	if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": childPartitionID}); emitErr != nil {
-		log.WithError(emitErr).Warn("failed to emit authz partition sync event for service account")
-	}
-
-	// Create ServiceAccount record (must exist before emitting service account sync)
 	audienceMap := data.JSONMap{}
 	if len(audienceInterfaces) > 0 {
 		audienceMap["namespaces"] = audienceInterfaces
@@ -165,12 +109,13 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 	}
 
 	sa := &models.ServiceAccount{
-		ProfileID:  profileID,
-		ClientID:   childPartitionID,
-		Type:       saType,
-		Audiences:  audienceMap,
-		PublicKeys: pubKeysMap,
-		Properties: data.JSONMap(properties),
+		ProfileID:    profileID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Type:         saType,
+		Audiences:    audienceMap,
+		PublicKeys:   pubKeysMap,
+		Properties:   data.JSONMap(properties),
 		BaseModel: data.BaseModel{
 			TenantID:    tenantID,
 			PartitionID: partitionID,
@@ -179,6 +124,14 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 
 	if createErr := sb.serviceAccountRepo.Create(ctx, sa); createErr != nil {
 		return nil, fmt.Errorf("failed to create service account record: %w", createErr)
+	}
+
+	log = log.WithField("service_account_id", sa.GetID()).
+		WithField("client_id", clientID)
+
+	// Emit SA sync event → registers Hydra OAuth2 client with client_credentials.
+	if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyServiceAccountSynchronization, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
+		return nil, fmt.Errorf("failed to emit service account sync event: %w", emitErr)
 	}
 
 	// Emit service account authz sync → writes per-bot tuples (access, service, audience bridges)
@@ -235,15 +188,15 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		return fmt.Errorf("service account not found: %w", err)
 	}
 
-	// Soft-delete the child partition (triggers Hydra client deletion via sync event)
-	if sa.ClientID != "" {
-		if delErr := sb.partitionRepo.Delete(ctx, sa.ClientID); delErr != nil {
-			log.WithError(delErr).Warn("failed to delete child partition")
-		}
+	// Soft-delete the SA record first so the sync event handler sees DeletedAt
+	if delErr := sb.serviceAccountRepo.Delete(ctx, id); delErr != nil {
+		return fmt.Errorf("failed to delete service account: %w", delErr)
+	}
 
-		// Emit partition sync to delete from Hydra
-		if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": sa.ClientID}); emitErr != nil {
-			log.WithError(emitErr).Warn("failed to emit partition sync for deletion")
+	// Emit SA sync event → handler sees soft-deleted SA and calls Hydra DELETE
+	if sa.ClientID != "" {
+		if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyServiceAccountSynchronization, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
+			log.WithError(emitErr).Warn("failed to emit service account sync for deletion")
 		}
 	}
 
@@ -269,11 +222,6 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 
 	if delErr := sb.authorizer.DeleteTuples(ctx, tuples); delErr != nil {
 		log.WithError(delErr).Warn("failed to delete service account tuples")
-	}
-
-	// Delete service account record
-	if delErr := sb.serviceAccountRepo.Delete(ctx, id); delErr != nil {
-		return fmt.Errorf("failed to delete service account: %w", delErr)
 	}
 
 	log.Info("service account removed successfully")

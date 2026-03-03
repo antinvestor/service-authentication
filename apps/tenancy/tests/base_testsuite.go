@@ -211,6 +211,7 @@ func (bs *BaseTestSuite) CreateService(
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
+		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ServiceAccountRepo, implementation.PartitionRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
 		events.NewTupleWriteEventHandler(auth),

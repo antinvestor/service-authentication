@@ -2,11 +2,15 @@ package handlers_test
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
@@ -962,6 +966,287 @@ func (s *HandlerTestSuite) TestRemovePage_NotFound() {
 
 			s.Require().Nil(resp)
 			s.Require().Error(err)
+		})
+	})
+}
+
+// ========================
+// Service Account Handler Tests
+// ========================
+
+func (s *HandlerTestSuite) TestCreateServiceAccount_Success() {
+	s.T().Run("create_service_account", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+
+			partition := s.createTestPartition(ctx, deps, tenantID, "SA Test Partition")
+			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			req := connect.NewRequest(&partitionv1.CreateServiceAccountRequest{
+				PartitionId: partition.GetID(),
+				ProfileId:   util.IDString(),
+				Name:        "test-bot",
+				Audiences:   []string{"service_profile", "service_tenancy"},
+			})
+			resp, err := deps.Server.CreateServiceAccount(ctx, req)
+
+			s.Require().NoError(err)
+			s.Require().NotNil(resp.Msg.Data)
+			s.Require().NotEmpty(resp.Msg.Data.Id)
+			s.Require().NotEmpty(resp.Msg.Data.ClientId)
+			s.Require().NotEmpty(resp.Msg.ClientSecret, "ClientSecret should be returned on creation")
+			s.Require().Equal(partition.GetID(), resp.Msg.Data.PartitionId)
+			s.Require().Equal(tenantID, resp.Msg.Data.TenantId)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestCreateServiceAccount_InvalidPartition() {
+	s.T().Run("create_sa_invalid_partition", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			req := connect.NewRequest(&partitionv1.CreateServiceAccountRequest{
+				PartitionId: "nonexistent-partition",
+				ProfileId:   util.IDString(),
+				Name:        "should-fail",
+			})
+			resp, err := deps.Server.CreateServiceAccount(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccount_ByID() {
+	s.T().Run("get_sa_by_id", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+
+			partition := s.createTestPartition(ctx, deps, tenantID, "P")
+			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			saProfileID := util.IDString()
+			sa := &models.ServiceAccount{
+				ProfileID:    saProfileID,
+				ClientID:     util.IDString(),
+				ClientSecret: "test-secret",
+				Type:         "internal",
+				Audiences:    data.JSONMap{"namespaces": []any{"svc1"}},
+				Properties:   data.JSONMap{},
+				BaseModel: data.BaseModel{
+					TenantID:    tenantID,
+					PartitionID: partition.GetID(),
+				},
+			}
+			err := deps.Server.ServiceAccountRepo.Create(ctx, sa)
+			s.Require().NoError(err)
+
+			req := connect.NewRequest(&partitionv1.GetServiceAccountRequest{Id: sa.GetID()})
+			resp, err := deps.Server.GetServiceAccount(ctx, req)
+
+			s.Require().NoError(err)
+			s.Require().Equal(sa.GetID(), resp.Msg.Data.Id)
+			s.Require().Equal(sa.ClientID, resp.Msg.Data.ClientId)
+			s.Require().Equal(saProfileID, resp.Msg.Data.ProfileId)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccount_ByClientAndProfile() {
+	s.T().Run("get_sa_by_client_and_profile", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+
+			partition := s.createTestPartition(ctx, deps, tenantID, "P")
+			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			saProfileID := util.IDString()
+			saClientID := util.IDString()
+			sa := &models.ServiceAccount{
+				ProfileID:    saProfileID,
+				ClientID:     saClientID,
+				ClientSecret: "test-secret",
+				Type:         "external",
+				Properties:   data.JSONMap{},
+				BaseModel: data.BaseModel{
+					TenantID:    tenantID,
+					PartitionID: partition.GetID(),
+				},
+			}
+			err := deps.Server.ServiceAccountRepo.Create(ctx, sa)
+			s.Require().NoError(err)
+
+			req := connect.NewRequest(&partitionv1.GetServiceAccountRequest{
+				ClientId:  saClientID,
+				ProfileId: saProfileID,
+			})
+			resp, err := deps.Server.GetServiceAccount(ctx, req)
+
+			s.Require().NoError(err)
+			s.Require().Equal(sa.GetID(), resp.Msg.Data.Id)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccount_NotFound() {
+	s.T().Run("get_sa_not_found", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			req := connect.NewRequest(&partitionv1.GetServiceAccountRequest{Id: "nonexistent"})
+			resp, err := deps.Server.GetServiceAccount(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+			st, ok := status.FromError(err)
+			s.Require().True(ok)
+			s.Require().Equal(codes.NotFound, st.Code())
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestRemoveServiceAccount_Success() {
+	s.T().Run("remove_service_account", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+
+			partition := s.createTestPartition(ctx, deps, tenantID, "P")
+			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			sa := &models.ServiceAccount{
+				ProfileID:    util.IDString(),
+				ClientID:     util.IDString(),
+				ClientSecret: "test-secret",
+				Type:         "internal",
+				Properties:   data.JSONMap{},
+				BaseModel: data.BaseModel{
+					TenantID:    tenantID,
+					PartitionID: partition.GetID(),
+				},
+			}
+			err := deps.Server.ServiceAccountRepo.Create(ctx, sa)
+			s.Require().NoError(err)
+
+			req := connect.NewRequest(&partitionv1.RemoveServiceAccountRequest{Id: sa.GetID()})
+			resp, err := deps.Server.RemoveServiceAccount(ctx, req)
+
+			s.Require().NoError(err)
+			s.Require().True(resp.Msg.Succeeded)
+
+			// Verify SA is no longer retrievable
+			getReq := connect.NewRequest(&partitionv1.GetServiceAccountRequest{Id: sa.GetID()})
+			getResp, getErr := deps.Server.GetServiceAccount(ctx, getReq)
+			s.Require().Nil(getResp)
+			s.Require().Error(getErr)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestRemoveServiceAccount_NotFound() {
+	s.T().Run("remove_sa_not_found", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			req := connect.NewRequest(&partitionv1.RemoveServiceAccountRequest{Id: "nonexistent"})
+			resp, err := deps.Server.RemoveServiceAccount(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_Success() {
+	s.T().Run("get_sa_by_client_id_http", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+
+			partition := s.createTestPartition(ctx, deps, tenantID, "P")
+			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			clientID := util.IDString()
+			sa := &models.ServiceAccount{
+				ProfileID:    util.IDString(),
+				ClientID:     clientID,
+				ClientSecret: "test-secret",
+				Type:         "internal",
+				Properties:   data.JSONMap{},
+				BaseModel: data.BaseModel{
+					TenantID:    tenantID,
+					PartitionID: partition.GetID(),
+				},
+			}
+			err := deps.Server.ServiceAccountRepo.Create(ctx, sa)
+			s.Require().NoError(err)
+
+			// Build HTTP request using the mux pattern
+			mux := http.NewServeMux()
+			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
+
+			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/"+clientID, nil)
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+
+			mux.ServeHTTP(rw, req)
+
+			s.Require().Equal(http.StatusOK, rw.Code)
+
+			var body map[string]any
+			err = json.Unmarshal(rw.Body.Bytes(), &body)
+			s.Require().NoError(err)
+			s.Require().Equal(clientID, body["clientId"])
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_NotFound() {
+	s.T().Run("get_sa_by_client_id_http_not_found", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			mux := http.NewServeMux()
+			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
+
+			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/nonexistent", nil)
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+
+			mux.ServeHTTP(rw, req)
+
+			s.Require().Equal(http.StatusNotFound, rw.Code)
 		})
 	})
 }

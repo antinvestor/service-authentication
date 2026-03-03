@@ -58,13 +58,22 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 		response["partition_sync_error"] = err.Error()
 	}
 
-	// Also sync service accounts — re-writes Keto tuples for all service bots
+	// Sync service accounts — register/update Hydra OAuth2 clients
 	saQuery := data.NewSearchQuery(
 		data.WithSearchLimit(count), data.WithSearchOffset(page))
-	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saQuery)
+	err = business.ReQueueServiceAccountsForHydraSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saQuery)
 	if err != nil {
-		log.WithError(err).Error("internal service error synchronising service accounts")
-		response["service_account_sync_error"] = err.Error()
+		log.WithError(err).Error("internal service error synchronising service accounts on Hydra")
+		response["service_account_hydra_sync_error"] = err.Error()
+	}
+
+	// Also sync service account Keto tuples
+	saAuthzQuery := data.NewSearchQuery(
+		data.WithSearchLimit(count), data.WithSearchOffset(page))
+	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saAuthzQuery)
+	if err != nil {
+		log.WithError(err).Error("internal service error synchronising service account authz")
+		response["service_account_authz_sync_error"] = err.Error()
 	}
 
 	rw.Header().Set("Content-Type", "application/json")
@@ -76,6 +85,7 @@ func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux := http.NewServeMux()
 
 	userServeMux.HandleFunc(SyncPartitionsHTTPPath, prtSrv.SynchronizePartitions)
+	userServeMux.HandleFunc("GET "+ServiceAccountByClientIDPath, prtSrv.GetServiceAccountByClientID)
 
 	return userServeMux
 }

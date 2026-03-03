@@ -8,7 +8,6 @@ import (
 	"time"
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -104,42 +103,24 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 
 // buildServiceAccountConsentClaims builds token claims for service account clients
 // (both system_internal and system_external).
-// Service accounts must be pre-registered via CreateServiceAccount — the partition's
-// Properties["subject"] must match the authenticating bot's profileID.
+// Service accounts are looked up via the tenancy service API by client_id.
 func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clientID, subjectID string, requestedScope, _ []string) (map[string]any, error) {
 	log := util.Log(ctx)
 
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
+	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
 	if err != nil {
-		log.WithError(err).WithField("client_id", clientID).Error("partition lookup failed")
-		return nil, fmt.Errorf("failed to get partition: %w", err)
+		log.WithError(err).WithField("client_id", clientID).Error("service account lookup failed")
+		return nil, fmt.Errorf("service account not found for client: %s", clientID)
 	}
 
-	partitionObj := partitionResp.Msg.GetData()
-	if partitionObj == nil {
-		log.WithField("client_id", clientID).Error("partition not found")
-		return nil, fmt.Errorf("partition not found for client: %s", clientID)
+	// Validate that the SA's profile matches the authenticating subject
+	if sa.ProfileID != subjectID {
+		log.WithField("client_id", clientID).
+			WithField("subject_id", subjectID).
+			WithField("sa_profile_id", sa.ProfileID).
+			Error("service account subject mismatch")
+		return nil, fmt.Errorf("service account subject mismatch for client %s", clientID)
 	}
-
-	// Validate pre-registration: the partition's Properties["subject"] must match
-	// the authenticating bot's profileID. This property is set during service
-	// account registration (or in migration SQL).
-	if props := partitionObj.GetProperties(); props != nil {
-		propsMap := props.AsMap()
-		if registeredSubject, ok := propsMap["subject"].(string); ok && registeredSubject == subjectID {
-			// Pre-registered — tuples already exist from registration/sync.
-		} else {
-			log.WithField("client_id", clientID).
-				WithField("subject_id", subjectID).
-				Error("service account not pre-registered")
-			return nil, fmt.Errorf("service account not pre-registered for client %s", clientID)
-		}
-	} else {
-		log.WithField("client_id", clientID).Error("partition has no properties")
-		return nil, fmt.Errorf("service account not pre-registered for client %s", clientID)
-	}
-
-	tenantID := partitionObj.GetTenantId()
 
 	// Determine role based on requested scope (see utilities.go for convention)
 	role := scopeToRole(requestedScope)
@@ -151,8 +132,8 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 		ProfileID: subjectID,
 	}
 	loginEvt.ID = util.IDString()
-	loginEvt.TenantID = tenantID
-	loginEvt.PartitionID = partitionObj.GetId()
+	loginEvt.TenantID = sa.TenantID
+	loginEvt.PartitionID = sa.PartitionID
 
 	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
 		log.WithError(createErr).WithField("client_id", clientID).
@@ -161,8 +142,8 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 	}
 
 	return map[string]any{
-		"tenant_id":      tenantID,
-		"partition_id":   partitionObj.GetId(),
+		"tenant_id":      sa.TenantID,
+		"partition_id":   sa.PartitionID,
 		"roles":          []string{role},
 		"profile_id":     subjectID,
 		"session_id":     loginEvt.GetID(),

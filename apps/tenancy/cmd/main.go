@@ -58,6 +58,7 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithRegisterEvents(
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.PartitionRepo),
+			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
 			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, auth),
 			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
 			events.NewTupleWriteEventHandler(auth),

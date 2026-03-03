@@ -16,6 +16,7 @@ import (
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
@@ -139,6 +140,49 @@ func NewAuthServer(ctx context.Context,
 	}
 
 	return h
+}
+
+// ServiceAccountInfo holds service account data for token enrichment.
+type ServiceAccountInfo struct {
+	TenantID    string
+	PartitionID string
+	ProfileID   string
+	ClientID    string
+	Type        string
+}
+
+// lookupServiceAccountByClientID retrieves a service account via the partition
+// service's GetServiceAccount RPC using the OAuth2 client ID.
+func (h *AuthServer) lookupServiceAccountByClientID(ctx context.Context, clientID string) (*ServiceAccountInfo, error) {
+	resp, err := h.partitionCli.GetServiceAccount(ctx, connect.NewRequest(&partitionv1.GetServiceAccountRequest{
+		ClientId: clientID,
+	}))
+	if err != nil {
+		return nil, fmt.Errorf("service account lookup failed: %w", err)
+	}
+
+	sa := resp.Msg.GetData()
+	if sa == nil {
+		return nil, fmt.Errorf("service account not found for client_id %s", clientID)
+	}
+
+	return &ServiceAccountInfo{
+		TenantID:    sa.GetTenantId(),
+		PartitionID: sa.GetPartitionId(),
+		ProfileID:   sa.GetProfileId(),
+		ClientID:    sa.GetClientId(),
+		Type:        inferSAType(sa),
+	}, nil
+}
+
+// inferSAType infers the SA type string from the proto object.
+func inferSAType(sa *partitionv1.ServiceAccountObject) string {
+	if sa.GetProperties() != nil {
+		if t, ok := sa.GetProperties().AsMap()["type"].(string); ok {
+			return t
+		}
+	}
+	return "internal"
 }
 
 func (h *AuthServer) loginEventCache() cache.Cache[string, models.LoginEvent] {

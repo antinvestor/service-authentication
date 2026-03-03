@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/pitabwire/util"
 )
@@ -554,45 +552,26 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 
 // handleServiceAccountEnrichment handles token enrichment for service account
 // client_credentials tokens (both system_internal and system_external).
-// It looks up the partition by client_id, validates the pre-registered subject,
+// It looks up the service account by client_id via the tenancy service API,
 // and returns enriched claims with the appropriate role.
 func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string, grantedScopes []string) error {
 	log := util.Log(ctx).WithField("client_id", clientID)
 
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
+	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
 	if err != nil {
-		log.WithError(err).Error("service account partition lookup failed")
-		return h.writeWebhookError(rw, "partition not found for service account client")
-	}
-
-	partitionObj := partitionResp.Msg.GetData()
-	if partitionObj == nil {
-		log.Error("service account partition not found")
-		return h.writeWebhookError(rw, "partition not found for service account client")
-	}
-
-	// Validate pre-registration: Properties["subject"] must be set and be a string.
-	var subject string
-	if props := partitionObj.GetProperties(); props != nil {
-		propsMap := props.AsMap()
-		if s, ok := propsMap["subject"].(string); ok && s != "" {
-			subject = s
-		}
-	}
-	if subject == "" {
-		log.Error("service account partition has no registered subject")
-		return h.writeWebhookError(rw, "service account not pre-registered")
+		log.WithError(err).Error("service account lookup failed")
+		return h.writeWebhookError(rw, "service account not found")
 	}
 
 	// Determine role based on granted scopes (see utilities.go for convention)
 	role := scopeToRole(grantedScopes)
 
-	log.WithField("role", role).Debug("enriched service account token via partition lookup")
+	log.WithField("role", role).Debug("enriched service account token via SA lookup")
 	return writeTokenHookResponse(rw, map[string]any{
-		"tenant_id":    partitionObj.GetTenantId(),
-		"partition_id": partitionObj.GetId(),
+		"tenant_id":    sa.TenantID,
+		"partition_id": sa.PartitionID,
 		"roles":        []string{role},
-		"profile_id":   subject,
+		"profile_id":   sa.ProfileID,
 	})
 }
 
