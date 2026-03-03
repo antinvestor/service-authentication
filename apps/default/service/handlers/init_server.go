@@ -50,6 +50,12 @@ type AuthServer struct {
 	securityAuth security.Authenticator
 	authorizer   security.Authorizer
 
+	// selfClientID is the OAuth2 client ID this service uses for its own
+	// client_credentials grants. It is used in the webhook to short-circuit
+	// SA lookups for the auth service's own tokens and avoid circular
+	// dependencies where the webhook calls partition service which calls Hydra.
+	selfClientID string
+
 	cacheMan cache.Manager
 
 	profileCli      profilev1connect.ProfileServiceClient
@@ -79,7 +85,7 @@ type AuthServer struct {
 }
 
 func NewAuthServer(ctx context.Context,
-	securityAuth security.Authenticator, securityAuthorizer security.Authorizer,
+	securityMan security.Manager,
 	authConfig *aconfig.AuthenticationConfig,
 	cacheMan cache.Manager,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
@@ -100,8 +106,9 @@ func NewAuthServer(ctx context.Context,
 	h := &AuthServer{
 
 		cacheMan:     cacheMan,
-		securityAuth: securityAuth,
-		authorizer:   securityAuthorizer,
+		securityAuth: securityMan.GetAuthenticator(ctx),
+		authorizer:   securityMan.GetAuthorizer(ctx),
+		selfClientID: securityMan.JwtClientID(),
 
 		config:          authConfig,
 		profileCli:      profileCli,
@@ -153,16 +160,72 @@ type ServiceAccountInfo struct {
 
 // lookupServiceAccountByClientID retrieves a service account via the partition
 // service's GetServiceAccount RPC using the OAuth2 client ID.
+// If the SA is not found in the tenancy DB, it falls back to config-based
+// defaults (DefaultTenantID/DefaultPartitionID) so that system-internal clients
+// registered directly in Hydra (e.g. service accounts not yet migrated to the
+// new SA model) can still obtain enriched tokens.
 func (h *AuthServer) lookupServiceAccountByClientID(ctx context.Context, clientID string) (*ServiceAccountInfo, error) {
-	resp, err := h.partitionCli.GetServiceAccount(ctx, connect.NewRequest(&partitionv1.GetServiceAccountRequest{
+	cfg := h.Config()
+
+	// Short-circuit: if the clientID is the authentication service's own client ID,
+	// return config defaults immediately without calling the partition service.
+	// This prevents a circular dependency where the token webhook calls the partition
+	// service, which itself needs a token from Hydra, which calls the webhook again.
+	// The partition client library's OAuth2 token fetch ignores context cancellation,
+	// so a timeout-based approach does not work; we must bypass the call entirely.
+	if h.selfClientID != "" && clientID == h.selfClientID && cfg != nil && cfg.DefaultTenantID != "" && cfg.DefaultPartitionID != "" {
+		util.Log(ctx).WithField("client_id", clientID).
+			Debug("skipping partition lookup for own service client ID, using config defaults")
+		return &ServiceAccountInfo{
+			TenantID:    cfg.DefaultTenantID,
+			PartitionID: cfg.DefaultPartitionID,
+			ProfileID:   clientID,
+			ClientID:    clientID,
+			Type:        "internal",
+		}, nil
+	}
+
+	// Use a bounded timeout for the SA lookup to avoid blocking the webhook
+	// indefinitely. The partition client's OAuth2 token fetch ignores context
+	// cancellation, so this timeout only bounds the actual gRPC call once a
+	// token is available. The main circular-dependency protection is the
+	// selfClientID short-circuit above.
+	lookupCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	resp, err := h.partitionCli.GetServiceAccount(lookupCtx, connect.NewRequest(&partitionv1.GetServiceAccountRequest{
 		ClientId: clientID,
 	}))
 	if err != nil {
+		// Fall back to config defaults for SA clients registered directly in Hydra.
+		if cfg != nil && cfg.DefaultTenantID != "" && cfg.DefaultPartitionID != "" {
+			util.Log(ctx).WithError(err).WithField("client_id", clientID).
+				Warn("service account not in tenancy DB, falling back to config defaults")
+			return &ServiceAccountInfo{
+				TenantID:    cfg.DefaultTenantID,
+				PartitionID: cfg.DefaultPartitionID,
+				ProfileID:   clientID,
+				ClientID:    clientID,
+				Type:        "internal",
+			}, nil
+		}
 		return nil, fmt.Errorf("service account lookup failed: %w", err)
 	}
 
 	sa := resp.Msg.GetData()
 	if sa == nil {
+		// Fall back to config defaults when SA record has no data.
+		if cfg != nil && cfg.DefaultTenantID != "" && cfg.DefaultPartitionID != "" {
+			util.Log(ctx).WithField("client_id", clientID).
+				Warn("service account data nil in tenancy response, falling back to config defaults")
+			return &ServiceAccountInfo{
+				TenantID:    cfg.DefaultTenantID,
+				PartitionID: cfg.DefaultPartitionID,
+				ProfileID:   clientID,
+				ClientID:    clientID,
+				Type:        "internal",
+			}, nil
+		}
 		return nil, fmt.Errorf("service account not found for client_id %s", clientID)
 	}
 

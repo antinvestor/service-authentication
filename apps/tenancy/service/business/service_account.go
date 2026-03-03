@@ -157,7 +157,10 @@ func (sb *serviceAccountBusiness) GetServiceAccount(
 	if clientID != "" && profileID != "" {
 		return sb.serviceAccountRepo.GetByClientAndProfile(ctx, clientID, profileID)
 	}
-	return nil, fmt.Errorf("id or (client_id + profile_id) required")
+	if clientID != "" {
+		return sb.serviceAccountRepo.GetByClientID(ctx, clientID)
+	}
+	return nil, fmt.Errorf("id or client_id (optionally with profile_id) required")
 }
 
 func (sb *serviceAccountBusiness) GetServiceAccountByClientID(

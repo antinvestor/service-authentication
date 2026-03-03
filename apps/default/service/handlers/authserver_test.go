@@ -32,7 +32,6 @@ import (
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 )
 
@@ -424,12 +423,14 @@ func (m *mockLoginRepo) GetByProfileID(_ context.Context, profileID string) (*mo
 
 type mockPartitionCli struct {
 	partitionv1connect.PartitionServiceClient
-	getPartitionResp *connect.Response[partitionv1.GetPartitionResponse]
-	getPartitionErr  error
-	getAccessResp    *connect.Response[partitionv1.GetAccessResponse]
-	getAccessErr     error
-	createAccessResp *connect.Response[partitionv1.CreateAccessResponse]
-	createAccessErr  error
+	getPartitionResp      *connect.Response[partitionv1.GetPartitionResponse]
+	getPartitionErr       error
+	getServiceAccountResp *connect.Response[partitionv1.GetServiceAccountResponse]
+	getServiceAccountErr  error
+	getAccessResp         *connect.Response[partitionv1.GetAccessResponse]
+	getAccessErr          error
+	createAccessResp      *connect.Response[partitionv1.CreateAccessResponse]
+	createAccessErr       error
 }
 
 func (m *mockPartitionCli) ListAccessRole(_ context.Context, _ *connect.Request[partitionv1.ListAccessRoleRequest]) (*connect.ServerStreamForClient[partitionv1.ListAccessRoleResponse], error) {
@@ -438,6 +439,10 @@ func (m *mockPartitionCli) ListAccessRole(_ context.Context, _ *connect.Request[
 
 func (m *mockPartitionCli) GetPartition(_ context.Context, _ *connect.Request[partitionv1.GetPartitionRequest]) (*connect.Response[partitionv1.GetPartitionResponse], error) {
 	return m.getPartitionResp, m.getPartitionErr
+}
+
+func (m *mockPartitionCli) GetServiceAccount(_ context.Context, _ *connect.Request[partitionv1.GetServiceAccountRequest]) (*connect.Response[partitionv1.GetServiceAccountResponse], error) {
+	return m.getServiceAccountResp, m.getServiceAccountErr
 }
 
 func (m *mockPartitionCli) GetAccess(_ context.Context, _ *connect.Request[partitionv1.GetAccessRequest]) (*connect.Response[partitionv1.GetAccessResponse], error) {
@@ -857,17 +862,14 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 		assert.Contains(t, roles, "system_internal")
 	})
 
-	t.Run("system internal scope without session claims does partition lookup", func(t *testing.T) {
-		partProps, _ := structpb.NewStruct(map[string]any{
-			"subject":     "service_bot",
-			"grant_types": []any{"client_credentials"},
-		})
+	t.Run("system internal scope without session claims does service account lookup", func(t *testing.T) {
 		partCli := &mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: &partitionv1.PartitionObject{
-					Id:         "svc-partition",
-					TenantId:   "lookup-tenant",
-					Properties: partProps,
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "svc-partition",
+					TenantId:    "lookup-tenant",
+					PartitionId: "svc-partition",
+					ProfileId:   "bot-profile",
 				},
 			}),
 		}
@@ -895,7 +897,7 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 
 	t.Run("system internal scope with unregistered client is rejected", func(t *testing.T) {
 		partCli := &mockPartitionCli{
-			getPartitionErr: connect.NewError(connect.CodeNotFound, errors.New("partition not found")),
+			getServiceAccountErr: connect.NewError(connect.CodeNotFound, errors.New("service account not found")),
 		}
 		h := newFullTestAuthServer(newMockLoginEventRepo(), nil, partCli, nil, nil)
 
@@ -1972,15 +1974,13 @@ func TestBuildServiceAccountConsentClaims_Success(t *testing.T) {
 		leRepo,
 		nil,
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
-					return &partitionv1.PartitionObject{
-						Id:         "partition-1",
-						TenantId:   "tenant-1",
-						Properties: props,
-					}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "partition-1",
+					TenantId:    "tenant-1",
+					PartitionId: "partition-1",
+					ProfileId:   "subject-1",
+				},
 			}),
 		},
 		nil,
@@ -2001,14 +2001,14 @@ func TestBuildServiceAccountConsentClaims_PartitionLookupFails(t *testing.T) {
 	h := newFullTestAuthServer(
 		newMockLoginEventRepo(),
 		nil,
-		&mockPartitionCli{getPartitionErr: errors.New("not found")},
+		&mockPartitionCli{getServiceAccountErr: errors.New("not found")},
 		nil,
 		&mockAuthorizer{},
 	)
 
 	_, err := h.buildServiceAccountConsentClaims(context.Background(), "bad-client", "subject-1", []string{"system_int"}, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get partition")
+	assert.Contains(t, err.Error(), "service account not found")
 }
 
 func TestBuildServiceAccountConsentClaims_NilPartitionData(t *testing.T) {
@@ -2016,7 +2016,7 @@ func TestBuildServiceAccountConsentClaims_NilPartitionData(t *testing.T) {
 		newMockLoginEventRepo(),
 		nil,
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{Data: nil}),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{Data: nil}),
 		},
 		nil,
 		&mockAuthorizer{},
@@ -2024,7 +2024,7 @@ func TestBuildServiceAccountConsentClaims_NilPartitionData(t *testing.T) {
 
 	_, err := h.buildServiceAccountConsentClaims(context.Background(), "client-1", "subject-1", []string{"system_int"}, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "partition not found")
+	assert.Contains(t, err.Error(), "service account not found")
 }
 
 func TestBuildServiceAccountConsentClaims_WriteTuplesError(t *testing.T) {
@@ -2033,11 +2033,13 @@ func TestBuildServiceAccountConsentClaims_WriteTuplesError(t *testing.T) {
 		leRepo,
 		nil,
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
-					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "p1",
+					TenantId:    "t1",
+					PartitionId: "p1",
+					ProfileId:   "sub1",
+				},
 			}),
 		},
 		nil,
@@ -2057,11 +2059,13 @@ func TestBuildServiceAccountConsentClaims_LoginEventCreateError(t *testing.T) {
 		leRepo,
 		nil,
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
-					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "p1",
+					TenantId:    "t1",
+					PartitionId: "p1",
+					ProfileId:   "sub1",
+				},
 			}),
 		},
 		nil,
@@ -2082,11 +2086,13 @@ func TestBuildConsentTokenClaims_ServiceAccount(t *testing.T) {
 		leRepo,
 		nil,
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "sub1"})
-					return &partitionv1.PartitionObject{Id: "p1", TenantId: "t1", Properties: props}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "p1",
+					TenantId:    "t1",
+					PartitionId: "p1",
+					ProfileId:   "sub1",
+				},
 			}),
 		},
 		nil,
@@ -2150,11 +2156,13 @@ func TestShowConsentEndpoint_InternalSystem_Success(t *testing.T) {
 			acceptConsentURL: "https://example.com/callback",
 		},
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
-					return &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1", Properties: props}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "partition-1",
+					TenantId:    "tenant-1",
+					PartitionId: "partition-1",
+					ProfileId:   "subject-1",
+				},
 			}),
 		},
 		nil,
@@ -2186,11 +2194,13 @@ func TestShowConsentEndpoint_AcceptConsentError(t *testing.T) {
 			acceptConsentErr: errors.New("accept failed"),
 		},
 		&mockPartitionCli{
-			getPartitionResp: connect.NewResponse(&partitionv1.GetPartitionResponse{
-				Data: func() *partitionv1.PartitionObject {
-					props, _ := structpb.NewStruct(map[string]any{"subject": "subject-1"})
-					return &partitionv1.PartitionObject{Id: "partition-1", TenantId: "tenant-1", Properties: props}
-				}(),
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "partition-1",
+					TenantId:    "tenant-1",
+					PartitionId: "partition-1",
+					ProfileId:   "subject-1",
+				},
 			}),
 		},
 		nil,
