@@ -38,10 +38,10 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-basic-%d", time.Now().Unix()),
 				},
-				Name:         "Basic Test Partition",
-				Description:  "Test partition with basic properties",
-				ClientSecret: "basic-test-secret",
+				Name:        "Basic Test Partition",
+				Description: "Test partition with basic properties",
 				Properties: data.JSONMap{
+					"client_secret": "basic-test-secret",
 					"redirect_uris": []interface{}{"https://basic-test.com/callback"},
 					"scope":         "openid profile email",
 					"audience":      []interface{}{"basic-api"},
@@ -56,9 +56,9 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-complex-%d", time.Now().Unix()),
 				},
-				Name:         "Complex Test Partition",
-				ClientSecret: "complex-secret",
+				Name: "Complex Test Partition",
 				Properties: data.JSONMap{
+					"client_secret": "complex-secret",
 					"redirect_uris": []interface{}{
 						"https://app1.com/callback",
 						"https://app2.com/auth",
@@ -120,9 +120,9 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				BaseModel: data.BaseModel{
 					ID: fmt.Sprintf("test-auth-method-%d", time.Now().Unix()),
 				},
-				Name:         "Auth Method Test Partition",
-				ClientSecret: "auth-method-secret",
+				Name: "Auth Method Test Partition",
 				Properties: data.JSONMap{
+					"client_secret":              "auth-method-secret",
 					"token_endpoint_auth_method": "client_secret_post",
 					"redirect_uris":              []interface{}{"https://auth-test.com/callback"},
 				},
@@ -143,7 +143,6 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				// Store original partition state for comparison
 				originalName := tc.partition.Name
 				originalID := tc.partition.ID
-				originalSecret := tc.partition.ClientSecret
 				originalProperties := make(data.JSONMap)
 				for k, v := range tc.partition.Properties {
 					originalProperties[k] = v
@@ -175,7 +174,6 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				// Verify partition structure integrity
 				require.Equal(t, originalName, tc.partition.Name, "Partition name should remain unchanged")
 				require.Equal(t, originalID, tc.partition.ID, "Partition ID should remain unchanged")
-				require.Equal(t, originalSecret, tc.partition.ClientSecret, "Client secret should remain unchanged")
 
 				// Verify original properties are preserved
 				for key := range originalProperties {

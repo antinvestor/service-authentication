@@ -21,7 +21,6 @@ import (
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testnats"
-	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -85,18 +84,16 @@ func initResources(_ context.Context) []definition.TestResource {
 		definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false))
 
-	hydra := testoryhydra.NewWithOpts(
-		testoryhydra.HydraConfiguration, definition.WithDependancies(pg),
-		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-
-	auth := internaltests.NewAuthentication(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	hydra := internaltests.NewHydra(
+		internaltests.HydraConfiguration, nil, definition.WithDependancies(pg),
+		definition.WithEnableLogging(false))
 
 	keto := testketo.NewWithOpts(
 		definition.WithDependancies(pg),
 		definition.WithEnableLogging(false),
 	)
 
-	resources := []definition.TestResource{pg, queue, hydra, auth, keto}
+	resources := []definition.TestResource{pg, queue, hydra, keto}
 	return resources
 }
 
@@ -135,16 +132,13 @@ func (bs *BaseTestSuite) CreateService(
 	var databaseDR definition.DependancyConn
 	var queueDR definition.DependancyConn
 	var hydraDR definition.DependancyConn
-	// var authenticationDR definition.DependancyConn
 	for _, res := range bs.Resources() {
 		switch res.Name() {
 		case testpostgres.PostgresqlDBImage:
 			databaseDR = res
 		case testnats.NatsImage:
 			queueDR = res
-		// case internaltests.AuthenticationImage:
-		// 	authenticationDR = res
-		case testoryhydra.OryHydraImage:
+		case internaltests.HydraImage:
 			hydraDR = res
 		}
 	}
@@ -165,6 +159,10 @@ func (bs *BaseTestSuite) CreateService(
 
 	cfg, err := config.LoadWithOIDC[aconfig.PartitionConfig](ctx)
 	require.NoError(t, err)
+
+	// Hydra's public URL is the internal Docker address; rewrite token endpoint for host.
+	hostTokenEndpoint := fmt.Sprintf("http://127.0.0.1:%s/oauth2/token", hydraPort)
+	cfg.SetOIDCValue("token_endpoint", hostTokenEndpoint)
 
 	qDS, err := queueDR.GetDS(ctx).WithUser("ant")
 	require.NoError(t, err)
@@ -211,6 +209,7 @@ func (bs *BaseTestSuite) CreateService(
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
+		events.NewClientSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ClientRepo, implementation.ServiceAccountRepo),
 		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ServiceAccountRepo, implementation.PartitionRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),

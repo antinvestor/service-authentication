@@ -31,6 +31,12 @@ func (pr *partitionRoleRepository) GetRolesByID(ctx context.Context, idList ...s
 	return partitionRoles, err
 }
 
+func (pr *partitionRoleRepository) GetByPartitionAndNames(ctx context.Context, partitionID string, names []string) ([]*models.PartitionRole, error) {
+	partitionRoles := make([]*models.PartitionRole, 0)
+	err := pr.Pool().DB(ctx, true).Find(&partitionRoles, "partition_id = ? AND name IN ?", partitionID, names).Error
+	return partitionRoles, err
+}
+
 func NewPartitionRoleRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) PartitionRoleRepository {
 	return &partitionRoleRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.PartitionRole](

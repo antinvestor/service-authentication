@@ -265,12 +265,14 @@ func (s *BusinessTestSuite) TestGetPartition_ServiceMatrix() {
 
 			partitionID := util.IDString()
 			partition := &models.Partition{
-				Name:         "WithSecret",
-				ClientSecret: "s3cr3t",
+				Name: "WithSecret",
 				BaseModel: data.BaseModel{
 					ID:          partitionID,
 					TenantID:    tenant.GetID(),
 					PartitionID: partitionID,
+				},
+				Properties: data.JSONMap{
+					"client_secret": "s3cr3t",
 				},
 			}
 			err := deps.PartitionRepo.Create(ctx, partition)

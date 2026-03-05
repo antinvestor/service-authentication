@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -25,15 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Global mutex to ensure sequential execution of integration tests
-var verificationTestMutex sync.Mutex
-
-// Test timeout constants
-const (
-	VerificationTestTimeout      = 60 * time.Second // Overall test timeout
-	VerificationOperationTimeout = 15 * time.Second // Individual operation timeout
-)
-
 type LoginVerificationTestSuite struct {
 	tests.BaseTestSuite
 }
@@ -47,23 +37,16 @@ type VerificationTestContext struct {
 	LoginRepo    repository.LoginRepository
 }
 
-// SetupVerificationTest creates a common test setup for verification tests with timeout handling
+// SetupVerificationTest creates a common test setup for verification tests
 func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep *definition.DependencyOption) *VerificationTestContext {
-	// Use global mutex to ensure sequential execution
-	verificationTestMutex.Lock()
-
-	// Create context with timeout for overall test
-	ctx, cancel := context.WithTimeout(context.Background(), VerificationTestTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
 
 	baseCtx, authServer, deps := suite.CreateService(t, dep)
 	_ = baseCtx
 
-	// Use the suite's server URL since Hydra is configured to call webhooks there
-	// Creating a new httptest server would cause webhook calls to fail
 	oauth2Client := tests.NewOAuth2TestClient(authServer)
 	oauth2Client.AuthServiceURL = suite.ServerUrl()
 
-	// Create login repository
 	return &VerificationTestContext{
 		AuthServer:   authServer,
 		Context:      ctx,
@@ -73,16 +56,14 @@ func (suite *LoginVerificationTestSuite) SetupVerificationTest(t *testing.T, dep
 	}
 }
 
-// TeardownVerificationTest cleans up test resources with timeout protection
+// TeardownVerificationTest cleans up test resources
 func (suite *LoginVerificationTestSuite) TeardownVerificationTest(testCtx *VerificationTestContext) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("Recovered from panic during teardown: %v\n", r)
 		}
-		verificationTestMutex.Unlock()
 	}()
 
-	// Create cleanup context with timeout
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cleanupCancel()
 
@@ -179,19 +160,16 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 				testCtx := suite.SetupVerificationTest(t, dep)
 				defer suite.TeardownVerificationTest(testCtx)
 
-				opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+				opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
 				defer opCancel()
 
-				// Create OAuth2 client for this test
-				testCtx.OAuth2Client.SetTestingT(t) // Enable debug logging
+				testCtx.OAuth2Client.SetTestingT(t)
 				oauth2Client, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, tc.name)
 				require.NoError(t, err)
 
-				// Initiate OAuth2 flow to get a valid login challenge
 				loginRedirect, err := testCtx.OAuth2Client.InitiateLoginFlow(testCtx.Context, oauth2Client)
 				require.NoError(t, err)
 
-				// Step 1: Submit contact for verification
 				contactVerificationResult, err := testCtx.OAuth2Client.PerformContactVerification(testCtx.Context, loginRedirect, tc.contact)
 				require.NoError(t, err)
 
@@ -202,19 +180,15 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 
 				require.True(t, contactVerificationResult.Success, "Contact verification submission should succeed")
 
-				// Step 2: Get verification code from database (in real scenario, user would receive this via contact/SMS)
-				// Use suite.Handler() which accesses the same database as the HTTP handlers
 				verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, suite.Handler(), contactVerificationResult.LoginEventID)
 				require.NoError(t, err)
 				require.NotEmpty(t, verificationCode, "Should retrieve verification code from database")
 
-				// Try all the wrong codes first
 				for i, wrongCode := range tc.badLoginCodes {
 					t.Logf("Attempting wrong verification code %d/%d: %s", i+1, len(tc.badLoginCodes), wrongCode)
 					result, err2 := testCtx.OAuth2Client.PerformCodeVerification(testCtx.Context,
 						contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, wrongCode)
 
-					// Wrong codes should fail
 					if err2 == nil && result.Success {
 						t.Errorf("Expected wrong code %s to fail, but it succeeded", wrongCode)
 					}
@@ -222,13 +196,10 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 					time.Sleep(1 * time.Second)
 				}
 
-				// For tests expecting failure, try the correct code to verify it's blocked
-				// For tests expecting success, try the correct code to verify it works
 				t.Logf("Now attempting correct verification code: %s", verificationCode)
 				finalResult, finalErr := testCtx.OAuth2Client.PerformCodeVerification(testCtx.Context,
 					contactVerificationResult.LoginEventID, contactVerificationResult.ProfileName, verificationCode)
 
-				// Validate final result
 				if tc.expectSuccess {
 					require.NoError(t, finalErr, "Final verification should succeed")
 					require.NotNil(t, finalResult, "Final result should not be nil for successful verification")
@@ -250,10 +221,9 @@ func (suite *LoginVerificationTestSuite) TestVerificationEndpointBasics() {
 		testCtx := suite.SetupVerificationTest(t, dep)
 		defer suite.TeardownVerificationTest(testCtx)
 
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
 		defer opCancel()
 
-		// Test verification page accessibility
 		verificationURL := fmt.Sprintf("%s/s/verify/contact/test-event?login_event_id=test-event&profile_name=Test+User", suite.ServerUrl())
 
 		req, err := http.NewRequestWithContext(opCtx, "GET", verificationURL, nil)
@@ -346,7 +316,7 @@ func (suite *LoginVerificationTestSuite) TestAccessTokenClaimsAreBoundToLoginEve
 		testCtx := suite.SetupVerificationTest(t, dep)
 		defer suite.TeardownVerificationTest(testCtx)
 
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
 		defer opCancel()
 
 		contact := fmt.Sprintf("claims-%d@example.com", time.Now().UnixNano())
@@ -388,10 +358,9 @@ func (suite *LoginVerificationTestSuite) TestPendingUnknownProfileLoginsDoNotSha
 		testCtx := suite.SetupVerificationTest(t, dep)
 		defer suite.TeardownVerificationTest(testCtx)
 
-		opCtx, opCancel := context.WithTimeout(testCtx.Context, VerificationOperationTimeout)
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
 		defer opCancel()
 
-		// Keep this test isolated from rate-limit state leaked across other integration flows.
 		suite.Handler().ResetLoginRateLimit(opCtx, "127.0.0.1")
 		suite.Handler().ResetLoginRateLimit(opCtx, "::1")
 

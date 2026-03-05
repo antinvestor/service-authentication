@@ -45,6 +45,53 @@ type OAuth2TestClient struct {
 	currentCodeVerifier string // For PKCE
 }
 
+// normalizeHydraURL rewrites Docker-internal Hydra URLs (http://hydra:4444/...)
+// to the host-accessible HydraPublicURL so the test client can follow redirects.
+func (c *OAuth2TestClient) normalizeHydraURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	hydraURL, err := url.Parse(c.HydraPublicURL)
+	if err != nil {
+		return rawURL
+	}
+	// If the URL points to Hydra's internal Docker address, rewrite to host address.
+	if parsed.Hostname() == "hydra" && parsed.Port() == "4444" {
+		parsed.Host = hydraURL.Host
+		return parsed.String()
+	}
+	return rawURL
+}
+
+// isHydraRedirectURL returns true if the given URL points to the Hydra server
+// (either the host-mapped address or the Docker-internal address).
+func (c *OAuth2TestClient) isHydraRedirectURL(location string) bool {
+	redirectURL, err := url.Parse(location)
+	if err != nil {
+		return false
+	}
+	hydraURL, err := url.Parse(c.HydraPublicURL)
+	if err != nil {
+		return false
+	}
+	// Match Docker-internal Hydra address
+	if redirectURL.Hostname() == "hydra" && redirectURL.Port() == "4444" {
+		return true
+	}
+	// Match host-mapped Hydra address
+	if redirectURL.Port() == hydraURL.Port() {
+		if redirectURL.Hostname() == hydraURL.Hostname() {
+			return true
+		}
+		if (redirectURL.Hostname() == "127.0.0.1" && hydraURL.Hostname() == "localhost") ||
+			(redirectURL.Hostname() == "localhost" && hydraURL.Hostname() == "127.0.0.1") {
+			return true
+		}
+	}
+	return false
+}
+
 // NewOAuth2TestClient creates a new OAuth2 test client
 func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 	// Get the public Hydra URL from config
@@ -536,19 +583,12 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 				c.t.Logf("DEBUG: Verification POST redirected to: %s", location)
 			}
 
-			// Parse both URLs to compare them properly (handle localhost vs 127.0.0.1)
-			hydraURL, err := url.Parse(c.HydraPublicURL)
-			if err != nil {
-				return result, fmt.Errorf("failed to parse Hydra public URL: %w", err)
-			}
-
-			redirectURL, err := url.Parse(location)
-			if err != nil {
-				return result, fmt.Errorf("failed to parse redirect URL: %w", err)
-			}
-
 			// Check if redirected back to verification page (indicates failure)
 			if strings.Contains(location, "/s/verify/contact") {
+				redirectURL, err := url.Parse(location)
+				if err != nil {
+					return result, fmt.Errorf("failed to parse redirect URL: %w", err)
+				}
 				errorMsg := redirectURL.Query().Get("error")
 				if errorMsg != "" {
 					if c.t != nil {
@@ -560,26 +600,15 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 				}
 			}
 
-			// Check if redirect is to Hydra by comparing host and port
-			isHydraRedirect := (redirectURL.Port() == hydraURL.Port()) &&
-				(redirectURL.Hostname() == hydraURL.Hostname() ||
-					(redirectURL.Hostname() == "127.0.0.1" && hydraURL.Hostname() == "localhost") ||
-					(redirectURL.Hostname() == "localhost" && hydraURL.Hostname() == "127.0.0.1"))
-
+			isHydraRedirect := c.isHydraRedirectURL(location)
 			if c.t != nil {
 				c.t.Logf("DEBUG: Is Hydra redirect: %v", isHydraRedirect)
 			}
 
 			if isHydraRedirect {
-				// Follow the redirect to complete the OAuth2 flow
-				// Normalise the redirect URL to use the same hostname as HydraPublicURL
-				normalizedLocation := location
-				if redirectURL.Hostname() != hydraURL.Hostname() {
-					redirectURL.Host = hydraURL.Host
-					normalizedLocation = redirectURL.String()
-					if c.t != nil {
-						c.t.Logf("DEBUG: Normalised redirect URL from %s to %s", location, normalizedLocation)
-					}
+				normalizedLocation := c.normalizeHydraURL(location)
+				if c.t != nil && normalizedLocation != location {
+					c.t.Logf("DEBUG: Normalised redirect URL from %s to %s", location, normalizedLocation)
 				}
 
 				redirectReq, err := http.NewRequestWithContext(ctx, "GET", normalizedLocation, nil)
@@ -700,7 +729,8 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 
 		if location != "" {
 			// Follow the redirect to the OAuth2 server to complete the flow
-			// This allows the OAuth2 server to handle the authorization code generation
+			// Normalise Docker-internal Hydra URLs to host-accessible URLs.
+			location = c.normalizeHydraURL(location)
 			redirectReq, err := http.NewRequestWithContext(ctx, "GET", location, nil)
 			if err != nil {
 				return result, fmt.Errorf("failed to create redirect request: %w", err)

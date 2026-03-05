@@ -28,22 +28,30 @@ func (t *Tenant) ToAPI() *partitionv1.TenantObject {
 
 type Partition struct {
 	data.BaseModel
-	Name         string       `gorm:"type:varchar(100);" json:"name"`
-	Description  string       `gorm:"type:text;"         json:"description"`
-	ParentID     string       `gorm:"type:varchar(50);"  json:"parent_id"`
-	ClientSecret string       `gorm:"type:varchar(250);" json:"client_secret"`
-	Properties   data.JSONMap `                          json:"properties"`
-	State        int32        `                          json:"state"`
+	Name        string       `gorm:"type:varchar(100);" json:"name"`
+	Description string       `gorm:"type:text;"         json:"description"`
+	Domain      string       `gorm:"type:varchar(255);index:idx_partitions_domain,unique,where:domain != ''" json:"domain"`
+	ParentID    string       `gorm:"type:varchar(50);"  json:"parent_id"`
+	Properties  data.JSONMap `                          json:"properties"`
+	State       int32        `                          json:"state"`
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
+	props := make(data.JSONMap, len(p.Properties)+1)
+	for k, v := range p.Properties {
+		props[k] = v
+	}
+	if p.Domain != "" {
+		props["domain"] = p.Domain
+	}
+
 	return &partitionv1.PartitionObject{
 		Id:          p.ID,
 		TenantId:    p.TenantID,
 		ParentId:    p.ParentID,
 		Name:        p.Name,
 		Description: p.Description,
-		Properties:  p.Properties.ToProtoStruct(),
+		Properties:  props.ToProtoStruct(),
 		State:       commonv1.STATE(p.State),
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 	}
@@ -118,11 +126,95 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 	}, nil
 }
 
+// Client represents an OAuth2 client configuration attached to a partition.
+// It defines HOW authentication happens (grant types, redirect URIs, scopes).
+// For PKCE flows (public/confidential), users authenticate through the client.
+// For client_credentials flows (internal/external), a ServiceAccount references
+// a Client to provide the identity (profile).
+type Client struct {
+	data.BaseModel
+	Name          string       `gorm:"type:varchar(100);"                                                        json:"name"`
+	ClientID      string       `gorm:"type:varchar(100);uniqueIndex"                                             json:"client_id"`
+	ClientSecret  string       `gorm:"type:varchar(250);"                                                        json:"client_secret"`
+	Type          string       `gorm:"type:varchar(20);not null;default:'public'"                                 json:"type"`           // "public", "confidential", "internal", "external"
+	GrantTypes    data.JSONMap `                                                                                  json:"grant_types"`    // ["authorization_code","refresh_token"] or ["client_credentials"]
+	ResponseTypes data.JSONMap `                                                                                  json:"response_types"` // ["code","token"]
+	RedirectURIs  data.JSONMap `                                                                                  json:"redirect_uris"`  // ["https://app.example.com/callback"]
+	Scopes        string       `gorm:"type:text;"                                                                 json:"scopes"`         // "openid offline_access profile"
+	Audiences     data.JSONMap `                                                                                  json:"audiences"`      // {"namespaces": ["service_profile",...]}
+	Roles         data.JSONMap `                                                                                  json:"roles"`          // ["admin","member"] — permission template for SA tokens
+	Properties    data.JSONMap `                                                                                  json:"properties"`
+	State         int32        `                                                                                  json:"state"`
+}
+
+func (c *Client) ToAPI() *partitionv1.ServiceAccountObject {
+	state := commonv1.STATE_ACTIVE
+	if c.DeletedAt.Valid {
+		state = commonv1.STATE_DELETED
+	}
+
+	props := make(data.JSONMap, len(c.Properties)+3)
+	for k, v := range c.Properties {
+		props[k] = v
+	}
+	props["type"] = c.Type
+	if c.GrantTypes != nil {
+		props["grant_types"] = c.GrantTypes
+	}
+	if c.RedirectURIs != nil {
+		props["redirect_uris"] = c.RedirectURIs
+	}
+	if c.Roles != nil {
+		props["roles"] = c.Roles
+	}
+
+	obj := &partitionv1.ServiceAccountObject{
+		Id:          c.ID,
+		TenantId:    c.TenantID,
+		PartitionId: c.PartitionID,
+		ClientId:    c.ClientID,
+		State:       state,
+		CreatedAt:   timestamppb.New(c.CreatedAt),
+		Properties:  props.ToProtoStruct(),
+	}
+
+	if c.Audiences != nil {
+		obj.Audiences = c.Audiences.ToProtoStruct()
+	}
+
+	return obj
+}
+
+// GetRoleNames extracts the list of role name strings from the Roles JSONMap.
+func (c *Client) GetRoleNames() []string {
+	if c.Roles == nil {
+		return nil
+	}
+	raw, ok := c.Roles["roles"]
+	if !ok {
+		return nil
+	}
+	switch typed := raw.(type) {
+	case []any:
+		result := make([]string, 0, len(typed))
+		for _, v := range typed {
+			if s, ok := v.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	case []string:
+		return typed
+	}
+	return nil
+}
+
 type ServiceAccount struct {
 	data.BaseModel
 	ProfileID    string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
-	ClientID     string `gorm:"type:varchar(100);uniqueIndex"`
-	ClientSecret string `gorm:"type:varchar(250);"`
+	ClientID     string `gorm:"type:varchar(100);uniqueIndex"`                // OAuth2 client_id (denormalized from Client for lookup)
+	ClientSecret string `gorm:"type:varchar(250);"`                           // DEPRECATED: kept for backward compat, new SAs use Client.ClientSecret
+	ClientRef    string `gorm:"type:varchar(50);index:idx_sa_client_ref"`     // FK → Client.ID
 	Type         string `gorm:"type:varchar(20);not null;default:'internal'"` // "internal" or "external"
 	State        int32
 	Audiences    data.JSONMap // {"namespaces": ["service_tenancy", "service_profile", ...]}

@@ -147,7 +147,9 @@ func (pb *partitionBusiness) GetPartition(
 	if strings.EqualFold(subject, "service_matrix") {
 		props := partitionObj.GetProperties().AsMap()
 
-		props["client_secret"] = partition.ClientSecret
+		if cs, ok := partition.Properties["client_secret"].(string); ok {
+			props["client_secret"] = cs
+		}
 		props["client_discovery_uri"] = pb.cfg.GetOauth2WellKnownOIDC()
 
 		partitionObj.Properties, _ = structpb.NewStruct(props)
@@ -180,11 +182,16 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
+	reqProperties := request.GetProperties().AsMap()
+	domain, _ := reqProperties["domain"].(string)
+	delete(reqProperties, "domain")
+
 	partition := &models.Partition{
 		ParentID:    request.GetParentId(),
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
-		Properties:  request.GetProperties().AsMap(),
+		Domain:      domain,
+		Properties:  reqProperties,
 	}
 
 	partition.GenID(ctx)
@@ -221,7 +228,12 @@ func (pb *partitionBusiness) UpdatePartition(
 	if jsonMap == nil {
 		jsonMap = make(data.JSONMap)
 	}
-	maps.Copy(jsonMap, request.GetProperties().AsMap())
+	reqProperties := request.GetProperties().AsMap()
+	if domain, ok := reqProperties["domain"].(string); ok {
+		partition.Domain = domain
+		delete(reqProperties, "domain")
+	}
+	maps.Copy(jsonMap, reqProperties)
 
 	if request.GetName() != "" {
 		partition.Name = request.GetName()
@@ -231,7 +243,7 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 	partition.Properties = jsonMap
 
-	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "properties")
+	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "domain", "properties")
 	if err != nil {
 		return nil, err
 	}

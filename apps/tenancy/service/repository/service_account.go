@@ -51,6 +51,15 @@ func (r *serviceAccountRepository) GetByClientID(
 	return sa, nil
 }
 
+func (r *serviceAccountRepository) GetByClientRef(
+	ctx context.Context,
+	clientRef string,
+) (*models.ServiceAccount, error) {
+	sa := &models.ServiceAccount{}
+	err := r.Pool().DB(ctx, true).First(sa, "client_ref = ?", clientRef).Error
+	return sa, err
+}
+
 func (r *serviceAccountRepository) ListByPartition(
 	ctx context.Context,
 	partitionID string,

@@ -210,8 +210,8 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 		payload["token_endpoint_auth_method"] = partition.Properties["token_endpoint_auth_method"]
 	} else {
 		payload["token_endpoint_auth_method"] = "none"
-		if partition.ClientSecret != "" {
-			payload["client_secret"] = partition.ClientSecret
+		if clientSecret, ok := partition.Properties["client_secret"].(string); ok && clientSecret != "" {
+			payload["client_secret"] = clientSecret
 			payload["token_endpoint_auth_method"] = "client_secret_post"
 		}
 	}

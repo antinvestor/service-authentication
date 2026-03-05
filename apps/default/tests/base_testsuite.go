@@ -30,12 +30,12 @@ import (
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/openid"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 type DepsBuilder struct {
@@ -102,23 +102,25 @@ func (bs *BaseTestSuite) Handler() *handlers.AuthServer {
 	return bs.handler
 }
 
-func initResources(_ context.Context, loginUrl string) []definition.TestResource {
+func initResources(_ context.Context, loginUrl string, authPort int) []definition.TestResource {
 	pg := testpostgres.NewWithOpts("service_authentication",
 		definition.WithUserName("ant"), definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
-	localHydraConfig := strings.Replace(testoryhydra.HydraConfiguration, "http://127.0.0.1:3000/", loginUrl+"/s/", 3)
-	localHydraConfig = strings.Replace(localHydraConfig, "http://127.0.0.1:3000/", loginUrl+"/", 2)
+	// Rewrite Hydra config to point callbacks at the host-side auth server.
+	// Containers reach the host via testcontainers' SSHD bridge (host.testcontainers.internal).
+	dockerLoginUrl := strings.Replace(loginUrl, "127.0.0.1", testcontainers.HostInternal, 1)
+	localHydraConfig := strings.Replace(internaltests.HydraConfiguration, "http://127.0.0.1:3000/", dockerLoginUrl+"/s/", 3)
+	localHydraConfig = strings.Replace(localHydraConfig, "http://127.0.0.1:3000/", dockerLoginUrl+"/", 2)
 
-	hydra := testoryhydra.NewWithOpts(
-		localHydraConfig, definition.WithDependancies(pg),
-		definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	hydra := internaltests.NewHydra(
+		localHydraConfig, []int{authPort}, definition.WithDependancies(pg),
+		definition.WithEnableLogging(false))
 
-	// Add profileSvc and partitionSvc service dependencies
-	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
-	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false), definition.WithUseHostMode(true))
+	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
+	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
+	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
+	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false))
 
 	resources := []definition.TestResource{pg, hydra, partitionSvc, notificationsSvc, profileSvc, deviceSvc}
 	return resources
@@ -136,7 +138,7 @@ func (bs *BaseTestSuite) SetupSuite() {
 		bs.FreeAuthPort = strconv.Itoa(freePort)
 
 		loginUrl := fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
-		return initResources(ctx, loginUrl)
+		return initResources(ctx, loginUrl, freePort)
 	}
 	bs.BaseTestSuite.SetupSuite()
 
@@ -166,7 +168,7 @@ func (bs *BaseTestSuite) CreateService(
 			partitionDR = res
 		case internaltests.NotificationImage:
 			notificationDR = res
-		case testoryhydra.OryHydraImage:
+		case internaltests.HydraImage:
 			hydraDR = res
 		}
 	}
@@ -189,6 +191,12 @@ func (bs *BaseTestSuite) CreateService(
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
+	// Hydra's public URL is set to the internal Docker address (http://hydra:4444)
+	// so container-side OIDC discovery returns reachable endpoints.  The host-side
+	// needs the token endpoint rewritten to the host-mapped port.
+	hostTokenEndpoint := fmt.Sprintf("http://127.0.0.1:%s/oauth2/token", hydraPort)
+	cfg.SetOIDCValue("token_endpoint", hostTokenEndpoint)
+
 	cfg.LogLevel = "debug"
 	cfg.TraceRequests = true
 	cfg.DatabaseMigrate = true
@@ -209,7 +217,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
-	cfg.Oauth2JwtVerifyIssuer = cfg.GetOauth2ServiceURI()
+	cfg.Oauth2JwtVerifyIssuer = fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
 
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
 		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache()), frame.WithRegisterServerOauth2Client()}

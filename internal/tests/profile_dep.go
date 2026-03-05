@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -74,14 +73,13 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		return errors.New("not all expected resource dependencies were supplied, ensure there is a DB, Oauth2 service & Notification container")
 	}
 
-	var err error
 	databaseURL := ""
 	hydraPort := ""
 	oauth2ServiceURIAdmin := ""
-	partitionService := ""
 	notificationService := ""
+	partitionService := ""
+	var err error
 	for _, dep := range d.Opts().Dependencies {
-
 		switch dep.Name() {
 		case testpostgres.PostgresqlDBImage:
 			databaseURL = dep.GetInternalDS(ctx).String()
@@ -89,10 +87,9 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			notificationService = dep.GetInternalDS(ctx).String()
 		case PartitionImage:
 			partitionService = dep.GetInternalDS(ctx).String()
-		case testoryhydra.OryHydraImage:
-
+		case HydraImage:
 			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
-			hydraPort, err = dep.PortMapping(ctx, "4444")
+			hydraPort, err = dep.PortMapping(ctx, "4444/tcp")
 			if err != nil {
 				return err
 			}
@@ -104,8 +101,12 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		return err
 	}
 
-	// Convert admin URI to public URI by changing port
-	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", hydraPort, 1)
+	jwksData, err := FetchJWKS(ctx, hydraPort)
+	if err != nil {
+		return fmt.Errorf("failed to fetch JWKS for profile container: %w", err)
+	}
+
+	issuer := fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
@@ -122,12 +123,13 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"CORS_ALLOWED_ORIGINS":         "*",
 			"CONTACT_ENCRYPTION_KEY":       "4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax",
 			"CONTACT_ENCRYPTION_SALT":      "geYobar79WDL",
-			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
+			"OAUTH2_SERVICE_URI":           "http://hydra:4444",
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_tenancy",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_profile",
-			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
+			"OAUTH2_JWT_VERIFY_ISSUER":     issuer,
+			"OAUTH2_WELL_KNOWN_JWK_DATA":   jwksData,
 			"NOTIFICATION_SERVICE_URI":     notificationService,
 			"PARTITION_SERVICE_URI":        partitionService,
 		},

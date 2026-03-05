@@ -72,16 +72,16 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		return errors.New("no Database/ Oauth2 svc dependencies was supplied")
 	}
 
-	var err error
 	databaseURL := ""
 	hydraPort := ""
 	oauth2ServiceURIAdmin := ""
+	var err error
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
 			databaseURL = dep.GetInternalDS(ctx).String()
 		} else {
 			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
-			hydraPort, err = dep.PortMapping(ctx, "4444")
+			hydraPort, err = dep.PortMapping(ctx, "4444/tcp")
 			if err != nil {
 				return err
 			}
@@ -93,8 +93,14 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		return err
 	}
 
-	// Convert admin URI to public URI by changing port
-	oauth2ServiceURI := strings.Replace(oauth2ServiceURIAdmin, "4445", hydraPort, 1)
+	// Fetch JWKS from Hydra via the host-mapped port so Docker containers
+	// don't need to follow OIDC discovery URLs that use 127.0.0.1.
+	jwksData, err := FetchJWKS(ctx, hydraPort)
+	if err != nil {
+		return fmt.Errorf("failed to fetch JWKS for device container: %w", err)
+	}
+
+	issuer := fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
@@ -105,12 +111,13 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 			"OPENTELEMETRY_DISABLE":        "true",
 			"HTTP_PORT":                    strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":                 databaseURL,
-			"OAUTH2_SERVICE_URI":           oauth2ServiceURI,
+			"OAUTH2_SERVICE_URI":           "http://hydra:4444",
 			"OAUTH2_SERVICE_ADMIN_URI":     oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET": "hkBaJroO9cDGleFnuaAZ",
 			"OAUTH2_SERVICE_AUDIENCE":      "service_notifications,service_tenancy,service_profile,authentication_tests",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":   "service_devices",
-			"OAUTH2_JWT_VERIFY_ISSUER":     "http://127.0.0.1:4444",
+			"OAUTH2_JWT_VERIFY_ISSUER":     issuer,
+			"OAUTH2_WELL_KNOWN_JWK_DATA":   jwksData,
 		},
 		WaitingFor: wait.ForLog("Initiating server operations"),
 	}

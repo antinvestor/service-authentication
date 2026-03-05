@@ -31,14 +31,39 @@ func (prtSrv *PartitionServer) CreateServiceAccount(
 		properties = msg.GetProperties().AsMap()
 	}
 
+	// Extract optional fields from properties
+	saType, _ := properties["type"].(string)
+	delete(properties, "type")
+
+	var roles []string
+	if r, ok := properties["roles"]; ok {
+		if rs, ok := r.([]any); ok {
+			for _, v := range rs {
+				if s, ok := v.(string); ok {
+					roles = append(roles, s)
+				}
+			}
+		}
+		delete(properties, "roles")
+	}
+
+	var publicKeys map[string]any
+	if pk, ok := properties["public_keys"]; ok {
+		if pkm, ok := pk.(map[string]any); ok {
+			publicKeys = pkm
+		}
+		delete(properties, "public_keys")
+	}
+
 	result, err := prtSrv.ServiceAccountBusiness.CreateServiceAccount(
 		ctx,
 		msg.GetPartitionId(),
 		msg.GetProfileId(),
 		msg.GetName(),
-		"", // default type
+		saType,
 		audiences,
-		nil, // publicKeys
+		roles,
+		publicKeys,
 		properties,
 	)
 	if err != nil {

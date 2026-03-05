@@ -89,8 +89,10 @@ func NewAuthServer(ctx context.Context,
 	authConfig *aconfig.AuthenticationConfig,
 	cacheMan cache.Manager,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
-	profileCli profilev1connect.ProfileServiceClient, deviceCli devicev1connect.DeviceServiceClient,
-	partitionCli partitionv1connect.PartitionServiceClient, notificationCli notificationv1connect.NotificationServiceClient,
+	profileCli profilev1connect.ProfileServiceClient,
+	deviceCli devicev1connect.DeviceServiceClient,
+	partitionCli partitionv1connect.PartitionServiceClient,
+	notificationCli notificationv1connect.NotificationServiceClient,
 	localizationMan localization.Manager) *AuthServer {
 
 	log := util.Log(ctx)

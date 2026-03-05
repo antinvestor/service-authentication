@@ -572,22 +572,22 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		return h.writeWebhookError(rw, err.Error())
 	}
 
-	// Get or create access for SA's profile in their partition
-	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.PartitionID, sa.ProfileID)
-	if err != nil {
-		log.WithError(err).Error("failed to get/create access for SA")
-		return h.writeWebhookError(rw, "failed to resolve access for service account")
+	// Derive role directly from the SA type. Access + AccessRole records are
+	// provisioned when the service account is created (or via seed migration),
+	// so there is no need to call the partition service from the webhook.
+	// Avoiding that call also prevents a circular dependency where the
+	// partition client needs a token from Hydra while Hydra is waiting for
+	// this webhook to respond.
+	role := RoleSystemInternal
+	if sa.Type == "external" {
+		role = RoleSystemExternal
 	}
 
-	// Fetch roles from access record
-	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId())
-
-	log.WithField("roles", roles).Debug("enriched service account token via SA lookup")
+	log.WithField("role", role).Debug("enriched service account token via SA lookup")
 	return writeTokenHookResponse(rw, map[string]any{
 		"tenant_id":    sa.TenantID,
 		"partition_id": sa.PartitionID,
-		"access_id":    accessObj.GetId(),
-		"roles":        roles,
+		"roles":        []string{role},
 		"profile_id":   sa.ProfileID,
 	})
 }

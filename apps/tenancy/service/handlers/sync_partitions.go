@@ -58,7 +58,16 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 		response["partition_sync_error"] = err.Error()
 	}
 
-	// Sync service accounts — register/update Hydra OAuth2 clients
+	// Sync clients — register/update Hydra OAuth2 clients for Client records
+	clientQuery := data.NewSearchQuery(
+		data.WithSearchLimit(count), data.WithSearchOffset(page))
+	err = business.ReQueueClientsForHydraSync(ctx, prtSrv.ClientRepo, prtSrv.eventsMan, clientQuery)
+	if err != nil {
+		log.WithError(err).Error("internal service error synchronising clients on Hydra")
+		response["client_hydra_sync_error"] = err.Error()
+	}
+
+	// Sync service accounts — register/update Hydra OAuth2 clients (legacy SAs without ClientRef)
 	saQuery := data.NewSearchQuery(
 		data.WithSearchLimit(count), data.WithSearchOffset(page))
 	err = business.ReQueueServiceAccountsForHydraSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saQuery)

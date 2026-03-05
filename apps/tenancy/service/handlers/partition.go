@@ -24,12 +24,14 @@ type PartitionServer struct {
 	authz     authz.Middleware
 
 	PartitionRepo      repository.PartitionRepository
+	ClientRepo         repository.ClientRepository
 	ServiceAccountRepo repository.ServiceAccountRepository
 
 	PartitionBusiness      business.PartitionBusiness
 	TenantBusiness         business.TenantBusiness
 	AccessBusiness         business.AccessBusiness
 	PageBusiness           business.PageBusiness
+	ClientBusiness         business.ClientBusiness
 	ServiceAccountBusiness business.ServiceAccountBusiness
 	partitionv1connect.UnimplementedPartitionServiceHandler
 }
@@ -46,6 +48,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 	accessRepo := repository.NewAccessRepository(ctx, dbPool, workMan)
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
+	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
 
 	cfg := service.Config().(*config.PartitionConfig)
@@ -57,12 +60,14 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 		eventsMan:              eventsMan,
 		authz:                  authzMiddleware,
 		PartitionRepo:          partitionRepo,
+		ClientRepo:             clientRepo,
 		ServiceAccountRepo:     serviceAccountRepo,
 		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
 		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo),
 		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
 		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
-		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, serviceAccountRepo),
+		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
+		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo),
 	}
 }
 

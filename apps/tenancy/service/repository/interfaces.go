@@ -13,6 +13,7 @@ type TenantRepository interface {
 
 type PartitionRepository interface {
 	datastore.BaseRepository[*models.Partition]
+	GetByDomain(ctx context.Context, domain string) (*models.Partition, error)
 	GetChildren(ctx context.Context, id string) ([]*models.Partition, error)
 	GetParents(ctx context.Context, id string) ([]*models.Partition, error)
 }
@@ -21,6 +22,7 @@ type PartitionRoleRepository interface {
 	GetByPartitionID(ctx context.Context, partitionID string) ([]*models.PartitionRole, error)
 	GetDefaultByPartitionID(ctx context.Context, partitionID string) ([]*models.PartitionRole, error)
 	GetRolesByID(ctx context.Context, id ...string) ([]*models.PartitionRole, error)
+	GetByPartitionAndNames(ctx context.Context, partitionID string, names []string) ([]*models.PartitionRole, error)
 }
 
 type PageRepository interface {
@@ -37,10 +39,17 @@ type AccessRoleRepository interface {
 	GetByAccessID(ctx context.Context, accessID string) ([]*models.AccessRole, error)
 }
 
+type ClientRepository interface {
+	datastore.BaseRepository[*models.Client]
+	GetByClientID(ctx context.Context, clientID string) (*models.Client, error)
+	ListByPartition(ctx context.Context, partitionID string) ([]*models.Client, error)
+}
+
 type ServiceAccountRepository interface {
 	datastore.BaseRepository[*models.ServiceAccount]
 	GetByPartitionAndProfile(ctx context.Context, partitionID, profileID string) (*models.ServiceAccount, error)
 	GetByClientAndProfile(ctx context.Context, clientID, profileID string) (*models.ServiceAccount, error)
 	GetByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
+	GetByClientRef(ctx context.Context, clientRef string) (*models.ServiceAccount, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
 }

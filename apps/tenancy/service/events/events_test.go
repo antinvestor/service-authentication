@@ -318,9 +318,10 @@ func TestPreparePayload_Basic(t *testing.T) {
 
 func TestPreparePayload_WithClientSecret(t *testing.T) {
 	partition := &models.Partition{
-		Name:         "Secret Partition",
-		ClientSecret: "my-secret",
-		Properties:   data.JSONMap{},
+		Name: "Secret Partition",
+		Properties: data.JSONMap{
+			"client_secret": "my-secret",
+		},
 	}
 	partition.ID = "p-456"
 
@@ -376,9 +377,11 @@ func TestPreparePayload_WithAudience(t *testing.T) {
 
 func TestPreparePayload_CustomTokenEndpointAuth(t *testing.T) {
 	partition := &models.Partition{
-		Name:         "Custom Auth",
-		ClientSecret: "secret",
-		Properties:   data.JSONMap{"token_endpoint_auth_method": "private_key_jwt"},
+		Name: "Custom Auth",
+		Properties: data.JSONMap{
+			"client_secret":              "secret",
+			"token_endpoint_auth_method": "private_key_jwt",
+		},
 	}
 	partition.ID = "p-c"
 
