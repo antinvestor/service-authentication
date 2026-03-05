@@ -99,7 +99,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 		return fmt.Errorf("failed to fetch JWKS for notification container: %w", err)
 	}
 
-	issuer := fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
+	issuer := "http://hydra:4444"
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),

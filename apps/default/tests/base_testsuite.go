@@ -186,14 +186,19 @@ func (bs *BaseTestSuite) CreateService(
 	oauth2ServiceURI, err := hydraDR.GetDS(ctx).ChangePort(hydraPort)
 	require.NoError(t, err)
 
+	// Inject JWKS data before OIDC discovery so LoadWithOIDC skips
+	// the remote JWKS fetch (which would hit unreachable http://hydra:4444).
+	jwksData, err := internaltests.FetchJWKS(ctx, hydraPort)
+	require.NoError(t, err)
+	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
 
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
-	// Hydra's public URL is set to the internal Docker address (http://hydra:4444)
-	// so container-side OIDC discovery returns reachable endpoints.  The host-side
-	// needs the token endpoint rewritten to the host-mapped port.
+	// Hydra's issuer and public URLs both use http://hydra:4444 so OIDC
+	// discovery returns container-reachable endpoints.  Override the
+	// token endpoint on the host side to the mapped port.
 	hostTokenEndpoint := fmt.Sprintf("http://127.0.0.1:%s/oauth2/token", hydraPort)
 	cfg.SetOIDCValue("token_endpoint", hostTokenEndpoint)
 
@@ -217,7 +222,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
-	cfg.Oauth2JwtVerifyIssuer = fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
+	cfg.Oauth2JwtVerifyIssuer = "http://hydra:4444"
 
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
 		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache()), frame.WithRegisterServerOauth2Client()}

@@ -122,14 +122,12 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		return fmt.Errorf("failed to allocate public port for hydra: %w", err)
 	}
 
-	issuerURL := fmt.Sprintf("http://127.0.0.1:%d", publicPort)
-
-	// Rewrite issuer to use the pre-allocated host port (for JWT iss claim).
+	// Set BOTH issuer and public to the Docker-internal address so that
+	// OIDC discovery returns endpoints (including jwks_uri) reachable from
+	// containers.  Host-side code sets OAUTH2_WELL_KNOWN_JWK_DATA to skip
+	// remote JWKS fetch, and overrides token_endpoint via SetOIDCValue.
 	d.configuration = strings.Replace(d.configuration,
-		"issuer: http://127.0.0.1:4444", "issuer: "+issuerURL, 1)
-
-	// Rewrite public to use the internal Docker address so that OIDC
-	// discovery returns endpoints reachable from other containers.
+		"issuer: http://127.0.0.1:4444", "issuer: http://hydra:4444", 1)
 	d.configuration = strings.Replace(d.configuration,
 		"public: http://127.0.0.1:4444", "public: http://hydra:4444", 1)
 

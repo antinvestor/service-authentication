@@ -100,7 +100,7 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		return fmt.Errorf("failed to fetch JWKS for device container: %w", err)
 	}
 
-	issuer := fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
+	issuer := "http://hydra:4444"
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
