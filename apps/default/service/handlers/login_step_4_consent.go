@@ -122,14 +122,28 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 		return nil, fmt.Errorf("service account subject mismatch for client %s", clientID)
 	}
 
-	// Determine role based on requested scope (see utilities.go for convention)
-	role := scopeToRole(requestedScope)
+	// Validate scope matches SA type
+	if err = validateScopeMatchesSAType(requestedScope, sa.Type); err != nil {
+		log.WithError(err).WithField("client_id", clientID).Error("scope/type mismatch")
+		return nil, err
+	}
+
+	// Get or create access for SA's profile in their partition
+	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.PartitionID, subjectID)
+	if err != nil {
+		log.WithError(err).WithField("client_id", clientID).Error("failed to get/create access for SA")
+		return nil, fmt.Errorf("failed to get/create access for service account: %w", err)
+	}
+
+	// Fetch roles from access record
+	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId())
 
 	// Create a LoginEvent for auditability and webhook fallback.
 	// This must succeed — without it, token refresh will fail to find the login event.
 	loginEvt := &models.LoginEvent{
 		ClientID:  clientID,
 		ProfileID: subjectID,
+		AccessID:  accessObj.GetId(),
 	}
 	loginEvt.ID = util.IDString()
 	loginEvt.TenantID = sa.TenantID
@@ -144,7 +158,8 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 	return map[string]any{
 		"tenant_id":      sa.TenantID,
 		"partition_id":   sa.PartitionID,
-		"roles":          []string{role},
+		"access_id":      accessObj.GetId(),
+		"roles":          roles,
 		"profile_id":     subjectID,
 		"session_id":     loginEvt.GetID(),
 		"login_event_id": loginEvt.GetID(),

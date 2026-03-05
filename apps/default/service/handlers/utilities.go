@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/pitabwire/frame/security/openid"
@@ -37,12 +38,16 @@ func isServiceAccountScoped(grantedScopes []string) bool {
 	return isInternalSystemScoped(grantedScopes) || isExternalSystemScoped(grantedScopes)
 }
 
-// scopeToRole maps the granted scope to the corresponding token role claim.
-func scopeToRole(grantedScopes []string) string {
-	if isExternalSystemScoped(grantedScopes) {
-		return RoleSystemExternal
+// validateScopeMatchesSAType checks that the granted scope is consistent with the SA type.
+// Returns an error if the scope implies a different SA type than what's registered.
+func validateScopeMatchesSAType(grantedScopes []string, saType string) error {
+	if isExternalSystemScoped(grantedScopes) && saType != "external" {
+		return fmt.Errorf("scope system_ext does not match SA type %q", saType)
 	}
-	return RoleSystemInternal
+	if isInternalSystemScoped(grantedScopes) && saType == "external" {
+		return fmt.Errorf("scope system_int does not match SA type %q", saType)
+	}
+	return nil
 }
 
 // isNonUserRole checks whether the roles claim contains a non-interactive role

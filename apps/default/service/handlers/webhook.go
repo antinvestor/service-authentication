@@ -377,16 +377,15 @@ func missingRequiredUserClaims(claims map[string]any) []string {
 	return missing
 }
 
-// buildCanonicalClaimsFromLoginEvent enforces strict login_event linkage before token issuance.
-func (h *AuthServer) buildCanonicalClaimsFromLoginEvent(
+// reconstructClaimsFromLoginEvent rebuilds claims from the login event DB when
+// consent-set claims are incomplete. It preserves roles from the incoming claims
+// (set at consent time) rather than re-fetching them from the partition service.
+func (h *AuthServer) reconstructClaimsFromLoginEvent(
 	ctx context.Context,
 	tokenObject map[string]any,
 	claims map[string]any,
 ) (map[string]any, error) {
-	clientID := extractClientID(tokenObject)
-	if clientID == "" {
-		return nil, fmt.Errorf("client_id not found")
-	}
+	log := util.Log(ctx)
 
 	var (
 		loginEvent *models.LoginEvent
@@ -427,11 +426,6 @@ func (h *AuthServer) buildCanonicalClaimsFromLoginEvent(
 		return nil, fmt.Errorf("profile_id could not be resolved for login event")
 	}
 
-	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, profileID)
-	if err != nil {
-		return nil, err
-	}
-
 	canonical := buildClaimsFromLoginEvent(
 		loginEvent.GetID(),
 		loginEvent.TenantID,
@@ -442,7 +436,15 @@ func (h *AuthServer) buildCanonicalClaimsFromLoginEvent(
 		profileID,
 		loginEvent.Oauth2SessionID,
 	)
-	canonical["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
+
+	// Preserve roles from consent-set claims; fallback to ["user"] only if absent.
+	if roles := claims["roles"]; roles != nil {
+		canonical["roles"] = roles
+	} else {
+		log.Warn("no roles in consent claims during reconstruction - defaulting to user")
+		canonical["roles"] = []string{"user"}
+	}
+
 	if canonical["device_id"] == "" {
 		if deviceID := claimString(claims, "device_id"); deviceID != "" {
 			canonical["device_id"] = deviceID
@@ -553,7 +555,8 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 // handleServiceAccountEnrichment handles token enrichment for service account
 // client_credentials tokens (both system_internal and system_external).
 // It looks up the service account by client_id via the tenancy service API,
-// and returns enriched claims with the appropriate role.
+// validates the scope matches the SA type, creates/gets an access record,
+// and returns enriched claims with roles from the access record.
 func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string, grantedScopes []string) error {
 	log := util.Log(ctx).WithField("client_id", clientID)
 
@@ -563,19 +566,36 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		return h.writeWebhookError(rw, "service account not found")
 	}
 
-	// Determine role based on granted scopes (see utilities.go for convention)
-	role := scopeToRole(grantedScopes)
+	// Validate scope matches SA type
+	if err = validateScopeMatchesSAType(grantedScopes, sa.Type); err != nil {
+		log.WithError(err).Error("scope/type mismatch")
+		return h.writeWebhookError(rw, err.Error())
+	}
 
-	log.WithField("role", role).Debug("enriched service account token via SA lookup")
+	// Get or create access for SA's profile in their partition
+	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.PartitionID, sa.ProfileID)
+	if err != nil {
+		log.WithError(err).Error("failed to get/create access for SA")
+		return h.writeWebhookError(rw, "failed to resolve access for service account")
+	}
+
+	// Fetch roles from access record
+	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId())
+
+	log.WithField("roles", roles).Debug("enriched service account token via SA lookup")
 	return writeTokenHookResponse(rw, map[string]any{
 		"tenant_id":    sa.TenantID,
 		"partition_id": sa.PartitionID,
-		"roles":        []string{role},
+		"access_id":    accessObj.GetId(),
+		"roles":        roles,
 		"profile_id":   sa.ProfileID,
 	})
 }
 
 // handleUserTokenEnrichment handles token enrichment for regular user tokens.
+// Consent is the single authority for all token claims including roles.
+// The webhook passes through complete consent-set claims and only reconstructs
+// from the login event DB when claims are missing (edge case).
 func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any) error {
 	log := util.Log(ctx)
 	session, sessionOk := tokenObject["session"].(map[string]any)
@@ -621,7 +641,15 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		return writeTokenHookResponse(rw, finalClaims)
 	}
 
-	canonicalClaims, err := h.buildCanonicalClaimsFromLoginEvent(ctx, tokenObject, finalClaims)
+	// Fast path: if all required claims are present from consent, pass through directly.
+	// This avoids DB and partition service calls during token refresh.
+	if missing := missingRequiredUserClaims(finalClaims); len(missing) == 0 {
+		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("complete consent claims - passing through without DB lookup")
+		return writeTokenHookResponse(rw, finalClaims)
+	}
+
+	// Slow path: claims incomplete — reconstruct from login event DB, preserving consent-set roles.
+	canonicalClaims, err := h.reconstructClaimsFromLoginEvent(ctx, tokenObject, finalClaims)
 	if err != nil {
 		log.WithError(err).Warn("token enrichment rejected: login_event mapping failed")
 		return h.writeWebhookError(rw, "unable to map token to login event")
@@ -632,11 +660,13 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		return h.writeWebhookError(rw, "required user claims missing")
 	}
 
-	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Info("enriching token with canonical user claims")
+	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Info("enriching token with reconstructed user claims")
 	return writeTokenHookResponse(rw, canonicalClaims)
 }
 
 // lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.
+// This is a fallback path when no session claims exist at all. Roles default to ["user"] since
+// consent-set roles are unavailable in this edge case.
 func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idTokenWrapper, nestedIdTokenClaims, session map[string]any) map[string]any {
 	log := util.Log(ctx)
 	subject := extractSubjectFromSession(idTokenWrapper, nestedIdTokenClaims)
@@ -648,7 +678,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 			if subject == "" {
 				subject = loginEvent.ProfileID
 			}
-			log.WithField("login_event_id", loginEvent.GetID()).Info("enriched token with claims from login event ID lookup")
+			log.WithField("login_event_id", loginEvent.GetID()).Warn("DB fallback: reconstructing claims without consent roles")
 			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
@@ -659,7 +689,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
-			claims["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
+			claims["roles"] = []string{"user"}
 			return claims
 		} else {
 			log.WithError(err).WithField("login_event_id", loginEventID).Warn("login event not found by ID - token will be missing claims")
@@ -677,7 +707,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 			log.WithFields(map[string]any{
 				"login_event_id":    loginEvent.GetID(),
 				"oauth2_session_id": oauth2SessionID,
-			}).Info("enriched token with claims from OAuth2 session ID lookup")
+			}).Warn("DB fallback: reconstructing claims without consent roles")
 			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
@@ -688,7 +718,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
-			claims["roles"] = h.fetchAccessRoleNames(ctx, loginEvent.AccessID)
+			claims["roles"] = []string{"user"}
 			return claims
 		} else {
 			log.WithError(err).WithField("oauth2_session_id", oauth2SessionID).Warn("login event not found for Hydra session ID - token will be missing claims")

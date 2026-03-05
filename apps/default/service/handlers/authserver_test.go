@@ -441,8 +441,22 @@ func (m *mockPartitionCli) GetPartition(_ context.Context, _ *connect.Request[pa
 	return m.getPartitionResp, m.getPartitionErr
 }
 
-func (m *mockPartitionCli) GetServiceAccount(_ context.Context, _ *connect.Request[partitionv1.GetServiceAccountRequest]) (*connect.Response[partitionv1.GetServiceAccountResponse], error) {
-	return m.getServiceAccountResp, m.getServiceAccountErr
+func (m *mockPartitionCli) GetServiceAccount(_ context.Context, req *connect.Request[partitionv1.GetServiceAccountRequest]) (*connect.Response[partitionv1.GetServiceAccountResponse], error) {
+	if m.getServiceAccountErr != nil {
+		return nil, m.getServiceAccountErr
+	}
+	if m.getServiceAccountResp != nil {
+		return m.getServiceAccountResp, nil
+	}
+	// Default: return a SA with the requested client_id, tenant "t1", partition "p1"
+	return connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+		Data: &partitionv1.ServiceAccountObject{
+			ClientId:    req.Msg.GetClientId(),
+			TenantId:    "t1",
+			PartitionId: "p1",
+			ProfileId:   "default-profile",
+		},
+	}), nil
 }
 
 func (m *mockPartitionCli) GetAccess(_ context.Context, _ *connect.Request[partitionv1.GetAccessRequest]) (*connect.Response[partitionv1.GetAccessResponse], error) {
@@ -641,6 +655,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 		assert.Equal(t, "access-1", claims["access_id"])
 		assert.Equal(t, "profile-1", claims["profile_id"])
 		assert.Equal(t, "evt-123", claims["session_id"])
+		assert.Equal(t, []string{"user"}, claims["roles"])
 	})
 
 	t.Run("lookup by oauth2 session ID", func(t *testing.T) {
@@ -670,6 +685,7 @@ func TestLookupClaimsFromDB(t *testing.T) {
 		require.NotNil(t, claims)
 		assert.Equal(t, "tenant-2", claims["tenant_id"])
 		assert.Equal(t, "profile-2", claims["profile_id"])
+		assert.Equal(t, []string{"user"}, claims["roles"])
 	})
 
 	t.Run("no login event ID or oauth2 session ID", func(t *testing.T) {
@@ -891,8 +907,10 @@ func TestTokenEnrichmentEndpointFull(t *testing.T) {
 		at := session["access_token"].(map[string]any)
 		assert.Equal(t, "lookup-tenant", at["tenant_id"])
 		assert.Equal(t, "svc-partition", at["partition_id"])
+		// Roles come from access record (ListAccessRole mock returns error → fallback to ["user"])
 		roles := at["roles"].([]any)
-		assert.Contains(t, roles, "system_internal")
+		assert.Contains(t, roles, "user")
+		assert.NotEmpty(t, at["access_id"])
 	})
 
 	t.Run("system internal scope with unregistered client is rejected", func(t *testing.T) {
@@ -1353,25 +1371,14 @@ func TestGetOrCreateTenancyAccessByPartitionID(t *testing.T) {
 
 // --- Tests for buildCanonicalClaimsFromLoginEvent ---
 
-func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
-	t.Run("missing client_id", func(t *testing.T) {
-		h := newTestAuthServer(newMockLoginEventRepo())
-
-		tokenObject := map[string]any{} // no client_id
-		claims := map[string]any{"session_id": "evt-1", "profile_id": "p1"}
-
-		_, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "client_id not found")
-	})
-
+func TestReconstructClaimsFromLoginEvent(t *testing.T) {
 	t.Run("missing session_id and oauth2_session_id", func(t *testing.T) {
 		h := newTestAuthServer(newMockLoginEventRepo())
 
-		tokenObject := map[string]any{"client_id": "my-client"}
+		tokenObject := map[string]any{}
 		claims := map[string]any{"profile_id": "p1"}
 
-		_, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		_, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing session_id and oauth2_session_id")
 	})
@@ -1379,10 +1386,10 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 	t.Run("login event not found by session_id", func(t *testing.T) {
 		h := newTestAuthServer(newMockLoginEventRepo())
 
-		tokenObject := map[string]any{"client_id": "my-client"}
+		tokenObject := map[string]any{}
 		claims := map[string]any{"session_id": "nonexistent", "profile_id": "p1"}
 
-		_, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		_, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to look up login event")
 	})
@@ -1403,41 +1410,29 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 		eventRepo.events["evt-1"] = evt
 		eventRepo.byOauth2Sess["oauth2-sess-1"] = evt
 
-		partCli := &mockPartitionCli{
-			getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-				Data: &partitionv1.AccessObject{
-					Id:        "a1",
-					Partition: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
-				},
-			}),
-		}
-		h := newFullTestAuthServer(eventRepo, &mockHydra{},
-			partCli, &mockDeviceCli{}, &mockAuthorizer{})
+		h := newTestAuthServer(eventRepo)
 
 		tokenObject := map[string]any{
-			"client_id": "client-1",
-			"session":   map[string]any{"id": "oauth2-sess-1"},
+			"session": map[string]any{"id": "oauth2-sess-1"},
 		}
-		claims := map[string]any{"profile_id": "profile-1"}
+		claims := map[string]any{"profile_id": "profile-1", "roles": []string{"user"}}
 
-		result, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		result, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.NoError(t, err)
 		assert.Equal(t, "profile-1", result["profile_id"])
 		assert.Equal(t, "t1", result["tenant_id"])
+		assert.Equal(t, []string{"user"}, result["roles"])
 	})
 
 	t.Run("oauth2_session_id not found", func(t *testing.T) {
-		eventRepo := newMockLoginEventRepo()
-		h := newFullTestAuthServer(eventRepo, &mockHydra{},
-			&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
+		h := newTestAuthServer(newMockLoginEventRepo())
 
 		tokenObject := map[string]any{
-			"client_id": "client-1",
-			"session":   map[string]any{"id": "nonexistent"},
+			"session": map[string]any{"id": "nonexistent"},
 		}
 		claims := map[string]any{"profile_id": "profile-1"}
 
-		_, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		_, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to look up login event by oauth2_session_id")
 	})
@@ -1456,21 +1451,12 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 		evt.AccessID = "a1"
 		eventRepo.events["evt-1"] = evt
 
-		partCli := &mockPartitionCli{
-			getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-				Data: &partitionv1.AccessObject{
-					Id:        "a1",
-					Partition: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
-				},
-			}),
-		}
-		h := newFullTestAuthServer(eventRepo, &mockHydra{},
-			partCli, &mockDeviceCli{}, &mockAuthorizer{})
+		h := newTestAuthServer(eventRepo)
 
-		tokenObject := map[string]any{"client_id": "client-1"}
+		tokenObject := map[string]any{}
 		claims := map[string]any{"session_id": "evt-1"} // no profile_id
 
-		result, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		result, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.NoError(t, err)
 		assert.Equal(t, "from-event", result["profile_id"])
 	})
@@ -1484,15 +1470,66 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 		evt.ID = "evt-1"
 		eventRepo.events["evt-1"] = evt
 
-		h := newFullTestAuthServer(eventRepo, &mockHydra{},
-			&mockPartitionCli{}, &mockDeviceCli{}, &mockAuthorizer{})
+		h := newTestAuthServer(eventRepo)
 
-		tokenObject := map[string]any{"client_id": "client-1"}
+		tokenObject := map[string]any{}
 		claims := map[string]any{"session_id": "evt-1"}
 
-		_, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		_, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "profile_id could not be resolved")
+	})
+
+	t.Run("preserves consent-set roles from claims", func(t *testing.T) {
+		eventRepo := newMockLoginEventRepo()
+		evt := &models.LoginEvent{
+			ClientID:  "client-1",
+			ProfileID: "profile-1",
+		}
+		evt.ID = "evt-1"
+		evt.TenantID = "t1"
+		evt.PartitionID = "p1"
+		evt.AccessID = "a1"
+		eventRepo.events["evt-1"] = evt
+
+		h := newTestAuthServer(eventRepo)
+
+		tokenObject := map[string]any{}
+		claims := map[string]any{
+			"session_id": "evt-1",
+			"profile_id": "profile-1",
+			"roles":      []string{"user", "admin"},
+		}
+
+		result, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"user", "admin"}, result["roles"])
+	})
+
+	t.Run("defaults to user role when no roles in claims", func(t *testing.T) {
+		eventRepo := newMockLoginEventRepo()
+		evt := &models.LoginEvent{
+			ClientID:  "client-1",
+			ProfileID: "profile-1",
+		}
+		evt.ID = "evt-1"
+		evt.TenantID = "t1"
+		evt.PartitionID = "p1"
+		evt.AccessID = "a1"
+		eventRepo.events["evt-1"] = evt
+
+		h := newTestAuthServer(eventRepo)
+
+		tokenObject := map[string]any{}
+		claims := map[string]any{
+			"session_id": "evt-1",
+			"profile_id": "profile-1",
+			// no roles
+		}
+
+		result, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"user"}, result["roles"])
 	})
 
 	t.Run("contact_id and device_id fallback from claims", func(t *testing.T) {
@@ -1508,18 +1545,9 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 		evt.AccessID = "a1"
 		eventRepo.events["evt-1"] = evt
 
-		partCli := &mockPartitionCli{
-			getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-				Data: &partitionv1.AccessObject{
-					Id:        "a1",
-					Partition: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
-				},
-			}),
-		}
-		h := newFullTestAuthServer(eventRepo, &mockHydra{},
-			partCli, &mockDeviceCli{}, &mockAuthorizer{})
+		h := newTestAuthServer(eventRepo)
 
-		tokenObject := map[string]any{"client_id": "client-1"}
+		tokenObject := map[string]any{}
 		claims := map[string]any{
 			"session_id": "evt-1",
 			"profile_id": "profile-1",
@@ -1528,7 +1556,7 @@ func TestBuildCanonicalClaimsFromLoginEvent(t *testing.T) {
 			"roles":      []string{"user"},
 		}
 
-		result, err := h.buildCanonicalClaimsFromLoginEvent(context.Background(), tokenObject, claims)
+		result, err := h.reconstructClaimsFromLoginEvent(context.Background(), tokenObject, claims)
 		require.NoError(t, err)
 		assert.Equal(t, "fallback-dev", result["device_id"])
 		assert.Equal(t, "fallback-contact", result["contact_id"])
@@ -1991,10 +2019,12 @@ func TestBuildServiceAccountConsentClaims_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "tenant-1", claims["tenant_id"])
 	assert.Equal(t, "partition-1", claims["partition_id"])
-	assert.Equal(t, []string{"system_internal"}, claims["roles"])
+	// Roles come from access record (ListAccessRole mock returns error → fallback to ["user"])
+	assert.Equal(t, []string{"user"}, claims["roles"])
 	assert.Equal(t, "subject-1", claims["profile_id"])
 	assert.NotEmpty(t, claims["session_id"])
 	assert.NotEmpty(t, claims["login_event_id"])
+	assert.Equal(t, "access-new", claims["access_id"])
 }
 
 func TestBuildServiceAccountConsentClaims_PartitionLookupFails(t *testing.T) {
@@ -2078,6 +2108,52 @@ func TestBuildServiceAccountConsentClaims_LoginEventCreateError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create login event")
 }
 
+func TestValidateScopeMatchesSAType(t *testing.T) {
+	// Internal scope + internal type → OK
+	assert.NoError(t, validateScopeMatchesSAType([]string{"system_int"}, "internal"))
+
+	// External scope + external type → OK
+	assert.NoError(t, validateScopeMatchesSAType([]string{"system_ext"}, "external"))
+
+	// External scope + internal type → error
+	err := validateScopeMatchesSAType([]string{"system_ext"}, "internal")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "system_ext does not match SA type")
+
+	// Internal scope + external type → error
+	err = validateScopeMatchesSAType([]string{"system_int"}, "external")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "system_int does not match SA type")
+
+	// No system scope → OK (no validation needed)
+	assert.NoError(t, validateScopeMatchesSAType([]string{"openid"}, "internal"))
+	assert.NoError(t, validateScopeMatchesSAType([]string{"openid"}, "external"))
+}
+
+func TestBuildServiceAccountConsentClaims_ScopeTypeMismatch(t *testing.T) {
+	h := newFullTestAuthServer(
+		newMockLoginEventRepo(),
+		nil,
+		&mockPartitionCli{
+			getServiceAccountResp: connect.NewResponse(&partitionv1.GetServiceAccountResponse{
+				Data: &partitionv1.ServiceAccountObject{
+					ClientId:    "p1",
+					TenantId:    "t1",
+					PartitionId: "p1",
+					ProfileId:   "sub1",
+				},
+			}),
+		},
+		nil,
+		&mockAuthorizer{},
+	)
+
+	// SA type defaults to "internal" (no properties), but scope says system_ext
+	_, err := h.buildServiceAccountConsentClaims(context.Background(), "p1", "sub1", []string{"system_ext"}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "system_ext does not match SA type")
+}
+
 // --- Tests for buildConsentTokenClaims ---
 
 func TestBuildConsentTokenClaims_ServiceAccount(t *testing.T) {
@@ -2108,7 +2184,9 @@ func TestBuildConsentTokenClaims_ServiceAccount(t *testing.T) {
 
 	claims, err := h.buildConsentTokenClaims(context.Background(), rr, req, consentReq, "p1", "sub1")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"system_internal"}, claims["roles"])
+	// Roles come from access record (ListAccessRole mock returns error → fallback to ["user"])
+	assert.Equal(t, []string{"user"}, claims["roles"])
+	assert.Equal(t, "access-new", claims["access_id"])
 }
 func TestShowConsentEndpoint_EmptyChallenge(t *testing.T) {
 	h := newFullTestAuthServer(
@@ -6047,15 +6125,10 @@ func TestEnsureLoginEventTenancyAccess_EmptyAccessID(t *testing.T) {
 	assert.Contains(t, err.Error(), "access without id")
 }
 
-func TestEnsureLoginEventTenancyAccess_IncompletePartition(t *testing.T) {
+func TestEnsureLoginEventTenancyAccess_ServiceAccountLookupFails(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	partCli := &mockPartitionCli{
-		getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-			Data: &partitionv1.AccessObject{
-				Id:        "a1",
-				Partition: &partitionv1.PartitionObject{Id: "", TenantId: ""}, // incomplete
-			},
-		}),
+		getServiceAccountErr: connect.NewError(connect.CodeNotFound, errors.New("service account not found")),
 	}
 	h := newFullTestAuthServer(eventRepo, &mockHydra{},
 		partCli, &mockDeviceCli{}, &mockAuthorizer{})
@@ -6065,7 +6138,7 @@ func TestEnsureLoginEventTenancyAccess_IncompletePartition(t *testing.T) {
 
 	_, err := h.ensureLoginEventTenancyAccess(context.Background(), evt, "c1", "p1")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "incomplete partition context")
+	assert.Contains(t, err.Error(), "service account lookup failed")
 }
 
 func TestEnsureLoginEventTenancyAccess_NoChangesNeeded(t *testing.T) {
@@ -6415,36 +6488,15 @@ func TestHandleUserTokenEnrichment_NonUserRolesPassthrough(t *testing.T) {
 }
 
 func TestHandleUserTokenEnrichment_WithCompleteSessionClaims(t *testing.T) {
-	eventRepo := newMockLoginEventRepo()
-	evt := &models.LoginEvent{
-		ClientID:  "client-1",
-		ProfileID: "prof-1",
-		ContactID: "contact-1",
-		DeviceID:  "d1",
-	}
-	evt.ID = "evt-1"
-	evt.TenantID = "t1"
-	evt.PartitionID = "p1"
-	evt.AccessID = "a1"
-	eventRepo.events["evt-1"] = evt
-
-	partCli := &mockPartitionCli{
-		getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-			Data: &partitionv1.AccessObject{
-				Id:        "a1",
-				Partition: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
-			},
-		}),
-	}
-	h := newFullTestAuthServer(eventRepo, &mockHydra{},
-		partCli, &mockDeviceCli{}, &mockAuthorizer{})
+	// Complete claims pass through directly — no DB or partition service calls needed.
+	h := newTestAuthServer(newMockLoginEventRepo())
 	rr := httptest.NewRecorder()
 
 	tokenObj := map[string]any{
-		"client_id": "client-1",
 		"session": map[string]any{
 			"access_token": map[string]any{
 				"session_id":   "evt-1",
+				"access_id":    "a1",
 				"roles":        []any{"user"},
 				"tenant_id":    "t1",
 				"partition_id": "p1",
@@ -6457,6 +6509,13 @@ func TestHandleUserTokenEnrichment_WithCompleteSessionClaims(t *testing.T) {
 	err := h.handleUserTokenEnrichment(context.Background(), rr, tokenObj)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var resp map[string]any
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
+	session := resp["session"].(map[string]any)
+	at := session["access_token"].(map[string]any)
+	assert.Equal(t, "t1", at["tenant_id"])
+	assert.Equal(t, "prof-1", at["profile_id"])
 }
 
 // --- Tests for extractGrantType edge cases ---
@@ -6733,6 +6792,7 @@ func TestLookupClaimsFromDB_WithSessionID(t *testing.T) {
 	result := h.lookupClaimsFromDB(context.Background(), tokenObj, nil, nil, map[string]any{})
 	require.NotNil(t, result)
 	assert.Equal(t, "prof-1", result["profile_id"])
+	assert.Equal(t, []string{"user"}, result["roles"])
 }
 
 // --- Test for inferDeviceName ---
@@ -6807,14 +6867,11 @@ func TestHandleUserTokenEnrichment_LoginEventLookupFails(t *testing.T) {
 	eventRepo := newMockLoginEventRepo()
 	eventRepo.getErr = errors.New("db down")
 
-	partCli := &mockPartitionCli{}
-	h := newFullTestAuthServer(eventRepo, &mockHydra{},
-		partCli, &mockDeviceCli{}, &mockAuthorizer{})
+	h := newTestAuthServer(eventRepo)
 	rr := httptest.NewRecorder()
 
-	// Session with user role and session_id that will fail lookup
+	// Incomplete claims (missing access_id) → triggers reconstruction which fails
 	tokenObj := map[string]any{
-		"client_id": "client-1",
 		"session": map[string]any{
 			"access_token": map[string]any{
 				"session_id":   "evt-missing",
@@ -6831,34 +6888,19 @@ func TestHandleUserTokenEnrichment_LoginEventLookupFails(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
-func TestHandleUserTokenEnrichment_MissingRequiredClaimsAfterLookup(t *testing.T) {
+func TestHandleUserTokenEnrichment_CompleteClaimsPassthroughNoDBCall(t *testing.T) {
+	// Even with a broken DB, complete claims pass through without error.
 	eventRepo := newMockLoginEventRepo()
-	// Login event with missing required fields (no tenantID, partitionID, accessID)
-	evt := &models.LoginEvent{
-		ClientID:  "client-1",
-		ProfileID: "prof-1",
-	}
-	evt.ID = "evt-1"
-	eventRepo.events["evt-1"] = evt
+	eventRepo.getErr = errors.New("db down")
 
-	// partitionCli will return access with empty partition
-	partCli := &mockPartitionCli{
-		getAccessResp: connect.NewResponse(&partitionv1.GetAccessResponse{
-			Data: &partitionv1.AccessObject{
-				Id:        "a1",
-				Partition: &partitionv1.PartitionObject{Id: "p1", TenantId: "t1"},
-			},
-		}),
-	}
-	h := newFullTestAuthServer(eventRepo, &mockHydra{},
-		partCli, &mockDeviceCli{}, &mockAuthorizer{})
+	h := newTestAuthServer(eventRepo)
 	rr := httptest.NewRecorder()
 
 	tokenObj := map[string]any{
-		"client_id": "client-1",
 		"session": map[string]any{
 			"access_token": map[string]any{
 				"session_id":   "evt-1",
+				"access_id":    "a1",
 				"roles":        []any{"user"},
 				"tenant_id":    "t1",
 				"partition_id": "p1",
@@ -6869,8 +6911,38 @@ func TestHandleUserTokenEnrichment_MissingRequiredClaimsAfterLookup(t *testing.T
 
 	err := h.handleUserTokenEnrichment(context.Background(), rr, tokenObj)
 	require.NoError(t, err)
-	// Should succeed now since the login event will have claims populated from ensureLoginEventTenancyAccess
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestHandleUserTokenEnrichment_MissingRequiredClaimsAfterLookup(t *testing.T) {
+	eventRepo := newMockLoginEventRepo()
+	// Login event with missing required fields (no tenantID, partitionID, accessID)
+	evt := &models.LoginEvent{
+		ClientID:  "client-1",
+		ProfileID: "prof-1",
+	}
+	evt.ID = "evt-1"
+	eventRepo.events["evt-1"] = evt
+
+	h := newTestAuthServer(eventRepo)
+	rr := httptest.NewRecorder()
+
+	// Incomplete claims (missing access_id) → triggers reconstruction from login event
+	// Login event also has missing tenant/partition/access → required claims still missing
+	tokenObj := map[string]any{
+		"session": map[string]any{
+			"access_token": map[string]any{
+				"session_id": "evt-1",
+				"roles":      []any{"user"},
+				"profile_id": "prof-1",
+			},
+		},
+	}
+
+	err := h.handleUserTokenEnrichment(context.Background(), rr, tokenObj)
+	require.NoError(t, err)
+	// Reconstructed claims are still missing tenant_id, partition_id, access_id
+	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
 // --- Tests for verifyProfileLogin login update error ---
