@@ -53,10 +53,10 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/antinvestor/apis/go/common v1.55.0 h1:dHokZ/eJObM3Eqt+A7sGVAkpjlvbqf9ne0Gx0vSW8LE=
 github.com/antinvestor/apis/go/common v1.55.0/go.mod h1:k1oRdlrA6js3vdRmWAEznAJQfRsa1sLq+nUpqD8E4v8=
-github.com/antinvestor/apis/go/device v1.53.18 h1:nfPWcdWY8OY802Y0rHQ4sPuZcYs8veMEGSTJI0lXU0s=
-github.com/antinvestor/apis/go/device v1.53.18/go.mod h1:0sE7jm3HeMPyx4GvIhDsWlaLjSYlxJTk18l8Urp8wZE=
-github.com/antinvestor/apis/go/notification v1.53.18 h1:mEl9QEWsq1fIc079ojvpJuJTvW2aFCFgz5h7BZGNqP0=
-github.com/antinvestor/apis/go/notification v1.53.18/go.mod h1:XsmR/HPkJ63LJXZtLUHrVpi+dKRumPDtUFg0fk+Ly5s=
+github.com/antinvestor/apis/go/device v1.55.1 h1:i+c9nJojvfbMMz1QPLcX2AvxIJqqsjr6pqvZjraw1XA=
+github.com/antinvestor/apis/go/device v1.55.1/go.mod h1:NLkga2Fvmg8GA4iW9O+5gvn0eaIg/wZ5rB/xOTc6rzI=
+github.com/antinvestor/apis/go/notification v1.55.1 h1:U0mCDBIRaoQJyt3QH/h1jhUkuFGLsSORAedtzLBOw64=
+github.com/antinvestor/apis/go/notification v1.55.1/go.mod h1:altMzJLeq4ksTiMlehwDWZFuPsXnyO4G1EtJkYmOKUo=
 github.com/antinvestor/apis/go/partition v1.55.1 h1:aCoZKxAI9nYwTsFEjPU4T6xXOrzZBOkgXn3O95otW6A=
 github.com/antinvestor/apis/go/partition v1.55.1/go.mod h1:8r8dWcLp2iLbmmOkxZFJSQ2BFVxyb0uoDXp8XQxSheE=
 github.com/antinvestor/apis/go/profile v1.55.1 h1:EFGwIWljecLWPFPRF+1fWU1Ujt97EOgX5DrL+pBoy9E=
@@ -385,8 +385,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171 h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171/go.mod h1:M5krXqk4GhBKvB596udGL3UyjL4I1+cTbK0orROM9ng=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 h1:ggcbiqK8WWh6l1dnltU4BgWGIGo+EVYxCaAPih/zQXQ=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
-google.golang.org/grpc v1.79.1 h1:zGhSi45ODB9/p3VAawt9a+O/MULLl9dpizzNNpq7flY=
-google.golang.org/grpc v1.79.1/go.mod h1:KmT0Kjez+0dde/v2j9vzwoAScgEPx/Bw1CYChhHLrHQ=
+google.golang.org/grpc v1.79.2 h1:fRMD94s2tITpyJGtBBn7MkMseNpOZU8ZxgC3MMBaXRU=
+google.golang.org/grpc v1.79.2/go.mod h1:KmT0Kjez+0dde/v2j9vzwoAScgEPx/Bw1CYChhHLrHQ=
 google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
 google.golang.org/protobuf v1.36.11/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

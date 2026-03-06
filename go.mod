@@ -14,8 +14,8 @@ require (
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
 	github.com/antinvestor/apis/go/common v1.55.0
-	github.com/antinvestor/apis/go/device v1.53.18
-	github.com/antinvestor/apis/go/notification v1.53.18
+	github.com/antinvestor/apis/go/device v1.55.1
+	github.com/antinvestor/apis/go/notification v1.55.1
 	github.com/antinvestor/apis/go/partition v1.55.1
 	github.com/antinvestor/apis/go/profile v1.55.1
 	github.com/coreos/go-oidc/v3 v3.17.0
@@ -29,7 +29,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/crypto v0.48.0
 	golang.org/x/oauth2 v0.35.0
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
 	gorm.io/gorm v1.31.1
 )
