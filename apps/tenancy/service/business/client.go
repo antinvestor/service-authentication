@@ -127,6 +127,7 @@ func (cb *clientBusiness) CreateClient(
 		Scopes:        scopes,
 		Audiences:     toJSONMapSlice("namespaces", audiences),
 		Roles:         toJSONMapSlice("roles", roles),
+		ParentRef:     partitionID,
 		Properties:    data.JSONMap(properties),
 		BaseModel: data.BaseModel{
 			TenantID:    partition.TenantID,
@@ -212,7 +213,8 @@ func (cb *clientBusiness) UpdateClient(
 
 	_, err = cb.clientRepo.Update(ctx, client,
 		"name", "grant_types", "response_types", "redirect_uris",
-		"scopes", "audiences", "roles", "properties", "synced_at")
+		"scopes", "audiences", "roles", "logo_uri", "post_logout_redirect_uris",
+		"token_endpoint_auth_method", "properties", "synced_at")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update client: %w", err)
 	}

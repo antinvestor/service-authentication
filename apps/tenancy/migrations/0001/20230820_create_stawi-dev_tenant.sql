@@ -14,12 +14,8 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
           "service_profile",
           "service_files"
           ],
-          "logo_uri": "https://static.stawi.dev/logo.png",
           "redirect_uris": [
             "https://stawi.dev/auth/callback"
-          ],
-          "post_logout_redirect_uris": [
-            "https://stawi.dev"
           ],
           "support_contacts": {
             "msisdn": "+256757546244",
@@ -30,7 +26,8 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
 -- Public client for Stawi AI Builder partition (user authorization_code flows)
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
-    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+    type, grant_types, response_types, scopes, audiences, redirect_uris,
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
 ) VALUES (
     'd6l82t4pf2t82gudn7ug',
     '9bsv0s0hijjg02z5lr4g',
@@ -43,5 +40,8 @@ INSERT INTO clients (
     'openid offline_access profile',
     '{"namespaces": ["service_trustage","service_foundry","service_devices","service_profile","service_files"]}',
     '{"uris": ["https://stawi.dev/auth/callback"]}',
-    '{"logo_uri": "https://static.stawi.dev/logo.png", "post_logout_redirect_uris": ["https://stawi.dev"]}'
+    'https://static.stawi.dev/logo.png',
+    '{"uris": ["https://stawi.dev"]}',
+    'none',
+    '9bsv0s0hid5g02qkl7gjg'                       -- parent_ref → Partition.ID (Stawi AI Builder)
 ) ON CONFLICT (id) DO NOTHING;

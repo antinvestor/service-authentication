@@ -193,9 +193,15 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		"audience":       audienceList,
 	}
 
-	// Auth method
-	switch cl.Type {
-	case "public":
+	// Auth method: use explicit column if set, otherwise derive from type/secret
+	switch {
+	case cl.TokenEndpointAuthMethod != "":
+		payload["token_endpoint_auth_method"] = cl.TokenEndpointAuthMethod
+		// Only send secret if auth method expects it
+		if cl.ClientSecret != "" && cl.TokenEndpointAuthMethod != "none" {
+			payload["client_secret"] = cl.ClientSecret
+		}
+	case cl.Type == "public":
 		payload["token_endpoint_auth_method"] = "none"
 	default:
 		if cl.ClientSecret != "" {
@@ -223,14 +229,14 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		}
 	}
 
-	// Logo URI from properties
-	if cl.Properties != nil {
-		if logoURI, ok := cl.Properties["logo_uri"].(string); ok {
-			payload["logo_uri"] = logoURI
-		}
-		if postLogoutURIs, ok := cl.Properties["post_logout_redirect_uris"]; ok {
-			payload["post_logout_redirect_uris"] = postLogoutURIs
-		}
+	// Logo URI
+	if cl.LogoURI != "" {
+		payload["logo_uri"] = cl.LogoURI
+	}
+
+	// Post-logout redirect URIs
+	if postLogoutURIs := getStringSlice(cl.PostLogoutRedirectURIs, "uris"); len(postLogoutURIs) > 0 {
+		payload["post_logout_redirect_uris"] = postLogoutURIs
 	}
 
 	return payload

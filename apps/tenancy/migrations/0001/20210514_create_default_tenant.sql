@@ -31,12 +31,8 @@ VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
       "service_files",
       "service_ledger"
     ],
-    "logo_uri": "https://static.antinvestor.com/logo.png",
     "redirect_uris": [
       "https://admin.antinvestor.com/auth/callback"
-    ],
-    "post_logout_redirect_uris": [
-      "https://admin.antinvestor.com/"
     ],
     "support_contacts": {
       "msisdn": "+256757546244",
@@ -47,7 +43,8 @@ VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
 -- Public client: user login via authorization_code + PKCE
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
-    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+    type, grant_types, response_types, scopes, audiences, redirect_uris,
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
 ) VALUES (
     'd6l82t4pf2t82gudn7s0',
     'c2f4j7au6s7f91uqnojg',                       -- tenant: System Manager
@@ -60,5 +57,8 @@ INSERT INTO clients (
     'openid offline_access profile',
     '{"namespaces": ["service_tenancy","service_devices","service_profile","service_notifications"]}',
     '{"uris": ["https://admin.antinvestor.com/auth/callback"]}',
-    '{"logo_uri": "https://static.antinvestor.com/logo.png", "post_logout_redirect_uris": ["https://admin.antinvestor.com/"]}'
+    'https://static.antinvestor.com/logo.png',
+    '{"uris": ["https://admin.antinvestor.com/"]}',
+    'none',
+    'c2f4j7au6s7f91uqnokg'                        -- parent_ref → Partition.ID (System Manager)
 ) ON CONFLICT (id) DO NOTHING;

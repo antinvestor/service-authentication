@@ -136,6 +136,7 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 	}
 
 	// Build the ServiceAccount record (identity)
+	// Link the client back to the SA after both are created (see below)
 	if properties == nil {
 		properties = map[string]any{}
 	}
@@ -167,6 +168,12 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 
 	if createErr := sb.serviceAccountRepo.Create(ctx, sa); createErr != nil {
 		return nil, fmt.Errorf("failed to create service account record: %w", createErr)
+	}
+
+	// Set ParentRef on the client to the SA ID now that both exist
+	client.ParentRef = sa.GetID()
+	if _, updateErr := sb.clientRepo.Update(ctx, client, "parent_ref"); updateErr != nil {
+		util.Log(ctx).WithError(updateErr).Warn("failed to set client parent_ref to service account")
 	}
 
 	log = log.WithField("service_account_id", sa.GetID()).

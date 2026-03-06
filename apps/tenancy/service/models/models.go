@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"maps"
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
@@ -65,9 +66,7 @@ func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
 	}
 
 	props := make(data.JSONMap, len(pr.Properties)+1)
-	for k, v := range pr.Properties {
-		props[k] = v
-	}
+	maps.Copy(props, pr.Properties)
 	props["is_default"] = pr.IsDefault
 
 	return &partitionv1.PartitionRoleObject{
@@ -125,21 +124,29 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 // For PKCE flows (public/confidential), users authenticate through the client.
 // For client_credentials flows (internal/external), a ServiceAccount references
 // a Client to provide the identity (profile).
+//
+// ParentRef links a client to its owning entity:
+//   - For public/confidential clients: the partition ID
+//   - For internal/external SA clients: the service_account ID
 type Client struct {
 	data.BaseModel
-	Name          string       `gorm:"type:varchar(100);"                                                        json:"name"`
-	ClientID      string       `gorm:"type:varchar(100);uniqueIndex"                                             json:"client_id"`
-	ClientSecret  string       `gorm:"type:varchar(250);"                                                        json:"client_secret"`
-	Type          string       `gorm:"type:varchar(20);not null;default:'public'"                                 json:"type"`           // "public", "confidential", "internal", "external"
-	GrantTypes    data.JSONMap `                                                                                  json:"grant_types"`    // ["authorization_code","refresh_token"] or ["client_credentials"]
-	ResponseTypes data.JSONMap `                                                                                  json:"response_types"` // ["code","token"]
-	RedirectURIs  data.JSONMap `                                                                                  json:"redirect_uris"`  // ["https://app.example.com/callback"]
-	Scopes        string       `gorm:"type:text;"                                                                 json:"scopes"`         // "openid offline_access profile"
-	Audiences     data.JSONMap `                                                                                  json:"audiences"`      // {"namespaces": ["service_profile",...]}
-	Roles         data.JSONMap `                                                                                  json:"roles"`          // ["admin","member"] — permission template for SA tokens
-	Properties    data.JSONMap `                                                                                  json:"properties"`
-	State         int32        `                                                                                  json:"state"`
-	SyncedAt      *time.Time   `gorm:"index"                                                                      json:"synced_at"`
+	Name                    string       `gorm:"type:varchar(100);"                                                        json:"name"`
+	ClientID                string       `gorm:"type:varchar(100);uniqueIndex"                                             json:"client_id"`
+	ClientSecret            string       `gorm:"type:varchar(250);"                                                        json:"client_secret"`
+	Type                    string       `gorm:"type:varchar(20);not null;default:'public'"                                 json:"type"`                       // "public", "confidential", "internal", "external"
+	GrantTypes              data.JSONMap `                                                                                  json:"grant_types"`                // ["authorization_code","refresh_token"] or ["client_credentials"]
+	ResponseTypes           data.JSONMap `                                                                                  json:"response_types"`             // ["code","token"]
+	RedirectURIs            data.JSONMap `                                                                                  json:"redirect_uris"`              // ["https://app.example.com/callback"]
+	Scopes                  string       `gorm:"type:text;"                                                                 json:"scopes"`                     // "openid offline_access profile"
+	Audiences               data.JSONMap `                                                                                  json:"audiences"`                  // {"namespaces": ["service_profile",...]}
+	Roles                   data.JSONMap `                                                                                  json:"roles"`                      // ["admin","member"] — permission template for SA tokens
+	LogoURI                 string       `gorm:"type:text;"                                                                 json:"logo_uri"`                   // Logo URL for OIDC clients
+	PostLogoutRedirectURIs  data.JSONMap `                                                                                  json:"post_logout_redirect_uris"`  // {"uris": ["https://app.example.com/"]}
+	TokenEndpointAuthMethod string       `gorm:"type:varchar(50);"                                                          json:"token_endpoint_auth_method"` // "none", "client_secret_post", "client_secret_basic", "private_key_jwt"
+	ParentRef               string       `gorm:"type:varchar(50);index:idx_clients_parent_ref"                              json:"parent_ref"`                 // FK → Partition.ID or ServiceAccount.ID
+	Properties              data.JSONMap `                                                                                  json:"properties"`
+	State                   int32        `                                                                                  json:"state"`
+	SyncedAt                *time.Time   `gorm:"index"                                                                      json:"synced_at"`
 }
 
 func (c *Client) ToAPI() *partitionv1.ClientObject {
@@ -163,8 +170,24 @@ func (c *Client) ToAPI() *partitionv1.ClientObject {
 		CreatedAt:     timestamppb.New(c.CreatedAt),
 	}
 
+	props := make(data.JSONMap)
 	if c.Properties != nil {
-		obj.Properties = c.Properties.ToProtoStruct()
+		maps.Copy(props, c.Properties)
+	}
+	if c.LogoURI != "" {
+		props["logo_uri"] = c.LogoURI
+	}
+	if plru := jsonMapToStringSlice(c.PostLogoutRedirectURIs, "uris"); len(plru) > 0 {
+		props["post_logout_redirect_uris"] = plru
+	}
+	if c.TokenEndpointAuthMethod != "" {
+		props["token_endpoint_auth_method"] = c.TokenEndpointAuthMethod
+	}
+	if c.ParentRef != "" {
+		props["parent_ref"] = c.ParentRef
+	}
+	if len(props) > 0 {
+		obj.Properties = props.ToProtoStruct()
 	}
 
 	return obj
@@ -178,9 +201,7 @@ func (c *Client) ToServiceAccountAPI() *partitionv1.ServiceAccountObject {
 	}
 
 	props := make(data.JSONMap, len(c.Properties)+3)
-	for k, v := range c.Properties {
-		props[k] = v
-	}
+	maps.Copy(props, c.Properties)
 	props["type"] = c.Type
 	if c.GrantTypes != nil {
 		props["grant_types"] = c.GrantTypes

@@ -22,7 +22,6 @@ INSERT INTO partitions (id, tenant_id, partition_id, name, description, properti
 VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
         'Dev Backoffice', 'default dev partition for test tenants', '{
     "scope": "openid offline offline_access profile contact",
-    "token_endpoint_auth_method": "none",
     "audience": [
       "service_tenancy",
       "service_devices",
@@ -31,14 +30,9 @@ VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
       "service_files",
       "service_ledger"
     ],
-    "logo_uri": "https://static.antinvestor.com/logo.png",
     "redirect_uris": [
       "http://localhost:5173/auth/callback",
       "https://admin-dev.antinvestor.com/auth/callback"
-    ],
-    "post_logout_redirect_uris": [
-      "http://localhost:5173/",
-      "https://admin-dev.antinvestor.com/"
     ],
     "support_contacts": {
       "msisdn": "+256757546244",
@@ -49,7 +43,8 @@ VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
 -- Public client: user login via authorization_code + PKCE
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
-    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+    type, grant_types, response_types, scopes, audiences, redirect_uris,
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
 ) VALUES (
     'd6l82t4pf2t82gudn7sg',
     '9bsv0s3pbdv002o80qfg',                       -- tenant: Testing Manager
@@ -62,5 +57,8 @@ INSERT INTO clients (
     'openid offline_access profile',
     '{"namespaces": ["service_tenancy","service_devices","service_profile","service_notifications"]}',
     '{"uris": ["http://localhost:5173/auth/callback","https://admin-dev.antinvestor.com/auth/callback"]}',
-    '{"logo_uri": "https://static.antinvestor.com/logo.png", "post_logout_redirect_uris": ["http://localhost:5173/","https://admin-dev.antinvestor.com/"]}'
+    'https://static.antinvestor.com/logo.png',
+    '{"uris": ["http://localhost:5173/","https://admin-dev.antinvestor.com/"]}',
+    'none',
+    '9bsv0s3pbdv002o80qhg'                        -- parent_ref → Partition.ID (Dev Backoffice)
 ) ON CONFLICT (id) DO NOTHING;

@@ -118,20 +118,33 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_CustomGrantType
 	s.Equal([]string{"client_credentials"}, grantTypes)
 }
 
-func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithProperties() {
+func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithDisplayFields() {
 	cl := &models.Client{
-		Name:     "Props",
-		ClientID: "props",
-		Type:     "public",
-		Properties: data.JSONMap{
-			"logo_uri":                  "https://example.com/logo.png",
-			"post_logout_redirect_uris": []any{"https://example.com/logout"},
-		},
+		Name:                   "Props",
+		ClientID:               "props",
+		Type:                   "public",
+		LogoURI:                "https://example.com/logo.png",
+		PostLogoutRedirectURIs: data.JSONMap{"uris": []any{"https://example.com/logout"}},
 	}
 
 	payload := buildClientHydraPayload(cl, "")
 	s.Equal("https://example.com/logo.png", payload["logo_uri"])
-	s.NotNil(payload["post_logout_redirect_uris"])
+	s.Equal([]string{"https://example.com/logout"}, payload["post_logout_redirect_uris"])
+}
+
+func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_ExplicitAuthMethod() {
+	cl := &models.Client{
+		Name:                    "PKJ Client",
+		ClientID:                "pkj-id",
+		ClientSecret:            "secret-val",
+		Type:                    "confidential",
+		TokenEndpointAuthMethod: "private_key_jwt",
+	}
+
+	payload := buildClientHydraPayload(cl, "")
+	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
+	// Secret should still be sent for non-"none" auth methods
+	s.Equal("secret-val", payload["client_secret"])
 }
 
 func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_DefaultScopes() {
