@@ -26,3 +26,22 @@ INSERT INTO partitions (id, tenant_id, partition_id, name, description, properti
               "email": "info@stawi.dev"
             }
            }');
+
+-- Public client for Stawi AI Builder Development partition (user authorization_code flows)
+INSERT INTO clients (
+    id, tenant_id, partition_id, name, client_id,
+    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+) VALUES (
+    'd6l82t4pf2t82gudn7v0',
+    '9bsv0s0hijjghdbz96dg',
+    '9bsv0s0hijjb83qksr20',
+    'Stawi AI Builder Development',
+    'stawi_ai_builder_dev',
+    'public',
+    '{"types": ["authorization_code","refresh_token"]}',
+    '{"types": ["code"]}',
+    'openid offline_access profile',
+    '{"namespaces": ["service_trustage","service_foundry","service_devices","service_profile","service_files"]}',
+    '{"uris": ["https://dev.stawi.dev/auth/callback","https://localhost:5170/auth/callback"]}',
+    '{"logo_uri": "https://static.stawi.dev/logo.png", "post_logout_redirect_uris": ["https://dev.stawi.dev","https://localhost:5170"]}'
+) ON CONFLICT (id) DO NOTHING;

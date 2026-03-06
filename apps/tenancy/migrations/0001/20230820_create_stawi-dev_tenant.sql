@@ -26,3 +26,22 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
             "email": "info@stawi.im"
           }
         }');
+
+-- Public client for Stawi AI Builder partition (user authorization_code flows)
+INSERT INTO clients (
+    id, tenant_id, partition_id, name, client_id,
+    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+) VALUES (
+    'd6l82t4pf2t82gudn7ug',
+    '9bsv0s0hijjg02z5lr4g',
+    '9bsv0s0hid5g02qkl7gjg',
+    'Stawi AI Builder',
+    'stawi_ai_builder',
+    'public',
+    '{"types": ["authorization_code","refresh_token"]}',
+    '{"types": ["code"]}',
+    'openid offline_access profile',
+    '{"namespaces": ["service_trustage","service_foundry","service_devices","service_profile","service_files"]}',
+    '{"uris": ["https://stawi.dev/auth/callback"]}',
+    '{"logo_uri": "https://static.stawi.dev/logo.png", "post_logout_redirect_uris": ["https://stawi.dev"]}'
+) ON CONFLICT (id) DO NOTHING;

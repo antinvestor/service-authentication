@@ -30,3 +30,22 @@ VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 
     }
   }');
 
+-- Public client for System Manager partition (user authorization_code flows)
+INSERT INTO clients (
+    id, tenant_id, partition_id, name, client_id,
+    type, grant_types, response_types, scopes, audiences, redirect_uris, properties
+) VALUES (
+    'd6l82t4pf2t82gudn7s0',
+    'c2f4j7au6s7f91uqnojg',
+    'c2f4j7au6s7f91uqnokg',
+    'System Manager',
+    'system_manager',
+    'public',
+    '{"types": ["authorization_code","refresh_token"]}',
+    '{"types": ["code"]}',
+    'openid offline_access profile',
+    '{"namespaces": ["service_tenancy","service_devices","service_profile","service_notifications"]}',
+    '{"uris": ["https://admin.antinvestor.com/auth/callback"]}',
+    '{"logo_uri": "https://static.antinvestor.com/logo.png", "post_logout_redirect_uris": ["https://admin.antinvestor.com/"]}'
+) ON CONFLICT (id) DO NOTHING;
+
