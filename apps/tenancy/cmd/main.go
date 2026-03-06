@@ -74,7 +74,7 @@ func main() {
 	// Sync all SA-type clients to Hydra at startup so their metadata
 	// (tenant_id, partition_id, profile_id, type) is available for the
 	// token enrichment webhook before any service acquires tokens.
-	if cfg.SynchronizePrimaryPartitions {
+	if cfg.SynchronizeClients {
 		syncAllClientsToHydra(ctx, &cfg, cliMan, partSrv)
 	}
 

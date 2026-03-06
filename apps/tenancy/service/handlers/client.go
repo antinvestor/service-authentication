@@ -15,7 +15,7 @@ func (prtSrv *PartitionServer) CreateClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateClientRequest],
 ) (*connect.Response[partitionv1.CreateClientResponse], error) {
-	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
+	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	msg := req.Msg
@@ -134,7 +134,7 @@ func (prtSrv *PartitionServer) UpdateClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateClientRequest],
 ) (*connect.Response[partitionv1.UpdateClientResponse], error) {
-	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
+	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
@@ -151,7 +151,7 @@ func (prtSrv *PartitionServer) RemoveClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveClientRequest],
 ) (*connect.Response[partitionv1.RemoveClientResponse], error) {
-	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
+	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)

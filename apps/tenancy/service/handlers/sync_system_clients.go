@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
@@ -12,10 +13,19 @@ import (
 	"github.com/pitabwire/util"
 )
 
-const SyncPartitionsHTTPPath = "/_system/sync/partitions"
+const SyncClientsHTTPPath = "/_system/sync/clients"
 
-func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req *http.Request) {
-	ctx := security.SkipTenancyChecksOnClaims(req.Context())
+func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	claims := security.ClaimsFromContext(ctx)
+	if claims == nil || !slices.Contains(claims.GetRoles(), "system_internal") {
+		rw.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(rw).Encode(map[string]string{"error": "system_internal role required"})
+		return
+	}
+
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
 	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
 	if !ok {
@@ -24,7 +34,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 	}
 
 	response := map[string]any{}
-	if !cfg.SynchronizePrimaryPartitions {
+	if !cfg.SynchronizeClients {
 
 		response["triggered"] = false
 
@@ -93,8 +103,7 @@ func (prtSrv *PartitionServer) SynchronizePartitions(rw http.ResponseWriter, req
 func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux := http.NewServeMux()
 
-	userServeMux.HandleFunc(SyncPartitionsHTTPPath, prtSrv.SynchronizePartitions)
-	userServeMux.HandleFunc("GET "+ServiceAccountByClientIDPath, prtSrv.GetServiceAccountByClientID)
+	userServeMux.HandleFunc(SyncClientsHTTPPath, prtSrv.SynchronizeSystemClients)
 
 	return userServeMux
 }

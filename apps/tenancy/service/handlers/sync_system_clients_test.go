@@ -11,6 +11,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/security"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -135,15 +136,21 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 
 				cfg, ok := svc.Config().(*config.PartitionConfig)
 				if ok {
-					cfg.SynchronizePrimaryPartitions = tc.syncEnabled
+					cfg.SynchronizeClients = tc.syncEnabled
 				}
 				// Create test request
-				url := "/_system/sync/partitions" + tc.queryParams
+				url := "/_system/sync/clients" + tc.queryParams
 				req := httptest.NewRequest(tc.httpMethod, url, nil)
-				req = req.WithContext(ctx)
+				claims := &security.AuthenticationClaims{
+					TenantID:    "tenant",
+					PartitionID: "partition",
+					Roles:       []string{"system_internal"},
+				}
+				claims.Subject = "sync-bot"
+				req = req.WithContext(claims.ClaimsToContext(ctx))
 				rw := httptest.NewRecorder()
 				// Call handler
-				dep.Server.SynchronizePartitions(rw, req)
+				dep.Server.SynchronizeSystemClients(rw, req)
 
 				// Verify response status and content type
 				assert.Equal(t, tc.expectedStatus, rw.Code, tc.description)
@@ -181,7 +188,7 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 			assert.NotNil(t, router)
 
 			// Test that the route is registered by making a request
-			req := httptest.NewRequest(http.MethodGet, handlers.SyncPartitionsHTTPPath, nil)
+			req := httptest.NewRequest(http.MethodGet, handlers.SyncClientsHTTPPath, nil)
 			req = req.WithContext(ctx)
 			rw := httptest.NewRecorder()
 
@@ -190,6 +197,27 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 
 			// Should not return 404 (route should be found)
 			assert.NotEqual(t, http.StatusNotFound, rw.Code)
+		})
+	})
+}
+
+func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_ForbiddenWithoutSystemInternal() {
+	suite.T().Run("forbidden_without_system_internal", func(t *testing.T) {
+		suite.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, _, dep := suite.CreateService(t, depOpts)
+
+			req := httptest.NewRequest(http.MethodGet, handlers.SyncClientsHTTPPath, nil)
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+
+			dep.Server.SynchronizeSystemClients(rw, req)
+
+			assert.Equal(t, http.StatusForbidden, rw.Code)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(rw.Body.Bytes(), &response)
+			require.NoError(t, err)
+			assert.Equal(t, "system_internal role required", response["error"])
 		})
 	})
 }

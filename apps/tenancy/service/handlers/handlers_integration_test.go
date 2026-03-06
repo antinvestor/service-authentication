@@ -2,16 +2,12 @@ package handlers_test
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame"
@@ -1029,6 +1025,26 @@ func (s *HandlerTestSuite) TestCreateServiceAccount_InvalidPartition() {
 	})
 }
 
+func (s *HandlerTestSuite) TestCreateServiceAccount_NoAuthz() {
+	s.T().Run("create_service_account_no_permission_grant", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, _, deps := s.CreateService(t, depOpts)
+
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
+
+			req := connect.NewRequest(&partitionv1.CreateServiceAccountRequest{
+				PartitionId: util.IDString(),
+				ProfileId:   util.IDString(),
+				Name:        "denied-bot",
+			})
+			resp, err := deps.Server.CreateServiceAccount(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
+
 func (s *HandlerTestSuite) TestGetServiceAccount_ByID() {
 	s.T().Run("get_sa_by_id", func(t *testing.T) {
 		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
@@ -1127,6 +1143,22 @@ func (s *HandlerTestSuite) TestGetServiceAccount_NotFound() {
 	})
 }
 
+func (s *HandlerTestSuite) TestGetServiceAccount_NoAuthz() {
+	s.T().Run("get_service_account_no_partition_view", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, _, deps := s.CreateService(t, depOpts)
+
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
+
+			req := connect.NewRequest(&partitionv1.GetServiceAccountRequest{Id: util.IDString()})
+			resp, err := deps.Server.GetServiceAccount(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
+
 func (s *HandlerTestSuite) TestRemoveServiceAccount_Success() {
 	s.T().Run("remove_service_account", func(t *testing.T) {
 		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
@@ -1185,103 +1217,93 @@ func (s *HandlerTestSuite) TestRemoveServiceAccount_NotFound() {
 	})
 }
 
-func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_Success() {
-	s.T().Run("get_sa_by_client_id_http", func(t *testing.T) {
+func (s *HandlerTestSuite) TestRemoveServiceAccount_NoAuthz() {
+	s.T().Run("remove_service_account_no_permission_grant", func(t *testing.T) {
 		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
-			ctx, svc, deps := s.CreateService(t, depOpts)
+			ctx, _, deps := s.CreateService(t, depOpts)
 
-			profileID := util.IDString()
-			tenantID := util.IDString()
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			partition := s.createTestPartition(ctx, deps, tenantID, "P")
-			s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+			req := connect.NewRequest(&partitionv1.RemoveServiceAccountRequest{Id: util.IDString()})
+			resp, err := deps.Server.RemoveServiceAccount(ctx, req)
 
-			// Use system_internal role — this is an internal service endpoint
-			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, partition.GetID(), profileID, []string{"system_internal"})
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
 
-			clientID := util.IDString()
-			sa := &models.ServiceAccount{
-				ProfileID:    util.IDString(),
-				ClientID:     clientID,
-				ClientSecret: "test-secret",
-				Type:         "internal",
-				Properties:   data.JSONMap{},
-				BaseModel: data.BaseModel{
-					TenantID:    tenantID,
-					PartitionID: partition.GetID(),
-				},
+// ========================
+// Client Handler Tests
+// ========================
+
+func (s *HandlerTestSuite) TestCreateClient_NoAuthz() {
+	s.T().Run("create_client_no_permission_grant", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, _, deps := s.CreateService(t, depOpts)
+
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
+
+			createReq := &partitionv1.CreateClientRequest{
+				Name: "denied-client",
 			}
-			err := deps.Server.ServiceAccountRepo.Create(ctx, sa)
-			s.Require().NoError(err)
+			createReq.SetPartitionId(util.IDString())
+			req := connect.NewRequest(createReq)
+			resp, err := deps.Server.CreateClient(ctx, req)
 
-			// Build HTTP request using the mux pattern
-			mux := http.NewServeMux()
-			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
-
-			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/"+clientID, nil)
-			req = req.WithContext(ctx)
-			rw := httptest.NewRecorder()
-
-			mux.ServeHTTP(rw, req)
-
-			s.Require().Equal(http.StatusOK, rw.Code)
-
-			var body map[string]any
-			err = json.Unmarshal(rw.Body.Bytes(), &body)
-			s.Require().NoError(err)
-			s.Require().Equal(clientID, body["clientId"])
+			s.Require().Nil(resp)
+			s.Require().Error(err)
 		})
 	})
 }
 
-func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_NotFound() {
-	s.T().Run("get_sa_by_client_id_http_not_found", func(t *testing.T) {
+func (s *HandlerTestSuite) TestGetClient_NoAuthz() {
+	s.T().Run("get_client_no_partition_view", func(t *testing.T) {
 		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
-			ctx, svc, deps := s.CreateService(t, depOpts)
+			ctx, _, deps := s.CreateService(t, depOpts)
 
-			profileID := util.IDString()
-			tenantID := util.IDString()
-			s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			// Use system_internal role — this is an internal service endpoint
-			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, tenantID, profileID, []string{"system_internal"})
+			req := connect.NewRequest(&partitionv1.GetClientRequest{Id: util.IDString()})
+			resp, err := deps.Server.GetClient(ctx, req)
 
-			mux := http.NewServeMux()
-			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
-
-			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/nonexistent", nil)
-			req = req.WithContext(ctx)
-			rw := httptest.NewRecorder()
-
-			mux.ServeHTTP(rw, req)
-
-			s.Require().Equal(http.StatusNotFound, rw.Code)
+			s.Require().Nil(resp)
+			s.Require().Error(err)
 		})
 	})
 }
 
-func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_Forbidden() {
-	s.T().Run("get_sa_by_client_id_http_forbidden", func(t *testing.T) {
+func (s *HandlerTestSuite) TestUpdateClient_NoAuthz() {
+	s.T().Run("update_client_no_permission_grant", func(t *testing.T) {
 		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
-			ctx, svc, deps := s.CreateService(t, depOpts)
+			ctx, _, deps := s.CreateService(t, depOpts)
 
-			profileID := util.IDString()
-			tenantID := util.IDString()
-			s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			// Regular user role — should be forbidden
-			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, tenantID, profileID, []string{"user"})
+			req := connect.NewRequest(&partitionv1.UpdateClientRequest{
+				Id:   util.IDString(),
+				Name: "denied-update",
+			})
+			resp, err := deps.Server.UpdateClient(ctx, req)
 
-			mux := http.NewServeMux()
-			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
+			s.Require().Nil(resp)
+			s.Require().Error(err)
+		})
+	})
+}
 
-			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/some-id", nil)
-			req = req.WithContext(ctx)
-			rw := httptest.NewRecorder()
+func (s *HandlerTestSuite) TestRemoveClient_NoAuthz() {
+	s.T().Run("remove_client_no_permission_grant", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, _, deps := s.CreateService(t, depOpts)
 
-			mux.ServeHTTP(rw, req)
+			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			s.Require().Equal(http.StatusForbidden, rw.Code)
+			req := connect.NewRequest(&partitionv1.RemoveClientRequest{Id: util.IDString()})
+			resp, err := deps.Server.RemoveClient(ctx, req)
+
+			s.Require().Nil(resp)
+			s.Require().Error(err)
 		})
 	})
 }
