@@ -11,6 +11,51 @@ import (
 	"github.com/pitabwire/util"
 )
 
+// resolvePartitionByClientID resolves a partition from a Hydra client_id.
+// It first tries treating the client_id as a partition ID (backward compat),
+// then falls back to looking up the Client record to get the partition.
+func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID string) (*partitionv1.PartitionObject, error) {
+	if clientID == "" {
+		return nil, fmt.Errorf("client_id is required")
+	}
+
+	// Try direct partition lookup (backward compat: client_id == partition_id)
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
+	if err == nil {
+		if obj := partitionResp.Msg.GetData(); obj != nil {
+			return obj, nil
+		}
+	}
+
+	// Fall back to looking up the Client record by its Hydra client_id
+	clientResp, clientErr := h.partitionCli.GetClient(ctx, connect.NewRequest(&partitionv1.GetClientRequest{ClientId: clientID}))
+	if clientErr != nil {
+		return nil, fmt.Errorf("no partition or client found for id %q: %w", clientID, clientErr)
+	}
+
+	// Try the owner.partition field (populated by newer tenancy service)
+	if partObj := clientResp.Msg.GetData().GetPartition(); partObj != nil && partObj.GetId() != "" {
+		return partObj, nil
+	}
+
+	// Fall back to metadata in properties (populated by Hydra sync)
+	if props := clientResp.Msg.GetData().GetProperties(); props != nil {
+		propsMap := props.AsMap()
+		if meta, ok := propsMap["metadata"].(map[string]any); ok {
+			partitionID, _ := meta["partition_id"].(string)
+			tenantID, _ := meta["tenant_id"].(string)
+			if partitionID != "" {
+				return &partitionv1.PartitionObject{
+					Id:       partitionID,
+					TenantId: tenantID,
+				}, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not resolve partition from client %q", clientID)
+}
+
 // fetchAccessRoleNames calls ListAccessRole for the given access ID and collects role names.
 // Always includes "user" as a base role. Non-fatal: falls back to ["user"] on error.
 func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) []string {
@@ -150,19 +195,30 @@ func (h *AuthServer) ensureLoginEventTenancyAccess(
 	}
 
 	log := util.Log(ctx).WithField("login_event_id", loginEvent.GetID())
-	accessObj, err := h.getOrCreateTenancyAccessByClientID(ctx, clientID, profileID)
+
+	// Resolve the partition first, then use partition_id for access operations.
+	// This handles the case where Hydra client_id != partition_id (new Client model).
+	partitionObj, resolveErr := h.resolvePartitionByClientID(ctx, clientID)
+	var accessObj *partitionv1.AccessObject
+	var err error
+	if resolveErr == nil && partitionObj.GetId() != "" {
+		accessObj, err = h.getOrCreateTenancyAccessByPartitionID(ctx, partitionObj.GetId(), profileID)
+	} else {
+		// Fall back to client_id based access (backward compat with old tenancy service)
+		accessObj, err = h.getOrCreateTenancyAccessByClientID(ctx, clientID, profileID)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	partitionObj := accessObj.GetPartition()
-	if partitionObj == nil {
+	accessPartition := accessObj.GetPartition()
+	if accessPartition == nil {
 		return nil, fmt.Errorf("partition service returned access without partition")
 	}
 	if accessObj.GetId() == "" {
 		return nil, fmt.Errorf("partition service returned access without id")
 	}
-	if partitionObj.GetId() == "" || partitionObj.GetTenantId() == "" {
+	if accessPartition.GetId() == "" || accessPartition.GetTenantId() == "" {
 		return nil, fmt.Errorf("partition service returned incomplete partition context")
 	}
 
@@ -183,12 +239,12 @@ func (h *AuthServer) ensureLoginEventTenancyAccess(
 		loginEvent.AccessID = accessObj.GetId()
 		changed["access_id"] = struct{}{}
 	}
-	if loginEvent.PartitionID != partitionObj.GetId() {
-		loginEvent.PartitionID = partitionObj.GetId()
+	if loginEvent.PartitionID != accessPartition.GetId() {
+		loginEvent.PartitionID = accessPartition.GetId()
 		changed["partition_id"] = struct{}{}
 	}
-	if loginEvent.TenantID != partitionObj.GetTenantId() {
-		loginEvent.TenantID = partitionObj.GetTenantId()
+	if loginEvent.TenantID != accessPartition.GetTenantId() {
+		loginEvent.TenantID = accessPartition.GetTenantId()
 		changed["tenant_id"] = struct{}{}
 	}
 

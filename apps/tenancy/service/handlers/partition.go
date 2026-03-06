@@ -64,7 +64,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 		ServiceAccountRepo:     serviceAccountRepo,
 		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
 		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
-		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
+		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo),
 		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
 		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
 		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo),

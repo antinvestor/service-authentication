@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -51,17 +49,10 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 		return
 	}
 
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: loginEvt.ClientID}))
+	partitionObj, err := h.resolvePartitionByClientID(ctx, loginEvt.ClientID)
 	if err != nil {
 		log.WithError(err).WithField("client_id", loginEvt.ClientID).
-			Error("partition lookup failed")
-		return
-	}
-
-	partitionObj := partitionResp.Msg.GetData()
-	if partitionObj == nil {
-		log.WithField("client_id", loginEvt.ClientID).
-			Warn("partition not found for client")
+			Warn("partition lookup failed for login event enrichment")
 		return
 	}
 

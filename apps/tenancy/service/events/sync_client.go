@@ -217,17 +217,18 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		payload["subject"] = profileID
 	}
 
-	// Store SA metadata so the token enrichment webhook can read it
-	// from the Hydra admin API without calling the partition service
-	// (which would create a circular dependency during token issuance).
-	if cl.Type == "internal" || cl.Type == "external" {
-		payload["metadata"] = map[string]any{
-			"tenant_id":    cl.TenantID,
-			"partition_id": cl.PartitionID,
-			"profile_id":   profileID,
-			"type":         cl.Type,
-		}
+	// Store metadata so the token enrichment webhook and other consumers can
+	// resolve the tenant/partition context from the Hydra admin API without
+	// calling the partition service (avoids circular dependency during token issuance).
+	metadata := map[string]any{
+		"tenant_id":    cl.TenantID,
+		"partition_id": cl.PartitionID,
+		"type":         cl.Type,
 	}
+	if profileID != "" {
+		metadata["profile_id"] = profileID
+	}
+	payload["metadata"] = metadata
 
 	// Logo URI
 	if cl.LogoURI != "" {

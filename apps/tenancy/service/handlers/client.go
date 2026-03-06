@@ -91,6 +91,17 @@ func (prtSrv *PartitionServer) GetClient(
 		}
 	}
 
+	// Always populate the partition owner so callers can resolve
+	// tenant/partition context from a Hydra client_id without extra RPCs.
+	if client.GetPartition() == nil && cl.PartitionID != "" {
+		part, partErr := prtSrv.PartitionBusiness.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: cl.PartitionID})
+		if partErr != nil {
+			logger.WithError(partErr).Debug("could not populate partition owner on client")
+		} else {
+			client.SetPartition(part)
+		}
+	}
+
 	return connect.NewResponse(&partitionv1.GetClientResponse{Data: client}), nil
 }
 

@@ -16,7 +16,9 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests/testketo"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -71,7 +73,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Partiti
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
 	depBuilder.ClientBusiness = business.NewClientBusiness(eventsMan, depBuilder.PartitionRepo, clientRepo)
 	depBuilder.ServiceAccountBusiness = business.NewServiceAccountBusiness(
@@ -286,6 +288,9 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	_ = svc.Run(ctx, "")
 
+	// Sync seeded clients to Hydra so SA credentials work for service-to-service auth
+	syncSeededClientsToHydra(ctx, &cfg, svc.HTTPClientManager(), implementation)
+
 	deps := BuildDeps(ctx, svc, implementation)
 
 	return ctx, svc, deps
@@ -327,4 +332,50 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role)
 	err := auth.WriteTuples(ctx, tuples)
 	bs.Require().NoError(err, "failed to seed tenant role")
+}
+
+// syncSeededClientsToHydra syncs all unsynced Client records to Hydra after
+// migrations so that seeded SA credentials work for service-to-service auth.
+func syncSeededClientsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig, cliMan client.Manager, partSrv *handlers.PartitionServer) {
+	log := util.Log(ctx)
+	syncCtx := security.SkipTenancyChecksOnClaims(ctx)
+
+	query := data.NewSearchQuery(
+		data.WithSearchLimit(200),
+		data.WithSearchFiltersAndByValue(map[string]any{"synced_at IS NULL": ""}),
+	)
+
+	jobResult, err := partSrv.ClientRepo.Search(syncCtx, query)
+	if err != nil {
+		log.WithError(err).Error("failed to search unsynced clients for Hydra sync")
+		return
+	}
+
+	synced := 0
+	for {
+		result, ok := jobResult.ReadResult(syncCtx)
+		if !ok {
+			break
+		}
+		if result.IsError() {
+			log.WithError(result.Error()).Error("error reading unsynced clients")
+			break
+		}
+		for _, cl := range result.Item() {
+			profileID := ""
+			if cl.Type == "internal" || cl.Type == "external" {
+				sa, saErr := partSrv.ServiceAccountRepo.GetByClientRef(syncCtx, cl.GetID())
+				if saErr == nil && sa != nil {
+					profileID = sa.ProfileID
+				}
+			}
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, cliMan, partSrv.ClientRepo, cl, profileID); syncErr != nil {
+				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
+			} else {
+				synced++
+			}
+		}
+	}
+
+	log.WithField("count", synced).Info("synced seeded clients to Hydra")
 }

@@ -22,6 +22,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -156,13 +157,23 @@ func (c *OAuth2TestClient) PostLoginRedirectHandler() {
 
 }
 
-// CreateOAuth2Client creates a test OAuth2 client in Hydra via the Client RPC.
+// CreateOAuth2Client creates a test OAuth2 client in Hydra via the partition service.
+// It creates a partition with OAuth2 config in properties, which triggers the partition
+// sync event to create a Hydra client with client_id = partition_id.
 func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName string) (*OAuth2Client, error) {
 	// Use a proper callback URI that won't interfere with OAuth2 endpoints
 	redirectURI := c.AuthServiceURL + "/oauth2/callback"
 
-	// Create a partition first (without OAuth2 config — that lives on the Client now)
-	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client", nil)
+	// Create partition with OAuth2 config in properties (triggers partition sync → Hydra client)
+	// Use comma-separated strings for lists to ensure compatibility with structpb serialisation.
+	props := data.JSONMap{
+		"redirect_uris":              redirectURI,
+		"scope":                      "openid offline offline_access profile contact",
+		"audience":                   "service_devices,service_profile,service_tenancy,service_files,authentication_tests",
+		"token_endpoint_auth_method": "none",
+	}
+
+	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client", props)
 	if err != nil {
 		if c.t != nil {
 			c.t.Logf("DEBUG: Failed to create partition for OAuth2 client: %v", err)
@@ -170,56 +181,33 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		return nil, fmt.Errorf("failed to create partition: %w", err)
 	}
 
-	// Create an OAuth2 Client for this partition
-	audiences := []string{"service_devices", "service_profile", "service_tenancy", "service_files", "authentication_tests"}
-	clientResp, err := c.PartitionCli.CreateClient(ctx, connect.NewRequest(&partitionv1.CreateClientRequest{
-		Name:          testName,
-		Type:          "public",
-		GrantTypes:    []string{"authorization_code", "refresh_token"},
-		ResponseTypes: []string{"code"},
-		RedirectUris:  []string{redirectURI},
-		Scopes:        "openid offline offline_access profile contact",
-		Audiences:     audiences,
-		Owner:         &partitionv1.CreateClientRequest_PartitionId{PartitionId: partition.GetId()},
-	}))
-	if err != nil {
-		if c.t != nil {
-			c.t.Logf("DEBUG: Failed to create client for partition %s: %v", partition.GetId(), err)
-		}
-		return nil, fmt.Errorf("failed to create OAuth2 client: %w", err)
-	}
-
-	cl := clientResp.Msg.GetData()
-	clientID := cl.GetClientId()
-
-	// Wait for the client to be synced to Hydra (synced_at gets set)
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.ClientObject, error) {
-		resp, err0 := c.PartitionCli.GetClient(ctx, connect.NewRequest(&partitionv1.GetClientRequest{
-			ClientId: clientID,
+	// Wait for partition sync to Hydra (client_id appears in properties)
+	clientID := partition.GetId()
+	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
+		resp, err0 := c.PartitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+			Id: clientID,
 		}))
 		if err0 != nil {
 			return nil, nil
 		}
-		clObj := resp.Msg.GetData()
-		// Once client properties contain Hydra response data (e.g. client_id echoed back),
-		// the sync is complete.
-		if clObj.GetProperties() != nil {
-			props := clObj.GetProperties().AsMap()
-			if _, ok := props["client_id"]; ok {
-				return clObj, nil
+		partObj := resp.Msg.GetData()
+		if partObj.GetProperties() != nil {
+			propsMap := partObj.GetProperties().AsMap()
+			if _, ok := propsMap["client_id"]; ok {
+				return partObj, nil
 			}
 		}
 		return nil, nil
 	}, 5*time.Second, 200*time.Millisecond)
 	if err != nil {
-		return nil, fmt.Errorf("client sync to Hydra timed out: %w", err)
+		return nil, fmt.Errorf("partition sync to Hydra timed out: %w", err)
 	}
 
-	c.clientIdList = append(c.clientIdList, cl.GetId())
+	c.clientIdList = append(c.clientIdList, clientID)
 
 	client := &OAuth2Client{
 		ClientID:     clientID,
-		ClientSecret: clientResp.Msg.GetClientSecret(),
+		ClientSecret: "", // public client
 		RedirectURIs: []string{redirectURI},
 		Scope:        "openid offline_access profile",
 		Audience:     []string{"authentication_tests"},
