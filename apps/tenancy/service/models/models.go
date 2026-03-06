@@ -125,9 +125,8 @@ func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partition
 // For client_credentials flows (internal/external), a ServiceAccount references
 // a Client to provide the identity (profile).
 //
-// ParentRef links a client to its owning entity:
-//   - For public/confidential clients: the partition ID
-//   - For internal/external SA clients: the service_account ID
+// ServiceAccountID is set when this client belongs to a service account.
+// If empty, the client belongs directly to the partition (user-facing).
 type Client struct {
 	data.BaseModel
 	Name                    string       `gorm:"type:varchar(100);"                                                        json:"name"`
@@ -143,7 +142,7 @@ type Client struct {
 	LogoURI                 string       `gorm:"type:text;"                                                                 json:"logo_uri"`                   // Logo URL for OIDC clients
 	PostLogoutRedirectURIs  data.JSONMap `                                                                                  json:"post_logout_redirect_uris"`  // {"uris": ["https://app.example.com/"]}
 	TokenEndpointAuthMethod string       `gorm:"type:varchar(50);"                                                          json:"token_endpoint_auth_method"` // "none", "client_secret_post", "client_secret_basic", "private_key_jwt"
-	ParentRef               string       `gorm:"type:varchar(50);index:idx_clients_parent_ref"                              json:"parent_ref"`                 // FK → Partition.ID or ServiceAccount.ID
+	ServiceAccountID        string       `gorm:"type:varchar(50);index:idx_clients_service_account_id"                      json:"service_account_id"`         // FK → ServiceAccount.ID; empty = partition client
 	Properties              data.JSONMap `                                                                                  json:"properties"`
 	State                   int32        `                                                                                  json:"state"`
 	SyncedAt                *time.Time   `gorm:"index"                                                                      json:"synced_at"`
@@ -183,8 +182,8 @@ func (c *Client) ToAPI() *partitionv1.ClientObject {
 	if c.TokenEndpointAuthMethod != "" {
 		props["token_endpoint_auth_method"] = c.TokenEndpointAuthMethod
 	}
-	if c.ParentRef != "" {
-		props["parent_ref"] = c.ParentRef
+	if c.ServiceAccountID != "" {
+		props["service_account_id"] = c.ServiceAccountID
 	}
 	if len(props) > 0 {
 		obj.Properties = props.ToProtoStruct()

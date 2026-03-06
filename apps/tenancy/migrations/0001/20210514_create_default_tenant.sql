@@ -21,19 +21,6 @@ VALUES ('c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
 VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
         'System manager', 'Default base partition in the base tenant', '{
-    "scope": "openid offline offline_access profile contact",
-    "audience": [
-      "service_tenancy",
-      "service_devices",
-      "service_profile",
-      "service_notification",
-      "service_payments",
-      "service_files",
-      "service_ledger"
-    ],
-    "redirect_uris": [
-      "https://admin.antinvestor.com/auth/callback"
-    ],
     "support_contacts": {
       "msisdn": "+256757546244",
       "email": "info@antinvestor.com"
@@ -44,7 +31,7 @@ VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
     type, grant_types, response_types, scopes, audiences, redirect_uris,
-    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
 ) VALUES (
     'd6l82t4pf2t82gudn7s0',
     'c2f4j7au6s7f91uqnojg',                       -- tenant: System Manager
@@ -59,6 +46,5 @@ INSERT INTO clients (
     '{"uris": ["https://admin.antinvestor.com/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://admin.antinvestor.com/"]}',
-    'none',
-    'c2f4j7au6s7f91uqnokg'                        -- parent_ref → Partition.ID (System Manager)
+    'none'
 ) ON CONFLICT (id) DO NOTHING;

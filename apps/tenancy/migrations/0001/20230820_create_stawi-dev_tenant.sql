@@ -6,17 +6,6 @@ INSERT INTO partitions (id, tenant_id, partition_id, name, description, properti
 VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
         'Stawi AI Builder', 'Default stawi ai builder partition to serve the masses',
         '{
-          "scope": "openid offline offline_access profile contact",
-          "audience": [
-          "service_trustage",
-          "service_foundry",
-          "service_devices",
-          "service_profile",
-          "service_files"
-          ],
-          "redirect_uris": [
-            "https://stawi.dev/auth/callback"
-          ],
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"
@@ -27,7 +16,7 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
     type, grant_types, response_types, scopes, audiences, redirect_uris,
-    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
 ) VALUES (
     'd6l82t4pf2t82gudn7ug',
     '9bsv0s0hijjg02z5lr4g',
@@ -42,6 +31,5 @@ INSERT INTO clients (
     '{"uris": ["https://stawi.dev/auth/callback"]}',
     'https://static.stawi.dev/logo.png',
     '{"uris": ["https://stawi.dev"]}',
-    'none',
-    '9bsv0s0hid5g02qkl7gjg'                       -- parent_ref → Partition.ID (Stawi AI Builder)
+    'none'
 ) ON CONFLICT (id) DO NOTHING;

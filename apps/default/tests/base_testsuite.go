@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
@@ -36,6 +35,7 @@ import (
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type DepsBuilder struct {
@@ -319,45 +319,22 @@ func setupProfileClient(
 
 func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {
 
+	var propsStruct *structpb.Struct
+	if properties != nil {
+		propsStruct = properties.ToProtoStruct()
+	}
+
 	result, err := partitionCli.CreatePartition(ctx, connect.NewRequest(&partitionv1.CreatePartitionRequest{
 		TenantId:    "c2f4j7au6s7f91uqnojg",
 		ParentId:    "c2f4j7au6s7f91uqnokg",
 		Name:        name,
 		Description: description,
-		Properties:  properties.ToProtoStruct(),
+		Properties:  propsStruct,
 	}))
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("failed to create partition")
 		return nil, err
 	}
 
-	res := result.Msg.GetData()
-
-	// wait for partition to be synced
-	res, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
-
-		response, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
-			Id: res.GetId(),
-		}))
-		if err0 != nil {
-			return nil, nil
-		}
-
-		prt := response.Msg.GetData()
-
-		var partProperties data.JSONMap = prt.GetProperties().AsMap()
-		_, ok := partProperties["client_id"]
-		if ok {
-			return prt, nil
-		}
-
-		return nil, nil
-
-	}, 2*time.Second, 200*time.Millisecond)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to synchronise partition in time: %w", err)
-	}
-
-	return res, nil
+	return result.Msg.GetData(), nil
 }

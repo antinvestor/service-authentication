@@ -170,10 +170,10 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		return nil, fmt.Errorf("failed to create service account record: %w", createErr)
 	}
 
-	// Set ParentRef on the client to the SA ID now that both exist
-	client.ParentRef = sa.GetID()
-	if _, updateErr := sb.clientRepo.Update(ctx, client, "parent_ref"); updateErr != nil {
-		util.Log(ctx).WithError(updateErr).Warn("failed to set client parent_ref to service account")
+	// Link client to its owning service account
+	client.ServiceAccountID = sa.GetID()
+	if _, updateErr := sb.clientRepo.Update(ctx, client, "service_account_id"); updateErr != nil {
+		util.Log(ctx).WithError(updateErr).Warn("failed to set client service_account_id")
 	}
 
 	log = log.WithField("service_account_id", sa.GetID()).

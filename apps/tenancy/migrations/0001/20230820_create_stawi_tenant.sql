@@ -6,19 +6,6 @@ INSERT INTO partitions (id, tenant_id, partition_id, name, description, properti
 VALUES ('9bsv0s0hijjg02qk7l1g', '9bsv0s0hijjg02z5lbjg', '9bsv0s0hijjg02qk7l1g',
         'Stawi', 'Default stawi partition to serve the masses',
         '{
-          "scope": "openid offline offline_access profile contact",
-          "audience": [
-            "service_chat_drone",
-            "service_chat_gateway",
-            "service_devices",
-            "service_profile",
-            "service_files"
-          ],
-          "redirect_uris": [
-            "https://app.stawi.im/sso/redirect",
-            "com.antinvestor.chat://sso/redirect",
-            "http://localhost:5170/sso/redirect"
-          ],
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"
@@ -29,7 +16,7 @@ VALUES ('9bsv0s0hijjg02qk7l1g', '9bsv0s0hijjg02z5lbjg', '9bsv0s0hijjg02qk7l1g',
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
     type, grant_types, response_types, scopes, audiences, redirect_uris,
-    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, parent_ref
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
 ) VALUES (
     'd6l82t4pf2t82gudn7tg',
     '9bsv0s0hijjg02z5lbjg',
@@ -44,7 +31,6 @@ INSERT INTO clients (
     '{"uris": ["https://app.stawi.im/sso/redirect","com.antinvestor.chat://sso/redirect","http://localhost:5170/sso/redirect"]}',
     'https://static.stawi.im/logo.png',
     '{"uris": ["https://app.stawi.im/sso/logout"]}',
-    'none',
-    '9bsv0s0hijjg02qk7l1g'                        -- parent_ref → Partition.ID (Stawi)
+    'none'
 ) ON CONFLICT (id) DO NOTHING;
 

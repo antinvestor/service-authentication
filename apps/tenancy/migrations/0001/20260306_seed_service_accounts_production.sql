@@ -19,45 +19,11 @@
 -- ==========================================================================
 
 -- ──────────────────────────────────────────────────────────────
--- authentication_tests (used by integration tests)
--- ──────────────────────────────────────────────────────────────
-INSERT INTO clients (
-    id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
-) VALUES (
-    'c2f4j7au6s7f91uqnong',
-    'c2f4j7au6s7f91uqnojg',                       -- tenant: System Manager
-    'c2f4j7au6s7f91uqnokg',                        -- partition: System Manager
-    'sa-authentication_tests',
-    'authentication_tests',
-    'vkGiJroO9dAS5eFnuaGy',
-    'internal',
-    '{"types": ["client_credentials"]}',
-    'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}'
-) ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO service_accounts (
-    id, tenant_id, partition_id, profile_id,
-    client_id, client_ref, type, audiences, properties
-) VALUES (
-    'c2f4j7au6s7f91uqnomg',
-    'c2f4j7au6s7f91uqnojg',                       -- tenant: System Manager
-    'c2f4j7au6s7f91uqnokg',                        -- partition: System Manager
-    'authentication_tests',                         -- profile_id (subject in tokens)
-    'authentication_tests',                         -- client_id (denormalized for lookup)
-    'c2f4j7au6s7f91uqnong',                        -- client_ref → Client.id above
-    'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
-    '{}'
-) ON CONFLICT (id) DO NOTHING;
-
--- ──────────────────────────────────────────────────────────────
 -- service_authentication
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
 ) VALUES (
     'c2f4j7au6s7f91uqnoog',
     'c2f4j7au6s7f91uqnojg',
@@ -68,7 +34,9 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}'
+    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
+    'client_secret_post',
+    'c2f4j7au6s7f91uqnolg'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -91,7 +59,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
 ) VALUES (
     'c2f4j7au6s7f91uqnopg',
     'c2f4j7au6s7f91uqnojg',
@@ -102,7 +70,9 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notifications","service_tenancy"]}'
+    '{"namespaces": ["service_notifications","service_tenancy"]}',
+    'client_secret_post',
+    'c2f4j7au6s7f91uqnoqg'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -125,7 +95,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
 ) VALUES (
     'c2f4j7au6s7f91uqnorg',
     'c2f4j7au6s7f91uqnojg',
@@ -136,7 +106,9 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notifications","service_profile"]}'
+    '{"namespaces": ["service_notifications","service_profile"]}',
+    'client_secret_post',
+    'c2f4j7au6s7f91uqnosg'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -159,7 +131,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
 ) VALUES (
     'c2f4j7au6s7f91uqnotg',
     'c2f4j7au6s7f91uqnojg',
@@ -170,7 +142,9 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_tenancy"]}'
+    '{"namespaces": ["service_tenancy"]}',
+    'client_secret_post',
+    'c2f4j7au6s7f91uqnoug'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -193,7 +167,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
 ) VALUES (
     'c2f4j7au6s7f91uqnovg',
     'c2f4j7au6s7f91uqnojg',
@@ -204,7 +178,9 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_tenancy"]}'
+    '{"namespaces": ["service_tenancy"]}',
+    'client_secret_post',
+    'c2f4j7au6s7f91uqnp0g'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (

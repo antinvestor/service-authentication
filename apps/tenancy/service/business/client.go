@@ -127,8 +127,8 @@ func (cb *clientBusiness) CreateClient(
 		Scopes:        scopes,
 		Audiences:     toJSONMapSlice("namespaces", audiences),
 		Roles:         toJSONMapSlice("roles", roles),
-		ParentRef:     partitionID,
-		Properties:    data.JSONMap(properties),
+		// ServiceAccountID left empty — this is a partition client
+		Properties: data.JSONMap(properties),
 		BaseModel: data.BaseModel{
 			TenantID:    partition.TenantID,
 			PartitionID: partitionID,
