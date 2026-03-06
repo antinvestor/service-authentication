@@ -27,11 +27,13 @@ type PartitionBusiness interface {
 	UpdatePartition(
 		ctx context.Context,
 		request *partitionv1.UpdatePartitionRequest) (*partitionv1.PartitionObject, error)
+	RemovePartition(ctx context.Context, id string) error
 	ListPartition(
 		ctx context.Context,
 		request *partitionv1.ListPartitionRequest) ([]*partitionv1.PartitionObject, error)
 
 	RemovePartitionRole(ctx context.Context, request *partitionv1.RemovePartitionRoleRequest) error
+	UpdatePartitionRole(ctx context.Context, request *partitionv1.UpdatePartitionRoleRequest) (*partitionv1.PartitionRoleObject, error)
 	ListPartitionRoles(
 		ctx context.Context,
 		request *partitionv1.ListPartitionRoleRequest) (*partitionv1.ListPartitionRoleResponse, error)
@@ -46,22 +48,31 @@ func NewPartitionBusiness(
 	tenantRepo repository.TenantRepository,
 	partitionRepo repository.PartitionRepository,
 	partitionRoleRepo repository.PartitionRoleRepository,
+	accessRepo repository.AccessRepository,
+	clientRepo repository.ClientRepository,
+	serviceAccountRepo repository.ServiceAccountRepository,
 ) PartitionBusiness {
 	return &partitionBusiness{
-		cfg:               cfg,
-		eventsMan:         eventsMan,
-		partitionRepo:     partitionRepo,
-		partitionRoleRepo: partitionRoleRepo,
-		tenantRepo:        tenantRepo,
+		cfg:                cfg,
+		eventsMan:          eventsMan,
+		partitionRepo:      partitionRepo,
+		partitionRoleRepo:  partitionRoleRepo,
+		tenantRepo:         tenantRepo,
+		accessRepo:         accessRepo,
+		clientRepo:         clientRepo,
+		serviceAccountRepo: serviceAccountRepo,
 	}
 }
 
 type partitionBusiness struct {
-	eventsMan         fevents.Manager
-	cfg               config.PartitionConfig
-	tenantRepo        repository.TenantRepository
-	partitionRepo     repository.PartitionRepository
-	partitionRoleRepo repository.PartitionRoleRepository
+	eventsMan          fevents.Manager
+	cfg                config.PartitionConfig
+	tenantRepo         repository.TenantRepository
+	partitionRepo      repository.PartitionRepository
+	partitionRoleRepo  repository.PartitionRoleRepository
+	accessRepo         repository.AccessRepository
+	clientRepo         repository.ClientRepository
+	serviceAccountRepo repository.ServiceAccountRepository
 }
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
@@ -123,8 +134,16 @@ func (pb *partitionBusiness) buildSearchQuery(ctx context.Context, query *partit
 		searchProperties["profile_id"] = profileID
 	}
 
-	return data.NewSearchQuery(data.WithSearchLimit(int(query.GetCount())),
-		data.WithSearchOffset(int(query.GetPage())), data.WithSearchFiltersAndByValue(filterProperties),
+	var limit, offset int
+	if cursor := query.GetCursor(); cursor != nil {
+		limit = int(cursor.GetLimit())
+		if p := cursor.GetPage(); p != "" {
+			_, _ = fmt.Sscanf(p, "%d", &offset)
+		}
+	}
+
+	return data.NewSearchQuery(data.WithSearchLimit(limit),
+		data.WithSearchOffset(offset), data.WithSearchFiltersAndByValue(filterProperties),
 		data.WithSearchFiltersOrByValue(searchProperties))
 }
 
@@ -251,6 +270,80 @@ func (pb *partitionBusiness) UpdatePartition(
 	return partition.ToAPI(), nil
 }
 
+func (pb *partitionBusiness) RemovePartition(ctx context.Context, id string) error {
+	// Check for child partitions
+	children, err := pb.partitionRepo.GetChildren(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check child partitions: %w", err)
+	}
+	if len(children) > 0 {
+		return fmt.Errorf("cannot remove partition: %d child partition(s) still exist", len(children))
+	}
+
+	// Check for access records
+	accessCount, err := pb.accessRepo.CountByPartitionID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check access records: %w", err)
+	}
+	if accessCount > 0 {
+		return fmt.Errorf("cannot remove partition: %d access record(s) still exist", accessCount)
+	}
+
+	// Check for clients
+	clientCount, err := pb.clientRepo.CountByPartitionID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check clients: %w", err)
+	}
+	if clientCount > 0 {
+		return fmt.Errorf("cannot remove partition: %d client(s) still exist", clientCount)
+	}
+
+	// Check for service accounts
+	saCount, err := pb.serviceAccountRepo.CountByPartitionID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check service accounts: %w", err)
+	}
+	if saCount > 0 {
+		return fmt.Errorf("cannot remove partition: %d service account(s) still exist", saCount)
+	}
+
+	return pb.partitionRepo.Delete(ctx, id)
+}
+
+func (pb *partitionBusiness) UpdatePartitionRole(
+	ctx context.Context,
+	request *partitionv1.UpdatePartitionRoleRequest,
+) (*partitionv1.PartitionRoleObject, error) {
+	role, err := pb.partitionRoleRepo.GetByID(ctx, request.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	if request.GetName() != "" {
+		role.Name = request.GetName()
+	}
+
+	if request.GetProperties() != nil {
+		if role.Properties == nil {
+			role.Properties = make(data.JSONMap)
+		}
+		reqProps := request.GetProperties().AsMap()
+		isDefault, ok := reqProps["is_default"].(bool)
+		if ok {
+			role.IsDefault = isDefault
+			delete(reqProps, "is_default")
+		}
+		maps.Copy(role.Properties, reqProps)
+	}
+
+	_, err = pb.partitionRoleRepo.Update(ctx, role, "name", "is_default", "properties")
+	if err != nil {
+		return nil, err
+	}
+
+	return toAPIPartitionRole(role), nil
+}
+
 func (pb *partitionBusiness) ListPartitionRoles(
 	ctx context.Context,
 	request *partitionv1.ListPartitionRoleRequest,
@@ -267,7 +360,7 @@ func (pb *partitionBusiness) ListPartitionRoles(
 	}
 
 	return &partitionv1.ListPartitionRoleResponse{
-		Role: response,
+		Data: response,
 	}, nil
 }
 

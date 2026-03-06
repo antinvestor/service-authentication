@@ -122,6 +122,57 @@ func (suite *LoginRepositoryTestSuite) TestGetByProfileID() {
 	})
 }
 
+func (suite *LoginRepositoryTestSuite) TestGetByID() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		loginRepo := deps.LoginRepo
+
+		login := &models.Login{
+			ProfileID: "profile-getbyid",
+			Source:    "direct",
+		}
+		err := loginRepo.Create(ctx, login)
+		require.NoError(t, err)
+
+		found, err := loginRepo.GetByID(ctx, login.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "profile-getbyid", found.ProfileID)
+	})
+}
+
+func (suite *LoginRepositoryTestSuite) TestGetByID_NotFound() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		loginRepo := deps.LoginRepo
+
+		_, err := loginRepo.GetByID(ctx, "nonexistent")
+		assert.Error(t, err)
+	})
+}
+
+func (suite *LoginRepositoryTestSuite) TestUpdate() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		loginRepo := deps.LoginRepo
+
+		login := &models.Login{
+			ProfileID: "profile-upd",
+			Source:    "direct",
+		}
+		err := loginRepo.Create(ctx, login)
+		require.NoError(t, err)
+		require.NotEmpty(t, login.ID)
+
+		login.Source = "google"
+		_, err = loginRepo.Update(ctx, login, "source")
+		require.NoError(t, err)
+
+		found, err := loginRepo.GetByID(ctx, login.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "google", found.Source)
+	})
+}
+
 func TestLoginRepository(t *testing.T) {
 	suite.Run(t, new(LoginRepositoryTestSuite))
 }

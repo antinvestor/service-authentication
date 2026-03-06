@@ -28,7 +28,7 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) 
 
 	seen := map[string]bool{"user": true}
 	for stream.Receive() {
-		for _, ar := range stream.Msg().GetRole() {
+		for _, ar := range stream.Msg().GetData() {
 			if r := ar.GetRole(); r != nil && r.GetName() != "" && !seen[r.GetName()] {
 				seen[r.GetName()] = true
 				roles = append(roles, r.GetName())

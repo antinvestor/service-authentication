@@ -171,7 +171,7 @@ func TestAccessRole_ToAPI(t *testing.T) {
 
 	api := ar.ToAPI(roleObj.ToAPI())
 	require.NotNil(t, api)
-	assert.Equal(t, "ar-1", api.AccessRoleId)
+	assert.Equal(t, "ar-1", api.Id)
 	assert.Equal(t, "access-1", api.AccessId)
 	assert.NotNil(t, api.Role)
 	assert.Equal(t, "admin", api.Role.Name)
@@ -185,6 +185,267 @@ func TestAccessRole_ToAPI_NilRole(t *testing.T) {
 
 	api := ar.ToAPI(nil)
 	require.NotNil(t, api)
-	assert.Equal(t, "ar-2", api.AccessRoleId)
+	assert.Equal(t, "ar-2", api.Id)
 	assert.Nil(t, api.Role)
+}
+
+// Client tests
+
+func TestClient_ToAPI(t *testing.T) {
+	client := &Client{
+		BaseModel: data.BaseModel{
+			ID:          "client-1",
+			TenantID:    "tenant-1",
+			PartitionID: "part-1",
+			CreatedAt:   time.Now(),
+		},
+		Name:         "Test Client",
+		ClientID:     "oauth-client-id",
+		ClientSecret: "secret",
+		Type:         "public",
+		GrantTypes:   data.JSONMap{"grant_types": []any{"authorization_code"}},
+		RedirectURIs: data.JSONMap{"uris": []any{"https://app.example.com/callback"}},
+		Scopes:       "openid offline_access",
+		Audiences:    data.JSONMap{"namespaces": []any{"service_profile"}},
+		Roles:        data.JSONMap{"roles": []any{"admin", "member"}},
+		Properties:   data.JSONMap{"custom": "value"},
+	}
+
+	api := client.ToAPI()
+	require.NotNil(t, api)
+	assert.Equal(t, "client-1", api.Id)
+	assert.Equal(t, "oauth-client-id", api.ClientId)
+	assert.Equal(t, "public", api.Type)
+	assert.Equal(t, "openid offline_access", api.Scopes)
+	assert.Equal(t, []string{"authorization_code"}, api.GrantTypes)
+	assert.Equal(t, []string{"https://app.example.com/callback"}, api.RedirectUris)
+	assert.Equal(t, []string{"service_profile"}, api.Audiences)
+	assert.Equal(t, []string{"admin", "member"}, api.Roles)
+	assert.NotNil(t, api.Properties)
+}
+
+func TestClient_ToAPI_Deleted(t *testing.T) {
+	client := &Client{
+		BaseModel: data.BaseModel{
+			ID:        "client-2",
+			DeletedAt: gorm.DeletedAt{Time: time.Now(), Valid: true},
+		},
+		Name:     "Deleted Client",
+		ClientID: "deleted-id",
+		Type:     "internal",
+	}
+
+	api := client.ToAPI()
+	assert.Equal(t, commonv1.STATE_DELETED, api.State)
+}
+
+func TestClient_ToAPI_NilOptionalFields(t *testing.T) {
+	client := &Client{
+		BaseModel: data.BaseModel{ID: "client-3"},
+		Name:      "Minimal",
+		ClientID:  "min-id",
+		Type:      "public",
+	}
+
+	api := client.ToAPI()
+	require.NotNil(t, api)
+	assert.Empty(t, api.Audiences)
+	assert.Nil(t, api.Properties)
+}
+
+func TestClient_GetRoleNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		roles    data.JSONMap
+		expected []string
+	}{
+		{"nil roles", nil, nil},
+		{"empty roles", data.JSONMap{}, nil},
+		{"missing key", data.JSONMap{"other": "value"}, nil},
+		{"[]any roles", data.JSONMap{"roles": []any{"admin", "member"}}, []string{"admin", "member"}},
+		{"[]string roles", data.JSONMap{"roles": []string{"viewer"}}, []string{"viewer"}},
+		{"mixed types in []any", data.JSONMap{"roles": []any{"admin", 123}}, []string{"admin"}},
+		{"wrong type", data.JSONMap{"roles": "not-a-slice"}, nil},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &Client{Roles: tc.roles}
+			result := client.GetRoleNames()
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+// ServiceAccount tests
+
+func TestServiceAccount_ToAPI(t *testing.T) {
+	sa := &ServiceAccount{
+		BaseModel: data.BaseModel{
+			ID:          "sa-1",
+			TenantID:    "tenant-1",
+			PartitionID: "part-1",
+			CreatedAt:   time.Now(),
+		},
+		ProfileID:  "profile-1",
+		ClientID:   "sa-client-id",
+		ClientRef:  "client-ref-1",
+		Type:       "internal",
+		Audiences:  data.JSONMap{"namespaces": []any{"service_tenancy"}},
+		Properties: data.JSONMap{"custom": "prop"},
+	}
+
+	api := sa.ToAPI()
+	require.NotNil(t, api)
+	assert.Equal(t, "sa-1", api.Id)
+	assert.Equal(t, "tenant-1", api.TenantId)
+	assert.Equal(t, "part-1", api.PartitionId)
+	assert.Equal(t, "profile-1", api.ProfileId)
+	assert.Equal(t, "sa-client-id", api.ClientId)
+	assert.Equal(t, "internal", api.Type)
+	assert.Equal(t, []string{"service_tenancy"}, api.Audiences)
+	assert.NotNil(t, api.Properties)
+}
+
+func TestServiceAccount_ToAPI_Deleted(t *testing.T) {
+	sa := &ServiceAccount{
+		BaseModel: data.BaseModel{
+			ID:        "sa-2",
+			DeletedAt: gorm.DeletedAt{Time: time.Now(), Valid: true},
+		},
+		ProfileID: "p-2",
+		ClientID:  "sa-del",
+		Type:      "external",
+	}
+
+	api := sa.ToAPI()
+	assert.Equal(t, commonv1.STATE_DELETED, api.State)
+	assert.Equal(t, "external", api.Type)
+}
+
+func TestServiceAccount_ToAPI_NilProperties(t *testing.T) {
+	sa := &ServiceAccount{
+		BaseModel: data.BaseModel{ID: "sa-3"},
+		ProfileID: "p-3",
+		ClientID:  "sa-min",
+		Type:      "internal",
+	}
+
+	api := sa.ToAPI()
+	require.NotNil(t, api)
+	assert.Equal(t, "internal", api.Type)
+	assert.Nil(t, api.Properties)
+	assert.Nil(t, api.Audiences)
+}
+
+func TestPartition_ToAPI_WithDomain(t *testing.T) {
+	partition := &Partition{
+		BaseModel: data.BaseModel{
+			ID:       "part-domain",
+			TenantID: "t-1",
+		},
+		Name:       "Domain Partition",
+		Domain:     "example.com",
+		Properties: data.JSONMap{"key": "val"},
+	}
+
+	api := partition.ToAPI()
+	require.NotNil(t, api)
+	// Domain should be a first-class field
+	assert.Equal(t, "example.com", api.Domain)
+	props := api.Properties.AsMap()
+	assert.Equal(t, "val", props["key"])
+}
+
+func TestPartition_ToAPI_NoDomain(t *testing.T) {
+	partition := &Partition{
+		BaseModel:  data.BaseModel{ID: "part-no-domain"},
+		Properties: data.JSONMap{"key": "val"},
+	}
+
+	api := partition.ToAPI()
+	assert.Empty(t, api.Domain)
+}
+
+func TestPartitionRole_ToAPI_WithIsDefault(t *testing.T) {
+	role := &PartitionRole{
+		BaseModel:  data.BaseModel{ID: "role-def", PartitionID: "p-1"},
+		Name:       "default-role",
+		IsDefault:  true,
+		Properties: data.JSONMap{},
+	}
+
+	api := role.ToAPI()
+	props := api.Properties.AsMap()
+	assert.Equal(t, true, props["is_default"])
+}
+
+func TestClient_ToServiceAccountAPI(t *testing.T) {
+	client := &Client{
+		BaseModel: data.BaseModel{
+			ID:          "client-sa-1",
+			TenantID:    "tenant-1",
+			PartitionID: "part-1",
+			CreatedAt:   time.Now(),
+		},
+		Name:         "SA Client",
+		ClientID:     "sa-oauth-id",
+		Type:         "internal",
+		GrantTypes:   data.JSONMap{"grant_types": []any{"client_credentials"}},
+		RedirectURIs: data.JSONMap{"uris": []any{"https://example.com"}},
+		Roles:        data.JSONMap{"roles": []any{"admin"}},
+		Audiences:    data.JSONMap{"namespaces": []any{"service_profile"}},
+		Properties:   data.JSONMap{"custom": "val"},
+	}
+
+	api := client.ToServiceAccountAPI()
+	require.NotNil(t, api)
+	assert.Equal(t, "client-sa-1", api.Id)
+	assert.Equal(t, "tenant-1", api.TenantId)
+	assert.Equal(t, "part-1", api.PartitionId)
+	assert.Equal(t, "sa-oauth-id", api.ClientId)
+	assert.Equal(t, "internal", api.Type)
+	assert.Equal(t, []string{"service_profile"}, api.Audiences)
+	assert.NotNil(t, api.Properties)
+	props := api.Properties.AsMap()
+	assert.Equal(t, "internal", props["type"])
+}
+
+func TestClient_ToServiceAccountAPI_Deleted(t *testing.T) {
+	client := &Client{
+		BaseModel: data.BaseModel{
+			ID:        "client-sa-2",
+			DeletedAt: gorm.DeletedAt{Time: time.Now(), Valid: true},
+		},
+		ClientID: "sa-del",
+		Type:     "external",
+	}
+
+	api := client.ToServiceAccountAPI()
+	assert.Equal(t, commonv1.STATE_DELETED, api.State)
+	assert.Equal(t, "external", api.Type)
+}
+
+func TestJsonMapToStringSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        data.JSONMap
+		key      string
+		expected []string
+	}{
+		{"nil map", nil, "key", nil},
+		{"missing key", data.JSONMap{"other": "val"}, "key", nil},
+		{"[]any strings", data.JSONMap{"k": []any{"a", "b"}}, "k", []string{"a", "b"}},
+		{"[]string", data.JSONMap{"k": []string{"x", "y"}}, "k", []string{"x", "y"}},
+		{"[]any mixed types", data.JSONMap{"k": []any{"a", 123, "b"}}, "k", []string{"a", "b"}},
+		{"wrong type", data.JSONMap{"k": 42}, "k", nil},
+		{"empty []any", data.JSONMap{"k": []any{}}, "k", []string{}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := jsonMapToStringSlice(tc.m, tc.key)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }

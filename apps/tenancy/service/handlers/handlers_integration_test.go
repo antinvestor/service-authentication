@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
@@ -222,7 +223,7 @@ func (s *HandlerTestSuite) TestListTenant_Success() {
 				s.Require().NoError(err, "failed creating tenant %d", i)
 			}
 
-			tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{Count: 50})
+			tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{Cursor: &commonv1.PageCursor{Limit: 50}})
 
 			s.Require().NoError(err)
 			s.Require().GreaterOrEqual(len(tenants), 2)
@@ -344,7 +345,7 @@ func (s *HandlerTestSuite) TestListPartition_Success() {
 				s.Require().NoError(err, "failed creating partition %d", i)
 			}
 
-			partitions, err := deps.PartitionBusiness.ListPartition(ctx, &partitionv1.ListPartitionRequest{Count: 50})
+			partitions, err := deps.PartitionBusiness.ListPartition(ctx, &partitionv1.ListPartitionRequest{Cursor: &commonv1.PageCursor{Limit: 50}})
 
 			s.Require().NoError(err)
 			s.Require().GreaterOrEqual(len(partitions), 2)
@@ -469,11 +470,12 @@ func (s *HandlerTestSuite) TestListPartitionRoles_Success() {
 				s.Require().NoError(err)
 			}
 
-			req := connect.NewRequest(&partitionv1.ListPartitionRoleRequest{PartitionId: partition.GetID()})
-			resp, err := deps.Server.ListPartitionRoles(ctx, req)
+			listReq := &partitionv1.ListPartitionRoleRequest{}
+			listReq.SetPartitionId(partition.GetID())
+			resp, err := deps.PartitionBusiness.ListPartitionRoles(ctx, listReq)
 
 			s.Require().NoError(err)
-			s.Require().GreaterOrEqual(len(resp.Msg.GetRole()), 2)
+			s.Require().GreaterOrEqual(len(resp.GetData()), 2)
 		})
 	})
 }
@@ -725,7 +727,7 @@ func (s *HandlerTestSuite) TestCreateAccessRole_Success() {
 			resp, err := deps.Server.CreateAccessRole(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.AccessRoleId)
+			s.Require().NotEmpty(resp.Msg.Data.Id)
 		})
 	})
 }
@@ -762,11 +764,12 @@ func (s *HandlerTestSuite) TestListAccessRoles_Success() {
 				s.Require().NoError(err)
 			}
 
-			req := connect.NewRequest(&partitionv1.ListAccessRoleRequest{AccessId: access.GetID()})
-			resp, err := deps.Server.ListAccessRoles(ctx, req)
+			listReq := &partitionv1.ListAccessRoleRequest{}
+			listReq.SetAccessId(access.GetID())
+			resp, err := deps.AccessBusiness.ListAccessRoles(ctx, listReq)
 
 			s.Require().NoError(err)
-			s.Require().Len(resp.Msg.GetRole(), 2)
+			s.Require().Len(resp.GetData(), 2)
 		})
 	})
 }
@@ -1191,7 +1194,10 @@ func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_Success() {
 			tenantID := util.IDString()
 
 			partition := s.createTestPartition(ctx, deps, tenantID, "P")
-			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+			s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
+
+			// Use system_internal role — this is an internal service endpoint
+			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, partition.GetID(), profileID, []string{"system_internal"})
 
 			clientID := util.IDString()
 			sa := &models.ServiceAccount{
@@ -1235,7 +1241,10 @@ func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_NotFound() {
 
 			profileID := util.IDString()
 			tenantID := util.IDString()
-			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+			s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			// Use system_internal role — this is an internal service endpoint
+			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, tenantID, profileID, []string{"system_internal"})
 
 			mux := http.NewServeMux()
 			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
@@ -1247,6 +1256,32 @@ func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_NotFound() {
 			mux.ServeHTTP(rw, req)
 
 			s.Require().Equal(http.StatusNotFound, rw.Code)
+		})
+	})
+}
+
+func (s *HandlerTestSuite) TestGetServiceAccountByClientID_HTTP_Forbidden() {
+	s.T().Run("get_sa_by_client_id_http_forbidden", func(t *testing.T) {
+		s.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
+			ctx, svc, deps := s.CreateService(t, depOpts)
+
+			profileID := util.IDString()
+			tenantID := util.IDString()
+			s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
+
+			// Regular user role — should be forbidden
+			ctx = s.WithAuthClaimsAndRoles(ctx, tenantID, tenantID, profileID, []string{"user"})
+
+			mux := http.NewServeMux()
+			mux.HandleFunc(handlers.ServiceAccountByClientIDPath, deps.Server.GetServiceAccountByClientID)
+
+			req := httptest.NewRequest(http.MethodGet, "/_system/service-account/by-client-id/some-id", nil)
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+
+			mux.ServeHTTP(rw, req)
+
+			s.Require().Equal(http.StatusForbidden, rw.Code)
 		})
 	})
 }

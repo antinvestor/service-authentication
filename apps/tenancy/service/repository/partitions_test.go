@@ -222,8 +222,13 @@ func (suite *PartitionTestSuite) TestDelete() {
 		err = partitionRepo.Create(ctx, &childPartition)
 		require.NoError(t, err)
 
+		// Repository-level Delete no longer checks guards (moved to business layer).
+		// Delete child first, then parent.
+		err = partitionRepo.Delete(ctx, childPartition.GetID())
+		require.NoError(t, err)
+
 		err = partitionRepo.Delete(ctx, parentPartition.GetID())
-		require.Error(t, err)
+		require.NoError(t, err)
 
 		// Execute
 		err = partitionRepo.Delete(ctx, partition.GetID())
@@ -615,6 +620,143 @@ func (suite *PartitionTestSuite) TestGetRolesByID() {
 
 		// Verify
 		assert.Len(t, roles, 2, "Should have two roles")
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetByDomain() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+
+		tenant := models.Tenant{Name: "default", Description: "Test"}
+		err := tenantRepo.Create(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:      "Domain Partition",
+			Domain:    "unique-domain-test.example.com",
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &partition)
+		require.NoError(t, err)
+
+		found, err := partitionRepo.GetByDomain(ctx, "unique-domain-test.example.com")
+		require.NoError(t, err)
+		assert.Equal(t, partition.GetID(), found.GetID())
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetParents() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+
+		tenant := models.Tenant{Name: "default", Description: "Test"}
+		err := tenantRepo.Create(ctx, &tenant)
+		require.NoError(t, err)
+
+		grandparent := models.Partition{
+			Name:      "Grandparent",
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &grandparent)
+		require.NoError(t, err)
+
+		parent := models.Partition{
+			Name:      "Parent",
+			ParentID:  grandparent.GetID(),
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &parent)
+		require.NoError(t, err)
+
+		child := models.Partition{
+			Name:      "Child",
+			ParentID:  parent.GetID(),
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &child)
+		require.NoError(t, err)
+
+		parents, err := partitionRepo.GetParents(ctx, child.GetID())
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(parents), 2, "Should have at least grandparent and parent")
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetDefaultByPartitionID() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
+
+		tenant := models.Tenant{Name: "default", Description: "Test"}
+		err := tenantRepo.Create(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:      "Role Partition",
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &partition)
+		require.NoError(t, err)
+
+		defaultRole := models.PartitionRole{
+			BaseModel: data.BaseModel{PartitionID: partition.GetID()},
+			Name:      "member",
+			IsDefault: true,
+		}
+		err = partitionRoleRepo.Create(ctx, &defaultRole)
+		require.NoError(t, err)
+
+		nonDefaultRole := models.PartitionRole{
+			BaseModel: data.BaseModel{PartitionID: partition.GetID()},
+			Name:      "admin",
+			IsDefault: false,
+		}
+		err = partitionRoleRepo.Create(ctx, &nonDefaultRole)
+		require.NoError(t, err)
+
+		defaults, err := partitionRoleRepo.GetDefaultByPartitionID(ctx, partition.GetID())
+		require.NoError(t, err)
+		assert.Len(t, defaults, 1)
+		assert.Equal(t, "member", defaults[0].Name)
+	})
+}
+
+func (suite *PartitionTestSuite) TestGetByPartitionAndNames() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, _, deps := suite.CreateService(t, dep)
+		tenantRepo := deps.TenantRepo
+		partitionRepo := deps.PartitionRepo
+		partitionRoleRepo := deps.PartitionRoleRepo
+
+		tenant := models.Tenant{Name: "default", Description: "Test"}
+		err := tenantRepo.Create(ctx, &tenant)
+		require.NoError(t, err)
+
+		partition := models.Partition{
+			Name:      "Named Roles Partition",
+			BaseModel: data.BaseModel{TenantID: tenant.GetID()},
+		}
+		err = partitionRepo.Create(ctx, &partition)
+		require.NoError(t, err)
+
+		for _, name := range []string{"viewer", "editor", "admin"} {
+			role := models.PartitionRole{
+				BaseModel: data.BaseModel{PartitionID: partition.GetID()},
+				Name:      name,
+			}
+			err = partitionRoleRepo.Create(ctx, &role)
+			require.NoError(t, err)
+		}
+
+		roles, err := partitionRoleRepo.GetByPartitionAndNames(ctx, partition.GetID(), []string{"viewer", "admin"})
+		require.NoError(t, err)
+		assert.Len(t, roles, 2)
 	})
 }
 

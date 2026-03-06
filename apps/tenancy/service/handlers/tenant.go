@@ -56,6 +56,22 @@ func (prtSrv *PartitionServer) CreateTenant(
 	return connect.NewResponse(&partitionv1.CreateTenantResponse{Data: tenant}), nil
 }
 
+func (prtSrv *PartitionServer) RemoveTenant(
+	ctx context.Context,
+	req *connect.Request[partitionv1.RemoveTenantRequest],
+) (*connect.Response[partitionv1.RemoveTenantResponse], error) {
+	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
+		return nil, authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	err := prtSrv.TenantBusiness.RemoveTenant(ctx, req.Msg.GetId())
+	if err != nil {
+		logger.WithError(err).Debug("could not remove tenant")
+		return nil, prtSrv.toAPIError(err)
+	}
+	return connect.NewResponse(&partitionv1.RemoveTenantResponse{Succeeded: true}), nil
+}
+
 func (prtSrv *PartitionServer) UpdateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateTenantRequest],

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/datastore"
@@ -60,21 +59,17 @@ func (pr *partitionRepository) GetChildren(ctx context.Context, id string) ([]*m
 }
 
 func (pr *partitionRepository) Delete(ctx context.Context, id string) error {
-	// Check if the partition has children
-	var childCount int64
-	db := pr.Pool().DB(ctx, true)
-	if err := db.Model(&models.Partition{}).Where("parent_id = ?", id).Count(&childCount).Error; err != nil {
-		return err
-	}
-	if childCount > 0 {
-		return errors.New("cannot delete partition with children")
-	}
-
 	var partition models.Partition
 	if err := pr.Pool().DB(ctx, true).First(&partition, "id = ?", id).Error; err != nil {
 		return err
 	}
 	return pr.Pool().DB(ctx, false).Delete(&partition).Error
+}
+
+func (pr *partitionRepository) CountByTenantID(ctx context.Context, tenantID string) (int64, error) {
+	var count int64
+	err := pr.Pool().DB(ctx, true).Model(&models.Partition{}).Where("tenant_id = ?", tenantID).Count(&count).Error
+	return count, err
 }
 
 func NewPartitionRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) PartitionRepository {

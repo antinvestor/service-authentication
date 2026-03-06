@@ -42,6 +42,7 @@ type (
 		GetConsentRequest(ctx context.Context, consentChallenge string) (*hydraclientgo.OAuth2ConsentRequest, error)
 		AcceptLogoutRequest(ctx context.Context, params *AcceptLogoutRequestParams) (string, error)
 		GetLogoutRequest(ctx context.Context, logoutChallenge string) (*hydraclientgo.OAuth2LogoutRequest, error)
+		GetOAuth2Client(ctx context.Context, clientID string) (*hydraclientgo.OAuth2Client, error)
 	}
 	DefaultHydra struct {
 		cli      *hydraclientgo.APIClient
@@ -246,4 +247,21 @@ func (h *DefaultHydra) GetLogoutRequest(ctx context.Context, logoutChallenge str
 	}
 
 	return hlr, nil
+}
+
+func (h *DefaultHydra) GetOAuth2Client(ctx context.Context, clientID string) (*hydraclientgo.OAuth2Client, error) {
+	if clientID == "" {
+		return nil, fmt.Errorf("client_id is required")
+	}
+
+	client, _, err := h.Cli().GetOAuth2Client(ctx, clientID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get OAuth2 client %s: %w", clientID, err)
+	}
+
+	if client == nil {
+		return nil, fmt.Errorf("hydra returned empty client for %s", clientID)
+	}
+
+	return client, nil
 }

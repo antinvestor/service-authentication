@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"maps"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -29,6 +31,7 @@ type ServiceAccountBusiness interface {
 		audiences, roles []string, publicKeys, properties map[string]any) (*ServiceAccountResult, error)
 	GetServiceAccount(ctx context.Context, id, clientID, profileID string) (*models.ServiceAccount, error)
 	GetServiceAccountByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
+	UpdateServiceAccount(ctx context.Context, request *partitionv1.UpdateServiceAccountRequest) (*partitionv1.ServiceAccountObject, error)
 	ListServiceAccounts(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
 	RemoveServiceAccount(ctx context.Context, id string) error
 }
@@ -270,6 +273,69 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 	}
 
 	return nil
+}
+
+func (sb *serviceAccountBusiness) UpdateServiceAccount(
+	ctx context.Context,
+	request *partitionv1.UpdateServiceAccountRequest,
+) (*partitionv1.ServiceAccountObject, error) {
+	sa, err := sb.serviceAccountRepo.GetByID(ctx, request.GetId())
+	if err != nil {
+		return nil, fmt.Errorf("service account not found: %w", err)
+	}
+
+	if request.GetType() != "" {
+		if request.GetType() != "internal" && request.GetType() != "external" {
+			return nil, fmt.Errorf("invalid service account type %q: must be \"internal\" or \"external\"", request.GetType())
+		}
+		sa.Type = request.GetType()
+	}
+
+	if len(request.GetAudiences()) > 0 {
+		sa.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+	}
+
+	if request.GetProperties() != nil {
+		if sa.Properties == nil {
+			sa.Properties = make(data.JSONMap)
+		}
+		maps.Copy(sa.Properties, data.JSONMap(request.GetProperties().AsMap()))
+	}
+
+	_, err = sb.serviceAccountRepo.Update(ctx, sa, "type", "audiences", "properties")
+	if err != nil {
+		return nil, fmt.Errorf("failed to update service account: %w", err)
+	}
+
+	// Update the associated client record if it exists
+	if sa.ClientRef != "" {
+		client, clientErr := sb.clientRepo.GetByID(ctx, sa.ClientRef)
+		if clientErr == nil {
+			if request.GetType() != "" {
+				client.Type = request.GetType()
+				scope := "system_int openid"
+				if request.GetType() == "external" {
+					scope = "system_ext openid"
+				}
+				client.Scopes = scope
+			}
+			if len(request.GetAudiences()) > 0 {
+				client.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+			}
+			if len(request.GetRoles()) > 0 {
+				client.Roles = toJSONMapSlice("roles", request.GetRoles())
+			}
+			if _, updateErr := sb.clientRepo.Update(ctx, client, "type", "scopes", "audiences", "roles"); updateErr != nil {
+				util.Log(ctx).WithError(updateErr).Warn("failed to update associated client record")
+			}
+			// Re-sync Hydra
+			if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyClientSynchronization, data.JSONMap{"id": client.GetID()}); emitErr != nil {
+				util.Log(ctx).WithError(emitErr).Warn("failed to emit client sync after SA update")
+			}
+		}
+	}
+
+	return sa.ToAPI(), nil
 }
 
 func (sb *serviceAccountBusiness) GetServiceAccount(

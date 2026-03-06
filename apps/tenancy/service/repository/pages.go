@@ -23,6 +23,12 @@ func (pgr *pageRepository) GetByPartitionAndName(
 	return page, err
 }
 
+func (pgr *pageRepository) ListByPartition(ctx context.Context, partitionID string) ([]*models.Page, error) {
+	var pages []*models.Page
+	err := pgr.Pool().DB(ctx, true).Where("partition_id = ?", partitionID).Find(&pages).Error
+	return pages, err
+}
+
 func NewPageRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) PageRepository {
 	return &pageRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.Page](

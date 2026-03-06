@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
@@ -31,28 +32,12 @@ func (prtSrv *PartitionServer) CreateServiceAccount(
 		properties = msg.GetProperties().AsMap()
 	}
 
-	// Extract optional fields from properties
-	saType, _ := properties["type"].(string)
-	delete(properties, "type")
-
-	var roles []string
-	if r, ok := properties["roles"]; ok {
-		if rs, ok := r.([]any); ok {
-			for _, v := range rs {
-				if s, ok := v.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-		}
-		delete(properties, "roles")
-	}
+	saType := msg.GetType()
+	roles := msg.GetRoles()
 
 	var publicKeys map[string]any
-	if pk, ok := properties["public_keys"]; ok {
-		if pkm, ok := pk.(map[string]any); ok {
-			publicKeys = pkm
-		}
-		delete(properties, "public_keys")
+	if msg.GetPublicKeys() != nil {
+		publicKeys = msg.GetPublicKeys().AsMap()
 	}
 
 	result, err := prtSrv.ServiceAccountBusiness.CreateServiceAccount(
@@ -119,6 +104,21 @@ func (prtSrv *PartitionServer) ListServiceAccount(
 	return nil
 }
 
+// UpdateServiceAccount updates a service account's configuration.
+func (prtSrv *PartitionServer) UpdateServiceAccount(
+	ctx context.Context,
+	req *connect.Request[partitionv1.UpdateServiceAccountRequest],
+) (*connect.Response[partitionv1.UpdateServiceAccountResponse], error) {
+	sa, err := prtSrv.ServiceAccountBusiness.UpdateServiceAccount(ctx, req.Msg)
+	if err != nil {
+		return nil, prtSrv.toAPIError(err)
+	}
+
+	return connect.NewResponse(&partitionv1.UpdateServiceAccountResponse{
+		Data: sa,
+	}), nil
+}
+
 // RemoveServiceAccount deregisters a service account.
 func (prtSrv *PartitionServer) RemoveServiceAccount(
 	ctx context.Context,
@@ -134,10 +134,22 @@ func (prtSrv *PartitionServer) RemoveServiceAccount(
 }
 
 // GetServiceAccountByClientID returns a service account by its OAuth2 client ID.
-// This is an HTTP endpoint for internal service-to-service lookups.
+// This is an internal service-to-service endpoint. It requires the caller to have
+// a system_internal role (i.e. be an internal service account) to prevent
+// arbitrary authenticated users from looking up any SA by client_id.
 func (prtSrv *PartitionServer) GetServiceAccountByClientID(rw http.ResponseWriter, req *http.Request) {
-	ctx := security.SkipTenancyChecksOnClaims(req.Context())
+	ctx := req.Context()
 	log := util.Log(ctx)
+
+	// Verify the caller has system_internal role
+	claims := security.ClaimsFromContext(ctx)
+	if claims == nil || !slices.Contains(claims.GetRoles(), "system_internal") {
+		rw.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(rw).Encode(map[string]string{"error": "system_internal role required"})
+		return
+	}
+
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
 	clientID := req.PathValue("clientID")
 	if clientID == "" {

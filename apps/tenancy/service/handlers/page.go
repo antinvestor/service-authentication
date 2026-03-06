@@ -25,6 +25,39 @@ func (prtSrv *PartitionServer) CreatePage(
 	return connect.NewResponse(&partitionv1.CreatePageResponse{Data: page}), nil
 }
 
+func (prtSrv *PartitionServer) ListPage(
+	ctx context.Context,
+	req *connect.Request[partitionv1.ListPageRequest],
+	stream *connect.ServerStream[partitionv1.ListPageResponse],
+) error {
+	if err := prtSrv.authz.CanPagesView(ctx); err != nil {
+		return authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	pages, err := prtSrv.PageBusiness.ListPages(ctx, req.Msg.GetPartitionId())
+	if err != nil {
+		logger.WithError(err).Debug("ListPage -- could not list pages")
+		return prtSrv.toAPIError(err)
+	}
+	return stream.Send(&partitionv1.ListPageResponse{Data: pages})
+}
+
+func (prtSrv *PartitionServer) UpdatePage(
+	ctx context.Context,
+	req *connect.Request[partitionv1.UpdatePageRequest],
+) (*connect.Response[partitionv1.UpdatePageResponse], error) {
+	if err := prtSrv.authz.CanPagesManage(ctx); err != nil {
+		return nil, authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	page, err := prtSrv.PageBusiness.UpdatePage(ctx, req.Msg)
+	if err != nil {
+		logger.WithError(err).Debug("UpdatePage -- could not update page")
+		return nil, prtSrv.toAPIError(err)
+	}
+	return connect.NewResponse(&partitionv1.UpdatePageResponse{Data: page}), nil
+}
+
 func (prtSrv *PartitionServer) GetPage(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetPageRequest],

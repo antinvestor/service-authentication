@@ -13,7 +13,9 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
@@ -69,6 +71,13 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
+	// Sync all SA-type clients to Hydra at startup so their metadata
+	// (tenant_id, partition_id, profile_id, type) is available for the
+	// token enrichment webhook before any service acquires tokens.
+	if cfg.SynchronizePrimaryPartitions {
+		syncAllClientsToHydra(ctx, &cfg, cliMan, partSrv)
+	}
+
 	err = svc.Run(ctx, "")
 	if err != nil {
 		log := util.Log(ctx).WithError(err)
@@ -97,6 +106,56 @@ func handleDatabaseMigration(
 		return true
 	}
 	return false
+}
+
+// syncAllClientsToHydra synchronously syncs unsynced Client records to Hydra.
+// This ensures SA metadata is available in the Hydra client metadata field
+// before any service attempts to acquire tokens via client_credentials.
+// Only clients with NULL synced_at are processed; successfully synced clients
+// are marked with a timestamp and skipped on subsequent runs.
+func syncAllClientsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig, cliMan client.Manager, partSrv *handlers.PartitionServer) {
+	log := util.Log(ctx)
+	syncCtx := security.SkipTenancyChecksOnClaims(ctx)
+
+	query := data.NewSearchQuery(
+		data.WithSearchLimit(200),
+		data.WithSearchFiltersAndByValue(map[string]any{"synced_at IS NULL": ""}),
+	)
+
+	jobResult, err := partSrv.ClientRepo.Search(syncCtx, query)
+	if err != nil {
+		log.WithError(err).Error("failed to search unsynced clients for Hydra sync")
+		return
+	}
+
+	synced := 0
+	for {
+		result, ok := jobResult.ReadResult(syncCtx)
+		if !ok {
+			break
+		}
+		if result.IsError() {
+			log.WithError(result.Error()).Error("error reading unsynced clients for Hydra sync")
+			break
+		}
+		for _, cl := range result.Item() {
+			profileID := ""
+			if cl.Type == "internal" || cl.Type == "external" {
+				sa, saErr := partSrv.ServiceAccountRepo.GetByClientRef(syncCtx, cl.GetID())
+				if saErr == nil && sa != nil {
+					profileID = sa.ProfileID
+				}
+			}
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, cliMan, partSrv.ClientRepo, cl, profileID); syncErr != nil {
+				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
+			} else {
+				synced++
+				log.WithField("client_id", cl.ClientID).Info("synced client to Hydra at startup")
+			}
+		}
+	}
+
+	log.WithField("count", synced).Info("completed Hydra client startup sync")
 }
 
 // setupConnectServer initialises and configures the connect server.

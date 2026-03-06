@@ -27,6 +27,24 @@ func (ar *accessRepository) GetByPartitionAndProfile(
 	return access, nil
 }
 
+func (ar *accessRepository) ListByPartition(ctx context.Context, partitionID string) ([]*models.Access, error) {
+	var accesses []*models.Access
+	err := ar.Pool().DB(ctx, true).Where("partition_id = ?", partitionID).Find(&accesses).Error
+	return accesses, err
+}
+
+func (ar *accessRepository) ListByProfileID(ctx context.Context, profileID string) ([]*models.Access, error) {
+	var accesses []*models.Access
+	err := ar.Pool().DB(ctx, true).Where("profile_id = ?", profileID).Find(&accesses).Error
+	return accesses, err
+}
+
+func (ar *accessRepository) CountByPartitionID(ctx context.Context, partitionID string) (int64, error) {
+	var count int64
+	err := ar.Pool().DB(ctx, true).Model(&models.Access{}).Where("partition_id = ?", partitionID).Count(&count).Error
+	return count, err
+}
+
 func NewAccessRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) AccessRepository {
 	return &accessRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.Access](

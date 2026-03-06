@@ -18,6 +18,7 @@ import (
 
 type AccessBusiness interface {
 	GetAccess(ctx context.Context, request *partitionv1.GetAccessRequest) (*partitionv1.AccessObject, error)
+	ListAccess(ctx context.Context, request *partitionv1.ListAccessRequest) ([]*partitionv1.AccessObject, error)
 	RemoveAccess(ctx context.Context, request *partitionv1.RemoveAccessRequest) error
 	CreateAccess(ctx context.Context, request *partitionv1.CreateAccessRequest) (*partitionv1.AccessObject, error)
 
@@ -98,6 +99,40 @@ func (ab *accessBusiness) GetAccess(
 	partitionObject := partition.ToAPI()
 
 	return access.ToAPI(partitionObject)
+}
+
+func (ab *accessBusiness) ListAccess(
+	ctx context.Context,
+	request *partitionv1.ListAccessRequest,
+) ([]*partitionv1.AccessObject, error) {
+	var accesses []*models.Access
+	var err error
+
+	if request.GetPartitionId() != "" {
+		accesses, err = ab.accessRepo.ListByPartition(ctx, request.GetPartitionId())
+	} else if request.GetProfileId() != "" {
+		accesses, err = ab.accessRepo.ListByProfileID(ctx, request.GetProfileId())
+	} else {
+		return nil, fmt.Errorf("partition_id or profile_id is required")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*partitionv1.AccessObject, 0, len(accesses))
+	for _, access := range accesses {
+		partition, partitionErr := ab.partitionRepo.GetByID(ctx, access.PartitionID)
+		if partitionErr != nil {
+			continue
+		}
+		obj, apiErr := access.ToAPI(partition.ToAPI())
+		if apiErr != nil {
+			continue
+		}
+		result = append(result, obj)
+	}
+
+	return result, nil
 }
 
 func (ab *accessBusiness) RemoveAccess(
@@ -242,7 +277,7 @@ func (ab *accessBusiness) ListAccessRoles(
 	}
 
 	return &partitionv1.ListAccessRoleResponse{
-		Role: response,
+		Data: response,
 	}, nil
 }
 

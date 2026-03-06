@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
@@ -37,23 +38,16 @@ type Partition struct {
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
-	props := make(data.JSONMap, len(p.Properties)+1)
-	for k, v := range p.Properties {
-		props[k] = v
-	}
-	if p.Domain != "" {
-		props["domain"] = p.Domain
-	}
-
 	return &partitionv1.PartitionObject{
 		Id:          p.ID,
 		TenantId:    p.TenantID,
 		ParentId:    p.ParentID,
 		Name:        p.Name,
 		Description: p.Description,
-		Properties:  props.ToProtoStruct(),
+		Properties:  p.Properties.ToProtoStruct(),
 		State:       commonv1.STATE(p.State),
 		CreatedAt:   timestamppb.New(p.CreatedAt),
+		Domain:      p.Domain,
 	}
 }
 
@@ -145,9 +139,39 @@ type Client struct {
 	Roles         data.JSONMap `                                                                                  json:"roles"`          // ["admin","member"] — permission template for SA tokens
 	Properties    data.JSONMap `                                                                                  json:"properties"`
 	State         int32        `                                                                                  json:"state"`
+	SyncedAt      *time.Time   `gorm:"index"                                                                      json:"synced_at"`
 }
 
-func (c *Client) ToAPI() *partitionv1.ServiceAccountObject {
+func (c *Client) ToAPI() *partitionv1.ClientObject {
+	state := commonv1.STATE_ACTIVE
+	if c.DeletedAt.Valid {
+		state = commonv1.STATE_DELETED
+	}
+
+	obj := &partitionv1.ClientObject{
+		Id:            c.ID,
+		Name:          c.Name,
+		ClientId:      c.ClientID,
+		Type:          c.Type,
+		GrantTypes:    jsonMapToStringSlice(c.GrantTypes, "grant_types"),
+		ResponseTypes: jsonMapToStringSlice(c.ResponseTypes, "response_types"),
+		RedirectUris:  jsonMapToStringSlice(c.RedirectURIs, "uris"),
+		Scopes:        c.Scopes,
+		Audiences:     jsonMapToStringSlice(c.Audiences, "namespaces"),
+		Roles:         c.GetRoleNames(),
+		State:         state,
+		CreatedAt:     timestamppb.New(c.CreatedAt),
+	}
+
+	if c.Properties != nil {
+		obj.Properties = c.Properties.ToProtoStruct()
+	}
+
+	return obj
+}
+
+// ToServiceAccountAPI returns a ServiceAccountObject view of this client for backward compatibility.
+func (c *Client) ToServiceAccountAPI() *partitionv1.ServiceAccountObject {
 	state := commonv1.STATE_ACTIVE
 	if c.DeletedAt.Valid {
 		state = commonv1.STATE_DELETED
@@ -176,10 +200,8 @@ func (c *Client) ToAPI() *partitionv1.ServiceAccountObject {
 		State:       state,
 		CreatedAt:   timestamppb.New(c.CreatedAt),
 		Properties:  props.ToProtoStruct(),
-	}
-
-	if c.Audiences != nil {
-		obj.Audiences = c.Audiences.ToProtoStruct()
+		Type:        c.Type,
+		Audiences:   jsonMapToStringSlice(c.Audiences, "namespaces"),
 	}
 
 	return obj
@@ -236,18 +258,16 @@ func (sa *ServiceAccount) ToAPI() *partitionv1.ServiceAccountObject {
 		ClientId:    sa.ClientID,
 		State:       state,
 		CreatedAt:   timestamppb.New(sa.CreatedAt),
+		Type:        sa.Type,
 	}
 
 	if sa.Audiences != nil {
-		obj.Audiences = sa.Audiences.ToProtoStruct()
+		obj.Audiences = jsonMapToStringSlice(sa.Audiences, "namespaces")
 	}
 
-	props := sa.Properties
-	if props == nil {
-		props = make(data.JSONMap)
+	if sa.Properties != nil {
+		obj.Properties = sa.Properties.ToProtoStruct()
 	}
-	props["type"] = sa.Type
-	obj.Properties = props.ToProtoStruct()
 
 	return obj
 }
@@ -260,8 +280,32 @@ type AccessRole struct {
 
 func (ar *AccessRole) ToAPI(partitionRoleObj *partitionv1.PartitionRoleObject) *partitionv1.AccessRoleObject {
 	return &partitionv1.AccessRoleObject{
-		AccessRoleId: ar.GetID(),
-		AccessId:     ar.AccessID,
-		Role:         partitionRoleObj,
+		Id:       ar.GetID(),
+		AccessId: ar.AccessID,
+		Role:     partitionRoleObj,
 	}
+}
+
+// jsonMapToStringSlice extracts a []string from a JSONMap entry keyed by key.
+func jsonMapToStringSlice(m data.JSONMap, key string) []string {
+	if m == nil {
+		return nil
+	}
+	raw, ok := m[key]
+	if !ok {
+		return nil
+	}
+	switch typed := raw.(type) {
+	case []any:
+		result := make([]string, 0, len(typed))
+		for _, v := range typed {
+			if s, ok := v.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	case []string:
+		return typed
+	}
+	return nil
 }

@@ -62,8 +62,8 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 		PartitionRepo:          partitionRepo,
 		ClientRepo:             clientRepo,
 		ServiceAccountRepo:     serviceAccountRepo,
-		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo),
-		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo),
+		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
+		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
 		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo),
 		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
 		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
@@ -162,19 +162,50 @@ func (prtSrv *PartitionServer) CreatePartitionRole(
 	return connect.NewResponse(&partitionv1.CreatePartitionRoleResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) ListPartitionRoles(
+func (prtSrv *PartitionServer) ListPartitionRole(
 	ctx context.Context,
-	req *connect.Request[partitionv1.ListPartitionRoleRequest]) (*connect.Response[partitionv1.ListPartitionRoleResponse], error) {
+	req *connect.Request[partitionv1.ListPartitionRoleRequest],
+	stream *connect.ServerStream[partitionv1.ListPartitionRoleResponse]) error {
+	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
+		return authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	resp, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req.Msg)
+	if err != nil {
+		logger.WithError(err).Debug(" could not obtain the list of partition roles")
+		return prtSrv.toAPIError(err)
+	}
+	return stream.Send(resp)
+}
+
+func (prtSrv *PartitionServer) UpdatePartitionRole(
+	ctx context.Context,
+	req *connect.Request[partitionv1.UpdatePartitionRoleRequest]) (*connect.Response[partitionv1.UpdatePartitionRoleResponse], error) {
 	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
 		return nil, authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
-	partition, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req.Msg)
+	role, err := prtSrv.PartitionBusiness.UpdatePartitionRole(ctx, req.Msg)
 	if err != nil {
-		logger.WithError(err).Debug(" could not obtain the list of partition roles")
+		logger.WithError(err).Debug("could not update partition role")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(partition), nil
+	return connect.NewResponse(&partitionv1.UpdatePartitionRoleResponse{Data: role}), nil
+}
+
+func (prtSrv *PartitionServer) RemovePartition(
+	ctx context.Context,
+	req *connect.Request[partitionv1.RemovePartitionRequest]) (*connect.Response[partitionv1.RemovePartitionResponse], error) {
+	if err := prtSrv.authz.CanPartitionManage(ctx); err != nil {
+		return nil, authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	err := prtSrv.PartitionBusiness.RemovePartition(ctx, req.Msg.GetId())
+	if err != nil {
+		logger.WithError(err).Debug("could not remove partition")
+		return nil, prtSrv.toAPIError(err)
+	}
+	return connect.NewResponse(&partitionv1.RemovePartitionResponse{Succeeded: true}), nil
 }
 
 func (prtSrv *PartitionServer) RemovePartitionRole(

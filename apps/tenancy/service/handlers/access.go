@@ -76,6 +76,23 @@ func (prtSrv *PartitionServer) RemoveAccess(
 	}), nil
 }
 
+func (prtSrv *PartitionServer) ListAccess(
+	ctx context.Context,
+	req *connect.Request[partitionv1.ListAccessRequest],
+	stream *connect.ServerStream[partitionv1.ListAccessResponse],
+) error {
+	if err := prtSrv.authz.CanAccessManage(ctx); err != nil {
+		return authorizer.ToConnectError(err)
+	}
+	logger := util.Log(ctx)
+	accesses, err := prtSrv.AccessBusiness.ListAccess(ctx, req.Msg)
+	if err != nil {
+		logger.WithError(err).Debug("could not list access records")
+		return prtSrv.toAPIError(err)
+	}
+	return stream.Send(&partitionv1.ListAccessResponse{Data: accesses})
+}
+
 func (prtSrv *PartitionServer) CreateAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateAccessRoleRequest],
@@ -92,20 +109,21 @@ func (prtSrv *PartitionServer) CreateAccessRole(
 	return connect.NewResponse(&partitionv1.CreateAccessRoleResponse{Data: accessRole}), nil
 }
 
-func (prtSrv *PartitionServer) ListAccessRoles(
+func (prtSrv *PartitionServer) ListAccessRole(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListAccessRoleRequest],
-) (*connect.Response[partitionv1.ListAccessRoleResponse], error) {
+	stream *connect.ServerStream[partitionv1.ListAccessRoleResponse],
+) error {
 	if err := prtSrv.authz.CanRolesManage(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
+		return authorizer.ToConnectError(err)
 	}
 	logger := util.Log(ctx)
 	accessRoleList, err := prtSrv.AccessBusiness.ListAccessRoles(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not get list of access roles")
-		return nil, prtSrv.toAPIError(err)
+		return prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(accessRoleList), nil
+	return stream.Send(accessRoleList)
 }
 
 func (prtSrv *PartitionServer) RemoveAccessRole(

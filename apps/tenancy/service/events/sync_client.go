@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -210,6 +211,18 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		payload["subject"] = profileID
 	}
 
+	// Store SA metadata so the token enrichment webhook can read it
+	// from the Hydra admin API without calling the partition service
+	// (which would create a circular dependency during token issuance).
+	if cl.Type == "internal" || cl.Type == "external" {
+		payload["metadata"] = map[string]any{
+			"tenant_id":    cl.TenantID,
+			"partition_id": cl.PartitionID,
+			"profile_id":   profileID,
+			"type":         cl.Type,
+		}
+	}
+
 	// Logo URI from properties
 	if cl.Properties != nil {
 		if logoURI, ok := cl.Properties["logo_uri"].(string); ok {
@@ -274,6 +287,8 @@ func updateClientWithResponse(
 	}
 
 	cl.Properties = props
-	_, err := clientRepo.Update(ctx, cl, "properties")
+	now := time.Now()
+	cl.SyncedAt = &now
+	_, err := clientRepo.Update(ctx, cl, "properties", "synced_at")
 	return err
 }

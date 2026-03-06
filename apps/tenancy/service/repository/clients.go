@@ -25,6 +25,12 @@ func (r *clientRepository) ListByPartition(ctx context.Context, partitionID stri
 	return clients, err
 }
 
+func (r *clientRepository) CountByPartitionID(ctx context.Context, partitionID string) (int64, error) {
+	var count int64
+	err := r.Pool().DB(ctx, true).Model(&models.Client{}).Where("partition_id = ?", partitionID).Count(&count).Error
+	return count, err
+}
+
 func NewClientRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) ClientRepository {
 	return &clientRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.Client](

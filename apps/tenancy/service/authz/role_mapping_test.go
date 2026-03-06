@@ -61,6 +61,57 @@ func TestBuildServiceAccessTuple(t *testing.T) {
 	assert.Empty(t, tuple.Subject.Relation)
 }
 
+func TestRolePermissions_OwnerHasAll(t *testing.T) {
+	perms := authz.RolePermissions[authz.RoleOwner]
+	assert.Contains(t, perms, authz.PermissionTenantManage)
+	assert.Contains(t, perms, authz.PermissionPermissionGrant)
+	assert.Len(t, perms, 10)
+}
+
+func TestRolePermissions_MemberViewOnly(t *testing.T) {
+	perms := authz.RolePermissions[authz.RoleMember]
+	assert.Contains(t, perms, authz.PermissionTenantView)
+	assert.Contains(t, perms, authz.PermissionPartitionView)
+	assert.Contains(t, perms, authz.PermissionPagesView)
+	assert.NotContains(t, perms, authz.PermissionTenantManage)
+	assert.NotContains(t, perms, authz.PermissionAccessManage)
+}
+
+func TestRolePermissions_AdminNoTenantManage(t *testing.T) {
+	perms := authz.RolePermissions[authz.RoleAdmin]
+	assert.NotContains(t, perms, authz.PermissionTenantManage)
+	assert.Contains(t, perms, authz.PermissionTenantView)
+}
+
+func TestGrantedRelation(t *testing.T) {
+	assert.Equal(t, "granted_tenant_manage", authz.GrantedRelation(authz.PermissionTenantManage))
+	assert.Equal(t, "granted_partition_view", authz.GrantedRelation(authz.PermissionPartitionView))
+}
+
+func TestBuildAccessTuple(t *testing.T) {
+	tuple := authz.BuildAccessTuple("t1/p1", "profile-1")
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuple.Object.Namespace)
+	assert.Equal(t, "t1/p1", tuple.Object.ID)
+	assert.Equal(t, authz.RoleMember, tuple.Relation)
+	assert.Equal(t, authz.NamespaceProfile, tuple.Subject.Namespace)
+	assert.Equal(t, "profile-1", tuple.Subject.ID)
+}
+
+func TestBuildServicePartitionInheritanceTuple(t *testing.T) {
+	tuple := authz.BuildServicePartitionInheritanceTuple("t1/parent", "t1/child")
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuple.Object.Namespace)
+	assert.Equal(t, "t1/child", tuple.Object.ID)
+	assert.Equal(t, authz.RoleService, tuple.Relation)
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuple.Subject.Namespace)
+	assert.Equal(t, "t1/parent", tuple.Subject.ID)
+	assert.Equal(t, authz.RoleService, tuple.Subject.Relation)
+}
+
+func TestBuildServiceInheritanceTuples_Empty(t *testing.T) {
+	tuples := authz.BuildServiceInheritanceTuples("t1/p1", nil)
+	assert.Empty(t, tuples)
+}
+
 func TestBuildServiceInheritanceTuples(t *testing.T) {
 	tenancyPath := "tenant1/partition1"
 	// Only specific namespaces the bot needs, not all services

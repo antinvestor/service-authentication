@@ -28,17 +28,21 @@ import (
 )
 
 type DepsBuilder struct {
-	TenantRepo        repository.TenantRepository
-	PartitionRepo     repository.PartitionRepository
-	PartitionRoleRepo repository.PartitionRoleRepository
-	AccessRepo        repository.AccessRepository
-	AccessRoleRepo    repository.AccessRoleRepository
-	PageRepo          repository.PageRepository
+	TenantRepo         repository.TenantRepository
+	PartitionRepo      repository.PartitionRepository
+	PartitionRoleRepo  repository.PartitionRoleRepository
+	AccessRepo         repository.AccessRepository
+	AccessRoleRepo     repository.AccessRoleRepository
+	PageRepo           repository.PageRepository
+	ClientRepo         repository.ClientRepository
+	ServiceAccountRepo repository.ServiceAccountRepository
 
-	PartitionBusiness business.PartitionBusiness
-	TenantBusiness    business.TenantBusiness
-	AccessBusiness    business.AccessBusiness
-	PageBusiness      business.PageBusiness
+	PartitionBusiness      business.PartitionBusiness
+	TenantBusiness         business.TenantBusiness
+	AccessBusiness         business.AccessBusiness
+	PageBusiness           business.PageBusiness
+	ClientBusiness         business.ClientBusiness
+	ServiceAccountBusiness business.ServiceAccountBusiness
 
 	Server *handlers.PartitionServer
 }
@@ -49,20 +53,31 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Partiti
 	cfg := svc.Config().(*aconfig.PartitionConfig)
 	eventsMan := svc.EventsManager()
 
+	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
+	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+
 	depBuilder := &DepsBuilder{
-		TenantRepo:        repository.NewTenantRepository(ctx, dbPool, workMan),
-		PartitionRepo:     repository.NewPartitionRepository(ctx, dbPool, workMan),
-		PartitionRoleRepo: repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
-		AccessRepo:        repository.NewAccessRepository(ctx, dbPool, workMan),
-		AccessRoleRepo:    repository.NewAccessRoleRepository(ctx, dbPool, workMan),
-		PageRepo:          repository.NewPageRepository(ctx, dbPool, workMan),
-		Server:            server,
+		TenantRepo:         repository.NewTenantRepository(ctx, dbPool, workMan),
+		PartitionRepo:      repository.NewPartitionRepository(ctx, dbPool, workMan),
+		PartitionRoleRepo:  repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
+		AccessRepo:         repository.NewAccessRepository(ctx, dbPool, workMan),
+		AccessRoleRepo:     repository.NewAccessRoleRepository(ctx, dbPool, workMan),
+		PageRepo:           repository.NewPageRepository(ctx, dbPool, workMan),
+		ClientRepo:         clientRepo,
+		ServiceAccountRepo: serviceAccountRepo,
+		Server:             server,
 	}
 
-	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
-	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo)
+	auth := svc.SecurityManager().GetAuthorizer(ctx)
+	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
+	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
 	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
+	depBuilder.ClientBusiness = business.NewClientBusiness(eventsMan, depBuilder.PartitionRepo, clientRepo)
+	depBuilder.ServiceAccountBusiness = business.NewServiceAccountBusiness(
+		eventsMan, auth, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo,
+		clientRepo, serviceAccountRepo, depBuilder.AccessRepo, depBuilder.AccessRoleRepo,
+	)
 
 	return depBuilder
 }
@@ -72,6 +87,11 @@ type BaseTestSuite struct {
 
 	ketoReadURI  string
 	ketoWriteURI string
+
+	// Suite-level service (set by CreateSuiteService, used to share one service across all tests).
+	SuiteCtx  context.Context
+	SuiteSvc  *frame.Service
+	SuiteDeps *DepsBuilder
 }
 
 func initResources(_ context.Context) []definition.TestResource {
@@ -122,7 +142,40 @@ func (bs *BaseTestSuite) SetupSuite() {
 	bs.ketoReadURI = fmt.Sprintf("%s:%s", writeURL.Hostname(), readPort)
 }
 
+// CreateSuiteService creates a single service for the entire test suite.
+// Call this from SetupSuite in your concrete suite type.
+// The service is cleaned up in TearDownSuite.
+func (bs *BaseTestSuite) CreateSuiteService() {
+	t := bs.T()
+	prefix := util.RandomAlphaNumericString(8)
+	depOpts := definition.NewDependancyOption("default", prefix, bs.Resources())
+	bs.SuiteCtx, bs.SuiteSvc, bs.SuiteDeps = bs.createServiceInternal(t, depOpts)
+}
+
+func (bs *BaseTestSuite) TearDownSuite() {
+	if bs.SuiteSvc != nil {
+		bgCtx := context.Background()
+		bs.SuiteSvc.Stop(bgCtx)
+	}
+	bs.BaseTestSuite.TearDownSuite()
+}
+
 func (bs *BaseTestSuite) CreateService(
+	t *testing.T,
+	depOpts *definition.DependencyOption,
+) (context.Context, *frame.Service, *DepsBuilder) {
+	ctx, svc, deps := bs.createServiceInternal(t, depOpts)
+
+	t.Cleanup(func() {
+		bgCtx := context.Background()
+		svc.Stop(bgCtx)
+		time.Sleep(500 * time.Millisecond)
+	})
+
+	return ctx, svc, deps
+}
+
+func (bs *BaseTestSuite) createServiceInternal(
 	t *testing.T,
 	depOpts *definition.DependencyOption,
 ) (context.Context, *frame.Service, *DepsBuilder) {
@@ -233,20 +286,16 @@ func (bs *BaseTestSuite) CreateService(
 
 	_ = svc.Run(ctx, "")
 
-	t.Cleanup(func() {
-		bgCtx := context.Background()
-		svc.Stop(bgCtx)
-		// Allow leaked pgxpool health checks to close idle connections
-		// before the next test tries to open new ones.
-		time.Sleep(500 * time.Millisecond)
-	})
-
 	deps := BuildDeps(ctx, svc, implementation)
 
 	return ctx, svc, deps
 }
 
 func (bs *BaseTestSuite) WithAuthClaims(ctx context.Context, tenantID, partitionID, profileID string) context.Context {
+	return bs.WithAuthClaimsAndRoles(ctx, tenantID, partitionID, profileID, nil)
+}
+
+func (bs *BaseTestSuite) WithAuthClaimsAndRoles(ctx context.Context, tenantID, partitionID, profileID string, roles []string) context.Context {
 	claims := &security.AuthenticationClaims{
 		TenantID:    tenantID,
 		PartitionID: partitionID,
@@ -254,6 +303,7 @@ func (bs *BaseTestSuite) WithAuthClaims(ctx context.Context, tenantID, partition
 		ContactID:   profileID,
 		SessionID:   util.IDString(),
 		DeviceID:    "test-device",
+		Roles:       roles,
 	}
 	claims.Subject = profileID
 	return claims.ClaimsToContext(ctx)

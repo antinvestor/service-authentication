@@ -72,6 +72,12 @@ func (r *serviceAccountRepository) ListByPartition(
 	return accounts, nil
 }
 
+func (r *serviceAccountRepository) CountByPartitionID(ctx context.Context, partitionID string) (int64, error) {
+	var count int64
+	err := r.Pool().DB(ctx, true).Model(&models.ServiceAccount{}).Where("partition_id = ?", partitionID).Count(&count).Error
+	return count, err
+}
+
 func NewServiceAccountRepository(ctx context.Context, dbPool pool.Pool, workMan workerpool.Manager) ServiceAccountRepository {
 	return &serviceAccountRepository{
 		BaseRepository: datastore.NewBaseRepository[*models.ServiceAccount](

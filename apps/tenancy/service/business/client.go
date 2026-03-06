@@ -3,8 +3,10 @@ package business
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -28,6 +30,7 @@ type ClientBusiness interface {
 		properties map[string]any) (*ClientResult, error)
 	GetClient(ctx context.Context, id string) (*models.Client, error)
 	GetClientByClientID(ctx context.Context, clientID string) (*models.Client, error)
+	UpdateClient(ctx context.Context, request *partitionv1.UpdateClientRequest) (*partitionv1.ClientObject, error)
 	ListClients(ctx context.Context, partitionID string) ([]*models.Client, error)
 	RemoveClient(ctx context.Context, id string) error
 }
@@ -163,6 +166,64 @@ func (cb *clientBusiness) GetClientByClientID(ctx context.Context, clientID stri
 
 func (cb *clientBusiness) ListClients(ctx context.Context, partitionID string) ([]*models.Client, error) {
 	return cb.clientRepo.ListByPartition(ctx, partitionID)
+}
+
+func (cb *clientBusiness) UpdateClient(
+	ctx context.Context,
+	request *partitionv1.UpdateClientRequest,
+) (*partitionv1.ClientObject, error) {
+	log := util.Log(ctx).WithField("client_db_id", request.GetId())
+
+	client, err := cb.clientRepo.GetByID(ctx, request.GetId())
+	if err != nil {
+		return nil, fmt.Errorf("client not found: %w", err)
+	}
+
+	if request.GetName() != "" {
+		client.Name = request.GetName()
+	}
+	if len(request.GetGrantTypes()) > 0 {
+		client.GrantTypes = toJSONMapSlice("types", request.GetGrantTypes())
+	}
+	if len(request.GetResponseTypes()) > 0 {
+		client.ResponseTypes = toJSONMapSlice("types", request.GetResponseTypes())
+	}
+	if len(request.GetRedirectUris()) > 0 {
+		client.RedirectURIs = toJSONMapSlice("uris", request.GetRedirectUris())
+	}
+	if request.GetScopes() != "" {
+		client.Scopes = request.GetScopes()
+	}
+	if len(request.GetAudiences()) > 0 {
+		client.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+	}
+	if len(request.GetRoles()) > 0 {
+		client.Roles = toJSONMapSlice("roles", request.GetRoles())
+	}
+	if request.GetProperties() != nil {
+		if client.Properties == nil {
+			client.Properties = make(data.JSONMap)
+		}
+		maps.Copy(client.Properties, data.JSONMap(request.GetProperties().AsMap()))
+	}
+
+	// Mark as needing Hydra re-sync
+	client.SyncedAt = nil
+
+	_, err = cb.clientRepo.Update(ctx, client,
+		"name", "grant_types", "response_types", "redirect_uris",
+		"scopes", "audiences", "roles", "properties", "synced_at")
+	if err != nil {
+		return nil, fmt.Errorf("failed to update client: %w", err)
+	}
+
+	// Re-sync with Hydra
+	if emitErr := cb.eventsMan.Emit(ctx, events.EventKeyClientSynchronization, data.JSONMap{"id": client.GetID()}); emitErr != nil {
+		log.WithError(emitErr).Warn("failed to emit client sync after update")
+	}
+
+	log.Info("client updated successfully")
+	return client.ToAPI(), nil
 }
 
 func (cb *clientBusiness) RemoveClient(ctx context.Context, id string) error {

@@ -12,6 +12,8 @@ import (
 
 type PageBusiness interface {
 	GetPage(ctx context.Context, request *partitionv1.GetPageRequest) (*partitionv1.PageObject, error)
+	ListPages(ctx context.Context, partitionID string) ([]*partitionv1.PageObject, error)
+	UpdatePage(ctx context.Context, request *partitionv1.UpdatePageRequest) (*partitionv1.PageObject, error)
 	RemovePage(ctx context.Context, request *partitionv1.RemovePageRequest) error
 	CreatePage(ctx context.Context, request *partitionv1.CreatePageRequest) (*partitionv1.PageObject, error)
 }
@@ -39,6 +41,46 @@ func (ab *pageBusiness) GetPage(
 	request *partitionv1.GetPageRequest,
 ) (*partitionv1.PageObject, error) {
 	page, err := ab.pageRepo.GetByPartitionAndName(ctx, request.GetPartitionId(), request.GetName())
+	if err != nil {
+		return nil, err
+	}
+
+	return page.ToAPI(), nil
+}
+
+func (ab *pageBusiness) ListPages(ctx context.Context, partitionID string) ([]*partitionv1.PageObject, error) {
+	pages, err := ab.pageRepo.ListByPartition(ctx, partitionID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*partitionv1.PageObject, 0, len(pages))
+	for _, p := range pages {
+		result = append(result, p.ToAPI())
+	}
+	return result, nil
+}
+
+func (ab *pageBusiness) UpdatePage(ctx context.Context, request *partitionv1.UpdatePageRequest) (*partitionv1.PageObject, error) {
+	page, err := ab.pageRepo.GetByID(ctx, request.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	if request.GetName() != "" {
+		page.Name = request.GetName()
+	}
+	if request.GetHtml() != "" {
+		page.HTML = request.GetHtml()
+	}
+	if request.GetState() != 0 {
+		page.State = int32(request.GetState())
+	}
+	if request.GetProperties() != nil {
+		page.Properties = request.GetProperties().AsMap()
+	}
+
+	_, err = ab.pageRepo.Update(ctx, page, "name", "html", "state", "properties")
 	if err != nil {
 		return nil, err
 	}

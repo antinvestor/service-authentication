@@ -8,23 +8,23 @@ require (
 	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260221033317-1a8e101ef7c6.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20260219061917-db3557eecaba.2
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260219061917-db3557eecaba.1
-	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20260302135159-869c278b660c.2
-	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20260302135159-869c278b660c.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20260306034803-bec59545427a.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20260306034803-bec59545427a.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260219062039-499f582dea7e.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.53.17
+	github.com/antinvestor/apis/go/common v1.55.0
 	github.com/antinvestor/apis/go/device v1.53.18
 	github.com/antinvestor/apis/go/notification v1.53.18
-	github.com/antinvestor/apis/go/partition v1.54.0
-	github.com/antinvestor/apis/go/profile v1.53.18
+	github.com/antinvestor/apis/go/partition v1.55.1
+	github.com/antinvestor/apis/go/profile v1.55.1
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.76.6
-	github.com/pitabwire/util v0.6.0
+	github.com/pitabwire/util v0.6.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/crypto v0.48.0

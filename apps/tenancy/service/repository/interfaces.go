@@ -16,6 +16,7 @@ type PartitionRepository interface {
 	GetByDomain(ctx context.Context, domain string) (*models.Partition, error)
 	GetChildren(ctx context.Context, id string) ([]*models.Partition, error)
 	GetParents(ctx context.Context, id string) ([]*models.Partition, error)
+	CountByTenantID(ctx context.Context, tenantID string) (int64, error)
 }
 type PartitionRoleRepository interface {
 	datastore.BaseRepository[*models.PartitionRole]
@@ -28,11 +29,15 @@ type PartitionRoleRepository interface {
 type PageRepository interface {
 	datastore.BaseRepository[*models.Page]
 	GetByPartitionAndName(ctx context.Context, partitionID string, name string) (*models.Page, error)
+	ListByPartition(ctx context.Context, partitionID string) ([]*models.Page, error)
 }
 
 type AccessRepository interface {
 	datastore.BaseRepository[*models.Access]
 	GetByPartitionAndProfile(ctx context.Context, partitionID string, profile string) (*models.Access, error)
+	ListByPartition(ctx context.Context, partitionID string) ([]*models.Access, error)
+	ListByProfileID(ctx context.Context, profileID string) ([]*models.Access, error)
+	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
 }
 type AccessRoleRepository interface {
 	datastore.BaseRepository[*models.AccessRole]
@@ -43,6 +48,7 @@ type ClientRepository interface {
 	datastore.BaseRepository[*models.Client]
 	GetByClientID(ctx context.Context, clientID string) (*models.Client, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.Client, error)
+	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
 }
 
 type ServiceAccountRepository interface {
@@ -52,4 +58,5 @@ type ServiceAccountRepository interface {
 	GetByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
 	GetByClientRef(ctx context.Context, clientRef string) (*models.ServiceAccount, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
+	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
 }
