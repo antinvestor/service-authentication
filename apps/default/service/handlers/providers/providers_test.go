@@ -6,14 +6,24 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
 )
+
+type ProvidersTestSuite struct {
+	suite.Suite
+}
+
+func TestProvidersTestSuite(t *testing.T) {
+	suite.Run(t, new(ProvidersTestSuite))
+}
 
 // --- StateCodec Tests ---
 
@@ -23,19 +33,56 @@ func validKey() []byte {
 	return key
 }
 
-func TestNewStateCodec_ValidKey(t *testing.T) {
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func routeFacebookGraphAPI(t *testing.T, graphServerURL string) {
+	t.Helper()
+
+	target, err := url.Parse(graphServerURL)
+	require.NoError(t, err)
+
+	baseTransport := http.DefaultTransport
+	prevTransport := http.DefaultClient.Transport
+	http.DefaultClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host == "graph.facebook.com" {
+			cloned := req.Clone(req.Context())
+			cloned.URL.Scheme = target.Scheme
+			cloned.URL.Host = target.Host
+			cloned.Host = target.Host
+			return baseTransport.RoundTrip(cloned)
+		}
+
+		if prevTransport != nil {
+			return prevTransport.RoundTrip(req)
+		}
+		return baseTransport.RoundTrip(req)
+	})
+
+	t.Cleanup(func() {
+		http.DefaultClient.Transport = prevTransport
+	})
+}
+
+func (suite *ProvidersTestSuite) TestNewStateCodec_ValidKey() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 	assert.NotNil(t, codec)
 }
 
-func TestNewStateCodec_InvalidKeySize(t *testing.T) {
+func (suite *ProvidersTestSuite) TestNewStateCodec_InvalidKeySize() {
+	t := suite.T()
 	// AES requires 16, 24, or 32 byte keys
 	_, err := NewStateCodec([]byte("short"))
 	assert.Error(t, err)
 }
 
-func TestStateCodec_EncodeDecodeRoundTrip(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_EncodeDecodeRoundTrip() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -50,7 +97,8 @@ func TestStateCodec_EncodeDecodeRoundTrip(t *testing.T) {
 	assert.Equal(t, original, decoded)
 }
 
-func TestStateCodec_EncodeDecodeAuthState(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_EncodeDecodeAuthState() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -76,7 +124,8 @@ func TestStateCodec_EncodeDecodeAuthState(t *testing.T) {
 	assert.Equal(t, original.LoginEventID, decoded.LoginEventID)
 }
 
-func TestStateCodec_DecodeExpiredState(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DecodeExpiredState() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -95,7 +144,8 @@ func TestStateCodec_DecodeExpiredState(t *testing.T) {
 	assert.Contains(t, err.Error(), "expired")
 }
 
-func TestStateCodec_DecodeWrongName(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DecodeWrongName() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -109,7 +159,8 @@ func TestStateCodec_DecodeWrongName(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStateCodec_DecodeInvalidBase64(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DecodeInvalidBase64() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -117,7 +168,8 @@ func TestStateCodec_DecodeInvalidBase64(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStateCodec_DecodeTooShort(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DecodeTooShort() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -128,7 +180,8 @@ func TestStateCodec_DecodeTooShort(t *testing.T) {
 	assert.Contains(t, err.Error(), "too short")
 }
 
-func TestStateCodec_DecodeTamperedData(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DecodeTamperedData() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 
@@ -141,7 +194,8 @@ func TestStateCodec_DecodeTamperedData(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStateCodec_DifferentKeys(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_DifferentKeys() {
+	t := suite.T()
 	codec1, _ := NewStateCodec(validKey())
 	codec2, _ := NewStateCodec(validKey())
 
@@ -155,24 +209,28 @@ func TestStateCodec_DifferentKeys(t *testing.T) {
 
 // --- AuthState Tests ---
 
-func TestAuthState_IsExpired_NotExpired(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAuthState_IsExpired_NotExpired() {
+	t := suite.T()
 	state := &AuthState{ExpiresAt: time.Now().Add(5 * time.Minute)}
 	assert.False(t, state.IsExpired())
 }
 
-func TestAuthState_IsExpired_Expired(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAuthState_IsExpired_Expired() {
+	t := suite.T()
 	state := &AuthState{ExpiresAt: time.Now().Add(-1 * time.Second)}
 	assert.True(t, state.IsExpired())
 }
 
-func TestAuthState_IsExpired_Zero(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAuthState_IsExpired_Zero() {
+	t := suite.T()
 	state := &AuthState{ExpiresAt: time.Time{}}
 	assert.True(t, state.IsExpired()) // zero time is in the past
 }
 
 // --- Cookie Helper Tests ---
 
-func TestSetAuthStateCookie(t *testing.T) {
+func (suite *ProvidersTestSuite) TestSetAuthStateCookie() {
+	t := suite.T()
 	rr := httptest.NewRecorder()
 	SetAuthStateCookie(rr, "encrypted-value")
 
@@ -189,7 +247,8 @@ func TestSetAuthStateCookie(t *testing.T) {
 	assert.Equal(t, 300, c.MaxAge)
 }
 
-func TestClearAuthStateCookie(t *testing.T) {
+func (suite *ProvidersTestSuite) TestClearAuthStateCookie() {
+	t := suite.T()
 	rr := httptest.NewRecorder()
 	ClearAuthStateCookie(rr)
 
@@ -202,13 +261,15 @@ func TestClearAuthStateCookie(t *testing.T) {
 	assert.Equal(t, -1, c.MaxAge)
 }
 
-func TestAuthStateCookieConstant(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAuthStateCookieConstant() {
+	t := suite.T()
 	assert.Equal(t, "__Host-auth_state", AuthStateCookie)
 }
 
 // --- PKCE Tests ---
 
-func TestNewPKCE(t *testing.T) {
+func (suite *ProvidersTestSuite) TestNewPKCE() {
+	t := suite.T()
 	pkce, err := NewPKCE()
 	require.NoError(t, err)
 	assert.NotNil(t, pkce)
@@ -217,7 +278,8 @@ func TestNewPKCE(t *testing.T) {
 	assert.NotEqual(t, pkce.Verifier, pkce.Challenge)
 }
 
-func TestNewPKCE_Uniqueness(t *testing.T) {
+func (suite *ProvidersTestSuite) TestNewPKCE_Uniqueness() {
+	t := suite.T()
 	pkce1, err := NewPKCE()
 	require.NoError(t, err)
 	pkce2, err := NewPKCE()
@@ -226,7 +288,8 @@ func TestNewPKCE_Uniqueness(t *testing.T) {
 	assert.NotEqual(t, pkce1.Challenge, pkce2.Challenge)
 }
 
-func TestNewPKCE_VerifierLength(t *testing.T) {
+func (suite *ProvidersTestSuite) TestNewPKCE_VerifierLength() {
+	t := suite.T()
 	pkce, err := NewPKCE()
 	require.NoError(t, err)
 	// 32 bytes base64url encoded = 43 chars
@@ -235,7 +298,8 @@ func TestNewPKCE_VerifierLength(t *testing.T) {
 
 // --- SetupAuthProviders Tests ---
 
-func TestSetupAuthProviders_EmptyConfig(t *testing.T) {
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_EmptyConfig() {
+	t := suite.T()
 	cfg := &config.AuthenticationConfig{}
 	providers, err := SetupAuthProviders(t.Context(), cfg)
 	require.NoError(t, err)
@@ -244,13 +308,15 @@ func TestSetupAuthProviders_EmptyConfig(t *testing.T) {
 
 // --- FacebookProvider Tests ---
 
-func TestNewFacebookProvider(t *testing.T) {
+func (suite *ProvidersTestSuite) TestNewFacebookProvider() {
+	t := suite.T()
 	p, err := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
 	require.NoError(t, err)
 	assert.Equal(t, "facebook", p.Name())
 }
 
-func TestFacebookProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestFacebookProvider_AuthCodeURL_WithoutNonce() {
+	t := suite.T()
 	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
 	url := p.AuthCodeURL("state-val", "challenge-val", "")
 	assert.Contains(t, url, "state=state-val")
@@ -259,7 +325,8 @@ func TestFacebookProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
 	assert.NotContains(t, url, "nonce=")
 }
 
-func TestFacebookProvider_AuthCodeURL_WithNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestFacebookProvider_AuthCodeURL_WithNonce() {
+	t := suite.T()
 	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
 	url := p.AuthCodeURL("state-val", "challenge-val", "nonce-val")
 	assert.Contains(t, url, "nonce=nonce-val")
@@ -267,7 +334,8 @@ func TestFacebookProvider_AuthCodeURL_WithNonce(t *testing.T) {
 
 // --- FacebookProvider CompleteLogin Tests ---
 
-func TestFacebookProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
+func (suite *ProvidersTestSuite) TestFacebookProvider_CompleteLogin_TokenExchangeError() {
+	t := suite.T()
 	// Use a test server that returns an error for token exchange
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -290,24 +358,22 @@ func TestFacebookProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
 	assert.Contains(t, err.Error(), "token exchange failed")
 }
 
-func TestFacebookProvider_CompleteLogin_Success(t *testing.T) {
-	// Mock token server
+func (suite *ProvidersTestSuite) TestFacebookProvider_CompleteLogin_Success() {
+	t := suite.T()
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"mock-token","token_type":"bearer","expires_in":3600}`))
+		_, _ = w.Write([]byte(`{"access_token":"test-token","token_type":"bearer","expires_in":3600}`))
 	}))
 	defer tokenServer.Close()
 
-	// Mock Graph API server
 	graphServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Contains(t, r.Header.Get("Authorization"), "Bearer mock-token")
+		assert.Contains(t, r.Header.Get("Authorization"), "Bearer test-token")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id":"12345","name":"Test User","email":"test@example.com"}`))
 	}))
 	defer graphServer.Close()
+	routeFacebookGraphAPI(t, graphServer.URL)
 
-	// We can't easily test the full flow because the graph API URL is hardcoded
-	// But we can test the token exchange failure path
 	p := &FacebookProvider{
 		oauth2: oauth2.Config{
 			ClientID:     "test-client",
@@ -318,15 +384,17 @@ func TestFacebookProvider_CompleteLogin_Success(t *testing.T) {
 		},
 	}
 
-	// This will succeed at token exchange but fail at the hardcoded Facebook graph API
-	_, err := p.CompleteLogin(t.Context(), "valid-code", "verifier", "")
-	// Should fail because the graph API URL is hardcoded to facebook.com
-	assert.Error(t, err)
+	user, err := p.CompleteLogin(t.Context(), "valid-code", "verifier", "")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	assert.Equal(t, "test@example.com", user.Contact)
+	assert.Equal(t, "Test User", user.Name)
 }
 
 // --- SetupAuthProviders Facebook ---
 
-func TestSetupAuthProviders_Facebook(t *testing.T) {
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_Facebook() {
+	t := suite.T()
 	cfg := &config.AuthenticationConfig{
 		AuthProviderMetaClientID:    "fb-client",
 		AuthProviderMetaSecret:      "fb-secret",
@@ -341,7 +409,8 @@ func TestSetupAuthProviders_Facebook(t *testing.T) {
 
 // --- AuthenticatedUser struct ---
 
-func TestAuthenticatedUser(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAuthenticatedUser() {
+	t := suite.T()
 	user := &AuthenticatedUser{
 		Contact:   "user@example.com",
 		Name:      "Test User",
@@ -355,7 +424,8 @@ func TestAuthenticatedUser(t *testing.T) {
 
 // --- Google OIDC Provider Tests (direct struct construction, no OIDC discovery) ---
 
-func TestGoogleOIDCProvider_Name(t *testing.T) {
+func (suite *ProvidersTestSuite) TestGoogleOIDCProvider_Name() {
+	t := suite.T()
 	p := &GoogleOIDCProvider{
 		oauth2: oauth2.Config{
 			ClientID:     "google-client",
@@ -365,7 +435,8 @@ func TestGoogleOIDCProvider_Name(t *testing.T) {
 	assert.Equal(t, "google", p.Name())
 }
 
-func TestGoogleOIDCProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestGoogleOIDCProvider_AuthCodeURL_WithoutNonce() {
+	t := suite.T()
 	p := &GoogleOIDCProvider{
 		oauth2: oauth2.Config{
 			ClientID:     "google-client",
@@ -382,7 +453,8 @@ func TestGoogleOIDCProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
 	assert.NotContains(t, url, "nonce=")
 }
 
-func TestGoogleOIDCProvider_AuthCodeURL_WithNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestGoogleOIDCProvider_AuthCodeURL_WithNonce() {
+	t := suite.T()
 	p := &GoogleOIDCProvider{
 		oauth2: oauth2.Config{
 			ClientID: "google-client",
@@ -395,7 +467,8 @@ func TestGoogleOIDCProvider_AuthCodeURL_WithNonce(t *testing.T) {
 	assert.Contains(t, url, "nonce=nonce-val")
 }
 
-func TestGoogleOIDCProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
+func (suite *ProvidersTestSuite) TestGoogleOIDCProvider_CompleteLogin_TokenExchangeError() {
+	t := suite.T()
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
@@ -419,7 +492,8 @@ func TestGoogleOIDCProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
 
 // --- Apple Provider Tests ---
 
-func TestAppleProvider_Name(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAppleProvider_Name() {
+	t := suite.T()
 	p := &AppleProvider{
 		oauth2: oauth2.Config{
 			ClientID: "apple-client",
@@ -428,7 +502,8 @@ func TestAppleProvider_Name(t *testing.T) {
 	assert.Equal(t, "apple", p.Name())
 }
 
-func TestAppleProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAppleProvider_AuthCodeURL_WithoutNonce() {
+	t := suite.T()
 	p := &AppleProvider{
 		oauth2: oauth2.Config{
 			ClientID: "apple-client",
@@ -444,7 +519,8 @@ func TestAppleProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
 	assert.NotContains(t, url, "nonce=")
 }
 
-func TestAppleProvider_AuthCodeURL_WithNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAppleProvider_AuthCodeURL_WithNonce() {
+	t := suite.T()
 	p := &AppleProvider{
 		oauth2: oauth2.Config{
 			ClientID: "apple-client",
@@ -458,7 +534,8 @@ func TestAppleProvider_AuthCodeURL_WithNonce(t *testing.T) {
 	assert.Contains(t, url, "response_mode=form_post")
 }
 
-func TestAppleProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
+func (suite *ProvidersTestSuite) TestAppleProvider_CompleteLogin_TokenExchangeError() {
+	t := suite.T()
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
@@ -482,7 +559,8 @@ func TestAppleProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
 
 // --- Microsoft Provider Tests ---
 
-func TestMicrosoftProvider_Name(t *testing.T) {
+func (suite *ProvidersTestSuite) TestMicrosoftProvider_Name() {
+	t := suite.T()
 	p := &MicrosoftProvider{
 		oauth2: oauth2.Config{
 			ClientID: "ms-client",
@@ -491,7 +569,8 @@ func TestMicrosoftProvider_Name(t *testing.T) {
 	assert.Equal(t, "microsoft", p.Name())
 }
 
-func TestMicrosoftProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestMicrosoftProvider_AuthCodeURL_WithoutNonce() {
+	t := suite.T()
 	p := &MicrosoftProvider{
 		oauth2: oauth2.Config{
 			ClientID: "ms-client",
@@ -507,7 +586,8 @@ func TestMicrosoftProvider_AuthCodeURL_WithoutNonce(t *testing.T) {
 	assert.NotContains(t, url, "nonce=")
 }
 
-func TestMicrosoftProvider_AuthCodeURL_WithNonce(t *testing.T) {
+func (suite *ProvidersTestSuite) TestMicrosoftProvider_AuthCodeURL_WithNonce() {
+	t := suite.T()
 	p := &MicrosoftProvider{
 		oauth2: oauth2.Config{
 			ClientID: "ms-client",
@@ -520,7 +600,8 @@ func TestMicrosoftProvider_AuthCodeURL_WithNonce(t *testing.T) {
 	assert.Contains(t, url, "nonce=nonce-val")
 }
 
-func TestMicrosoftProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
+func (suite *ProvidersTestSuite) TestMicrosoftProvider_CompleteLogin_TokenExchangeError() {
+	t := suite.T()
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
@@ -544,17 +625,22 @@ func TestMicrosoftProvider_CompleteLogin_TokenExchangeError(t *testing.T) {
 
 // --- Facebook CompleteLogin with successful token exchange but Graph API returns JSON ---
 
-func TestFacebookProvider_CompleteLogin_GraphAPISuccess(t *testing.T) {
-	// Mock token server
+func (suite *ProvidersTestSuite) TestFacebookProvider_CompleteLogin_GraphAPISuccess() {
+	t := suite.T()
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"mock-token","token_type":"bearer","expires_in":3600}`))
+		_, _ = w.Write([]byte(`{"access_token":"test-token","token_type":"bearer","expires_in":3600}`))
 	}))
 	defer tokenServer.Close()
 
-	// Mock Graph API server - we need to override the hardcoded URL
-	// We can't easily do that, but we can test that the token exchange works
-	// The actual graph call will fail with the hardcoded URL
+	graphServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.Header.Get("Authorization"), "Bearer test-token")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"abc","name":"Another User","email":"another@example.com"}`))
+	}))
+	defer graphServer.Close()
+	routeFacebookGraphAPI(t, graphServer.URL)
+
 	p := &FacebookProvider{
 		oauth2: oauth2.Config{
 			ClientID:     "test-client",
@@ -565,14 +651,17 @@ func TestFacebookProvider_CompleteLogin_GraphAPISuccess(t *testing.T) {
 		},
 	}
 
-	// Token exchange succeeds but graph API call to facebook.com will fail
-	_, err := p.CompleteLogin(t.Context(), "valid-code", "verifier", "")
-	assert.Error(t, err) // Will fail at Graph API call
+	user, err := p.CompleteLogin(t.Context(), "valid-code", "verifier", "")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	assert.Equal(t, "another@example.com", user.Contact)
+	assert.Equal(t, "Another User", user.Name)
 }
 
 // --- SetupAuthProviders Google error path ---
 
-func TestSetupAuthProviders_GoogleDiscoveryError(t *testing.T) {
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_GoogleDiscoveryError() {
+	t := suite.T()
 	cfg := &config.AuthenticationConfig{
 		AuthProviderGoogleClientID:    "google-client",
 		AuthProviderGoogleSecret:      "google-secret",
@@ -588,7 +677,8 @@ func TestSetupAuthProviders_GoogleDiscoveryError(t *testing.T) {
 
 // --- SetupAuthProviders Multiple providers (Facebook only works without network) ---
 
-func TestSetupAuthProviders_MultipleFacebook(t *testing.T) {
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_MultipleFacebook() {
+	t := suite.T()
 	cfg := &config.AuthenticationConfig{
 		AuthProviderMetaClientID:    "fb-client",
 		AuthProviderMetaSecret:      "fb-secret",
@@ -606,7 +696,8 @@ func TestSetupAuthProviders_MultipleFacebook(t *testing.T) {
 
 // --- StateCodec Encode error ---
 
-func TestStateCodec_EncodeNilValue(t *testing.T) {
+func (suite *ProvidersTestSuite) TestStateCodec_EncodeNilValue() {
+	t := suite.T()
 	codec, err := NewStateCodec(validKey())
 	require.NoError(t, err)
 

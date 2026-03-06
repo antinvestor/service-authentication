@@ -8,10 +8,20 @@ import (
 	"github.com/pitabwire/frame/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
 
-func TestTenant_ToAPI(t *testing.T) {
+type ModelsTestSuite struct {
+	suite.Suite
+}
+
+func TestModelsTestSuite(t *testing.T) {
+	suite.Run(t, new(ModelsTestSuite))
+}
+
+func (suite *ModelsTestSuite) TestTenant_ToAPI() {
+	t := suite.T()
 	now := time.Now()
 	tenant := &Tenant{
 		BaseModel: data.BaseModel{
@@ -32,7 +42,8 @@ func TestTenant_ToAPI(t *testing.T) {
 	assert.NotNil(t, api.CreatedAt)
 }
 
-func TestTenant_ToAPI_EmptyProperties(t *testing.T) {
+func (suite *ModelsTestSuite) TestTenant_ToAPI_EmptyProperties() {
+	t := suite.T()
 	tenant := &Tenant{
 		BaseModel: data.BaseModel{ID: "t-2"},
 		Name:      "Empty",
@@ -43,7 +54,8 @@ func TestTenant_ToAPI_EmptyProperties(t *testing.T) {
 	assert.Equal(t, "Empty", api.Name)
 }
 
-func TestPartition_ToAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartition_ToAPI() {
+	t := suite.T()
 	now := time.Now()
 	partition := &Partition{
 		BaseModel: data.BaseModel{
@@ -68,7 +80,8 @@ func TestPartition_ToAPI(t *testing.T) {
 	assert.NotNil(t, api.Properties)
 }
 
-func TestPartitionRole_ToAPI_Active(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartitionRole_ToAPI_Active() {
+	t := suite.T()
 	role := &PartitionRole{
 		BaseModel: data.BaseModel{
 			ID:          "role-1",
@@ -87,7 +100,8 @@ func TestPartitionRole_ToAPI_Active(t *testing.T) {
 	assert.Equal(t, commonv1.STATE_ACTIVE, api.State)
 }
 
-func TestPartitionRole_ToAPI_Deleted(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartitionRole_ToAPI_Deleted() {
+	t := suite.T()
 	role := &PartitionRole{
 		BaseModel: data.BaseModel{
 			ID:        "role-2",
@@ -100,7 +114,8 @@ func TestPartitionRole_ToAPI_Deleted(t *testing.T) {
 	assert.Equal(t, commonv1.STATE_DELETED, api.State)
 }
 
-func TestPage_ToAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestPage_ToAPI() {
+	t := suite.T()
 	page := &Page{
 		BaseModel: data.BaseModel{
 			ID:        "page-1",
@@ -121,7 +136,8 @@ func TestPage_ToAPI(t *testing.T) {
 	assert.NotNil(t, api.Properties)
 }
 
-func TestAccess_ToAPI_Valid(t *testing.T) {
+func (suite *ModelsTestSuite) TestAccess_ToAPI_Valid() {
+	t := suite.T()
 	access := &Access{
 		BaseModel: data.BaseModel{
 			ID:        "access-1",
@@ -145,7 +161,8 @@ func TestAccess_ToAPI_Valid(t *testing.T) {
 	assert.Equal(t, commonv1.STATE_ACTIVE, api.State)
 }
 
-func TestAccess_ToAPI_NilPartition(t *testing.T) {
+func (suite *ModelsTestSuite) TestAccess_ToAPI_NilPartition() {
+	t := suite.T()
 	access := &Access{
 		BaseModel: data.BaseModel{ID: "access-2"},
 		ProfileID: "profile-2",
@@ -157,7 +174,8 @@ func TestAccess_ToAPI_NilPartition(t *testing.T) {
 	assert.Contains(t, err.Error(), "no partition exists")
 }
 
-func TestAccessRole_ToAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestAccessRole_ToAPI() {
+	t := suite.T()
 	ar := &AccessRole{
 		BaseModel:       data.BaseModel{ID: "ar-1"},
 		AccessID:        "access-1",
@@ -177,7 +195,8 @@ func TestAccessRole_ToAPI(t *testing.T) {
 	assert.Equal(t, "admin", api.Role.Name)
 }
 
-func TestAccessRole_ToAPI_NilRole(t *testing.T) {
+func (suite *ModelsTestSuite) TestAccessRole_ToAPI_NilRole() {
+	t := suite.T()
 	ar := &AccessRole{
 		BaseModel: data.BaseModel{ID: "ar-2"},
 		AccessID:  "access-1",
@@ -191,7 +210,8 @@ func TestAccessRole_ToAPI_NilRole(t *testing.T) {
 
 // Client tests
 
-func TestClient_ToAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_ToAPI() {
+	t := suite.T()
 	client := &Client{
 		BaseModel: data.BaseModel{
 			ID:          "client-1",
@@ -224,7 +244,8 @@ func TestClient_ToAPI(t *testing.T) {
 	assert.NotNil(t, api.Properties)
 }
 
-func TestClient_ToAPI_Deleted(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_ToAPI_Deleted() {
+	t := suite.T()
 	client := &Client{
 		BaseModel: data.BaseModel{
 			ID:        "client-2",
@@ -239,7 +260,8 @@ func TestClient_ToAPI_Deleted(t *testing.T) {
 	assert.Equal(t, commonv1.STATE_DELETED, api.State)
 }
 
-func TestClient_ToAPI_NilOptionalFields(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_ToAPI_NilOptionalFields() {
+	t := suite.T()
 	client := &Client{
 		BaseModel: data.BaseModel{ID: "client-3"},
 		Name:      "Minimal",
@@ -253,7 +275,8 @@ func TestClient_ToAPI_NilOptionalFields(t *testing.T) {
 	assert.Nil(t, api.Properties)
 }
 
-func TestClient_GetRoleNames(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_GetRoleNames() {
+	t := suite.T()
 	tests := []struct {
 		name     string
 		roles    data.JSONMap
@@ -279,7 +302,8 @@ func TestClient_GetRoleNames(t *testing.T) {
 
 // ServiceAccount tests
 
-func TestServiceAccount_ToAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestServiceAccount_ToAPI() {
+	t := suite.T()
 	sa := &ServiceAccount{
 		BaseModel: data.BaseModel{
 			ID:          "sa-1",
@@ -307,7 +331,8 @@ func TestServiceAccount_ToAPI(t *testing.T) {
 	assert.NotNil(t, api.Properties)
 }
 
-func TestServiceAccount_ToAPI_Deleted(t *testing.T) {
+func (suite *ModelsTestSuite) TestServiceAccount_ToAPI_Deleted() {
+	t := suite.T()
 	sa := &ServiceAccount{
 		BaseModel: data.BaseModel{
 			ID:        "sa-2",
@@ -323,7 +348,8 @@ func TestServiceAccount_ToAPI_Deleted(t *testing.T) {
 	assert.Equal(t, "external", api.Type)
 }
 
-func TestServiceAccount_ToAPI_NilProperties(t *testing.T) {
+func (suite *ModelsTestSuite) TestServiceAccount_ToAPI_NilProperties() {
+	t := suite.T()
 	sa := &ServiceAccount{
 		BaseModel: data.BaseModel{ID: "sa-3"},
 		ProfileID: "p-3",
@@ -338,7 +364,8 @@ func TestServiceAccount_ToAPI_NilProperties(t *testing.T) {
 	assert.Nil(t, api.Audiences)
 }
 
-func TestPartition_ToAPI_WithDomain(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartition_ToAPI_WithDomain() {
+	t := suite.T()
 	partition := &Partition{
 		BaseModel: data.BaseModel{
 			ID:       "part-domain",
@@ -357,7 +384,8 @@ func TestPartition_ToAPI_WithDomain(t *testing.T) {
 	assert.Equal(t, "val", props["key"])
 }
 
-func TestPartition_ToAPI_NoDomain(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartition_ToAPI_NoDomain() {
+	t := suite.T()
 	partition := &Partition{
 		BaseModel:  data.BaseModel{ID: "part-no-domain"},
 		Properties: data.JSONMap{"key": "val"},
@@ -367,7 +395,8 @@ func TestPartition_ToAPI_NoDomain(t *testing.T) {
 	assert.Empty(t, api.Domain)
 }
 
-func TestPartitionRole_ToAPI_WithIsDefault(t *testing.T) {
+func (suite *ModelsTestSuite) TestPartitionRole_ToAPI_WithIsDefault() {
+	t := suite.T()
 	role := &PartitionRole{
 		BaseModel:  data.BaseModel{ID: "role-def", PartitionID: "p-1"},
 		Name:       "default-role",
@@ -380,7 +409,8 @@ func TestPartitionRole_ToAPI_WithIsDefault(t *testing.T) {
 	assert.Equal(t, true, props["is_default"])
 }
 
-func TestClient_ToServiceAccountAPI(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_ToServiceAccountAPI() {
+	t := suite.T()
 	client := &Client{
 		BaseModel: data.BaseModel{
 			ID:          "client-sa-1",
@@ -411,7 +441,8 @@ func TestClient_ToServiceAccountAPI(t *testing.T) {
 	assert.Equal(t, "internal", props["type"])
 }
 
-func TestClient_ToServiceAccountAPI_Deleted(t *testing.T) {
+func (suite *ModelsTestSuite) TestClient_ToServiceAccountAPI_Deleted() {
+	t := suite.T()
 	client := &Client{
 		BaseModel: data.BaseModel{
 			ID:        "client-sa-2",
@@ -426,7 +457,8 @@ func TestClient_ToServiceAccountAPI_Deleted(t *testing.T) {
 	assert.Equal(t, "external", api.Type)
 }
 
-func TestJsonMapToStringSlice(t *testing.T) {
+func (suite *ModelsTestSuite) TestJsonMapToStringSlice() {
+	t := suite.T()
 	tests := []struct {
 		name     string
 		m        data.JSONMap
