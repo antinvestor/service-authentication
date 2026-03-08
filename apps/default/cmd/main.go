@@ -22,8 +22,6 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/security"
-	"github.com/pitabwire/frame/security/openid"
 	"github.com/pitabwire/util"
 )
 
@@ -47,7 +45,7 @@ func main() {
 	}
 
 	ctx, svc := frame.NewServiceWithContext(ctx,
-		frame.WithConfig(&cfg), frame.WithRegisterServerOauth2Client(),
+		frame.WithConfig(&cfg),
 		frame.WithCache(cfg.CacheName, rawCache), frame.WithDatastore())
 
 	log := util.Log(ctx)
@@ -64,22 +62,22 @@ func main() {
 		return
 	}
 
-	partitionCli, err := setupPartitionClient(ctx, sm, cfg)
+	partitionCli, err := setupPartitionClient(ctx, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup partition service client: %v", err)
 	}
 
-	notificationCli, err := setupNotificationClient(ctx, sm, cfg)
+	notificationCli, err := setupNotificationClient(ctx, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup notification service client: %v", err)
 	}
 
-	profileCli, err := setupProfileClient(ctx, sm, cfg)
+	profileCli, err := setupProfileClient(ctx, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup profile service : %v", err)
 	}
 
-	deviceCli, err := setupDeviceClient(ctx, sm, cfg)
+	deviceCli, err := setupDeviceClient(ctx, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup devices service : %v", err)
 	}
@@ -149,55 +147,43 @@ func setupCache(_ context.Context, cfg aconfig.AuthenticationConfig) (cache.RawC
 // setupDeviceClient creates and configures the device client.
 func setupDeviceClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
-	return device.NewClient(ctx,
-		common.WithEndpoint(cfg.DeviceServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_devices"))
+	return device.NewClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.DeviceServiceURI,
+		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_devices"},
+	})
 }
 
 // setupNotificationClient creates and configures the notification client.
 func setupNotificationClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
-	return notification.NewClient(ctx,
-		common.WithEndpoint(cfg.NotificationServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_notifications"))
+	return notification.NewClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.NotificationServiceURI,
+		WorkloadAPITargetPath: cfg.NotificationServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_notifications"},
+	})
 }
 
 // setupPartitionClient creates and configures the partition client.
 func setupPartitionClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
-	return partition.NewClient(ctx,
-		common.WithEndpoint(cfg.PartitionServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_tenancy"))
+	return partition.NewClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.PartitionServiceURI,
+		WorkloadAPITargetPath: cfg.PartitionServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_tenancy"},
+	})
 }
 
 // setupProfileClient creates and configures the profile client.
 func setupProfileClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
-	return profile.NewClient(ctx,
-		common.WithEndpoint(cfg.ProfileServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_profile"))
+	return profile.NewClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.ProfileServiceURI,
+		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_profile"},
+	})
 }

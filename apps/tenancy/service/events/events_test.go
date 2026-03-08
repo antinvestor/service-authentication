@@ -547,6 +547,7 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_Internal() {
 		Type:         "internal",
 		ProfileID:    "profile-123",
 		Audiences:    data.JSONMap{"namespaces": []any{"svc1", "svc2"}},
+		BaseModel:    data.BaseModel{TenantID: "tenant-123", PartitionID: "partition-123"},
 	}
 
 	payload := buildServiceAccountHydraPayload(sa)
@@ -563,6 +564,12 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_Internal() {
 	aud, ok := payload["audience"].([]string)
 	require.True(t, ok)
 	assert.Equal(t, []string{"svc1", "svc2"}, aud)
+	assert.Equal(t, map[string]any{
+		"tenant_id":    "tenant-123",
+		"partition_id": "partition-123",
+		"profile_id":   "profile-123",
+		"type":         "internal",
+	}, payload["metadata"])
 }
 
 func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_External() {
@@ -593,6 +600,30 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_NoAudiences() 
 	payload := buildServiceAccountHydraPayload(sa)
 
 	assert.Nil(t, payload["audience"])
+}
+
+func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_JWKSURIInfersPrivateKeyJWT() {
+	t := suite.T()
+	sa := &models.ServiceAccount{
+		ClientID:     "service-profile",
+		ClientSecret: "legacy-secret",
+		Type:         "internal",
+		ProfileID:    "service_profile",
+		Properties: data.JSONMap{
+			"jwks_uri": "http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		},
+	}
+
+	payload := buildServiceAccountHydraPayload(sa)
+
+	assert.Equal(t, "private_key_jwt", payload["token_endpoint_auth_method"])
+	assert.Equal(
+		t,
+		"http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		payload["jwks_uri"],
+	)
+	_, hasSecret := payload["client_secret"]
+	assert.False(t, hasSecret)
 }
 
 // --- extractAudienceNamespaces ---

@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -355,6 +356,35 @@ func (s *WebhookHelpersTestSuite) TestGetMapKeys() {
 	s.Len(keys, 2)
 	s.Contains(keys, "a")
 	s.Contains(keys, "b")
+}
+
+func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient() {
+	client := hydraclientgo.NewOAuth2Client()
+	client.SetMetadata(map[string]any{
+		"tenant_id":    "tenant-1",
+		"partition_id": "partition-1",
+		"profile_id":   "profile-1",
+		"type":         "internal",
+	})
+
+	sa, err := serviceAccountFromHydraClient(client, "client-1")
+	s.Require().NoError(err)
+	s.Equal("client-1", sa.GetClientId())
+	s.Equal("tenant-1", sa.GetTenantId())
+	s.Equal("partition-1", sa.GetPartitionId())
+	s.Equal("profile-1", sa.GetProfileId())
+	s.Equal("internal", sa.GetType())
+}
+
+func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient_MissingMetadata() {
+	client := hydraclientgo.NewOAuth2Client()
+	client.SetMetadata(map[string]any{
+		"tenant_id": "tenant-1",
+	})
+
+	_, err := serviceAccountFromHydraClient(client, "client-1")
+	s.Error(err)
+	s.Contains(err.Error(), "metadata incomplete")
 }
 
 // --- extractOAuth2SessionID additional paths ---

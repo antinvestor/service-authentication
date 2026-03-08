@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,14 +15,12 @@ import (
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/apis/go/common"
-	"github.com/antinvestor/apis/go/device"
-	"github.com/antinvestor/apis/go/notification"
-	"github.com/antinvestor/apis/go/partition"
-	"github.com/antinvestor/apis/go/profile"
+	commonconnection "github.com/antinvestor/apis/go/common/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/internal/tests"
+	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/config"
@@ -31,7 +30,6 @@ import (
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
 	"github.com/pitabwire/frame/security"
-	"github.com/pitabwire/frame/security/openid"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -51,9 +49,6 @@ type DepsBuilder struct {
 func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
-	sMan := svc.SecurityManager()
-	// qMan := svc.QueueManager()
-	//
 	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
 
 	depBuilder := &DepsBuilder{
@@ -63,21 +58,21 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 
 	var err error
 
-	depBuilder.PartitionCli, err = setupPartitionClient(ctx, sMan, cfg)
+	depBuilder.PartitionCli, err = setupPartitionClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	depBuilder.NotificationCli, err = setupNotificationClient(ctx, sMan, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	depBuilder.ProfileCli, err = setupProfileClient(ctx, sMan, cfg)
+	depBuilder.NotificationCli, err = setupNotificationClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	depBuilder.DeviceCli, err = setupDeviceClient(ctx, sMan, cfg)
+	depBuilder.ProfileCli, err = setupProfileClient(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	depBuilder.DeviceCli, err = setupDeviceClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +205,9 @@ func (bs *BaseTestSuite) CreateService(
 	if bs.handler == nil {
 		cfg.HTTPServerPort = bs.FreeAuthPort
 	}
+	cfg.Oauth2ServiceClientID = "dev_authentication_tests"
 	cfg.Oauth2ServiceClientSecret = "vkGiJroO9dAS5eFnuaGy"
+	cfg.Oauth2TokenEndpointAuthMethod = common.TokenEndpointAuthMethodClientSecretPost
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
 
@@ -224,8 +221,11 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = "http://hydra:4444"
 
+	err = ensureHydraServiceClient(ctx, cfg.Oauth2ServiceAdminURI)
+	require.NoError(t, err)
+
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
-		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache()), frame.WithRegisterServerOauth2Client()}
+		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache())}
 
 	if bs.handler != nil {
 		opts = append(opts, frametests.WithNoopDriver())
@@ -258,63 +258,110 @@ func (bs *BaseTestSuite) CreateService(
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
+func ensureHydraServiceClient(ctx context.Context, adminURL string) error {
+	configuration := hydraclientgo.NewConfiguration()
+	configuration.HTTPClient = http.DefaultClient
+	configuration.Servers = []hydraclientgo.ServerConfiguration{{URL: adminURL}}
+
+	client := hydraclientgo.NewOAuth2Client()
+	client.SetClientId("dev_authentication_tests")
+	client.SetClientName("sa-authentication_tests")
+	client.SetClientSecret("vkGiJroO9dAS5eFnuaGy")
+	client.SetGrantTypes([]string{"client_credentials"})
+	client.SetResponseTypes([]string{"token"})
+	client.SetScope("system_int openid")
+	client.SetAudience([]string{"service_profile", "service_tenancy", "service_notifications", "service_devices"})
+	client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
+	client.SetMetadata(map[string]any{
+		"tenant_id":    "9bsv0s3pbdv002o80qfg",
+		"partition_id": "9bsv0s3pbdv002o80qhg",
+		"profile_id":   "dev_authentication_tests",
+		"type":         "internal",
+	})
+
+	apiClient := hydraclientgo.NewAPIClient(configuration)
+
+	_, _, err := apiClient.OAuth2API.
+		CreateOAuth2Client(ctx).
+		OAuth2Client(*client).
+		Execute()
+	if err == nil {
+		return nil
+	}
+
+	if !strings.Contains(err.Error(), "409") {
+		return fmt.Errorf("create hydra service client: %w", err)
+	}
+
+	_, _, err = apiClient.OAuth2API.
+		SetOAuth2Client(ctx, "dev_authentication_tests").
+		OAuth2Client(*client).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("ensure hydra service client: %w", err)
+	}
+
+	return nil
+}
+
 // setupDeviceClient creates and configures the device client.
 func setupDeviceClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
-	return device.NewClient(ctx,
-		common.WithEndpoint(cfg.DeviceServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_devices"))
+	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
+		Endpoint:  cfg.DeviceServiceURI,
+		Audiences: []string{"service_devices"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return commonconnection.NewConnectClient(ctx, devicev1connect.NewDeviceServiceClient, opts...)
 }
 
 // setupNotificationClient creates and configures the notification client.
 func setupNotificationClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
-	return notification.NewClient(ctx,
-		common.WithEndpoint(cfg.NotificationServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_notifications"))
+	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
+		Endpoint:  cfg.NotificationServiceURI,
+		Audiences: []string{"service_notifications"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return commonconnection.NewConnectClient(ctx, notificationv1connect.NewNotificationServiceClient, opts...)
 }
 
 // setupPartitionClient creates and configures the partition client.
 func setupPartitionClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
-	return partition.NewClient(ctx,
-		common.WithEndpoint(cfg.PartitionServiceURI),
-		common.WithTraceRequests(),
-		common.WithTraceResponses(),
-		common.WithTraceHeaders(),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_tenancy"))
+	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
+		Endpoint:  cfg.PartitionServiceURI,
+		Audiences: []string{"service_tenancy"},
+	}, common.WithTraceRequests(), common.WithTraceResponses(), common.WithTraceHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return commonconnection.NewConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
 }
 
 // setupProfileClient creates and configures the profile client.
 func setupProfileClient(
 	ctx context.Context,
-	clHolder security.InternalOauth2ClientHolder,
 	cfg *aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
-	return profile.NewClient(ctx,
-		common.WithEndpoint(cfg.ProfileServiceURI),
-		common.WithTokenEndpoint(cfg.GetOauth2TokenEndpoint()),
-		common.WithTokenUsername(clHolder.JwtClientID()),
-		common.WithTokenPassword(clHolder.JwtClientSecret()),
-		common.WithScopes(openid.ConstSystemScopeInternal),
-		common.WithAudiences("service_profile"))
+	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
+		Endpoint:  cfg.ProfileServiceURI,
+		Audiences: []string{"service_profile"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return commonconnection.NewConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
 }
 
 func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {

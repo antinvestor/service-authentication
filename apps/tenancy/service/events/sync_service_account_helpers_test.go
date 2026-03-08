@@ -51,6 +51,7 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 		ProfileID: "prof-1",
 		Type:      "internal",
 		Audiences: data.JSONMap{"namespaces": []any{"service_profile"}},
+		BaseModel: data.BaseModel{TenantID: "tenant-1", PartitionID: "partition-1"},
 	}
 
 	payload := buildServiceAccountHydraPayload(sa)
@@ -60,6 +61,12 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 	s.Equal("prof-1", payload["subject"])
 	s.Equal([]string{"client_credentials"}, payload["grant_types"])
 	s.Equal("none", payload["token_endpoint_auth_method"])
+	s.Equal(map[string]any{
+		"tenant_id":    "tenant-1",
+		"partition_id": "partition-1",
+		"profile_id":   "prof-1",
+		"type":         "internal",
+	}, payload["metadata"])
 }
 
 func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_External() {
@@ -84,6 +91,27 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_WithSecret() {
 	payload := buildServiceAccountHydraPayload(sa)
 	s.Equal("s3cr3t", payload["client_secret"])
 	s.Equal("client_secret_post", payload["token_endpoint_auth_method"])
+}
+
+func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_WithJWKSURI() {
+	sa := &models.ServiceAccount{
+		ClientID:     "service-profile",
+		ProfileID:    "service_profile",
+		ClientSecret: "legacy-secret",
+		Type:         "internal",
+		Properties: data.JSONMap{
+			"jwks_uri": "http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		},
+	}
+
+	payload := buildServiceAccountHydraPayload(sa)
+	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
+	s.Equal(
+		"http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		payload["jwks_uri"],
+	)
+	_, hasSecret := payload["client_secret"]
+	s.False(hasSecret)
 }
 
 // --- ServiceAccountSyncEvent validation ---

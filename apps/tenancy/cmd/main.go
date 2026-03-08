@@ -37,7 +37,7 @@ func main() {
 		cfg.ServiceName = "service_tenancy"
 	}
 
-	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore(), frame.WithRegisterServerOauth2Client())
+	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 
 	// Handle database migration if requested
 	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {

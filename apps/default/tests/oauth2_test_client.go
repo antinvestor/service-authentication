@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -21,10 +22,15 @@ import (
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
+	"github.com/antinvestor/apis/go/common"
+	commonconnection "github.com/antinvestor/apis/go/common/connection"
+	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/util"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -36,6 +42,7 @@ type OAuth2TestClient struct {
 	PartitionCli   partitionv1connect.PartitionServiceClient
 	Client         *http.Client
 	t              *testing.T
+	cfg            *aconfig.AuthenticationConfig
 
 	clientIdList []string
 	cookieJar    http.CookieJar // Store reference to cookie jar for clearing
@@ -123,7 +130,8 @@ func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 				return http.ErrUseLastResponse
 			},
 		},
-		t: nil, // No testing.T required for basic functionality
+		t:   nil, // No testing.T required for basic functionality
+		cfg: authServer.Config(),
 	}
 	client.cookieJar = jar // Store reference to cookie jar for clearing
 	return client
@@ -157,10 +165,44 @@ func (c *OAuth2TestClient) PostLoginRedirectHandler() {
 
 }
 
+func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (partitionv1connect.PartitionServiceClient, error) {
+	if c.cfg == nil {
+		return c.PartitionCli, nil
+	}
+
+	tokenCfg := &clientcredentials.Config{
+		ClientID:     c.cfg.GetOauth2ServiceClientID(),
+		ClientSecret: c.cfg.GetOauth2ServiceClientSecret(),
+		TokenURL:     c.cfg.GetOauth2TokenEndpoint(),
+		AuthStyle:    oauth2.AuthStyleInParams,
+		EndpointParams: url.Values{
+			"audience": []string{"service_tenancy"},
+		},
+	}
+
+	client, err := commonconnection.NewConnectClient(
+		ctx,
+		partitionv1connect.NewPartitionServiceClient,
+		common.WithEndpoint(c.cfg.PartitionServiceURI),
+		common.WithAudiences("service_tenancy"),
+		common.WithTokenSource(tokenCfg.TokenSource(ctx)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("partition client: %w", err)
+	}
+
+	return client, nil
+}
+
 // CreateOAuth2Client creates a test OAuth2 client in Hydra via the partition service.
 // It creates a partition with OAuth2 config in properties, which triggers the partition
 // sync event to create a Hydra client with client_id = partition_id.
 func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName string) (*OAuth2Client, error) {
+	partitionCli, err := c.authenticatedPartitionClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Use a proper callback URI that won't interfere with OAuth2 endpoints
 	redirectURI := c.AuthServiceURL + "/oauth2/callback"
 
@@ -173,7 +215,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 		"token_endpoint_auth_method": "none",
 	}
 
-	partition, err := NewPartitionForOauthCli(ctx, c.PartitionCli, testName, "Test OAuth2 client", props)
+	partition, err := NewPartitionForOauthCli(ctx, partitionCli, testName, "Test OAuth2 client", props)
 	if err != nil {
 		if c.t != nil {
 			c.t.Logf("DEBUG: Failed to create partition for OAuth2 client: %v", err)
@@ -184,7 +226,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	// Wait for partition sync to Hydra (client_id appears in properties)
 	clientID := partition.GetId()
 	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
-		resp, err0 := c.PartitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
 			Id: clientID,
 		}))
 		if err0 != nil {
@@ -707,7 +749,9 @@ func (c *OAuth2TestClient) PerformCodeVerification(ctx context.Context, loginEve
 	return result, nil
 }
 
-// PerformConsent handles the consent flow if required
+// PerformConsent handles the consent flow if required.
+//
+//nolint:gocyclo // Test helper that intentionally walks the multi-step browser redirect flow.
 func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge string) (*ConsentResult, error) {
 	// Get consent request details
 	consentURL := fmt.Sprintf("%s/s/consent?consent_challenge=%s", c.AuthServiceURL, consentChallenge)
@@ -791,6 +835,47 @@ func (c *OAuth2TestClient) PerformConsent(ctx context.Context, consentChallenge 
 	} else {
 		if c.t != nil {
 			c.t.Logf("DEBUG: Consent response status: %d (expected redirect)", resp.StatusCode)
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return result, fmt.Errorf("failed to read consent response body: %w", err)
+			}
+
+			matches := regexp.MustCompile(`data-redirect="([^"]+)"`).FindStringSubmatch(string(bodyBytes))
+			if len(matches) == 2 {
+				location := html.UnescapeString(matches[1])
+				location = c.normalizeHydraURL(location)
+
+				redirectReq, err := http.NewRequestWithContext(ctx, "GET", location, nil)
+				if err != nil {
+					return result, fmt.Errorf("failed to create interstitial redirect request: %w", err)
+				}
+
+				redirectResp, err := c.Client.Do(redirectReq)
+				if err != nil {
+					return result, fmt.Errorf("failed to follow interstitial redirect: %w", err)
+				}
+				defer func() {
+					if closeErr := redirectResp.Body.Close(); closeErr != nil && c.t != nil {
+						c.t.Logf("DEBUG: Failed to close redirect response body: %v", closeErr)
+					}
+				}()
+
+				if redirectResp.StatusCode == http.StatusSeeOther || redirectResp.StatusCode == http.StatusFound {
+					finalLocation := redirectResp.Header.Get("Location")
+					if finalLocation != "" && strings.Contains(finalLocation, "code=") {
+						parsedURL, err := url.Parse(finalLocation)
+						if err != nil {
+							return result, fmt.Errorf("failed to parse interstitial final redirect URL: %w", err)
+						}
+
+						result.AuthorizationCode = parsedURL.Query().Get("code")
+						result.Success = true
+					}
+				}
+			}
 		}
 	}
 

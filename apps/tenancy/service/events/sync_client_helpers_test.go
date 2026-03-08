@@ -75,8 +75,8 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithProfile() {
 
 	payload := buildClientHydraPayload(cl, "profile-1")
 	s.Equal("profile-1", payload["subject"])
-	// No secret → auth method = none
-	s.Equal("none", payload["token_endpoint_auth_method"])
+	_, hasAuthMethod := payload["token_endpoint_auth_method"]
+	s.False(hasAuthMethod)
 }
 
 func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithSecret() {
@@ -143,8 +143,29 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_ExplicitAuthMet
 
 	payload := buildClientHydraPayload(cl, "")
 	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
-	// Secret should still be sent for non-"none" auth methods
-	s.Equal("secret-val", payload["client_secret"])
+	_, hasSecret := payload["client_secret"]
+	s.False(hasSecret)
+}
+
+func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_JWKSURIInfersPrivateKeyJWT() {
+	cl := &models.Client{
+		Name:         "JWKS Client",
+		ClientID:     "jwks-id",
+		ClientSecret: "secret-val",
+		Type:         "confidential",
+		Properties: data.JSONMap{
+			"jwks_uri": "http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		},
+	}
+
+	payload := buildClientHydraPayload(cl, "")
+	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
+	s.Equal(
+		"http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		payload["jwks_uri"],
+	)
+	_, hasSecret := payload["client_secret"]
+	s.False(hasSecret)
 }
 
 func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_DefaultScopes() {

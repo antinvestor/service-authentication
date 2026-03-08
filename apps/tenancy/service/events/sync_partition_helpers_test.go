@@ -74,6 +74,26 @@ func (s *SyncPartitionHelpersTestSuite) TestPreparePayload_WithSubject() {
 	s.Equal("profile-1", payload["subject"])
 }
 
+func (s *SyncPartitionHelpersTestSuite) TestPreparePayload_WithJWKSURI() {
+	p := &models.Partition{
+		Name: "JWKS Partition",
+		Properties: data.JSONMap{
+			"client_secret": "legacy-secret",
+			"jwks_uri":      "http://service-tenancy.auth.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		},
+	}
+
+	payload, err := preparePayload("client-5", p)
+	s.Require().NoError(err)
+	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
+	s.Equal(
+		"http://service-tenancy.auth.svc.cluster.local/.well-known/oauth2-client-jwks.json",
+		payload["jwks_uri"],
+	)
+	_, hasSecret := payload["client_secret"]
+	s.False(hasSecret)
+}
+
 // --- prepareRedirectURIs ---
 
 func (s *SyncPartitionHelpersTestSuite) TestPrepareRedirectURIs_FromSlice() {

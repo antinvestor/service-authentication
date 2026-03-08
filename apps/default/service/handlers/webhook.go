@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
+	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/util"
 )
 
@@ -496,9 +499,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// use them directly. Otherwise look up the partition to get tenant/partition
 	// and validate the pre-registered subject.
 	grantedScopes := extractGrantedScopes(tokenObject)
-	if grantedScopes == nil {
-		log.Warn("granted_scopes not found - checking session claims for non-user roles")
-	} else if isServiceAccountScoped(grantedScopes) {
+	if grantType == "client_credentials" {
 		sessionClaims := extractSessionAccessTokenClaims(tokenObject)
 		if len(sessionClaims) > 0 {
 			log.Debug("enriched service account token with existing session claims")
@@ -585,11 +586,69 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 
 	log.WithField("role", role).Debug("enriched service account token via SA lookup")
 	return writeTokenHookResponse(rw, map[string]any{
-		"tenant_id":    sa.TenantID,
-		"partition_id": sa.PartitionID,
+		"tenant_id":    sa.GetTenantId(),
+		"partition_id": sa.GetPartitionId(),
 		"roles":        []string{role},
-		"profile_id":   sa.ProfileID,
+		"profile_id":   sa.GetProfileId(),
 	})
+}
+
+func (h *AuthServer) lookupServiceAccountByClientID(
+	ctx context.Context,
+	clientID string,
+) (*partitionv1.ServiceAccountObject, error) {
+	if strings.TrimSpace(clientID) == "" {
+		return nil, fmt.Errorf("client_id is required")
+	}
+
+	client, err := h.defaultHydraCli.GetOAuth2Client(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	return serviceAccountFromHydraClient(client, clientID)
+}
+
+func serviceAccountFromHydraClient(
+	client *hydraclientgo.OAuth2Client,
+	clientID string,
+) (*partitionv1.ServiceAccountObject, error) {
+	if client == nil {
+		return nil, fmt.Errorf("hydra client is required")
+	}
+
+	metadata, ok := client.GetMetadata().(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("hydra client metadata missing for client_id %s", clientID)
+	}
+
+	tenantID, _ := metadata["tenant_id"].(string)
+	partitionID, _ := metadata["partition_id"].(string)
+	profileID, _ := metadata["profile_id"].(string)
+	clientType, _ := metadata["type"].(string)
+	if profileID == "" {
+		profileID = clientID
+	}
+	if clientType == "" {
+		scope := strings.Fields(strings.TrimSpace(client.GetScope()))
+		if slices.Contains(scope, "system_int") {
+			clientType = "internal"
+		} else if slices.Contains(scope, "system_ext") {
+			clientType = "external"
+		}
+	}
+
+	if tenantID == "" || partitionID == "" || profileID == "" || clientType == "" {
+		return nil, fmt.Errorf("hydra client metadata incomplete for client_id %s", clientID)
+	}
+
+	return &partitionv1.ServiceAccountObject{
+		ClientId:    clientID,
+		TenantId:    tenantID,
+		PartitionId: partitionID,
+		ProfileId:   profileID,
+		Type:        clientType,
+	}, nil
 }
 
 // handleUserTokenEnrichment handles token enrichment for regular user tokens.

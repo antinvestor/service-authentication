@@ -206,15 +206,14 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 		"audience":                  audienceList,
 	}
 
-	if _, ok := partition.Properties["token_endpoint_auth_method"]; ok {
-		payload["token_endpoint_auth_method"] = partition.Properties["token_endpoint_auth_method"]
-	} else {
-		payload["token_endpoint_auth_method"] = "none"
-		if clientSecret, ok := partition.Properties["client_secret"].(string); ok && clientSecret != "" {
-			payload["client_secret"] = clientSecret
-			payload["token_endpoint_auth_method"] = "client_secret_post"
-		}
-	}
+	applyHydraClientAuthPayload(
+		payload,
+		partition.Properties.GetString("token_endpoint_auth_method"),
+		partition.Properties.GetString("client_secret"),
+		partition.Properties,
+		nil,
+		true,
+	)
 
 	// Pass subject through to Hydra for client_credentials flow
 	if subject, ok := partition.Properties["subject"].(string); ok && subject != "" {

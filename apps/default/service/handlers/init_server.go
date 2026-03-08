@@ -143,58 +143,6 @@ func NewAuthServer(ctx context.Context,
 	return h
 }
 
-// ServiceAccountInfo holds service account data for token enrichment.
-type ServiceAccountInfo struct {
-	TenantID    string
-	PartitionID string
-	ProfileID   string
-	ClientID    string
-	Type        string
-}
-
-// lookupServiceAccountByClientID retrieves service account metadata via the
-// Hydra admin API. The SA metadata (tenant_id, partition_id, profile_id, type)
-// is stored in the Hydra client's metadata field during client sync.
-//
-// This uses the Hydra admin API (unauthenticated) instead of the partition
-// service's GetClient RPC to avoid a circular dependency: the webhook is called
-// by Hydra during token issuance, and calling the partition service from here
-// would require a token from Hydra, creating an infinite loop.
-func (h *AuthServer) lookupServiceAccountByClientID(ctx context.Context, clientID string) (*ServiceAccountInfo, error) {
-	lookupCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	hydraClient, err := h.defaultHydraCli.GetOAuth2Client(lookupCtx, clientID)
-	if err != nil {
-		return nil, fmt.Errorf("hydra client lookup failed: %w", err)
-	}
-
-	metadata, ok := hydraClient.GetMetadata().(map[string]any)
-	if !ok || metadata == nil {
-		return nil, fmt.Errorf("client %s has no SA metadata in Hydra", clientID)
-	}
-
-	tenantID, _ := metadata["tenant_id"].(string)
-	partitionID, _ := metadata["partition_id"].(string)
-	profileID, _ := metadata["profile_id"].(string)
-	saType, _ := metadata["type"].(string)
-	if saType == "" {
-		saType = "internal"
-	}
-
-	if tenantID == "" || partitionID == "" {
-		return nil, fmt.Errorf("client %s metadata missing tenant_id or partition_id", clientID)
-	}
-
-	return &ServiceAccountInfo{
-		TenantID:    tenantID,
-		PartitionID: partitionID,
-		ProfileID:   profileID,
-		ClientID:    clientID,
-		Type:        saType,
-	}, nil
-}
-
 func (h *AuthServer) loginEventCache() cache.Cache[string, models.LoginEvent] {
 
 	if h.iCache == nil {

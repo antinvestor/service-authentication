@@ -173,14 +173,22 @@ func buildServiceAccountHydraPayload(sa *models.ServiceAccount) map[string]any {
 		"scope":          scope,
 		"audience":       audienceList,
 		"subject":        sa.ProfileID,
+		"metadata": map[string]any{
+			"tenant_id":    sa.TenantID,
+			"partition_id": sa.PartitionID,
+			"profile_id":   sa.ProfileID,
+			"type":         sa.Type,
+		},
 	}
 
-	if sa.ClientSecret != "" {
-		payload["client_secret"] = sa.ClientSecret
-		payload["token_endpoint_auth_method"] = "client_secret_post"
-	} else {
-		payload["token_endpoint_auth_method"] = "none"
-	}
+	applyHydraClientAuthPayload(
+		payload,
+		sa.Properties.GetString("token_endpoint_auth_method"),
+		sa.ClientSecret,
+		sa.Properties,
+		sa.PublicKeys,
+		true,
+	)
 
 	return payload
 }

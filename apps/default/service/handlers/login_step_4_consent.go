@@ -8,6 +8,7 @@ import (
 	"time"
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -49,11 +50,34 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
-	subjectID := getConseReq.GetSubject()
-	log = log.WithField("subject_id", subjectID)
+
+	clientResp, err := h.partitionCli.GetClient(ctx, connect.NewRequest(&partitionv1.GetClientRequest{ClientId: clientID}))
+	var clientObj *partitionv1.ClientObject
+	if err == nil && clientResp.Msg.GetData() != nil {
+		clientObj = clientResp.Msg.GetData()
+	}
+
+	if clientObj == nil {
+		partitionObj, resolveErr := h.resolvePartitionByClientID(ctx, clientID)
+		if resolveErr != nil {
+			log.WithFields(map[string]any{
+				"client_id":  clientID,
+				"subject_id": getConseReq.GetSubject(),
+			}).WithError(err).WithField("resolve_error", resolveErr.Error()).
+				Error("could not obtain appropriate client object")
+			return fmt.Errorf("failed to resolve consent client %s: %w", clientID, resolveErr)
+		}
+
+		// Legacy partition-backed OAuth2 clients use the partition ID as the Hydra client_id
+		// without a separate tenancy Client record.
+		clientObj = &partitionv1.ClientObject{
+			ClientId: clientID,
+			Owner:    &partitionv1.ClientObject_Partition{Partition: partitionObj},
+		}
+	}
 
 	// Step 3: Build token claims based on client type
-	tokenMap, err := h.buildConsentTokenClaims(ctx, rw, req, getConseReq, clientID, subjectID)
+	tokenMap, err := h.buildConsentTokenClaims(ctx, rw, req, getConseReq, clientObj)
 	if err != nil {
 		return err
 	}
@@ -80,7 +104,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	h.logConsentSuccess(log, tokenMap, start)
 
 	// For regular user flows from a browser, render an interstitial page
-	if h.shouldRenderBrowserInterstitial(req, getConseReq.GetRequestedScope(), clientID) {
+	if h.shouldRenderBrowserInterstitial(req, clientObj) {
 		payload := h.initTemplatePayloadWithI18n(ctx, req)
 		payload["RedirectURL"] = redirectURL
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -92,46 +116,52 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 }
 
 // buildConsentTokenClaims builds token claims based on the client type (service account or user).
-func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientID, subjectID string) (map[string]any, error) {
+func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *partitionv1.ClientObject) (map[string]any, error) {
 	requestedScope := consentReq.GetRequestedScope()
-	if isServiceAccountScoped(requestedScope) {
+	subjectID := consentReq.GetSubject()
+
+	switch owner := clientObj.GetOwner().(type) {
+
+	case *partitionv1.ClientObject_Partition:
+		return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientObj, subjectID)
+
+	case *partitionv1.ClientObject_ServiceAccount:
+
 		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
-		return h.buildServiceAccountConsentClaims(ctx, clientID, subjectID, requestedScope, requestedAudiences)
+		return h.buildServiceAccountConsentClaims(ctx, clientObj, owner.ServiceAccount, subjectID, requestedScope, requestedAudiences)
+
+	default:
+		return nil, fmt.Errorf("only partition or service account should own a client")
+
 	}
-	return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientID, subjectID)
 }
 
 // buildServiceAccountConsentClaims builds token claims for service account clients
 // (both system_internal and system_external).
 // Service accounts are looked up via the tenancy service API by client_id.
-func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clientID, subjectID string, requestedScope, _ []string) (map[string]any, error) {
-	log := util.Log(ctx)
-
-	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
-	if err != nil {
-		log.WithError(err).WithField("client_id", clientID).Error("service account lookup failed")
-		return nil, fmt.Errorf("service account not found for client: %s", clientID)
-	}
+func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clientObj *partitionv1.ClientObject, sa *partitionv1.ServiceAccountObject, subjectID string, requestedScope, _ []string) (map[string]any, error) {
+	log := util.Log(ctx).WithFields(map[string]any{
+		"client_id":     clientObj.GetClientId(),
+		"subject_id":    subjectID,
+		"sa_profile_id": sa.GetProfileId(),
+	})
 
 	// Validate that the SA's profile matches the authenticating subject
-	if sa.ProfileID != subjectID {
-		log.WithField("client_id", clientID).
-			WithField("subject_id", subjectID).
-			WithField("sa_profile_id", sa.ProfileID).
-			Error("service account subject mismatch")
-		return nil, fmt.Errorf("service account subject mismatch for client %s", clientID)
+	if sa.GetProfileId() != subjectID {
+		log.Error("service account subject mismatch")
+		return nil, fmt.Errorf("service account subject mismatch for client %s", clientObj.GetClientId())
 	}
 
 	// Validate scope matches SA type
-	if err = validateScopeMatchesSAType(requestedScope, sa.Type); err != nil {
-		log.WithError(err).WithField("client_id", clientID).Error("scope/type mismatch")
+	if err := validateScopeMatchesSAType(requestedScope, sa.Type); err != nil {
+		log.WithError(err).Error("scope/type mismatch")
 		return nil, err
 	}
 
 	// Get or create access for SA's profile in their partition
-	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.PartitionID, subjectID)
+	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
 	if err != nil {
-		log.WithError(err).WithField("client_id", clientID).Error("failed to get/create access for SA")
+		log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to get/create access for SA")
 		return nil, fmt.Errorf("failed to get/create access for service account: %w", err)
 	}
 
@@ -141,23 +171,23 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 	// Create a LoginEvent for auditability and webhook fallback.
 	// This must succeed — without it, token refresh will fail to find the login event.
 	loginEvt := &models.LoginEvent{
-		ClientID:  clientID,
+		ClientID:  clientObj.GetClientId(),
 		ProfileID: subjectID,
 		AccessID:  accessObj.GetId(),
 	}
 	loginEvt.ID = util.IDString()
-	loginEvt.TenantID = sa.TenantID
-	loginEvt.PartitionID = sa.PartitionID
+	loginEvt.TenantID = sa.GetTenantId()
+	loginEvt.PartitionID = sa.GetPartitionId()
 
 	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
-		log.WithError(createErr).WithField("client_id", clientID).
+		log.WithError(createErr).WithField("client_id", clientObj.GetClientId()).
 			Error("failed to create login event for service account consent")
 		return nil, fmt.Errorf("failed to create login event: %w", createErr)
 	}
 
 	return map[string]any{
-		"tenant_id":      sa.TenantID,
-		"partition_id":   sa.PartitionID,
+		"tenant_id":      sa.GetTenantId(),
+		"partition_id":   sa.GetPartitionId(),
 		"access_id":      accessObj.GetId(),
 		"roles":          roles,
 		"profile_id":     subjectID,
@@ -172,11 +202,11 @@ func (h *AuthServer) buildUserTokenClaims(
 	rw http.ResponseWriter,
 	req *http.Request,
 	consentReq *hydraclientgo.OAuth2ConsentRequest,
-	clientID string,
+	clientObj *partitionv1.ClientObject,
 	subjectID string,
 ) (map[string]any, error) {
 	log := util.Log(ctx)
-	if clientID == "" {
+	if clientObj == nil {
 		return nil, fmt.Errorf("client_id is required for user token claims")
 	}
 	if subjectID == "" {
@@ -214,14 +244,14 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("login event not found")
 	}
 
-	if loginEvent.ClientID != "" && loginEvent.ClientID != clientID {
+	if loginEvent.ClientID != "" && loginEvent.ClientID != clientObj.GetClientId() {
 		return nil, fmt.Errorf("login event client mismatch")
 	}
 	if loginEvent.ProfileID != "" && loginEvent.ProfileID != subjectID {
 		return nil, fmt.Errorf("login event subject mismatch")
 	}
 
-	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientID, subjectID)
+	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientObj.GetClientId(), subjectID)
 	if err != nil {
 		log.WithError(err).WithField("login_event_id", loginEvent.GetID()).Error("failed to ensure tenancy access for consent")
 		return nil, err
@@ -288,9 +318,44 @@ func (h *AuthServer) logConsentSuccess(log *util.LogEntry, tokenMap map[string]a
 }
 
 // shouldRenderBrowserInterstitial determines if we should render an HTML interstitial page.
-func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, requestedScope []string, _ string) bool {
-	isBrowser := strings.Contains(req.Header.Get("Accept"), "text/html")
-	return isBrowser && !isServiceAccountScoped(requestedScope)
+func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, clientObj *partitionv1.ClientObject) bool {
+	_, isPartition := clientObj.GetOwner().(*partitionv1.ClientObject_Partition)
+	if !isPartition {
+		return false
+	}
+
+	if req.Method != http.MethodGet {
+		return false
+	}
+
+	if !acceptsHTML(req) || isProgrammaticRequest(req) {
+		return false
+	}
+
+	return true
+}
+
+func acceptsHTML(req *http.Request) bool {
+	accept := req.Header.Get("Accept")
+	return strings.Contains(accept, "text/html") || strings.Contains(accept, "application/xhtml+xml")
+}
+
+func isProgrammaticRequest(req *http.Request) bool {
+	if req.Header.Get("X-Requested-With") == "XMLHttpRequest" {
+		return true
+	}
+
+	contentType := req.Header.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") {
+		return true
+	}
+
+	secFetchMode := req.Header.Get("Sec-Fetch-Mode")
+	if secFetchMode == "cors" || secFetchMode == "same-origin" {
+		return true
+	}
+
+	return false
 }
 
 // inferDeviceName returns a human-readable device name based on the User-Agent string.

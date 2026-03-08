@@ -97,7 +97,7 @@ type BaseTestSuite struct {
 }
 
 func initResources(_ context.Context) []definition.TestResource {
-	pg := testpostgres.NewWithOpts("service_tenancy",
+	pg := newTenancyPostgres("service_tenancy",
 		definition.WithUserName("ant"), definition.WithCredential("s3cr3t"),
 		definition.WithEnableLogging(false), definition.WithUseHostMode(false))
 
@@ -171,7 +171,10 @@ func (bs *BaseTestSuite) CreateService(
 	t.Cleanup(func() {
 		bgCtx := context.Background()
 		svc.Stop(bgCtx)
-		time.Sleep(500 * time.Millisecond)
+		if dbMan := svc.DatastoreManager(); dbMan != nil {
+			dbMan.Close(bgCtx)
+		}
+		time.Sleep(200 * time.Millisecond)
 	})
 
 	return ctx, svc, deps
@@ -238,11 +241,16 @@ func (bs *BaseTestSuite) createServiceInternal(
 	cfg.DatabaseTraceQueries = true
 
 	testDSLimited := testDS.
-		ExtendQuery("pool_max_conns", "2").
+		ExtendQuery("pool_max_conns", "1").
+		ExtendQuery("pool_min_conns", "0").
+		ExtendQuery("pool_max_conn_lifetime", "1s").
 		ExtendQuery("pool_max_conn_idle_time", "200ms").
 		ExtendQuery("pool_health_check_period", "200ms")
 	cfg.DatabasePrimaryURL = []string{testDSLimited.String()}
 	cfg.DatabaseReplicaURL = []string{}
+	cfg.Oauth2ServiceClientID = "dev_service_tenancy"
+	cfg.Oauth2ServiceClientSecret = "hkGiJroO9cDS5eFnuaAV"
+	cfg.Oauth2TokenEndpointAuthMethod = "client_secret_post"
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.EventsQueueURL = qDS.
 		ExtendQuery("jetstream", "true").
@@ -285,6 +293,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
 	require.NoError(t, err)
+	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)
 
 	_ = svc.Run(ctx, "")
 

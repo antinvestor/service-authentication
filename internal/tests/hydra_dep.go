@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
@@ -131,13 +133,30 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 	d.configuration = strings.Replace(d.configuration,
 		"public: http://127.0.0.1:4444", "public: http://hydra:4444", 1)
 
-	hydraDatabase, _, err := testpostgres.CreateDatabase(ctx, d.Opts().Dependencies[0].GetInternalDS(ctx), "hydra")
+	// Database bootstrap runs from the host test process, so it must use the host DSN.
+	// On some machines Postgres can still be finalising startup immediately after the
+	// container wait condition trips, so give the bootstrap a few bounded retries.
+	var hydraDatabase data.DSN
+	for attempt := 0; attempt < 20; attempt++ {
+		hydraDatabase, _, err = testpostgres.CreateDatabase(ctx, d.Opts().Dependencies[0].GetDS(ctx), "hydra")
+		if err == nil {
+			break
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 	if err != nil {
-		return err
+		return fmt.Errorf("create hydra database: %w", err)
 	}
 
-	databaseURL := hydraDatabase.String()
-	err = d.migrateContainer(ctx, ntwk, databaseURL)
+	databaseURL, err := toInternalDatabaseDSN(d.Opts().Dependencies[0].GetInternalDS(ctx), hydraDatabase)
+	if err != nil {
+		return fmt.Errorf("derive hydra internal database dsn: %w", err)
+	}
+
+	err = d.migrateContainer(ctx, ntwk, databaseURL.String())
 	if err != nil {
 		return err
 	}
@@ -149,7 +168,7 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		Env: d.Opts().Env(map[string]string{
 			"LOG_LEVEL":                 "debug",
 			"LOG_LEAK_SENSITIVE_VALUES": "true",
-			"DSN":                       databaseURL,
+			"DSN":                       databaseURL.String(),
 		}),
 		Files: []testcontainers.ContainerFile{
 			{
@@ -186,4 +205,18 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 
 	d.SetContainer(hydraContainer)
 	return nil
+}
+
+func toInternalDatabaseDSN(baseInternalDSN, databaseDSN data.DSN) (data.DSN, error) {
+	databaseURI, err := databaseDSN.ToURI()
+	if err != nil {
+		return "", err
+	}
+
+	internalDSN, err := baseInternalDSN.WithPath(databaseURI.Path)
+	if err != nil {
+		return "", err
+	}
+
+	return internalDSN, nil
 }

@@ -102,6 +102,7 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":                      "debug",
+			"RUN_SERVICE_SECURELY":           "false",
 			"TRACE_REQUESTS":                 "true",
 			"DATABASE_LOG_QUERIES":           "true",
 			"OPENTELEMETRY_DISABLE":          "true",

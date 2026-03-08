@@ -193,24 +193,14 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		"audience":       audienceList,
 	}
 
-	// Auth method: use explicit column if set, otherwise derive from type/secret
-	switch {
-	case cl.TokenEndpointAuthMethod != "":
-		payload["token_endpoint_auth_method"] = cl.TokenEndpointAuthMethod
-		// Only send secret if auth method expects it
-		if cl.ClientSecret != "" && cl.TokenEndpointAuthMethod != "none" {
-			payload["client_secret"] = cl.ClientSecret
-		}
-	case cl.Type == "public":
-		payload["token_endpoint_auth_method"] = "none"
-	default:
-		if cl.ClientSecret != "" {
-			payload["client_secret"] = cl.ClientSecret
-			payload["token_endpoint_auth_method"] = "client_secret_post"
-		} else {
-			payload["token_endpoint_auth_method"] = "none"
-		}
-	}
+	applyHydraClientAuthPayload(
+		payload,
+		cl.TokenEndpointAuthMethod,
+		cl.ClientSecret,
+		cl.Properties,
+		nil,
+		cl.Type == "public",
+	)
 
 	// Subject for client_credentials flow
 	if profileID != "" {
