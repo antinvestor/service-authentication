@@ -25,6 +25,33 @@ import (
 	"github.com/pitabwire/util"
 )
 
+type apiOAuth2Config struct {
+	*aconfig.AuthenticationConfig
+}
+
+func (c apiOAuth2Config) GetOauth2PrivateKeyJWTConfig() *common.PrivateKeyJWTConfig {
+	if c.AuthenticationConfig == nil {
+		return nil
+	}
+
+	cfg := c.GetOauth2PrivateKeyJWTConfig()
+	if cfg == nil {
+		return nil
+	}
+
+	return &common.PrivateKeyJWTConfig{
+		PrivateKeyPEM:  append([]byte(nil), cfg.PrivateKeyPEM...),
+		PrivateKeyPath: cfg.PrivateKeyPath,
+		Source:         cfg.Source,
+		SPIFFEID:       cfg.SPIFFEID,
+		Hint:           cfg.Hint,
+		KeyID:          cfg.KeyID,
+		Audience:       cfg.Audience,
+		Issuer:         cfg.Issuer,
+		Subject:        cfg.Subject,
+	}
+}
+
 func main() {
 
 	ctx := context.Background()
@@ -148,7 +175,7 @@ func setupCache(_ context.Context, cfg aconfig.AuthenticationConfig) (cache.RawC
 func setupDeviceClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
-	return device.NewClient(ctx, &cfg, common.ServiceTarget{
+	return device.NewClient(ctx, apiOAuth2Config{AuthenticationConfig: &cfg}, common.ServiceTarget{
 		Endpoint:              cfg.DeviceServiceURI,
 		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_devices"},
@@ -159,7 +186,7 @@ func setupDeviceClient(
 func setupNotificationClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
-	return notification.NewClient(ctx, &cfg, common.ServiceTarget{
+	return notification.NewClient(ctx, apiOAuth2Config{AuthenticationConfig: &cfg}, common.ServiceTarget{
 		Endpoint:              cfg.NotificationServiceURI,
 		WorkloadAPITargetPath: cfg.NotificationServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_notifications"},
@@ -170,7 +197,7 @@ func setupNotificationClient(
 func setupPartitionClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
-	return partition.NewClient(ctx, &cfg, common.ServiceTarget{
+	return partition.NewClient(ctx, apiOAuth2Config{AuthenticationConfig: &cfg}, common.ServiceTarget{
 		Endpoint:              cfg.PartitionServiceURI,
 		WorkloadAPITargetPath: cfg.PartitionServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_tenancy"},
@@ -181,7 +208,7 @@ func setupPartitionClient(
 func setupProfileClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
-	return profile.NewClient(ctx, &cfg, common.ServiceTarget{
+	return profile.NewClient(ctx, apiOAuth2Config{AuthenticationConfig: &cfg}, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_profile"},
