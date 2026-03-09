@@ -120,10 +120,27 @@ func initResources(_ context.Context, loginUrl string, authPort int) []definitio
 		localHydraConfig, []int{authPort}, definition.WithDependancies(pg),
 		definition.WithEnableLogging(false))
 
-	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false))
+	partitionSvc := internaltests.NewPartitionSvc(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+	notificationsSvc := internaltests.NewNotificationSvc(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+	profileSvc := internaltests.NewProfile(
+		definition.WithDependancies(pg, hydra, notificationsSvc),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+
+	deviceSvc := internaltests.NewDevice(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
 
 	resources := []definition.TestResource{pg, hydra, partitionSvc, notificationsSvc, profileSvc, deviceSvc}
 	return resources
@@ -189,8 +206,8 @@ func (bs *BaseTestSuite) CreateService(
 	oauth2ServiceURI, err := hydraDR.GetDS(ctx).ChangePort(hydraPort)
 	require.NoError(t, err)
 
-	// Inject JWKS data before OIDC discovery so LoadWithOIDC skips
-	// the remote JWKS fetch (which would hit unreachable http://hydra:4444).
+	// Inject JWKS data before OIDC discovery so LoadWithOIDC skips the
+	// remote JWKS fetch entirely and sticks to the host-mapped Hydra URL.
 	jwksData, err := internaltests.FetchJWKS(ctx, hydraPort)
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
@@ -199,9 +216,6 @@ func (bs *BaseTestSuite) CreateService(
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
-	// Hydra's issuer and public URLs both use http://hydra:4444 so OIDC
-	// discovery returns container-reachable endpoints.  Override the
-	// token endpoint on the host side to the mapped port.
 	hostTokenEndpoint := fmt.Sprintf("http://127.0.0.1:%s/oauth2/token", hydraPort)
 	cfg.SetOIDCValue("token_endpoint", hostTokenEndpoint)
 
@@ -227,7 +241,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
-	cfg.Oauth2JwtVerifyIssuer = "http://hydra:4444"
+	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
 	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
 	require.NoError(t, err)

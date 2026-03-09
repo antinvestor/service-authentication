@@ -76,22 +76,42 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 	databaseURL := ""
 	hydraPort := ""
 	oauth2ServiceURIAdmin := ""
+	oauth2ServiceURI := "http://hydra:4444"
 	notificationService := ""
 	partitionService := ""
 	var err error
 	for _, dep := range d.Opts().Dependencies {
 		switch dep.Name() {
 		case testpostgres.PostgresqlDBImage:
-			databaseURL = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				databaseURL = dep.GetDS(ctx).String()
+			} else {
+				databaseURL = dep.GetInternalDS(ctx).String()
+			}
 		case NotificationImage:
-			notificationService = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				notificationService = dep.GetDS(ctx).String()
+			} else {
+				notificationService = dep.GetInternalDS(ctx).String()
+			}
 		case PartitionImage:
-			partitionService = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				partitionService = dep.GetDS(ctx).String()
+			} else {
+				partitionService = dep.GetInternalDS(ctx).String()
+			}
 		case HydraImage:
-			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				oauth2ServiceURIAdmin = dep.GetDS(ctx).String()
+			} else {
+				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			}
 			hydraPort, err = dep.PortMapping(ctx, "4444/tcp")
 			if err != nil {
 				return err
+			}
+			if d.Opts().UseHostMode {
+				oauth2ServiceURI = fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
 			}
 		}
 	}
@@ -106,7 +126,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 		return fmt.Errorf("failed to fetch JWKS for profile container: %w", err)
 	}
 
-	issuer := "http://hydra:4444"
+	issuer := oauth2ServiceURI
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
@@ -125,7 +145,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"CORS_ALLOWED_ORIGINS":              "*",
 			"CONTACT_ENCRYPTION_KEY":            "4nbQuIu5ZMa8hvmt66UMZx5gLAI5kdax",
 			"CONTACT_ENCRYPTION_SALT":           "geYobar79WDL",
-			"OAUTH2_SERVICE_URI":                "http://hydra:4444",
+			"OAUTH2_SERVICE_URI":                oauth2ServiceURI,
 			"OAUTH2_SERVICE_ADMIN_URI":          oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_ID":          "dev_service_profile",
 			"OAUTH2_SERVICE_CLIENT_SECRET":      "hkGiJroO9cDS5eFnuaAV",

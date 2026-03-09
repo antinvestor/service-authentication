@@ -144,14 +144,12 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		return fmt.Errorf("failed to allocate public port for hydra: %w", err)
 	}
 
-	// Set BOTH issuer and public to the Docker-internal address so that
-	// OIDC discovery returns endpoints (including jwks_uri) reachable from
-	// containers.  Host-side code sets OAUTH2_WELL_KNOWN_JWK_DATA to skip
-	// remote JWKS fetch, and overrides token_endpoint via SetOIDCValue.
+	publicPortStr := strconv.Itoa(publicPort)
+	publicURL := fmt.Sprintf("http://127.0.0.1:%s", publicPortStr)
 	d.configuration = strings.Replace(d.configuration,
-		"issuer: http://127.0.0.1:4444", "issuer: http://hydra:4444", 1)
+		"issuer: http://127.0.0.1:4444", "issuer: "+publicURL, 1)
 	d.configuration = strings.Replace(d.configuration,
-		"public: http://127.0.0.1:4444", "public: http://hydra:4444", 1)
+		"public: http://127.0.0.1:4444", "public: "+publicURL, 1)
 
 	// Database bootstrap runs from the host test process, so it must use the host DSN.
 	// On some machines Postgres can still be finalising startup immediately after the
@@ -181,7 +179,6 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		return err
 	}
 
-	publicPortStr := strconv.Itoa(publicPort)
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Cmd:   []string{"serve", "all", "--config", "/etc/config/hydra.yml", "--dev"},
