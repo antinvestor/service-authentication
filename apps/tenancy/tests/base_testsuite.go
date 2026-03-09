@@ -14,7 +14,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests/testketo"
-	internaltests "github.com/antinvestor/service-authentication/internal/tests"
+	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"

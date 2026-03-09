@@ -33,21 +33,41 @@ var HydraConfiguration = testoryhydra.HydraConfiguration
 // FetchJWKS fetches the JWKS JSON from a running Hydra instance via its host-mapped port.
 func FetchJWKS(ctx context.Context, hostPort string) (string, error) {
 	jwksURL := fmt.Sprintf("http://127.0.0.1:%s/.well-known/jwks.json", hostPort)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURL, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("fetching JWKS from %s: %w", jwksURL, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
+	var lastErr error
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+	for attempt := 0; attempt < 20; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURL, nil)
+		if err != nil {
+			return "", err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("fetching JWKS from %s: %w", jwksURL, err)
+		} else {
+			body, readErr := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+
+			switch {
+			case readErr != nil:
+				lastErr = fmt.Errorf("reading JWKS response from %s: %w", jwksURL, readErr)
+			case resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices:
+				lastErr = fmt.Errorf("fetching JWKS from %s: unexpected status %d", jwksURL, resp.StatusCode)
+			case len(body) == 0:
+				lastErr = fmt.Errorf("fetching JWKS from %s: empty response body", jwksURL)
+			default:
+				return string(body), nil
+			}
+		}
+
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
-	return string(body), nil
+
+	return "", lastErr
 }
 
 // hydraDependency wraps frame's testoryhydra to add ExtraHosts support

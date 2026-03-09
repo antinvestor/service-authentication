@@ -365,15 +365,17 @@ func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient() {
 		"partition_id": "partition-1",
 		"profile_id":   "profile-1",
 		"type":         "internal",
+		"access_id":    "access-1",
 	})
 
 	sa, err := serviceAccountFromHydraClient(client, "client-1")
 	s.Require().NoError(err)
-	s.Equal("client-1", sa.GetClientId())
-	s.Equal("tenant-1", sa.GetTenantId())
-	s.Equal("partition-1", sa.GetPartitionId())
-	s.Equal("profile-1", sa.GetProfileId())
-	s.Equal("internal", sa.GetType())
+	s.Equal("client-1", sa.ClientID)
+	s.Equal("tenant-1", sa.TenantID)
+	s.Equal("partition-1", sa.PartitionID)
+	s.Equal("profile-1", sa.ProfileID)
+	s.Equal("internal", sa.Type)
+	s.Equal("access-1", sa.AccessID)
 }
 
 func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient_MissingMetadata() {

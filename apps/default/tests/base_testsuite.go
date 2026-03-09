@@ -19,7 +19,7 @@ import (
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	internaltests "github.com/antinvestor/service-authentication/internal/tests"
+	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"

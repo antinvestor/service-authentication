@@ -218,6 +218,9 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 	if profileID != "" {
 		metadata["profile_id"] = profileID
 	}
+	if accessID := cl.Properties.GetString("access_id"); accessID != "" {
+		metadata["access_id"] = accessID
+	}
 	payload["metadata"] = metadata
 
 	// Logo URI
