@@ -108,7 +108,7 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 			"OPENTELEMETRY_DISABLE": "true",
 			"HTTP_PORT":             strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":          databaseURL,
-			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": "",
+			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": " ",
 			"OAUTH2_SERVICE_URI":                            "http://hydra:4444",
 			"OAUTH2_SERVICE_ADMIN_URI":                      oauth2ServiceURIAdmin,
 			"OAUTH2_SERVICE_CLIENT_SECRET":                  "hkGiJroO9cDS5eFnuaAV",

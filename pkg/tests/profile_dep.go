@@ -118,7 +118,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"OPENTELEMETRY_DISABLE": "true",
 			"HTTP_PORT":             strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":          databaseURL,
-			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": "",
+			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": " ",
 			"CORS_ENABLED":                 "true",
 			"CORS_ALLOW_CREDENTIALS":       "true",
 			"CORS_ALLOWED_HEADERS":         "Authorization,Content-Type,Origin",
