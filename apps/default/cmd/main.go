@@ -34,7 +34,8 @@ func (c apiOAuth2Config) GetOauth2PrivateKeyJWTConfig() *common.PrivateKeyJWTCon
 		return nil
 	}
 
-	cfg := c.GetOauth2PrivateKeyJWTConfig()
+	base := &c.ConfigurationDefault
+	cfg := base.GetOauth2PrivateKeyJWTConfig()
 	if cfg == nil {
 		return nil
 	}
