@@ -180,6 +180,9 @@ func buildServiceAccountHydraPayload(sa *models.ServiceAccount) map[string]any {
 			"type":         sa.Type,
 		},
 	}
+	if accessID := sa.Properties.GetString("access_id"); accessID != "" {
+		payload["metadata"].(map[string]any)["access_id"] = accessID
+	}
 
 	applyHydraClientAuthPayload(
 		payload,

@@ -256,62 +256,21 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 	clientID := cli.GetClientId()
 	oauth2SessionID := loginReq.GetSessionId()
 
-	if oauth2SessionID != "" {
-		existing, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-		if err == nil && existing != nil {
-			if existing.ClientID != "" && existing.ClientID != clientID {
-				return nil, fmt.Errorf("existing login event client mismatch")
-			}
-			if existing.ProfileID != "" && existing.ProfileID != subjectID {
-				return nil, fmt.Errorf("existing login event subject mismatch")
-			}
-			return h.ensureLoginEventTenancyAccess(ctx, existing, clientID, subjectID)
-		}
-		if err != nil && !data.ErrorIsNoRows(err) {
-			return nil, fmt.Errorf("failed to resolve login event by oauth2_session_id: %w", err)
-		}
+	existingLoginEvent, err := h.resolveExistingSkippedLoginEvent(ctx, oauth2SessionID, clientID, subjectID)
+	if err != nil {
+		return nil, err
 	}
 
-	var loginRecord *models.Login
-	loginRecord, err := h.loginRepo.GetByProfileID(ctx, subjectID)
+	loginRecord, err := h.resolveSkippedLoginRecord(ctx, subjectID, clientID, existingLoginEvent)
 	if err != nil {
-		if !data.ErrorIsNoRows(err) {
-			return nil, fmt.Errorf("failed to resolve login record: %w", err)
-		}
-		loginRecord = &models.Login{
-			ProfileID: subjectID,
-			ClientID:  clientID,
-			Source:    "session_refresh",
-		}
-		loginRecord.GenID(ctx)
-		if createErr := h.loginRepo.Create(ctx, loginRecord); createErr != nil {
-			return nil, fmt.Errorf("failed to create login record for skipped login: %w", createErr)
-		}
+		return nil, err
 	}
 
 	// Ensure device tracking for the skip flow. Non-browser clients (mobile apps, bots)
 	// won't have device cookies, so we create/find a device using the session or User-Agent.
 	userAgent := req.UserAgent()
-	deviceID := utils.DeviceIDFromContext(ctx)
-	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID, userAgent)
-	if deviceErr != nil {
-		util.Log(ctx).WithError(deviceErr).Warn("device session processing failed during skip-login")
-	}
-	if deviceObj != nil && deviceObj.GetId() != "" {
-		deviceID = deviceObj.GetId()
-	}
-
-	newLoginEvent := &models.LoginEvent{
-		ClientID:         clientID,
-		LoginID:          loginRecord.GetID(),
-		LoginChallengeID: loginChallenge,
-		ProfileID:        subjectID,
-		SessionID:        utils.SessionIDFromContext(ctx),
-		Oauth2SessionID:  oauth2SessionID,
-		DeviceID:         deviceID,
-		IP:               util.GetIP(req),
-		Client:           userAgent,
-	}
+	deviceID := h.resolveSkippedLoginDeviceID(ctx, subjectID, userAgent, existingLoginEvent)
+	newLoginEvent := newSkippedLoginEvent(req, loginChallenge, clientID, subjectID, oauth2SessionID, userAgent, deviceID, loginRecord, existingLoginEvent)
 	newLoginEvent.ID = util.IDString()
 
 	if err = h.loginEventRepo.Create(ctx, newLoginEvent); err != nil {
@@ -328,6 +287,115 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 	}
 
 	return newLoginEvent, nil
+}
+
+func (h *AuthServer) resolveExistingSkippedLoginEvent(
+	ctx context.Context,
+	oauth2SessionID string,
+	clientID string,
+	subjectID string,
+) (*models.LoginEvent, error) {
+	if oauth2SessionID == "" {
+		return nil, nil
+	}
+
+	existing, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+	if err != nil {
+		if data.ErrorIsNoRows(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to resolve login event by oauth2_session_id: %w", err)
+	}
+	if existing == nil {
+		return nil, nil
+	}
+	if existing.ClientID != "" && existing.ClientID != clientID {
+		return nil, fmt.Errorf("existing login event client mismatch")
+	}
+	if existing.ProfileID != "" && existing.ProfileID != subjectID {
+		return nil, fmt.Errorf("existing login event subject mismatch")
+	}
+
+	return existing, nil
+}
+
+func (h *AuthServer) resolveSkippedLoginRecord(
+	ctx context.Context,
+	subjectID string,
+	clientID string,
+	existingLoginEvent *models.LoginEvent,
+) (*models.Login, error) {
+	loginRecord, err := h.loginRepo.GetByProfileID(ctx, subjectID)
+	if err != nil {
+		if !data.ErrorIsNoRows(err) {
+			return nil, fmt.Errorf("failed to resolve login record: %w", err)
+		}
+		loginRecord = &models.Login{
+			ProfileID: subjectID,
+			ClientID:  clientID,
+			Source:    string(models.LoginSourceSessionRefresh),
+		}
+		loginRecord.GenID(ctx)
+		if createErr := h.loginRepo.Create(ctx, loginRecord); createErr != nil {
+			return nil, fmt.Errorf("failed to create login record for skipped login: %w", createErr)
+		}
+	}
+	if existingLoginEvent != nil && existingLoginEvent.LoginID != "" {
+		loginRecord.ID = existingLoginEvent.LoginID
+	}
+
+	return loginRecord, nil
+}
+
+func (h *AuthServer) resolveSkippedLoginDeviceID(
+	ctx context.Context,
+	subjectID string,
+	userAgent string,
+	existingLoginEvent *models.LoginEvent,
+) string {
+	deviceID := utils.DeviceIDFromContext(ctx)
+	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID, userAgent)
+	if deviceErr != nil {
+		util.Log(ctx).WithError(deviceErr).Warn("device session processing failed during skip-login")
+	}
+	if deviceObj != nil && deviceObj.GetId() != "" {
+		deviceID = deviceObj.GetId()
+	}
+	if deviceID == "" && existingLoginEvent != nil {
+		deviceID = existingLoginEvent.DeviceID
+	}
+	return deviceID
+}
+
+func newSkippedLoginEvent(
+	req *http.Request,
+	loginChallenge string,
+	clientID string,
+	subjectID string,
+	oauth2SessionID string,
+	userAgent string,
+	deviceID string,
+	loginRecord *models.Login,
+	existingLoginEvent *models.LoginEvent,
+) *models.LoginEvent {
+	newLoginEvent := &models.LoginEvent{
+		ClientID:         clientID,
+		LoginID:          loginRecord.GetID(),
+		LoginChallengeID: loginChallenge,
+		ProfileID:        subjectID,
+		SessionID:        utils.SessionIDFromContext(req.Context()),
+		Oauth2SessionID:  oauth2SessionID,
+		DeviceID:         deviceID,
+		IP:               util.GetIP(req),
+		Client:           userAgent,
+	}
+	if existingLoginEvent != nil {
+		newLoginEvent.ContactID = existingLoginEvent.ContactID
+		newLoginEvent.AccessID = existingLoginEvent.AccessID
+		newLoginEvent.TenantID = existingLoginEvent.TenantID
+		newLoginEvent.PartitionID = existingLoginEvent.PartitionID
+	}
+	return newLoginEvent
 }
 
 // getRememberMeLoginEventID reads and decodes the remember-me cookie, returning

@@ -73,15 +73,27 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 	databaseURL := ""
 	hydraPort := ""
 	oauth2ServiceURIAdmin := ""
+	oauth2ServiceURI := "http://hydra:4444"
 	var err error
 	for _, dep := range d.Opts().Dependencies {
 		if dep.GetDS(ctx).IsDB() {
-			databaseURL = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				databaseURL = dep.GetDS(ctx).String()
+			} else {
+				databaseURL = dep.GetInternalDS(ctx).String()
+			}
 		} else {
-			oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			if d.Opts().UseHostMode {
+				oauth2ServiceURIAdmin = dep.GetDS(ctx).String()
+			} else {
+				oauth2ServiceURIAdmin = dep.GetInternalDS(ctx).String()
+			}
 			hydraPort, err = dep.PortMapping(ctx, "4444/tcp")
 			if err != nil {
 				return err
+			}
+			if d.Opts().UseHostMode {
+				oauth2ServiceURI = fmt.Sprintf("http://127.0.0.1:%s", hydraPort)
 			}
 		}
 	}
@@ -96,26 +108,29 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 		return fmt.Errorf("failed to fetch JWKS for partition container: %w", err)
 	}
 
-	issuer := "http://hydra:4444"
+	issuer := oauth2ServiceURI
 
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":                      "debug",
-			"RUN_SERVICE_SECURELY":           "false",
-			"TRACE_REQUESTS":                 "true",
-			"DATABASE_LOG_QUERIES":           "true",
-			"OPENTELEMETRY_DISABLE":          "true",
-			"HTTP_PORT":                      strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
-			"DATABASE_URL":                   databaseURL,
-			"OAUTH2_SERVICE_URI":             "http://hydra:4444",
-			"OAUTH2_SERVICE_ADMIN_URI":       oauth2ServiceURIAdmin,
-			"OAUTH2_SERVICE_CLIENT_SECRET":   "hkGiJroO9cDS5eFnuaAV",
-			"OAUTH2_SERVICE_AUDIENCE":        "service_notifications,service_profile,authentication_tests",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":     "service_tenancy",
-			"OAUTH2_JWT_VERIFY_ISSUER":       issuer,
-			"OAUTH2_WELL_KNOWN_JWK_DATA":     jwksData,
-			"SYNCHRONISE_PRIMARY_PARTITIONS": "true",
+			"LOG_LEVEL":             "debug",
+			"RUN_SERVICE_SECURELY":  "false",
+			"TRACE_REQUESTS":        "true",
+			"DATABASE_LOG_QUERIES":  "true",
+			"OPENTELEMETRY_DISABLE": "true",
+			"HTTP_PORT":             strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
+			"DATABASE_URL":          databaseURL,
+			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": " ",
+			"OAUTH2_SERVICE_URI":                            oauth2ServiceURI,
+			"OAUTH2_SERVICE_ADMIN_URI":                      oauth2ServiceURIAdmin,
+			"OAUTH2_SERVICE_CLIENT_ID":                      "dev_service_tenancy",
+			"OAUTH2_SERVICE_CLIENT_SECRET":                  "hkGiJroO9cDS5eFnuaAV",
+			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD":             "client_secret_post",
+			"OAUTH2_SERVICE_AUDIENCE":                       "service_notifications,service_profile,authentication_tests",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":                    "service_tenancy",
+			"OAUTH2_JWT_VERIFY_ISSUER":                      issuer,
+			"OAUTH2_WELL_KNOWN_JWK_DATA":                    jwksData,
+			"SYNCHRONISE_PRIMARY_PARTITIONS":                "true",
 		},
 
 		WaitingFor: wait.ForLog("Initiating server operations"),

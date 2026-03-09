@@ -13,15 +13,16 @@ ARG BUILDTIME
 
 # Copy go.mod and go.sum files from the project root
 COPY go.mod go.sum ./
+RUN go mod edit -dropreplace=github.com/pitabwire/frame \
+    -dropreplace=github.com/antinvestor/apis/go/common
 RUN go mod download
 
 # Copy project files
 COPY ./apps/tenancy ./apps/tenancy
-COPY ./internal ./internal
 
 # Build static binary for target platform
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath \
+    go build -mod=mod -trimpath \
      -ldflags="-s -w \
          -X github.com/pitabwire/frame/version.Repository=${REPOSITORY} \
          -X github.com/pitabwire/frame/version.Version=${VERSION} \

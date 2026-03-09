@@ -33,21 +33,41 @@ var HydraConfiguration = testoryhydra.HydraConfiguration
 // FetchJWKS fetches the JWKS JSON from a running Hydra instance via its host-mapped port.
 func FetchJWKS(ctx context.Context, hostPort string) (string, error) {
 	jwksURL := fmt.Sprintf("http://127.0.0.1:%s/.well-known/jwks.json", hostPort)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURL, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("fetching JWKS from %s: %w", jwksURL, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
+	var lastErr error
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+	for attempt := 0; attempt < 20; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURL, nil)
+		if err != nil {
+			return "", err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("fetching JWKS from %s: %w", jwksURL, err)
+		} else {
+			body, readErr := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+
+			switch {
+			case readErr != nil:
+				lastErr = fmt.Errorf("reading JWKS response from %s: %w", jwksURL, readErr)
+			case resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices:
+				lastErr = fmt.Errorf("fetching JWKS from %s: unexpected status %d", jwksURL, resp.StatusCode)
+			case len(body) == 0:
+				lastErr = fmt.Errorf("fetching JWKS from %s: empty response body", jwksURL)
+			default:
+				return string(body), nil
+			}
+		}
+
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
-	return string(body), nil
+
+	return "", lastErr
 }
 
 // hydraDependency wraps frame's testoryhydra to add ExtraHosts support
@@ -124,14 +144,12 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		return fmt.Errorf("failed to allocate public port for hydra: %w", err)
 	}
 
-	// Set BOTH issuer and public to the Docker-internal address so that
-	// OIDC discovery returns endpoints (including jwks_uri) reachable from
-	// containers.  Host-side code sets OAUTH2_WELL_KNOWN_JWK_DATA to skip
-	// remote JWKS fetch, and overrides token_endpoint via SetOIDCValue.
+	publicPortStr := strconv.Itoa(publicPort)
+	publicURL := fmt.Sprintf("http://127.0.0.1:%s", publicPortStr)
 	d.configuration = strings.Replace(d.configuration,
-		"issuer: http://127.0.0.1:4444", "issuer: http://hydra:4444", 1)
+		"issuer: http://127.0.0.1:4444", "issuer: "+publicURL, 1)
 	d.configuration = strings.Replace(d.configuration,
-		"public: http://127.0.0.1:4444", "public: http://hydra:4444", 1)
+		"public: http://127.0.0.1:4444", "public: "+publicURL, 1)
 
 	// Database bootstrap runs from the host test process, so it must use the host DSN.
 	// On some machines Postgres can still be finalising startup immediately after the
@@ -161,7 +179,6 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		return err
 	}
 
-	publicPortStr := strconv.Itoa(publicPort)
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Cmd:   []string{"serve", "all", "--config", "/etc/config/hydra.yml", "--dev"},

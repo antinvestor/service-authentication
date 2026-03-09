@@ -13,18 +13,18 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260219062039-499f582dea7e.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.55.5
-	github.com/antinvestor/apis/go/device v1.55.5
-	github.com/antinvestor/apis/go/notification v1.55.5
-	github.com/antinvestor/apis/go/partition v1.55.5
-	github.com/antinvestor/apis/go/profile v1.55.5
+	github.com/antinvestor/apis/go/common v1.55.6
+	github.com/antinvestor/apis/go/device v1.55.7
+	github.com/antinvestor/apis/go/notification v1.55.7
+	github.com/antinvestor/apis/go/partition v1.55.7
+	github.com/antinvestor/apis/go/profile v1.55.7
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.77.0
+	github.com/pitabwire/frame v1.77.1
 	github.com/pitabwire/util v0.6.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
@@ -161,7 +161,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )
-
-replace github.com/pitabwire/frame => ../../pitabwire/frame
-
-replace github.com/antinvestor/apis/go/common => ../apis/go/common

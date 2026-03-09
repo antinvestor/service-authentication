@@ -9,9 +9,11 @@ import (
 type LoginSource string
 
 const (
-	LoginSourceDirect LoginSource = "direct"
-	LoginSourceGoogle LoginSource = "google"
-	LoginSourceMeta   LoginSource = "facebook"
+	LoginSourceDirect         LoginSource = "direct"
+	LoginSourceGoogle         LoginSource = "google"
+	LoginSourceMeta           LoginSource = "facebook"
+	LoginSourceServiceAccount LoginSource = "service_account"
+	LoginSourceSessionRefresh LoginSource = "session_refresh"
 )
 
 type Login struct {

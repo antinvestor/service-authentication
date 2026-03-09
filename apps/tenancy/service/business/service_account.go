@@ -181,8 +181,24 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		WithField("client_db_id", client.GetID())
 
 	// Provision Access + AccessRoles for the SA's profile in the partition
-	if provisionErr := sb.provisionAccessAndRoles(ctx, partition, profileID, roles); provisionErr != nil {
+	accessID, provisionErr := sb.provisionAccessAndRoles(ctx, partition, profileID, roles)
+	if provisionErr != nil {
 		log.WithError(provisionErr).Warn("failed to provision access roles for service account")
+	} else if accessID != "" {
+		if client.Properties == nil {
+			client.Properties = data.JSONMap{}
+		}
+		client.Properties["access_id"] = accessID
+		if _, updateErr := sb.clientRepo.Update(ctx, client, "properties"); updateErr != nil {
+			log.WithError(updateErr).Warn("failed to persist client access_id for service account")
+		}
+		if sa.Properties == nil {
+			sa.Properties = data.JSONMap{}
+		}
+		sa.Properties["access_id"] = accessID
+		if _, updateErr := sb.serviceAccountRepo.Update(ctx, sa, "properties"); updateErr != nil {
+			log.WithError(updateErr).Warn("failed to persist service account access_id")
+		}
 	}
 
 	// Emit client sync event → registers Hydra OAuth2 client
@@ -214,7 +230,7 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 	partition *models.Partition,
 	profileID string,
 	roleNames []string,
-) error {
+) (string, error) {
 	log := util.Log(ctx).
 		WithField("partition_id", partition.GetID()).
 		WithField("profile_id", profileID)
@@ -223,7 +239,7 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 	access, err := sb.accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), profileID)
 	if err != nil {
 		if !data.ErrorIsNoRows(err) {
-			return fmt.Errorf("failed to check existing access: %w", err)
+			return "", fmt.Errorf("failed to check existing access: %w", err)
 		}
 		// Create new access
 		access = &models.Access{
@@ -234,7 +250,7 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 			},
 		}
 		if createErr := sb.accessRepo.Create(ctx, access); createErr != nil {
-			return fmt.Errorf("failed to create access record: %w", createErr)
+			return "", fmt.Errorf("failed to create access record: %w", createErr)
 		}
 
 		// Emit tenancy_access member tuple
@@ -247,13 +263,13 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 	}
 
 	if len(roleNames) == 0 {
-		return nil
+		return access.GetID(), nil
 	}
 
 	// Look up partition roles by name
 	partitionRoles, err := sb.partitionRoleRepo.GetByPartitionAndNames(ctx, partition.GetID(), roleNames)
 	if err != nil {
-		return fmt.Errorf("failed to look up partition roles: %w", err)
+		return access.GetID(), fmt.Errorf("failed to look up partition roles: %w", err)
 	}
 
 	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
@@ -279,7 +295,7 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 		}
 	}
 
-	return nil
+	return access.GetID(), nil
 }
 
 func (sb *serviceAccountBusiness) UpdateServiceAccount(

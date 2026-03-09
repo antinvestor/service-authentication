@@ -19,7 +19,7 @@ import (
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	internaltests "github.com/antinvestor/service-authentication/internal/tests"
+	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"
@@ -87,6 +87,14 @@ type BaseTestSuite struct {
 	handler      *handlers.AuthServer
 }
 
+type hydraServiceClientSeed struct {
+	ClientID   string
+	ClientName string
+	Secret     string
+	Audience   []string
+	ProfileID  string
+}
+
 func (bs *BaseTestSuite) ServerUrl() string {
 	return fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
 }
@@ -112,10 +120,27 @@ func initResources(_ context.Context, loginUrl string, authPort int) []definitio
 		localHydraConfig, []int{authPort}, definition.WithDependancies(pg),
 		definition.WithEnableLogging(false))
 
-	deviceSvc := internaltests.NewDevice(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	partitionSvc := internaltests.NewPartitionSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	notificationsSvc := internaltests.NewNotificationSvc(definition.WithDependancies(pg, hydra), definition.WithEnableLogging(false))
-	profileSvc := internaltests.NewProfile(definition.WithDependancies(pg, hydra, notificationsSvc), definition.WithEnableLogging(false))
+	partitionSvc := internaltests.NewPartitionSvc(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+	notificationsSvc := internaltests.NewNotificationSvc(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+	profileSvc := internaltests.NewProfile(
+		definition.WithDependancies(pg, hydra, notificationsSvc),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
+
+	deviceSvc := internaltests.NewDevice(
+		definition.WithDependancies(pg, hydra),
+		definition.WithEnableLogging(false),
+		definition.WithUseHostMode(true),
+	)
 
 	resources := []definition.TestResource{pg, hydra, partitionSvc, notificationsSvc, profileSvc, deviceSvc}
 	return resources
@@ -181,8 +206,8 @@ func (bs *BaseTestSuite) CreateService(
 	oauth2ServiceURI, err := hydraDR.GetDS(ctx).ChangePort(hydraPort)
 	require.NoError(t, err)
 
-	// Inject JWKS data before OIDC discovery so LoadWithOIDC skips
-	// the remote JWKS fetch (which would hit unreachable http://hydra:4444).
+	// Inject JWKS data before OIDC discovery so LoadWithOIDC skips the
+	// remote JWKS fetch entirely and sticks to the host-mapped Hydra URL.
 	jwksData, err := internaltests.FetchJWKS(ctx, hydraPort)
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
@@ -191,9 +216,6 @@ func (bs *BaseTestSuite) CreateService(
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
 
-	// Hydra's issuer and public URLs both use http://hydra:4444 so OIDC
-	// discovery returns container-reachable endpoints.  Override the
-	// token endpoint on the host side to the mapped port.
 	hostTokenEndpoint := fmt.Sprintf("http://127.0.0.1:%s/oauth2/token", hydraPort)
 	cfg.SetOIDCValue("token_endpoint", hostTokenEndpoint)
 
@@ -219,9 +241,9 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
-	cfg.Oauth2JwtVerifyIssuer = "http://hydra:4444"
+	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
-	err = ensureHydraServiceClient(ctx, cfg.Oauth2ServiceAdminURI)
+	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
 	require.NoError(t, err)
 
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
@@ -258,50 +280,112 @@ func (bs *BaseTestSuite) CreateService(
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
-func ensureHydraServiceClient(ctx context.Context, adminURL string) error {
+func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 	configuration := hydraclientgo.NewConfiguration()
 	configuration.HTTPClient = http.DefaultClient
 	configuration.Servers = []hydraclientgo.ServerConfiguration{{URL: adminURL}}
 
-	client := hydraclientgo.NewOAuth2Client()
-	client.SetClientId("dev_authentication_tests")
-	client.SetClientName("sa-authentication_tests")
-	client.SetClientSecret("vkGiJroO9dAS5eFnuaGy")
-	client.SetGrantTypes([]string{"client_credentials"})
-	client.SetResponseTypes([]string{"token"})
-	client.SetScope("system_int openid")
-	client.SetAudience([]string{"service_profile", "service_tenancy", "service_notifications", "service_devices"})
-	client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
-	client.SetMetadata(map[string]any{
-		"tenant_id":    "9bsv0s3pbdv002o80qfg",
-		"partition_id": "9bsv0s3pbdv002o80qhg",
-		"profile_id":   "dev_authentication_tests",
-		"type":         "internal",
-	})
-
 	apiClient := hydraclientgo.NewAPIClient(configuration)
-
-	_, _, err := apiClient.OAuth2API.
-		CreateOAuth2Client(ctx).
-		OAuth2Client(*client).
-		Execute()
-	if err == nil {
-		return nil
+	seeds := []hydraServiceClientSeed{
+		{
+			ClientID:   "dev_authentication_tests",
+			ClientName: "sa-authentication_tests",
+			Secret:     "vkGiJroO9dAS5eFnuaGy",
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			ProfileID:  "dev_authentication_tests",
+		},
+		{
+			ClientID:   "dev_service_authentication",
+			ClientName: "sa-service_authentication",
+			Secret:     "vkGiJroO9dAS5eFnuaGy",
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			ProfileID:  "dev_service_authentication",
+		},
+		{
+			ClientID:   "dev_service_profile",
+			ClientName: "sa-service_profile",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_notifications", "service_tenancy"},
+			ProfileID:  "dev_service_profile",
+		},
+		{
+			ClientID:   "dev_service_tenancy",
+			ClientName: "sa-service_tenancy",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_notifications", "service_profile", "authentication_tests"},
+			ProfileID:  "dev_service_tenancy",
+		},
+		{
+			ClientID:   "dev_service_notifications",
+			ClientName: "sa-service_notifications",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_profile", "service_tenancy", "service_devices"},
+			ProfileID:  "dev_service_notifications",
+		},
+		{
+			ClientID:   "dev_service_devices",
+			ClientName: "sa-service_devices",
+			Secret:     "hkBaJroO9cDGleFnuaAZ",
+			Audience:   []string{"service_notifications", "service_tenancy", "service_profile", "authentication_tests"},
+			ProfileID:  "dev_service_devices",
+		},
 	}
 
-	if !strings.Contains(err.Error(), "409") {
-		return fmt.Errorf("create hydra service client: %w", err)
-	}
+	for _, seed := range seeds {
+		client := hydraclientgo.NewOAuth2Client()
+		client.SetClientId(seed.ClientID)
+		client.SetClientName(seed.ClientName)
+		client.SetClientSecret(seed.Secret)
+		client.SetGrantTypes([]string{"client_credentials"})
+		client.SetResponseTypes([]string{"token"})
+		client.SetScope("system_int openid")
+		client.SetAudience(seed.Audience)
+		client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
+		client.SetMetadata(map[string]any{
+			"tenant_id":    "9bsv0s3pbdv002o80qfg",
+			"partition_id": "9bsv0s3pbdv002o80qhg",
+			"profile_id":   seed.ProfileID,
+			"type":         "internal",
+		})
 
-	_, _, err = apiClient.OAuth2API.
-		SetOAuth2Client(ctx, "dev_authentication_tests").
-		OAuth2Client(*client).
-		Execute()
-	if err != nil {
-		return fmt.Errorf("ensure hydra service client: %w", err)
+		_, _, err := apiClient.OAuth2API.
+			CreateOAuth2Client(ctx).
+			OAuth2Client(*client).
+			Execute()
+		if err == nil {
+			continue
+		}
+
+		if !strings.Contains(err.Error(), "409") {
+			return fmt.Errorf("create hydra service client %s: %w", seed.ClientID, err)
+		}
+
+		_, _, err = apiClient.OAuth2API.
+			SetOAuth2Client(ctx, seed.ClientID).
+			OAuth2Client(*client).
+			Execute()
+		if err != nil {
+			return fmt.Errorf("ensure hydra service client %s: %w", seed.ClientID, err)
+		}
 	}
 
 	return nil
+}
+
+func newTestConnectClient[T any](
+	ctx context.Context,
+	factory commonconnection.ConnectServiceClientFactory[T],
+	opts ...common.ClientOption,
+) (T, error) {
+	var zero T
+
+	httpClient, err := commonconnection.NewHTTPClient(ctx)
+	if err != nil {
+		return zero, err
+	}
+
+	opts = append(opts, common.WithHTTPClient(httpClient))
+	return commonconnection.NewConnectClient(ctx, factory, opts...)
 }
 
 // setupDeviceClient creates and configures the device client.
@@ -316,7 +400,7 @@ func setupDeviceClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, devicev1connect.NewDeviceServiceClient, opts...)
+	return newTestConnectClient(ctx, devicev1connect.NewDeviceServiceClient, opts...)
 }
 
 // setupNotificationClient creates and configures the notification client.
@@ -331,7 +415,7 @@ func setupNotificationClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, notificationv1connect.NewNotificationServiceClient, opts...)
+	return newTestConnectClient(ctx, notificationv1connect.NewNotificationServiceClient, opts...)
 }
 
 // setupPartitionClient creates and configures the partition client.
@@ -346,7 +430,7 @@ func setupPartitionClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
+	return newTestConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
 }
 
 // setupProfileClient creates and configures the profile client.
@@ -361,7 +445,7 @@ func setupProfileClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
+	return newTestConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
 }
 
 func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {

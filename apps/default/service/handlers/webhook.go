@@ -8,12 +8,22 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 )
+
+type serviceAccountAuthContext struct {
+	ClientID    string
+	TenantID    string
+	PartitionID string
+	ProfileID   string
+	Type        string
+	AccessID    string
+}
 
 // extractGrantedScopes extracts and normalises granted_scopes to []string
 // from the first location found in the payload.
@@ -340,6 +350,26 @@ func buildClaimsFromLoginEvent(
 	}
 }
 
+func buildServiceAccountClaims(
+	loginEventID string,
+	sa *serviceAccountAuthContext,
+	accessID string,
+	roles []string,
+) map[string]any {
+	claims := map[string]any{
+		"tenant_id":      sa.TenantID,
+		"partition_id":   sa.PartitionID,
+		"roles":          roles,
+		"profile_id":     sa.ProfileID,
+		"session_id":     loginEventID,
+		"login_event_id": loginEventID,
+	}
+	if accessID != "" {
+		claims["access_id"] = accessID
+	}
+	return claims
+}
+
 // extractSessionAccessTokenClaims extracts the access_token claims from the session object.
 // These claims were set server-side during consent and are trusted.
 func extractSessionAccessTokenClaims(tokenObject map[string]any) map[string]any {
@@ -495,36 +525,15 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 
 	// Handle service account scoped tokens (system_internal or system_external).
 	// For client_credentials grants Hydra does NOT call consent — only this webhook.
-	// If session claims exist (e.g. from a previous consent or hook response),
-	// use them directly. Otherwise look up the partition to get tenant/partition
-	// and validate the pre-registered subject.
+	// Normalise them through a durable login_event so every service-account login
+	// is traceable and refreshes preserve the same event linkage.
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantType == "client_credentials" {
-		sessionClaims := extractSessionAccessTokenClaims(tokenObject)
-		if len(sessionClaims) > 0 {
-			log.Debug("enriched service account token with existing session claims")
-			return writeTokenHookResponse(rw, sessionClaims)
-		}
-		// No session claims — initial client_credentials grant. Look up partition.
-		return h.handleServiceAccountEnrichment(ctx, rw, clientID, grantedScopes)
-	}
-
-	// Guard: if scopes were nil and this is a client_credentials flow,
-	// check session claims for non-user roles before falling through to
-	// the user-token path which requires a login event.
-	if grantedScopes == nil && grantType == "client_credentials" {
-		sessionClaims := extractSessionAccessTokenClaims(tokenObject)
-		if sessionClaims != nil && isNonUserRole(sessionClaims["roles"]) {
-			log.WithField("grant_type", grantType).
-				Info("client_credentials with non-user session roles - passing through session claims")
-			return writeTokenHookResponse(rw, sessionClaims)
-		}
-		log.WithField("grant_type", grantType).
-			Warn("client_credentials flow with no scopes and no non-user session roles")
+		return h.handleServiceAccountEnrichment(ctx, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
 	}
 
 	// Handle regular user tokens
-	return h.handleUserTokenEnrichment(ctx, rw, tokenObject)
+	return h.handleUserTokenEnrichment(ctx, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
 }
 
 // parseTokenWebhookRequest reads and parses the webhook request body.
@@ -558,7 +567,7 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 // It looks up the service account by client_id via the tenancy service API,
 // validates the scope matches the SA type, creates/gets an access record,
 // and returns enriched claims with roles from the access record.
-func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, clientID string, grantedScopes []string) error {
+func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
 	log := util.Log(ctx).WithField("client_id", clientID)
 
 	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
@@ -573,30 +582,47 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		return h.writeWebhookError(rw, err.Error())
 	}
 
-	// Derive role directly from the SA type. Access + AccessRole records are
-	// provisioned when the service account is created (or via seed migration),
-	// so there is no need to call the partition service from the webhook.
-	// Avoiding that call also prevents a circular dependency where the
-	// partition client needs a token from Hydra while Hydra is waiting for
-	// this webhook to respond.
 	role := RoleSystemInternal
 	if sa.Type == "external" {
 		role = RoleSystemExternal
 	}
+	roles := []string{role}
 
-	log.WithField("role", role).Debug("enriched service account token via SA lookup")
-	return writeTokenHookResponse(rw, map[string]any{
-		"tenant_id":    sa.GetTenantId(),
-		"partition_id": sa.GetPartitionId(),
-		"roles":        []string{role},
-		"profile_id":   sa.GetProfileId(),
-	})
+	sessionClaims := extractSessionAccessTokenClaims(tokenObject)
+	loginEvent, err := h.ensureServiceAccountLoginEvent(ctx, clientID, sa, sessionClaims, tokenType, grantType, grantedScopes)
+	if err != nil {
+		log.WithError(err).Error("service account login event persistence failed")
+		return h.writeWebhookError(rw, "unable to trace service account login")
+	}
+
+	accessID := sa.AccessID
+	if accessID == "" {
+		accessID = loginEvent.AccessID
+	}
+	if accessID == "" {
+		accessID = claimString(sessionClaims, "access_id")
+	}
+
+	claims := buildServiceAccountClaims(loginEvent.GetID(), sa, accessID, roles)
+	h.recordTokenWebhookTrace(ctx, loginEvent, tokenType, grantType, "service_account", grantedScopes)
+
+	log.WithFields(map[string]any{
+		"login_event_id": loginEvent.GetID(),
+		"profile_id":     sa.ProfileID,
+		"partition_id":   sa.PartitionID,
+		"tenant_id":      sa.TenantID,
+		"role":           role,
+		"token_type":     tokenType,
+		"grant_type":     grantType,
+	}).Info("enriched service account token with durable login event")
+
+	return writeTokenHookResponse(rw, claims)
 }
 
 func (h *AuthServer) lookupServiceAccountByClientID(
 	ctx context.Context,
 	clientID string,
-) (*partitionv1.ServiceAccountObject, error) {
+) (*serviceAccountAuthContext, error) {
 	if strings.TrimSpace(clientID) == "" {
 		return nil, fmt.Errorf("client_id is required")
 	}
@@ -612,7 +638,7 @@ func (h *AuthServer) lookupServiceAccountByClientID(
 func serviceAccountFromHydraClient(
 	client *hydraclientgo.OAuth2Client,
 	clientID string,
-) (*partitionv1.ServiceAccountObject, error) {
+) (*serviceAccountAuthContext, error) {
 	if client == nil {
 		return nil, fmt.Errorf("hydra client is required")
 	}
@@ -626,6 +652,7 @@ func serviceAccountFromHydraClient(
 	partitionID, _ := metadata["partition_id"].(string)
 	profileID, _ := metadata["profile_id"].(string)
 	clientType, _ := metadata["type"].(string)
+	accessID, _ := metadata["access_id"].(string)
 	if profileID == "" {
 		profileID = clientID
 	}
@@ -642,12 +669,13 @@ func serviceAccountFromHydraClient(
 		return nil, fmt.Errorf("hydra client metadata incomplete for client_id %s", clientID)
 	}
 
-	return &partitionv1.ServiceAccountObject{
-		ClientId:    clientID,
-		TenantId:    tenantID,
-		PartitionId: partitionID,
-		ProfileId:   profileID,
+	return &serviceAccountAuthContext{
+		ClientID:    clientID,
+		TenantID:    tenantID,
+		PartitionID: partitionID,
+		ProfileID:   profileID,
 		Type:        clientType,
+		AccessID:    accessID,
 	}, nil
 }
 
@@ -655,7 +683,7 @@ func serviceAccountFromHydraClient(
 // Consent is the single authority for all token claims including roles.
 // The webhook passes through complete consent-set claims and only reconstructs
 // from the login event DB when claims are missing (edge case).
-func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any) error {
+func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
 	log := util.Log(ctx)
 	session, sessionOk := tokenObject["session"].(map[string]any)
 	if !sessionOk {
@@ -703,6 +731,13 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	// Fast path: if all required claims are present from consent, pass through directly.
 	// This avoids DB and partition service calls during token refresh.
 	if missing := missingRequiredUserClaims(finalClaims); len(missing) == 0 {
+		h.traceUserTokenWebhook(ctx, tokenObject, finalClaims, tokenType, grantType, grantedScopes)
+		log.WithFields(map[string]any{
+			"client_id":      clientID,
+			"login_event_id": claimString(finalClaims, "session_id"),
+			"token_type":     tokenType,
+			"grant_type":     grantType,
+		}).Info("complete consent claims - passing through without DB reconstruction")
 		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("complete consent claims - passing through without DB lookup")
 		return writeTokenHookResponse(rw, finalClaims)
 	}
@@ -719,8 +754,237 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		return h.writeWebhookError(rw, "required user claims missing")
 	}
 
+	h.traceUserTokenWebhook(ctx, tokenObject, canonicalClaims, tokenType, grantType, grantedScopes)
 	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Info("enriching token with reconstructed user claims")
 	return writeTokenHookResponse(rw, canonicalClaims)
+}
+
+func (h *AuthServer) getOrCreateLoginRecord(ctx context.Context, profileID, clientID, source string) (*models.Login, error) {
+	var (
+		login *models.Login
+		err   error
+	)
+
+	if profileID != "" {
+		login, err = h.loginRepo.GetByProfileID(ctx, profileID)
+		if err != nil && !data.ErrorIsNoRows(err) {
+			return nil, err
+		}
+	}
+
+	if login != nil && login.ClientID != "" && login.ClientID != clientID {
+		login = nil
+	}
+
+	if login == nil {
+		login = &models.Login{
+			ProfileID: profileID,
+			ClientID:  clientID,
+			Source:    source,
+		}
+		login.GenID(ctx)
+		if err = h.loginRepo.Create(ctx, login); err != nil {
+			return nil, err
+		}
+	}
+
+	return login, nil
+}
+
+func (h *AuthServer) ensureServiceAccountLoginEvent(
+	ctx context.Context,
+	clientID string,
+	sa *serviceAccountAuthContext,
+	sessionClaims map[string]any,
+	tokenType string,
+	grantType string,
+	grantedScopes []string,
+) (*models.LoginEvent, error) {
+	if sa == nil {
+		return nil, fmt.Errorf("service account context is required")
+	}
+
+	loginRecord, err := h.getOrCreateLoginRecord(ctx, sa.ProfileID, clientID, string(models.LoginSourceServiceAccount))
+	if err != nil {
+		return nil, fmt.Errorf("resolve login record: %w", err)
+	}
+
+	if loginEventID := claimString(sessionClaims, "session_id"); loginEventID != "" {
+		loginEvent, lookupErr := h.loginEventRepo.GetByID(ctx, loginEventID)
+		if lookupErr != nil {
+			return nil, fmt.Errorf("lookup existing login event: %w", lookupErr)
+		}
+		if loginEvent != nil {
+			return h.ensureServiceAccountLoginEventContext(ctx, loginEvent, loginRecord, sa), nil
+		}
+	}
+
+	loginEvent := &models.LoginEvent{
+		ClientID:  clientID,
+		LoginID:   loginRecord.GetID(),
+		ProfileID: sa.ProfileID,
+		AccessID:  sa.AccessID,
+		Properties: data.JSONMap{
+			"auth_flow":            "service_account_webhook",
+			"grant_type":           grantType,
+			"token_type":           tokenType,
+			"service_account_type": sa.Type,
+		},
+		Client: "hydra_token_webhook",
+		BaseModel: data.BaseModel{
+			TenantID:    sa.TenantID,
+			PartitionID: sa.PartitionID,
+		},
+	}
+	if len(grantedScopes) > 0 {
+		loginEvent.Properties["granted_scopes"] = append([]string(nil), grantedScopes...)
+	}
+	loginEvent.ID = util.IDString()
+
+	if err := h.loginEventRepo.Create(ctx, loginEvent); err != nil {
+		return nil, fmt.Errorf("create service account login event: %w", err)
+	}
+
+	return loginEvent, nil
+}
+
+func (h *AuthServer) ensureServiceAccountLoginEventContext(
+	ctx context.Context,
+	loginEvent *models.LoginEvent,
+	loginRecord *models.Login,
+	sa *serviceAccountAuthContext,
+) *models.LoginEvent {
+	if loginEvent == nil || sa == nil {
+		return loginEvent
+	}
+
+	changed := make([]string, 0, 5)
+	if loginEvent.ClientID == "" {
+		loginEvent.ClientID = sa.ClientID
+		changed = append(changed, "client_id")
+	}
+	if loginEvent.LoginID == "" && loginRecord != nil {
+		loginEvent.LoginID = loginRecord.GetID()
+		changed = append(changed, "login_id")
+	}
+	if loginEvent.ProfileID == "" {
+		loginEvent.ProfileID = sa.ProfileID
+		changed = append(changed, "profile_id")
+	}
+	if loginEvent.AccessID == "" && sa.AccessID != "" {
+		loginEvent.AccessID = sa.AccessID
+		changed = append(changed, "access_id")
+	}
+	if loginEvent.TenantID == "" {
+		loginEvent.TenantID = sa.TenantID
+		changed = append(changed, "tenant_id")
+	}
+	if loginEvent.PartitionID == "" {
+		loginEvent.PartitionID = sa.PartitionID
+		changed = append(changed, "partition_id")
+	}
+
+	if len(changed) > 0 {
+		if _, err := h.loginEventRepo.Update(ctx, loginEvent, changed...); err != nil {
+			util.Log(ctx).WithError(err).WithField("login_event_id", loginEvent.GetID()).
+				Warn("failed to update existing service account login event context")
+		}
+	}
+
+	return loginEvent
+}
+
+func (h *AuthServer) recordTokenWebhookTrace(
+	ctx context.Context,
+	loginEvent *models.LoginEvent,
+	tokenType string,
+	grantType string,
+	principalType string,
+	grantedScopes []string,
+) {
+	if loginEvent == nil {
+		return
+	}
+
+	props := loginEvent.Properties
+	if props == nil {
+		props = data.JSONMap{}
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	tracePayload := map[string]any{
+		"last_seen_at":   now,
+		"token_type":     tokenType,
+		"grant_type":     grantType,
+		"principal_type": principalType,
+	}
+	if len(grantedScopes) > 0 {
+		tracePayload["granted_scopes"] = append([]string(nil), grantedScopes...)
+	}
+
+	if existingTrace, ok := props["token_webhook"].(map[string]any); ok {
+		for key, value := range existingTrace {
+			tracePayload[key] = value
+		}
+	}
+	if _, ok := tracePayload["first_seen_at"]; !ok {
+		tracePayload["first_seen_at"] = now
+	}
+	if currentCount, ok := tracePayload["count"].(float64); ok {
+		tracePayload["count"] = int(currentCount) + 1
+	} else if currentCount, ok := tracePayload["count"].(int); ok {
+		tracePayload["count"] = currentCount + 1
+	} else {
+		tracePayload["count"] = 1
+	}
+
+	props["token_webhook"] = tracePayload
+	loginEvent.Properties = props
+	if _, err := h.loginEventRepo.Update(ctx, loginEvent, "properties"); err != nil {
+		util.Log(ctx).WithError(err).WithField("login_event_id", loginEvent.GetID()).
+			Warn("failed to persist token webhook trace on login event")
+	}
+}
+
+func (h *AuthServer) traceUserTokenWebhook(
+	ctx context.Context,
+	tokenObject map[string]any,
+	claims map[string]any,
+	tokenType string,
+	grantType string,
+	grantedScopes []string,
+) {
+	loginEventID := claimString(claims, "session_id")
+	if loginEventID == "" {
+		loginEventID = extractLoginEventIDFromWebhook(tokenObject)
+	}
+	if loginEventID == "" {
+		util.Log(ctx).WithFields(map[string]any{
+			"token_type": tokenType,
+			"grant_type": grantType,
+		}).Warn("token webhook did not contain a login_event reference for user tracing")
+		return
+	}
+
+	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
+	if err != nil {
+		util.Log(ctx).WithError(err).WithField("login_event_id", loginEventID).
+			Warn("failed to look up login event while tracing token webhook")
+		return
+	}
+	if loginEvent == nil {
+		return
+	}
+
+	h.recordTokenWebhookTrace(ctx, loginEvent, tokenType, grantType, "user", grantedScopes)
+	util.Log(ctx).WithFields(map[string]any{
+		"login_event_id": loginEvent.GetID(),
+		"profile_id":     loginEvent.ProfileID,
+		"partition_id":   loginEvent.PartitionID,
+		"tenant_id":      loginEvent.TenantID,
+		"token_type":     tokenType,
+		"grant_type":     grantType,
+	}).Info("traced token webhook against user login event")
 }
 
 // lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.

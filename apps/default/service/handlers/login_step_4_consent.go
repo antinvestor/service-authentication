@@ -14,6 +14,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -128,7 +129,7 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 	case *partitionv1.ClientObject_ServiceAccount:
 
 		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
-		return h.buildServiceAccountConsentClaims(ctx, clientObj, owner.ServiceAccount, subjectID, requestedScope, requestedAudiences)
+		return h.buildServiceAccountConsentClaims(ctx, consentReq, clientObj, owner.ServiceAccount, subjectID, requestedScope, requestedAudiences)
 
 	default:
 		return nil, fmt.Errorf("only partition or service account should own a client")
@@ -139,7 +140,7 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 // buildServiceAccountConsentClaims builds token claims for service account clients
 // (both system_internal and system_external).
 // Service accounts are looked up via the tenancy service API by client_id.
-func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clientObj *partitionv1.ClientObject, sa *partitionv1.ServiceAccountObject, subjectID string, requestedScope, _ []string) (map[string]any, error) {
+func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *partitionv1.ClientObject, sa *partitionv1.ServiceAccountObject, subjectID string, requestedScope, _ []string) (map[string]any, error) {
 	log := util.Log(ctx).WithFields(map[string]any{
 		"client_id":     clientObj.GetClientId(),
 		"subject_id":    subjectID,
@@ -168,16 +169,37 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, clien
 	// Fetch roles from access record
 	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId())
 
+	loginRecord, err := h.getOrCreateLoginRecord(ctx, subjectID, clientObj.GetClientId(), string(models.LoginSourceServiceAccount))
+	if err != nil {
+		log.WithError(err).WithField("client_id", clientObj.GetClientId()).
+			Error("failed to resolve login record for service account consent")
+		return nil, fmt.Errorf("failed to resolve login record: %w", err)
+	}
+
+	props := data.JSONMap{
+		"auth_flow":            "service_account_consent",
+		"grant_type":           "client_credentials",
+		"service_account_type": sa.Type,
+	}
+	if consentReq != nil && consentReq.GetLoginSessionId() != "" {
+		props["hydra_login_session_id"] = consentReq.GetLoginSessionId()
+	}
+
 	// Create a LoginEvent for auditability and webhook fallback.
 	// This must succeed — without it, token refresh will fail to find the login event.
 	loginEvt := &models.LoginEvent{
-		ClientID:  clientObj.GetClientId(),
-		ProfileID: subjectID,
-		AccessID:  accessObj.GetId(),
+		ClientID:   clientObj.GetClientId(),
+		LoginID:    loginRecord.GetID(),
+		ProfileID:  subjectID,
+		AccessID:   accessObj.GetId(),
+		Properties: props,
+		Client:     "hydra_consent",
+		BaseModel: data.BaseModel{
+			TenantID:    sa.GetTenantId(),
+			PartitionID: sa.GetPartitionId(),
+		},
 	}
 	loginEvt.ID = util.IDString()
-	loginEvt.TenantID = sa.GetTenantId()
-	loginEvt.PartitionID = sa.GetPartitionId()
 
 	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
 		log.WithError(createErr).WithField("client_id", clientObj.GetClientId()).

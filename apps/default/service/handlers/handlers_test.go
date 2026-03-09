@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Test timeout constants
@@ -137,14 +138,14 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 
 		webhookReq := map[string]any{
 			"granted_scopes": []string{"openid", "offline", "system_int"},
-			"client_id":      "test-system-client",
+			"client_id":      "dev_authentication_tests",
 			"grant_type":     "client_credentials",
 			"session": map[string]any{
 				"access_token": map[string]any{
-					"tenant_id":    "tenant-sa-1",
-					"partition_id": "part-sa-1",
+					"tenant_id":    "9bsv0s3pbdv002o80qfg",
+					"partition_id": "9bsv0s3pbdv002o80qhg",
 					"roles":        []string{"system_internal"},
-					"profile_id":   "service-bot-profile-1",
+					"profile_id":   "dev_authentication_tests",
 				},
 			},
 		}
@@ -175,9 +176,77 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 		require.True(t, ok, "access_token should have roles")
 		assert.Contains(t, roles, "system_internal")
 
-		assert.Equal(t, "service-bot-profile-1", accessToken["profile_id"])
-		assert.Equal(t, "tenant-sa-1", accessToken["tenant_id"])
-		assert.Equal(t, "part-sa-1", accessToken["partition_id"])
+		assert.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
+		assert.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
+		assert.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
+	})
+}
+
+func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsCreatesLoginEvent() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+
+		webhookReq := map[string]any{
+			"client_id":      "dev_authentication_tests",
+			"grant_type":     "client_credentials",
+			"granted_scopes": []string{"openid", "system_int"},
+			"session":        map[string]any{},
+		}
+		jsonData, err := json.Marshal(webhookReq)
+		require.NoError(t, err)
+
+		req, err := http.NewRequestWithContext(opCtx, "POST", server.URL+"/webhook/enrich/access-token", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		session, ok := response["session"].(map[string]any)
+		require.True(t, ok)
+		accessToken, ok := session["access_token"].(map[string]any)
+		require.True(t, ok)
+
+		loginEventID, _ := accessToken["login_event_id"].(string)
+		sessionID, _ := accessToken["session_id"].(string)
+		require.NotEmpty(t, loginEventID)
+		require.Equal(t, loginEventID, sessionID)
+		require.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
+		require.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
+		require.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
+
+		loginEvent, err := authServer.LoginEventRepo().GetByID(opCtx, loginEventID)
+		require.NoError(t, err)
+		require.NotNil(t, loginEvent)
+		require.Equal(t, "dev_authentication_tests", loginEvent.ClientID)
+		require.Equal(t, "dev_authentication_tests", loginEvent.ProfileID)
+
+		tracePayload, ok := loginEvent.Properties["token_webhook"]
+		require.True(t, ok)
+		traceStruct, err := structpb.NewStruct(map[string]any{"trace": tracePayload})
+		require.NoError(t, err)
+		assert.NotNil(t, traceStruct.GetFields()["trace"])
 	})
 }
 
@@ -200,13 +269,14 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
 		client := &http.Client{Timeout: HandlerOperationTimeout}
 
 		webhookReq := map[string]any{
-			"client_id":  "test-system-client",
+			"client_id":  "dev_authentication_tests",
 			"grant_type": "client_credentials",
 			"session": map[string]any{
 				"access_token": map[string]any{
-					"tenant_id":    "tenant-1",
-					"partition_id": "part-1",
+					"tenant_id":    "9bsv0s3pbdv002o80qfg",
+					"partition_id": "9bsv0s3pbdv002o80qhg",
 					"roles":        []string{"system_internal"},
+					"profile_id":   "dev_authentication_tests",
 				},
 			},
 		}
@@ -233,8 +303,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
 		accessToken, ok := session["access_token"].(map[string]any)
 		require.True(t, ok)
 
-		assert.Equal(t, "tenant-1", accessToken["tenant_id"])
-		assert.Equal(t, "part-1", accessToken["partition_id"])
+		assert.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
+		assert.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
 	})
 }
 
