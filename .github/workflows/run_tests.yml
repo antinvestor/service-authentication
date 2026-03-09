@@ -36,4 +36,4 @@ jobs:
       - name: Run tests with coverage
         run: |
           set -o pipefail
-          ./scripts/run_go_tests.sh -json -v | gotestfmt -hide all
+          go test -p 1 -json -v ./... | gotestfmt -hide all
