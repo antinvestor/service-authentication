@@ -304,6 +304,22 @@ func ensureHydraServiceClient(ctx context.Context, adminURL string) error {
 	return nil
 }
 
+func newTestConnectClient[T any](
+	ctx context.Context,
+	factory commonconnection.ConnectServiceClientFactory[T],
+	opts ...common.ClientOption,
+) (T, error) {
+	var zero T
+
+	httpClient, err := commonconnection.NewHTTPClient(ctx)
+	if err != nil {
+		return zero, err
+	}
+
+	opts = append(opts, common.WithHTTPClient(httpClient))
+	return commonconnection.NewConnectClient(ctx, factory, opts...)
+}
+
 // setupDeviceClient creates and configures the device client.
 func setupDeviceClient(
 	ctx context.Context,
@@ -316,7 +332,7 @@ func setupDeviceClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, devicev1connect.NewDeviceServiceClient, opts...)
+	return newTestConnectClient(ctx, devicev1connect.NewDeviceServiceClient, opts...)
 }
 
 // setupNotificationClient creates and configures the notification client.
@@ -331,7 +347,7 @@ func setupNotificationClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, notificationv1connect.NewNotificationServiceClient, opts...)
+	return newTestConnectClient(ctx, notificationv1connect.NewNotificationServiceClient, opts...)
 }
 
 // setupPartitionClient creates and configures the partition client.
@@ -346,7 +362,7 @@ func setupPartitionClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
+	return newTestConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
 }
 
 // setupProfileClient creates and configures the profile client.
@@ -361,7 +377,7 @@ func setupProfileClient(
 		return nil, err
 	}
 
-	return commonconnection.NewConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
+	return newTestConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
 }
 
 func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {
