@@ -87,6 +87,14 @@ type BaseTestSuite struct {
 	handler      *handlers.AuthServer
 }
 
+type hydraServiceClientSeed struct {
+	ClientID   string
+	ClientName string
+	Secret     string
+	Audience   []string
+	ProfileID  string
+}
+
 func (bs *BaseTestSuite) ServerUrl() string {
 	return fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
 }
@@ -221,7 +229,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = "http://hydra:4444"
 
-	err = ensureHydraServiceClient(ctx, cfg.Oauth2ServiceAdminURI)
+	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
 	require.NoError(t, err)
 
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
@@ -258,47 +266,93 @@ func (bs *BaseTestSuite) CreateService(
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
-func ensureHydraServiceClient(ctx context.Context, adminURL string) error {
+func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 	configuration := hydraclientgo.NewConfiguration()
 	configuration.HTTPClient = http.DefaultClient
 	configuration.Servers = []hydraclientgo.ServerConfiguration{{URL: adminURL}}
 
-	client := hydraclientgo.NewOAuth2Client()
-	client.SetClientId("dev_authentication_tests")
-	client.SetClientName("sa-authentication_tests")
-	client.SetClientSecret("vkGiJroO9dAS5eFnuaGy")
-	client.SetGrantTypes([]string{"client_credentials"})
-	client.SetResponseTypes([]string{"token"})
-	client.SetScope("system_int openid")
-	client.SetAudience([]string{"service_profile", "service_tenancy", "service_notifications", "service_devices"})
-	client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
-	client.SetMetadata(map[string]any{
-		"tenant_id":    "9bsv0s3pbdv002o80qfg",
-		"partition_id": "9bsv0s3pbdv002o80qhg",
-		"profile_id":   "dev_authentication_tests",
-		"type":         "internal",
-	})
-
 	apiClient := hydraclientgo.NewAPIClient(configuration)
-
-	_, _, err := apiClient.OAuth2API.
-		CreateOAuth2Client(ctx).
-		OAuth2Client(*client).
-		Execute()
-	if err == nil {
-		return nil
+	seeds := []hydraServiceClientSeed{
+		{
+			ClientID:   "dev_authentication_tests",
+			ClientName: "sa-authentication_tests",
+			Secret:     "vkGiJroO9dAS5eFnuaGy",
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			ProfileID:  "dev_authentication_tests",
+		},
+		{
+			ClientID:   "dev_service_authentication",
+			ClientName: "sa-service_authentication",
+			Secret:     "vkGiJroO9dAS5eFnuaGy",
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			ProfileID:  "dev_service_authentication",
+		},
+		{
+			ClientID:   "dev_service_profile",
+			ClientName: "sa-service_profile",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_notifications", "service_tenancy"},
+			ProfileID:  "dev_service_profile",
+		},
+		{
+			ClientID:   "dev_service_tenancy",
+			ClientName: "sa-service_tenancy",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_notifications", "service_profile", "authentication_tests"},
+			ProfileID:  "dev_service_tenancy",
+		},
+		{
+			ClientID:   "dev_service_notifications",
+			ClientName: "sa-service_notifications",
+			Secret:     "hkGiJroO9cDS5eFnuaAV",
+			Audience:   []string{"service_profile", "service_tenancy", "service_devices"},
+			ProfileID:  "dev_service_notifications",
+		},
+		{
+			ClientID:   "dev_service_devices",
+			ClientName: "sa-service_devices",
+			Secret:     "hkBaJroO9cDGleFnuaAZ",
+			Audience:   []string{"service_notifications", "service_tenancy", "service_profile", "authentication_tests"},
+			ProfileID:  "dev_service_devices",
+		},
 	}
 
-	if !strings.Contains(err.Error(), "409") {
-		return fmt.Errorf("create hydra service client: %w", err)
-	}
+	for _, seed := range seeds {
+		client := hydraclientgo.NewOAuth2Client()
+		client.SetClientId(seed.ClientID)
+		client.SetClientName(seed.ClientName)
+		client.SetClientSecret(seed.Secret)
+		client.SetGrantTypes([]string{"client_credentials"})
+		client.SetResponseTypes([]string{"token"})
+		client.SetScope("system_int openid")
+		client.SetAudience(seed.Audience)
+		client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
+		client.SetMetadata(map[string]any{
+			"tenant_id":    "9bsv0s3pbdv002o80qfg",
+			"partition_id": "9bsv0s3pbdv002o80qhg",
+			"profile_id":   seed.ProfileID,
+			"type":         "internal",
+		})
 
-	_, _, err = apiClient.OAuth2API.
-		SetOAuth2Client(ctx, "dev_authentication_tests").
-		OAuth2Client(*client).
-		Execute()
-	if err != nil {
-		return fmt.Errorf("ensure hydra service client: %w", err)
+		_, _, err := apiClient.OAuth2API.
+			CreateOAuth2Client(ctx).
+			OAuth2Client(*client).
+			Execute()
+		if err == nil {
+			continue
+		}
+
+		if !strings.Contains(err.Error(), "409") {
+			return fmt.Errorf("create hydra service client %s: %w", seed.ClientID, err)
+		}
+
+		_, _, err = apiClient.OAuth2API.
+			SetOAuth2Client(ctx, seed.ClientID).
+			OAuth2Client(*client).
+			Execute()
+		if err != nil {
+			return fmt.Errorf("ensure hydra service client %s: %w", seed.ClientID, err)
+		}
 	}
 
 	return nil
