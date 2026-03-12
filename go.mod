@@ -21,11 +21,14 @@ require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
+	github.com/go-jose/go-jose/v4 v4.1.3
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.77.2
+	github.com/pitabwire/frame v1.78.0
 	github.com/pitabwire/util v0.6.1
+	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
@@ -63,11 +66,9 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/exaring/otelpgx v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.18.0 // indirect
@@ -107,7 +108,6 @@ require (
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
-	github.com/rs/xid v1.6.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.2 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
