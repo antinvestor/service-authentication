@@ -43,6 +43,7 @@ type (
 		AcceptLogoutRequest(ctx context.Context, params *AcceptLogoutRequestParams) (string, error)
 		GetLogoutRequest(ctx context.Context, logoutChallenge string) (*hydraclientgo.OAuth2LogoutRequest, error)
 		GetOAuth2Client(ctx context.Context, clientID string) (*hydraclientgo.OAuth2Client, error)
+		GetJsonWebKeySet(ctx context.Context, set string) (*hydraclientgo.JsonWebKeySet, error)
 	}
 	DefaultHydra struct {
 		cli      *hydraclientgo.APIClient
@@ -92,6 +93,10 @@ func getChallengeID(r *http.Request, query string) (string, error) {
 
 func (h *DefaultHydra) Cli() hydraclientgo.OAuth2API {
 	return h.cli.OAuth2API
+}
+
+func (h *DefaultHydra) JwkCli() hydraclientgo.JwkAPI {
+	return h.cli.JwkAPI
 }
 
 func (h *DefaultHydra) AcceptLoginRequest(ctx context.Context, params *AcceptLoginRequestParams, loginCtx map[string]any, acr string, amr ...string) (string, error) {
@@ -264,4 +269,21 @@ func (h *DefaultHydra) GetOAuth2Client(ctx context.Context, clientID string) (*h
 	}
 
 	return client, nil
+}
+
+func (h *DefaultHydra) GetJsonWebKeySet(ctx context.Context, set string) (*hydraclientgo.JsonWebKeySet, error) {
+	if set == "" {
+		return nil, fmt.Errorf("JWK set name is required")
+	}
+
+	jwks, _, err := h.JwkCli().GetJsonWebKeySet(ctx, set).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get JWK set %s: %w", set, err)
+	}
+
+	if jwks == nil {
+		return nil, fmt.Errorf("hydra returned empty JWK set for %s", set)
+	}
+
+	return jwks, nil
 }

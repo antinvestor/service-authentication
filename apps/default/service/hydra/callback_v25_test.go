@@ -140,6 +140,13 @@ func (s *HydraTestSuite) TestGetOAuth2Client_EmptyClientID() {
 	s.Contains(err.Error(), "client_id is required")
 }
 
+func (s *HydraTestSuite) TestGetJsonWebKeySet_EmptySet() {
+	h := NewDefaultHydra(http.DefaultClient, "http://localhost:4445")
+	_, err := h.GetJsonWebKeySet(context.Background(), "")
+	s.Error(err)
+	s.Contains(err.Error(), "JWK set name is required")
+}
+
 func TestHydra(t *testing.T) {
 	suite.Run(t, new(HydraTestSuite))
 }
