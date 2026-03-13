@@ -296,8 +296,9 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	_ = svc.Run(ctx, "")
 
-	// Sync seeded clients to Hydra so SA credentials work for service-to-service auth
-	syncSeededClientsToHydra(ctx, &cfg, svc.HTTPClientManager(), implementation)
+	// Sync seeded records to Hydra so SA credentials work for service-to-service auth.
+	// Must happen after migrations and before any OAuth2-authenticated calls.
+	syncSeededRecordsToHydra(ctx, &cfg, implementation)
 
 	deps := BuildDeps(ctx, svc, implementation)
 
@@ -342,26 +343,62 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	bs.Require().NoError(err, "failed to seed tenant role")
 }
 
-// syncSeededClientsToHydra syncs all unsynced Client records to Hydra after
-// migrations so that seeded SA credentials work for service-to-service auth.
-func syncSeededClientsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig, cliMan client.Manager, partSrv *handlers.PartitionServer) {
+// syncSeededRecordsToHydra syncs all seeded Partition and Client records to
+// Hydra after migrations. It uses a plain HTTP client (no OAuth2 transport)
+// because the service's own OAuth2 client (dev_service_tenancy) hasn't been
+// registered on Hydra yet — the Hydra admin API doesn't require auth.
+// Once the seeded clients are registered, the service's OAuth2-authenticated
+// HTTP client will be able to obtain tokens for subsequent event handlers.
+func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig, partSrv *handlers.PartitionServer) {
 	log := util.Log(ctx)
 	syncCtx := security.SkipTenancyChecksOnClaims(ctx)
 
-	query := data.NewSearchQuery(
+	// Plain HTTP client — context.Background() has no OAuth2 config,
+	// so client.NewManager won't wrap requests with OAuth2 transport.
+	plainCli := client.NewManager(context.Background())
+	defer plainCli.Close()
+
+	// 1. Sync partitions (they're registered as Hydra OAuth2 clients too).
+	partQuery := data.NewSearchQuery(data.WithSearchLimit(200))
+	partResult, err := partSrv.PartitionRepo.Search(syncCtx, partQuery)
+	if err != nil {
+		log.WithError(err).Error("failed to search partitions for Hydra sync")
+	} else {
+		partsSynced := 0
+		for {
+			result, ok := partResult.ReadResult(syncCtx)
+			if !ok {
+				break
+			}
+			if result.IsError() {
+				log.WithError(result.Error()).Error("error reading partitions")
+				break
+			}
+			for _, p := range result.Item() {
+				if syncErr := events.SyncPartitionOnHydra(syncCtx, cfg, plainCli, partSrv.PartitionRepo, p); syncErr != nil {
+					log.WithError(syncErr).WithField("partition_id", p.GetID()).Error("failed to sync partition to Hydra")
+				} else {
+					partsSynced++
+				}
+			}
+		}
+		log.WithField("count", partsSynced).Info("synced seeded partitions to Hydra")
+	}
+
+	// 2. Sync clients (including service account clients like dev_service_tenancy).
+	clientQuery := data.NewSearchQuery(
 		data.WithSearchLimit(200),
 		data.WithSearchFiltersAndByValue(map[string]any{"synced_at IS NULL": ""}),
 	)
-
-	jobResult, err := partSrv.ClientRepo.Search(syncCtx, query)
+	clientResult, err := partSrv.ClientRepo.Search(syncCtx, clientQuery)
 	if err != nil {
 		log.WithError(err).Error("failed to search unsynced clients for Hydra sync")
 		return
 	}
 
-	synced := 0
+	clientsSynced := 0
 	for {
-		result, ok := jobResult.ReadResult(syncCtx)
+		result, ok := clientResult.ReadResult(syncCtx)
 		if !ok {
 			break
 		}
@@ -377,13 +414,13 @@ func syncSeededClientsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig,
 					profileID = sa.ProfileID
 				}
 			}
-			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, cliMan, partSrv.ClientRepo, cl, profileID); syncErr != nil {
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, cl, profileID); syncErr != nil {
 				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
 			} else {
-				synced++
+				clientsSynced++
 			}
 		}
 	}
 
-	log.WithField("count", synced).Info("synced seeded clients to Hydra")
+	log.WithField("count", clientsSynced).Info("synced seeded clients to Hydra")
 }
