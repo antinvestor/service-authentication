@@ -2,15 +2,20 @@ package handlers
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 )
+
+// defaultSyncLimit is large enough to cover all records in a single invocation.
+// StableSearch internally batches at 50 rows, so memory usage stays bounded
+// regardless of this value.
+const defaultSyncLimit = math.MaxInt32
 
 const SyncClientsHTTPPath = "/_system/sync/clients"
 
@@ -35,45 +40,25 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 	// Skip tenancy checks on downstream queries so the sync can read all partitions.
 	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
-	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
-	if !ok {
-		log.Error("failed to cast config to PartitionConfig")
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	response := map[string]any{}
-	if !cfg.SynchronizeClients {
-		log.Info("synchronise clients is disabled, skipping")
-
-		response["triggered"] = false
-
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(rw).Encode(response)
-		return
-	}
-
 	response["triggered"] = true
 
-	pageStr := req.URL.Query().Get("page")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		page = 0
-	}
-	limitStr := req.URL.Query().Get("count")
-	count, err := strconv.Atoi(limitStr)
-	if err != nil {
-		count = 50
+	// Optional count parameter caps total records per category.
+	// Default is unlimited — all records are synced.
+	limit := defaultSyncLimit
+	if limitStr := req.URL.Query().Get("count"); limitStr != "" {
+		if n, err := strconv.Atoi(limitStr); err == nil && n > 0 {
+			limit = n
+		}
 	}
 
-	log.WithField("page", page).WithField("count", count).
-		Info("starting synchronisation")
+	log.WithField("limit", limit).Info("starting synchronisation")
 
-	query := data.NewSearchQuery(
-		data.WithSearchLimit(count), data.WithSearchOffset(page))
+	syncQuery := func() *data.SearchQuery {
+		return data.NewSearchQuery(data.WithSearchLimit(limit))
+	}
 
-	err = business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, query)
+	err := business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, syncQuery())
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising partitions")
 		response["partition_sync_error"] = err.Error()
@@ -82,9 +67,7 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 	}
 
 	// Sync clients — register/update Hydra OAuth2 clients for Client records
-	clientQuery := data.NewSearchQuery(
-		data.WithSearchLimit(count), data.WithSearchOffset(page))
-	err = business.ReQueueClientsForHydraSync(ctx, prtSrv.ClientRepo, prtSrv.eventsMan, clientQuery)
+	err = business.ReQueueClientsForHydraSync(ctx, prtSrv.ClientRepo, prtSrv.eventsMan, syncQuery())
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising clients on Hydra")
 		response["client_hydra_sync_error"] = err.Error()
@@ -93,9 +76,7 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 	}
 
 	// Sync service accounts — register/update Hydra OAuth2 clients (legacy SAs without ClientRef)
-	saQuery := data.NewSearchQuery(
-		data.WithSearchLimit(count), data.WithSearchOffset(page))
-	err = business.ReQueueServiceAccountsForHydraSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saQuery)
+	err = business.ReQueueServiceAccountsForHydraSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, syncQuery())
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising service accounts on Hydra")
 		response["service_account_hydra_sync_error"] = err.Error()
@@ -104,9 +85,7 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 	}
 
 	// Also sync service account Keto tuples
-	saAuthzQuery := data.NewSearchQuery(
-		data.WithSearchLimit(count), data.WithSearchOffset(page))
-	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, saAuthzQuery)
+	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, syncQuery())
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising service account authz")
 		response["service_account_authz_sync_error"] = err.Error()

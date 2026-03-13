@@ -265,7 +265,6 @@ func (bs *BaseTestSuite) createServiceInternal(
 		ExtendQuery("stream_retention", "workqueue").
 		ExtendQuery("stream_storage", "file").
 		String()
-	cfg.SynchronizeClients = true
 
 	cfg.AuthorizationServiceReadURI = bs.ketoReadURI
 	cfg.AuthorizationServiceWriteURI = bs.ketoWriteURI
