@@ -94,7 +94,10 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			suite.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
 
-				ctx, _, dep := suite.CreateService(t, depOpts)
+				ctx, svc, dep := suite.CreateService(t, depOpts)
+
+				// Seed the sync-bot with service role so CanPartitionManage passes.
+				suite.SeedTenantRole(ctx, svc, "tenant", "partition", "sync-bot", "service")
 
 				// Create test request
 				url := "/_system/sync/clients" + tc.queryParams
