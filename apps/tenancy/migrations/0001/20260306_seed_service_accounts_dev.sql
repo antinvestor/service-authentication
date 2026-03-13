@@ -235,3 +235,39 @@ INSERT INTO service_accounts (
     '{"namespaces": ["service_tenancy"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
+
+-- ──────────────────────────────────────────────────────────────
+-- dev_synchronize_partitions (CronJob for periodic tenancy sync)
+-- ──────────────────────────────────────────────────────────────
+INSERT INTO clients (
+    id, tenant_id, partition_id, name, client_id, client_secret,
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+) VALUES (
+    'd6l82t4pf2t82gudn86g',
+    '9bsv0s3pbdv002o80qfg',
+    '9bsv0s3pbdv002o80qhg',
+    'sa-synchronize_partitions',
+    'dev_synchronize_partitions',
+    '',
+    'internal',
+    '{"types": ["client_credentials"]}',
+    'system_int openid',
+    '{"namespaces": ["service_tenancy"]}',
+    'private_key_jwt',
+    'd6l82t4pf2t82gudn870'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO service_accounts (
+    id, tenant_id, partition_id, profile_id,
+    client_id, client_ref, type, audiences, properties
+) VALUES (
+    'd6l82t4pf2t82gudn870',
+    '9bsv0s3pbdv002o80qfg',
+    '9bsv0s3pbdv002o80qhg',
+    'dev_synchronize_partitions',
+    'dev_synchronize_partitions',
+    'd6l82t4pf2t82gudn86g',
+    'internal',
+    '{"namespaces": ["service_tenancy"]}',
+    '{}'
+) ON CONFLICT (id) DO NOTHING;
