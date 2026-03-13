@@ -22,6 +22,9 @@ import (
 
 const defaultAssertionTTL = 5 * time.Minute
 
+// defaultJWKSetName is the Hydra-managed JWK set used for signing client assertions.
+const defaultJWKSetName = "hydra.openid.id-token"
+
 //nolint:gosec // standards-defined identifier, not a credential
 const clientAssertionTypeJWTBearer = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 
@@ -64,13 +67,21 @@ func (h *AuthServer) SignPrivateKeyJWTEndpoint(rw http.ResponseWriter, req *http
 
 	setName := strings.TrimSpace(body.JWKSetName)
 	if setName == "" {
-		setName = clientID
+		setName = defaultJWKSetName
 	}
 
 	jwks, err := h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
 	if err != nil {
-		log.WithError(err).WithField("jwk_set", setName).Error("failed to fetch JWK set from Hydra")
-		return writeSignError(rw, http.StatusBadGateway, "failed to fetch signing keys")
+		// If the requested set doesn't exist, fall back to the default Hydra JWK set.
+		if setName != defaultJWKSetName {
+			log.WithError(err).WithField("jwk_set", setName).Warn("JWK set not found, falling back to default")
+			setName = defaultJWKSetName
+			jwks, err = h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
+		}
+		if err != nil {
+			log.WithError(err).WithField("jwk_set", setName).Error("failed to fetch JWK set from Hydra")
+			return writeSignError(rw, http.StatusBadGateway, "failed to fetch signing keys")
+		}
 	}
 
 	signingKey, kid, err := selectSigningKey(jwks)
