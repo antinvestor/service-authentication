@@ -201,23 +201,5 @@ func (suite *SyncPartitionsTestSuite) TestNewSecureRouterV1() {
 	})
 }
 
-func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions_ForbiddenWithoutSystemInternal() {
-	suite.T().Run("forbidden_without_system_internal", func(t *testing.T) {
-		suite.WithTestDependancies(t, func(t *testing.T, depOpts *definition.DependencyOption) {
-			ctx, _, dep := suite.CreateService(t, depOpts)
-
-			req := httptest.NewRequest(http.MethodGet, handlers.SyncClientsHTTPPath, nil)
-			req = req.WithContext(ctx)
-			rw := httptest.NewRecorder()
-
-			dep.Server.SynchronizeSystemClients(rw, req)
-
-			assert.Equal(t, http.StatusForbidden, rw.Code)
-
-			var response map[string]interface{}
-			err := json.Unmarshal(rw.Body.Bytes(), &response)
-			require.NoError(t, err)
-			assert.Equal(t, "system_internal role required", response["error"])
-		})
-	})
-}
+// Authorization is now handled by TenancyAccessMiddleware (Keto ReBAC)
+// instead of manual system_internal role checking in the handler.

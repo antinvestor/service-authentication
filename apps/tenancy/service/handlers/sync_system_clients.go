@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
@@ -18,13 +17,8 @@ const SyncClientsHTTPPath = "/_system/sync/clients"
 func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	claims := security.ClaimsFromContext(ctx)
-	if claims == nil || !slices.Contains(claims.GetRoles(), "system_internal") {
-		rw.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(rw).Encode(map[string]string{"error": "system_internal role required"})
-		return
-	}
-
+	// Authorization is handled by TenancyAccessMiddleware (Keto ReBAC).
+	// Skip tenancy checks on downstream queries so the sync can read all partitions.
 	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
 	cfg, ok := prtSrv.svc.Config().(*config.PartitionConfig)
