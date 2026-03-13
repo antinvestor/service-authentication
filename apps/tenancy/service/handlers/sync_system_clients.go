@@ -26,7 +26,7 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 		log.WithError(err).Error("failed to authorize partition management")
 
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusBadRequest)
+		rw.WriteHeader(http.StatusForbidden)
 		_ = json.NewEncoder(rw).Encode(map[string]string{"error": "failed to authorize partition management"})
 		return
 	}

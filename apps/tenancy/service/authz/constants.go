@@ -4,7 +4,30 @@ const (
 	NamespaceTenancy       = "service_tenancy"
 	NamespaceTenancyAccess = "tenancy_access"
 	NamespaceProfile       = "profile_user"
+
+	// Downstream service namespaces that accept service bot access via
+	// the tenancy_access#service bridge pattern.
+	NamespaceProfile_      = "service_profile"
+	NamespaceNotifications = "service_notifications"
+	NamespacePayment       = "service_payment"
+	NamespaceLedger        = "service_ledger"
+	NamespaceCommerce      = "service_commerce"
+	NamespaceTrustage      = "service_trustage"
 )
+
+// AllServiceNamespaces lists every service namespace that should receive a
+// bridge tuple (ns:path#service ← tenancy_access:path#service) when a
+// partition is provisioned. This ensures service bots with a single
+// tenancy_access#service tuple get functional permissions in all services.
+var AllServiceNamespaces = []string{ //nolint:gochecknoglobals // namespace registry
+	NamespaceTenancy,
+	NamespaceProfile_,
+	NamespaceNotifications,
+	NamespacePayment,
+	NamespaceLedger,
+	NamespaceCommerce,
+	NamespaceTrustage,
+}
 
 // Permission constants for tenancy operations.
 // These names match the OPL permits functions and are used with Keto's Check API.

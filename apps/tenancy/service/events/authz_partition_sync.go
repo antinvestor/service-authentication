@@ -77,17 +77,18 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 
-	// Write bridge tuples for service_tenancy namespace so service bots can
-	// access this partition via the partition service. These tuples create the
-	// subject set chain: tenancy_access:path#service → service_tenancy:path#service
-	// → service_tenancy:path#permission.
-	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, []string{authz.NamespaceTenancy})
+	// Write bridge tuples for all service namespaces so service bots with a
+	// single tenancy_access:path#service tuple get functional permissions in
+	// every service. Each bridge creates the subject set chain:
+	//   tenancy_access:path#service → ns:path#service → OPL permits
+	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, authz.AllServiceNamespaces)
 	if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
-		return fmt.Errorf("failed to write service_tenancy bridge tuples: %w", writeErr)
+		return fmt.Errorf("failed to write service bridge tuples: %w", writeErr)
 	}
 
 	logger.WithField("tenancy_path", tenancyPath).
-		Info("wrote service_tenancy bridge tuples")
+		WithField("namespaces", len(authz.AllServiceNamespaces)).
+		Info("wrote service bridge tuples for all namespaces")
 
 	// Write partition inheritance tuple if this partition has a parent.
 	// This creates a Keto subject set so members of the parent partition
