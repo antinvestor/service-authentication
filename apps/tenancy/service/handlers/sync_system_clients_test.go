@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
@@ -28,7 +27,6 @@ func TestSyncPartitionsTestSuite(t *testing.T) {
 func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 	testCases := []struct {
 		name                string
-		syncEnabled         bool
 		queryParams         string
 		httpMethod          string
 		expectedStatus      int
@@ -37,68 +35,34 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 		description         string
 	}{
 		{
-			name:                "sync_disabled",
-			syncEnabled:         false,
-			queryParams:         "",
-			httpMethod:          http.MethodGet,
-			expectedStatus:      http.StatusOK,
-			expectedTriggered:   false,
-			expectedContentType: "application/json",
-			description:         "Should return triggered=false when sync is disabled",
-		},
-		{
-			name:                "sync_enabled",
-			syncEnabled:         true,
+			name:                "sync_triggered",
 			queryParams:         "",
 			httpMethod:          http.MethodGet,
 			expectedStatus:      http.StatusOK,
 			expectedTriggered:   true,
 			expectedContentType: "application/json",
-			description:         "Should return triggered=true when sync is enabled",
+			description:         "Should return triggered=true and queue sync jobs",
 		},
 		{
-			name:                "with_query_parameters",
-			syncEnabled:         true,
-			queryParams:         "?q=test&page=1&count=25",
+			name:                "with_count_limit",
+			queryParams:         "?count=25",
 			httpMethod:          http.MethodGet,
 			expectedStatus:      http.StatusOK,
 			expectedTriggered:   true,
 			expectedContentType: "application/json",
-			description:         "Should handle query parameters correctly",
+			description:         "Should respect optional count limit",
 		},
 		{
-			name:                "invalid_page_parameter",
-			syncEnabled:         true,
-			queryParams:         "?page=invalid",
-			httpMethod:          http.MethodGet,
-			expectedStatus:      http.StatusOK,
-			expectedTriggered:   true,
-			expectedContentType: "application/json",
-			description:         "Should default page to 0 for invalid page parameter",
-		},
-		{
-			name:                "invalid_count_parameter",
-			syncEnabled:         true,
+			name:                "invalid_count_uses_default",
 			queryParams:         "?count=invalid",
 			httpMethod:          http.MethodGet,
 			expectedStatus:      http.StatusOK,
 			expectedTriggered:   true,
 			expectedContentType: "application/json",
-			description:         "Should default count to 50 for invalid count parameter",
-		},
-		{
-			name:                "empty_query_parameters",
-			syncEnabled:         true,
-			queryParams:         "?q=&page=&count=",
-			httpMethod:          http.MethodGet,
-			expectedStatus:      http.StatusOK,
-			expectedTriggered:   true,
-			expectedContentType: "application/json",
-			description:         "Should handle empty query parameters",
+			description:         "Should sync all records when count is invalid",
 		},
 		{
 			name:                "post_method",
-			syncEnabled:         true,
 			queryParams:         "",
 			httpMethod:          http.MethodPost,
 			expectedStatus:      http.StatusOK,
@@ -108,7 +72,6 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 		},
 		{
 			name:                "put_method",
-			syncEnabled:         true,
 			queryParams:         "",
 			httpMethod:          http.MethodPut,
 			expectedStatus:      http.StatusOK,
@@ -118,7 +81,6 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 		},
 		{
 			name:                "delete_method",
-			syncEnabled:         true,
 			queryParams:         "",
 			httpMethod:          http.MethodDelete,
 			expectedStatus:      http.StatusOK,
@@ -134,10 +96,9 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 
 				ctx, svc, dep := suite.CreateService(t, depOpts)
 
-				cfg, ok := svc.Config().(*config.PartitionConfig)
-				if ok {
-					cfg.SynchronizeClients = tc.syncEnabled
-				}
+				// Seed the sync-bot with service role so CanPartitionManage passes.
+				suite.SeedTenantRole(ctx, svc, "tenant", "partition", "sync-bot", "service")
+
 				// Create test request
 				url := "/_system/sync/clients" + tc.queryParams
 				req := httptest.NewRequest(tc.httpMethod, url, nil)
