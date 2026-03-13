@@ -95,8 +95,13 @@ func NewAuthServer(ctx context.Context,
 		httpOpts = append(httpOpts, client.WithHTTPTraceRequests(), client.WithHTTPTraceRequestHeaders())
 	}
 
-	httpCli := client.NewHTTPClient(ctx, httpOpts...)
-	hydraCli := hydra.NewDefaultHydra(httpCli, authConfig.GetOauth2ServiceAdminURI())
+	// Use context.Background() to avoid inheriting the service's OAuth2 token
+	// source. The Hydra admin API is internal and does not require OAuth2 auth.
+	// Using the service context would cause a circular dependency: the signing
+	// webhook needs Hydra admin to fetch JWK sets, but the HTTP client would
+	// try to authenticate via the signer (itself) before making the request.
+	hydraHTTPCli := client.NewHTTPClient(context.Background(), httpOpts...)
+	hydraCli := hydra.NewDefaultHydra(hydraHTTPCli, authConfig.GetOauth2ServiceAdminURI())
 
 	h := &AuthServer{
 
