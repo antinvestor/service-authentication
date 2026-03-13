@@ -151,6 +151,14 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 	d.configuration = strings.Replace(d.configuration,
 		"public: http://127.0.0.1:4444", "public: "+publicURL, 1)
 
+	// Remove token enrichment webhooks — they point to the auth service which
+	// isn't reachable from inside the Hydra container during tests. Without
+	// these hooks Hydra issues tokens without enrichment, which is fine for tests.
+	d.configuration = strings.Replace(d.configuration,
+		"  refresh_token_hook: http://127.0.0.1:3000/webhook/enrich/refresh-token\n", "", 1)
+	d.configuration = strings.Replace(d.configuration,
+		"  token_hook: http://127.0.0.1:3000/webhook/enrich/token\n", "", 1)
+
 	// Database bootstrap runs from the host test process, so it must use the host DSN.
 	// On some machines Postgres can still be finalising startup immediately after the
 	// container wait condition trips, so give the bootstrap a few bounded retries.
