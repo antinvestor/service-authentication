@@ -16,8 +16,8 @@ type SyncServiceAccountHelpersTestSuite struct {
 // --- extractAudienceNamespaces ---
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_AnySlice() {
-	m := data.JSONMap{"namespaces": []any{"service_profile", "service_devices"}}
-	s.Equal([]string{"service_profile", "service_devices"}, extractAudienceNamespaces(m))
+	m := data.JSONMap{"namespaces": []any{"service_profile", "service_device"}}
+	s.Equal([]string{"service_profile", "service_device"}, extractAudienceNamespaces(m))
 }
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_StringSlice() {

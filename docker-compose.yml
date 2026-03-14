@@ -117,7 +117,7 @@ services:
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
       - OAUTH2_SERVICE_AUDIENCE=service_profile
-      - OAUTH2_JWT_VERIFY_AUDIENCE=service_devices
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_device
       - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
     ports:
       - "8085:8085"
@@ -147,7 +147,7 @@ services:
       - OAUTH2_SERVICE_URI=http://hydra:4444
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=vkGiJroO9dAS5eFnuaGy
-      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_tenancy,service_notifications,service_devices
+      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_tenancy,service_notifications,service_device
       - OAUTH2_JWT_VERIFY_AUDIENCE=authentication_tests
       - OAUTH2_JWT_VERIFY_ISSUER=http://hydra:4444
       - PROFILE_SERVICE_URI=http://profile_svc:8086

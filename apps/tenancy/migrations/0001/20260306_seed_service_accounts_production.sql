@@ -37,7 +37,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_device"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnolg'
 ) ON CONFLICT (id) DO NOTHING;
@@ -53,7 +53,7 @@ INSERT INTO service_accounts (
     'service-authentication',
     'c2f4j7au6s7f91uqnoog',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_device"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -73,7 +73,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notifications","service_tenancy","service_devices"]}',
+    '{"namespaces": ["service_notifications","service_tenancy","service_device"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnoqg'
 ) ON CONFLICT (id) DO NOTHING;
@@ -89,7 +89,7 @@ INSERT INTO service_accounts (
     'service-profile',
     'c2f4j7au6s7f91uqnopg',
     'internal',
-    '{"namespaces": ["service_notifications","service_tenancy","service_devices"]}',
+    '{"namespaces": ["service_notifications","service_tenancy","service_device"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 

@@ -27,7 +27,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_trustage","service_foundry","service_devices","service_profile","service_files"]}',
+    '{"namespaces": ["service_trustage","service_foundry","service_device","service_profile","service_files"]}',
     '{"uris": ["https://stawi.dev/auth/callback"]}',
     'https://static.stawi.dev/logo.png',
     '{"uris": ["https://stawi.dev"]}',

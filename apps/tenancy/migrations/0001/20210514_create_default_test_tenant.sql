@@ -42,7 +42,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_tenancy","service_devices","service_profile","service_notifications"]}',
+    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notifications"]}',
     '{"uris": ["http://localhost:5173/auth/callback","https://admin-dev.antinvestor.com/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["http://localhost:5173/","https://admin-dev.antinvestor.com/"]}',

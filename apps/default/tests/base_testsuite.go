@@ -239,7 +239,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"}
+	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_device"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
@@ -291,14 +291,14 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientID:   "dev_authentication_tests",
 			ClientName: "sa-authentication_tests",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_device"},
 			ProfileID:  "dev_authentication_tests",
 		},
 		{
 			ClientID:   "dev_service_authentication",
 			ClientName: "sa-service_authentication",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_devices"},
+			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_device"},
 			ProfileID:  "dev_service_authentication",
 		},
 		{
@@ -319,7 +319,7 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientID:   "dev_service_notifications",
 			ClientName: "sa-service_notifications",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_profile", "service_tenancy", "service_devices"},
+			Audience:   []string{"service_profile", "service_tenancy", "service_device"},
 			ProfileID:  "dev_service_notifications",
 		},
 		{
@@ -394,7 +394,7 @@ func setupDeviceClient(
 	cfg *aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.DeviceServiceURI,
-		Audiences: []string{"service_devices"},
+		Audiences: []string{"service_device"},
 	})
 	if err != nil {
 		return nil, err

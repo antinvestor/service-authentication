@@ -151,7 +151,7 @@ func setupDeviceClient(
 	return device.NewClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.DeviceServiceURI,
 		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_devices"},
+		Audiences:             []string{"service_device"},
 	})
 }
 

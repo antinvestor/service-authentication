@@ -36,7 +36,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_device"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn800'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -52,7 +52,7 @@ INSERT INTO service_accounts (
     'dev_authentication_tests',                     -- client_id (denormalized for lookup)
     'd6l82t4pf2t82gudn7vg',                        -- client_ref → Client.id above
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_device"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -72,7 +72,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_device"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn810'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -88,7 +88,7 @@ INSERT INTO service_accounts (
     'dev_service_authentication',
     'd6l82t4pf2t82gudn80g',                        -- client_ref → Client.id above
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_devices"]}',
+    '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_device"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 

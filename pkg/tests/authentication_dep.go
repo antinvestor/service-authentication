@@ -117,7 +117,7 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 			"OAUTH2_SERVICE_CLIENT_ID":                      "dev_service_authentication",
 			"OAUTH2_SERVICE_CLIENT_SECRET":                  "vkGiJroO9dAS5eFnuaGy",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD":             "client_secret_post",
-			"OAUTH2_SERVICE_AUDIENCE":                       "service_devices,service_notifications,service_tenancy,service_profile",
+			"OAUTH2_SERVICE_AUDIENCE":                       "service_device,service_notifications,service_tenancy,service_profile",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":                    "service_tenancy,authentication_tests",
 			"OAUTH2_JWT_VERIFY_ISSUER":                      issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":                    jwksData,
