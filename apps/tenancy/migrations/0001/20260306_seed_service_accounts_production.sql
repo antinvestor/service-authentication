@@ -26,7 +26,7 @@
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnoog',
     'c2f4j7au6s7f91uqnojg',
@@ -39,7 +39,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnolg'
+    'c2f4j7au6s7f91uqnolg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -62,7 +63,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnopg',
     'c2f4j7au6s7f91uqnojg',
@@ -75,7 +76,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_tenancy","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnoqg'
+    'c2f4j7au6s7f91uqnoqg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -98,7 +100,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnorg',
     'c2f4j7au6s7f91uqnojg',
@@ -111,7 +113,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnosg'
+    'c2f4j7au6s7f91uqnosg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -134,7 +137,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnotg',
     'c2f4j7au6s7f91uqnojg',
@@ -147,7 +150,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnoug'
+    'c2f4j7au6s7f91uqnoug',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -170,7 +174,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnovg',
     'c2f4j7au6s7f91uqnojg',
@@ -183,7 +187,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp0g'
+    'c2f4j7au6s7f91uqnp0g',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -206,7 +211,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnp1g',
     'c2f4j7au6s7f91uqnojg',
@@ -219,7 +224,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp2g'
+    'c2f4j7au6s7f91uqnp2g',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -242,7 +248,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnp3g',
     'c2f4j7au6s7f91uqnojg',
@@ -255,7 +261,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp4g'
+    'c2f4j7au6s7f91uqnp4g',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -278,7 +285,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnp5g',
     'c2f4j7au6s7f91uqnojg',
@@ -291,7 +298,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp6g'
+    'c2f4j7au6s7f91uqnp6g',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -314,7 +322,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnp7g',
     'c2f4j7au6s7f91uqnojg',
@@ -327,7 +335,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp8g'
+    'c2f4j7au6s7f91uqnp8g',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -350,7 +359,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnp9g',
     'c2f4j7au6s7f91uqnojg',
@@ -363,7 +372,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpag'
+    'c2f4j7au6s7f91uqnpag',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -386,7 +396,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnpbg',
     'c2f4j7au6s7f91uqnojg',
@@ -399,7 +409,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpcg'
+    'c2f4j7au6s7f91uqnpcg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -422,7 +433,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnpdg',
     'c2f4j7au6s7f91uqnojg',
@@ -435,7 +446,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpeg'
+    'c2f4j7au6s7f91uqnpeg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -458,7 +470,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnpfg',
     'c2f4j7au6s7f91uqnojg',
@@ -471,7 +483,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_notifications","service_chat_drone","service_device"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpgg'
+    'c2f4j7au6s7f91uqnpgg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -494,7 +507,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnphg',
     'c2f4j7au6s7f91uqnojg',
@@ -507,7 +520,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpig'
+    'c2f4j7au6s7f91uqnpig',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -530,7 +544,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnpjg',
     'c2f4j7au6s7f91uqnojg',
@@ -543,7 +557,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpkg'
+    'c2f4j7au6s7f91uqnpkg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -566,7 +581,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnplg',
     'c2f4j7au6s7f91uqnojg',
@@ -579,7 +594,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpmg'
+    'c2f4j7au6s7f91uqnpmg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -602,7 +618,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnpng',
     'c2f4j7au6s7f91uqnojg',
@@ -615,7 +631,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_settings"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpog'
+    'c2f4j7au6s7f91uqnpog',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -638,7 +655,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnppg',
     'c2f4j7au6s7f91uqnojg',
@@ -651,7 +668,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_settings"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpqg'
+    'c2f4j7au6s7f91uqnpqg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
@@ -674,7 +692,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'c2f4j7au6s7f91uqnprg',
     'c2f4j7au6s7f91uqnojg',
@@ -687,7 +705,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnpsg'
+    'c2f4j7au6s7f91uqnpsg',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (

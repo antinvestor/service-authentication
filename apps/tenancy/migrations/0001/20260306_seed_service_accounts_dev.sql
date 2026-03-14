@@ -241,7 +241,7 @@ INSERT INTO service_accounts (
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
-    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id
+    type, grant_types, scopes, audiences, token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
     'd6l82t4pf2t82gudn86g',
     '9bsv0s3pbdv002o80qfg',
@@ -254,7 +254,8 @@ INSERT INTO clients (
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
     'private_key_jwt',
-    'd6l82t4pf2t82gudn870'
+    'd6l82t4pf2t82gudn870',
+    '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_accounts (
