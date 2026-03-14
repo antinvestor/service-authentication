@@ -13,6 +13,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
@@ -43,7 +44,12 @@ func main() {
 	}
 
 	sm := svc.SecurityManager()
-	cliMan := svc.HTTPClientManager()
+
+	// Unauthenticated HTTP client for Hydra admin API calls.
+	// Hydra admin is cluster-internal and doesn't require OAuth2 tokens.
+	// Using the authenticated client causes bootstrap failures when the
+	// service's own OAuth2 client isn't yet registered in Hydra.
+	hydraClient := client.NewManager(context.Background())
 
 	auth := sm.GetAuthorizer(ctx)
 	authzMiddleware := authz.NewMiddleware(auth)
@@ -57,9 +63,9 @@ func main() {
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithRegisterEvents(
-			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.PartitionRepo),
-			events.NewClientSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
-			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, cliMan, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
+			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
+			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
+			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
 			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, auth),
 			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
