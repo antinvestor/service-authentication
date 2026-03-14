@@ -6,7 +6,7 @@
 --
 --   Tenant (Ant Investor Development) — child of Testing Manager
 --     └─ Partition (Ant Investor Development)         ← the "home" partition
---          └─ Client (Ant Investor_dev)                ← public, for user login (authorization_code)
+--          └─ Client (d6qbqdkpf2t52mcunf6g)             ← public, for user login (authorization_code)
 --
 -- ==========================================================================
 
@@ -36,7 +36,7 @@ INSERT INTO clients (
     'd6q1aekpf2taeg5iovqg',                       -- tenant: Ant Investor Development
     'd6q1aekpf2taeg5iovr0',                        -- partition: Ant Investor Development
     'Ant Investor Development',
-    'Ant Investor_dev',
+    'd6qbqdkpf2t52mcunf6g',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',

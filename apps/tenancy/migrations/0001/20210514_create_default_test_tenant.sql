@@ -6,7 +6,7 @@
 --
 --   Tenant (Testing Manager)
 --     └─ Partition (Dev Backoffice)              ← the "home" partition
---          └─ Client (dev_backoffice)             ← public, for user login (authorization_code)
+--          └─ Client (d6qbqdkpf2t52mcunf3g)       ← public, for user login (authorization_code)
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_dev_service_accounts.sql
@@ -36,8 +36,8 @@ INSERT INTO clients (
     'd6l82t4pf2t82gudn7sg',
     '9bsv0s3pbdv002o80qfg',                       -- tenant: Testing Manager
     '9bsv0s3pbdv002o80qhg',                        -- partition: Dev Backoffice
-    'Dev Backoffice',
-    'dev_backoffice',
+    'Thesa Dev',
+    'd6qbqdkpf2t52mcunf3g',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',

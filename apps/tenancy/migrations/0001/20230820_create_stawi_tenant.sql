@@ -22,7 +22,7 @@ INSERT INTO clients (
     '9bsv0s0hijjg02z5lbjg',
     '9bsv0s0hijjg02qk7l1g',
     'Stawi',
-    'stawi',
+    'd6qbqdkpf2t52mcunf40',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',

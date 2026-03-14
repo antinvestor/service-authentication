@@ -6,7 +6,7 @@
 --
 --   Tenant (System Manager)
 --     └─ Partition (System Manager)            ← the "home" partition
---          └─ Client (system_manager)           ← public, for user login (authorization_code)
+--          └─ Client (d6qbqdkpf2t52mcunf30)      ← public, for user login (authorization_code)
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_production_service_accounts.sql
@@ -36,8 +36,8 @@ INSERT INTO clients (
     'd6l82t4pf2t82gudn7s0',
     'c2f4j7au6s7f91uqnojg',                       -- tenant: System Manager
     'c2f4j7au6s7f91uqnokg',                        -- partition: System Manager
-    'System Manager',
-    'system_manager',
+    'Thesa',
+    'd6qbqdkpf2t52mcunf30',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',

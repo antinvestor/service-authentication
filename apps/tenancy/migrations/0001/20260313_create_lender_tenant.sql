@@ -6,7 +6,7 @@
 --
 --   Tenant (Ant Investor) — child of System Manager
 --     └─ Partition (Ant Investor)                    ← the "home" partition
---          └─ Client (Ant Investor)                   ← public, for user login (authorization_code)
+--          └─ Client (d6qbqdkpf2t52mcunf60)            ← public, for user login (authorization_code)
 --
 -- ==========================================================================
 
@@ -36,7 +36,7 @@ INSERT INTO clients (
     'd6q1aekpf2taeg5iovp0',                       -- tenant: Ant Investor
     'd6q1aekpf2taeg5iovpg',                        -- partition: Ant Investor
     'Ant Investor',
-    'Ant Investor',
+    'd6qbqdkpf2t52mcunf60',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',

@@ -22,7 +22,7 @@ INSERT INTO clients (
     '9bsv0s0hijjg02z5lr4g',
     '9bsv0s0hid5g02qkl7gjg',
     'Stawi AI Builder',
-    'stawi_ai_builder',
+    'd6qbqdkpf2t52mcunf50',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
