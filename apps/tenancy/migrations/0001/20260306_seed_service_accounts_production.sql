@@ -17,8 +17,8 @@
 -- The ServiceAccount links the Client to a profile identity and records
 -- which partition/tenant it belongs to.
 --
--- NOTE: client_id and client_secret values are aligned to production cluster
--- colony deployments and oauth2-cli secrets as of 2026-03-06.
+-- All service accounts use private_key_jwt authentication (no client_secret).
+-- Services authenticate via JWT signed with their private key.
 -- ==========================================================================
 
 -- ──────────────────────────────────────────────────────────────
@@ -33,12 +33,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_authentication',
     'service-authentication',
-    'ITvdpoRNMyVyqjQnQ23ytKKJxygLB5HnKGejCArawbGlAYiU',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_devices"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnolg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -69,12 +69,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_profile',
     'service-profile',
-    'Vi2B9Ed0f6l8NZrCXC27sOxUo0SMH7wH4P73vfFFSSiwF6t2',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_tenancy","service_devices"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnoqg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -105,12 +105,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_tenancy',
     'service-tenancy',
-    'AD0XjiHRrS4io7qrJeubs2Ja8ievgifqs3mqbjaJtMld0dra',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnosg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -141,12 +141,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_notifications',
     'service-notification',
-    'RkOYfbMlbmkWJvgL0rgy1ctrS6GcNqqcHMfXxfxQBvajd1zt',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnoug'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -177,12 +177,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_devices',
     'service-devices',
-    'ZUDE1sHQYjnw32x1ERpRl3P7hnuGMt94MJ6MUhmDgqXRZgEB',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnp0g'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -213,12 +213,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_settings',
     'service-settings',
-    'BwVET6DQzzz9aHsc6nE6QroFwLo8M0obpEKHMK9NSar3BqYd',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnp2g'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -249,12 +249,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_payment',
     'service-payment',
-    'Xy7CgD9JVAjy8ITai90jkIJGY49cV1wvDsNqFzw0JJ6T7HaI',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnp4g'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -285,12 +285,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_payment_jenga',
     'service-payment-jenga',
-    'zOrn1UmlV42GsH6EKnhOEjhvsQvLDlqbyYYxQxzQhJcLVL62',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnp6g'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -321,12 +321,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_ledger',
     'service-ledger',
-    '13638BAsNT1PhaUuLeQcwUwQBMpzjZm3yVEZyVBUj3EW8xxX',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnp8g'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -357,12 +357,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_billing',
     'service-billing',
-    '1fdd689105f3d183e49173db0f2ba5f0beb5bdc32a78199f8c42f0c9026c7da29f111209a2f6a14be8793ffd58ff719c',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpag'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -393,12 +393,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_files',
     'service-files',
-    'VeQdjjgfPHVPbYCbgyUHpNcshHe00dMRtWl0zZ9kO3v9R2uk',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpcg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -429,12 +429,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_chat_drone',
     'service-chat-drone',
-    'S3ufOQAjErZfl3Edvva37uiTzgkKBIL4wOJofw8fEnxvk0Cf',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_profile","service_device"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpeg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -465,12 +465,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_chat_gateway',
     'service-chat-gateway',
-    '9150M2z7251RKppAUAx0CWYkb2SXQkiw17PdPtPkYE18iaYU',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_notifications","service_chat_drone","service_device"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpgg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -501,12 +501,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-foundry',
     'foundry',
-    'iTJlenYyGj9HMKiYGSpq7bjKqT89A3n6GfIyQbjpE9osMEv2',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpig'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -537,12 +537,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-gitvault',
     'gitvault',
-    'A6AFkzTXkuHdtvKgKs8nlrSPO3WTzLc4Ml8f02XCmeFyg6UN',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpkg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -573,12 +573,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-trustage',
     'trustage',
-    'y0Pkcb~ytMQuaxb887V.Zau4yB',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpmg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -609,12 +609,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_notification_africastalking',
     'service-notification-integration-africastalking',
-    'HJ8hx0WrPK07gBLY1d2aTtACuUK8XS1Dvb4DbdBPT5gOouuU',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_settings"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpog'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -645,12 +645,12 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnokg',
     'sa-service_notification_emailsmtp',
     'service-notification-integration-emailsmtp',
-    'N7I3wbPza84IYi0I0gI4qreKak9tERGdqapHiUN3BFgS5Uyw',
+    '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
     '{"namespaces": ["service_profile","service_tenancy","service_notifications","service_settings"]}',
-    'client_secret_post',
+    'private_key_jwt',
     'c2f4j7au6s7f91uqnpqg'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -704,3 +704,4 @@ INSERT INTO service_accounts (
     '{"namespaces": ["service_tenancy"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
+

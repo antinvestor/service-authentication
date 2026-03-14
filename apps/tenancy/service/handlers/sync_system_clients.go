@@ -36,7 +36,15 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 		return
 	}
 
-	// Authorization is handled by TenancyAccessMiddleware (Keto ReBAC).
+	prtSrv.executeSyncClients(rw, req)
+}
+
+// executeSyncClients performs the actual sync work. Called by both the
+// authenticated handler and the internal (unauthenticated) handler.
+func (prtSrv *PartitionServer) executeSyncClients(rw http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	log := util.Log(ctx)
+
 	// Skip tenancy checks on downstream queries so the sync can read all partitions.
 	ctx = security.SkipTenancyChecksOnClaims(ctx)
 
@@ -106,4 +114,16 @@ func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux.HandleFunc(SyncClientsHTTPPath, prtSrv.SynchronizeSystemClients)
 
 	return userServeMux
+}
+
+// NewInternalSyncHandler returns an http.Handler for the internal (unauthenticated)
+// sync endpoint. This is used for bootstrap: syncing seeded clients to Hydra before
+// any service can obtain tokens. Only accessible within the cluster — not exposed
+// through the API gateway.
+func (prtSrv *PartitionServer) NewInternalSyncHandler() http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		log := util.Log(req.Context())
+		log.Info("internal sync endpoint called (unauthenticated)")
+		prtSrv.executeSyncClients(rw, req)
+	})
 }
