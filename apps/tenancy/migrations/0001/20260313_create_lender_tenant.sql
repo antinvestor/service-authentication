@@ -42,8 +42,8 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"namespaces": ["service_lender","service_devices","service_profile","service_files","service_geolocation"]}',
-    '{"uris": ["https://app.antinvestor.com/auth/callback","https://app.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback"]}',
+    '{"uris": ["https://app.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback","http://localhost:5174/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
-    '{"uris": ["https://app.antinvestor.com/"]}',
+    '{"uris": ["https://app.antinvestor.com/","http://localhost:5174/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
