@@ -16,10 +16,10 @@ type WebhookHelpersTestSuite struct {
 
 func (s *WebhookHelpersTestSuite) TestExtractGrantedScopes_TopLevel() {
 	payload := map[string]any{
-		"granted_scopes": []any{"openid", "offline", "system_int"},
+		"granted_scopes": []any{"openid", "offline", "internal"},
 	}
 	scopes := extractGrantedScopes(payload)
-	s.Equal([]string{"openid", "offline", "system_int"}, scopes)
+	s.Equal([]string{"openid", "offline", "internal"}, scopes)
 }
 
 func (s *WebhookHelpersTestSuite) TestExtractGrantedScopes_InRequest() {
@@ -34,10 +34,10 @@ func (s *WebhookHelpersTestSuite) TestExtractGrantedScopes_InRequest() {
 func (s *WebhookHelpersTestSuite) TestExtractGrantedScopes_InRequester() {
 	payload := map[string]any{
 		"requester": map[string]any{
-			"granted_scopes": []any{"openid", "system_ext"},
+			"granted_scopes": []any{"openid", "external"},
 		},
 	}
-	s.Equal([]string{"openid", "system_ext"}, extractGrantedScopes(payload))
+	s.Equal([]string{"openid", "external"}, extractGrantedScopes(payload))
 }
 
 func (s *WebhookHelpersTestSuite) TestExtractGrantedScopes_Nil() {

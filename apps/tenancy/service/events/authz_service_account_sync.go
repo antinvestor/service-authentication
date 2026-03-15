@@ -16,14 +16,12 @@ import (
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
 
 // AuthzServiceAccountSyncEvent writes Keto tuples for a service account after
-// it is created or during bulk sync. This is separate from the partition sync
-// event so that service account authorization is decoupled from partition
-// management.
+// it is created or during bulk sync.
 //
 // For each service account it writes:
-//   - tenancy_access:tenancyPath#member ← profile_user:profileID
-//   - tenancy_access:tenancyPath#service ← profile_user:profileID
-//   - Per-audience bridge tuples: ns:tenancyPath#service ← tenancy_access:tenancyPath#service
+//   - tenancy_access:tenancyPath#member ← profile_user:profileID  (data access)
+//   - tenancy_access:tenancyPath#service ← profile_user:profileID (service marker)
+//   - Per-audience explicit permission tuples: ns:tenancyPath#granted_{perm} ← profile_user:profileID
 type AuthzServiceAccountSyncEvent struct {
 	serviceAccountRepo repository.ServiceAccountRepository
 	authorizer         security.Authorizer
@@ -80,26 +78,18 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	}
 
 	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
+	subjectID := sa.ProfileID
 
-	// Write per-bot tuples: member access and service access
+	// Layer 1: data access tuples (member + service marker)
 	tuples := []security.RelationTuple{
-		authz.BuildAccessTuple(tenancyPath, sa.ProfileID),
-		authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID),
+		authz.BuildAccessTuple(tenancyPath, subjectID),
+		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
 	}
 
-	// Write per-audience bridge tuples
-	if namespaces, ok := sa.Audiences["namespaces"]; ok {
-		if nsList, ok := namespaces.([]any); ok {
-			nsStrings := make([]string, 0, len(nsList))
-			for _, ns := range nsList {
-				if s, ok := ns.(string); ok {
-					nsStrings = append(nsStrings, s)
-				}
-			}
-			if len(nsStrings) > 0 {
-				tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, nsStrings)...)
-			}
-		}
+	// Layer 2: explicit per-namespace permission tuples
+	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
+	for ns, perms := range audiencePerms {
+		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, subjectID, ns, perms)...)
 	}
 
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
@@ -108,7 +98,8 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 
 	logger.
 		WithField("tenancy_path", tenancyPath).
-		WithField("profile_id", sa.ProfileID).
+		WithField("subject_id", subjectID).
+		WithField("namespace_count", len(audiencePerms)).
 		WithField("tuple_count", len(tuples)).
 		Info("wrote service account authorization tuples")
 

@@ -105,7 +105,7 @@ func (suite *SyncPartitionsTestSuite) TestSynchronizePartitions() {
 				claims := &security.AuthenticationClaims{
 					TenantID:    "tenant",
 					PartitionID: "partition",
-					Roles:       []string{"system_internal"},
+					Roles:       []string{"internal"},
 				}
 				claims.Subject = "sync-bot"
 				req = req.WithContext(claims.ClaimsToContext(ctx))

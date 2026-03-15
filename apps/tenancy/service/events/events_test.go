@@ -555,7 +555,7 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_Internal() {
 	assert.Equal(t, "sa-test-client-id", payload["client_name"])
 	assert.Equal(t, "test-client-id", payload["client_id"])
 	assert.Equal(t, "test-secret", payload["client_secret"])
-	assert.Equal(t, "system_int openid", payload["scope"])
+	assert.Equal(t, "internal openid", payload["scope"])
 	assert.Equal(t, []string{"client_credentials"}, payload["grant_types"])
 	assert.Equal(t, []string{"token"}, payload["response_types"])
 	assert.Equal(t, "profile-123", payload["subject"])
@@ -582,7 +582,7 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_External() {
 
 	payload := buildServiceAccountHydraPayload(sa)
 
-	assert.Equal(t, "system_ext openid", payload["scope"])
+	assert.Equal(t, "external openid", payload["scope"])
 	assert.Equal(t, "none", payload["token_endpoint_auth_method"])
 	_, hasSecret := payload["client_secret"]
 	assert.False(t, hasSecret)

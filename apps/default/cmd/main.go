@@ -94,6 +94,11 @@ func main() {
 
 	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
 
+	// Ensure the default bot profile exists for internal service accounts
+	if bootstrapErr := srv.EnsureDefaultBotProfile(ctx); bootstrapErr != nil {
+		log.WithError(bootstrapErr).Warn("failed to bootstrap default bot profile — will retry on next startup")
+	}
+
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
 

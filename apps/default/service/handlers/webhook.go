@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame/data"
@@ -326,6 +328,22 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 	return json.NewEncoder(rw).Encode(hookResponse)
 }
 
+// writeTokenHookResponseWithSubject writes a token enrichment response that also
+// overrides the JWT sub claim. For client_credentials grants Hydra sets sub to
+// the client_id; this allows the webhook to correct it to the profile_id.
+func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
+	hookResponse := map[string]any{
+		"session": map[string]any{
+			"access_token": claims,
+			"id_token":     claims,
+			"subject":      subject,
+		},
+	}
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	return json.NewEncoder(rw).Encode(hookResponse)
+}
+
 // buildClaimsFromLoginEvent creates a canonical claims map from a login event.
 func buildClaimsFromLoginEvent(
 	loginEventID string,
@@ -563,10 +581,10 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 }
 
 // handleServiceAccountEnrichment handles token enrichment for service account
-// client_credentials tokens (both system_internal and system_external).
+// client_credentials tokens (both internal and external).
 // It looks up the service account by client_id via the tenancy service API,
-// validates the scope matches the SA type, creates/gets an access record,
-// and returns enriched claims with roles from the access record.
+// validates the scope matches the SA type, verifies the attached profile type,
+// and returns enriched claims.
 func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
 	log := util.Log(ctx).WithField("client_id", clientID)
 
@@ -582,11 +600,15 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		return h.writeWebhookError(rw, err.Error())
 	}
 
-	role := RoleSystemInternal
-	if sa.Type == "external" {
-		role = RoleSystemExternal
+	// Validate the attached profile type matches the SA type constraints.
+	// Type mismatches are rejected; profile service unreachable is a warning.
+	if err = h.validateServiceAccountProfile(ctx, sa); err != nil {
+		log.WithError(err).Error("service account profile type validation failed — token rejected")
+		return h.writeWebhookError(rw, err.Error())
 	}
-	roles := []string{role}
+
+	// Pass SA type directly as the role — no transformation
+	roles := []string{sa.Type}
 
 	sessionClaims := extractSessionAccessTokenClaims(tokenObject)
 	loginEvent, err := h.ensureServiceAccountLoginEvent(ctx, clientID, sa, sessionClaims, tokenType, grantType, grantedScopes)
@@ -611,12 +633,14 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		"profile_id":     sa.ProfileID,
 		"partition_id":   sa.PartitionID,
 		"tenant_id":      sa.TenantID,
-		"role":           role,
+		"sa_type":        sa.Type,
 		"token_type":     tokenType,
 		"grant_type":     grantType,
 	}).Info("enriched service account token with durable login event")
 
-	return writeTokenHookResponse(rw, claims)
+	// Override JWT sub to profile_id — for client_credentials Hydra defaults
+	// sub to the client_id, but the canonical identity is the profile_id.
+	return writeTokenHookResponseWithSubject(rw, claims, sa.ProfileID)
 }
 
 func (h *AuthServer) lookupServiceAccountByClientID(
@@ -658,10 +682,10 @@ func serviceAccountFromHydraClient(
 	}
 	if clientType == "" {
 		scope := strings.Fields(strings.TrimSpace(client.GetScope()))
-		if slices.Contains(scope, "system_int") {
-			clientType = "internal"
-		} else if slices.Contains(scope, "system_ext") {
-			clientType = "external"
+		if slices.Contains(scope, SATypeInternal) {
+			clientType = SATypeInternal
+		} else if slices.Contains(scope, SATypeExternal) {
+			clientType = SATypeExternal
 		}
 	}
 
@@ -677,6 +701,55 @@ func serviceAccountFromHydraClient(
 		Type:        clientType,
 		AccessID:    accessID,
 	}, nil
+}
+
+// validateServiceAccountProfile verifies that the profile attached to the
+// service account has the correct type:
+//   - Internal SAs must be attached to a BOT profile
+//   - External SAs must be attached to a PERSON or INSTITUTION profile
+func (h *AuthServer) validateServiceAccountProfile(ctx context.Context, sa *serviceAccountAuthContext) error {
+	if sa.ProfileID == "" {
+		return fmt.Errorf("service account %s has no profile_id", sa.ClientID)
+	}
+
+	if h.profileCli == nil {
+		return nil
+	}
+
+	// Use a short timeout — profile validation should not block token issuance
+	profileCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	resp, err := h.profileCli.GetById(profileCtx, connect.NewRequest(&profilev1.GetByIdRequest{Id: sa.ProfileID}))
+	if err != nil {
+		// Profile service unreachable — log warning but allow token issuance.
+		// This avoids blocking service startup when the profile service isn't ready yet.
+		util.Log(ctx).WithError(err).WithField("profile_id", sa.ProfileID).
+			Warn("profile lookup failed during SA token validation — skipping type check")
+		return nil
+	}
+
+	profile := resp.Msg.GetData()
+	if profile == nil {
+		util.Log(ctx).WithField("profile_id", sa.ProfileID).
+			Warn("profile not found during SA token validation — skipping type check")
+		return nil
+	}
+
+	switch sa.Type {
+	case SATypeInternal:
+		if profile.GetType() != profilev1.ProfileType_BOT {
+			return fmt.Errorf("internal service account %s must be attached to a BOT profile, got %s",
+				sa.ClientID, profile.GetType().String())
+		}
+	case SATypeExternal:
+		if profile.GetType() != profilev1.ProfileType_PERSON && profile.GetType() != profilev1.ProfileType_INSTITUTION {
+			return fmt.Errorf("external service account %s must be attached to a PERSON or INSTITUTION profile, got %s",
+				sa.ClientID, profile.GetType().String())
+		}
+	}
+
+	return nil
 }
 
 // handleUserTokenEnrichment handles token enrichment for regular user tokens.

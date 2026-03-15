@@ -109,11 +109,8 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		return nil, fmt.Errorf("failed to generate client secret: %w", err)
 	}
 
-	// Determine scopes based on type
-	scope := "system_int openid"
-	if saType == "external" {
-		scope = "system_ext openid"
-	}
+	// Use SA type directly as scope
+	scope := saType + " openid"
 
 	// Build the Client record (OAuth2 credential config)
 	client := &models.Client{
@@ -330,17 +327,18 @@ func (sb *serviceAccountBusiness) UpdateServiceAccount(
 		return nil, fmt.Errorf("failed to update service account: %w", err)
 	}
 
+	// Re-sync Keto tuples so permission changes take effect
+	if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
+		util.Log(ctx).WithError(emitErr).Warn("failed to emit SA authz sync after update")
+	}
+
 	// Update the associated client record if it exists
 	if sa.ClientRef != "" {
 		client, clientErr := sb.clientRepo.GetByID(ctx, sa.ClientRef)
 		if clientErr == nil {
 			if request.GetType() != "" {
 				client.Type = request.GetType()
-				scope := "system_int openid"
-				if request.GetType() == "external" {
-					scope = "system_ext openid"
-				}
-				client.Scopes = scope
+				client.Scopes = request.GetType() + " openid"
 			}
 			if len(request.GetAudiences()) > 0 {
 				client.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
@@ -433,17 +431,10 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID),
 	}
 
-	// Delete audience bridge tuples
-	if namespaces, ok := sa.Audiences["namespaces"]; ok {
-		if nsList, ok := namespaces.([]any); ok {
-			nsStrings := make([]string, 0, len(nsList))
-			for _, ns := range nsList {
-				if s, ok := ns.(string); ok {
-					nsStrings = append(nsStrings, s)
-				}
-			}
-			tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, nsStrings)...)
-		}
+	// Delete explicit permission tuples for each audience namespace
+	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
+	for ns, perms := range audiencePerms {
+		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ProfileID, ns, perms)...)
 	}
 
 	if delErr := sb.authorizer.DeleteTuples(ctx, tuples); delErr != nil {

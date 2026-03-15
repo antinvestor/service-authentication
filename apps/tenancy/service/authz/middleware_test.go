@@ -84,7 +84,7 @@ func (s *MiddlewareTestSuite) ctxWithSystemInternalClaims(subjectID string) cont
 	claims := &security.AuthenticationClaims{
 		TenantID:    "tenant1",
 		PartitionID: "partition1",
-		Roles:       []string{"system_internal"},
+		Roles:       []string{"internal"},
 	}
 	claims.Subject = subjectID
 	return claims.ClaimsToContext(context.Background())
@@ -222,25 +222,23 @@ func (s *MiddlewareTestSuite) TestAccessChecker_NoTupleDenied() {
 }
 
 // ---------------------------------------------------------------------------
-// Service bot via subject sets — full two-layer check
+// Service bot via explicit permissions — full two-layer check
 // ---------------------------------------------------------------------------
 
-func (s *MiddlewareTestSuite) seedServiceBridgeTuples(auth security.Authorizer, tenancyPath string) {
-	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, []string{authz.NamespaceTenancy})
-	err := auth.WriteTuples(s.T().Context(), tuples)
-	s.Require().NoError(err)
-}
-
-func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
+func (s *MiddlewareTestSuite) TestServiceBotViaExplicitPermissions() {
 	auth := s.newAuthorizer()
 	mw := authz.NewMiddleware(auth)
 	accessChecker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
-	// Step 1: Write bridge tuples (normally done at partition sync).
-	s.seedServiceBridgeTuples(auth, testTenancyPath())
-
-	// Step 2: Grant the bot service access in tenancy_access.
+	// Step 1: Grant the bot service access in tenancy_access (Plane 1).
 	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath(), "service-bot"))
+	s.Require().NoError(err)
+
+	// Step 2: Write explicit per-permission tuples (Plane 2).
+	permTuples := authz.BuildServicePermissionTuples(
+		testTenancyPath(), "service-bot", authz.NamespaceTenancy, authz.AllServicePermissions(),
+	)
+	err = auth.WriteTuples(s.T().Context(), permTuples)
 	s.Require().NoError(err)
 
 	botCtx := s.ctxWithSystemInternalClaims("service-bot")
@@ -248,7 +246,7 @@ func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
 	// Layer 1: Access check passes
 	s.NoError(accessChecker.CheckAccess(botCtx))
 
-	// Layer 2: Functional permissions resolved through subject sets
+	// Layer 2: Functional permissions resolved through explicit granted_ tuples
 	s.NoError(mw.CanTenantManage(botCtx))
 	s.NoError(mw.CanTenantView(botCtx))
 	s.NoError(mw.CanPartitionManage(botCtx))
@@ -258,6 +256,33 @@ func (s *MiddlewareTestSuite) TestServiceBotViaSubjectSets() {
 	s.NoError(mw.CanPagesManage(botCtx))
 	s.NoError(mw.CanPagesView(botCtx))
 	s.NoError(mw.CanPermissionGrant(botCtx))
+}
+
+func (s *MiddlewareTestSuite) TestServiceBotPartialPermissions() {
+	auth := s.newAuthorizer()
+	mw := authz.NewMiddleware(auth)
+
+	// Grant only view permissions — no manage
+	err := auth.WriteTuple(s.T().Context(), authz.BuildServiceAccessTuple(testTenancyPath(), "limited-bot"))
+	s.Require().NoError(err)
+
+	viewPerms := []string{authz.PermissionTenantView, authz.PermissionPartitionView, authz.PermissionPagesView}
+	permTuples := authz.BuildServicePermissionTuples(testTenancyPath(), "limited-bot", authz.NamespaceTenancy, viewPerms)
+	err = auth.WriteTuples(s.T().Context(), permTuples)
+	s.Require().NoError(err)
+
+	botCtx := s.ctxWithSystemInternalClaims("limited-bot")
+
+	// View permissions granted
+	s.NoError(mw.CanTenantView(botCtx))
+	s.NoError(mw.CanPartitionView(botCtx))
+	s.NoError(mw.CanPagesView(botCtx))
+
+	// Manage permissions denied
+	s.Error(mw.CanTenantManage(botCtx))
+	s.Error(mw.CanPartitionManage(botCtx))
+	s.Error(mw.CanAccessManage(botCtx))
+	s.Error(mw.CanPermissionGrant(botCtx))
 }
 
 func (s *MiddlewareTestSuite) TestDirectPermissionGrant() {

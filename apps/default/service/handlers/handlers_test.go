@@ -137,14 +137,14 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 		client := &http.Client{Timeout: HandlerOperationTimeout}
 
 		webhookReq := map[string]any{
-			"granted_scopes": []string{"openid", "offline", "system_int"},
+			"granted_scopes": []string{"openid", "offline", "internal"},
 			"client_id":      "dev_authentication_tests",
 			"grant_type":     "client_credentials",
 			"session": map[string]any{
 				"access_token": map[string]any{
 					"tenant_id":    "9bsv0s3pbdv002o80qfg",
 					"partition_id": "9bsv0s3pbdv002o80qhg",
-					"roles":        []string{"system_internal"},
+					"roles":        []string{"internal"},
 					"profile_id":   "dev_authentication_tests",
 				},
 			},
@@ -174,7 +174,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 
 		roles, ok := accessToken["roles"].([]any)
 		require.True(t, ok, "access_token should have roles")
-		assert.Contains(t, roles, "system_internal")
+		assert.Contains(t, roles, "internal")
 
 		assert.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
 		assert.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
@@ -203,7 +203,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsCreatesLogin
 		webhookReq := map[string]any{
 			"client_id":      "dev_authentication_tests",
 			"grant_type":     "client_credentials",
-			"granted_scopes": []string{"openid", "system_int"},
+			"granted_scopes": []string{"openid", "internal"},
 			"session":        map[string]any{},
 		}
 		jsonData, err := json.Marshal(webhookReq)
@@ -275,7 +275,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
 				"access_token": map[string]any{
 					"tenant_id":    "9bsv0s3pbdv002o80qfg",
 					"partition_id": "9bsv0s3pbdv002o80qhg",
-					"roles":        []string{"system_internal"},
+					"roles":        []string{"internal"},
 					"profile_id":   "dev_authentication_tests",
 				},
 			},
@@ -374,7 +374,7 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithLoginEvent() {
 					"tenant_id":    "tenant-2",
 					"partition_id": "part-2",
 					"access_id":    "access-2",
-					"roles":        []string{"system_external"},
+					"roles":        []string{"external"},
 					"session_id":   "evt-test-123",
 				},
 			},

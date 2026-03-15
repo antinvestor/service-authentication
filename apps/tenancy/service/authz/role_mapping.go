@@ -1,6 +1,11 @@
 package authz
 
-import "github.com/pitabwire/frame/security"
+import (
+	"slices"
+	"strings"
+
+	"github.com/pitabwire/frame/security"
+)
 
 // RolePermissions documents the permission model defined in the OPL namespace config.
 // Keto's Check API evaluates OPL permits, so only role tuples need to be written;
@@ -134,20 +139,9 @@ func BuildServicePartitionInheritanceTuple(parentTenancyPath, childTenancyPath s
 // BuildServiceInheritanceTuples creates the subject set chain that gives service
 // accounts automatic access to functional roles via Keto composition.
 //
-// The namespaces parameter controls which service namespaces get bridge tuples.
-// Callers pass only the specific namespaces the service bot needs access to
-// (e.g. the audiences requested during credential registration).
-//
-// For each namespace it writes a single cross-namespace bridge:
-//
-//	ns:path#service ← tenancy_access:path#service
-//
-// Permission resolution from service role to individual permissions is handled
-// by Keto's OPL permits evaluation.
-//
-// The resolution chain is: botID → tenancy_access:path#service → ns:path#service → OPL permits
-// These tuples are written once per partition path (not per bot). Each new service
-// bot only needs a single tenancy_access:path#service tuple to get full access.
+// Deprecated: Use BuildServicePermissionTuples for explicit per-permission grants.
+// This function is retained for backward compatibility with partition sync and
+// legacy service accounts that use the old {"namespaces": [...]} format.
 func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []security.RelationTuple {
 	tuples := make([]security.RelationTuple, 0, len(namespaces))
 
@@ -160,4 +154,104 @@ func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []se
 		})
 	}
 	return tuples
+}
+
+// BuildServicePermissionTuples creates explicit per-permission grant tuples for
+// a service account in a specific namespace. Instead of granting blanket "service"
+// access, each permission is individually materialised as a granted_ relation.
+//
+// This is the preferred approach for service account authorization — each SA
+// declares exactly which permissions it needs per namespace, following the
+// principle of least privilege.
+//
+// Example: BuildServicePermissionTuples("t/p", "bot1", "service_profile", ["tenant_view", "partition_view"])
+// writes:
+//
+//	service_profile:t/p#granted_tenant_view ← profile_user:bot1
+//	service_profile:t/p#granted_partition_view ← profile_user:bot1
+func BuildServicePermissionTuples(tenancyPath, profileID, namespace string, permissions []string) []security.RelationTuple {
+	tuples := make([]security.RelationTuple, 0, len(permissions))
+	for _, perm := range permissions {
+		tuples = append(tuples, BuildPermissionTuple(namespace, tenancyPath, perm, profileID))
+	}
+	return tuples
+}
+
+// AllServicePermissions returns the full list of permissions granted to the
+// "service" role. Used as a fallback when a service account's audience entry
+// specifies a namespace without explicit permissions (legacy format).
+func AllServicePermissions() []string {
+	return RolePermissions[RoleService]
+}
+
+// ParseAudiencePermissions extracts per-namespace permission grants from an
+// Audiences JSONMap. It supports two formats:
+//
+// New (explicit): {"service_profile": ["tenant_view", "partition_view"], ...}
+// Legacy:         {"namespaces": ["service_profile", ...]}
+//
+// For the legacy format, each namespace receives all RoleService permissions.
+// Returns a map of namespace → permission list.
+func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
+	result := make(map[string][]string)
+
+	// Check for legacy format: {"namespaces": [...]} or {"namespaces": "ns1,ns2"}
+	if raw, ok := audiences["namespaces"]; ok {
+		var nsList []string
+		switch typed := raw.(type) {
+		case []any:
+			for _, v := range typed {
+				if s, ok := v.(string); ok {
+					nsList = append(nsList, s)
+				}
+			}
+		case []string:
+			nsList = typed
+		case string:
+			if strings.Contains(typed, ",") {
+				nsList = strings.Split(typed, ",")
+			} else if typed != "" {
+				nsList = []string{typed}
+			}
+		}
+		for _, ns := range nsList {
+			result[ns] = AllServicePermissions()
+		}
+		return result
+	}
+
+	// New format: {"namespace": ["perm1", "perm2"], ...}
+	for ns, raw := range audiences {
+		var perms []string
+		switch typed := raw.(type) {
+		case []any:
+			for _, v := range typed {
+				if s, ok := v.(string); ok {
+					perms = append(perms, s)
+				}
+			}
+		case []string:
+			perms = typed
+		}
+		if len(perms) > 0 {
+			result[ns] = perms
+		}
+	}
+
+	return result
+}
+
+// AudienceNamespaces extracts the list of namespace names from an audiences map,
+// supporting both legacy and new formats.
+func AudienceNamespaces(audiences map[string]any) []string {
+	parsed := ParseAudiencePermissions(audiences)
+	if len(parsed) == 0 {
+		return nil
+	}
+	namespaces := make([]string, 0, len(parsed))
+	for ns := range parsed {
+		namespaces = append(namespaces, ns)
+	}
+	slices.Sort(namespaces)
+	return namespaces
 }

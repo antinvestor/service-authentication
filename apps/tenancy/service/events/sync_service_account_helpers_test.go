@@ -17,7 +17,7 @@ type SyncServiceAccountHelpersTestSuite struct {
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_AnySlice() {
 	m := data.JSONMap{"namespaces": []any{"service_profile", "service_device"}}
-	s.Equal([]string{"service_profile", "service_device"}, extractAudienceNamespaces(m))
+	s.ElementsMatch([]string{"service_profile", "service_device"}, extractAudienceNamespaces(m))
 }
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_StringSlice() {
@@ -57,7 +57,7 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 	payload := buildServiceAccountHydraPayload(sa)
 	s.Equal("sa-sa-internal", payload["client_name"])
 	s.Equal("sa-internal", payload["client_id"])
-	s.Equal("system_int openid", payload["scope"])
+	s.Equal("internal openid", payload["scope"])
 	s.Equal("prof-1", payload["subject"])
 	s.Equal([]string{"client_credentials"}, payload["grant_types"])
 	s.Equal("none", payload["token_endpoint_auth_method"])
@@ -77,7 +77,7 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_External() {
 	}
 
 	payload := buildServiceAccountHydraPayload(sa)
-	s.Equal("system_ext openid", payload["scope"])
+	s.Equal("external openid", payload["scope"])
 }
 
 func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_WithSecret() {

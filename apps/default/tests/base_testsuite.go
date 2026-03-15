@@ -338,7 +338,7 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 		client.SetClientSecret(seed.Secret)
 		client.SetGrantTypes([]string{"client_credentials"})
 		client.SetResponseTypes([]string{"token"})
-		client.SetScope("system_int openid")
+		client.SetScope("internal openid")
 		client.SetAudience(seed.Audience)
 		client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
 		client.SetMetadata(map[string]any{

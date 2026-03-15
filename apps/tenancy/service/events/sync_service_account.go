@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/client"
@@ -158,21 +158,19 @@ func deleteServiceAccountOnHydra(ctx context.Context, cli client.Manager, hydraI
 }
 
 func buildServiceAccountHydraPayload(sa *models.ServiceAccount) map[string]any {
-	scope := "system_int openid"
-	if sa.Type == "external" {
-		scope = "system_ext openid"
-	}
+	// Use SA type directly as scope — no transformation
+	scope := sa.Type + " openid"
 
 	audienceList := extractAudienceNamespaces(sa.Audiences)
 
 	payload := map[string]any{
 		"client_name":    fmt.Sprintf("sa-%s", sa.ClientID),
 		"client_id":      sa.ClientID,
+		"subject":        sa.ProfileID,
 		"grant_types":    []string{"client_credentials"},
 		"response_types": []string{"token"},
 		"scope":          scope,
 		"audience":       audienceList,
-		"subject":        sa.ProfileID,
 		"metadata": map[string]any{
 			"tenant_id":    sa.TenantID,
 			"partition_id": sa.PartitionID,
@@ -200,28 +198,7 @@ func extractAudienceNamespaces(audiences data.JSONMap) []string {
 	if audiences == nil {
 		return nil
 	}
-	namespaces, ok := audiences["namespaces"]
-	if !ok {
-		return nil
-	}
-	switch typed := namespaces.(type) {
-	case []any:
-		result := make([]string, 0, len(typed))
-		for _, ns := range typed {
-			if s, ok := ns.(string); ok {
-				result = append(result, s)
-			}
-		}
-		return result
-	case []string:
-		return typed
-	case string:
-		if strings.Contains(typed, ",") {
-			return strings.Split(typed, ",")
-		}
-		return []string{typed}
-	}
-	return nil
+	return authz.AudienceNamespaces(audiences)
 }
 
 func updateServiceAccountWithResponse(

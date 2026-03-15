@@ -94,9 +94,9 @@ func (cb *clientBusiness) CreateClient(
 	if scopes == "" {
 		switch clientType {
 		case "internal":
-			scopes = "system_int openid"
+			scopes = "internal openid"
 		case "external":
-			scopes = "system_ext openid"
+			scopes = "external openid"
 		default:
 			scopes = "openid offline_access profile"
 		}

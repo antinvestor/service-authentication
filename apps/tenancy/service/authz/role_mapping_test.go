@@ -151,3 +151,75 @@ func (suite *RoleMappingTestSuite) TestBuildServiceInheritanceTuples() {
 		assert.Equal(t, authz.RoleService, tuples[i].Subject.Relation)
 	}
 }
+
+func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples() {
+	t := suite.T()
+	perms := []string{"tenant_view", "partition_manage"}
+	tuples := authz.BuildServicePermissionTuples("t1/p1", "bot1", "service_profile", perms)
+
+	assert.Len(t, tuples, 2)
+	for i, perm := range perms {
+		assert.Equal(t, "service_profile", tuples[i].Object.Namespace)
+		assert.Equal(t, "t1/p1", tuples[i].Object.ID)
+		assert.Equal(t, "granted_"+perm, tuples[i].Relation)
+		assert.Equal(t, authz.NamespaceProfile, tuples[i].Subject.Namespace)
+		assert.Equal(t, "bot1", tuples[i].Subject.ID)
+	}
+}
+
+func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples_Empty() {
+	tuples := authz.BuildServicePermissionTuples("t1/p1", "bot1", "ns", nil)
+	assert.Empty(suite.T(), tuples)
+}
+
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_LegacyFormat() {
+	t := suite.T()
+	audiences := map[string]any{"namespaces": []any{"service_profile", "service_payment"}}
+	result := authz.ParseAudiencePermissions(audiences)
+
+	assert.Len(t, result, 2)
+	// Legacy format grants all service permissions
+	assert.Equal(t, authz.AllServicePermissions(), result["service_profile"])
+	assert.Equal(t, authz.AllServicePermissions(), result["service_payment"])
+}
+
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_ExplicitFormat() {
+	t := suite.T()
+	audiences := map[string]any{
+		"service_profile": []any{"tenant_view", "partition_view"},
+		"service_payment": []any{"tenant_view"},
+	}
+	result := authz.ParseAudiencePermissions(audiences)
+
+	assert.Len(t, result, 2)
+	assert.Equal(t, []string{"tenant_view", "partition_view"}, result["service_profile"])
+	assert.Equal(t, []string{"tenant_view"}, result["service_payment"])
+}
+
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_EmptyPermissions() {
+	t := suite.T()
+	audiences := map[string]any{
+		"service_profile": []any{},
+	}
+	result := authz.ParseAudiencePermissions(audiences)
+	assert.Empty(t, result)
+}
+
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_NonArrayValueSkipped() {
+	t := suite.T()
+	audiences := map[string]any{
+		"other": "value",
+	}
+	result := authz.ParseAudiencePermissions(audiences)
+	assert.Empty(t, result)
+}
+
+func (suite *RoleMappingTestSuite) TestAudienceNamespaces_ExplicitFormat() {
+	t := suite.T()
+	audiences := map[string]any{
+		"service_profile": []any{"tenant_view"},
+		"service_payment": []any{"tenant_view"},
+	}
+	result := authz.AudienceNamespaces(audiences)
+	assert.ElementsMatch(t, []string{"service_profile", "service_payment"}, result)
+}
