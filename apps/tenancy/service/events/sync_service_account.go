@@ -188,7 +188,7 @@ func buildServiceAccountHydraPayload(sa *models.ServiceAccount) map[string]any {
 		sa.ClientSecret,
 		sa.Properties,
 		sa.PublicKeys,
-		true,
+		sa.Type == "internal",
 	)
 
 	return payload

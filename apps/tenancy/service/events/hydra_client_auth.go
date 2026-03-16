@@ -7,17 +7,23 @@ import (
 	"github.com/pitabwire/frame/data"
 )
 
+// DefaultHydraPublicJWKSURI is the internal JWKS endpoint for Hydra's public keys.
+// Internal service accounts use this for private_key_jwt authentication —
+// they sign assertions with a shared key from Hydra's JWK set and Hydra
+// verifies against its own published JWKS.
+const DefaultHydraPublicJWKSURI = "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"
+
 func applyHydraClientAuthPayload(
 	payload map[string]any,
 	explicitMethod string,
 	clientSecret string,
 	properties data.JSONMap,
 	publicKeys data.JSONMap,
-	defaultToNone bool,
+	isInternalSA bool,
 ) {
 	method := strings.TrimSpace(explicitMethod)
 	if method == "" {
-		method = defaultHydraClientAuthMethod(clientSecret, properties, publicKeys, defaultToNone)
+		method = defaultHydraClientAuthMethod(clientSecret, properties, publicKeys, isInternalSA)
 	}
 
 	if method == "" {
@@ -28,7 +34,7 @@ func applyHydraClientAuthPayload(
 
 	switch method {
 	case common.TokenEndpointAuthMethodPrivateKeyJWT:
-		applyHydraPrivateKeyJWTPayload(payload, properties, publicKeys)
+		applyHydraPrivateKeyJWTPayload(payload, properties, publicKeys, isInternalSA)
 	case common.TokenEndpointAuthMethodClientSecretPost, common.TokenEndpointAuthMethodClientSecretBasic:
 		if strings.TrimSpace(clientSecret) != "" {
 			payload["client_secret"] = clientSecret
@@ -40,19 +46,21 @@ func defaultHydraClientAuthMethod(
 	clientSecret string,
 	properties data.JSONMap,
 	publicKeys data.JSONMap,
-	defaultToNone bool,
+	isInternalSA bool,
 ) string {
+	// Explicit JWKS config in properties takes priority
 	if hasHydraPrivateJWTConfig(properties, publicKeys) {
 		return common.TokenEndpointAuthMethodPrivateKeyJWT
 	}
 	if strings.TrimSpace(clientSecret) != "" {
 		return common.TokenEndpointAuthMethodClientSecretPost
 	}
-	if defaultToNone {
-		return "none"
+	// Internal SAs always use private_key_jwt with the default Hydra JWKS
+	if isInternalSA {
+		return common.TokenEndpointAuthMethodPrivateKeyJWT
 	}
 
-	return ""
+	return "none"
 }
 
 func hasHydraPrivateJWTConfig(properties data.JSONMap, publicKeys data.JSONMap) bool {
@@ -68,14 +76,19 @@ func hasHydraPrivateJWTConfig(properties data.JSONMap, publicKeys data.JSONMap) 
 	return len(publicKeys) > 0
 }
 
-func applyHydraPrivateKeyJWTPayload(payload map[string]any, properties data.JSONMap, publicKeys data.JSONMap) {
+func applyHydraPrivateKeyJWTPayload(payload map[string]any, properties data.JSONMap, publicKeys data.JSONMap, isInternalSA bool) {
 	if payload == nil {
 		return
 	}
 
+	// Check for explicit jwks_uri in properties
 	if jwksURI := strings.TrimSpace(properties.GetString("jwks_uri")); jwksURI != "" {
 		payload["jwks_uri"] = jwksURI
+	} else if isInternalSA {
+		// Internal SAs default to Hydra's public JWKS endpoint
+		payload["jwks_uri"] = DefaultHydraPublicJWKSURI
 	}
+
 	if signingAlg := strings.TrimSpace(properties.GetString("token_endpoint_auth_signing_alg")); signingAlg != "" {
 		payload["token_endpoint_auth_signing_alg"] = signingAlg
 	}

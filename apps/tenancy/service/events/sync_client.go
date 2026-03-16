@@ -199,7 +199,7 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		cl.ClientSecret,
 		cl.Properties,
 		nil,
-		cl.Type == "public",
+		cl.Type == "internal",
 	)
 
 	// Subject for client_credentials flow

@@ -212,7 +212,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 		partition.Properties.GetString("client_secret"),
 		partition.Properties,
 		nil,
-		true,
+		false, // partition clients are user-facing, not internal SAs
 	)
 
 	// Pass subject through to Hydra for client_credentials flow
