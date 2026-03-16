@@ -334,8 +334,8 @@ func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string
 		"session": map[string]any{
 			"access_token": claims,
 			"id_token":     claims,
-			"subject":      subject,
 		},
+		"subject": subject,
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
