@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame/data"
@@ -600,14 +598,11 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		return h.writeWebhookError(rw, err.Error())
 	}
 
-	// Validate the attached profile type matches the SA type constraints.
-	// Type mismatches are rejected; profile service unreachable is a warning.
-	if err = h.validateServiceAccountProfile(ctx, sa); err != nil {
-		log.WithError(err).Error("service account profile type validation failed — token rejected")
-		return h.writeWebhookError(rw, err.Error())
-	}
-
 	// Pass SA type directly as the role — no transformation
+	// NOTE: Profile type validation (BOT for internal, PERSON/INSTITUTION for
+	// external) is enforced at SA creation time, not here. Validating on every
+	// token request would create a circular dependency: token → webhook →
+	// profile service → token → webhook → ...
 	roles := []string{sa.Type}
 
 	sessionClaims := extractSessionAccessTokenClaims(tokenObject)
@@ -703,54 +698,10 @@ func serviceAccountFromHydraClient(
 	}, nil
 }
 
-// validateServiceAccountProfile verifies that the profile attached to the
-// service account has the correct type:
-//   - Internal SAs must be attached to a BOT profile
-//   - External SAs must be attached to a PERSON or INSTITUTION profile
-func (h *AuthServer) validateServiceAccountProfile(ctx context.Context, sa *serviceAccountAuthContext) error {
-	if sa.ProfileID == "" {
-		return fmt.Errorf("service account %s has no profile_id", sa.ClientID)
-	}
-
-	if h.profileCli == nil {
-		return nil
-	}
-
-	// Use a short timeout — profile validation should not block token issuance
-	profileCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-
-	resp, err := h.profileCli.GetById(profileCtx, connect.NewRequest(&profilev1.GetByIdRequest{Id: sa.ProfileID}))
-	if err != nil {
-		// Profile service unreachable — log warning but allow token issuance.
-		// This avoids blocking service startup when the profile service isn't ready yet.
-		util.Log(ctx).WithError(err).WithField("profile_id", sa.ProfileID).
-			Warn("profile lookup failed during SA token validation — skipping type check")
-		return nil
-	}
-
-	profile := resp.Msg.GetData()
-	if profile == nil {
-		util.Log(ctx).WithField("profile_id", sa.ProfileID).
-			Warn("profile not found during SA token validation — skipping type check")
-		return nil
-	}
-
-	switch sa.Type {
-	case SATypeInternal:
-		if profile.GetType() != profilev1.ProfileType_BOT {
-			return fmt.Errorf("internal service account %s must be attached to a BOT profile, got %s",
-				sa.ClientID, profile.GetType().String())
-		}
-	case SATypeExternal:
-		if profile.GetType() != profilev1.ProfileType_PERSON && profile.GetType() != profilev1.ProfileType_INSTITUTION {
-			return fmt.Errorf("external service account %s must be attached to a PERSON or INSTITUTION profile, got %s",
-				sa.ClientID, profile.GetType().String())
-		}
-	}
-
-	return nil
-}
+// TODO: Move profile type validation to SA creation time in the tenancy service.
+// Internal SAs must be attached to BOT profiles; external SAs to PERSON/INSTITUTION.
+// This cannot run in the token webhook because it creates a circular dependency:
+// token → webhook → profile service → needs token → webhook → ...
 
 // handleUserTokenEnrichment handles token enrichment for regular user tokens.
 // Consent is the single authority for all token claims including roles.
