@@ -81,15 +81,27 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	subjectID := sa.ProfileID
 
 	// Layer 1: data access tuples (member + service marker)
+	// Write tuples for BOTH profileID and clientID because for client_credentials
+	// Hydra sets JWT sub to the client_id, not the profile_id. Services check
+	// Keto using the JWT sub value.
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, subjectID),
 		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
+	}
+	if sa.ClientID != "" && sa.ClientID != subjectID {
+		tuples = append(tuples,
+			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
+			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
+		)
 	}
 
 	// Layer 2: explicit per-namespace permission tuples
 	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
 	for ns, perms := range audiencePerms {
 		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, subjectID, ns, perms)...)
+		if sa.ClientID != "" && sa.ClientID != subjectID {
+			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
+		}
 	}
 
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
