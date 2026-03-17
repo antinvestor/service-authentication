@@ -106,10 +106,20 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		return fmt.Errorf("failed to write service partition inheritance tuple: %w", writeErr)
 	}
 
+	// Write per-service namespace bridge tuples for the child partition.
+	// This creates ns:childPath#service ← tenancy_access:childPath#service
+	// so that SAs inheriting tenancy_access#service from the parent also get
+	// the service relation in each downstream service namespace.
+	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, authz.AllServiceNamespaceNames()) //nolint:staticcheck // intentional: bridge tuples needed for partition inheritance
+	if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
+		return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
+	}
+
 	logger.
 		WithField("parent_path", parentPath).
 		WithField("child_path", tenancyPath).
-		Info("wrote partition inheritance and service inheritance tuples")
+		WithField("bridge_ns_count", len(bridgeTuples)).
+		Info("wrote partition inheritance, service inheritance, and namespace bridge tuples")
 
 	return nil
 }
