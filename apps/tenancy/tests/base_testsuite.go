@@ -280,7 +280,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
 		events.NewClientSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ClientRepo, implementation.ServiceAccountRepo),
 		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ServiceAccountRepo, implementation.PartitionRepo),
-		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, auth),
+		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),

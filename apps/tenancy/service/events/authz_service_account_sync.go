@@ -104,6 +104,14 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		}
 	}
 
+	// Bridge tuples: ns:tenancyPath#service ← tenancy_access:tenancyPath#service
+	// Written here so new namespaces added to an SA's audiences take effect
+	// immediately without waiting for a partition sync.
+	nsNames := authz.AudienceNamespaces(sa.Audiences)
+	if len(nsNames) > 0 {
+		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, nsNames)...)
+	}
+
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
 		return fmt.Errorf("failed to write service account tuples: %w", writeErr)
 	}

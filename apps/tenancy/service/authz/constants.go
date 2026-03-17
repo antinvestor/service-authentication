@@ -46,29 +46,3 @@ const (
 	RoleMember  = "member"
 	RoleService = "service"
 )
-
-// AllServiceNamespaceNames returns all per-service Keto namespaces that have
-// a "service" relation. Used to write bridge tuples (ns#service ← tenancy_access#service)
-// for child partitions so that service bots inheriting tenancy_access from a parent
-// also get the service relation in each downstream namespace.
-func AllServiceNamespaceNames() []string {
-	return []string{
-		"service_tenancy",
-		"service_profile",
-		"service_notifications",
-		"service_payment",
-		"service_ledger",
-		"service_commerce",
-		"service_trustage",
-		"service_devices",
-		"service_settings",
-		"service_geolocation",
-		"service_files",
-		"service_billing",
-		"service_chat_drone",
-		"service_chat_gateway",
-		"service_foundry",
-		"service_stawi",
-		"service_lender",
-	}
-}

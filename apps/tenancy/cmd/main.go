@@ -66,7 +66,7 @@ func main() {
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
 			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
 			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
-			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, auth),
+			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, auth),
 			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
 			events.NewTupleDeleteEventHandler(auth),

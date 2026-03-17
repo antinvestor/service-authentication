@@ -138,10 +138,8 @@ func BuildServicePartitionInheritanceTuple(parentTenancyPath, childTenancyPath s
 
 // BuildServiceInheritanceTuples creates the subject set chain that gives service
 // accounts automatic access to functional roles via Keto composition.
-//
-// Deprecated: Use BuildServicePermissionTuples for explicit per-permission grants.
-// This function is retained for backward compatibility with partition sync and
-// legacy service accounts that use the old {"namespaces": [...]} format.
+// Bridge tuples (ns#service ← tenancy_access#service) are written for namespaces
+// derived from SA audiences — no hardcoded namespace lists.
 func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []security.RelationTuple {
 	tuples := make([]security.RelationTuple, 0, len(namespaces))
 

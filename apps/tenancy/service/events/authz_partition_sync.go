@@ -19,19 +19,23 @@ const EventKeyAuthzPartitionSync = "authorization.partition.sync"
 // is created or synced. This is separate from the Hydra sync event so that
 // authorization concerns are decoupled from OAuth2 client management.
 //
-// For every partition it writes bridge tuples for the service_tenancy namespace
-// so that service bots can access the partition service. For partitions with a
-// parent, it also writes an inheritance tuple so members of the parent get
-// automatic access to the child.
+// For every child partition it writes inheritance tuples (member + service) and
+// bridge tuples for namespaces derived from all parent partition SAs' audiences.
 type AuthzPartitionSyncEvent struct {
-	partitionRepo repository.PartitionRepository
-	authorizer    security.Authorizer
+	partitionRepo      repository.PartitionRepository
+	serviceAccountRepo repository.ServiceAccountRepository
+	authorizer         security.Authorizer
 }
 
-func NewAuthzPartitionSyncEventHandler(partitionRepo repository.PartitionRepository, auth security.Authorizer) fevents.EventI {
+func NewAuthzPartitionSyncEventHandler(
+	partitionRepo repository.PartitionRepository,
+	serviceAccountRepo repository.ServiceAccountRepository,
+	auth security.Authorizer,
+) fevents.EventI {
 	return &AuthzPartitionSyncEvent{
-		partitionRepo: partitionRepo,
-		authorizer:    auth,
+		partitionRepo:      partitionRepo,
+		serviceAccountRepo: serviceAccountRepo,
+		authorizer:         auth,
 	}
 }
 
@@ -106,20 +110,42 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		return fmt.Errorf("failed to write service partition inheritance tuple: %w", writeErr)
 	}
 
-	// Write per-service namespace bridge tuples for the child partition.
-	// This creates ns:childPath#service ← tenancy_access:childPath#service
-	// so that SAs inheriting tenancy_access#service from the parent also get
-	// the service relation in each downstream service namespace.
-	bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, authz.AllServiceNamespaceNames()) //nolint:staticcheck // intentional: bridge tuples needed for partition inheritance
-	if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
-		return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
+	// Collect namespaces from all SAs on the parent partition — SA audiences
+	// are the only source of truth for which namespaces need bridge tuples.
+	parentSAs, err := e.serviceAccountRepo.ListByPartition(ctx, partition.ParentID)
+	if err != nil {
+		return fmt.Errorf("failed to list parent partition SAs: %w", err)
 	}
 
-	logger.
-		WithField("parent_path", parentPath).
-		WithField("child_path", tenancyPath).
-		WithField("bridge_ns_count", len(bridgeTuples)).
-		Info("wrote partition inheritance, service inheritance, and namespace bridge tuples")
+	nsSet := make(map[string]bool)
+	for _, sa := range parentSAs {
+		for _, ns := range authz.AudienceNamespaces(sa.Audiences) {
+			nsSet[ns] = true
+		}
+	}
+
+	if len(nsSet) > 0 {
+		namespaces := make([]string, 0, len(nsSet))
+		for ns := range nsSet {
+			namespaces = append(namespaces, ns)
+		}
+
+		bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
+		if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
+			return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
+		}
+
+		logger.
+			WithField("parent_path", parentPath).
+			WithField("child_path", tenancyPath).
+			WithField("bridge_ns_count", len(bridgeTuples)).
+			Info("wrote partition inheritance, service inheritance, and namespace bridge tuples")
+	} else {
+		logger.
+			WithField("parent_path", parentPath).
+			WithField("child_path", tenancyPath).
+			Info("wrote partition and service inheritance tuples (no SA namespaces for bridge tuples)")
+	}
 
 	return nil
 }
