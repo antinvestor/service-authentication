@@ -15,9 +15,10 @@ INSERT INTO tenants (id, tenant_id, partition_id, name, description)
 VALUES ('d6q1aekpf2taeg5iovqg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
         'Ant Investor Development', 'Default base tenant for testing and building Ant Investor');
 
--- Partition
-INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
+-- Partition (child of Dev Backoffice)
+INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
 VALUES ('d6q1aekpf2taeg5iovr0', 'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
+        '9bsv0s3pbdv002o80qhg',                          -- parent: Dev Backoffice
         'Ant Investor Development', 'Default Ant Investor development partition',
         '{
           "support_contacts": {
