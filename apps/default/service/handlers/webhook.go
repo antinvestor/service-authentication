@@ -415,6 +415,33 @@ func claimString(claims map[string]any, key string) string {
 	return value
 }
 
+// loginEventRoles extracts the "roles" list stored in a login event's Properties.
+// Returns nil if not present, letting callers fall back to a default.
+func loginEventRoles(loginEvent *models.LoginEvent) []string {
+	if loginEvent == nil || loginEvent.Properties == nil {
+		return nil
+	}
+	raw, ok := loginEvent.Properties["roles"]
+	if !ok {
+		return nil
+	}
+	switch v := raw.(type) {
+	case []string:
+		return v
+	case []any:
+		roles := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				roles = append(roles, s)
+			}
+		}
+		if len(roles) > 0 {
+			return roles
+		}
+	}
+	return nil
+}
+
 func missingRequiredUserClaims(claims map[string]any) []string {
 	required := []string{"tenant_id", "partition_id", "access_id", "session_id", "profile_id"}
 	missing := make([]string, 0, len(required))
@@ -486,11 +513,13 @@ func (h *AuthServer) reconstructClaimsFromLoginEvent(
 		loginEvent.Oauth2SessionID,
 	)
 
-	// Preserve roles from consent-set claims; fallback to ["user"] only if absent.
+	// Preserve roles from consent-set claims; fallback to login event properties, then ["user"].
 	if roles := claims["roles"]; roles != nil {
 		canonical["roles"] = roles
+	} else if roles := loginEventRoles(loginEvent); roles != nil {
+		canonical["roles"] = roles
 	} else {
-		log.Warn("no roles in consent claims during reconstruction - defaulting to user")
+		log.Warn("no roles in consent claims or login event - defaulting to user")
 		canonical["roles"] = []string{"user"}
 	}
 
@@ -1025,7 +1054,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 			if subject == "" {
 				subject = loginEvent.ProfileID
 			}
-			log.WithField("login_event_id", loginEvent.GetID()).Warn("DB fallback: reconstructing claims without consent roles")
+			log.WithField("login_event_id", loginEvent.GetID()).Warn("DB fallback: reconstructing claims from login event")
 			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
@@ -1036,7 +1065,11 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
-			claims["roles"] = []string{"user"}
+			if roles := loginEventRoles(loginEvent); roles != nil {
+				claims["roles"] = roles
+			} else {
+				claims["roles"] = []string{"user"}
+			}
 			return claims
 		} else {
 			log.WithError(err).WithField("login_event_id", loginEventID).Warn("login event not found by ID - token will be missing claims")
@@ -1054,7 +1087,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 			log.WithFields(map[string]any{
 				"login_event_id":    loginEvent.GetID(),
 				"oauth2_session_id": oauth2SessionID,
-			}).Warn("DB fallback: reconstructing claims without consent roles")
+			}).Warn("DB fallback: reconstructing claims from login event")
 			claims := buildClaimsFromLoginEvent(
 				loginEvent.GetID(),
 				loginEvent.TenantID,
@@ -1065,7 +1098,11 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 				subject,
 				loginEvent.Oauth2SessionID,
 			)
-			claims["roles"] = []string{"user"}
+			if roles := loginEventRoles(loginEvent); roles != nil {
+				claims["roles"] = roles
+			} else {
+				claims["roles"] = []string{"user"}
+			}
 			return claims
 		} else {
 			log.WithError(err).WithField("oauth2_session_id", oauth2SessionID).Warn("login event not found for Hydra session ID - token will be missing claims")

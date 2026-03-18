@@ -21,6 +21,7 @@ VALUES ('c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
 VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
         'System manager', 'Default base partition in the base tenant', '{
+    "default_role": "user",
     "support_contacts": {
       "msisdn": "+256757546244",
       "email": "info@antinvestor.com"
@@ -43,8 +44,8 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"namespaces": ["service_tenancy","service_device","service_profile","service_notifications"]}',
-    '{"uris": ["https://admin.antinvestor.com/auth/callback"]}',
+    '{"uris": ["https://thesa.pages.dev/auth/callback","https://thesa.stawi.org/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
-    '{"uris": ["https://admin.antinvestor.com/"]}',
+    '{"uris": ["https://thesa.pages.dev/","https://thesa.stawi.org/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;

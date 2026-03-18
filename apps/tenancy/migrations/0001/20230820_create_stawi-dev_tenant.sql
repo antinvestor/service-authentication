@@ -7,6 +7,7 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
         'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
         'Stawi AI Builder', 'Default stawi ai builder partition to serve the masses',
         '{
+          "default_role": "user",
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"

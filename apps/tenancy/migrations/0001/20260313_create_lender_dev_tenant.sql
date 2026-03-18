@@ -21,6 +21,7 @@ VALUES ('d6q1aekpf2taeg5iovr0', 'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
         '9bsv0s3pbdv002o80qhg',                          -- parent: Dev Backoffice
         'Ant Investor Development', 'Default Ant Investor development partition',
         '{
+          "default_role": "user",
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@antinvestor.com"

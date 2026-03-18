@@ -5,6 +5,7 @@ INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, descriptio
            '9bsv0s3pbdv002o80qhg',                        -- parent: Dev Backoffice
            'Stawi Development', 'Default Stawi development partition',
            '{
+            "default_role": "user",
             "support_contacts": {
               "msisdn": "+256757546244",
               "email": "info@stawi.im"

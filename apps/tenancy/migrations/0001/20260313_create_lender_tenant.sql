@@ -21,6 +21,7 @@ VALUES ('d6q1aekpf2taeg5iovpg', 'd6q1aekpf2taeg5iovp0', 'd6q1aekpf2taeg5iovpg',
         'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
         'Ant Investor', 'Default Ant Investor partition to serve the masses',
         '{
+          "default_role": "user",
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@antinvestor.com"

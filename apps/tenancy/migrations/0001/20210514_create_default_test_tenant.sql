@@ -21,6 +21,7 @@ VALUES ('9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
 VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
         'Dev Backoffice', 'default dev partition for test tenants', '{
+    "default_role": "user",
     "support_contacts": {
       "msisdn": "+256757546244",
       "email": "info@antinvestor.com"
@@ -43,8 +44,8 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"namespaces": ["service_tenancy","service_device","service_profile","service_notifications"]}',
-    '{"uris": ["http://localhost:5173/auth/callback","https://admin-dev.antinvestor.com/auth/callback"]}',
+    '{"uris": ["http://localhost:5173/auth/callback","https://thesa-dev.stawi.org/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
-    '{"uris": ["http://localhost:5173/","https://admin-dev.antinvestor.com/"]}',
+    '{"uris": ["http://localhost:5173/","https://thesa-dev.stawi.org/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;

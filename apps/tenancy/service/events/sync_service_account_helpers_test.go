@@ -60,7 +60,9 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 	s.Equal("internal openid", payload["scope"])
 	s.Equal("prof-1", payload["subject"])
 	s.Equal([]string{"client_credentials"}, payload["grant_types"])
-	s.Equal("none", payload["token_endpoint_auth_method"])
+	// Internal SAs use private_key_jwt with Hydra's default JWKS
+	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
+	s.Equal(DefaultHydraPublicJWKSURI, payload["jwks_uri"])
 	s.Equal(map[string]any{
 		"tenant_id":    "tenant-1",
 		"partition_id": "partition-1",

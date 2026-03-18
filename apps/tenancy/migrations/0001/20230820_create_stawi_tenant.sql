@@ -7,6 +7,7 @@ VALUES ('9bsv0s0hijjg02qk7l1g', '9bsv0s0hijjg02z5lbjg', '9bsv0s0hijjg02qk7l1g',
         'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
         'Stawi', 'Default stawi partition to serve the masses',
         '{
+          "default_role": "user",
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"

@@ -57,9 +57,14 @@ func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID st
 }
 
 // fetchAccessRoleNames calls ListAccessRole for the given access ID and collects role names.
-// Always includes "user" as a base role. Non-fatal: falls back to ["user"] on error.
-func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) []string {
-	roles := []string{"user"}
+// The defaultRole is read from partition properties ("default_role"); falls back to "user" if unset.
+// Non-fatal: falls back to [defaultRole] on error.
+func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string, defaultRole string) []string {
+	if defaultRole == "" {
+		defaultRole = "user"
+	}
+
+	roles := []string{defaultRole}
 	if accessID == "" || h.partitionCli == nil {
 		return roles
 	}
@@ -71,7 +76,7 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) 
 		return roles
 	}
 
-	seen := map[string]bool{"user": true}
+	seen := map[string]bool{defaultRole: true}
 	for stream.Receive() {
 		for _, ar := range stream.Msg().GetData() {
 			if r := ar.GetRole(); r != nil && r.GetName() != "" && !seen[r.GetName()] {
@@ -84,6 +89,22 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string) 
 		util.Log(ctx).WithError(err).Warn("error reading access role stream")
 	}
 	return roles
+}
+
+// partitionDefaultRole extracts the "default_role" property from a partition object.
+// Returns an empty string if unset, letting callers fall back to "user".
+func partitionDefaultRole(partition *partitionv1.PartitionObject) string {
+	if partition == nil {
+		return ""
+	}
+	props := partition.GetProperties()
+	if props == nil {
+		return ""
+	}
+	if role, ok := props.AsMap()["default_role"].(string); ok {
+		return role
+	}
+	return ""
 }
 
 // getOrCreateTenancyAccess resolves a tenancy access object for the given profile/client.

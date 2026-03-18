@@ -166,8 +166,9 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 		return nil, fmt.Errorf("failed to get/create access for service account: %w", err)
 	}
 
-	// Fetch roles from access record
-	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId())
+	// Fetch roles from access record, using partition default role
+	defaultRole := partitionDefaultRole(clientObj.GetPartition())
+	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId(), defaultRole)
 
 	loginRecord, err := h.getOrCreateLoginRecord(ctx, subjectID, clientObj.GetClientId(), string(models.LoginSourceServiceAccount))
 	if err != nil {
@@ -180,6 +181,7 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 		"auth_flow":            "service_account_consent",
 		"grant_type":           "client_credentials",
 		"service_account_type": sa.Type,
+		"roles":                roles,
 	}
 	if consentReq != nil && consentReq.GetLoginSessionId() != "" {
 		props["hydra_login_session_id"] = consentReq.GetLoginSessionId()
@@ -295,6 +297,19 @@ func (h *AuthServer) buildUserTokenClaims(
 		log.WithError(rmErr).Debug("failed to set remember-me cookie")
 	}
 
+	defaultRole := partitionDefaultRole(clientObj.GetPartition())
+	roles := h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID(), defaultRole)
+
+	// Persist resolved roles in login event properties so the webhook fallback can use them
+	// without calling the partition service (avoids circular dependency).
+	if loginEvent.Properties == nil {
+		loginEvent.Properties = data.JSONMap{}
+	}
+	loginEvent.Properties["roles"] = roles
+	if _, err = h.loginEventRepo.Update(ctx, loginEvent, "properties"); err != nil {
+		log.WithError(err).Debug("failed to persist roles in login event properties")
+	}
+
 	return map[string]any{
 		"tenant_id":         loginEvent.GetTenantID(),
 		"partition_id":      loginEvent.GetPartitionID(),
@@ -303,7 +318,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		"session_id":        loginEvent.GetID(),
 		"login_event_id":    loginEvent.GetID(),
 		"oauth2_session_id": loginEvent.Oauth2SessionID,
-		"roles":             h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID()),
+		"roles":             roles,
 		"device_id":         deviceObj.GetId(),
 		"profile_id":        subjectID,
 	}, nil
