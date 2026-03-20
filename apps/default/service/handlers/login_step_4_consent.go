@@ -14,6 +14,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
+	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -159,11 +160,20 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 		return nil, err
 	}
 
-	// Get or create access for SA's profile in their partition
-	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
+	// Service accounts are provisioned explicitly and are not gated by the
+	// user-facing auto-access partition policy.
+	accessObj, err := h.getTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
 	if err != nil {
-		log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to get/create access for SA")
-		return nil, fmt.Errorf("failed to get/create access for service account: %w", err)
+		if !frame.ErrorIsNotFound(err) {
+			log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to resolve access for SA")
+			return nil, fmt.Errorf("failed to resolve access for service account: %w", err)
+		}
+
+		accessObj, err = h.createTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
+		if err != nil {
+			log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to create access for SA")
+			return nil, fmt.Errorf("failed to create access for service account: %w", err)
+		}
 	}
 
 	// Fetch roles from access record, using partition default role

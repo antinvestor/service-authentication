@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -232,6 +233,13 @@ const genericErrorMessage = "An unexpected error occurred. Please try again late
 // If ExposeErrors is false, only generic messages are shown to users.
 func (h *AuthServer) redirectToErrorPage(w http.ResponseWriter, r *http.Request, err error, errorTitle string) {
 	log := util.Log(r.Context())
+
+	var redirectErr *accessInstructionsRedirectError
+	if errors.As(err, &redirectErr) && redirectErr.RedirectURI() != "" {
+		log.WithField("redirect_uri", redirectErr.RedirectURI()).Info("redirecting to access instructions")
+		http.Redirect(w, r, redirectErr.RedirectURI(), http.StatusSeeOther)
+		return
+	}
 
 	// Always log the full error details
 	log.WithError(err).WithField("error_title", errorTitle).Error("redirecting to error page")

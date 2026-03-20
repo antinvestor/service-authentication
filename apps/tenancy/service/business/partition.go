@@ -11,6 +11,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/pitabwire/frame/data"
 	fevents "github.com/pitabwire/frame/events"
 	"github.com/pitabwire/frame/security"
@@ -204,6 +205,9 @@ func (pb *partitionBusiness) CreatePartition(
 	reqProperties := request.GetProperties().AsMap()
 	domain, _ := reqProperties["domain"].(string)
 	delete(reqProperties, "domain")
+	allowAutoAccess := partitionpolicy.AllowAutoAccess(reqProperties, true)
+	reqProperties[partitionpolicy.PropertyAllowAutoAccess] = allowAutoAccess
+	delete(reqProperties, partitionpolicy.PropertyAllowAutoAccessSetup)
 
 	partition := &models.Partition{
 		ParentID:    request.GetParentId(),
@@ -212,6 +216,7 @@ func (pb *partitionBusiness) CreatePartition(
 		Domain:      domain,
 		Properties:  reqProperties,
 	}
+	partition.SetAllowAutoAccess(allowAutoAccess)
 
 	partition.GenID(ctx)
 	partition.TenantID = tenant.GetID()
@@ -247,12 +252,23 @@ func (pb *partitionBusiness) UpdatePartition(
 	if jsonMap == nil {
 		jsonMap = make(data.JSONMap)
 	}
+	delete(jsonMap, partitionpolicy.PropertyAllowAutoAccess)
+	delete(jsonMap, partitionpolicy.PropertyAllowAutoAccessSetup)
 	reqProperties := request.GetProperties().AsMap()
 	if domain, ok := reqProperties["domain"].(string); ok {
 		partition.Domain = domain
 		delete(reqProperties, "domain")
 	}
+	if _, ok := reqProperties[partitionpolicy.PropertyAllowAutoAccess]; ok {
+		partition.SetAllowAutoAccess(partitionpolicy.AllowAutoAccess(reqProperties, partition.AutoAccessAllowed()))
+		delete(reqProperties, partitionpolicy.PropertyAllowAutoAccess)
+	}
+	if _, ok := reqProperties[partitionpolicy.PropertyAllowAutoAccessSetup]; ok {
+		partition.SetAllowAutoAccess(partitionpolicy.AllowAutoAccess(reqProperties, partition.AutoAccessAllowed()))
+		delete(reqProperties, partitionpolicy.PropertyAllowAutoAccessSetup)
+	}
 	maps.Copy(jsonMap, reqProperties)
+	jsonMap[partitionpolicy.PropertyAllowAutoAccess] = partition.AutoAccessAllowed()
 
 	if request.GetName() != "" {
 		partition.Name = request.GetName()
@@ -262,7 +278,7 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 	partition.Properties = jsonMap
 
-	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "domain", "properties")
+	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "domain", "allow_auto_access", "properties")
 	if err != nil {
 		return nil, err
 	}
