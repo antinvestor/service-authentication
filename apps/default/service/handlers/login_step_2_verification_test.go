@@ -12,11 +12,15 @@ import (
 	"testing"
 	"time"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
+	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
@@ -104,6 +108,58 @@ func (suite *LoginVerificationTestSuite) CreateVerificationRecord(ctx context.Co
 		return nil, err
 	}
 	return resp.Msg, nil
+}
+
+func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperties(
+	ctx context.Context,
+	testCtx *VerificationTestContext,
+	testName string,
+	properties data.JSONMap,
+) (*tests.OAuth2Client, error) {
+	redirectURI := suite.ServerUrl() + "/oauth2/callback"
+
+	props := data.JSONMap{
+		"redirect_uris":              redirectURI,
+		"scope":                      "openid offline offline_access profile contact",
+		"audience":                   "service_device,service_profile,service_tenancy,service_files,authentication_tests",
+		"token_endpoint_auth_method": "none",
+	}
+	for key, value := range properties {
+		props[key] = value
+	}
+
+	partition, err := tests.NewPartitionForOauthCli(ctx, testCtx.AuthServer.PartitionCli(), testName, "Test OAuth2 client", props)
+	if err != nil {
+		return nil, err
+	}
+
+	clientID := partition.GetId()
+	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
+		resp, getErr := testCtx.AuthServer.PartitionCli().GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+			Id: clientID,
+		}))
+		if getErr != nil {
+			return nil, nil
+		}
+		partObj := resp.Msg.GetData()
+		if partObj.GetProperties() != nil {
+			if _, ok := partObj.GetProperties().AsMap()["client_id"]; ok {
+				return partObj, nil
+			}
+		}
+		return nil, nil
+	}, 5*time.Second, 200*time.Millisecond)
+	if err != nil {
+		return nil, fmt.Errorf("partition sync to Hydra timed out: %w", err)
+	}
+
+	return &tests.OAuth2Client{
+		ClientID:     clientID,
+		ClientSecret: "",
+		RedirectURIs: []string{redirectURI},
+		Scope:        "openid offline_access profile",
+		Audience:     []string{"authentication_tests"},
+	}, nil
 }
 
 // TestCodeVerificationFlow tests the complete verification flow with real database verification codes
@@ -212,6 +268,50 @@ func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow() {
 
 			})
 		}
+	})
+}
+
+func (suite *LoginVerificationTestSuite) TestCodeVerificationFlow_RedirectsToAccessInstructionsWhenAutoAccessDisabled() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx := suite.SetupVerificationTest(t, dep)
+		defer suite.TeardownVerificationTest(testCtx)
+
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
+		defer opCancel()
+
+		testCtx.OAuth2Client.SetTestingT(t)
+
+		requestURI := "https://members.example.com/request-access"
+		oauth2Client, err := suite.CreateOAuth2ClientWithPartitionProperties(opCtx, testCtx, "members_only_partition", data.JSONMap{
+			partitionpolicy.PropertyAllowAutoAccess:  false,
+			partitionpolicy.PropertyAccessRequestURI: requestURI,
+		})
+		require.NoError(t, err)
+
+		loginRedirect, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, oauth2Client)
+		require.NoError(t, err)
+
+		contactVerificationResult, err := testCtx.OAuth2Client.PerformContactVerification(opCtx, loginRedirect, "members@example.com")
+		require.NoError(t, err)
+		require.True(t, contactVerificationResult.Success)
+
+		verificationCode, err := testCtx.OAuth2Client.GetVerificationCodeByLoginEventID(opCtx, suite.Handler(), contactVerificationResult.LoginEventID)
+		require.NoError(t, err)
+		require.NotEmpty(t, verificationCode)
+
+		loginResult, err := testCtx.OAuth2Client.PerformCodeVerification(
+			opCtx,
+			contactVerificationResult.LoginEventID,
+			contactVerificationResult.ProfileName,
+			verificationCode,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, loginResult)
+		require.False(t, loginResult.Success)
+		require.Equal(t, http.StatusSeeOther, loginResult.StatusCode)
+		require.Equal(t, requestURI, loginResult.Location)
+		require.Empty(t, loginResult.ConsentChallenge)
+		require.Empty(t, loginResult.AuthorizationCode)
 	})
 }
 

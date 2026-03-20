@@ -7,6 +7,7 @@ import (
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/pitabwire/frame/data"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -30,22 +31,46 @@ func (t *Tenant) ToAPI() *partitionv1.TenantObject {
 
 type Partition struct {
 	data.BaseModel
-	Name        string       `gorm:"type:varchar(100);" json:"name"`
-	Description string       `gorm:"type:text;"         json:"description"`
-	Domain      string       `gorm:"type:varchar(255);index:idx_partitions_domain,unique,where:domain != ''" json:"domain"`
-	ParentID    string       `gorm:"type:varchar(50);"  json:"parent_id"`
-	Properties  data.JSONMap `                          json:"properties"`
-	State       int32        `                          json:"state"`
+	Name            string       `gorm:"type:varchar(100);" json:"name"`
+	Description     string       `gorm:"type:text;"         json:"description"`
+	Domain          string       `gorm:"type:varchar(255);index:idx_partitions_domain,unique,where:domain != ''" json:"domain"`
+	ParentID        string       `gorm:"type:varchar(50);"  json:"parent_id"`
+	AllowAutoAccess *bool        `gorm:"column:allow_auto_access;not null;default:true" json:"allow_auto_access"`
+	Properties      data.JSONMap `                          json:"properties"`
+	State           int32        `                          json:"state"`
+}
+
+func (p *Partition) AutoAccessAllowed() bool {
+	if p == nil || p.AllowAutoAccess == nil {
+		return true
+	}
+
+	return *p.AllowAutoAccess
+}
+
+func (p *Partition) SetAllowAutoAccess(allow bool) {
+	if p == nil {
+		return
+	}
+
+	p.AllowAutoAccess = &allow
 }
 
 func (p *Partition) ToAPI() *partitionv1.PartitionObject {
+	props := make(data.JSONMap)
+	if p.Properties != nil {
+		maps.Copy(props, p.Properties)
+	}
+	delete(props, partitionpolicy.PropertyAllowAutoAccessSetup)
+	props[partitionpolicy.PropertyAllowAutoAccess] = p.AutoAccessAllowed()
+
 	return &partitionv1.PartitionObject{
 		Id:          p.ID,
 		TenantId:    p.TenantID,
 		ParentId:    p.ParentID,
 		Name:        p.Name,
 		Description: p.Description,
-		Properties:  p.Properties.ToProtoStruct(),
+		Properties:  props.ToProtoStruct(),
 		State:       commonv1.STATE(p.State),
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		Domain:      p.Domain,

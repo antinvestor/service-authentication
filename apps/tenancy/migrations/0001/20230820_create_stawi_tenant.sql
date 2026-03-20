@@ -8,6 +8,7 @@ VALUES ('9bsv0s0hijjg02qk7l1g', '9bsv0s0hijjg02z5lbjg', '9bsv0s0hijjg02qk7l1g',
         'Stawi', 'Default stawi partition to serve the masses',
         '{
           "default_role": "user",
+          "allow_auto_access": true,
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"
@@ -35,4 +36,3 @@ INSERT INTO clients (
     '{"uris": ["https://app.stawi.im/sso/logout"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
-

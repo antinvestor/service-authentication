@@ -8,6 +8,7 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
         'Stawi AI Builder', 'Default stawi ai builder partition to serve the masses',
         '{
           "default_role": "user",
+          "allow_auto_access": true,
           "support_contacts": {
             "msisdn": "+256757546244",
             "email": "info@stawi.im"

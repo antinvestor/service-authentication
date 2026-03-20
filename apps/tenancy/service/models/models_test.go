@@ -5,6 +5,7 @@ import (
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/pitabwire/frame/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,6 +70,7 @@ func (suite *ModelsTestSuite) TestPartition_ToAPI() {
 		Properties:  data.JSONMap{"scope": "openid"},
 		State:       int32(commonv1.STATE_ACTIVE),
 	}
+	partition.SetAllowAutoAccess(false)
 
 	api := partition.ToAPI()
 	require.NotNil(t, api)
@@ -78,6 +80,7 @@ func (suite *ModelsTestSuite) TestPartition_ToAPI() {
 	assert.Equal(t, "Test Partition", api.Name)
 	assert.Equal(t, commonv1.STATE_ACTIVE, api.State)
 	assert.NotNil(t, api.Properties)
+	assert.Equal(t, false, api.Properties.AsMap()[partitionpolicy.PropertyAllowAutoAccess])
 }
 
 func (suite *ModelsTestSuite) TestPartitionRole_ToAPI_Active() {

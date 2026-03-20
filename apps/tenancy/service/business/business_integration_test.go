@@ -6,6 +6,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -190,11 +191,20 @@ func (s *BusinessTestSuite) TestCreatePartition() {
 		TenantId:    tenant.GetID(),
 		Name:        "Partition A",
 		Description: "desc",
+		Properties: func() *structpb.Struct {
+			props, _ := structpb.NewStruct(map[string]any{
+				partitionpolicy.PropertyAllowAutoAccess:  false,
+				partitionpolicy.PropertyAccessRequestURI: "https://members.example.com/apply",
+			})
+			return props
+		}(),
 	})
 
 	s.Require().NoError(err)
 	s.NotEmpty(resp.Id)
 	s.Equal("Partition A", resp.Name)
+	s.Equal(false, resp.GetProperties().AsMap()[partitionpolicy.PropertyAllowAutoAccess])
+	s.Equal("https://members.example.com/apply", resp.GetProperties().AsMap()[partitionpolicy.PropertyAccessRequestURI])
 }
 
 func (s *BusinessTestSuite) TestCreatePartition_InvalidTenant() {
@@ -284,10 +294,19 @@ func (s *BusinessTestSuite) TestUpdatePartition() {
 		Id:          partition.GetID(),
 		Name:        "Updated Name",
 		Description: "Updated Desc",
+		Properties: func() *structpb.Struct {
+			props, _ := structpb.NewStruct(map[string]any{
+				partitionpolicy.PropertyAllowAutoAccess:  false,
+				partitionpolicy.PropertyAccessRequestURI: "https://members.example.com/request",
+			})
+			return props
+		}(),
 	})
 	s.Require().NoError(err)
 	s.Equal("Updated Name", updated.Name)
 	s.Equal("Updated Desc", updated.Description)
+	s.Equal(false, updated.GetProperties().AsMap()[partitionpolicy.PropertyAllowAutoAccess])
+	s.Equal("https://members.example.com/request", updated.GetProperties().AsMap()[partitionpolicy.PropertyAccessRequestURI])
 }
 
 func (s *BusinessTestSuite) TestListPartition() {
