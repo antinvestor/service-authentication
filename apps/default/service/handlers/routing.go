@@ -114,6 +114,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.LoginEndpointSubmit, "/s/login/{loginEventId}/post", "SubmitLoginEndpoint", "POST")
 	unAuthenticatedHandler(h.ShowLogoutEndpoint, "/s/logout", "ShowLogoutEndpoint", "GET")
 	unAuthenticatedHandler(h.ShowConsentEndpoint, "/s/consent", "ShowConsentEndpoint", "GET")
+	unAuthenticatedHandler(h.AccessInstructionsEndpoint, accessInstructionsPath, "AccessInstructionsEndpoint", "GET")
 	unAuthenticatedHandler(h.VerificationEndpointShow, "/s/verify/contact/{loginEventId}", "VerificationEndpointShow", "GET")
 	unAuthenticatedHandler(h.VerificationEndpointSubmit, "/s/verify/contact/{loginEventId}/post", "VerificationEndpointSubmit", "POST")
 	unAuthenticatedHandler(h.VerificationResendEndpoint, "/s/verify/contact/{loginEventId}/resend", "VerificationResendEndpoint", "POST")

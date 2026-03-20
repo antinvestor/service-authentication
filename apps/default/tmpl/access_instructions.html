@@ -1,0 +1,125 @@
+{{ define "title"}}Access Required{{ end }}
+
+{{ define "subtitle" }}
+<p>This service needs manual approval before sign-in can continue.</p>
+{{ end }}
+
+{{define "content"}}
+<style>
+    .access-help-shell {
+        min-height: 20rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        padding: 0.5rem 0 0.75rem;
+    }
+
+    .access-help-copy {
+        max-width: 21rem;
+        margin: 0 0 2.25rem;
+        color: var(--auth-text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .access-help-panel {
+        width: min(100%, 19rem);
+        margin-left: 0.125rem;
+        padding: 1rem 1.1rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 248, 251, 0.98)),
+            radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 58%);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .access-help-panel h2 {
+        margin: 0 0 0.35rem;
+        font-size: 0.92rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #0f766e;
+    }
+
+    .access-help-panel p {
+        margin: 0 0 1rem;
+        color: var(--auth-text-secondary);
+        font-size: 0.92rem;
+    }
+
+    .access-help-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .access-help-item {
+        display: grid;
+        gap: 0.1rem;
+    }
+
+    .access-help-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--auth-text-muted);
+    }
+
+    .access-help-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--auth-text);
+        text-decoration: none;
+        word-break: break-word;
+    }
+
+    .access-help-value:hover {
+        color: #0f766e;
+    }
+
+    .access-help-empty {
+        margin: 0;
+        color: var(--auth-text-secondary);
+        font-size: 0.92rem;
+    }
+
+    @media (max-width: 480px) {
+        .access-help-shell {
+            min-height: 16rem;
+            padding-top: 0;
+        }
+
+        .access-help-copy {
+            margin-bottom: 1.5rem;
+        }
+    }
+</style>
+
+<section class="access-help-shell" aria-labelledby="access-help-heading">
+    <p class="access-help-copy">
+        {{ if .PartitionName }}{{ .PartitionName }}{{ else }}This service{{ end }} has to review your access before an account can be linked.
+    </p>
+
+    <div class="access-help-panel">
+        <h2 id="access-help-heading">Support Contacts</h2>
+        <p>Reach out to the provider contacts below for the next step.</p>
+
+        {{ if .SupportContacts }}
+        <div class="access-help-list">
+            {{ range .SupportContacts }}
+            <div class="access-help-item">
+                <span class="access-help-label">{{ .Label }}</span>
+                {{ if .Href }}
+                <a class="access-help-value" href="{{ .Href }}">{{ .Value }}</a>
+                {{ else }}
+                <span class="access-help-value">{{ .Value }}</span>
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+        {{ else }}
+        <p class="access-help-empty">No support contacts were published for this service yet.</p>
+        {{ end }}
+    </div>
+</section>
+{{end}}

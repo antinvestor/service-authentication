@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"html"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,6 +81,48 @@ func (suite *HandlersTestSuite) TestErrorEndpoint() {
 				assert.Contains(t, bodyStr, "<title>Error | Authentication</title>")
 			})
 		}
+	})
+}
+
+func (suite *HandlersTestSuite) TestAccessInstructionsEndpoint() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+		req, err := http.NewRequestWithContext(
+			opCtx,
+			"GET",
+			server.URL+"/s/access/help?partition_name=Stawi&support_contacts=%7B%22email%22%3A%22info%40stawi.im%22%2C%22msisdn%22%3A%22%2B256757546244%22%7D",
+			nil,
+		)
+		require.NoError(t, err)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		bodyStr := html.UnescapeString(string(body))
+		assert.Contains(t, bodyStr, "Access Required")
+		assert.Contains(t, bodyStr, "info@stawi.im")
+		assert.Contains(t, bodyStr, "+256757546244")
+		assert.Contains(t, bodyStr, "href=\"tel:+256757546244\"")
 	})
 }
 

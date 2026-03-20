@@ -14,7 +14,9 @@ import (
 )
 
 type accessInstructionsRedirectError struct {
-	URI string
+	URI             string
+	PartitionName   string
+	SupportContacts map[string]string
 }
 
 func (e *accessInstructionsRedirectError) Error() string {
@@ -45,6 +47,14 @@ func partitionAccessRequestURI(partition *partitionv1.PartitionObject) string {
 	}
 
 	return partitionpolicy.AccessRequestURI(partition.GetProperties().AsMap())
+}
+
+func partitionSupportContacts(partition *partitionv1.PartitionObject) map[string]string {
+	if partition == nil || partition.GetProperties() == nil {
+		return map[string]string{}
+	}
+
+	return partitionpolicy.SupportContacts(partition.GetProperties().AsMap())
 }
 
 // resolvePartitionByClientID resolves a partition from a Hydra client_id.
@@ -263,7 +273,11 @@ func (h *AuthServer) getOrCreateTenancyAccessByPartitionID(ctx context.Context, 
 	}
 
 	if !partitionAllowsAutoAccess(partition) {
-		return nil, &accessInstructionsRedirectError{URI: partitionAccessRequestURI(partition)}
+		return nil, &accessInstructionsRedirectError{
+			URI:             partitionAccessRequestURI(partition),
+			PartitionName:   partition.GetName(),
+			SupportContacts: partitionSupportContacts(partition),
+		}
 	}
 
 	return h.createTenancyAccessByPartitionID(ctx, partition.GetId(), profileID)

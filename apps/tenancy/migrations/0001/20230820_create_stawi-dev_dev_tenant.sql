@@ -6,6 +6,7 @@ INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, descriptio
            'Stawi AI Builder Development', 'Default Stawi development partition',
            '{
             "default_role": "user",
+            "allow_auto_access": true,
             "support_contacts": {
               "msisdn": "+256757546244",
               "email": "info@stawi.dev"

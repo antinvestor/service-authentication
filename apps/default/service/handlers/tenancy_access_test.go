@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	neturl "net/url"
 	"testing"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
@@ -56,4 +57,30 @@ func (s *TenancyAccessTestSuite) TestRedirectToErrorPage_AccessInstructions() {
 
 	assert.Equal(s.T(), http.StatusSeeOther, response.StatusCode)
 	assert.Equal(s.T(), "https://members.example.com/request-access", response.Header.Get("Location"))
+}
+
+func (s *TenancyAccessTestSuite) TestRedirectToErrorPage_DefaultAccessInstructionsPage() {
+	server := &AuthServer{}
+	req := httptest.NewRequest(http.MethodGet, "/s/login?ui_locales=en", nil)
+	recorder := httptest.NewRecorder()
+
+	server.redirectToErrorPage(recorder, req, &accessInstructionsRedirectError{
+		PartitionName: "Members Only",
+		SupportContacts: map[string]string{
+			"email":  "members@example.com",
+			"msisdn": "+256700000000",
+		},
+	}, "LoginEndpointShow")
+
+	response := recorder.Result()
+	defer response.Body.Close()
+
+	redirectLocation := response.Header.Get("Location")
+	parsedLocation, err := neturl.Parse(redirectLocation)
+	s.Require().NoError(err)
+
+	assert.Equal(s.T(), http.StatusSeeOther, response.StatusCode)
+	assert.Equal(s.T(), accessInstructionsPath, parsedLocation.Path)
+	assert.Equal(s.T(), "Members Only", parsedLocation.Query().Get("partition_name"))
+	assert.NotEmpty(s.T(), parsedLocation.Query().Get("support_contacts"))
 }

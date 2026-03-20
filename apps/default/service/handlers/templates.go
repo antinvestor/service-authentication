@@ -9,12 +9,13 @@ import (
 
 // Template variables for all handlers
 var (
-	errorTmpl         *template.Template
-	notFoundTmpl      *template.Template
-	loginTmpl         *template.Template
-	verifyContactTmpl *template.Template
-	loginCompleteTmpl *template.Template
-	templateDir       string
+	errorTmpl              *template.Template
+	notFoundTmpl           *template.Template
+	loginTmpl              *template.Template
+	verifyContactTmpl      *template.Template
+	loginCompleteTmpl      *template.Template
+	accessInstructionsTmpl *template.Template
+	templateDir            string
 )
 
 // findTemplateDirectory searches for a template directory in common locations
@@ -105,4 +106,5 @@ func init() {
 	loginTmpl = loadTemplate("login")
 	verifyContactTmpl = loadTemplate("contact_verification")
 	loginCompleteTmpl = loadTemplate("login_complete")
+	accessInstructionsTmpl = loadTemplate("access_instructions")
 }
