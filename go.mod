@@ -2,6 +2,8 @@ module github.com/antinvestor/service-authentication
 
 go 1.26
 
+toolchain go1.26.1
+
 require (
 	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260219054105-fe125014d75c.1
 	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20260221033317-1a8e101ef7c6.2
@@ -26,7 +28,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.80.0
+	github.com/pitabwire/frame v1.80.1
 	github.com/pitabwire/util v0.6.1
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
