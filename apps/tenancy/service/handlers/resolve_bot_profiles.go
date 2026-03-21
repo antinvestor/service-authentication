@@ -16,6 +16,13 @@ import (
 
 const botEmailDomain = "stawi.org"
 
+type botProfileResolution struct {
+	Scanned    int
+	Resolved   int
+	Unresolved int
+	Skipped    int
+}
+
 // resolveBotProfiles ensures every service account has a real profile_id
 // from the profile service. Migration-seeded SAs use placeholder profile_ids
 // (e.g. "service_authentication") — this step replaces them with actual
@@ -25,10 +32,12 @@ const botEmailDomain = "stawi.org"
 //
 //	"service-authentication" → authentication.bot@stawi.org
 //	"foundry"                → foundry.bot@stawi.org
-func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
+func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) botProfileResolution {
+	result := botProfileResolution{}
+
 	if prtSrv.ProfileCli == nil {
 		util.Log(ctx).Warn("profile client not configured, skipping bot profile resolution")
-		return
+		return result
 	}
 
 	ctx = security.SkipTenancyChecksOnClaims(ctx)
@@ -37,12 +46,14 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 	allSAs, err := prtSrv.ServiceAccountRepo.GetAllBy(ctx, nil, 0, math.MaxInt32)
 	if err != nil {
 		log.WithError(err).Error("failed to list service accounts for bot profile resolution")
-		return
+		return result
 	}
 
-	resolved := 0
+	result.Scanned = len(allSAs)
+
 	for _, sa := range allSAs {
 		if !isPlaceholderProfileID(sa.ProfileID) {
+			result.Skipped++
 			continue
 		}
 
@@ -50,6 +61,7 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 		if email == "" {
 			log.WithField("client_id", sa.ClientID).
 				Debug("cannot derive bot email from service account client_id, skipping")
+			result.Skipped++
 			continue
 		}
 
@@ -59,6 +71,7 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 				WithField("sa_id", sa.GetID()).
 				WithField("email", email).
 				Error("failed to create bot profile for service account")
+			result.Unresolved++
 			continue
 		}
 
@@ -68,6 +81,7 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 				WithField("sa_id", sa.GetID()).
 				WithField("profile_id", profileID).
 				Error("failed to update service account profile_id")
+			result.Unresolved++
 			continue
 		}
 
@@ -76,12 +90,17 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 			WithField("email", email).
 			WithField("profile_id", profileID).
 			Info("resolved bot profile for service account")
-		resolved++
+		result.Resolved++
 	}
 
-	if resolved > 0 {
-		log.WithField("resolved", resolved).Info("bot profile resolution completed")
-	}
+	log.WithFields(map[string]any{
+		"scanned":    result.Scanned,
+		"resolved":   result.Resolved,
+		"unresolved": result.Unresolved,
+		"skipped":    result.Skipped,
+	}).Info("bot profile resolution completed")
+
+	return result
 }
 
 // ensureBotProfile looks up or creates a ProfileType_BOT profile for the given email.
@@ -125,18 +144,15 @@ func botEmailFromClientID(clientID string) string {
 
 // isPlaceholderProfileID returns true if the profile_id looks like a
 // human-readable placeholder rather than a real profile service ID.
-// Real profile IDs are xid-format strings (20 chars, [0-9a-v]).
+// Placeholder values from migrations contain underscores (e.g.
+// "service_authentication") or are short alphabetic names (e.g. "foundry").
+// Real profile IDs are exactly 20 characters long with no underscores.
 func isPlaceholderProfileID(profileID string) bool {
 	if profileID == "" {
 		return true
 	}
-	if len(profileID) != 20 {
+	if strings.Contains(profileID, "_") {
 		return true
 	}
-	for _, c := range profileID {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'v')) {
-			return true
-		}
-	}
-	return false
+	return len(profileID) != 20
 }

@@ -101,6 +101,16 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
 	}
 
+	// Step 5.1: Reject bot profiles from completing UI login (defence-in-depth).
+	profileReq := &profilev1.GetByIdRequest{}
+	profileReq.SetId(profileID)
+	profileResp, profileErr := h.profileCli.GetById(ctx, connect.NewRequest(profileReq))
+	if profileErr == nil && profileResp.Msg.GetData() != nil &&
+		profileResp.Msg.GetData().GetType() == profilev1.ProfileType_BOT {
+		log.WithField("profile_id", profileID).Warn("bot profile attempted UI login via verification")
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "This account cannot log in through the web interface.")
+	}
+
 	// Step 5.5: Ensure login event is bound to the authenticated profile and tenancy access.
 	if loginEvent.ProfileID != profileID {
 		loginEvent.ProfileID = profileID

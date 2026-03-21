@@ -65,7 +65,15 @@ func (prtSrv *PartitionServer) executeSyncClients(rw http.ResponseWriter, req *h
 	// Resolve bot profiles before syncing to Hydra. This ensures service
 	// accounts seeded via SQL migrations get real profile_id values from
 	// the profile service, so Hydra metadata and token subjects are correct.
-	prtSrv.resolveBotProfiles(ctx)
+	botResolution := prtSrv.resolveBotProfiles(ctx)
+	if botResolution.Unresolved > 0 {
+		response["unresolved_bot_profiles"] = botResolution.Unresolved
+		log.WithField("unresolved", botResolution.Unresolved).
+			Warn("some service accounts still have placeholder profile_ids")
+	}
+	if botResolution.Resolved > 0 {
+		response["resolved_bot_profiles"] = botResolution.Resolved
+	}
 
 	syncQuery := func() *data.SearchQuery {
 		return data.NewSearchQuery(data.WithSearchLimit(limit))
