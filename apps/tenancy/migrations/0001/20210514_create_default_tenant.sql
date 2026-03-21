@@ -13,9 +13,9 @@
 -- ==========================================================================
 
 -- Tenant
-INSERT INTO tenants (id, tenant_id, partition_id, name, description)
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
-        'System Manager', 'Default base tenant that all others build on');
+        'System Manager', 'Default base tenant that all others build on', 'production');
 
 -- Partition
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)

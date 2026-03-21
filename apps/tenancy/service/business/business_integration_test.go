@@ -7,6 +7,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
+	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -29,7 +30,7 @@ func (s *BusinessTestSuite) SetupSuite() {
 
 // createTestTenant creates a tenant via repo without claims (unscoped).
 func (s *BusinessTestSuite) createTestTenant(name string) *models.Tenant {
-	tenant := &models.Tenant{Name: name}
+	tenant := &models.Tenant{Name: name, Environment: tenantenv.Production}
 	err := s.SuiteDeps.TenantRepo.Create(s.SuiteCtx, tenant)
 	s.Require().NoError(err)
 	return tenant
@@ -73,12 +74,14 @@ func (s *BusinessTestSuite) TestCreateTenant() {
 	resp, err := deps.TenantBusiness.CreateTenant(ctx, &partitionv1.CreateTenantRequest{
 		Name:        "Test Tenant",
 		Description: "A test tenant",
+		Environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
 	})
 
 	s.Require().NoError(err)
 	s.Require().NotEmpty(resp.Id)
 	s.Require().Equal("Test Tenant", resp.Name)
 	s.Require().Equal("A test tenant", resp.Description)
+	s.Require().Equal(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.GetEnvironment())
 }
 
 func (s *BusinessTestSuite) TestGetTenant() {
@@ -166,6 +169,34 @@ func (s *BusinessTestSuite) TestListTenant() {
 	tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{})
 	s.Require().NoError(err)
 	s.GreaterOrEqual(len(tenants), 2)
+}
+
+func (s *BusinessTestSuite) TestListTenantByEnvironment() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+
+	productionTenant := &models.Tenant{Name: "Prod", Environment: tenantenv.Production}
+	err := deps.TenantRepo.Create(ctx, productionTenant)
+	s.Require().NoError(err)
+
+	stagingTenant := &models.Tenant{Name: "Stage", Environment: tenantenv.Staging}
+	err = deps.TenantRepo.Create(ctx, stagingTenant)
+	s.Require().NoError(err)
+
+	claims := &security.AuthenticationClaims{
+		AccessID:  util.IDString(),
+		SessionID: util.IDString(),
+		DeviceID:  "test-device",
+	}
+	ctx = claims.ClaimsToContext(ctx)
+
+	tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{
+		Environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
+	})
+	s.Require().NoError(err)
+	s.Len(tenants, 1)
+	s.Equal(stagingTenant.GetID(), tenants[0].GetId())
+	s.Equal(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING, tenants[0].GetEnvironment())
 }
 
 // ========================
@@ -379,6 +410,8 @@ func (s *BusinessTestSuite) TestCreatePartitionRole() {
 		Name:        "admin",
 	})
 	s.Require().NoError(err)
+	s.NotEmpty(role.GetId())
+	s.Equal(partition.GetID(), role.GetPartitionId())
 	s.Equal("admin", role.Name)
 }
 

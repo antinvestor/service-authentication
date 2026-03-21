@@ -10,6 +10,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
+	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -70,7 +71,7 @@ func (s *HandlerTestSuite) TestGetTenant_Success() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			tenant := &models.Tenant{Name: "Test Tenant", Description: "A test tenant"}
+			tenant := &models.Tenant{Name: "Test Tenant", Description: "A test tenant", Environment: tenantenv.Production}
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
@@ -135,12 +136,14 @@ func (s *HandlerTestSuite) TestCreateTenant_Success() {
 			req := connect.NewRequest(&partitionv1.CreateTenantRequest{
 				Name:        "New Tenant",
 				Description: "Created via test",
+				Environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
 			})
 			resp, err := deps.Server.CreateTenant(ctx, req)
 
 			s.Require().NoError(err)
 			s.Require().NotEmpty(resp.Msg.Data.Id)
 			s.Require().Equal("New Tenant", resp.Msg.Data.Name)
+			s.Require().Equal(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.Msg.Data.GetEnvironment())
 		})
 	})
 }
@@ -170,7 +173,7 @@ func (s *HandlerTestSuite) TestUpdateTenant_Success() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			tenant := &models.Tenant{Name: "Original", Description: "Desc"}
+			tenant := &models.Tenant{Name: "Original", Description: "Desc", Environment: tenantenv.Production}
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
@@ -214,7 +217,7 @@ func (s *HandlerTestSuite) TestListTenant_Success() {
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
 			for i := range 2 {
-				tenant := &models.Tenant{Name: util.IDString(), Description: "tenant"}
+				tenant := &models.Tenant{Name: util.IDString(), Description: "tenant", Environment: tenantenv.Production}
 				err := deps.TenantRepo.Create(ctx, tenant)
 				s.Require().NoError(err, "failed creating tenant %d", i)
 			}
@@ -240,7 +243,7 @@ func (s *HandlerTestSuite) TestCreatePartition_Success() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			tenant := &models.Tenant{Name: "T", Description: "D"}
+			tenant := &models.Tenant{Name: "T", Description: "D", Environment: tenantenv.Production}
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
@@ -426,6 +429,8 @@ func (s *HandlerTestSuite) TestCreatePartitionRole_Success() {
 			resp, err := deps.Server.CreatePartitionRole(ctx, req)
 
 			s.Require().NoError(err)
+			s.Require().NotEmpty(resp.Msg.Data.GetId())
+			s.Require().Equal(partition.GetID(), resp.Msg.Data.GetPartitionId())
 			s.Require().Equal("editor", resp.Msg.Data.Name)
 		})
 	})

@@ -10,15 +10,15 @@ require (
 	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260221033317-1a8e101ef7c6.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20260219061917-db3557eecaba.2
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260219061917-db3557eecaba.1
-	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20260306034803-bec59545427a.2
-	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20260306034803-bec59545427a.1
+	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20260321071111-e3ff42086d9d.2
+	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20260321071111-e3ff42086d9d.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260219062039-499f582dea7e.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.55.17
+	github.com/antinvestor/apis/go/common v1.55.18
 	github.com/antinvestor/apis/go/device v1.55.17
 	github.com/antinvestor/apis/go/notification v1.55.17
-	github.com/antinvestor/apis/go/partition v1.55.17
+	github.com/antinvestor/apis/go/partition v1.56.0
 	github.com/antinvestor/apis/go/profile v1.55.17
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/docker/docker v28.5.2+incompatible
@@ -159,7 +159,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.272.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260316180232-0b37fe3546d5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 )

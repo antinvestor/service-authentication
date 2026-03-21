@@ -13,9 +13,9 @@
 -- ==========================================================================
 
 -- Tenant
-INSERT INTO tenants (id, tenant_id, partition_id, name, description)
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
-        'Testing Manager', 'Default test tenant that all others build on');
+        'Testing Manager', 'Default test tenant that all others build on', 'staging');
 
 -- Partition
 INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
