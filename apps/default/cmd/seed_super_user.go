@@ -72,6 +72,8 @@ func handleOneShotCommands(ctx context.Context, cfg aconfig.AuthenticationConfig
 	switch os.Args[1] {
 	case seedSuperUserCommandName:
 		return true, runSeedSuperUserCommand(ctx, cfg, os.Args[2:])
+	case seedBotUsersCommandName:
+		return true, runSeedBotUsersCommand(ctx, cfg, os.Args[2:])
 	default:
 		return false, nil
 	}

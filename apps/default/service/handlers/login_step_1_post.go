@@ -80,6 +80,13 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	if result != nil {
 		existingProfile = result.Msg.GetData()
 		if existingProfile != nil {
+			if existingProfile.GetType() == profilev1.ProfileType_BOT {
+				log.WithField("profile_id", existingProfile.GetId()).Warn("bot profile attempted UI login")
+				errorMsg := url.QueryEscape("This account cannot log in through the web interface.")
+				http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error="+errorMsg, http.StatusSeeOther)
+				return nil
+			}
+
 			// Find matching contactDetail ID
 			for _, profileContact := range existingProfile.GetContacts() {
 				if strings.EqualFold(contactDetail, profileContact.GetDetail()) {
