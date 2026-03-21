@@ -8,6 +8,7 @@ import (
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
+	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame/data"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,6 +17,7 @@ type Tenant struct {
 	data.BaseModel
 	Name        string `gorm:"type:varchar(100);"`
 	Description string `gorm:"type:text;"`
+	Environment string `gorm:"type:varchar(20);not null;default:'production';index"`
 	Properties  data.JSONMap
 }
 
@@ -26,6 +28,7 @@ func (t *Tenant) ToAPI() *partitionv1.TenantObject {
 		Description: t.Description,
 		Properties:  t.Properties.ToProtoStruct(),
 		CreatedAt:   timestamppb.New(t.CreatedAt),
+		Environment: tenantenv.ToProto(t.Environment),
 	}
 }
 

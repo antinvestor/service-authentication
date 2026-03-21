@@ -11,9 +11,9 @@
 -- ==========================================================================
 
 -- Tenant
-INSERT INTO tenants (id, tenant_id, partition_id, name, description)
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('d6q1aekpf2taeg5iovp0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
-        'Ant Investor', 'Default base tenant for Ant Investor');
+        'Ant Investor', 'Default base tenant for Ant Investor', 'production');
 
 -- Partition (child of System Manager)
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)

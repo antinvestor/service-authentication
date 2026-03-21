@@ -150,6 +150,11 @@ func (h *AuthServer) postUserLogin(
 		existingProfile = result.Msg.GetData()
 	}
 
+	if existingProfile != nil && existingProfile.GetType() == profilev1.ProfileType_BOT {
+		log.WithField("profile_id", existingProfile.GetId()).Warn("bot profile attempted UI login via provider")
+		return fmt.Errorf("bot accounts cannot log in through the web interface")
+	}
+
 	// Step 2: Create profile if not found or if returned profile has empty ID
 	if existingProfile == nil || existingProfile.GetId() == "" {
 		if existingProfile != nil && existingProfile.GetId() == "" {

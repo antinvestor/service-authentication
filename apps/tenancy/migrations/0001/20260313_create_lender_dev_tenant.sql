@@ -11,9 +11,9 @@
 -- ==========================================================================
 
 -- Tenant
-INSERT INTO tenants (id, tenant_id, partition_id, name, description)
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('d6q1aekpf2taeg5iovqg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
-        'Ant Investor Development', 'Default base tenant for testing and building Ant Investor');
+        'Ant Investor Development', 'Default base tenant for testing and building Ant Investor', 'staging');
 
 -- Partition (child of Dev Backoffice)
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)

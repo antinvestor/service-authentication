@@ -274,7 +274,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	authzMiddleware := authz.NewMiddleware(auth)
-	implementation := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth)
+	implementation := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth, nil)
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),

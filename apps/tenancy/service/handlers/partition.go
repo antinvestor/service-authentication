@@ -5,6 +5,7 @@ import (
 
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
@@ -23,6 +24,7 @@ type PartitionServer struct {
 	eventsMan events.Manager
 	authz     authz.Middleware
 
+	ProfileCli         profilev1connect.ProfileServiceClient
 	PartitionRepo      repository.PartitionRepository
 	ClientRepo         repository.ClientRepository
 	ServiceAccountRepo repository.ServiceAccountRepository
@@ -37,7 +39,7 @@ type PartitionServer struct {
 }
 
 // NewPartitionServer creates a new PartitionServer with injected dependencies
-func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddleware authz.Middleware, auth security.Authorizer) *PartitionServer {
+func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddleware authz.Middleware, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *PartitionServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -59,6 +61,7 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, authzMiddle
 		svc:                    service,
 		eventsMan:              eventsMan,
 		authz:                  authzMiddleware,
+		ProfileCli:             profileCli,
 		PartitionRepo:          partitionRepo,
 		ClientRepo:             clientRepo,
 		ServiceAccountRepo:     serviceAccountRepo,

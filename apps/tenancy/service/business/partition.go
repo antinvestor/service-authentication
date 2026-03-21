@@ -77,19 +77,14 @@ type partitionBusiness struct {
 }
 
 func toAPIPartitionRole(partitionModel *models.PartitionRole) *partitionv1.PartitionRoleObject {
-
-	return &partitionv1.PartitionRoleObject{
-		PartitionId: partitionModel.PartitionID,
-		Name:        partitionModel.Name,
-		Properties:  partitionModel.Properties.ToProtoStruct(),
-	}
+	return partitionModel.ToAPI()
 }
 
 func (pb *partitionBusiness) ListPartition(
 	ctx context.Context,
 	request *partitionv1.ListPartitionRequest) ([]*partitionv1.PartitionObject, error) {
 
-	query := pb.buildSearchQuery(ctx, request)
+	query := pb.buildSearchQuery(request)
 	jobResult, err := pb.partitionRepo.Search(ctx, query)
 	if err != nil {
 		return nil, err
@@ -115,24 +110,12 @@ func (pb *partitionBusiness) ListPartition(
 }
 
 // buildSearchQuery creates the search query from the request.
-func (pb *partitionBusiness) buildSearchQuery(ctx context.Context, query *partitionv1.ListPartitionRequest) *data.SearchQuery {
-	profileID := ""
-	claims := security.ClaimsFromContext(ctx)
-	if claims != nil {
-		profileID, _ = claims.GetSubject()
-	}
-
+func (pb *partitionBusiness) buildSearchQuery(query *partitionv1.ListPartitionRequest) *data.SearchQuery {
 	filterProperties := map[string]any{}
-	searchProperties := map[string]any{}
 
 	// Add additional properties from the request
 	for _, p := range query.GetProperties() {
 		filterProperties[fmt.Sprintf("%s = ? ", p)] = query.GetQuery()
-	}
-
-	// Build searchProperties map, only add profile_id if it's not empty
-	if profileID != "" {
-		searchProperties["profile_id"] = profileID
 	}
 
 	var limit, offset int
@@ -144,8 +127,7 @@ func (pb *partitionBusiness) buildSearchQuery(ctx context.Context, query *partit
 	}
 
 	return data.NewSearchQuery(data.WithSearchLimit(limit),
-		data.WithSearchOffset(offset), data.WithSearchFiltersAndByValue(filterProperties),
-		data.WithSearchFiltersOrByValue(searchProperties))
+		data.WithSearchOffset(offset), data.WithSearchFiltersAndByValue(filterProperties))
 }
 
 func (pb *partitionBusiness) GetPartition(
@@ -411,7 +393,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 		IsDefault:  isDefault,
 		Properties: jsonMap,
 		BaseModel: data.BaseModel{
-			PartitionID: partition.PartitionID,
+			PartitionID: partition.GetID(),
 			TenantID:    partition.TenantID,
 		},
 	}

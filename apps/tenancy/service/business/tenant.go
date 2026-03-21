@@ -7,6 +7,7 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 )
@@ -41,7 +42,9 @@ type tenantBusiness struct {
 
 func ToModelTenant(tenantAPI *partitionv1.TenantObject) *models.Tenant {
 	return &models.Tenant{
+		Name:        tenantAPI.GetName(),
 		Description: tenantAPI.GetDescription(),
+		Environment: tenantenv.FromProto(tenantAPI.GetEnvironment()),
 		Properties:  tenantAPI.GetProperties().AsMap(),
 	}
 }
@@ -64,10 +67,15 @@ func (t *tenantBusiness) CreateTenant(
 	ctx context.Context,
 	request *partitionv1.CreateTenantRequest,
 ) (*partitionv1.TenantObject, error) {
+	environment := tenantenv.FromProto(request.GetEnvironment())
+	if environment == "" {
+		return nil, fmt.Errorf("tenant environment is required")
+	}
 
 	tenantModel := &models.Tenant{
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
+		Environment: environment,
 		Properties:  request.GetProperties().AsMap(),
 	}
 
@@ -100,10 +108,13 @@ func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *partitionv1.
 	if request.GetDescription() != "" {
 		tenant.Description = request.GetDescription()
 	}
+	if environment := tenantenv.FromProto(request.GetEnvironment()); environment != "" {
+		tenant.Environment = environment
+	}
 
 	tenant.Properties = jsonMap
 
-	_, err = t.tenantRepo.Update(ctx, tenant, "name", "description", "properties")
+	_, err = t.tenantRepo.Update(ctx, tenant, "name", "description", "environment", "properties")
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +141,9 @@ func (t *tenantBusiness) ListTenant(
 
 	for _, p := range request.GetProperties() {
 		filterProperties[p+" = ?"] = request.GetQuery()
+	}
+	if environment := tenantenv.FromProto(request.GetEnvironment()); environment != "" {
+		filterProperties["environment = ?"] = environment
 	}
 
 	var limit, offset int

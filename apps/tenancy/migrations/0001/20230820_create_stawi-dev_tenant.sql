@@ -1,7 +1,7 @@
 -- Default base partition
-INSERT INTO tenants (id, tenant_id, partition_id, name, description)
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('9bsv0s0hijjg02z5lr4g', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'Stawi AI Builder',
-        'Default base tenant for stawi');
+        'Default base tenant for stawi', 'production');
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
 VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
         'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
