@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
@@ -19,7 +20,15 @@ func TestBotEmail(t *testing.T) {
 	require.Equal(t, "payment-jenga.bot@stawi.org", botEmail("payment-jenga"))
 }
 
-func TestDefaultBotDefinitionsNotEmpty(t *testing.T) {
+func TestBotServiceAccountName(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "notification", botServiceAccountName("notification"))
+	require.Equal(t, "payment_jenga", botServiceAccountName("payment-jenga"))
+	require.Equal(t, "notification_africastalking", botServiceAccountName("notification-africastalking"))
+}
+
+func TestDefaultBotDefinitionsAreValid(t *testing.T) {
 	t.Parallel()
 
 	bots := defaultBotDefinitions()
@@ -29,21 +38,22 @@ func TestDefaultBotDefinitionsNotEmpty(t *testing.T) {
 	for _, bot := range bots {
 		require.NotEmpty(t, bot.Function, "bot function must not be empty")
 		require.NotEmpty(t, bot.Description, "bot description must not be empty")
+		require.NotEmpty(t, bot.Audiences, "bot %s must have at least one audience", bot.Function)
 		require.False(t, seen[bot.Function], "duplicate bot function: %s", bot.Function)
 		seen[bot.Function] = true
 	}
 }
 
+// --- Fakes ---
+
 type fakeBotProfileService struct {
 	profiles map[string]*profilev1.ProfileObject
-	created  map[string]bool
 	failOn   map[string]error
 }
 
 func newFakeBotProfileService() *fakeBotProfileService {
 	return &fakeBotProfileService{
 		profiles: make(map[string]*profilev1.ProfileObject),
-		created:  make(map[string]bool),
 		failOn:   make(map[string]error),
 	}
 }
@@ -55,7 +65,7 @@ func (f *fakeBotProfileService) GetByContact(_ context.Context, contact string) 
 	return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("not found: %s", contact))
 }
 
-func (f *fakeBotProfileService) CreateBotProfile(_ context.Context, email, _ string) (*profilev1.ProfileObject, error) {
+func (f *fakeBotProfileService) CreateBotProfile(_ context.Context, email string) (*profilev1.ProfileObject, error) {
 	if err, ok := f.failOn[email]; ok {
 		return nil, err
 	}
@@ -63,17 +73,67 @@ func (f *fakeBotProfileService) CreateBotProfile(_ context.Context, email, _ str
 	p.SetId("bot-profile-" + email)
 	p.SetType(profilev1.ProfileType_BOT)
 	f.profiles[email] = p
-	f.created[email] = true
 	return p, nil
 }
 
-func TestSeedBotUsersCreatesAllProfiles(t *testing.T) {
+type fakeBotPartitionService struct {
+	serviceAccounts map[string]*partitionv1.ServiceAccountObject // keyed by profile_id
+	created         map[string]bool
+	failOn          map[string]error // keyed by profile_id
+}
+
+func newFakeBotPartitionService() *fakeBotPartitionService {
+	return &fakeBotPartitionService{
+		serviceAccounts: make(map[string]*partitionv1.ServiceAccountObject),
+		created:         make(map[string]bool),
+		failOn:          make(map[string]error),
+	}
+}
+
+func (f *fakeBotPartitionService) ListServiceAccounts(_ context.Context, _ string) ([]*partitionv1.ServiceAccountObject, error) {
+	accounts := make([]*partitionv1.ServiceAccountObject, 0, len(f.serviceAccounts))
+	for _, sa := range f.serviceAccounts {
+		accounts = append(accounts, sa)
+	}
+	return accounts, nil
+}
+
+func (f *fakeBotPartitionService) CreateServiceAccount(
+	_ context.Context,
+	_, profileID, name, saType string,
+	audiences []string,
+) (*partitionv1.CreateServiceAccountResponse, error) {
+	if err, ok := f.failOn[profileID]; ok {
+		return nil, err
+	}
+	sa := &partitionv1.ServiceAccountObject{}
+	sa.SetId("sa-" + profileID)
+	sa.SetProfileId(profileID)
+	sa.SetType(saType)
+	sa.SetAudiences(audiences)
+	f.serviceAccounts[profileID] = sa
+	f.created[name] = true
+
+	resp := &partitionv1.CreateServiceAccountResponse{}
+	resp.SetData(sa)
+	resp.SetClientSecret("test-secret-" + profileID)
+	return resp, nil
+}
+
+// --- Tests ---
+
+func TestSeedBotUsersCreatesAllProfilesAndServiceAccounts(t *testing.T) {
 	t.Parallel()
 
-	fake := newFakeBotProfileService()
-	seeder := &botUserSeeder{profiles: fake}
+	fakeProfiles := newFakeBotProfileService()
+	fakePartitions := newFakeBotPartitionService()
+	seeder := &botUserSeeder{
+		profiles:   fakeProfiles,
+		partitions: fakePartitions,
+	}
 
-	result := seeder.SeedBotUsers(context.Background())
+	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
+	require.NoError(t, err)
 
 	bots := defaultBotDefinitions()
 	require.Equal(t, len(bots), result.Created)
@@ -82,26 +142,44 @@ func TestSeedBotUsersCreatesAllProfiles(t *testing.T) {
 	require.Len(t, result.Details, len(bots))
 
 	for _, detail := range result.Details {
-		require.True(t, detail.Created, "expected %s to be created", detail.Function)
+		require.True(t, detail.CreatedProfile, "expected profile created for %s", detail.Function)
+		require.True(t, detail.CreatedSA, "expected SA created for %s", detail.Function)
 		require.NotEmpty(t, detail.ProfileID, "expected profile ID for %s", detail.Function)
+		require.NotEmpty(t, detail.ServiceAccountID, "expected SA ID for %s", detail.Function)
 		require.Empty(t, detail.Error)
+	}
+
+	// Verify SA names follow convention
+	for _, bot := range bots {
+		expectedName := botServiceAccountName(bot.Function)
+		require.True(t, fakePartitions.created[expectedName], "SA not created for %s", expectedName)
 	}
 }
 
-func TestSeedBotUsersSkipsExisting(t *testing.T) {
+func TestSeedBotUsersSkipsExistingProfileAndSA(t *testing.T) {
 	t.Parallel()
 
-	fake := newFakeBotProfileService()
+	fakeProfiles := newFakeBotProfileService()
+	fakePartitions := newFakeBotPartitionService()
 
 	existingEmail := botEmail("notification")
 	existingProfile := &profilev1.ProfileObject{}
 	existingProfile.SetId("existing-profile-id")
 	existingProfile.SetType(profilev1.ProfileType_BOT)
-	fake.profiles[existingEmail] = existingProfile
+	fakeProfiles.profiles[existingEmail] = existingProfile
 
-	seeder := &botUserSeeder{profiles: fake}
+	existingSA := &partitionv1.ServiceAccountObject{}
+	existingSA.SetId("existing-sa-id")
+	existingSA.SetProfileId("existing-profile-id")
+	fakePartitions.serviceAccounts["existing-profile-id"] = existingSA
 
-	result := seeder.SeedBotUsers(context.Background())
+	seeder := &botUserSeeder{
+		profiles:   fakeProfiles,
+		partitions: fakePartitions,
+	}
+
+	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
+	require.NoError(t, err)
 
 	require.Equal(t, 1, result.Existing)
 	require.Equal(t, len(defaultBotDefinitions())-1, result.Created)
@@ -109,30 +187,95 @@ func TestSeedBotUsersSkipsExisting(t *testing.T) {
 
 	for _, detail := range result.Details {
 		if detail.Function == "notification" {
-			require.False(t, detail.Created)
+			require.False(t, detail.CreatedProfile)
+			require.False(t, detail.CreatedSA)
 			require.Equal(t, "existing-profile-id", detail.ProfileID)
+			require.Equal(t, "existing-sa-id", detail.ServiceAccountID)
 		}
 	}
 }
 
-func TestSeedBotUsersHandlesCreateError(t *testing.T) {
+func TestSeedBotUsersCreatesOnlySAWhenProfileExists(t *testing.T) {
 	t.Parallel()
 
-	fake := newFakeBotProfileService()
-	failEmail := botEmail("payment")
-	fake.failOn[failEmail] = fmt.Errorf("service unavailable")
+	fakeProfiles := newFakeBotProfileService()
+	fakePartitions := newFakeBotPartitionService()
 
-	seeder := &botUserSeeder{profiles: fake}
+	existingEmail := botEmail("payment")
+	existingProfile := &profilev1.ProfileObject{}
+	existingProfile.SetId("existing-payment-profile")
+	existingProfile.SetType(profilev1.ProfileType_BOT)
+	fakeProfiles.profiles[existingEmail] = existingProfile
 
-	result := seeder.SeedBotUsers(context.Background())
+	seeder := &botUserSeeder{
+		profiles:   fakeProfiles,
+		partitions: fakePartitions,
+	}
 
-	require.Equal(t, 1, result.Errors)
-	require.Equal(t, len(defaultBotDefinitions())-1, result.Created)
+	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
+	require.NoError(t, err)
 
 	for _, detail := range result.Details {
 		if detail.Function == "payment" {
+			require.False(t, detail.CreatedProfile)
+			require.True(t, detail.CreatedSA)
+			require.Equal(t, "existing-payment-profile", detail.ProfileID)
+			require.NotEmpty(t, detail.ServiceAccountID)
+		}
+	}
+}
+
+func TestSeedBotUsersHandlesProfileCreateError(t *testing.T) {
+	t.Parallel()
+
+	fakeProfiles := newFakeBotProfileService()
+	fakePartitions := newFakeBotPartitionService()
+	failEmail := botEmail("payment")
+	fakeProfiles.failOn[failEmail] = fmt.Errorf("service unavailable")
+
+	seeder := &botUserSeeder{
+		profiles:   fakeProfiles,
+		partitions: fakePartitions,
+	}
+
+	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, result.Errors)
+
+	for _, detail := range result.Details {
+		if detail.Function == "payment" {
+			require.Contains(t, detail.Error, "profile")
 			require.Contains(t, detail.Error, "create failed")
-			require.Empty(t, detail.ProfileID)
+			require.Empty(t, detail.ServiceAccountID)
+		}
+	}
+}
+
+func TestSeedBotUsersHandlesSACreateError(t *testing.T) {
+	t.Parallel()
+
+	fakeProfiles := newFakeBotProfileService()
+	fakePartitions := newFakeBotPartitionService()
+
+	ledgerProfileID := "bot-profile-" + botEmail("ledger")
+	fakePartitions.failOn[ledgerProfileID] = fmt.Errorf("permission denied")
+
+	seeder := &botUserSeeder{
+		profiles:   fakeProfiles,
+		partitions: fakePartitions,
+	}
+
+	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, result.Errors)
+
+	for _, detail := range result.Details {
+		if detail.Function == "ledger" {
+			require.Contains(t, detail.Error, "service account")
+			require.Contains(t, detail.Error, "create failed")
+			require.NotEmpty(t, detail.ProfileID, "profile should still be created")
 		}
 	}
 }

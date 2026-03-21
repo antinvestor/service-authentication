@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
@@ -18,41 +20,125 @@ import (
 const (
 	seedBotUsersCommandName = "seed-bot-users"
 	botEmailDomain          = "stawi.org"
+	serviceAccountType      = "internal"
 )
 
-// botDefinition describes a service bot profile to seed.
+// botDefinition describes a service bot profile and its service account configuration.
 type botDefinition struct {
 	Function    string
 	Description string
+	Audiences   []string
 }
 
 // defaultBotDefinitions returns the list of bot profiles to seed for service accounts.
+// Each definition includes the audiences (namespaces) the service account needs access to.
 func defaultBotDefinitions() []botDefinition {
 	return []botDefinition{
-		{Function: "authentication", Description: "Authentication service bot"},
-		{Function: "profile", Description: "Profile service bot"},
-		{Function: "tenancy", Description: "Tenancy service bot"},
-		{Function: "notification", Description: "Notification service bot"},
-		{Function: "device", Description: "Device service bot"},
-		{Function: "settings", Description: "Settings service bot"},
-		{Function: "payment", Description: "Payment service bot"},
-		{Function: "payment-jenga", Description: "Jenga payment integration bot"},
-		{Function: "ledger", Description: "Ledger service bot"},
-		{Function: "billing", Description: "Billing service bot"},
-		{Function: "files", Description: "Files service bot"},
-		{Function: "chat-drone", Description: "Chat drone service bot"},
-		{Function: "chat-gateway", Description: "Chat gateway service bot"},
-		{Function: "foundry", Description: "Foundry service bot"},
-		{Function: "gitvault", Description: "Gitvault service bot"},
-		{Function: "trustage", Description: "Trustage service bot"},
-		{Function: "notification-africastalking", Description: "Africa's Talking notification integration bot"},
-		{Function: "notification-emailsmtp", Description: "SMTP email notification integration bot"},
-		{Function: "sync", Description: "Partition synchronisation bot"},
+		{
+			Function:    "authentication",
+			Description: "Authentication service bot",
+			Audiences:   []string{"service_profile", "service_tenancy", "service_device"},
+		},
+		{
+			Function:    "profile",
+			Description: "Profile service bot",
+			Audiences:   []string{"service_notifications", "service_tenancy", "service_device"},
+		},
+		{
+			Function:    "tenancy",
+			Description: "Tenancy service bot",
+			Audiences:   []string{"service_notifications", "service_profile"},
+		},
+		{
+			Function:    "notification",
+			Description: "Notification service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "device",
+			Description: "Device service bot",
+			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
+		},
+		{
+			Function:    "settings",
+			Description: "Settings service bot",
+			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
+		},
+		{
+			Function:    "payment",
+			Description: "Payment service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "payment-jenga",
+			Description: "Jenga payment integration bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "ledger",
+			Description: "Ledger service bot",
+			Audiences:   []string{"service_tenancy"},
+		},
+		{
+			Function:    "billing",
+			Description: "Billing service bot",
+			Audiences:   []string{"service_tenancy"},
+		},
+		{
+			Function:    "files",
+			Description: "Files service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "chat-drone",
+			Description: "Chat drone service bot",
+			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
+		},
+		{
+			Function:    "chat-gateway",
+			Description: "Chat gateway service bot",
+			Audiences:   []string{"service_notifications", "service_chat_drone", "service_device"},
+		},
+		{
+			Function:    "foundry",
+			Description: "Foundry service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "gitvault",
+			Description: "Gitvault service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "trustage",
+			Description: "Trustage service bot",
+			Audiences:   []string{"service_profile", "service_tenancy"},
+		},
+		{
+			Function:    "notification-africastalking",
+			Description: "Africa's Talking notification integration bot",
+			Audiences:   []string{"service_profile", "service_tenancy", "service_notifications", "service_settings"},
+		},
+		{
+			Function:    "notification-emailsmtp",
+			Description: "SMTP email notification integration bot",
+			Audiences:   []string{"service_profile", "service_tenancy", "service_notifications", "service_settings"},
+		},
+		{
+			Function:    "sync",
+			Description: "Partition synchronisation bot",
+			Audiences:   []string{"service_tenancy"},
+		},
 	}
 }
 
 func botEmail(function string) string {
 	return fmt.Sprintf("%s.bot@%s", function, botEmailDomain)
+}
+
+// botServiceAccountName returns the SA display name matching the migration convention.
+func botServiceAccountName(function string) string {
+	return strings.ReplaceAll(function, "-", "_")
 }
 
 type seedBotUsersResult struct {
@@ -63,20 +149,30 @@ type seedBotUsersResult struct {
 }
 
 type seedBotUserDetail struct {
-	Function  string
-	Email     string
-	ProfileID string
-	Created   bool
-	Error     string
+	Function         string
+	Email            string
+	ProfileID        string
+	ServiceAccountID string
+	CreatedProfile   bool
+	CreatedSA        bool
+	Error            string
 }
 
 type botUserProfileService interface {
 	GetByContact(ctx context.Context, contact string) (*profilev1.ProfileObject, error)
-	CreateBotProfile(ctx context.Context, email, description string) (*profilev1.ProfileObject, error)
+	CreateBotProfile(ctx context.Context, email string) (*profilev1.ProfileObject, error)
+}
+
+type botUserPartitionService interface {
+	ListServiceAccounts(ctx context.Context, partitionID string) ([]*partitionv1.ServiceAccountObject, error)
+	CreateServiceAccount(ctx context.Context, partitionID, profileID, name, saType string, audiences []string) (*partitionv1.CreateServiceAccountResponse, error)
 }
 
 type botUserSeeder struct {
-	profiles botUserProfileService
+	profiles    botUserProfileService
+	partitions  botUserPartitionService
+	partitionID string
+	existingSAs map[string]*partitionv1.ServiceAccountObject // keyed by profile_id
 }
 
 func runSeedBotUsersCommand(ctx context.Context, cfg aconfig.AuthenticationConfig, args []string) error {
@@ -91,7 +187,13 @@ func runSeedBotUsersCommand(ctx context.Context, cfg aconfig.AuthenticationConfi
 		return fmt.Errorf("%s requires --environment", seedBotUsersCommandName)
 	}
 
-	if _, err := tenantenv.ParseToProto(*environment); err != nil {
+	environmentEnum, err := tenantenv.ParseToProto(*environment)
+	if err != nil {
+		return err
+	}
+
+	partitionID, err := rootPartitionIDForEnvironment(environmentEnum)
+	if err != nil {
 		return err
 	}
 
@@ -100,25 +202,37 @@ func runSeedBotUsersCommand(ctx context.Context, cfg aconfig.AuthenticationConfi
 		return fmt.Errorf("setup profile client: %w", err)
 	}
 
-	seeder := &botUserSeeder{
-		profiles: connectBotUserProfileService{client: profileCli},
+	partitionCli, err := setupPartitionClient(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("setup partition client: %w", err)
 	}
 
-	result := seeder.SeedBotUsers(ctx)
+	seeder := &botUserSeeder{
+		profiles:   connectBotUserProfileService{client: profileCli},
+		partitions: connectBotUserPartitionService{client: partitionCli},
+	}
+
+	result, err := seeder.SeedBotUsers(ctx, partitionID)
+	if err != nil {
+		return err
+	}
 
 	util.Log(ctx).WithFields(map[string]any{
-		"environment": tenantenv.Normalise(*environment),
-		"created":     result.Created,
-		"existing":    result.Existing,
-		"errors":      result.Errors,
+		"environment":  tenantenv.Normalise(*environment),
+		"partition_id": partitionID,
+		"created":      result.Created,
+		"existing":     result.Existing,
+		"errors":       result.Errors,
 	}).Info("seeded bot users completed")
 
 	for _, detail := range result.Details {
 		fields := map[string]any{
-			"function":   detail.Function,
-			"email":      detail.Email,
-			"profile_id": detail.ProfileID,
-			"created":    detail.Created,
+			"function":           detail.Function,
+			"email":              detail.Email,
+			"profile_id":         detail.ProfileID,
+			"service_account_id": detail.ServiceAccountID,
+			"created_profile":    detail.CreatedProfile,
+			"created_sa":         detail.CreatedSA,
 		}
 		if detail.Error != "" {
 			fields["error"] = detail.Error
@@ -131,7 +245,19 @@ func runSeedBotUsersCommand(ctx context.Context, cfg aconfig.AuthenticationConfi
 	return nil
 }
 
-func (s *botUserSeeder) SeedBotUsers(ctx context.Context) *seedBotUsersResult {
+func (s *botUserSeeder) SeedBotUsers(ctx context.Context, partitionID string) (*seedBotUsersResult, error) {
+	s.partitionID = partitionID
+
+	existingSAs, err := s.partitions.ListServiceAccounts(ctx, partitionID)
+	if err != nil {
+		return nil, fmt.Errorf("list existing service accounts for partition %s: %w", partitionID, err)
+	}
+
+	s.existingSAs = make(map[string]*partitionv1.ServiceAccountObject, len(existingSAs))
+	for _, sa := range existingSAs {
+		s.existingSAs[sa.GetProfileId()] = sa
+	}
+
 	bots := defaultBotDefinitions()
 	result := &seedBotUsersResult{
 		Details: make([]seedBotUserDetail, 0, len(bots)),
@@ -144,14 +270,14 @@ func (s *botUserSeeder) SeedBotUsers(ctx context.Context) *seedBotUsersResult {
 		switch {
 		case detail.Error != "":
 			result.Errors++
-		case detail.Created:
+		case detail.CreatedProfile || detail.CreatedSA:
 			result.Created++
 		default:
 			result.Existing++
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func (s *botUserSeeder) seedOneBot(ctx context.Context, bot botDefinition) seedBotUserDetail {
@@ -161,30 +287,66 @@ func (s *botUserSeeder) seedOneBot(ctx context.Context, bot botDefinition) seedB
 		Email:    email,
 	}
 
-	profile, err := s.profiles.GetByContact(ctx, email)
-	if err == nil && profile != nil && profile.GetId() != "" {
-		detail.ProfileID = profile.GetId()
-		detail.Created = false
-		return detail
-	}
-
-	if err != nil && !isNotFoundError(err) {
-		detail.Error = fmt.Sprintf("lookup failed: %v", err)
-		return detail
-	}
-
-	profile, err = s.profiles.CreateBotProfile(ctx, email, bot.Description)
+	// Step 1: Find or create the bot profile.
+	profileID, createdProfile, err := s.ensureBotProfile(ctx, email)
 	if err != nil {
-		detail.Error = fmt.Sprintf("create failed: %v", err)
+		detail.Error = fmt.Sprintf("profile: %v", err)
 		return detail
 	}
+	detail.ProfileID = profileID
+	detail.CreatedProfile = createdProfile
 
-	detail.ProfileID = profile.GetId()
-	detail.Created = true
+	// Step 2: Find or create the service account.
+	saID, createdSA, err := s.ensureServiceAccount(ctx, profileID, bot)
+	if err != nil {
+		detail.Error = fmt.Sprintf("service account: %v", err)
+		return detail
+	}
+	detail.ServiceAccountID = saID
+	detail.CreatedSA = createdSA
+
 	return detail
 }
 
-// connectBotUserProfileService adapts the profile Connect client for bot seeding.
+func (s *botUserSeeder) ensureBotProfile(ctx context.Context, email string) (string, bool, error) {
+	profile, err := s.profiles.GetByContact(ctx, email)
+	if err == nil && profile != nil && profile.GetId() != "" {
+		return profile.GetId(), false, nil
+	}
+
+	if err != nil && !isNotFoundError(err) {
+		return "", false, fmt.Errorf("lookup failed: %w", err)
+	}
+
+	profile, err = s.profiles.CreateBotProfile(ctx, email)
+	if err != nil {
+		return "", false, fmt.Errorf("create failed: %w", err)
+	}
+
+	return profile.GetId(), true, nil
+}
+
+func (s *botUserSeeder) ensureServiceAccount(ctx context.Context, profileID string, bot botDefinition) (string, bool, error) {
+	if existing, ok := s.existingSAs[profileID]; ok {
+		return existing.GetId(), false, nil
+	}
+
+	name := botServiceAccountName(bot.Function)
+	resp, err := s.partitions.CreateServiceAccount(ctx, s.partitionID, profileID, name, serviceAccountType, bot.Audiences)
+	if err != nil {
+		return "", false, fmt.Errorf("create failed: %w", err)
+	}
+
+	sa := resp.GetData()
+	if sa == nil {
+		return "", false, errors.New("partition service returned empty service account")
+	}
+
+	return sa.GetId(), true, nil
+}
+
+// --- Connect client adapters ---
+
 type connectBotUserProfileService struct {
 	client profilev1connect.ProfileServiceClient
 }
@@ -202,7 +364,7 @@ func (c connectBotUserProfileService) GetByContact(ctx context.Context, contact 
 	return resp.Msg.GetData(), nil
 }
 
-func (c connectBotUserProfileService) CreateBotProfile(ctx context.Context, email, description string) (*profilev1.ProfileObject, error) {
+func (c connectBotUserProfileService) CreateBotProfile(ctx context.Context, email string) (*profilev1.ProfileObject, error) {
 	req := &profilev1.CreateRequest{}
 	req.SetType(profilev1.ProfileType_BOT)
 	req.SetContact(email)
@@ -215,4 +377,45 @@ func (c connectBotUserProfileService) CreateBotProfile(ctx context.Context, emai
 		return nil, errors.New("profile service returned empty created bot profile")
 	}
 	return resp.Msg.GetData(), nil
+}
+
+type connectBotUserPartitionService struct {
+	client partitionv1connect.PartitionServiceClient
+}
+
+func (c connectBotUserPartitionService) ListServiceAccounts(ctx context.Context, partitionID string) ([]*partitionv1.ServiceAccountObject, error) {
+	req := &partitionv1.ListServiceAccountRequest{}
+	req.SetPartitionId(partitionID)
+
+	stream, err := c.client.ListServiceAccount(ctx, connect.NewRequest(req))
+	if err != nil {
+		return nil, err
+	}
+
+	var accounts []*partitionv1.ServiceAccountObject
+	for stream.Receive() {
+		accounts = append(accounts, stream.Msg().GetData()...)
+	}
+
+	return accounts, stream.Err()
+}
+
+func (c connectBotUserPartitionService) CreateServiceAccount(
+	ctx context.Context,
+	partitionID, profileID, name, saType string,
+	audiences []string,
+) (*partitionv1.CreateServiceAccountResponse, error) {
+	req := &partitionv1.CreateServiceAccountRequest{}
+	req.SetPartitionId(partitionID)
+	req.SetProfileId(profileID)
+	req.SetName(name)
+	req.SetType(saType)
+	req.SetAudiences(audiences)
+
+	resp, err := c.client.CreateServiceAccount(ctx, connect.NewRequest(req))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Msg, nil
 }
