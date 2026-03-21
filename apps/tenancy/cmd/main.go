@@ -7,6 +7,8 @@ import (
 
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"connectrpc.com/connect"
+	"github.com/antinvestor/apis/go/common"
+	"github.com/antinvestor/apis/go/profile"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
@@ -51,9 +53,18 @@ func main() {
 	// service's own OAuth2 client isn't yet registered in Hydra.
 	hydraClient := client.NewManager(context.Background())
 
+	profileCli, err := profile.NewClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.ProfileServiceURI,
+		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_profile"},
+	})
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
+	}
+
 	auth := sm.GetAuthorizer(ctx)
 	authzMiddleware := authz.NewMiddleware(auth)
-	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth)
+	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth, profileCli)
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)

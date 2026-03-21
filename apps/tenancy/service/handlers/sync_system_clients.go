@@ -62,6 +62,11 @@ func (prtSrv *PartitionServer) executeSyncClients(rw http.ResponseWriter, req *h
 
 	log.WithField("limit", limit).Info("starting synchronisation")
 
+	// Resolve bot profiles before syncing to Hydra. This ensures service
+	// accounts seeded via SQL migrations get real profile_id values from
+	// the profile service, so Hydra metadata and token subjects are correct.
+	prtSrv.resolveBotProfiles(ctx)
+
 	syncQuery := func() *data.SearchQuery {
 		return data.NewSearchQuery(data.WithSearchLimit(limit))
 	}

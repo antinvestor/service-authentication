@@ -9,15 +9,16 @@ import (
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/pkg/botdefs"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBotEmail(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "notification.bot@stawi.org", botEmail("notification"))
-	require.Equal(t, "profile.bot@stawi.org", botEmail("profile"))
-	require.Equal(t, "payment-jenga.bot@stawi.org", botEmail("payment-jenga"))
+	require.Equal(t, "notification.bot@stawi.org", botdefs.Email("notification"))
+	require.Equal(t, "profile.bot@stawi.org", botdefs.Email("profile"))
+	require.Equal(t, "payment-jenga.bot@stawi.org", botdefs.Email("payment-jenga"))
 }
 
 func TestBotServiceAccountName(t *testing.T) {
@@ -31,7 +32,7 @@ func TestBotServiceAccountName(t *testing.T) {
 func TestDefaultBotDefinitionsAreValid(t *testing.T) {
 	t.Parallel()
 
-	bots := defaultBotDefinitions()
+	bots := botdefs.All()
 	require.NotEmpty(t, bots)
 
 	seen := make(map[string]bool)
@@ -77,9 +78,9 @@ func (f *fakeBotProfileService) CreateBotProfile(_ context.Context, email string
 }
 
 type fakeBotPartitionService struct {
-	serviceAccounts map[string]*partitionv1.ServiceAccountObject // keyed by profile_id
+	serviceAccounts map[string]*partitionv1.ServiceAccountObject
 	created         map[string]bool
-	failOn          map[string]error // keyed by profile_id
+	failOn          map[string]error
 }
 
 func newFakeBotPartitionService() *fakeBotPartitionService {
@@ -135,7 +136,7 @@ func TestSeedBotUsersCreatesAllProfilesAndServiceAccounts(t *testing.T) {
 	result, err := seeder.SeedBotUsers(context.Background(), rootPartitionProductionID)
 	require.NoError(t, err)
 
-	bots := defaultBotDefinitions()
+	bots := botdefs.All()
 	require.Equal(t, len(bots), result.Created)
 	require.Equal(t, 0, result.Existing)
 	require.Equal(t, 0, result.Errors)
@@ -149,7 +150,6 @@ func TestSeedBotUsersCreatesAllProfilesAndServiceAccounts(t *testing.T) {
 		require.Empty(t, detail.Error)
 	}
 
-	// Verify SA names follow convention
 	for _, bot := range bots {
 		expectedName := botServiceAccountName(bot.Function)
 		require.True(t, fakePartitions.created[expectedName], "SA not created for %s", expectedName)
@@ -162,7 +162,7 @@ func TestSeedBotUsersSkipsExistingProfileAndSA(t *testing.T) {
 	fakeProfiles := newFakeBotProfileService()
 	fakePartitions := newFakeBotPartitionService()
 
-	existingEmail := botEmail("notification")
+	existingEmail := botdefs.Email("notification")
 	existingProfile := &profilev1.ProfileObject{}
 	existingProfile.SetId("existing-profile-id")
 	existingProfile.SetType(profilev1.ProfileType_BOT)
@@ -182,7 +182,7 @@ func TestSeedBotUsersSkipsExistingProfileAndSA(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 1, result.Existing)
-	require.Equal(t, len(defaultBotDefinitions())-1, result.Created)
+	require.Equal(t, len(botdefs.All())-1, result.Created)
 	require.Equal(t, 0, result.Errors)
 
 	for _, detail := range result.Details {
@@ -201,7 +201,7 @@ func TestSeedBotUsersCreatesOnlySAWhenProfileExists(t *testing.T) {
 	fakeProfiles := newFakeBotProfileService()
 	fakePartitions := newFakeBotPartitionService()
 
-	existingEmail := botEmail("payment")
+	existingEmail := botdefs.Email("payment")
 	existingProfile := &profilev1.ProfileObject{}
 	existingProfile.SetId("existing-payment-profile")
 	existingProfile.SetType(profilev1.ProfileType_BOT)
@@ -230,7 +230,7 @@ func TestSeedBotUsersHandlesProfileCreateError(t *testing.T) {
 
 	fakeProfiles := newFakeBotProfileService()
 	fakePartitions := newFakeBotPartitionService()
-	failEmail := botEmail("payment")
+	failEmail := botdefs.Email("payment")
 	fakeProfiles.failOn[failEmail] = fmt.Errorf("service unavailable")
 
 	seeder := &botUserSeeder{
@@ -258,7 +258,7 @@ func TestSeedBotUsersHandlesSACreateError(t *testing.T) {
 	fakeProfiles := newFakeBotProfileService()
 	fakePartitions := newFakeBotPartitionService()
 
-	ledgerProfileID := "bot-profile-" + botEmail("ledger")
+	ledgerProfileID := "bot-profile-" + botdefs.Email("ledger")
 	fakePartitions.failOn[ledgerProfileID] = fmt.Errorf("permission denied")
 
 	seeder := &botUserSeeder{

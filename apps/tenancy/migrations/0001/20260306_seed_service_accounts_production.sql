@@ -688,7 +688,7 @@ INSERT INTO service_accounts (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
--- synchronize-partitions (CronJob for periodic tenancy sync)
+-- synchronise-partitions (CronJob for periodic tenancy sync)
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -697,8 +697,8 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnprg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-synchronize_partitions',
-    'synchronize-partitions',
+    'sa-synchronise_partitions',
+    'synchronise-partitions',
     '',
     'internal',
     '{"types": ["client_credentials"]}',
@@ -716,8 +716,8 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpsg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'synchronize_partitions',
-    'synchronize-partitions',
+    'synchronise_partitions',
+    'synchronise-partitions',
     'c2f4j7au6s7f91uqnprg',
     'internal',
     '{"namespaces": ["service_tenancy"]}',

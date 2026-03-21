@@ -13,128 +13,12 @@ import (
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/pkg/botdefs"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/util"
 )
 
-const (
-	seedBotUsersCommandName = "seed-bot-users"
-	botEmailDomain          = "stawi.org"
-	serviceAccountType      = "internal"
-)
-
-// botDefinition describes a service bot profile and its service account configuration.
-type botDefinition struct {
-	Function    string
-	Description string
-	Audiences   []string
-}
-
-// defaultBotDefinitions returns the list of bot profiles to seed for service accounts.
-// Each definition includes the audiences (namespaces) the service account needs access to.
-func defaultBotDefinitions() []botDefinition {
-	return []botDefinition{
-		{
-			Function:    "authentication",
-			Description: "Authentication service bot",
-			Audiences:   []string{"service_profile", "service_tenancy", "service_device"},
-		},
-		{
-			Function:    "profile",
-			Description: "Profile service bot",
-			Audiences:   []string{"service_notifications", "service_tenancy", "service_device"},
-		},
-		{
-			Function:    "tenancy",
-			Description: "Tenancy service bot",
-			Audiences:   []string{"service_notifications", "service_profile"},
-		},
-		{
-			Function:    "notification",
-			Description: "Notification service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "device",
-			Description: "Device service bot",
-			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
-		},
-		{
-			Function:    "settings",
-			Description: "Settings service bot",
-			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
-		},
-		{
-			Function:    "payment",
-			Description: "Payment service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "payment-jenga",
-			Description: "Jenga payment integration bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "ledger",
-			Description: "Ledger service bot",
-			Audiences:   []string{"service_tenancy"},
-		},
-		{
-			Function:    "billing",
-			Description: "Billing service bot",
-			Audiences:   []string{"service_tenancy"},
-		},
-		{
-			Function:    "files",
-			Description: "Files service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "chat-drone",
-			Description: "Chat drone service bot",
-			Audiences:   []string{"service_notifications", "service_profile", "service_device"},
-		},
-		{
-			Function:    "chat-gateway",
-			Description: "Chat gateway service bot",
-			Audiences:   []string{"service_notifications", "service_chat_drone", "service_device"},
-		},
-		{
-			Function:    "foundry",
-			Description: "Foundry service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "gitvault",
-			Description: "Gitvault service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "trustage",
-			Description: "Trustage service bot",
-			Audiences:   []string{"service_profile", "service_tenancy"},
-		},
-		{
-			Function:    "notification-africastalking",
-			Description: "Africa's Talking notification integration bot",
-			Audiences:   []string{"service_profile", "service_tenancy", "service_notifications", "service_settings"},
-		},
-		{
-			Function:    "notification-emailsmtp",
-			Description: "SMTP email notification integration bot",
-			Audiences:   []string{"service_profile", "service_tenancy", "service_notifications", "service_settings"},
-		},
-		{
-			Function:    "sync",
-			Description: "Partition synchronisation bot",
-			Audiences:   []string{"service_tenancy"},
-		},
-	}
-}
-
-func botEmail(function string) string {
-	return fmt.Sprintf("%s.bot@%s", function, botEmailDomain)
-}
+const seedBotUsersCommandName = "seed-bot-users"
 
 // botServiceAccountName returns the SA display name matching the migration convention.
 func botServiceAccountName(function string) string {
@@ -258,12 +142,12 @@ func (s *botUserSeeder) SeedBotUsers(ctx context.Context, partitionID string) (*
 		s.existingSAs[sa.GetProfileId()] = sa
 	}
 
-	bots := defaultBotDefinitions()
+	allBots := botdefs.All()
 	result := &seedBotUsersResult{
-		Details: make([]seedBotUserDetail, 0, len(bots)),
+		Details: make([]seedBotUserDetail, 0, len(allBots)),
 	}
 
-	for _, bot := range bots {
+	for _, bot := range allBots {
 		detail := s.seedOneBot(ctx, bot)
 		result.Details = append(result.Details, detail)
 
@@ -280,14 +164,13 @@ func (s *botUserSeeder) SeedBotUsers(ctx context.Context, partitionID string) (*
 	return result, nil
 }
 
-func (s *botUserSeeder) seedOneBot(ctx context.Context, bot botDefinition) seedBotUserDetail {
-	email := botEmail(bot.Function)
+func (s *botUserSeeder) seedOneBot(ctx context.Context, bot botdefs.Definition) seedBotUserDetail {
+	email := botdefs.Email(bot.Function)
 	detail := seedBotUserDetail{
 		Function: bot.Function,
 		Email:    email,
 	}
 
-	// Step 1: Find or create the bot profile.
 	profileID, createdProfile, err := s.ensureBotProfile(ctx, email)
 	if err != nil {
 		detail.Error = fmt.Sprintf("profile: %v", err)
@@ -296,7 +179,6 @@ func (s *botUserSeeder) seedOneBot(ctx context.Context, bot botDefinition) seedB
 	detail.ProfileID = profileID
 	detail.CreatedProfile = createdProfile
 
-	// Step 2: Find or create the service account.
 	saID, createdSA, err := s.ensureServiceAccount(ctx, profileID, bot)
 	if err != nil {
 		detail.Error = fmt.Sprintf("service account: %v", err)
@@ -326,13 +208,13 @@ func (s *botUserSeeder) ensureBotProfile(ctx context.Context, email string) (str
 	return profile.GetId(), true, nil
 }
 
-func (s *botUserSeeder) ensureServiceAccount(ctx context.Context, profileID string, bot botDefinition) (string, bool, error) {
+func (s *botUserSeeder) ensureServiceAccount(ctx context.Context, profileID string, bot botdefs.Definition) (string, bool, error) {
 	if existing, ok := s.existingSAs[profileID]; ok {
 		return existing.GetId(), false, nil
 	}
 
 	name := botServiceAccountName(bot.Function)
-	resp, err := s.partitions.CreateServiceAccount(ctx, s.partitionID, profileID, name, serviceAccountType, bot.Audiences)
+	resp, err := s.partitions.CreateServiceAccount(ctx, s.partitionID, profileID, name, botdefs.ServiceAccountType, bot.Audiences)
 	if err != nil {
 		return "", false, fmt.Errorf("create failed: %w", err)
 	}
