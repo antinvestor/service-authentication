@@ -3,21 +3,28 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/service-authentication/pkg/botdefs"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 )
 
+const botEmailDomain = "stawi.org"
+
 // resolveBotProfiles ensures every service account has a real profile_id
 // from the profile service. Migration-seeded SAs use placeholder profile_ids
 // (e.g. "service_authentication") — this step replaces them with actual
 // ProfileType_BOT profile IDs before Hydra sync so tokens carry valid subjects.
+//
+// The bot email is derived from the SA's ClientID field:
+//
+//	"service-authentication" → authentication.bot@stawi.org
+//	"foundry"                → foundry.bot@stawi.org
 func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 	if prtSrv.ProfileCli == nil {
 		util.Log(ctx).Warn("profile client not configured, skipping bot profile resolution")
@@ -33,18 +40,16 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 		return
 	}
 
-	placeholderToEmail := buildPlaceholderEmailMap()
-
 	resolved := 0
 	for _, sa := range allSAs {
 		if !isPlaceholderProfileID(sa.ProfileID) {
 			continue
 		}
 
-		email, ok := placeholderToEmail[sa.ProfileID]
-		if !ok {
-			log.WithField("profile_id", sa.ProfileID).
-				Debug("service account profile_id is not a known bot placeholder, skipping")
+		email := botEmailFromClientID(sa.ClientID)
+		if email == "" {
+			log.WithField("client_id", sa.ClientID).
+				Debug("cannot derive bot email from service account client_id, skipping")
 			continue
 		}
 
@@ -67,6 +72,7 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) {
 		}
 
 		log.WithField("sa_id", sa.GetID()).
+			WithField("client_id", sa.ClientID).
 			WithField("email", email).
 			WithField("profile_id", profileID).
 			Info("resolved bot profile for service account")
@@ -106,43 +112,15 @@ func (prtSrv *PartitionServer) ensureBotProfile(ctx context.Context, email strin
 	return createResp.Msg.GetData().GetId(), nil
 }
 
-// buildPlaceholderEmailMap creates a mapping from the migration placeholder
-// profile_id values to bot email addresses.
-//
-// Migration SQL uses values like:
-//
-//	"service_authentication" → authentication.bot@stawi.org
-//	"service_notifications" → notification.bot@stawi.org
-//	"foundry"               → foundry.bot@stawi.org
-func buildPlaceholderEmailMap() map[string]string {
-	m := make(map[string]string)
-	for _, d := range botdefs.All() {
-		placeholder := migrationProfileID(d.Function)
-		m[placeholder] = botdefs.Email(d.Function)
+// botEmailFromClientID derives a bot email from a service account's client_id.
+// The client_id from migrations follows patterns like "service-authentication",
+// "service-notification-integration-africastalking", or bare names like "foundry".
+func botEmailFromClientID(clientID string) string {
+	if clientID == "" {
+		return ""
 	}
-	return m
-}
-
-// migrationProfileID converts a bot function name to the placeholder value
-// used as profile_id in the seed migration SQL.
-func migrationProfileID(function string) string {
-	name := strings.ReplaceAll(function, "-", "_")
-	switch name {
-	case "foundry", "gitvault", "trustage":
-		return name
-	case "sync":
-		return "synchronise_partitions"
-	case "notification":
-		return "service_notifications"
-	case "device":
-		return "service_devices"
-	case "notification_africastalking":
-		return "service_notification_africastalking"
-	case "notification_emailsmtp":
-		return "service_notification_emailsmtp"
-	default:
-		return "service_" + name
-	}
+	name := strings.TrimPrefix(clientID, "service-")
+	return fmt.Sprintf("%s.bot@%s", name, botEmailDomain)
 }
 
 // isPlaceholderProfileID returns true if the profile_id looks like a

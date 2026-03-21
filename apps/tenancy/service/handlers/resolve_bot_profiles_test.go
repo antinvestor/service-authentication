@@ -6,38 +6,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMigrationProfileID(t *testing.T) {
+func TestBotEmailFromClientID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		function string
+		clientID string
 		expected string
 	}{
-		{"authentication", "service_authentication"},
-		{"profile", "service_profile"},
-		{"tenancy", "service_tenancy"},
-		{"notification", "service_notifications"},
-		{"device", "service_devices"},
-		{"settings", "service_settings"},
-		{"payment", "service_payment"},
-		{"payment-jenga", "service_payment_jenga"},
-		{"ledger", "service_ledger"},
-		{"billing", "service_billing"},
-		{"files", "service_files"},
-		{"chat-drone", "service_chat_drone"},
-		{"chat-gateway", "service_chat_gateway"},
-		{"foundry", "foundry"},
-		{"gitvault", "gitvault"},
-		{"trustage", "trustage"},
-		{"notification-africastalking", "service_notification_africastalking"},
-		{"notification-emailsmtp", "service_notification_emailsmtp"},
-		{"sync", "synchronise_partitions"},
+		{"service-authentication", "authentication.bot@stawi.org"},
+		{"service-profile", "profile.bot@stawi.org"},
+		{"service-notification", "notification.bot@stawi.org"},
+		{"service-devices", "devices.bot@stawi.org"},
+		{"service-payment-jenga", "payment-jenga.bot@stawi.org"},
+		{"service-notification-integration-africastalking", "notification-integration-africastalking.bot@stawi.org"},
+		{"foundry", "foundry.bot@stawi.org"},
+		{"gitvault", "gitvault.bot@stawi.org"},
+		{"trustage", "trustage.bot@stawi.org"},
+		{"", ""},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.function, func(t *testing.T) {
+		t.Run(tt.clientID, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.expected, migrationProfileID(tt.function))
+			require.Equal(t, tt.expected, botEmailFromClientID(tt.clientID))
 		})
 	}
 }
@@ -46,34 +37,23 @@ func TestIsPlaceholderProfileID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
+		name          string
 		profileID     string
 		isPlaceholder bool
 	}{
-		{"", true},
-		{"service_authentication", true},
-		{"service_notifications", true},
-		{"foundry", true},
-		{"trustage", true},
-		{"c2f4j7au6s7f91uqnolg", false},
-		{"9bsv0s3pbdv002o80qhg", false},
+		{"empty", "", true},
+		{"service_authentication", "service_authentication", true},
+		{"service_notifications", "service_notifications", true},
+		{"foundry", "foundry", true},
+		{"trustage", "trustage", true},
+		{"valid_xid_1", "c2f4j7au6s7f91uqnolg", false},
+		{"valid_xid_2", "9bsv0s3pbdv002o80qhg", false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.profileID, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.isPlaceholder, isPlaceholderProfileID(tt.profileID))
 		})
 	}
-}
-
-func TestBuildPlaceholderEmailMap(t *testing.T) {
-	t.Parallel()
-
-	m := buildPlaceholderEmailMap()
-
-	require.Equal(t, "authentication.bot@stawi.org", m["service_authentication"])
-	require.Equal(t, "notification.bot@stawi.org", m["service_notifications"])
-	require.Equal(t, "foundry.bot@stawi.org", m["foundry"])
-	require.Equal(t, "sync.bot@stawi.org", m["synchronise_partitions"])
-	require.Equal(t, "notification-africastalking.bot@stawi.org", m["service_notification_africastalking"])
 }
