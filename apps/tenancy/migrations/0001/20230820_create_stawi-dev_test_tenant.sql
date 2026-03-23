@@ -1,9 +1,9 @@
 -- Default base partition
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment) VALUES('9bsv0s0hijjghdbz96dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi AI Builder Development', 'Default base tenant for testing and building stawi', 'staging');
-INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
     VALUES('9bsv0s0hijjb83qksr20', '9bsv0s0hijjghdbz96dg', '9bsv0s0hijjb83qksr20',
            '9bsv0s3pbdv002o80qhg',                        -- parent: Dev Backoffice
-           'Stawi AI Builder Development', 'Default Stawi development partition',
+           'Stawi AI Builder Development', 'Default Stawi development partition', 'true',
            '{
             "default_role": "user",
             "allow_auto_access": true,
@@ -28,7 +28,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_trustage","service_foundry","service_device","service_profile","service_files"]}',
+    '{"namespaces": ["service_trustage","service_foundry","service_device","service_profile","service_file"]}',
     '{"uris": ["https://dev.stawi.dev/auth/callback","https://localhost:5170/auth/callback"]}',
     'https://static.stawi.dev/logo.png',
     '{"uris": ["https://dev.stawi.dev","https://localhost:5170"]}',

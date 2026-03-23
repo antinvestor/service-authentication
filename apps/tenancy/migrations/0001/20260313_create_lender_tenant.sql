@@ -16,10 +16,10 @@ VALUES ('d6q1aekpf2taeg5iovp0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
         'Ant Investor', 'Default base tenant for Ant Investor', 'production');
 
 -- Partition (child of System Manager)
-INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d6q1aekpf2taeg5iovpg', 'd6q1aekpf2taeg5iovp0', 'd6q1aekpf2taeg5iovpg',
         'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
-        'Ant Investor', 'Default Ant Investor partition to serve the masses',
+        'Ant Investor', 'Default Ant Investor partition to serve the masses', 'false',
         '{
           "default_role": "user",
           "support_contacts": {
@@ -43,7 +43,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_lender","service_device","service_profile","service_files","service_geolocation"]}',
+    '{"namespaces": ["service_lender","service_device","service_profile","service_file","service_geolocation"]}',
     '{"uris": ["https://app.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback","http://localhost:5174/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://app.antinvestor.com/","http://localhost:5174/"]}',

@@ -150,7 +150,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"OAUTH2_SERVICE_CLIENT_ID":          "dev_service_profile",
 			"OAUTH2_SERVICE_CLIENT_SECRET":      "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD": "client_secret_post",
-			"OAUTH2_SERVICE_AUDIENCE":           "service_notifications,service_tenancy",
+			"OAUTH2_SERVICE_AUDIENCE":           "service_notification,service_tenancy",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":        "service_profile",
 			"OAUTH2_JWT_VERIFY_ISSUER":          issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,

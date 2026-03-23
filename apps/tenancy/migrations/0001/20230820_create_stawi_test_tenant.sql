@@ -1,9 +1,9 @@
 -- Default base partition
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment) VALUES('9bsv0s0hijjg09bzz6dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi Development', 'Default base tenant for testing and building stawi', 'staging');
-INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
     VALUES('9bsv0s0hijjg02qks6i0', '9bsv0s0hijjg09bzz6dg', '9bsv0s0hijjg02qks6i0',
            '9bsv0s3pbdv002o80qhg',                        -- parent: Dev Backoffice
-           'Stawi Development', 'Default Stawi development partition',
+           'Stawi Development', 'Default Stawi development partition', 'true',
            '{
             "default_role": "user",
             "allow_auto_access": true,
@@ -28,7 +28,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_chat_drone","service_chat_gateway","service_device","service_profile","service_files"]}',
+    '{"namespaces": ["service_chat_drone","service_chat_gateway","service_device","service_profile","service_file"]}',
     '{"uris": ["https://app-dev.stawi.im/sso/redirect","com.antinvestor.chat://sso/redirect","https://localhost:5170/sso/redirect"]}',
     'https://static.stawi.im/logo.png',
     '{"uris": ["https://app-dev.stawi.im/sso/logout","com.antinvestor.chat://sso/logout","https://localhost:5170/sso/logout"]}',

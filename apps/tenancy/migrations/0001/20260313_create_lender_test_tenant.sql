@@ -16,10 +16,10 @@ VALUES ('d6q1aekpf2taeg5iovqg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
         'Ant Investor Development', 'Default base tenant for testing and building Ant Investor', 'staging');
 
 -- Partition (child of Dev Backoffice)
-INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d6q1aekpf2taeg5iovr0', 'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
         '9bsv0s3pbdv002o80qhg',                          -- parent: Dev Backoffice
-        'Ant Investor Development', 'Default Ant Investor development partition',
+        'Ant Investor Development', 'Default Ant Investor development partition', 'false',
         '{
           "default_role": "user",
           "support_contacts": {
@@ -43,7 +43,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_lender","service_device","service_profile","service_files","service_geolocation"]}',
+    '{"namespaces": ["service_lender","service_device","service_profile","service_file","service_geolocation"]}',
     '{"uris": ["https://app-dev.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback","https://app-dev.antinvestor.com/auth/callback","http://localhost:5174/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://app-dev.antinvestor.com/","http://localhost:5174/"]}',

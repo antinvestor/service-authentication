@@ -43,7 +43,7 @@ func TestIsPlaceholderProfileID(t *testing.T) {
 	}{
 		{"empty", "", true},
 		{"service_authentication", "service_authentication", true},
-		{"service_notifications", "service_notifications", true},
+		{"service_notification", "service_notification", true},
 		{"foundry", "foundry", true},
 		{"trustage", "trustage", true},
 		{"valid_xid_1", "c2f4j7au6s7f91uqnolg", false},

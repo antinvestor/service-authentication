@@ -49,7 +49,7 @@ services:
       - OAUTH2_WELL_KNOWN_JWK=http://hydra:4444/.well-known/jwks.json
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
-      - OAUTH2_SERVICE_AUDIENCE=service_notifications,service_profile,authentication_tests
+      - OAUTH2_SERVICE_AUDIENCE=service_notification,service_profile,authentication_tests
       - OAUTH2_JWT_VERIFY_AUDIENCE=service_tenancy
       - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
       - SYNCHRONISE_PRIMARY_PARTITIONS=true
@@ -69,7 +69,7 @@ services:
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
       - OAUTH2_SERVICE_AUDIENCE=service_profile,service_tenancy
-      - OAUTH2_JWT_VERIFY_AUDIENCE=service_notifications
+      - OAUTH2_JWT_VERIFY_AUDIENCE=service_notification
       - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
     ports:
       - "8087:8087"
@@ -95,7 +95,7 @@ services:
       - OAUTH2_SERVICE_URI=http://hydra:4444
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=hkGiJroO9cDS5eFnuaAV
-      - OAUTH2_SERVICE_AUDIENCE=service_notifications,service_tenancy
+      - OAUTH2_SERVICE_AUDIENCE=service_notification,service_tenancy
       - OAUTH2_JWT_VERIFY_AUDIENCE=service_profile
       - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
       - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
@@ -147,7 +147,7 @@ services:
       - OAUTH2_SERVICE_URI=http://hydra:4444
       - OAUTH2_SERVICE_ADMIN_URI=http://hydra:4445
       - OAUTH2_SERVICE_CLIENT_SECRET=vkGiJroO9dAS5eFnuaGy
-      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_tenancy,service_notifications,service_device
+      - OAUTH2_SERVICE_AUDIENCE=service_profile,service_tenancy,service_notification,service_device
       - OAUTH2_JWT_VERIFY_AUDIENCE=authentication_tests
       - OAUTH2_JWT_VERIFY_ISSUER=http://hydra:4444
       - PROFILE_SERVICE_URI=http://profile_svc:8086

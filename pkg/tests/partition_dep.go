@@ -126,7 +126,7 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 			"OAUTH2_SERVICE_CLIENT_ID":                      "dev_service_tenancy",
 			"OAUTH2_SERVICE_CLIENT_SECRET":                  "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD":             "client_secret_post",
-			"OAUTH2_SERVICE_AUDIENCE":                       "service_notifications,service_profile,authentication_tests",
+			"OAUTH2_SERVICE_AUDIENCE":                       "service_notification,service_profile,authentication_tests",
 			"OAUTH2_JWT_VERIFY_AUDIENCE":                    "service_tenancy",
 			"OAUTH2_JWT_VERIFY_ISSUER":                      issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":                    jwksData,

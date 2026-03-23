@@ -15,12 +15,12 @@
 -- Tenant
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
-        'Testing Manager', 'Default test tenant that all others build on', 'staging');
+        'System Manager Test', 'Default test tenant that all others build on', 'staging');
 
 -- Partition
-INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, name, description, allow_auto_access, properties)
 VALUES ('9bsv0s3pbdv002o80qhg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
-        'Dev Backoffice', 'default dev partition for test tenants', '{
+        'System Manager Test', 'default dev partition for test tenants', 'false', '{
     "default_role": "user",
     "support_contacts": {
       "msisdn": "+256757546244",
@@ -43,7 +43,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notifications"]}',
+    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notification","service_payment","service_thesa","service_file"]}',
     '{"uris": ["http://localhost:5173/auth/callback","https://thesa-dev.stawi.org/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["http://localhost:5173/","https://thesa-dev.stawi.org/"]}',

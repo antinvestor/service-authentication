@@ -239,7 +239,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notifications", "service_device"}
+	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notification", "service_device"}
 	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
 	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
@@ -291,42 +291,42 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientID:   "dev_authentication_tests",
 			ClientName: "sa-authentication_tests",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_device"},
+			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
 			ProfileID:  "dev_authentication_tests",
 		},
 		{
 			ClientID:   "dev_service_authentication",
 			ClientName: "sa-service_authentication",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notifications", "service_device"},
+			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
 			ProfileID:  "dev_service_authentication",
 		},
 		{
 			ClientID:   "dev_service_profile",
 			ClientName: "sa-service_profile",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notifications", "service_tenancy"},
+			Audience:   []string{"service_notification", "service_tenancy"},
 			ProfileID:  "dev_service_profile",
 		},
 		{
 			ClientID:   "dev_service_tenancy",
 			ClientName: "sa-service_tenancy",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notifications", "service_profile", "authentication_tests"},
+			Audience:   []string{"service_notification", "service_profile", "authentication_tests"},
 			ProfileID:  "dev_service_tenancy",
 		},
 		{
-			ClientID:   "dev_service_notifications",
-			ClientName: "sa-service_notifications",
+			ClientID:   "dev_service_notification",
+			ClientName: "sa-service_notification",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
 			Audience:   []string{"service_profile", "service_tenancy", "service_device"},
-			ProfileID:  "dev_service_notifications",
+			ProfileID:  "dev_service_notification",
 		},
 		{
 			ClientID:   "dev_service_devices",
 			ClientName: "sa-service_devices",
 			Secret:     "hkBaJroO9cDGleFnuaAZ",
-			Audience:   []string{"service_notifications", "service_tenancy", "service_profile", "authentication_tests"},
+			Audience:   []string{"service_notification", "service_tenancy", "service_profile", "authentication_tests"},
 			ProfileID:  "dev_service_devices",
 		},
 	}
@@ -409,7 +409,7 @@ func setupNotificationClient(
 	cfg *aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.NotificationServiceURI,
-		Audiences: []string{"service_notifications"},
+		Audiences: []string{"service_notification"},
 	})
 	if err != nil {
 		return nil, err

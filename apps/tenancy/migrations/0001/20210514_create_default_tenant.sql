@@ -18,9 +18,9 @@ VALUES ('c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
         'System Manager', 'Default base tenant that all others build on', 'production');
 
 -- Partition
-INSERT INTO partitions (id, tenant_id, partition_id, name, description, properties)
+INSERT INTO partitions (id, tenant_id, partition_id, name, description, allow_auto_access, properties)
 VALUES ('c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
-        'System manager', 'Default base partition in the base tenant', '{
+        'System Manager', 'Default base partition in the base tenant', 'false', '{
     "default_role": "user",
     "support_contacts": {
       "msisdn": "+256757546244",
@@ -43,7 +43,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notifications"]}',
+    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notification","service_payment","service_thesa","service_file"]}',
     '{"uris": ["https://thesa.pages.dev/auth/callback","https://thesa.stawi.org/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://thesa.pages.dev/","https://thesa.stawi.org/"]}',

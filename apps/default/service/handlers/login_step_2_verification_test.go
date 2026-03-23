@@ -121,7 +121,7 @@ func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperti
 	props := data.JSONMap{
 		"redirect_uris":              redirectURI,
 		"scope":                      "openid offline offline_access profile contact",
-		"audience":                   "service_device,service_profile,service_tenancy,service_files,authentication_tests",
+		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
 		"token_endpoint_auth_method": "none",
 	}
 	for key, value := range properties {
