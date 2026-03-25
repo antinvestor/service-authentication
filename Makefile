@@ -1,59 +1,145 @@
-ENV_LOCAL_TEST=\
-  TEST_DATABASE_URL=postgres://ant:secret@localhost:5436/service_authentication?sslmode=disable \
-  POSTGRES_PASSWORD=secret \
-  POSTGRES_DB=service_authentication \
-  POSTGRES_HOST=authentication_db \
-  POSTGRES_USER=ant
+# Standardized service Makefile — copy to service repo and adjust variables below.
+# See https://github.com/antinvestor/common for tooling documentation.
 
-SERVICE		?= $(shell basename `go list`)
-VERSION		?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || cat $(PWD)/.version 2> /dev/null || echo v0)
-PACKAGE		?= $(shell go list)
-PACKAGES	?= $(shell go list ./...)
-FILES		?= $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := all
 
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-print-directory
 
+# ------------------------------------------------------------------------------
+# Service configuration — adjust per repo
+# ------------------------------------------------------------------------------
 
-default: help
+SERVICE_NAME     := service-authentication
+PROTO_DIR        := proto
+DEFAULT_APP      := apps/default
+APP_DIRS         := apps/default apps/tenancy
 
-help:   ## show this help
-	@echo 'usage: make [target] ...'
-	@echo ''
-	@echo 'targets:'
-	@egrep '^(.+)\:\ .*##\ (.+)' ${MAKEFILE_LIST} | sed 's/:.*##/#/' | column -t -c 2 -s '#'
+# ------------------------------------------------------------------------------
+# Paths & tools
+# ------------------------------------------------------------------------------
 
-format:
-	find . -name '*.go' -not -path './.git/*' -exec sed -i '/^import (/,/^)/{/^$$/d}' {} +
-	find . -name '*.go' -not -path './.git/*' -exec goimports -w {} +
+BIN              := $(abspath .tmp/bin)
+GO               ?= go
+TOOLS_VER        ?= latest
+COPYRIGHT_YEARS  := 2023-2026
+
+export PATH  := $(BIN):$(PATH)
+export GOBIN := $(BIN)
+
+# ------------------------------------------------------------------------------
+# Tool bootstrap
+# ------------------------------------------------------------------------------
+
+$(BIN)/buf:
+	@mkdir -p $(BIN)
+	$(GO) install github.com/bufbuild/buf/cmd/buf@latest
+
+$(BIN)/license-header:
+	@mkdir -p $(BIN)
+	$(GO) install github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@latest
+
+$(BIN)/golangci-lint:
+	@mkdir -p $(BIN)
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+
+$(BIN)/inject-permissions:
+	@mkdir -p $(BIN)
+	$(GO) install github.com/antinvestor/common/tools/inject-permissions@$(TOOLS_VER)
+
+$(BIN)/generate-opl:
+	@mkdir -p $(BIN)
+	$(GO) install github.com/antinvestor/common/tools/generate-opl@$(TOOLS_VER)
+
+# ------------------------------------------------------------------------------
+# Proto targets
+# ------------------------------------------------------------------------------
+
+.PHONY: proto-lint
+proto-lint: $(BIN)/buf ## Format and lint protobuf
+	cd $(PROTO_DIR) && buf format -w
+	cd $(PROTO_DIR) && buf lint
+
+.PHONY: proto-deps
+proto-deps: $(BIN)/buf ## Update buf dependencies
+	cd $(PROTO_DIR) && buf dep update
+
+.PHONY: proto-generate
+proto-generate: $(BIN)/buf $(BIN)/inject-permissions $(BIN)/generate-opl ## Generate all artifacts from proto
+	@echo "==> buf generate $(SERVICE_NAME)"
+	cd $(PROTO_DIR) && buf dep update && buf generate
+	@# Inject permissions into OpenAPI specs
+	@for app_dir in $(APP_DIRS); do \
+		yaml_files=$$(find $$app_dir -name '*.openapi.yaml' 2>/dev/null); \
+		for yaml_file in $$yaml_files; do \
+			echo "==> inject permissions $$yaml_file"; \
+			buf build $(PROTO_DIR) -o /dev/stdout | \
+				$(BIN)/inject-permissions "$$yaml_file"; \
+		done; \
+	done
+	@# Generate OPL TypeScript
+	@echo "==> generate opl $(SERVICE_NAME)"
+	@buf build $(PROTO_DIR) -o /dev/stdout | $(BIN)/generate-opl $(DEFAULT_APP)
+	@# License headers
+	license-header \
+		--license-type apache \
+		--copyright-holder "Ant Investor Ltd" \
+		--year-range "$(COPYRIGHT_YEARS)" \
+		--ignore /testdata/ --ignore /sdk/
+
+.PHONY: proto-push
+proto-push: $(BIN)/buf ## Push proto to BSR
+	cd $(PROTO_DIR) && buf push
+
+# ------------------------------------------------------------------------------
+# Go targets
+# ------------------------------------------------------------------------------
+
+.PHONY: build
+build: ## Build all app binaries
+	@for app_dir in $(APP_DIRS); do \
+		if [ -d "$$app_dir/cmd" ]; then \
+			echo "==> building $$app_dir"; \
+			$(GO) build ./$$app_dir/cmd/...; \
+		fi; \
+	done
+
+.PHONY: test
+test: ## Run all tests with race detection
+	$(GO) test -vet=off -race -cover ./...
+
+.PHONY: lint
+lint: $(BIN)/golangci-lint ## Lint Go code
+	$(GO) vet ./...
+	golangci-lint run
+
+.PHONY: lintfix
+lintfix: $(BIN)/golangci-lint ## Auto-fix lint issues
 	golangci-lint run --fix
 
-clean:  ## go clean
-	go clean
+.PHONY: tidy
+tidy: ## Tidy Go modules
+	$(GO) mod tidy
+	$(GO) fmt ./...
 
-fmt:    ## format the go source files
-	go fmt ./...
+# ------------------------------------------------------------------------------
+# Aggregate targets
+# ------------------------------------------------------------------------------
 
-vet:    ## run go vet on the source files
-	go vet ./...
+.PHONY: all
+all: proto-lint proto-generate build test lint ## Full pipeline
 
-doc:    ## generate godocs and start a local documentation webserver on port 8085
-	godoc -http=:8085 -index
+.PHONY: generate
+generate: proto-generate ## Alias for proto-generate
 
-# this command will start docker components that we set in docker-compose.yml
-docker-setup: ## sets up docker container images
-	docker-compose up -d --remove-orphans
+.PHONY: clean
+clean: ## Delete generated / temporary files
+	rm -rf $(BIN)
 
-# shutting down docker components
-docker-stop: ## stops all docker containers
-	docker-compose down
-
-# this command will run all tests in the repo
-# INTEGRATION_TEST_SUITE_PATH is used to run specific tests in Golang,
-# if it's not specified it will run all tests
-tests: ## runs all system tests
-	go test -p 1 -v ./...
-	RETURNCODE=$$?; \
-	if [ "$$RETURNCODE" != "0" ]; then \
-		echo "unit tests failed" && exit 1; \
-	fi;
-
-build: clean fmt vet tests ## run all preliminary steps and tests the setup
+.PHONY: help
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+	awk 'BEGIN {FS = ":.*?## "}; {printf "%-28s %s\n", $$1, $$2}'

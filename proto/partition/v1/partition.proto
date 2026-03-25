@@ -1,0 +1,1648 @@
+// Copyright 2023-2026 Ant Investor Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package partition.v1;
+
+// -----------------------------------------------------
+// Core notes (normative):
+// - Partition Service provides multi-tenancy and data isolation
+// - Tenants contain hierarchical partitions for organizational structure
+// - Role-based access control (RBAC) with partition and access roles
+// - Custom pages for partition-specific UI customization
+// - Profile-based access grants with role assignments
+// - All timestamps are RFC3339 / google.protobuf.Timestamp
+// -----------------------------------------------------
+
+import "buf/validate/validate.proto";
+import "common/v1/common.proto";
+import "common/v1/permissions.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/antinvestor/apis/go/partition/v1;partitionv1";
+option java_multiple_files = true;
+option java_package = "partitionv1";
+option (gnostic.openapi.v3.document) = {
+  info: {
+    title: "Partition Service"
+    version: "v1.0.0"
+    description: "The Partition Service provides multi-tenancy and data isolation capabilities with hierarchical partitions, role-based access control (RBAC), and custom UI pages. Tenants represent top-level organizational units containing hierarchical partitions for departments, projects, or teams. The service supports fine-grained access control through partition roles and access grants, enabling secure multi-tenant applications with customizable user experiences."
+    contact: {
+      name: "Ant Investor Ltd"
+      url: "https://github.com/antinvestor/service-partition"
+      email: "info@antinvestor.com"
+    }
+    license: {
+      name: "Apache License"
+      url: "https://github.com/antinvestor/apis/blob/master/LICENSE"
+    }
+  }
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth"
+          value: {
+            security_scheme: {
+              type: "http"
+              scheme: "bearer"
+              bearer_format: "JWT"
+            }
+          }
+        }
+      ]
+    }
+  }
+};
+
+// -----------------------------------------------------
+// Core Data Types
+// -----------------------------------------------------
+
+// TenantEnvironment identifies the deployment environment a tenant belongs to.
+enum TenantEnvironment {
+  TENANT_ENVIRONMENT_UNSPECIFIED = 0;
+  TENANT_ENVIRONMENT_PRODUCTION = 1;
+  TENANT_ENVIRONMENT_STAGING = 2;
+}
+
+// TenantObject represents a top-level organizational unit.
+message TenantObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique tenant ID
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Tenant name (organization, company)
+  string description = 3 [(buf.validate.field).string.max_len = 500]; // Tenant description
+  google.protobuf.Struct properties = 4; // Additional tenant metadata
+  google.protobuf.Timestamp created_at = 5; // Creation timestamp
+  common.v1.STATE state = 6; // Tenant state
+  TenantEnvironment environment = 7 [(buf.validate.field).enum.defined_only = true]; // Deployment environment
+}
+
+// PartitionObject represents a data partition within a tenant.
+message PartitionObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique partition ID
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Partition name (department, project, team)
+  string tenant_id = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Parent tenant ID
+  string parent_id = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Parent partition ID for hierarchical structure (empty for root partitions)
+  string description = 5 [(buf.validate.field).string.max_len = 500]; // Partition description
+  common.v1.STATE state = 6; // Partition state
+  google.protobuf.Struct properties = 7; // Additional partition metadata
+  google.protobuf.Timestamp created_at = 8; // Creation timestamp
+  string domain = 9 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.max_len = 255
+  ]; // Custom domain for the partition (unique across all partitions)
+}
+
+// PartitionRoleObject represents a role within a partition.
+message PartitionRoleObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique role ID
+  string partition_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Associated partition ID
+  string name = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Role name (admin, editor, viewer, etc.)
+  google.protobuf.Struct properties = 4; // Role permissions and metadata
+  google.protobuf.Timestamp created_at = 5; // Creation timestamp
+  common.v1.STATE state = 6; // Role state
+}
+
+// PageObject represents a custom UI page for a partition.
+message PageObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique page ID
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Page name
+  string html = 3 [
+    (buf.validate.field).string.min_len = 4,
+    (buf.validate.field).string.max_len = 5000
+  ]; // HTML content for the page
+  common.v1.STATE state = 4; // Page state
+  google.protobuf.Timestamp created_at = 5; // Creation timestamp
+  google.protobuf.Struct properties = 6; // Additional page metadata
+  string partition_id = 7 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Associated partition ID
+}
+
+// AccessObject represents a profile's access to a partition.
+message AccessObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique access ID
+  string profile_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Profile ID with access
+  PartitionObject partition = 3; // Partition being accessed
+  common.v1.STATE state = 4; // Access state
+  google.protobuf.Timestamp created_at = 5; // Access grant timestamp
+}
+
+// AccessRoleObject links an access grant to a partition role.
+message AccessRoleObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique access role ID
+  string access_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Associated access ID
+  PartitionRoleObject role = 3; // Assigned partition role
+}
+
+// ServiceAccountObject represents a pre-registered service account (bot) for a partition.
+// Service accounts get a dedicated child partition with client_credentials grant type.
+message ServiceAccountObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique service account ID
+  string tenant_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Tenant ID
+  string partition_id = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Target partition ID the bot operates on
+  string profile_id = 4 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Identity/subject of the service bot
+  string client_id = 5 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Dedicated child partition ID (= Hydra client_id)
+  common.v1.STATE state = 6; // Service account state
+  repeated string audiences = 7; // Service namespaces the bot can access
+  google.protobuf.Struct properties = 8; // Additional metadata
+  google.protobuf.Timestamp created_at = 9; // Creation timestamp
+  string type = 10 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.in = "internal",
+    (buf.validate.field).string.in = "external"
+  ]; // Service account type: internal (service-to-service) or external (API consumers)
+}
+
+// ClientObject represents an OAuth2 client configuration.
+// A client can be owned by either a partition (for user auth flows like PKCE)
+// or a service account (for client_credentials machine-to-machine flows).
+message ClientObject {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Unique client record ID
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Display name
+  string client_id = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // OAuth2 client_id (= Hydra client identifier)
+  string type = 4 [
+    (buf.validate.field).string.in = "public",
+    (buf.validate.field).string.in = "confidential",
+    (buf.validate.field).string.in = "internal",
+    (buf.validate.field).string.in = "external"
+  ]; // Client type: public, confidential, internal, external
+  repeated string grant_types = 5; // OAuth2 grant types (authorization_code, refresh_token, client_credentials)
+  repeated string response_types = 6; // OAuth2 response types (code, token)
+  repeated string redirect_uris = 7; // Allowed redirect URIs
+  string scopes = 8; // Space-separated OAuth2 scopes
+  repeated string audiences = 9; // Service namespaces the client can access
+  repeated string roles = 10; // Permission role names for SA tokens
+  google.protobuf.Struct properties = 11; // Additional metadata
+  common.v1.STATE state = 12; // Client state
+  google.protobuf.Timestamp created_at = 13; // Creation timestamp
+
+  // Owner: the client belongs to either a partition or a service account.
+  // Full objects are returned to avoid extra network round-trips.
+  oneof owner {
+    PartitionObject partition = 14; // Partition that owns this client (user auth flows)
+    ServiceAccountObject service_account = 15; // Service account that owns this client (client_credentials flows)
+  }
+}
+
+// -----------------------------------------------------
+// Tenant Request/Response Messages
+// -----------------------------------------------------
+
+message GetTenantRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message GetTenantResponse {
+  TenantObject data = 1;
+}
+
+message ListTenantRequest {
+  string query = 1;
+  common.v1.PageCursor cursor = 2;
+  string start_date = 4;
+  string end_date = 5;
+  repeated string properties = 6;
+  google.protobuf.Struct extras = 7;
+  TenantEnvironment environment = 8 [(buf.validate.field).enum.defined_only = true];
+}
+
+message ListTenantResponse {
+  repeated TenantObject data = 1;
+}
+
+message CreateTenantRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 2 [
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 500
+  ];
+  google.protobuf.Struct properties = 3;
+  TenantEnvironment environment = 4 [(buf.validate.field).enum.defined_only = true];
+}
+
+message CreateTenantResponse {
+  TenantObject data = 1;
+}
+
+message UpdateTenantRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 500
+  ];
+  common.v1.STATE state = 4;
+  google.protobuf.Struct properties = 5;
+  TenantEnvironment environment = 6 [(buf.validate.field).enum.defined_only = true];
+}
+
+message UpdateTenantResponse {
+  TenantObject data = 1;
+}
+
+message RemoveTenantRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemoveTenantResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Partition Request/Response Messages
+// -----------------------------------------------------
+
+message GetPartitionRequest {
+  string id = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Partition ID
+  string domain = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.max_len = 255
+  ]; // Partition domain (unique)
+}
+
+message GetPartitionResponse {
+  PartitionObject data = 1;
+}
+
+message GetPartitionParentsRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message GetPartitionParentsResponse {
+  repeated PartitionObject data = 1;
+}
+
+message ListPartitionRequest {
+  string query = 1;
+  common.v1.PageCursor cursor = 2;
+  string start_date = 4;
+  string end_date = 5;
+  repeated string properties = 6;
+  google.protobuf.Struct extras = 7;
+}
+
+message ListPartitionResponse {
+  repeated PartitionObject data = 1;
+}
+
+message CreatePartitionRequest {
+  string tenant_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string parent_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 4 [
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 500
+  ];
+  google.protobuf.Struct properties = 5;
+  string domain = 6 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.max_len = 255
+  ];
+}
+
+message CreatePartitionResponse {
+  PartitionObject data = 1;
+}
+
+message UpdatePartitionRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 500
+  ];
+  common.v1.STATE state = 4;
+  google.protobuf.Struct properties = 5;
+  string domain = 6 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.max_len = 255
+  ];
+}
+
+message UpdatePartitionResponse {
+  PartitionObject data = 1;
+}
+
+message RemovePartitionRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemovePartitionResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Partition Role Request/Response Messages
+// -----------------------------------------------------
+
+message CreatePartitionRoleRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  google.protobuf.Struct properties = 3;
+}
+
+message CreatePartitionRoleResponse {
+  PartitionRoleObject data = 1;
+}
+
+message UpdatePartitionRoleRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  google.protobuf.Struct properties = 3;
+  common.v1.STATE state = 4;
+}
+
+message UpdatePartitionRoleResponse {
+  PartitionRoleObject data = 1;
+}
+
+message RemovePartitionRoleRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemovePartitionRoleResponse {
+  bool succeeded = 1;
+}
+
+message ListPartitionRoleRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  common.v1.PageCursor cursor = 2;
+}
+
+message ListPartitionRoleResponse {
+  repeated PartitionRoleObject data = 1;
+}
+
+// -----------------------------------------------------
+// Page Request/Response Messages
+// -----------------------------------------------------
+
+message CreatePageRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string html = 3 [
+    (buf.validate.field).string.min_len = 4,
+    (buf.validate.field).string.max_len = 5000
+  ];
+  google.protobuf.Struct properties = 4;
+}
+
+message CreatePageResponse {
+  PageObject data = 1;
+}
+
+message GetPageRequest {
+  string page_id = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string partition_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+}
+
+message GetPageResponse {
+  PageObject data = 1;
+}
+
+message UpdatePageRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string html = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 4,
+    (buf.validate.field).string.max_len = 5000
+  ];
+  common.v1.STATE state = 4;
+  google.protobuf.Struct properties = 5;
+}
+
+message UpdatePageResponse {
+  PageObject data = 1;
+}
+
+message ListPageRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  common.v1.PageCursor cursor = 2;
+}
+
+message ListPageResponse {
+  repeated PageObject data = 1;
+}
+
+message RemovePageRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemovePageResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Access Request/Response Messages
+// -----------------------------------------------------
+
+message CreateAccessRequest {
+  oneof partition {
+    option (buf.validate.oneof).required = true;
+
+    string partition_id = 1 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+
+    string client_id = 3 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+  }
+
+  string profile_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message CreateAccessResponse {
+  AccessObject data = 1;
+}
+
+message GetAccessRequest {
+  string access_id = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+
+  oneof partition {
+    option (buf.validate.oneof).required = false;
+
+    string partition_id = 2 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+
+    string client_id = 3 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+  }
+
+  string profile_id = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message GetAccessResponse {
+  AccessObject data = 1;
+}
+
+message ListAccessRequest {
+  oneof scope {
+    option (buf.validate.oneof).required = true;
+
+    // List all access grants for a partition
+    string partition_id = 1 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+
+    // List all access grants for a profile
+    string profile_id = 2 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+  }
+
+  common.v1.PageCursor cursor = 3;
+}
+
+message ListAccessResponse {
+  repeated AccessObject data = 1;
+}
+
+message RemoveAccessRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemoveAccessResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Access Role Request/Response Messages
+// -----------------------------------------------------
+
+message CreateAccessRoleRequest {
+  string access_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string partition_role_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message CreateAccessRoleResponse {
+  AccessRoleObject data = 1;
+}
+
+message RemoveAccessRoleRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemoveAccessRoleResponse {
+  bool succeeded = 1;
+}
+
+message ListAccessRoleRequest {
+  string access_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  common.v1.PageCursor cursor = 2;
+}
+
+message ListAccessRoleResponse {
+  repeated AccessRoleObject data = 1;
+}
+
+// -----------------------------------------------------
+// Service Account Request/Response Messages
+// -----------------------------------------------------
+
+message CreateServiceAccountRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Target partition the bot operates on
+  string profile_id = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Identity/subject of the service bot
+  string name = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Display name for the service account
+  repeated string audiences = 4; // Service namespaces the bot needs access to
+  google.protobuf.Struct properties = 5; // Additional metadata
+  string type = 6 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.in = "internal",
+    (buf.validate.field).string.in = "external"
+  ]; // Service account type (defaults to "internal")
+  repeated string roles = 7; // Partition role names to assign to the service account
+  google.protobuf.Struct public_keys = 8; // Public keys for JWT-based authentication (e.g. {"keys": [{"kid":"k1","kty":"EC",...}]})
+}
+
+message CreateServiceAccountResponse {
+  ServiceAccountObject data = 1;
+  string client_secret = 2; // Only returned on creation
+}
+
+message GetServiceAccountRequest {
+  string id = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Service account ID
+  string client_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Child partition ID (= Hydra client_id)
+  string profile_id = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Identity/subject of the service bot
+}
+
+message GetServiceAccountResponse {
+  ServiceAccountObject data = 1;
+}
+
+message ListServiceAccountRequest {
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  common.v1.PageCursor cursor = 2;
+}
+
+message ListServiceAccountResponse {
+  repeated ServiceAccountObject data = 1;
+}
+
+message UpdateServiceAccountRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  repeated string audiences = 3; // Updated service namespaces
+  google.protobuf.Struct properties = 4;
+  string type = 5 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.in = "internal",
+    (buf.validate.field).string.in = "external"
+  ];
+  repeated string roles = 6; // Updated partition role names
+  google.protobuf.Struct public_keys = 7;
+  common.v1.STATE state = 8;
+}
+
+message UpdateServiceAccountResponse {
+  ServiceAccountObject data = 1;
+}
+
+message RemoveServiceAccountRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemoveServiceAccountResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Client Request/Response Messages
+// -----------------------------------------------------
+
+message CreateClientRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string type = 2 [
+    (buf.validate.field).string.in = "public",
+    (buf.validate.field).string.in = "confidential",
+    (buf.validate.field).string.in = "internal",
+    (buf.validate.field).string.in = "external"
+  ];
+  repeated string grant_types = 3;
+  repeated string response_types = 4;
+  repeated string redirect_uris = 5;
+  string scopes = 6;
+  repeated string audiences = 7;
+  repeated string roles = 8;
+  google.protobuf.Struct properties = 9;
+
+  // Owner: attach this client to either a partition or a service account.
+  oneof owner {
+    option (buf.validate.oneof).required = true;
+
+    string partition_id = 10 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+    string service_account_id = 11 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+  }
+}
+
+message CreateClientResponse {
+  ClientObject data = 1;
+  string client_secret = 2; // Only returned on creation
+}
+
+message GetClientRequest {
+  string id = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Client record ID
+  string client_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // OAuth2 client_id
+}
+
+message GetClientResponse {
+  ClientObject data = 1;
+}
+
+message ListClientRequest {
+  oneof owner {
+    option (buf.validate.oneof).required = true;
+
+    string partition_id = 1 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+    string service_account_id = 2 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 40,
+      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+    ];
+  }
+  common.v1.PageCursor cursor = 3;
+}
+
+message ListClientResponse {
+  repeated ClientObject data = 1;
+}
+
+message UpdateClientRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  repeated string grant_types = 3;
+  repeated string response_types = 4;
+  repeated string redirect_uris = 5;
+  string scopes = 6;
+  repeated string audiences = 7;
+  repeated string roles = 8;
+  google.protobuf.Struct properties = 9;
+  common.v1.STATE state = 10;
+}
+
+message UpdateClientResponse {
+  ClientObject data = 1;
+}
+
+message RemoveClientRequest {
+  string id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RemoveClientResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
+// Partition Service
+// -----------------------------------------------------
+
+// PartitionService provides multi-tenancy and data isolation.
+// All RPCs require authentication via Bearer token.
+service PartitionService {
+  option (common.v1.service_permissions) = {
+    namespace: "service_partition"
+    permissions: [
+      "tenant_view",
+      "tenant_manage",
+      "partition_view",
+      "partition_manage",
+      "access_view",
+      "access_manage",
+      "role_manage",
+      "page_view",
+      "page_manage",
+      "permission_grant",
+      "service_account_view",
+      "service_account_manage",
+      "client_view",
+      "client_manage"
+    ]
+    role_bindings: [
+      {
+        role: ROLE_OWNER
+        permissions: [
+          "tenant_view",
+          "tenant_manage",
+          "partition_view",
+          "partition_manage",
+          "access_view",
+          "access_manage",
+          "role_manage",
+          "page_view",
+          "page_manage",
+          "permission_grant",
+          "service_account_view",
+          "service_account_manage",
+          "client_view",
+          "client_manage"
+        ]
+      },
+      {
+        role: ROLE_ADMIN
+        permissions: [
+          "tenant_view",
+          "partition_view",
+          "partition_manage",
+          "access_view",
+          "access_manage",
+          "role_manage",
+          "page_view",
+          "page_manage",
+          "permission_grant",
+          "service_account_view",
+          "service_account_manage",
+          "client_view",
+          "client_manage"
+        ]
+      },
+      {
+        role: ROLE_OPERATOR
+        permissions: [
+          "tenant_view",
+          "partition_view",
+          "access_view",
+          "page_view",
+          "service_account_view",
+          "client_view"
+        ]
+      },
+      {
+        role: ROLE_VIEWER
+        permissions: [
+          "tenant_view",
+          "partition_view",
+          "page_view"
+        ]
+      },
+      {
+        role: ROLE_MEMBER
+        permissions: [
+          "tenant_view",
+          "partition_view",
+          "page_view"
+        ]
+      },
+      {
+        role: ROLE_SERVICE
+        permissions: [
+          "tenant_view",
+          "tenant_manage",
+          "partition_view",
+          "partition_manage",
+          "access_view",
+          "access_manage",
+          "role_manage",
+          "page_view",
+          "page_manage",
+          "permission_grant",
+          "service_account_view",
+          "service_account_manage",
+          "client_view",
+          "client_manage"
+        ]
+      }
+    ]
+  };
+
+  // GetTenant retrieves a tenant by ID.
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getTenant"
+      summary: "Get tenant"
+      description: "Retrieves a tenant by its unique identifier including all tenant metadata and properties."
+      tags: "Tenants"
+    };
+  }
+
+  // ListTenant retrieves all tenants matching criteria.
+  rpc ListTenant(ListTenantRequest) returns (stream ListTenantResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listTenants"
+      summary: "List tenants"
+      description: "Lists all tenants in the system with optional filtering by query, date range, and properties. Returns a stream of tenants."
+      tags: "Tenants"
+    };
+  }
+
+  // CreateTenant creates a new tenant.
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createTenant"
+      summary: "Create tenant"
+      description: "Creates a new tenant (top-level organizational unit) with name, description, and custom properties."
+      tags: "Tenants"
+    };
+  }
+
+  // UpdateTenant updates an existing tenant.
+  rpc UpdateTenant(UpdateTenantRequest) returns (UpdateTenantResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updateTenant"
+      summary: "Update tenant"
+      description: "Updates an existing tenant's name, description, state, and properties."
+      tags: "Tenants"
+    };
+  }
+
+  // RemoveTenant soft-deletes a tenant and all its partitions.
+  rpc RemoveTenant(RemoveTenantRequest) returns (RemoveTenantResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removeTenant"
+      summary: "Remove tenant"
+      description: "Soft-deletes a tenant. All partitions, access grants, and roles within the tenant are also marked as deleted."
+      tags: "Tenants"
+    };
+  }
+
+  // ListPartition retrieves all partitions matching criteria.
+  rpc ListPartition(ListPartitionRequest) returns (stream ListPartitionResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listPartitions"
+      summary: "List partitions"
+      description: "Lists all partitions in the system with optional filtering by query, date range, and properties. Returns a stream of partitions."
+      tags: "Partitions"
+    };
+  }
+
+  // CreatePartition creates a new partition.
+  rpc CreatePartition(CreatePartitionRequest) returns (CreatePartitionResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createPartition"
+      summary: "Create partition"
+      description: "Creates a new partition within a tenant. Supports hierarchical structures with parent partitions."
+      tags: "Partitions"
+    };
+  }
+
+  // GetPartition retrieves a partition by ID or domain.
+  rpc GetPartition(GetPartitionRequest) returns (GetPartitionResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getPartition"
+      summary: "Get partition"
+      description: "Retrieves a partition by its unique identifier or domain, including all partition metadata and properties."
+      tags: "Partitions"
+    };
+  }
+
+  // GetPartitionParents retrieves the parent hierarchy.
+  rpc GetPartitionParents(GetPartitionParentsRequest) returns (GetPartitionParentsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getPartitionParents"
+      summary: "Get partition parents"
+      description: "Retrieves the complete parent hierarchy for a partition from the root tenant down to the partition."
+      tags: "Partitions"
+    };
+  }
+
+  // RemovePartition soft-deletes a partition.
+  rpc RemovePartition(RemovePartitionRequest) returns (RemovePartitionResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removePartition"
+      summary: "Remove partition"
+      description: "Soft-deletes a partition. All access grants, roles, pages, and service accounts within the partition are also marked as deleted."
+      tags: "Partitions"
+    };
+  }
+
+  // UpdatePartition updates an existing partition.
+  rpc UpdatePartition(UpdatePartitionRequest) returns (UpdatePartitionResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updatePartition"
+      summary: "Update partition"
+      description: "Updates an existing partition's name, description, domain, state, and properties."
+      tags: "Partitions"
+    };
+  }
+
+  // CreatePartitionRole creates a role within a partition.
+  rpc CreatePartitionRole(CreatePartitionRoleRequest) returns (CreatePartitionRoleResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createPartitionRole"
+      summary: "Create partition role"
+      description: "Creates a new role within a partition for access control (admin, editor, viewer, etc.)."
+      tags: "Roles"
+    };
+  }
+
+  // ListPartitionRole retrieves all roles for a partition.
+  rpc ListPartitionRole(ListPartitionRoleRequest) returns (stream ListPartitionRoleResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listPartitionRoles"
+      summary: "List partition roles"
+      description: "Lists all roles available for a specific partition. Returns a stream of partition roles."
+      tags: "Roles"
+    };
+  }
+
+  // UpdatePartitionRole updates an existing partition role.
+  rpc UpdatePartitionRole(UpdatePartitionRoleRequest) returns (UpdatePartitionRoleResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updatePartitionRole"
+      summary: "Update partition role"
+      description: "Updates a partition role's name, properties, and state."
+      tags: "Roles"
+    };
+  }
+
+  // RemovePartitionRole deletes a partition role.
+  rpc RemovePartitionRole(RemovePartitionRoleRequest) returns (RemovePartitionRoleResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removePartitionRole"
+      summary: "Remove partition role"
+      description: "Removes a partition role. All access grants using this role must be removed first."
+      tags: "Roles"
+    };
+  }
+
+  // CreatePage creates a custom UI page for a partition.
+  rpc CreatePage(CreatePageRequest) returns (CreatePageResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createPage"
+      summary: "Create custom page"
+      description: "Creates a custom UI page for a partition with HTML content. Enables partition-specific branding and customization."
+      tags: "Pages"
+    };
+  }
+
+  // ListPage retrieves all custom pages for a partition.
+  rpc ListPage(ListPageRequest) returns (stream ListPageResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["page_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listPages"
+      summary: "List custom pages"
+      description: "Lists all custom pages for a partition. Returns a stream of pages."
+      tags: "Pages"
+    };
+  }
+
+  // GetPage retrieves a custom page.
+  rpc GetPage(GetPageRequest) returns (GetPageResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["page_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getPage"
+      summary: "Get custom page"
+      description: "Retrieves a custom page by page ID, partition ID, or page name."
+      tags: "Pages"
+    };
+  }
+
+  // UpdatePage updates an existing custom page.
+  rpc UpdatePage(UpdatePageRequest) returns (UpdatePageResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updatePage"
+      summary: "Update custom page"
+      description: "Updates a custom page's name, HTML content, state, and properties."
+      tags: "Pages"
+    };
+  }
+
+  // RemovePage deletes a custom page.
+  rpc RemovePage(RemovePageRequest) returns (RemovePageResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removePage"
+      summary: "Remove custom page"
+      description: "Removes a custom page from a partition."
+      tags: "Pages"
+    };
+  }
+
+  // CreateAccess grants a profile access to a partition.
+  rpc CreateAccess(CreateAccessRequest) returns (CreateAccessResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["access_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createAccess"
+      summary: "Create access grant"
+      description: "Grants a profile access to a partition. The profile can then be assigned roles via CreateAccessRole."
+      tags: "Access"
+    };
+  }
+
+  // GetAccess retrieves an access grant.
+  rpc GetAccess(GetAccessRequest) returns (GetAccessResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getAccess"
+      summary: "Get access grant"
+      description: "Retrieves an access grant by access ID or by partition and profile ID combination."
+      tags: "Access"
+    };
+  }
+
+  // ListAccess retrieves all access grants for a partition or profile.
+  rpc ListAccess(ListAccessRequest) returns (stream ListAccessResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listAccess"
+      summary: "List access grants"
+      description: "Lists all access grants for a partition (who has access) or for a profile (what they can access)."
+      tags: "Access"
+    };
+  }
+
+  // RemoveAccess revokes a profile's access to a partition.
+  rpc RemoveAccess(RemoveAccessRequest) returns (RemoveAccessResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["access_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removeAccess"
+      summary: "Remove access grant"
+      description: "Revokes a profile's access to a partition. All associated access roles are also removed."
+      tags: "Access"
+    };
+  }
+
+  // CreateAccessRole assigns a role to an access grant.
+  rpc CreateAccessRole(CreateAccessRoleRequest) returns (CreateAccessRoleResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createAccessRole"
+      summary: "Assign role to access"
+      description: "Assigns a partition role to an access grant, granting the profile specific permissions within the partition."
+      tags: "Access"
+    };
+  }
+
+  // ListAccessRole retrieves all roles for an access grant.
+  rpc ListAccessRole(ListAccessRoleRequest) returns (stream ListAccessRoleResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listAccessRoles"
+      summary: "List access roles"
+      description: "Lists all roles assigned to an access grant. Returns a stream of access roles."
+      tags: "Access"
+    };
+  }
+
+  // RemoveAccessRole removes a role from an access grant.
+  rpc RemoveAccessRole(RemoveAccessRoleRequest) returns (RemoveAccessRoleResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removeAccessRole"
+      summary: "Remove access role"
+      description: "Removes a specific role from an access grant. The profile retains access but loses the permissions of this role."
+      tags: "Access"
+    };
+  }
+
+  // CreateServiceAccount registers a service account (bot) for a partition.
+  rpc CreateServiceAccount(CreateServiceAccountRequest) returns (CreateServiceAccountResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createServiceAccount"
+      summary: "Create service account"
+      description: "Registers a pre-authorized service account for machine-to-machine authentication. Creates a dedicated child partition with client_credentials grant type and writes authorization tuples."
+      tags: "ServiceAccounts"
+    };
+  }
+
+  // GetServiceAccount retrieves a service account.
+  rpc GetServiceAccount(GetServiceAccountRequest) returns (GetServiceAccountResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getServiceAccount"
+      summary: "Get service account"
+      description: "Retrieves a service account by ID, client ID, or profile ID."
+      tags: "ServiceAccounts"
+    };
+  }
+
+  // UpdateServiceAccount updates an existing service account.
+  rpc UpdateServiceAccount(UpdateServiceAccountRequest) returns (UpdateServiceAccountResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updateServiceAccount"
+      summary: "Update service account"
+      description: "Updates a service account's name, audiences, type, roles, public keys, and properties."
+      tags: "ServiceAccounts"
+    };
+  }
+
+  // ListServiceAccount retrieves all service accounts for a partition.
+  rpc ListServiceAccount(ListServiceAccountRequest) returns (stream ListServiceAccountResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listServiceAccounts"
+      summary: "List service accounts"
+      description: "Lists all service accounts registered for a partition."
+      tags: "ServiceAccounts"
+    };
+  }
+
+  // RemoveServiceAccount deregisters a service account.
+  rpc RemoveServiceAccount(RemoveServiceAccountRequest) returns (RemoveServiceAccountResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removeServiceAccount"
+      summary: "Remove service account"
+      description: "Deregisters a service account, deleting its child partition and revoking authorization tuples."
+      tags: "ServiceAccounts"
+    };
+  }
+
+  // CreateClient registers an OAuth2 client for a partition or service account.
+  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createClient"
+      summary: "Create OAuth2 client"
+      description: "Creates a new OAuth2 client attached to either a partition (for user auth flows) or a service account (for client_credentials flows). Returns the client secret on creation."
+      tags: "Clients"
+    };
+  }
+
+  // GetClient retrieves an OAuth2 client by ID or client_id.
+  rpc GetClient(GetClientRequest) returns (GetClientResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getClient"
+      summary: "Get OAuth2 client"
+      description: "Retrieves an OAuth2 client by its record ID or OAuth2 client_id."
+      tags: "Clients"
+    };
+  }
+
+  // ListClient retrieves all OAuth2 clients for a partition or service account.
+  rpc ListClient(ListClientRequest) returns (stream ListClientResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listClients"
+      summary: "List OAuth2 clients"
+      description: "Lists all OAuth2 clients belonging to a partition or service account."
+      tags: "Clients"
+    };
+  }
+
+  // UpdateClient updates an existing OAuth2 client.
+  rpc UpdateClient(UpdateClientRequest) returns (UpdateClientResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "updateClient"
+      summary: "Update OAuth2 client"
+      description: "Updates an existing OAuth2 client's name, redirect URIs, scopes, audiences, roles, and properties."
+      tags: "Clients"
+    };
+  }
+
+  // RemoveClient deletes an OAuth2 client.
+  rpc RemoveClient(RemoveClientRequest) returns (RemoveClientResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "removeClient"
+      summary: "Remove OAuth2 client"
+      description: "Removes an OAuth2 client and its Hydra registration."
+      tags: "Clients"
+    };
+  }
+}
