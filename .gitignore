@@ -27,3 +27,6 @@ coverage.out
 
 
 WORK_STATE.md
+
+# Shared Makefile cache
+.tmp/
