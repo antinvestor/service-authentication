@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.1
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260219054105-fe125014d75c.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260324155536-90f3f009e08b.1
 	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20260324160910-e0ba8c6c7282.2
 	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260221033317-1a8e101ef7c6.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20260324161035-bd2eeca8a8ca.2
@@ -13,7 +13,7 @@ require (
 	buf.build/gen/go/antinvestor/partition/connectrpc/go v1.19.1-20260324161119-1d8321d2c242.2
 	buf.build/gen/go/antinvestor/partition/protocolbuffers/go v1.36.11-20260321071111-e3ff42086d9d.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260324161209-9468cfa0f32b.2
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260324161209-9468cfa0f32b.1
 	connectrpc.com/connect v1.19.1
 	github.com/antinvestor/common v1.2.0
 	github.com/coreos/go-oidc/v3 v3.17.0
