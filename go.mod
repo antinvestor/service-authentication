@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.1
 
 require (
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260324155536-90f3f009e08b.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260325040325-9771112f2289.1
 	buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.1-20260324160910-e0ba8c6c7282.2
 	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260324160910-e0ba8c6c7282.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.19.1-20260324161035-bd2eeca8a8ca.2
