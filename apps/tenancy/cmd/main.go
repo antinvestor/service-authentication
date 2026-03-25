@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/apis/go/common"
-	"github.com/antinvestor/apis/go/common/permissions"
-	"github.com/antinvestor/apis/go/profile"
+	"github.com/antinvestor/common"
+	"github.com/antinvestor/common/connection"
+	"github.com/antinvestor/common/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
@@ -55,11 +56,11 @@ func main() {
 	// service's own OAuth2 client isn't yet registered in Hydra.
 	hydraClient := client.NewManager(context.Background())
 
-	profileCli, err := profile.NewClient(ctx, &cfg, common.ServiceTarget{
+	profileCli, err := connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_profile"},
-	})
+	}, profilev1connect.NewProfileServiceClient)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
 	}

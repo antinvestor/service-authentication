@@ -3,7 +3,7 @@ package events
 import (
 	"strings"
 
-	"github.com/antinvestor/apis/go/common"
+	"github.com/antinvestor/common"
 	"github.com/pitabwire/frame/data"
 )
 

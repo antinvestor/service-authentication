@@ -7,11 +7,8 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"github.com/antinvestor/apis/go/common"
-	"github.com/antinvestor/apis/go/device"
-	"github.com/antinvestor/apis/go/notification"
-	"github.com/antinvestor/apis/go/partition"
-	"github.com/antinvestor/apis/go/profile"
+	"github.com/antinvestor/common"
+	"github.com/antinvestor/common/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
@@ -157,42 +154,42 @@ func setupCache(_ context.Context, cfg aconfig.AuthenticationConfig) (cache.RawC
 func setupDeviceClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
-	return device.NewClient(ctx, &cfg, common.ServiceTarget{
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.DeviceServiceURI,
 		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_device"},
-	})
+	}, devicev1connect.NewDeviceServiceClient)
 }
 
 // setupNotificationClient creates and configures the notification client.
 func setupNotificationClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
-	return notification.NewClient(ctx, &cfg, common.ServiceTarget{
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.NotificationServiceURI,
 		WorkloadAPITargetPath: cfg.NotificationServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_notification"},
-	})
+	}, notificationv1connect.NewNotificationServiceClient)
 }
 
 // setupPartitionClient creates and configures the partition client.
 func setupPartitionClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
-	return partition.NewClient(ctx, &cfg, common.ServiceTarget{
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.PartitionServiceURI,
 		WorkloadAPITargetPath: cfg.PartitionServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_tenancy"},
-	})
+	}, partitionv1connect.NewPartitionServiceClient)
 }
 
 // setupProfileClient creates and configures the profile client.
 func setupProfileClient(
 	ctx context.Context,
 	cfg aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
-	return profile.NewClient(ctx, &cfg, common.ServiceTarget{
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_profile"},
-	})
+	}, profilev1connect.NewProfileServiceClient)
 }
