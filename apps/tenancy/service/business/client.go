@@ -125,7 +125,7 @@ func (cb *clientBusiness) CreateClient(
 		ResponseTypes: toJSONMapSlice("types", responseTypes),
 		RedirectURIs:  toJSONMapSlice("uris", redirectURIs),
 		Scopes:        scopes,
-		Audiences:     toJSONMapSlice("namespaces", audiences),
+		Audiences:     audiencesFromNamespaces(audiences),
 		Roles:         toJSONMapSlice("roles", roles),
 		// ServiceAccountID left empty — this is a partition client
 		Properties: data.JSONMap(properties),
@@ -196,7 +196,7 @@ func (cb *clientBusiness) UpdateClient(
 		client.Scopes = request.GetScopes()
 	}
 	if len(request.GetAudiences()) > 0 {
-		client.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+		client.Audiences = audiencesFromNamespaces(request.GetAudiences())
 	}
 	if len(request.GetRoles()) > 0 {
 		client.Roles = toJSONMapSlice("roles", request.GetRoles())
@@ -260,6 +260,23 @@ func toJSONMapSlice(key string, values []string) data.JSONMap {
 		anySlice[i] = v
 	}
 	return data.JSONMap{key: anySlice}
+}
+
+// audiencesFromNamespaces builds an audiences JSONMap from a list of namespace names.
+// Each namespace is stored as a key with an empty permission array, meaning
+// bridge-tuple-only access (ns#service ← tenancy_access#service).
+//
+// To grant explicit per-permission tuples, set the value to a list of
+// OPL permission names: {"service_profile": ["profile_view", "profile_create"]}.
+func audiencesFromNamespaces(namespaces []string) data.JSONMap {
+	if len(namespaces) == 0 {
+		return nil
+	}
+	m := make(data.JSONMap, len(namespaces))
+	for _, ns := range namespaces {
+		m[ns] = []any{}
+	}
+	return m
 }
 
 // ReQueueClientsForHydraSync re-queues all clients for Hydra OAuth2 client registration/update.

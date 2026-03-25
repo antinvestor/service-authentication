@@ -1288,7 +1288,7 @@ func (s *BusinessTestSuite) TestUpdateServiceAccount() {
 
 	s.Require().NoError(err)
 	s.Equal("external", updated.Type)
-	s.Equal([]string{"service_tenancy", "service_notification"}, updated.Audiences)
+	s.ElementsMatch([]string{"service_tenancy", "service_notification"}, updated.Audiences)
 }
 
 // ========================

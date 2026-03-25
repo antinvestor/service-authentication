@@ -120,7 +120,7 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		Type:         saType,
 		GrantTypes:   toJSONMapSlice("types", []string{"client_credentials"}),
 		Scopes:       scope,
-		Audiences:    toJSONMapSlice("namespaces", audiences),
+		Audiences:    audiencesFromNamespaces(audiences),
 		Roles:        toJSONMapSlice("roles", roles),
 		BaseModel: data.BaseModel{
 			TenantID:    tenantID,
@@ -143,18 +143,12 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		pubKeysMap = data.JSONMap(publicKeys)
 	}
 
-	audienceInterfaces := toAnySlice(audiences)
-	audienceMap := data.JSONMap{}
-	if len(audienceInterfaces) > 0 {
-		audienceMap["namespaces"] = audienceInterfaces
-	}
-
 	sa := &models.ServiceAccount{
 		ProfileID:  profileID,
 		ClientID:   clientID, // denormalized for lookup
 		ClientRef:  client.GetID(),
 		Type:       saType,
-		Audiences:  audienceMap,
+		Audiences:  audiencesFromNamespaces(audiences),
 		PublicKeys: pubKeysMap,
 		Properties: data.JSONMap(properties),
 		BaseModel: data.BaseModel{
@@ -312,7 +306,7 @@ func (sb *serviceAccountBusiness) UpdateServiceAccount(
 	}
 
 	if len(request.GetAudiences()) > 0 {
-		sa.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+		sa.Audiences = audiencesFromNamespaces(request.GetAudiences())
 	}
 
 	if request.GetProperties() != nil {
@@ -341,7 +335,7 @@ func (sb *serviceAccountBusiness) UpdateServiceAccount(
 				client.Scopes = request.GetType() + " openid"
 			}
 			if len(request.GetAudiences()) > 0 {
-				client.Audiences = toJSONMapSlice("namespaces", request.GetAudiences())
+				client.Audiences = audiencesFromNamespaces(request.GetAudiences())
 			}
 			if len(request.GetRoles()) > 0 {
 				client.Roles = toJSONMapSlice("roles", request.GetRoles())
@@ -443,14 +437,6 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 
 	log.Info("service account removed successfully")
 	return nil
-}
-
-func toAnySlice(ss []string) []any {
-	out := make([]any, len(ss))
-	for i, s := range ss {
-		out[i] = s
-	}
-	return out
 }
 
 func generateClientSecret() (string, error) {

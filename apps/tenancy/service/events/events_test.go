@@ -546,7 +546,7 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_Internal() {
 		ClientSecret: "test-secret",
 		Type:         "internal",
 		ProfileID:    "profile-123",
-		Audiences:    data.JSONMap{"namespaces": []any{"svc1", "svc2"}},
+		Audiences:    data.JSONMap{"svc1": []any{}, "svc2": []any{}},
 		BaseModel:    data.BaseModel{TenantID: "tenant-123", PartitionID: "partition-123"},
 	}
 
@@ -628,32 +628,18 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_JWKSURIInfersP
 
 // --- extractAudienceNamespaces ---
 
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_SliceAny() {
+func (suite *EventsTestSuite) TestExtractAudienceNamespaces_MapFormat() {
 	t := suite.T()
-	audiences := data.JSONMap{"namespaces": []any{"svc1", "svc2", "svc3"}}
+	audiences := data.JSONMap{"svc1": []any{}, "svc2": []any{}, "svc3": []any{}}
 	result := extractAudienceNamespaces(audiences)
-	assert.Equal(t, []string{"svc1", "svc2", "svc3"}, result)
+	assert.ElementsMatch(t, []string{"svc1", "svc2", "svc3"}, result)
 }
 
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_SliceString() {
+func (suite *EventsTestSuite) TestExtractAudienceNamespaces_WithPermissions() {
 	t := suite.T()
-	audiences := data.JSONMap{"namespaces": []string{"svc1", "svc2"}}
+	audiences := data.JSONMap{"svc1": []any{"perm1"}, "svc2": []any{}}
 	result := extractAudienceNamespaces(audiences)
-	assert.Equal(t, []string{"svc1", "svc2"}, result)
-}
-
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_CommaSeparated() {
-	t := suite.T()
-	audiences := data.JSONMap{"namespaces": "svc1,svc2,svc3"}
-	result := extractAudienceNamespaces(audiences)
-	assert.Equal(t, []string{"svc1", "svc2", "svc3"}, result)
-}
-
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_SingleString() {
-	t := suite.T()
-	audiences := data.JSONMap{"namespaces": "svc1"}
-	result := extractAudienceNamespaces(audiences)
-	assert.Equal(t, []string{"svc1"}, result)
+	assert.ElementsMatch(t, []string{"svc1", "svc2"}, result)
 }
 
 func (suite *EventsTestSuite) TestExtractAudienceNamespaces_Nil() {
@@ -662,18 +648,10 @@ func (suite *EventsTestSuite) TestExtractAudienceNamespaces_Nil() {
 	assert.Nil(t, result)
 }
 
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_NoNamespacesKey() {
+func (suite *EventsTestSuite) TestExtractAudienceNamespaces_Empty() {
 	t := suite.T()
-	audiences := data.JSONMap{"other": "value"}
-	result := extractAudienceNamespaces(audiences)
+	result := extractAudienceNamespaces(data.JSONMap{})
 	assert.Nil(t, result)
-}
-
-func (suite *EventsTestSuite) TestExtractAudienceNamespaces_MixedTypes() {
-	t := suite.T()
-	audiences := data.JSONMap{"namespaces": []any{"svc1", 42, "svc2"}}
-	result := extractAudienceNamespaces(audiences)
-	assert.Equal(t, []string{"svc1", "svc2"}, result)
 }
 
 // --- Event Key Constants ---

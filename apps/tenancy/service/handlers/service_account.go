@@ -5,7 +5,6 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
-	"github.com/pitabwire/frame/security/authorizer"
 )
 
 // CreateServiceAccount registers a new service account for a partition.
@@ -13,9 +12,6 @@ func (prtSrv *PartitionServer) CreateServiceAccount(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateServiceAccountRequest],
 ) (*connect.Response[partitionv1.CreateServiceAccountResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	msg := req.Msg
 
 	var audiences []string
@@ -63,9 +59,6 @@ func (prtSrv *PartitionServer) GetServiceAccount(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetServiceAccountRequest],
 ) (*connect.Response[partitionv1.GetServiceAccountResponse], error) {
-	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	msg := req.Msg
 
 	sa, err := prtSrv.ServiceAccountBusiness.GetServiceAccount(ctx, msg.GetId(), msg.GetClientId(), msg.GetProfileId())
@@ -84,9 +77,6 @@ func (prtSrv *PartitionServer) ListServiceAccount(
 	req *connect.Request[partitionv1.ListServiceAccountRequest],
 	stream *connect.ServerStream[partitionv1.ListServiceAccountResponse],
 ) error {
-	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
-		return authorizer.ToConnectError(err)
-	}
 	accounts, err := prtSrv.ServiceAccountBusiness.ListServiceAccounts(ctx, req.Msg.GetPartitionId())
 	if err != nil {
 		return prtSrv.toAPIError(err)
@@ -111,9 +101,6 @@ func (prtSrv *PartitionServer) UpdateServiceAccount(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateServiceAccountRequest],
 ) (*connect.Response[partitionv1.UpdateServiceAccountResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	sa, err := prtSrv.ServiceAccountBusiness.UpdateServiceAccount(ctx, req.Msg)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
@@ -129,9 +116,6 @@ func (prtSrv *PartitionServer) RemoveServiceAccount(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveServiceAccountRequest],
 ) (*connect.Response[partitionv1.RemoveServiceAccountResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	if err := prtSrv.ServiceAccountBusiness.RemoveServiceAccount(ctx, req.Msg.GetId()); err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}

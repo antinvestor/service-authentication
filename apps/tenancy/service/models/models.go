@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"maps"
+	"slices"
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
@@ -165,7 +166,7 @@ type Client struct {
 	ResponseTypes           data.JSONMap `                                                                                  json:"response_types"`             // ["code","token"]
 	RedirectURIs            data.JSONMap `                                                                                  json:"redirect_uris"`              // ["https://app.example.com/callback"]
 	Scopes                  string       `gorm:"type:text;"                                                                 json:"scopes"`                     // "openid offline_access profile"
-	Audiences               data.JSONMap `                                                                                  json:"audiences"`                  // {"namespaces": ["service_profile",...]}
+	Audiences               data.JSONMap `                                                                                  json:"audiences"`                  // {"service_profile": [], "service_tenancy": ["tenant_view"]}
 	Roles                   data.JSONMap `                                                                                  json:"roles"`                      // ["admin","member"] — permission template for SA tokens
 	LogoURI                 string       `gorm:"type:text;"                                                                 json:"logo_uri"`                   // Logo URL for OIDC clients
 	PostLogoutRedirectURIs  data.JSONMap `                                                                                  json:"post_logout_redirect_uris"`  // {"uris": ["https://app.example.com/"]}
@@ -191,7 +192,7 @@ func (c *Client) ToAPI() *partitionv1.ClientObject {
 		ResponseTypes: jsonMapToStringSlice(c.ResponseTypes, "response_types"),
 		RedirectUris:  jsonMapToStringSlice(c.RedirectURIs, "uris"),
 		Scopes:        c.Scopes,
-		Audiences:     jsonMapToStringSlice(c.Audiences, "namespaces"),
+		Audiences:     audienceMapKeys(c.Audiences),
 		Roles:         c.GetRoleNames(),
 		State:         state,
 		CreatedAt:     timestamppb.New(c.CreatedAt),
@@ -249,7 +250,7 @@ func (c *Client) ToServiceAccountAPI() *partitionv1.ServiceAccountObject {
 		CreatedAt:   timestamppb.New(c.CreatedAt),
 		Properties:  props.ToProtoStruct(),
 		Type:        c.Type,
-		Audiences:   jsonMapToStringSlice(c.Audiences, "namespaces"),
+		Audiences:   audienceMapKeys(c.Audiences),
 	}
 
 	return obj
@@ -287,7 +288,7 @@ type ServiceAccount struct {
 	ClientRef    string `gorm:"type:varchar(50);index:idx_sa_client_ref"`     // FK → Client.ID
 	Type         string `gorm:"type:varchar(20);not null;default:'internal'"` // "internal" or "external"
 	State        int32
-	Audiences    data.JSONMap // {"namespaces": ["service_tenancy", "service_profile", ...]}
+	Audiences    data.JSONMap // {"service_tenancy": [], "service_profile": ["profile_view"], ...}
 	PublicKeys   data.JSONMap // {"keys": [{"kid":"k1","kty":"EC","crv":"P-256","x":"...","y":"..."}]}
 	Properties   data.JSONMap
 }
@@ -310,7 +311,7 @@ func (sa *ServiceAccount) ToAPI() *partitionv1.ServiceAccountObject {
 	}
 
 	if sa.Audiences != nil {
-		obj.Audiences = jsonMapToStringSlice(sa.Audiences, "namespaces")
+		obj.Audiences = audienceMapKeys(sa.Audiences)
 	}
 
 	if sa.Properties != nil {
@@ -332,6 +333,20 @@ func (ar *AccessRole) ToAPI(partitionRoleObj *partitionv1.PartitionRoleObject) *
 		AccessId: ar.AccessID,
 		Role:     partitionRoleObj,
 	}
+}
+
+// audienceMapKeys returns sorted namespace names from an audiences JSONMap.
+// The audiences map uses namespace names as keys: {"ns1": [], "ns2": ["perm"]}.
+func audienceMapKeys(m data.JSONMap) []string {
+	if len(m) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 // jsonMapToStringSlice extracts a []string from a JSONMap entry keyed by key.

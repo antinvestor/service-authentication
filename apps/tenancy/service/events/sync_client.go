@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/client"
@@ -176,7 +177,7 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 	}
 
 	redirectURIs := getStringSlice(cl.RedirectURIs, "uris")
-	audienceList := getStringSlice(cl.Audiences, "namespaces")
+	audienceList := authz.AudienceNamespaces(cl.Audiences)
 
 	scopes := cl.Scopes
 	if scopes == "" {

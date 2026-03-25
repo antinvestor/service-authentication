@@ -5,16 +5,12 @@ import (
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
-	"github.com/pitabwire/frame/security/authorizer"
 	"github.com/pitabwire/util"
 )
 
 func (prtSrv *PartitionServer) GetTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetTenantRequest]) (*connect.Response[partitionv1.GetTenantResponse], error) {
-	if err := prtSrv.authz.CanTenantView(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.GetTenant(ctx, req.Msg.GetId())
 	if err != nil {
@@ -28,9 +24,6 @@ func (prtSrv *PartitionServer) ListTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.ListTenantRequest],
 	stream *connect.ServerStream[partitionv1.ListTenantResponse]) error {
-	if err := prtSrv.authz.CanTenantView(ctx); err != nil {
-		return authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	tenants, err := prtSrv.TenantBusiness.ListTenant(ctx, req.Msg)
 	if err != nil {
@@ -44,9 +37,6 @@ func (prtSrv *PartitionServer) CreateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateTenantRequest],
 ) (*connect.Response[partitionv1.CreateTenantResponse], error) {
-	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.CreateTenant(ctx, req.Msg)
 	if err != nil {
@@ -60,9 +50,6 @@ func (prtSrv *PartitionServer) RemoveTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveTenantRequest],
 ) (*connect.Response[partitionv1.RemoveTenantResponse], error) {
-	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	err := prtSrv.TenantBusiness.RemoveTenant(ctx, req.Msg.GetId())
 	if err != nil {
@@ -76,9 +63,6 @@ func (prtSrv *PartitionServer) UpdateTenant(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateTenantRequest],
 ) (*connect.Response[partitionv1.UpdateTenantResponse], error) {
-	if err := prtSrv.authz.CanTenantManage(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.UpdateTenant(ctx, req.Msg)
 	if err != nil {

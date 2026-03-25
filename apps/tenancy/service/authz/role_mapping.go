@@ -2,7 +2,6 @@ package authz
 
 import (
 	"slices"
-	"strings"
 
 	"github.com/pitabwire/frame/security"
 )
@@ -176,49 +175,26 @@ func BuildServicePermissionTuples(tenancyPath, profileID, namespace string, perm
 }
 
 // AllServicePermissions returns the full list of permissions granted to the
-// "service" role. Used as a fallback when a service account's audience entry
-// specifies a namespace without explicit permissions (legacy format).
+// "service" role in the service_tenancy namespace. Useful for tests and for
+// building explicit permission tuples when writing Keto tuples directly.
 func AllServicePermissions() []string {
 	return RolePermissions[RoleService]
 }
 
 // ParseAudiencePermissions extracts per-namespace permission grants from an
-// Audiences JSONMap. It supports two formats:
+// Audiences JSONMap.
 //
-// New (explicit): {"service_profile": ["tenant_view", "partition_view"], ...}
-// Legacy:         {"namespaces": ["service_profile", ...]}
+// Format: {"service_profile": ["profile_view"], "service_device": [], ...}
 //
-// For the legacy format, each namespace receives all RoleService permissions.
-// Returns a map of namespace → permission list.
+// Each key is a Keto OPL namespace. The value is a list of explicit permissions
+// to grant via granted_* tuples. An empty list means the SA gets access only
+// through bridge tuples (ns#service ← tenancy_access#service), which grants
+// full service-level access via OPL permits.
+//
+// Returns a map of namespace → permission list (nil for bridge-only entries).
 func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
 	result := make(map[string][]string)
 
-	// Check for legacy format: {"namespaces": [...]} or {"namespaces": "ns1,ns2"}
-	if raw, ok := audiences["namespaces"]; ok {
-		var nsList []string
-		switch typed := raw.(type) {
-		case []any:
-			for _, v := range typed {
-				if s, ok := v.(string); ok {
-					nsList = append(nsList, s)
-				}
-			}
-		case []string:
-			nsList = typed
-		case string:
-			if strings.Contains(typed, ",") {
-				nsList = strings.Split(typed, ",")
-			} else if typed != "" {
-				nsList = []string{typed}
-			}
-		}
-		for _, ns := range nsList {
-			result[ns] = AllServicePermissions()
-		}
-		return result
-	}
-
-	// New format: {"namespace": ["perm1", "perm2"], ...}
 	for ns, raw := range audiences {
 		var perms []string
 		switch typed := raw.(type) {
@@ -231,23 +207,20 @@ func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
 		case []string:
 			perms = typed
 		}
-		if len(perms) > 0 {
-			result[ns] = perms
-		}
+		// Always include the namespace — nil/empty perms means bridge-only access.
+		result[ns] = perms
 	}
 
 	return result
 }
 
-// AudienceNamespaces extracts the list of namespace names from an audiences map,
-// supporting both legacy and new formats.
+// AudienceNamespaces extracts the sorted list of namespace names from an audiences map.
 func AudienceNamespaces(audiences map[string]any) []string {
-	parsed := ParseAudiencePermissions(audiences)
-	if len(parsed) == 0 {
+	if len(audiences) == 0 {
 		return nil
 	}
-	namespaces := make([]string, 0, len(parsed))
-	for ns := range parsed {
+	namespaces := make([]string, 0, len(audiences))
+	for ns := range audiences {
 		namespaces = append(namespaces, ns)
 	}
 	slices.Sort(namespaces)

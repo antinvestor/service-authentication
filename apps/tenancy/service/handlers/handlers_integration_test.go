@@ -1067,7 +1067,7 @@ func (s *HandlerTestSuite) TestGetServiceAccount_ByID() {
 				ClientID:     util.IDString(),
 				ClientSecret: "test-secret",
 				Type:         "internal",
-				Audiences:    data.JSONMap{"namespaces": []any{"svc1"}},
+				Audiences:    data.JSONMap{"svc1": []any{}},
 				Properties:   data.JSONMap{},
 				BaseModel: data.BaseModel{
 					TenantID:    tenantID,

@@ -43,8 +43,8 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_tenancy","service_device","service_profile","service_notification","service_payment","service_thesa","service_file"]}',
-    '{"uris": ["http://localhost:5173/auth/callback","https://thesa-dev.stawi.org/auth/callback"]}',
+    '{"service_tenancy": [],"service_device": [],"service_profile": [],"service_notification": [],"service_payment": [],"service_thesa": [],"service_file": []}',
+    '{"uris": ["http://localhost:5173/auth/callback","https://thesa-dev.stawi.org/auth/callback","org.stawi.thesa-dev://auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["http://localhost:5173/","https://thesa-dev.stawi.org/"]}',
     'none'

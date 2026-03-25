@@ -6,7 +6,6 @@ import (
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/security/authorizer"
 	"github.com/pitabwire/util"
 )
 
@@ -15,9 +14,6 @@ func (prtSrv *PartitionServer) CreateClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.CreateClientRequest],
 ) (*connect.Response[partitionv1.CreateClientResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	msg := req.Msg
 
 	var properties map[string]any
@@ -55,9 +51,6 @@ func (prtSrv *PartitionServer) GetClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.GetClientRequest],
 ) (*connect.Response[partitionv1.GetClientResponse], error) {
-	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	msg := req.Msg
 
@@ -111,9 +104,6 @@ func (prtSrv *PartitionServer) ListClient(
 	req *connect.Request[partitionv1.ListClientRequest],
 	stream *connect.ServerStream[partitionv1.ListClientResponse],
 ) error {
-	if err := prtSrv.authz.CanPartitionView(ctx); err != nil {
-		return authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	clients, err := prtSrv.ClientBusiness.ListClients(ctx, req.Msg.GetPartitionId())
 	if err != nil {
@@ -134,9 +124,6 @@ func (prtSrv *PartitionServer) UpdateClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.UpdateClientRequest],
 ) (*connect.Response[partitionv1.UpdateClientResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	client, err := prtSrv.ClientBusiness.UpdateClient(ctx, req.Msg)
 	if err != nil {
@@ -151,9 +138,6 @@ func (prtSrv *PartitionServer) RemoveClient(
 	ctx context.Context,
 	req *connect.Request[partitionv1.RemoveClientRequest],
 ) (*connect.Response[partitionv1.RemoveClientResponse], error) {
-	if err := prtSrv.authz.CanPermissionGrant(ctx); err != nil {
-		return nil, authorizer.ToConnectError(err)
-	}
 	logger := util.Log(ctx)
 	err := prtSrv.ClientBusiness.RemoveClient(ctx, req.Msg.GetId())
 	if err != nil {

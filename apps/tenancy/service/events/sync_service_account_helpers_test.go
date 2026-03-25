@@ -15,31 +15,21 @@ type SyncServiceAccountHelpersTestSuite struct {
 
 // --- extractAudienceNamespaces ---
 
-func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_AnySlice() {
-	m := data.JSONMap{"namespaces": []any{"service_profile", "service_device"}}
+func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_MapFormat() {
+	m := data.JSONMap{"service_profile": []any{}, "service_device": []any{}}
 	s.ElementsMatch([]string{"service_profile", "service_device"}, extractAudienceNamespaces(m))
 }
 
-func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_StringSlice() {
-	m := data.JSONMap{"namespaces": []string{"ns1"}}
-	s.Equal([]string{"ns1"}, extractAudienceNamespaces(m))
-}
-
-func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_CommaSep() {
-	m := data.JSONMap{"namespaces": "ns1,ns2"}
-	s.Equal([]string{"ns1", "ns2"}, extractAudienceNamespaces(m))
-}
-
-func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_Single() {
-	m := data.JSONMap{"namespaces": "ns1"}
-	s.Equal([]string{"ns1"}, extractAudienceNamespaces(m))
+func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_WithPermissions() {
+	m := data.JSONMap{"service_profile": []any{"profile_view"}}
+	s.Equal([]string{"service_profile"}, extractAudienceNamespaces(m))
 }
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_Nil() {
 	s.Nil(extractAudienceNamespaces(nil))
 }
 
-func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_MissingKey() {
+func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_Empty() {
 	s.Nil(extractAudienceNamespaces(data.JSONMap{}))
 }
 
@@ -50,7 +40,7 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 		ClientID:  "sa-internal",
 		ProfileID: "prof-1",
 		Type:      "internal",
-		Audiences: data.JSONMap{"namespaces": []any{"service_profile"}},
+		Audiences: data.JSONMap{"service_profile": []any{}},
 		BaseModel: data.BaseModel{TenantID: "tenant-1", PartitionID: "partition-1"},
 	}
 

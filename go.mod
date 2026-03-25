@@ -15,11 +15,11 @@ require (
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.19.1-20260219062039-499f582dea7e.2
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260219062039-499f582dea7e.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/apis/go/common v1.55.18
-	github.com/antinvestor/apis/go/device v1.56.0
-	github.com/antinvestor/apis/go/notification v1.56.0
-	github.com/antinvestor/apis/go/partition v1.56.0
-	github.com/antinvestor/apis/go/profile v1.56.0
+	github.com/antinvestor/apis/go/common v1.58.0
+	github.com/antinvestor/apis/go/device v1.58.0
+	github.com/antinvestor/apis/go/notification v1.58.0
+	github.com/antinvestor/apis/go/partition v1.58.0
+	github.com/antinvestor/apis/go/profile v1.58.0
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
@@ -28,7 +28,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.81.1
+	github.com/pitabwire/frame v1.82.0
 	github.com/pitabwire/util v0.7.0
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
@@ -72,6 +72,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/google/cel-go v0.27.0 // indirect
+	github.com/google/gnostic v0.7.1 // indirect
+	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.19.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
@@ -150,6 +152,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gocloud.dev v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.52.0 // indirect

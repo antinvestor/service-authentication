@@ -37,7 +37,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_device"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnolg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -54,7 +54,7 @@ INSERT INTO service_accounts (
     'service-authentication',
     'c2f4j7au6s7f91uqnoog',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_device"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -74,7 +74,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_tenancy","service_device"]}',
+    '{"service_notification": [],"service_tenancy": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnoqg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -91,7 +91,7 @@ INSERT INTO service_accounts (
     'service-profile',
     'c2f4j7au6s7f91uqnopg',
     'internal',
-    '{"namespaces": ["service_notification","service_tenancy","service_device"]}',
+    '{"service_notification": [],"service_tenancy": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -111,7 +111,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_profile"]}',
+    '{"service_notification": [],"service_profile": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnosg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -128,7 +128,7 @@ INSERT INTO service_accounts (
     'service-tenancy',
     'c2f4j7au6s7f91uqnorg',
     'internal',
-    '{"namespaces": ["service_notification","service_profile"]}',
+    '{"service_notification": [],"service_profile": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -148,7 +148,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnoug',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -165,7 +165,7 @@ INSERT INTO service_accounts (
     'service-notification',
     'c2f4j7au6s7f91uqnotg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -185,7 +185,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnp0g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -202,7 +202,7 @@ INSERT INTO service_accounts (
     'service-devices',
     'c2f4j7au6s7f91uqnovg',
     'internal',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -216,13 +216,13 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnp1g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-service_settings',
+    'sa-service_setting',
     'service-settings',
     '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnp2g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -235,11 +235,11 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp2g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_settings',
+    'service_setting',
     'service-settings',
     'c2f4j7au6s7f91uqnp1g',
     'internal',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -259,7 +259,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnp4g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -276,7 +276,7 @@ INSERT INTO service_accounts (
     'service-payment',
     'c2f4j7au6s7f91uqnp3g',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -296,7 +296,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnp6g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -313,7 +313,7 @@ INSERT INTO service_accounts (
     'service-payment-jenga',
     'c2f4j7au6s7f91uqnp5g',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -333,7 +333,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnp8g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -350,7 +350,7 @@ INSERT INTO service_accounts (
     'service-ledger',
     'c2f4j7au6s7f91uqnp7g',
     'internal',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -370,7 +370,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpag',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -387,7 +387,7 @@ INSERT INTO service_accounts (
     'service-billing',
     'c2f4j7au6s7f91uqnp9g',
     'internal',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -407,7 +407,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpcg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -424,7 +424,7 @@ INSERT INTO service_accounts (
     'service-files',
     'c2f4j7au6s7f91uqnpbg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -444,7 +444,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpeg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -461,7 +461,7 @@ INSERT INTO service_accounts (
     'service-chat-drone',
     'c2f4j7au6s7f91uqnpdg',
     'internal',
-    '{"namespaces": ["service_notification","service_profile","service_device"]}',
+    '{"service_notification": [],"service_profile": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -481,7 +481,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_notification","service_chat_drone","service_device"]}',
+    '{"service_notification": [],"service_chat_drone": [],"service_device": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpgg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -498,7 +498,7 @@ INSERT INTO service_accounts (
     'service-chat-gateway',
     'c2f4j7au6s7f91uqnpfg',
     'internal',
-    '{"namespaces": ["service_notification","service_chat_drone","service_device"]}',
+    '{"service_notification": [],"service_chat_drone": [],"service_device": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -518,7 +518,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpig',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -535,7 +535,7 @@ INSERT INTO service_accounts (
     'foundry',
     'c2f4j7au6s7f91uqnphg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -555,7 +555,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpkg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -572,7 +572,7 @@ INSERT INTO service_accounts (
     'gitvault',
     'c2f4j7au6s7f91uqnpjg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -592,7 +592,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpmg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -609,7 +609,7 @@ INSERT INTO service_accounts (
     'trustage',
     'c2f4j7au6s7f91uqnplg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy"]}',
+    '{"service_profile": [],"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -629,7 +629,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notification","service_settings"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_setting": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpog',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -646,7 +646,7 @@ INSERT INTO service_accounts (
     'service-notification-integration-africastalking',
     'c2f4j7au6s7f91uqnpng',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_notification","service_settings"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_setting": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -666,7 +666,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_profile","service_tenancy","service_notification","service_settings"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_setting": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpqg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -683,7 +683,7 @@ INSERT INTO service_accounts (
     'service-notification-integration-emailsmtp',
     'c2f4j7au6s7f91uqnppg',
     'internal',
-    '{"namespaces": ["service_profile","service_tenancy","service_notification","service_settings"]}',
+    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_setting": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -703,7 +703,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpsg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -720,7 +720,7 @@ INSERT INTO service_accounts (
     'synchronise-partitions',
     'c2f4j7au6s7f91uqnprg',
     'internal',
-    '{"namespaces": ["service_tenancy"]}',
+    '{"service_tenancy": []}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 

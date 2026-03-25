@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
+	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/apis/go/common"
+	"github.com/antinvestor/apis/go/common/permissions"
 	"github.com/antinvestor/apis/go/profile"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
@@ -63,8 +65,7 @@ func main() {
 	}
 
 	auth := sm.GetAuthorizer(ctx)
-	authzMiddleware := authz.NewMiddleware(auth)
-	partSrv := handlers.NewPartitionServer(ctx, svc, authzMiddleware, auth, profileCli)
+	partSrv := handlers.NewPartitionServer(ctx, svc, auth, profileCli)
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)
@@ -124,12 +125,19 @@ func setupConnectServer(
 ) http.Handler {
 
 	authenticator := sm.GetAuthenticator(ctx)
-	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(sm.GetAuthorizer(ctx), authz.NamespaceTenancyAccess)
+	auth := sm.GetAuthorizer(ctx)
+	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
 	// Connect: tenancy access interceptor runs after authentication to verify data access.
 	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, sm.GetAuthenticator(ctx), tenancyAccessInterceptor)
+	// Layer 2: FunctionAccessInterceptor enforces per-RPC permissions from proto annotations.
+	sd := partitionv1.File_partition_v1_partition_proto.Services().ByName("PartitionService")
+	procMap := permissions.BuildProcedureMap(sd)
+	functionChecker := authorizer.NewFunctionChecker(auth, "service_tenancy")
+	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("main -- Could not create default interceptors")
 	}

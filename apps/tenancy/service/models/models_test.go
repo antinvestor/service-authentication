@@ -229,7 +229,7 @@ func (suite *ModelsTestSuite) TestClient_ToAPI() {
 		GrantTypes:   data.JSONMap{"grant_types": []any{"authorization_code"}},
 		RedirectURIs: data.JSONMap{"uris": []any{"https://app.example.com/callback"}},
 		Scopes:       "openid offline_access",
-		Audiences:    data.JSONMap{"namespaces": []any{"service_profile"}},
+		Audiences:    data.JSONMap{"service_profile": []any{}},
 		Roles:        data.JSONMap{"roles": []any{"admin", "member"}},
 		Properties:   data.JSONMap{"custom": "value"},
 	}
@@ -318,7 +318,7 @@ func (suite *ModelsTestSuite) TestServiceAccount_ToAPI() {
 		ClientID:   "sa-client-id",
 		ClientRef:  "client-ref-1",
 		Type:       "internal",
-		Audiences:  data.JSONMap{"namespaces": []any{"service_tenancy"}},
+		Audiences:  data.JSONMap{"service_tenancy": []any{}},
 		Properties: data.JSONMap{"custom": "prop"},
 	}
 
@@ -427,7 +427,7 @@ func (suite *ModelsTestSuite) TestClient_ToServiceAccountAPI() {
 		GrantTypes:   data.JSONMap{"grant_types": []any{"client_credentials"}},
 		RedirectURIs: data.JSONMap{"uris": []any{"https://example.com"}},
 		Roles:        data.JSONMap{"roles": []any{"admin"}},
-		Audiences:    data.JSONMap{"namespaces": []any{"service_profile"}},
+		Audiences:    data.JSONMap{"service_profile": []any{}},
 		Properties:   data.JSONMap{"custom": "val"},
 	}
 

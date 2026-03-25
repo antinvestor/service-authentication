@@ -172,15 +172,17 @@ func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples_Empty() {
 	assert.Empty(suite.T(), tuples)
 }
 
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_LegacyFormat() {
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_BridgeOnly() {
 	t := suite.T()
-	audiences := map[string]any{"namespaces": []any{"service_profile", "service_payment"}}
+	audiences := map[string]any{"service_profile": []any{}, "service_payment": []any{}}
 	result := authz.ParseAudiencePermissions(audiences)
 
 	assert.Len(t, result, 2)
-	// Legacy format grants all service permissions
-	assert.Equal(t, authz.AllServicePermissions(), result["service_profile"])
-	assert.Equal(t, authz.AllServicePermissions(), result["service_payment"])
+	// Empty permission arrays mean bridge-tuple-only access.
+	assert.Contains(t, result, "service_profile")
+	assert.Nil(t, result["service_profile"])
+	assert.Contains(t, result, "service_payment")
+	assert.Nil(t, result["service_payment"])
 }
 
 func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_ExplicitFormat() {
@@ -202,16 +204,23 @@ func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_EmptyPermissions
 		"service_profile": []any{},
 	}
 	result := authz.ParseAudiencePermissions(audiences)
-	assert.Empty(t, result)
+	// Empty array means bridge-only — namespace is still included with nil perms.
+	assert.Len(t, result, 1)
+	assert.Contains(t, result, "service_profile")
+	assert.Nil(t, result["service_profile"])
 }
 
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_NonArrayValueSkipped() {
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_NonArrayValueIgnored() {
 	t := suite.T()
 	audiences := map[string]any{
 		"other": "value",
 	}
 	result := authz.ParseAudiencePermissions(audiences)
-	assert.Empty(t, result)
+	// Non-array values produce nil permissions — namespace is still recorded
+	// for bridge tuple generation.
+	assert.Len(t, result, 1)
+	assert.Contains(t, result, "other")
+	assert.Nil(t, result["other"])
 }
 
 func (suite *RoleMappingTestSuite) TestAudienceNamespaces_ExplicitFormat() {

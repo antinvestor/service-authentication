@@ -43,7 +43,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"namespaces": ["service_lender","service_device","service_profile","service_file","service_geolocation"]}',
+    '{"service_lender": [],"service_device": [],"service_profile": [],"service_file": [],"service_geolocation": []}',
     '{"uris": ["https://app-dev.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback","https://app-dev.antinvestor.com/auth/callback","http://localhost:5174/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://app-dev.antinvestor.com/","http://localhost:5174/"]}',
