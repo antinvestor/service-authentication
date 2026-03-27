@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -263,8 +264,8 @@ func toJSONMapSlice(key string, values []string) data.JSONMap {
 }
 
 // audiencesFromNamespaces builds an audiences JSONMap from a list of namespace names.
-// Each namespace is stored as a key with an empty permission array, meaning
-// bridge-tuple-only access (ns#service ← tenancy_access#service).
+// Each namespace is stored as a key with ["*"] meaning full service-level access
+// via bridge tuples (ns#service ← tenancy_access#service).
 //
 // To grant explicit per-permission tuples, set the value to a list of
 // OPL permission names: {"service_profile": ["profile_view", "profile_create"]}.
@@ -274,7 +275,7 @@ func audiencesFromNamespaces(namespaces []string) data.JSONMap {
 	}
 	m := make(data.JSONMap, len(namespaces))
 	for _, ns := range namespaces {
-		m[ns] = []any{}
+		m[ns] = []any{authz.PermissionFullAccess}
 	}
 	return m
 }

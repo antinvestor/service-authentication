@@ -546,7 +546,7 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_Internal() {
 		ClientSecret: "test-secret",
 		Type:         "internal",
 		ProfileID:    "profile-123",
-		Audiences:    data.JSONMap{"svc1": []any{}, "svc2": []any{}},
+		Audiences:    data.JSONMap{"svc1": []any{"*"}, "svc2": []any{"*"}},
 		BaseModel:    data.BaseModel{TenantID: "tenant-123", PartitionID: "partition-123"},
 	}
 
@@ -630,14 +630,14 @@ func (suite *EventsTestSuite) TestBuildServiceAccountHydraPayload_JWKSURIInfersP
 
 func (suite *EventsTestSuite) TestExtractAudienceNamespaces_MapFormat() {
 	t := suite.T()
-	audiences := data.JSONMap{"svc1": []any{}, "svc2": []any{}, "svc3": []any{}}
+	audiences := data.JSONMap{"svc1": []any{"*"}, "svc2": []any{"*"}, "svc3": []any{"*"}}
 	result := extractAudienceNamespaces(audiences)
 	assert.ElementsMatch(t, []string{"svc1", "svc2", "svc3"}, result)
 }
 
 func (suite *EventsTestSuite) TestExtractAudienceNamespaces_WithPermissions() {
 	t := suite.T()
-	audiences := data.JSONMap{"svc1": []any{"perm1"}, "svc2": []any{}}
+	audiences := data.JSONMap{"svc1": []any{"perm1"}, "svc2": []any{"*"}}
 	result := extractAudienceNamespaces(audiences)
 	assert.ElementsMatch(t, []string{"svc1", "svc2"}, result)
 }

@@ -181,17 +181,30 @@ func AllServicePermissions() []string {
 	return RolePermissions[RoleService]
 }
 
+// PermissionFullAccess is the wildcard marker for full service-level access.
+// When a namespace's permission list contains only "*", the SA gets a bridge
+// tuple (ns#service ← tenancy_access#service) instead of explicit granted_*
+// tuples. This is more readable than an empty array.
+const PermissionFullAccess = "*"
+
+// IsFullAccess returns true if the permission list contains the wildcard "*",
+// meaning full service-level access via bridge tuples.
+// An empty list means no permissions are granted — it does NOT imply full access.
+func IsFullAccess(perms []string) bool {
+	return len(perms) == 1 && perms[0] == PermissionFullAccess
+}
+
 // ParseAudiencePermissions extracts per-namespace permission grants from an
 // Audiences JSONMap.
 //
-// Format: {"service_profile": ["profile_view"], "service_device": [], ...}
+// Format: {"service_profile": ["profile_view"], "service_device": ["*"], ...}
 //
-// Each key is a Keto OPL namespace. The value is a list of explicit permissions
-// to grant via granted_* tuples. An empty list means the SA gets access only
-// through bridge tuples (ns#service ← tenancy_access#service), which grants
-// full service-level access via OPL permits.
+// Each key is a Keto OPL namespace. The value is a list of permissions:
+//   - ["*"]                  → full service access via bridge tuple
+//   - ["perm1", "perm2"]    → only these granted_* permissions (least-privilege)
+//   - []                    → namespace is recorded but no permissions are granted
 //
-// Returns a map of namespace → permission list (nil for bridge-only entries).
+// Returns a map of namespace → permission list.
 func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
 	result := make(map[string][]string)
 
@@ -207,7 +220,6 @@ func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
 		case []string:
 			perms = typed
 		}
-		// Always include the namespace — nil/empty perms means bridge-only access.
 		result[ns] = perms
 	}
 

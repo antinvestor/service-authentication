@@ -38,7 +38,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_Internal
 			ClientSecret: "test-internal-secret",
 			Type:         "internal",
 			ProfileID:    util.IDString(),
-			Audiences:    data.JSONMap{"service_profile": []any{}, "service_tenancy": []any{}},
+			Audiences:    data.JSONMap{"service_profile": []any{"*"}, "service_tenancy": []any{"*"}},
 			Properties:   data.JSONMap{},
 		}
 
@@ -68,7 +68,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_External
 			ClientSecret: "test-external-secret",
 			Type:         "external",
 			ProfileID:    util.IDString(),
-			Audiences:    data.JSONMap{"api_gateway": []any{}},
+			Audiences:    data.JSONMap{"api_gateway": []any{"*"}},
 			Properties:   data.JSONMap{},
 		}
 
@@ -169,7 +169,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_ViaQueue
 			ClientSecret: "queue-test-secret",
 			Type:         "internal",
 			ProfileID:    util.IDString(),
-			Audiences:    data.JSONMap{"service_profile": []any{}},
+			Audiences:    data.JSONMap{"service_profile": []any{"*"}},
 			Properties:   data.JSONMap{},
 			BaseModel: data.BaseModel{
 				TenantID:    tenantID,

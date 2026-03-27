@@ -172,17 +172,27 @@ func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples_Empty() {
 	assert.Empty(suite.T(), tuples)
 }
 
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_BridgeOnly() {
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_FullAccessWildcard() {
 	t := suite.T()
-	audiences := map[string]any{"service_profile": []any{}, "service_payment": []any{}}
+	audiences := map[string]any{"service_profile": []any{"*"}, "service_payment": []any{"*"}}
 	result := authz.ParseAudiencePermissions(audiences)
 
 	assert.Len(t, result, 2)
-	// Empty permission arrays mean bridge-tuple-only access.
+	// ["*"] is parsed as-is — IsFullAccess checks for it.
+	assert.Equal(t, []string{"*"}, result["service_profile"])
+	assert.Equal(t, []string{"*"}, result["service_payment"])
+}
+
+func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_EmptyArrayNoAccess() {
+	t := suite.T()
+	// Empty arrays mean no permissions — NOT full access.
+	audiences := map[string]any{"service_profile": []any{}}
+	result := authz.ParseAudiencePermissions(audiences)
+
+	assert.Len(t, result, 1)
 	assert.Contains(t, result, "service_profile")
 	assert.Nil(t, result["service_profile"])
-	assert.Contains(t, result, "service_payment")
-	assert.Nil(t, result["service_payment"])
+	assert.False(t, authz.IsFullAccess(result["service_profile"]))
 }
 
 func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_ExplicitFormat() {
@@ -198,29 +208,25 @@ func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_ExplicitFormat()
 	assert.Equal(t, []string{"tenant_view"}, result["service_payment"])
 }
 
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_EmptyPermissions() {
-	t := suite.T()
-	audiences := map[string]any{
-		"service_profile": []any{},
-	}
-	result := authz.ParseAudiencePermissions(audiences)
-	// Empty array means bridge-only — namespace is still included with nil perms.
-	assert.Len(t, result, 1)
-	assert.Contains(t, result, "service_profile")
-	assert.Nil(t, result["service_profile"])
-}
-
 func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_NonArrayValueIgnored() {
 	t := suite.T()
 	audiences := map[string]any{
 		"other": "value",
 	}
 	result := authz.ParseAudiencePermissions(audiences)
-	// Non-array values produce nil permissions — namespace is still recorded
-	// for bridge tuple generation.
+	// Non-array values produce nil permissions — namespace is recorded but no access.
 	assert.Len(t, result, 1)
 	assert.Contains(t, result, "other")
 	assert.Nil(t, result["other"])
+}
+
+func (suite *RoleMappingTestSuite) TestIsFullAccess() {
+	t := suite.T()
+	assert.False(t, authz.IsFullAccess(nil))
+	assert.False(t, authz.IsFullAccess([]string{}))
+	assert.True(t, authz.IsFullAccess([]string{"*"}))
+	assert.False(t, authz.IsFullAccess([]string{"tenant_view"}))
+	assert.False(t, authz.IsFullAccess([]string{"*", "tenant_view"}))
 }
 
 func (suite *RoleMappingTestSuite) TestAudienceNamespaces_ExplicitFormat() {

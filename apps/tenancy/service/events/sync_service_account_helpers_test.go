@@ -16,7 +16,7 @@ type SyncServiceAccountHelpersTestSuite struct {
 // --- extractAudienceNamespaces ---
 
 func (s *SyncServiceAccountHelpersTestSuite) TestExtractAudienceNamespaces_MapFormat() {
-	m := data.JSONMap{"service_profile": []any{}, "service_device": []any{}}
+	m := data.JSONMap{"service_profile": []any{"*"}, "service_device": []any{"*"}}
 	s.ElementsMatch([]string{"service_profile", "service_device"}, extractAudienceNamespaces(m))
 }
 
@@ -40,7 +40,7 @@ func (s *SyncServiceAccountHelpersTestSuite) TestBuildPayload_Internal() {
 		ClientID:  "sa-internal",
 		ProfileID: "prof-1",
 		Type:      "internal",
-		Audiences: data.JSONMap{"service_profile": []any{}},
+		Audiences: data.JSONMap{"service_profile": []any{"*"}},
 		BaseModel: data.BaseModel{TenantID: "tenant-1", PartitionID: "partition-1"},
 	}
 

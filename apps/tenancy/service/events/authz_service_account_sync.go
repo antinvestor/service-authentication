@@ -95,21 +95,33 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		)
 	}
 
-	// Layer 2: explicit per-namespace permission tuples
+	// Layer 2: per-namespace permission tuples and bridge tuples.
+	//
+	// Namespaces with an empty permission list get a bridge tuple
+	// (ns#service ← tenancy_access#service) which grants full service-level
+	// access via OPL permits.
+	//
+	// Namespaces with explicit permissions get only granted_* tuples,
+	// enforcing least-privilege — the bridge tuple is NOT written so the
+	// service account only has the permissions it declares.
 	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
+	var bridgeNamespaces []string
+
 	for ns, perms := range audiencePerms {
+		if authz.IsFullAccess(perms) {
+			// Full access (["*"] or []) → bridge tuple for full service role.
+			bridgeNamespaces = append(bridgeNamespaces, ns)
+			continue
+		}
+		// Explicit permissions → granted_* tuples only, no bridge.
 		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, subjectID, ns, perms)...)
 		if sa.ClientID != "" && sa.ClientID != subjectID {
 			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
 		}
 	}
 
-	// Bridge tuples: ns:tenancyPath#service ← tenancy_access:tenancyPath#service
-	// Written here so new namespaces added to an SA's audiences take effect
-	// immediately without waiting for a partition sync.
-	nsNames := authz.AudienceNamespaces(sa.Audiences)
-	if len(nsNames) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, nsNames)...)
+	if len(bridgeNamespaces) > 0 {
+		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
 	}
 
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {

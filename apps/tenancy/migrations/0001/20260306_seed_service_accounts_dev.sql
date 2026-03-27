@@ -36,7 +36,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_device": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn800'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -52,7 +52,7 @@ INSERT INTO service_accounts (
     'dev_authentication_tests',                     -- client_id (denormalized for lookup)
     'd6l82t4pf2t82gudn7vg',                        -- client_ref → Client.id above
     'internal',
-    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_device": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -72,7 +72,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_device": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn810'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -88,7 +88,7 @@ INSERT INTO service_accounts (
     'dev_service_authentication',
     'd6l82t4pf2t82gudn80g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_profile": [],"service_tenancy": [],"service_notification": [],"service_device": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -108,7 +108,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_notification": [],"service_tenancy": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_tenancy": ["partition_view","tenant_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn820'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -124,7 +124,7 @@ INSERT INTO service_accounts (
     'dev_service_profile',
     'd6l82t4pf2t82gudn81g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_notification": [],"service_tenancy": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -144,7 +144,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_notification": [],"service_profile": [],"dev_authentication_tests": []}',
+    '{"dev_authentication_tests": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn830'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -160,7 +160,7 @@ INSERT INTO service_accounts (
     'dev_service_tenancy',
     'd6l82t4pf2t82gudn82g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_notification": [],"service_profile": [],"dev_authentication_tests": []}',
+    '{"dev_authentication_tests": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -180,7 +180,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_tenancy": []}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn840'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -196,7 +196,7 @@ INSERT INTO service_accounts (
     'dev_service_notification',
     'd6l82t4pf2t82gudn83g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_tenancy": []}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -216,7 +216,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_tenancy": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn850'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -232,7 +232,7 @@ INSERT INTO service_accounts (
     'dev_service_devices',
     'd6l82t4pf2t82gudn84g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_tenancy": []}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -252,7 +252,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_tenancy": []}',
+    '{"service_tenancy": ["partition_view","tenant_view","partition_manage"]}',
     'private_key_jwt',
     'd6l82t4pf2t82gudn870',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -269,6 +269,6 @@ INSERT INTO service_accounts (
     'dev_synchronise_partitions',
     'd6l82t4pf2t82gudn86g',
     'internal',
-    '{"service_tenancy": []}',
+    '{"service_tenancy": ["partition_view","tenant_view","partition_manage"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
