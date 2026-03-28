@@ -1,10 +1,6 @@
 import { Namespace, Context } from "@ory/keto-namespace-types"
 
-class profile_user implements Namespace {
-  related: {
-    self: profile_user[]
-  }
-}
+class profile_user implements Namespace {}
 
 class tenancy_access implements Namespace {
   related: {
