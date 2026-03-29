@@ -1,7 +1,7 @@
 package authz
 
 const (
-	NamespaceTenancy       = "service_tenancy"
+	NamespaceTenancy       = "service_partition"
 	NamespaceTenancyAccess = "tenancy_access"
 	NamespaceProfile       = "profile_user"
 )
@@ -16,9 +16,9 @@ const (
 	PermissionPartitionView   = "partition_view"
 	PermissionAccessManage    = "access_manage"
 	PermissionAccessView      = "access_view"
-	PermissionRolesManage     = "roles_manage"
-	PermissionPagesManage     = "pages_manage"
-	PermissionPagesView       = "pages_view"
+	PermissionRolesManage     = "role_manage"
+	PermissionPagesManage     = "page_manage"
+	PermissionPagesView       = "page_view"
 	PermissionPermissionGrant = "permission_grant"
 )
 
@@ -33,9 +33,9 @@ const (
 	GrantedPartitionView   = "granted_partition_view"
 	GrantedAccessManage    = "granted_access_manage"
 	GrantedAccessView      = "granted_access_view"
-	GrantedRolesManage     = "granted_roles_manage"
-	GrantedPagesManage     = "granted_pages_manage"
-	GrantedPagesView       = "granted_pages_view"
+	GrantedRolesManage     = "granted_role_manage"
+	GrantedPagesManage     = "granted_page_manage"
+	GrantedPagesView       = "granted_page_view"
 	GrantedPermissionGrant = "granted_permission_grant"
 )
 
