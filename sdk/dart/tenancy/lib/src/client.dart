@@ -14,7 +14,7 @@
 
 import 'package:antinvestor_api_common/antinvestor_api_common.dart';
 import 'package:connectrpc/connect.dart' show Interceptor;
-import '../antinvestor_api_partition.dart';
+import '../antinvestor_api_tenancy.dart';
 
 /// Default endpoint for the Partition service.
 const String defaultPartitionEndpoint = 'https://partition.antinvestor.com';

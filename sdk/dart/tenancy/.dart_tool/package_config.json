@@ -27,7 +27,7 @@
     },
     {
       "name": "async",
-      "rootUri": "file:///home/j/.pub-cache/hosted/pub.dev/async-2.13.0",
+      "rootUri": "file:///home/j/.pub-cache/hosted/pub.dev/async-2.13.1",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -320,7 +320,7 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "antinvestor_api_partition",
+      "name": "antinvestor_api_tenancy",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.3"

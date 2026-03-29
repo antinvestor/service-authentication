@@ -1,5 +1,5 @@
-name: antinvestor_api_partition
-description: Dart client library for Ant Investor Partition Service - Data partitioning, multi-tenancy, access control, service accounts, and OAuth2 client management
+name: antinvestor_api_tenancy
+description: Dart client library for Ant Investor Tenancy Service - Data partitioning, multi-tenancy, access control, service accounts, and OAuth2 client management
 version: 1.53.0
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication
@@ -22,4 +22,4 @@ topics:
   - grpc
   - protobuf
   - api-client
-  - partition
+  - tenancy

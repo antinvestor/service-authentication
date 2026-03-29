@@ -1,11 +1,11 @@
-/// Dart client library for Ant Investor Partition Service.
+/// Dart client library for Ant Investor Tenancy Service.
 ///
 /// Provides Partition service functionality using Connect RPC protocol.
 ///
 /// ## Usage
 ///
 /// ```dart
-/// import 'package:antinvestor_api_partition/antinvestor_api_partition.dart';
+/// import 'package:antinvestor_api_tenancy/antinvestor_api_tenancy.dart';
 /// import 'package:connectrpc/connect.dart';
 ///
 /// void main() async {
