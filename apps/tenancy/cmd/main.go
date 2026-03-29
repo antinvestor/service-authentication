@@ -135,7 +135,8 @@ func setupConnectServer(
 	// Layer 2: FunctionAccessInterceptor enforces per-RPC permissions from proto annotations.
 	sd := partitionv1.File_partition_v1_partition_proto.Services().ByName("PartitionService")
 	procMap := permissions.BuildProcedureMap(sd)
-	functionChecker := authorizer.NewFunctionChecker(auth, "service_tenancy")
+	svcPerms := permissions.ForService(sd)
+	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
 	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
 
 	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
