@@ -8,6 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"net/http"
+	"time"
+
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
@@ -95,6 +98,13 @@ func runSeedSuperUserCommand(ctx context.Context, cfg aconfig.AuthenticationConf
 	}
 	if strings.TrimSpace(*environment) == "" {
 		return fmt.Errorf("%s requires --environment", seedSuperUserCommandName)
+	}
+
+	// Trigger authorization sync before seeding. This ensures all partition
+	// inheritance tuples and service account Keto tuples exist, which is
+	// required for the seed job's service-to-service calls to pass tenancy checks.
+	if err := triggerAuthzSync(ctx, cfg); err != nil {
+		util.Log(ctx).WithError(err).Warn("authz sync trigger failed — continuing anyway")
 	}
 
 	profileCli, err := setupProfileClient(ctx, cfg)
@@ -306,6 +316,50 @@ func rootPartitionIDForEnvironment(environment tenancyv1.TenantEnvironment) (str
 
 func isNotFoundError(err error) bool {
 	return frame.ErrorIsNotFound(err) || connect.CodeOf(err) == connect.CodeNotFound
+}
+
+// triggerAuthzSync calls the tenancy service's internal sync endpoint to ensure
+// all partition inheritance tuples and service account Keto tuples are written.
+// This must run before the seed command makes service-to-service calls, because
+// those calls go through TenancyAccessChecker which requires the service account
+// to have a "service" tuple on the root partition (and child partitions to inherit it).
+func triggerAuthzSync(ctx context.Context, cfg aconfig.AuthenticationConfig) error {
+	tenancyURI := cfg.TenancyServiceURI
+	if tenancyURI == "" {
+		return fmt.Errorf("TENANCY_SERVICE_URI not set")
+	}
+
+	// Build the sync URL. The URI may be a bare host:port (for gRPC) — ensure http scheme.
+	syncURL := tenancyURI
+	if !strings.HasPrefix(syncURL, "http") {
+		syncURL = "http://" + syncURL
+	}
+	syncURL += "/_internal/sync/clients"
+
+	log := util.Log(ctx)
+	log.WithField("url", syncURL).Info("triggering authorization sync before seed")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, syncURL, nil)
+	if err != nil {
+		return fmt.Errorf("create sync request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("sync request failed: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("sync returned HTTP %d", resp.StatusCode)
+	}
+
+	// Give the async event handlers a moment to process the queued tuples.
+	log.Info("authorization sync triggered — waiting for tuple propagation")
+	time.Sleep(5 * time.Second)
+
+	return nil
 }
 
 type connectSuperUserProfileService struct {
