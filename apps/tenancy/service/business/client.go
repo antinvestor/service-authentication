@@ -6,7 +6,7 @@ import (
 	"maps"
 	"strings"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -31,7 +31,7 @@ type ClientBusiness interface {
 		properties map[string]any) (*ClientResult, error)
 	GetClient(ctx context.Context, id string) (*models.Client, error)
 	GetClientByClientID(ctx context.Context, clientID string) (*models.Client, error)
-	UpdateClient(ctx context.Context, request *partitionv1.UpdateClientRequest) (*partitionv1.ClientObject, error)
+	UpdateClient(ctx context.Context, request *tenancyv1.UpdateClientRequest) (*tenancyv1.ClientObject, error)
 	ListClients(ctx context.Context, partitionID string) ([]*models.Client, error)
 	RemoveClient(ctx context.Context, id string) error
 }
@@ -172,8 +172,8 @@ func (cb *clientBusiness) ListClients(ctx context.Context, partitionID string) (
 
 func (cb *clientBusiness) UpdateClient(
 	ctx context.Context,
-	request *partitionv1.UpdateClientRequest,
-) (*partitionv1.ClientObject, error) {
+	request *tenancyv1.UpdateClientRequest,
+) (*tenancyv1.ClientObject, error) {
 	log := util.Log(ctx).WithField("client_db_id", request.GetId())
 
 	client, err := cb.clientRepo.GetByID(ctx, request.GetId())

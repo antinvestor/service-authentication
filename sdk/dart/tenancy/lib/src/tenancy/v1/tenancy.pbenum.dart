@@ -1,6 +1,6 @@
 //
 //  Generated code. Do not modify.
-//  source: partition/v1/partition.proto
+//  source: tenancy/v1/tenancy.proto
 //
 // @dart = 2.12
 

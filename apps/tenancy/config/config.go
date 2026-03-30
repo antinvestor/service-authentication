@@ -2,7 +2,7 @@ package config
 
 import "github.com/pitabwire/frame/config"
 
-type PartitionConfig struct {
+type TenancyConfig struct {
 	config.ConfigurationDefault
 
 	NotificationServiceURI                   string `envDefault:"127.0.0.1:7020" env:"NOTIFICATION_SERVICE_URI"`

@@ -6,7 +6,7 @@ import (
 	neturl "net/url"
 	"testing"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -22,7 +22,7 @@ func TestTenancyAccess(t *testing.T) {
 }
 
 func (s *TenancyAccessTestSuite) TestPartitionAllowsAutoAccess_DefaultsTrue() {
-	s.True(partitionAllowsAutoAccess(&partitionv1.PartitionObject{}))
+	s.True(partitionAllowsAutoAccess(&tenancyv1.PartitionObject{}))
 }
 
 func (s *TenancyAccessTestSuite) TestPartitionAllowsAutoAccess_ReadsProperties() {
@@ -31,7 +31,7 @@ func (s *TenancyAccessTestSuite) TestPartitionAllowsAutoAccess_ReadsProperties()
 	})
 	s.Require().NoError(err)
 
-	s.False(partitionAllowsAutoAccess(&partitionv1.PartitionObject{Properties: props}))
+	s.False(partitionAllowsAutoAccess(&tenancyv1.PartitionObject{Properties: props}))
 }
 
 func (s *TenancyAccessTestSuite) TestPartitionAccessRequestURI_FallbackKey() {
@@ -40,7 +40,7 @@ func (s *TenancyAccessTestSuite) TestPartitionAccessRequestURI_FallbackKey() {
 	})
 	s.Require().NoError(err)
 
-	s.Equal("https://members.example.com/join", partitionAccessRequestURI(&partitionv1.PartitionObject{Properties: props}))
+	s.Equal("https://members.example.com/join", partitionAccessRequestURI(&tenancyv1.PartitionObject{Properties: props}))
 }
 
 func (s *TenancyAccessTestSuite) TestRedirectToErrorPage_AccessInstructions() {

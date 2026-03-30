@@ -32,7 +32,7 @@ type botProfileResolution struct {
 //
 //	"service-authentication" → authentication.bot@stawi.org
 //	"foundry"                → foundry.bot@stawi.org
-func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) botProfileResolution {
+func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileResolution {
 	result := botProfileResolution{}
 
 	if prtSrv.ProfileCli == nil {
@@ -104,7 +104,7 @@ func (prtSrv *PartitionServer) resolveBotProfiles(ctx context.Context) botProfil
 }
 
 // ensureBotProfile looks up or creates a ProfileType_BOT profile for the given email.
-func (prtSrv *PartitionServer) ensureBotProfile(ctx context.Context, email string) (string, error) {
+func (prtSrv *TenancyServer) ensureBotProfile(ctx context.Context, email string) (string, error) {
 	resp, err := prtSrv.ProfileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{
 		Contact: email,
 	}))

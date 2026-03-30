@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,17 +13,17 @@ func TestRootPartitionIDForEnvironment(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		environment partitionv1.TenantEnvironment
+		environment tenancyv1.TenantEnvironment
 		expectedID  string
 	}{
 		{
 			name:        "production",
-			environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
+			environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
 			expectedID:  rootPartitionProductionID,
 		},
 		{
 			name:        "staging",
-			environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
+			environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
 			expectedID:  rootPartitionStagingID,
 		},
 	}
@@ -42,7 +42,7 @@ func TestRootPartitionIDForEnvironment(t *testing.T) {
 func TestRootPartitionIDForEnvironmentRejectsUnsupportedValue(t *testing.T) {
 	t.Parallel()
 
-	_, err := rootPartitionIDForEnvironment(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED)
+	_, err := rootPartitionIDForEnvironment(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported environment")
 }

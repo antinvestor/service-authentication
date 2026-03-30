@@ -3,17 +3,17 @@ package handlers
 import (
 	"context"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/util"
 )
 
 // CreateClient registers a new OAuth2 client for a partition.
-func (prtSrv *PartitionServer) CreateClient(
+func (prtSrv *TenancyServer) CreateClient(
 	ctx context.Context,
-	req *connect.Request[partitionv1.CreateClientRequest],
-) (*connect.Response[partitionv1.CreateClientResponse], error) {
+	req *connect.Request[tenancyv1.CreateClientRequest],
+) (*connect.Response[tenancyv1.CreateClientResponse], error) {
 	msg := req.Msg
 
 	var properties map[string]any
@@ -38,7 +38,7 @@ func (prtSrv *PartitionServer) CreateClient(
 		return nil, prtSrv.toAPIError(err)
 	}
 
-	return connect.NewResponse(&partitionv1.CreateClientResponse{
+	return connect.NewResponse(&tenancyv1.CreateClientResponse{
 		Data:         result.Client.ToAPI(),
 		ClientSecret: result.ClientSecret,
 	}), nil
@@ -47,10 +47,10 @@ func (prtSrv *PartitionServer) CreateClient(
 // GetClient retrieves a client by ID or client_id.
 // For service-account clients (internal/external), the response includes the
 // associated ServiceAccountObject in the owner oneof field.
-func (prtSrv *PartitionServer) GetClient(
+func (prtSrv *TenancyServer) GetClient(
 	ctx context.Context,
-	req *connect.Request[partitionv1.GetClientRequest],
-) (*connect.Response[partitionv1.GetClientResponse], error) {
+	req *connect.Request[tenancyv1.GetClientRequest],
+) (*connect.Response[tenancyv1.GetClientResponse], error) {
 	logger := util.Log(ctx)
 	msg := req.Msg
 
@@ -87,7 +87,7 @@ func (prtSrv *PartitionServer) GetClient(
 	// Always populate the partition owner so callers can resolve
 	// tenant/partition context from a Hydra client_id without extra RPCs.
 	if client.GetPartition() == nil && cl.PartitionID != "" {
-		part, partErr := prtSrv.PartitionBusiness.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: cl.PartitionID})
+		part, partErr := prtSrv.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: cl.PartitionID})
 		if partErr != nil {
 			logger.WithError(partErr).Debug("could not populate partition owner on client")
 		} else {
@@ -95,14 +95,14 @@ func (prtSrv *PartitionServer) GetClient(
 		}
 	}
 
-	return connect.NewResponse(&partitionv1.GetClientResponse{Data: client}), nil
+	return connect.NewResponse(&tenancyv1.GetClientResponse{Data: client}), nil
 }
 
 // ListClient streams clients for a partition.
-func (prtSrv *PartitionServer) ListClient(
+func (prtSrv *TenancyServer) ListClient(
 	ctx context.Context,
-	req *connect.Request[partitionv1.ListClientRequest],
-	stream *connect.ServerStream[partitionv1.ListClientResponse],
+	req *connect.Request[tenancyv1.ListClientRequest],
+	stream *connect.ServerStream[tenancyv1.ListClientResponse],
 ) error {
 	logger := util.Log(ctx)
 	clients, err := prtSrv.ClientBusiness.ListClients(ctx, req.Msg.GetPartitionId())
@@ -111,38 +111,38 @@ func (prtSrv *PartitionServer) ListClient(
 		return prtSrv.toAPIError(err)
 	}
 
-	protoClients := make([]*partitionv1.ClientObject, 0, len(clients))
+	protoClients := make([]*tenancyv1.ClientObject, 0, len(clients))
 	for _, cl := range clients {
 		protoClients = append(protoClients, cl.ToAPI())
 	}
 
-	return stream.Send(&partitionv1.ListClientResponse{Data: protoClients})
+	return stream.Send(&tenancyv1.ListClientResponse{Data: protoClients})
 }
 
 // UpdateClient updates an existing OAuth2 client.
-func (prtSrv *PartitionServer) UpdateClient(
+func (prtSrv *TenancyServer) UpdateClient(
 	ctx context.Context,
-	req *connect.Request[partitionv1.UpdateClientRequest],
-) (*connect.Response[partitionv1.UpdateClientResponse], error) {
+	req *connect.Request[tenancyv1.UpdateClientRequest],
+) (*connect.Response[tenancyv1.UpdateClientResponse], error) {
 	logger := util.Log(ctx)
 	client, err := prtSrv.ClientBusiness.UpdateClient(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not update client")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.UpdateClientResponse{Data: client}), nil
+	return connect.NewResponse(&tenancyv1.UpdateClientResponse{Data: client}), nil
 }
 
 // RemoveClient deletes a client.
-func (prtSrv *PartitionServer) RemoveClient(
+func (prtSrv *TenancyServer) RemoveClient(
 	ctx context.Context,
-	req *connect.Request[partitionv1.RemoveClientRequest],
-) (*connect.Response[partitionv1.RemoveClientResponse], error) {
+	req *connect.Request[tenancyv1.RemoveClientRequest],
+) (*connect.Response[tenancyv1.RemoveClientResponse], error) {
 	logger := util.Log(ctx)
 	err := prtSrv.ClientBusiness.RemoveClient(ctx, req.Msg.GetId())
 	if err != nil {
 		logger.WithError(err).Debug("could not remove client")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.RemoveClientResponse{Succeeded: true}), nil
+	return connect.NewResponse(&tenancyv1.RemoveClientResponse{Succeeded: true}), nil
 }

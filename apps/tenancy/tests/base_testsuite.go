@@ -46,13 +46,13 @@ type DepsBuilder struct {
 	ClientBusiness         business.ClientBusiness
 	ServiceAccountBusiness business.ServiceAccountBusiness
 
-	Server *handlers.PartitionServer
+	Server *handlers.TenancyServer
 }
 
-func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.PartitionServer) *DepsBuilder {
+func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.TenancyServer) *DepsBuilder {
 	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := svc.WorkManager()
-	cfg := svc.Config().(*aconfig.PartitionConfig)
+	cfg := svc.Config().(*aconfig.TenancyConfig)
 	eventsMan := svc.EventsManager()
 
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
@@ -220,7 +220,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
 
-	cfg, err := config.LoadWithOIDC[aconfig.PartitionConfig](ctx)
+	cfg, err := config.LoadWithOIDC[aconfig.TenancyConfig](ctx)
 	require.NoError(t, err)
 
 	// Hydra's issuer and public URLs both use http://hydra:4444 so OIDC
@@ -273,7 +273,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
-	implementation := handlers.NewPartitionServer(ctx, svc, auth, nil)
+	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
@@ -348,7 +348,7 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 // registered on Hydra yet — the Hydra admin API doesn't require auth.
 // Once the seeded clients are registered, the service's OAuth2-authenticated
 // HTTP client will be able to obtain tokens for subsequent event handlers.
-func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.PartitionConfig, partSrv *handlers.PartitionServer) {
+func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, partSrv *handlers.TenancyServer) {
 	log := util.Log(ctx)
 	syncCtx := security.SkipTenancyChecksOnClaims(ctx)
 

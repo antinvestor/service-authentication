@@ -19,7 +19,7 @@ const defaultSyncLimit = math.MaxInt32
 
 const SyncClientsHTTPPath = "/_system/sync/clients"
 
-func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, req *http.Request) {
+func (prtSrv *TenancyServer) SynchronizeSystemClients(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := util.Log(ctx)
 
@@ -32,7 +32,7 @@ func (prtSrv *PartitionServer) SynchronizeSystemClients(rw http.ResponseWriter, 
 
 // executeSyncClients performs the actual sync work. Called by both the
 // authenticated handler and the internal (unauthenticated) handler.
-func (prtSrv *PartitionServer) executeSyncClients(rw http.ResponseWriter, req *http.Request) {
+func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := util.Log(ctx)
 
@@ -112,7 +112,7 @@ func (prtSrv *PartitionServer) executeSyncClients(rw http.ResponseWriter, req *h
 	_ = json.NewEncoder(rw).Encode(response)
 }
 
-func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
+func (prtSrv *TenancyServer) NewSecureRouterV1() *http.ServeMux {
 	userServeMux := http.NewServeMux()
 
 	userServeMux.HandleFunc(SyncClientsHTTPPath, prtSrv.SynchronizeSystemClients)
@@ -124,7 +124,7 @@ func (prtSrv *PartitionServer) NewSecureRouterV1() *http.ServeMux {
 // sync endpoint. This is used for bootstrap: syncing seeded clients to Hydra before
 // any service can obtain tokens. Only accessible within the cluster — not exposed
 // through the API gateway.
-func (prtSrv *PartitionServer) NewInternalSyncHandler() http.Handler {
+func (prtSrv *TenancyServer) NewInternalSyncHandler() http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		log := util.Log(req.Context())
 		log.Info("internal sync endpoint called (unauthenticated)")

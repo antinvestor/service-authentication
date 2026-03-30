@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common"
 	"github.com/antinvestor/common/connection"
@@ -31,7 +31,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := config.LoadWithOIDC[aconfig.PartitionConfig](ctx)
+	cfg, err := config.LoadWithOIDC[aconfig.TenancyConfig](ctx)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not process configs")
 		return
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	auth := sm.GetAuthorizer(ctx)
-	partSrv := handlers.NewPartitionServer(ctx, svc, auth, profileCli)
+	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli)
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)
@@ -122,7 +122,7 @@ func handleDatabaseMigration(
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
-	implementation *handlers.PartitionServer,
+	implementation *handlers.TenancyServer,
 ) http.Handler {
 
 	authenticator := sm.GetAuthenticator(ctx)
@@ -133,7 +133,7 @@ func setupConnectServer(
 	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
 
 	// Layer 2: FunctionAccessInterceptor enforces per-RPC permissions from proto annotations.
-	sd := partitionv1.File_partition_v1_partition_proto.Services().ByName("PartitionService")
+	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
 	procMap := permissions.BuildProcedureMap(sd)
 	svcPerms := permissions.ForService(sd)
 	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
@@ -144,7 +144,7 @@ func setupConnectServer(
 		util.Log(ctx).WithError(err).Fatal("main -- Could not create default interceptors")
 	}
 
-	_, serverHandler := partitionv1connect.NewPartitionServiceHandler(
+	_, serverHandler := tenancyv1connect.NewTenancyServiceHandler(
 		implementation, connect.WithInterceptors(defaultInterceptorList...))
 
 	// HTTP: auth middleware (outer) populates claims → tenancy access (inner) verifies data access → handler.

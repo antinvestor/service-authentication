@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"maps"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -31,7 +31,7 @@ type ServiceAccountBusiness interface {
 		audiences, roles []string, publicKeys, properties map[string]any) (*ServiceAccountResult, error)
 	GetServiceAccount(ctx context.Context, id, clientID, profileID string) (*models.ServiceAccount, error)
 	GetServiceAccountByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
-	UpdateServiceAccount(ctx context.Context, request *partitionv1.UpdateServiceAccountRequest) (*partitionv1.ServiceAccountObject, error)
+	UpdateServiceAccount(ctx context.Context, request *tenancyv1.UpdateServiceAccountRequest) (*tenancyv1.ServiceAccountObject, error)
 	ListServiceAccounts(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
 	RemoveServiceAccount(ctx context.Context, id string) error
 }
@@ -291,8 +291,8 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 
 func (sb *serviceAccountBusiness) UpdateServiceAccount(
 	ctx context.Context,
-	request *partitionv1.UpdateServiceAccountRequest,
-) (*partitionv1.ServiceAccountObject, error) {
+	request *tenancyv1.UpdateServiceAccountRequest,
+) (*tenancyv1.ServiceAccountObject, error) {
 	sa, err := sb.serviceAccountRepo.GetByID(ctx, request.GetId())
 	if err != nil {
 		return nil, fmt.Errorf("service account not found: %w", err)

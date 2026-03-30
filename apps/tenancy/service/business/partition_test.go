@@ -55,7 +55,7 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 	dep := definition.NewDependancyOption("partition_test", "partition_sync", nil)
 	ctx, svc, deps := p.CreateService(t, dep)
 
-	cfg, ok := svc.Config().(*config.PartitionConfig)
+	cfg, ok := svc.Config().(*config.TenancyConfig)
 	if ok {
 		cfg.Oauth2ServiceAdminURI = p.hydraContainer.GetInternalDS(ctx).String()
 	}

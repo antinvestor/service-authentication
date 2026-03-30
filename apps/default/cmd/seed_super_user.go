@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -45,12 +45,12 @@ type superUserProfileService interface {
 }
 
 type superUserPartitionService interface {
-	CreateAccess(ctx context.Context, partitionID, profileID string) (*partitionv1.AccessObject, error)
-	ListAccesses(ctx context.Context, partitionID string) ([]*partitionv1.AccessObject, error)
-	ListPartitionRoles(ctx context.Context, partitionID string) ([]*partitionv1.PartitionRoleObject, error)
-	CreatePartitionRole(ctx context.Context, partitionID, name string) (*partitionv1.PartitionRoleObject, error)
-	ListAccessRoles(ctx context.Context, accessID string) ([]*partitionv1.AccessRoleObject, error)
-	CreateAccessRole(ctx context.Context, accessID, partitionRoleID string) (*partitionv1.AccessRoleObject, error)
+	CreateAccess(ctx context.Context, partitionID, profileID string) (*tenancyv1.AccessObject, error)
+	ListAccesses(ctx context.Context, partitionID string) ([]*tenancyv1.AccessObject, error)
+	ListPartitionRoles(ctx context.Context, partitionID string) ([]*tenancyv1.PartitionRoleObject, error)
+	CreatePartitionRole(ctx context.Context, partitionID, name string) (*tenancyv1.PartitionRoleObject, error)
+	ListAccessRoles(ctx context.Context, accessID string) ([]*tenancyv1.AccessRoleObject, error)
+	CreateAccessRole(ctx context.Context, accessID, partitionRoleID string) (*tenancyv1.AccessRoleObject, error)
 }
 
 type superUserSeeder struct {
@@ -215,7 +215,7 @@ func (s *superUserSeeder) getOrCreatePartitionRole(
 	ctx context.Context,
 	partitionID string,
 	roleName string,
-) (*partitionv1.PartitionRoleObject, bool, error) {
+) (*tenancyv1.PartitionRoleObject, bool, error) {
 	roles, err := s.partitions.ListPartitionRoles(ctx, partitionID)
 	if err != nil {
 		return nil, false, fmt.Errorf("list partition roles for %s: %w", partitionID, err)
@@ -238,7 +238,7 @@ func (s *superUserSeeder) getOrCreatePartitionRole(
 func (s *superUserSeeder) ensureAccessRole(
 	ctx context.Context,
 	accessID string,
-	role *partitionv1.PartitionRoleObject,
+	role *tenancyv1.PartitionRoleObject,
 ) (bool, error) {
 	roles, err := s.partitions.ListAccessRoles(ctx, accessID)
 	if err != nil {
@@ -293,11 +293,11 @@ func normalizeRootEnvironment(environment string) string {
 	return tenantenv.Normalise(environment)
 }
 
-func rootPartitionIDForEnvironment(environment partitionv1.TenantEnvironment) (string, error) {
+func rootPartitionIDForEnvironment(environment tenancyv1.TenantEnvironment) (string, error) {
 	switch environment {
-	case partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION:
+	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION:
 		return rootPartitionProductionID, nil
-	case partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
+	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
 		return rootPartitionStagingID, nil
 	default:
 		return "", fmt.Errorf("unsupported environment %s", environment.String())
@@ -342,15 +342,15 @@ func (c connectSuperUserProfileService) CreateProfile(ctx context.Context, email
 }
 
 type connectSuperUserPartitionService struct {
-	client partitionv1connect.PartitionServiceClient
+	client tenancyv1connect.TenancyServiceClient
 }
 
 func (c connectSuperUserPartitionService) CreateAccess(
 	ctx context.Context,
 	partitionID, profileID string,
-) (*partitionv1.AccessObject, error) {
-	resp, err := c.client.CreateAccess(ctx, connect.NewRequest(&partitionv1.CreateAccessRequest{
-		Partition: &partitionv1.CreateAccessRequest_PartitionId{PartitionId: partitionID},
+) (*tenancyv1.AccessObject, error) {
+	resp, err := c.client.CreateAccess(ctx, connect.NewRequest(&tenancyv1.CreateAccessRequest{
+		Partition: &tenancyv1.CreateAccessRequest_PartitionId{PartitionId: partitionID},
 		ProfileId: profileID,
 	}))
 	if err != nil {
@@ -366,8 +366,8 @@ func (c connectSuperUserPartitionService) CreateAccess(
 func (c connectSuperUserPartitionService) ListAccesses(
 	ctx context.Context,
 	partitionID string,
-) ([]*partitionv1.AccessObject, error) {
-	req := &partitionv1.ListAccessRequest{}
+) ([]*tenancyv1.AccessObject, error) {
+	req := &tenancyv1.ListAccessRequest{}
 	req.SetPartitionId(partitionID)
 
 	stream, err := c.client.ListAccess(ctx, connect.NewRequest(req))
@@ -375,7 +375,7 @@ func (c connectSuperUserPartitionService) ListAccesses(
 		return nil, err
 	}
 
-	var accesses []*partitionv1.AccessObject
+	var accesses []*tenancyv1.AccessObject
 	for stream.Receive() {
 		accesses = append(accesses, stream.Msg().GetData()...)
 	}
@@ -386,15 +386,15 @@ func (c connectSuperUserPartitionService) ListAccesses(
 func (c connectSuperUserPartitionService) ListPartitionRoles(
 	ctx context.Context,
 	partitionID string,
-) ([]*partitionv1.PartitionRoleObject, error) {
-	stream, err := c.client.ListPartitionRole(ctx, connect.NewRequest(&partitionv1.ListPartitionRoleRequest{
+) ([]*tenancyv1.PartitionRoleObject, error) {
+	stream, err := c.client.ListPartitionRole(ctx, connect.NewRequest(&tenancyv1.ListPartitionRoleRequest{
 		PartitionId: partitionID,
 	}))
 	if err != nil {
 		return nil, err
 	}
 
-	var roles []*partitionv1.PartitionRoleObject
+	var roles []*tenancyv1.PartitionRoleObject
 	for stream.Receive() {
 		roles = append(roles, stream.Msg().GetData()...)
 	}
@@ -405,8 +405,8 @@ func (c connectSuperUserPartitionService) ListPartitionRoles(
 func (c connectSuperUserPartitionService) CreatePartitionRole(
 	ctx context.Context,
 	partitionID, name string,
-) (*partitionv1.PartitionRoleObject, error) {
-	resp, err := c.client.CreatePartitionRole(ctx, connect.NewRequest(&partitionv1.CreatePartitionRoleRequest{
+) (*tenancyv1.PartitionRoleObject, error) {
+	resp, err := c.client.CreatePartitionRole(ctx, connect.NewRequest(&tenancyv1.CreatePartitionRoleRequest{
 		PartitionId: partitionID,
 		Name:        name,
 	}))
@@ -423,15 +423,15 @@ func (c connectSuperUserPartitionService) CreatePartitionRole(
 func (c connectSuperUserPartitionService) ListAccessRoles(
 	ctx context.Context,
 	accessID string,
-) ([]*partitionv1.AccessRoleObject, error) {
-	stream, err := c.client.ListAccessRole(ctx, connect.NewRequest(&partitionv1.ListAccessRoleRequest{
+) ([]*tenancyv1.AccessRoleObject, error) {
+	stream, err := c.client.ListAccessRole(ctx, connect.NewRequest(&tenancyv1.ListAccessRoleRequest{
 		AccessId: accessID,
 	}))
 	if err != nil {
 		return nil, err
 	}
 
-	var roles []*partitionv1.AccessRoleObject
+	var roles []*tenancyv1.AccessRoleObject
 	for stream.Receive() {
 		roles = append(roles, stream.Msg().GetData()...)
 	}
@@ -442,8 +442,8 @@ func (c connectSuperUserPartitionService) ListAccessRoles(
 func (c connectSuperUserPartitionService) CreateAccessRole(
 	ctx context.Context,
 	accessID, partitionRoleID string,
-) (*partitionv1.AccessRoleObject, error) {
-	resp, err := c.client.CreateAccessRole(ctx, connect.NewRequest(&partitionv1.CreateAccessRoleRequest{
+) (*tenancyv1.AccessRoleObject, error) {
+	resp, err := c.client.CreateAccessRole(ctx, connect.NewRequest(&tenancyv1.CreateAccessRoleRequest{
 		AccessId:        accessID,
 		PartitionRoleId: partitionRoleID,
 	}))

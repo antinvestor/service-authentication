@@ -3,7 +3,7 @@ package business_test
 import (
 	"testing"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
@@ -71,17 +71,17 @@ func (s *BusinessTestSuite) TestCreateTenant() {
 	tenantID := util.IDString()
 	ctx = s.WithAuthClaims(ctx, tenantID, tenantID, profileID)
 
-	resp, err := deps.TenantBusiness.CreateTenant(ctx, &partitionv1.CreateTenantRequest{
+	resp, err := deps.TenantBusiness.CreateTenant(ctx, &tenancyv1.CreateTenantRequest{
 		Name:        "Test Tenant",
 		Description: "A test tenant",
-		Environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
+		Environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
 	})
 
 	s.Require().NoError(err)
 	s.Require().NotEmpty(resp.Id)
 	s.Require().Equal("Test Tenant", resp.Name)
 	s.Require().Equal("A test tenant", resp.Description)
-	s.Require().Equal(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.GetEnvironment())
+	s.Require().Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.GetEnvironment())
 }
 
 func (s *BusinessTestSuite) TestGetTenant() {
@@ -117,7 +117,7 @@ func (s *BusinessTestSuite) TestUpdateTenant_Name() {
 	tenant := s.createTestTenant("OldName")
 	ctx = s.WithAuthClaims(ctx, tenant.TenantID, tenant.PartitionID, util.IDString())
 
-	updated, err := deps.TenantBusiness.UpdateTenant(ctx, &partitionv1.UpdateTenantRequest{
+	updated, err := deps.TenantBusiness.UpdateTenant(ctx, &tenancyv1.UpdateTenantRequest{
 		Id:   tenant.GetID(),
 		Name: "NewName",
 	})
@@ -135,7 +135,7 @@ func (s *BusinessTestSuite) TestUpdateTenant_Properties() {
 
 	props, _ := structpb.NewStruct(map[string]any{"key": "value"})
 
-	updated, err := deps.TenantBusiness.UpdateTenant(ctx, &partitionv1.UpdateTenantRequest{
+	updated, err := deps.TenantBusiness.UpdateTenant(ctx, &tenancyv1.UpdateTenantRequest{
 		Id:         tenant.GetID(),
 		Properties: props,
 	})
@@ -166,7 +166,7 @@ func (s *BusinessTestSuite) TestListTenant() {
 	}
 	ctx = claims.ClaimsToContext(ctx)
 
-	tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{})
+	tenants, err := deps.TenantBusiness.ListTenant(ctx, &tenancyv1.ListTenantRequest{})
 	s.Require().NoError(err)
 	s.GreaterOrEqual(len(tenants), 2)
 }
@@ -190,13 +190,13 @@ func (s *BusinessTestSuite) TestListTenantByEnvironment() {
 	}
 	ctx = claims.ClaimsToContext(ctx)
 
-	tenants, err := deps.TenantBusiness.ListTenant(ctx, &partitionv1.ListTenantRequest{
-		Environment: partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
+	tenants, err := deps.TenantBusiness.ListTenant(ctx, &tenancyv1.ListTenantRequest{
+		Environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
 	})
 	s.Require().NoError(err)
 	s.Len(tenants, 1)
 	s.Equal(stagingTenant.GetID(), tenants[0].GetId())
-	s.Equal(partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING, tenants[0].GetEnvironment())
+	s.Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING, tenants[0].GetEnvironment())
 }
 
 // ========================
@@ -218,7 +218,7 @@ func (s *BusinessTestSuite) TestCreatePartition() {
 	}
 	ctx = claims.ClaimsToContext(ctx)
 
-	resp, err := deps.PartitionBusiness.CreatePartition(ctx, &partitionv1.CreatePartitionRequest{
+	resp, err := deps.PartitionBusiness.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
 		TenantId:    tenant.GetID(),
 		Name:        "Partition A",
 		Description: "desc",
@@ -251,7 +251,7 @@ func (s *BusinessTestSuite) TestCreatePartition_InvalidTenant() {
 	}
 	ctx = claims.ClaimsToContext(ctx)
 
-	_, err := deps.PartitionBusiness.CreatePartition(ctx, &partitionv1.CreatePartitionRequest{
+	_, err := deps.PartitionBusiness.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
 		TenantId: "nonexistent-tenant",
 		Name:     "Bad",
 	})
@@ -266,7 +266,7 @@ func (s *BusinessTestSuite) TestGetPartition() {
 	partition := s.createTestPartition(tenant.GetID())
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	fetched, err := deps.PartitionBusiness.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: partition.GetID()})
+	fetched, err := deps.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: partition.GetID()})
 	s.Require().NoError(err)
 	s.Equal(partition.GetID(), fetched.Id)
 }
@@ -295,7 +295,7 @@ func (s *BusinessTestSuite) TestGetPartition_ServiceMatrix() {
 	claims.Subject = "service_matrix"
 	ctx = claims.ClaimsToContext(ctx)
 
-	fetched, err := deps.PartitionBusiness.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: partition.GetID()})
+	fetched, err := deps.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: partition.GetID()})
 	s.Require().NoError(err)
 	s.Equal("top-secret", fetched.Properties.AsMap()["client_secret"])
 	s.NotEmpty(fetched.Properties.AsMap()["client_discovery_uri"])
@@ -308,7 +308,7 @@ func (s *BusinessTestSuite) TestGetPartition_NoClaims() {
 	tenant := s.createTestTenant("NC")
 	partition := s.createTestPartition(tenant.GetID())
 
-	_, err := deps.PartitionBusiness.GetPartition(ctx, &partitionv1.GetPartitionRequest{Id: partition.GetID()})
+	_, err := deps.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: partition.GetID()})
 	s.Require().Error(err)
 	s.Contains(err.Error(), "known entities")
 }
@@ -321,7 +321,7 @@ func (s *BusinessTestSuite) TestUpdatePartition() {
 	partition := s.createTestPartition(tenant.GetID())
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	updated, err := deps.PartitionBusiness.UpdatePartition(ctx, &partitionv1.UpdatePartitionRequest{
+	updated, err := deps.PartitionBusiness.UpdatePartition(ctx, &tenancyv1.UpdatePartitionRequest{
 		Id:          partition.GetID(),
 		Name:        "Updated Name",
 		Description: "Updated Desc",
@@ -359,7 +359,7 @@ func (s *BusinessTestSuite) TestListPartition() {
 	}
 	ctx = claims.ClaimsToContext(ctx)
 
-	partitions, err := deps.PartitionBusiness.ListPartition(ctx, &partitionv1.ListPartitionRequest{})
+	partitions, err := deps.PartitionBusiness.ListPartition(ctx, &tenancyv1.ListPartitionRequest{})
 	s.Require().NoError(err)
 	s.GreaterOrEqual(len(partitions), 1)
 	s.Equal(partition.GetID(), partitions[0].GetId())
@@ -387,7 +387,7 @@ func (s *BusinessTestSuite) TestGetPartitionParents() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), childID, util.IDString())
 
-	parents, err := deps.PartitionBusiness.GetPartitionParents(ctx, &partitionv1.GetPartitionParentsRequest{Id: childID})
+	parents, err := deps.PartitionBusiness.GetPartitionParents(ctx, &tenancyv1.GetPartitionParentsRequest{Id: childID})
 	s.Require().NoError(err)
 	s.GreaterOrEqual(len(parents), 1)
 	s.Equal(parent.GetID(), parents[0].Id)
@@ -405,7 +405,7 @@ func (s *BusinessTestSuite) TestCreatePartitionRole() {
 	partition := s.createTestPartition(tenant.GetID())
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	role, err := deps.PartitionBusiness.CreatePartitionRole(ctx, &partitionv1.CreatePartitionRoleRequest{
+	role, err := deps.PartitionBusiness.CreatePartitionRole(ctx, &tenancyv1.CreatePartitionRoleRequest{
 		PartitionId: partition.GetID(),
 		Name:        "admin",
 	})
@@ -436,7 +436,7 @@ func (s *BusinessTestSuite) TestListPartitionRoles() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	resp, err := deps.PartitionBusiness.ListPartitionRoles(ctx, &partitionv1.ListPartitionRoleRequest{
+	resp, err := deps.PartitionBusiness.ListPartitionRoles(ctx, &tenancyv1.ListPartitionRoleRequest{
 		PartitionId: partition.GetID(),
 	})
 	s.Require().NoError(err)
@@ -462,7 +462,7 @@ func (s *BusinessTestSuite) TestRemovePartitionRole() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	err = deps.PartitionBusiness.RemovePartitionRole(ctx, &partitionv1.RemovePartitionRoleRequest{
+	err = deps.PartitionBusiness.RemovePartitionRole(ctx, &tenancyv1.RemovePartitionRoleRequest{
 		Id: role.GetID(),
 	})
 	s.Require().NoError(err)
@@ -475,28 +475,28 @@ func (s *BusinessTestSuite) TestRemovePartitionRole() {
 // Access Business Tests
 // ========================
 
-func (s *BusinessTestSuite) newGetPageByPartitionAndName(partitionID, name string) *partitionv1.GetPageRequest {
-	req := &partitionv1.GetPageRequest{}
+func (s *BusinessTestSuite) newGetPageByPartitionAndName(partitionID, name string) *tenancyv1.GetPageRequest {
+	req := &tenancyv1.GetPageRequest{}
 	req.SetPartitionId(partitionID)
 	req.SetName(name)
 	return req
 }
 
-func (s *BusinessTestSuite) newCreateAccessReq(partitionID, profileID string) *partitionv1.CreateAccessRequest {
-	req := &partitionv1.CreateAccessRequest{}
+func (s *BusinessTestSuite) newCreateAccessReq(partitionID, profileID string) *tenancyv1.CreateAccessRequest {
+	req := &tenancyv1.CreateAccessRequest{}
 	req.SetPartitionId(partitionID)
 	req.SetProfileId(profileID)
 	return req
 }
 
-func (s *BusinessTestSuite) newGetAccessByIDReq(accessID string) *partitionv1.GetAccessRequest {
-	req := &partitionv1.GetAccessRequest{}
+func (s *BusinessTestSuite) newGetAccessByIDReq(accessID string) *tenancyv1.GetAccessRequest {
+	req := &tenancyv1.GetAccessRequest{}
 	req.SetAccessId(accessID)
 	return req
 }
 
-func (s *BusinessTestSuite) newGetAccessByPartitionProfileReq(partitionID, profileID string) *partitionv1.GetAccessRequest {
-	req := &partitionv1.GetAccessRequest{}
+func (s *BusinessTestSuite) newGetAccessByPartitionProfileReq(partitionID, profileID string) *tenancyv1.GetAccessRequest {
+	req := &tenancyv1.GetAccessRequest{}
 	req.SetPartitionId(partitionID)
 	req.SetProfileId(profileID)
 	return req
@@ -587,7 +587,7 @@ func (s *BusinessTestSuite) TestRemoveAccess() {
 	created, err := deps.AccessBusiness.CreateAccess(ctx, s.newCreateAccessReq(partition.GetID(), profileID))
 	s.Require().NoError(err)
 
-	removeReq := &partitionv1.RemoveAccessRequest{}
+	removeReq := &tenancyv1.RemoveAccessRequest{}
 	removeReq.SetId(created.GetId())
 	err = deps.AccessBusiness.RemoveAccess(ctx, removeReq)
 	s.Require().NoError(err)
@@ -619,7 +619,7 @@ func (s *BusinessTestSuite) TestCreateAccessRole() {
 	err = deps.PartitionRoleRepo.Create(ctx, role)
 	s.Require().NoError(err)
 
-	createRoleReq := &partitionv1.CreateAccessRoleRequest{}
+	createRoleReq := &tenancyv1.CreateAccessRoleRequest{}
 	createRoleReq.SetAccessId(created.GetId())
 	createRoleReq.SetPartitionRoleId(role.GetID())
 	resp, err := deps.AccessBusiness.CreateAccessRole(ctx, createRoleReq)
@@ -652,14 +652,14 @@ func (s *BusinessTestSuite) TestListAccessRoles() {
 		err = deps.PartitionRoleRepo.Create(ctx, role)
 		s.Require().NoError(err)
 
-		createRoleReq := &partitionv1.CreateAccessRoleRequest{}
+		createRoleReq := &tenancyv1.CreateAccessRoleRequest{}
 		createRoleReq.SetAccessId(created.GetId())
 		createRoleReq.SetPartitionRoleId(role.GetID())
 		_, err = deps.AccessBusiness.CreateAccessRole(ctx, createRoleReq)
 		s.Require().NoError(err)
 	}
 
-	listReq := &partitionv1.ListAccessRoleRequest{}
+	listReq := &tenancyv1.ListAccessRoleRequest{}
 	listReq.SetAccessId(created.GetId())
 	resp, err := deps.AccessBusiness.ListAccessRoles(ctx, listReq)
 	s.Require().NoError(err)
@@ -689,18 +689,18 @@ func (s *BusinessTestSuite) TestRemoveAccessRole() {
 	err = deps.PartitionRoleRepo.Create(ctx, role)
 	s.Require().NoError(err)
 
-	createRoleReq := &partitionv1.CreateAccessRoleRequest{}
+	createRoleReq := &tenancyv1.CreateAccessRoleRequest{}
 	createRoleReq.SetAccessId(created.GetId())
 	createRoleReq.SetPartitionRoleId(role.GetID())
 	accessRole, err := deps.AccessBusiness.CreateAccessRole(ctx, createRoleReq)
 	s.Require().NoError(err)
 
-	removeReq := &partitionv1.RemoveAccessRoleRequest{}
+	removeReq := &tenancyv1.RemoveAccessRoleRequest{}
 	removeReq.SetId(accessRole.GetId())
 	err = deps.AccessBusiness.RemoveAccessRole(ctx, removeReq)
 	s.Require().NoError(err)
 
-	listReq := &partitionv1.ListAccessRoleRequest{}
+	listReq := &tenancyv1.ListAccessRoleRequest{}
 	listReq.SetAccessId(created.GetId())
 	resp, err := deps.AccessBusiness.ListAccessRoles(ctx, listReq)
 	s.Require().NoError(err)
@@ -719,7 +719,7 @@ func (s *BusinessTestSuite) TestCreatePage() {
 	partition := s.createTestPartition(tenant.GetID())
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	page, err := deps.PageBusiness.CreatePage(ctx, &partitionv1.CreatePageRequest{
+	page, err := deps.PageBusiness.CreatePage(ctx, &tenancyv1.CreatePageRequest{
 		PartitionId: partition.GetID(),
 		Name:        "login",
 		Html:        "<h1>Login</h1>",
@@ -734,7 +734,7 @@ func (s *BusinessTestSuite) TestCreatePage_InvalidPartition() {
 
 	ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-	_, err := deps.PageBusiness.CreatePage(ctx, &partitionv1.CreatePageRequest{
+	_, err := deps.PageBusiness.CreatePage(ctx, &tenancyv1.CreatePageRequest{
 		PartitionId: "nonexistent",
 		Name:        "bad",
 		Html:        "<h1>Bad</h1>",
@@ -797,7 +797,7 @@ func (s *BusinessTestSuite) TestRemovePage() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	removePageReq := &partitionv1.RemovePageRequest{}
+	removePageReq := &tenancyv1.RemovePageRequest{}
 	removePageReq.SetId(page.GetID())
 	err = deps.PageBusiness.RemovePage(ctx, removePageReq)
 	s.Require().NoError(err)
@@ -1130,7 +1130,7 @@ func (s *BusinessTestSuite) TestUpdatePartitionRole() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	updated, err := deps.PartitionBusiness.UpdatePartitionRole(ctx, &partitionv1.UpdatePartitionRoleRequest{
+	updated, err := deps.PartitionBusiness.UpdatePartitionRole(ctx, &tenancyv1.UpdatePartitionRoleRequest{
 		Id:   role.GetID(),
 		Name: "renamed",
 	})
@@ -1190,7 +1190,7 @@ func (s *BusinessTestSuite) TestUpdatePage() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	updated, err := deps.PageBusiness.UpdatePage(ctx, &partitionv1.UpdatePageRequest{
+	updated, err := deps.PageBusiness.UpdatePage(ctx, &tenancyv1.UpdatePageRequest{
 		Id:   page.GetID(),
 		Html: "<h1>New</h1>",
 	})
@@ -1224,7 +1224,7 @@ func (s *BusinessTestSuite) TestListAccess_ByPartition() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	req := &partitionv1.ListAccessRequest{}
+	req := &tenancyv1.ListAccessRequest{}
 	req.SetPartitionId(partition.GetID())
 	accesses, err := deps.AccessBusiness.ListAccess(ctx, req)
 	s.Require().NoError(err)
@@ -1251,7 +1251,7 @@ func (s *BusinessTestSuite) TestListAccess_ByProfile() {
 
 	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
 
-	req := &partitionv1.ListAccessRequest{}
+	req := &tenancyv1.ListAccessRequest{}
 	req.SetProfileId(profileID)
 	accesses, err := deps.AccessBusiness.ListAccess(ctx, req)
 	s.Require().NoError(err)
@@ -1280,7 +1280,7 @@ func (s *BusinessTestSuite) TestUpdateServiceAccount() {
 	)
 	s.Require().NoError(err)
 
-	updated, err := deps.ServiceAccountBusiness.UpdateServiceAccount(ctx, &partitionv1.UpdateServiceAccountRequest{
+	updated, err := deps.ServiceAccountBusiness.UpdateServiceAccount(ctx, &tenancyv1.UpdateServiceAccountRequest{
 		Id:        result.ServiceAccount.GetID(),
 		Type:      "external",
 		Audiences: []string{"service_tenancy", "service_notification"},
@@ -1327,7 +1327,7 @@ func (s *BusinessTestSuite) TestUpdateClient() {
 	)
 	s.Require().NoError(err)
 
-	updated, err := deps.ClientBusiness.UpdateClient(ctx, &partitionv1.UpdateClientRequest{
+	updated, err := deps.ClientBusiness.UpdateClient(ctx, &tenancyv1.UpdateClientRequest{
 		Id:           result.Client.GetID(),
 		Name:         "updated",
 		RedirectUris: []string{"https://new.example.com/callback"},

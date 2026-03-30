@@ -1,6 +1,6 @@
 //
 //  Generated code. Do not modify.
-//  source: partition/v1/partition.proto
+//  source: tenancy/v1/tenancy.proto
 //
 // @dart = 2.12
 
@@ -43,7 +43,7 @@ const TenantObject$json = {
     {'1': 'properties', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
     {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'state', '3': 6, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'environment', '3': 7, '4': 1, '5': 14, '6': '.partition.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {'1': 'environment', '3': 7, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
   ],
 };
 
@@ -54,8 +54,8 @@ final $typed_data.Uint8List tenantObjectDescriptor = $convert.base64Decode(
     'Qgi6SAVyAxj0A1ILZGVzY3JpcHRpb24SNwoKcHJvcGVydGllcxgEIAEoCzIXLmdvb2dsZS5wcm'
     '90b2J1Zi5TdHJ1Y3RSCnByb3BlcnRpZXMSOQoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5w'
     'cm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBImCgVzdGF0ZRgGIAEoDjIQLmNvbW1vbi52MS'
-    '5TVEFURVIFc3RhdGUSSwoLZW52aXJvbm1lbnQYByABKA4yHy5wYXJ0aXRpb24udjEuVGVuYW50'
-    'RW52aXJvbm1lbnRCCLpIBYIBAhABUgtlbnZpcm9ubWVudA==');
+    '5TVEFURVIFc3RhdGUSSQoLZW52aXJvbm1lbnQYByABKA4yHS50ZW5hbmN5LnYxLlRlbmFudEVu'
+    'dmlyb25tZW50Qgi6SAWCAQIQAVILZW52aXJvbm1lbnQ=');
 
 @$core.Deprecated('Use partitionObjectDescriptor instead')
 const PartitionObject$json = {
@@ -137,7 +137,7 @@ const AccessObject$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'profile_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
-    {'1': 'partition', '3': 3, '4': 1, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'partition'},
+    {'1': 'partition', '3': 3, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'partition'},
     {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
     {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
@@ -147,10 +147,10 @@ const AccessObject$json = {
 final $typed_data.Uint8List accessObjectDescriptor = $convert.base64Decode(
     'CgxBY2Nlc3NPYmplY3QSKwoCaWQYASABKAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfV'
     'ICaWQSOgoKcHJvZmlsZV9pZBgCIAEoCUIbukgYchYQAxgoMhBbMC05YS16Xy1dezMsNDB9Uglw'
-    'cm9maWxlSWQSOwoJcGFydGl0aW9uGAMgASgLMh0ucGFydGl0aW9uLnYxLlBhcnRpdGlvbk9iam'
-    'VjdFIJcGFydGl0aW9uEiYKBXN0YXRlGAQgASgOMhAuY29tbW9uLnYxLlNUQVRFUgVzdGF0ZRI5'
-    'CgpjcmVhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZE'
-    'F0');
+    'cm9maWxlSWQSOQoJcGFydGl0aW9uGAMgASgLMhsudGVuYW5jeS52MS5QYXJ0aXRpb25PYmplY3'
+    'RSCXBhcnRpdGlvbhImCgVzdGF0ZRgEIAEoDjIQLmNvbW1vbi52MS5TVEFURVIFc3RhdGUSOQoK'
+    'Y3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdA'
+    '==');
 
 @$core.Deprecated('Use accessRoleObjectDescriptor instead')
 const AccessRoleObject$json = {
@@ -158,7 +158,7 @@ const AccessRoleObject$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'access_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'accessId'},
-    {'1': 'role', '3': 3, '4': 1, '5': 11, '6': '.partition.v1.PartitionRoleObject', '10': 'role'},
+    {'1': 'role', '3': 3, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'role'},
   ],
 };
 
@@ -166,8 +166,8 @@ const AccessRoleObject$json = {
 final $typed_data.Uint8List accessRoleObjectDescriptor = $convert.base64Decode(
     'ChBBY2Nlc3NSb2xlT2JqZWN0EisKAmlkGAEgASgJQhu6SBhyFhADGCgyEFswLTlhLXpfLV17My'
     'w0MH1SAmlkEjgKCWFjY2Vzc19pZBgCIAEoCUIbukgYchYQAxgoMhBbMC05YS16Xy1dezMsNDB9'
-    'UghhY2Nlc3NJZBI1CgRyb2xlGAMgASgLMiEucGFydGl0aW9uLnYxLlBhcnRpdGlvblJvbGVPYm'
-    'plY3RSBHJvbGU=');
+    'UghhY2Nlc3NJZBIzCgRyb2xlGAMgASgLMh8udGVuYW5jeS52MS5QYXJ0aXRpb25Sb2xlT2JqZW'
+    'N0UgRyb2xl');
 
 @$core.Deprecated('Use serviceAccountObjectDescriptor instead')
 const ServiceAccountObject$json = {
@@ -216,8 +216,8 @@ const ClientObject$json = {
     {'1': 'properties', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
     {'1': 'state', '3': 12, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
     {'1': 'created_at', '3': 13, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'partition', '3': 14, '4': 1, '5': 11, '6': '.partition.v1.PartitionObject', '9': 0, '10': 'partition'},
-    {'1': 'service_account', '3': 15, '4': 1, '5': 11, '6': '.partition.v1.ServiceAccountObject', '9': 0, '10': 'serviceAccount'},
+    {'1': 'partition', '3': 14, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '9': 0, '10': 'partition'},
+    {'1': 'service_account', '3': 15, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '9': 0, '10': 'serviceAccount'},
   ],
   '8': [
     {'1': 'owner'},
@@ -235,10 +235,10 @@ final $typed_data.Uint8List clientObjectDescriptor = $convert.base64Decode(
     'HAoJYXVkaWVuY2VzGAkgAygJUglhdWRpZW5jZXMSFAoFcm9sZXMYCiADKAlSBXJvbGVzEjcKCn'
     'Byb3BlcnRpZXMYCyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEiYK'
     'BXN0YXRlGAwgASgOMhAuY29tbW9uLnYxLlNUQVRFUgVzdGF0ZRI5CgpjcmVhdGVkX2F0GA0gAS'
-    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej0KCXBhcnRpdGlvbhgO'
-    'IAEoCzIdLnBhcnRpdGlvbi52MS5QYXJ0aXRpb25PYmplY3RIAFIJcGFydGl0aW9uEk0KD3Nlcn'
-    'ZpY2VfYWNjb3VudBgPIAEoCzIiLnBhcnRpdGlvbi52MS5TZXJ2aWNlQWNjb3VudE9iamVjdEgA'
-    'Ug5zZXJ2aWNlQWNjb3VudEIHCgVvd25lcg==');
+    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0EjsKCXBhcnRpdGlvbhgO'
+    'IAEoCzIbLnRlbmFuY3kudjEuUGFydGl0aW9uT2JqZWN0SABSCXBhcnRpdGlvbhJLCg9zZXJ2aW'
+    'NlX2FjY291bnQYDyABKAsyIC50ZW5hbmN5LnYxLlNlcnZpY2VBY2NvdW50T2JqZWN0SABSDnNl'
+    'cnZpY2VBY2NvdW50QgcKBW93bmVy');
 
 @$core.Deprecated('Use getTenantRequestDescriptor instead')
 const GetTenantRequest$json = {
@@ -257,14 +257,14 @@ final $typed_data.Uint8List getTenantRequestDescriptor = $convert.base64Decode(
 const GetTenantResponse$json = {
   '1': 'GetTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.TenantObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetTenantResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getTenantResponseDescriptor = $convert.base64Decode(
-    'ChFHZXRUZW5hbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLlRlbmFudE'
-    '9iamVjdFIEZGF0YQ==');
+    'ChFHZXRUZW5hbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5UZW5hbnRPYm'
+    'plY3RSBGRhdGE=');
 
 @$core.Deprecated('Use listTenantRequestDescriptor instead')
 const ListTenantRequest$json = {
@@ -276,7 +276,7 @@ const ListTenantRequest$json = {
     {'1': 'end_date', '3': 5, '4': 1, '5': 9, '10': 'endDate'},
     {'1': 'properties', '3': 6, '4': 3, '5': 9, '10': 'properties'},
     {'1': 'extras', '3': 7, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'extras'},
-    {'1': 'environment', '3': 8, '4': 1, '5': 14, '6': '.partition.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {'1': 'environment', '3': 8, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
   ],
 };
 
@@ -286,21 +286,21 @@ final $typed_data.Uint8List listTenantRequestDescriptor = $convert.base64Decode(
     'gLMhUuY29tbW9uLnYxLlBhZ2VDdXJzb3JSBmN1cnNvchIdCgpzdGFydF9kYXRlGAQgASgJUglz'
     'dGFydERhdGUSGQoIZW5kX2RhdGUYBSABKAlSB2VuZERhdGUSHgoKcHJvcGVydGllcxgGIAMoCV'
     'IKcHJvcGVydGllcxIvCgZleHRyYXMYByABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0UgZl'
-    'eHRyYXMSSwoLZW52aXJvbm1lbnQYCCABKA4yHy5wYXJ0aXRpb24udjEuVGVuYW50RW52aXJvbm'
-    '1lbnRCCLpIBYIBAhABUgtlbnZpcm9ubWVudA==');
+    'eHRyYXMSSQoLZW52aXJvbm1lbnQYCCABKA4yHS50ZW5hbmN5LnYxLlRlbmFudEVudmlyb25tZW'
+    '50Qgi6SAWCAQIQAVILZW52aXJvbm1lbnQ=');
 
 @$core.Deprecated('Use listTenantResponseDescriptor instead')
 const ListTenantResponse$json = {
   '1': 'ListTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.TenantObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListTenantResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listTenantResponseDescriptor = $convert.base64Decode(
-    'ChJMaXN0VGVuYW50UmVzcG9uc2USLgoEZGF0YRgBIAMoCzIaLnBhcnRpdGlvbi52MS5UZW5hbn'
-    'RPYmplY3RSBGRhdGE=');
+    'ChJMaXN0VGVuYW50UmVzcG9uc2USLAoEZGF0YRgBIAMoCzIYLnRlbmFuY3kudjEuVGVuYW50T2'
+    'JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use createTenantRequestDescriptor instead')
 const CreateTenantRequest$json = {
@@ -309,7 +309,7 @@ const CreateTenantRequest$json = {
     {'1': 'name', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'description'},
     {'1': 'properties', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'environment', '3': 4, '4': 1, '5': 14, '6': '.partition.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {'1': 'environment', '3': 4, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
   ],
 };
 
@@ -317,22 +317,22 @@ const CreateTenantRequest$json = {
 final $typed_data.Uint8List createTenantRequestDescriptor = $convert.base64Decode(
     'ChNDcmVhdGVUZW5hbnRSZXF1ZXN0Eh0KBG5hbWUYASABKAlCCbpIBnIEEAMYZFIEbmFtZRIsCg'
     'tkZXNjcmlwdGlvbhgCIAEoCUIKukgHcgUQChj0A1ILZGVzY3JpcHRpb24SNwoKcHJvcGVydGll'
-    'cxgDIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3RSCnByb3BlcnRpZXMSSwoLZW52aXJvbm'
-    '1lbnQYBCABKA4yHy5wYXJ0aXRpb24udjEuVGVuYW50RW52aXJvbm1lbnRCCLpIBYIBAhABUgtl'
-    'bnZpcm9ubWVudA==');
+    'cxgDIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3RSCnByb3BlcnRpZXMSSQoLZW52aXJvbm'
+    '1lbnQYBCABKA4yHS50ZW5hbmN5LnYxLlRlbmFudEVudmlyb25tZW50Qgi6SAWCAQIQAVILZW52'
+    'aXJvbm1lbnQ=');
 
 @$core.Deprecated('Use createTenantResponseDescriptor instead')
 const CreateTenantResponse$json = {
   '1': 'CreateTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.TenantObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreateTenantResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createTenantResponseDescriptor = $convert.base64Decode(
-    'ChRDcmVhdGVUZW5hbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLlRlbm'
-    'FudE9iamVjdFIEZGF0YQ==');
+    'ChRDcmVhdGVUZW5hbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5UZW5hbn'
+    'RPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use updateTenantRequestDescriptor instead')
 const UpdateTenantRequest$json = {
@@ -343,7 +343,7 @@ const UpdateTenantRequest$json = {
     {'1': 'description', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'description'},
     {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
     {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'environment', '3': 6, '4': 1, '5': 14, '6': '.partition.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {'1': 'environment', '3': 6, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
   ],
 };
 
@@ -353,21 +353,21 @@ final $typed_data.Uint8List updateTenantRequestDescriptor = $convert.base64Decod
     '17Myw0MH1SAmlkEiAKBG5hbWUYAiABKAlCDLpICdgBAXIEEAMYZFIEbmFtZRIvCgtkZXNjcmlw'
     'dGlvbhgDIAEoCUINukgK2AEBcgUQChj0A1ILZGVzY3JpcHRpb24SJgoFc3RhdGUYBCABKA4yEC'
     '5jb21tb24udjEuU1RBVEVSBXN0YXRlEjcKCnByb3BlcnRpZXMYBSABKAsyFy5nb29nbGUucHJv'
-    'dG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEksKC2Vudmlyb25tZW50GAYgASgOMh8ucGFydGl0aW'
-    '9uLnYxLlRlbmFudEVudmlyb25tZW50Qgi6SAWCAQIQAVILZW52aXJvbm1lbnQ=');
+    'dG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEkkKC2Vudmlyb25tZW50GAYgASgOMh0udGVuYW5jeS'
+    '52MS5UZW5hbnRFbnZpcm9ubWVudEIIukgFggECEAFSC2Vudmlyb25tZW50');
 
 @$core.Deprecated('Use updateTenantResponseDescriptor instead')
 const UpdateTenantResponse$json = {
   '1': 'UpdateTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.TenantObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdateTenantResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updateTenantResponseDescriptor = $convert.base64Decode(
-    'ChRVcGRhdGVUZW5hbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLlRlbm'
-    'FudE9iamVjdFIEZGF0YQ==');
+    'ChRVcGRhdGVUZW5hbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5UZW5hbn'
+    'RPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use removeTenantRequestDescriptor instead')
 const RemoveTenantRequest$json = {
@@ -412,14 +412,14 @@ final $typed_data.Uint8List getPartitionRequestDescriptor = $convert.base64Decod
 const GetPartitionResponse$json = {
   '1': 'GetPartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetPartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getPartitionResponseDescriptor = $convert.base64Decode(
-    'ChRHZXRQYXJ0aXRpb25SZXNwb25zZRIxCgRkYXRhGAEgASgLMh0ucGFydGl0aW9uLnYxLlBhcn'
-    'RpdGlvbk9iamVjdFIEZGF0YQ==');
+    'ChRHZXRQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYXJ0aX'
+    'Rpb25PYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use getPartitionParentsRequestDescriptor instead')
 const GetPartitionParentsRequest$json = {
@@ -438,14 +438,14 @@ final $typed_data.Uint8List getPartitionParentsRequestDescriptor = $convert.base
 const GetPartitionParentsResponse$json = {
   '1': 'GetPartitionParentsResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetPartitionParentsResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getPartitionParentsResponseDescriptor = $convert.base64Decode(
-    'ChtHZXRQYXJ0aXRpb25QYXJlbnRzUmVzcG9uc2USMQoEZGF0YRgBIAMoCzIdLnBhcnRpdGlvbi'
-    '52MS5QYXJ0aXRpb25PYmplY3RSBGRhdGE=');
+    'ChtHZXRQYXJ0aXRpb25QYXJlbnRzUmVzcG9uc2USLwoEZGF0YRgBIAMoCzIbLnRlbmFuY3kudj'
+    'EuUGFydGl0aW9uT2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use listPartitionRequestDescriptor instead')
 const ListPartitionRequest$json = {
@@ -472,14 +472,14 @@ final $typed_data.Uint8List listPartitionRequestDescriptor = $convert.base64Deco
 const ListPartitionResponse$json = {
   '1': 'ListPartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListPartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listPartitionResponseDescriptor = $convert.base64Decode(
-    'ChVMaXN0UGFydGl0aW9uUmVzcG9uc2USMQoEZGF0YRgBIAMoCzIdLnBhcnRpdGlvbi52MS5QYX'
-    'J0aXRpb25PYmplY3RSBGRhdGE=');
+    'ChVMaXN0UGFydGl0aW9uUmVzcG9uc2USLwoEZGF0YRgBIAMoCzIbLnRlbmFuY3kudjEuUGFydG'
+    'l0aW9uT2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use createPartitionRequestDescriptor instead')
 const CreatePartitionRequest$json = {
@@ -507,14 +507,14 @@ final $typed_data.Uint8List createPartitionRequestDescriptor = $convert.base64De
 const CreatePartitionResponse$json = {
   '1': 'CreatePartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreatePartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createPartitionResponseDescriptor = $convert.base64Decode(
-    'ChdDcmVhdGVQYXJ0aXRpb25SZXNwb25zZRIxCgRkYXRhGAEgASgLMh0ucGFydGl0aW9uLnYxLl'
-    'BhcnRpdGlvbk9iamVjdFIEZGF0YQ==');
+    'ChdDcmVhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
+    'J0aXRpb25PYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use updatePartitionRequestDescriptor instead')
 const UpdatePartitionRequest$json = {
@@ -542,14 +542,14 @@ final $typed_data.Uint8List updatePartitionRequestDescriptor = $convert.base64De
 const UpdatePartitionResponse$json = {
   '1': 'UpdatePartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PartitionObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdatePartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updatePartitionResponseDescriptor = $convert.base64Decode(
-    'ChdVcGRhdGVQYXJ0aXRpb25SZXNwb25zZRIxCgRkYXRhGAEgASgLMh0ucGFydGl0aW9uLnYxLl'
-    'BhcnRpdGlvbk9iamVjdFIEZGF0YQ==');
+    'ChdVcGRhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
+    'J0aXRpb25PYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use removePartitionRequestDescriptor instead')
 const RemovePartitionRequest$json = {
@@ -598,14 +598,14 @@ final $typed_data.Uint8List createPartitionRoleRequestDescriptor = $convert.base
 const CreatePartitionRoleResponse$json = {
   '1': 'CreatePartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PartitionRoleObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreatePartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createPartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChtDcmVhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USNQoEZGF0YRgBIAEoCzIhLnBhcnRpdGlvbi'
-    '52MS5QYXJ0aXRpb25Sb2xlT2JqZWN0UgRkYXRh');
+    'ChtDcmVhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
+    'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use updatePartitionRoleRequestDescriptor instead')
 const UpdatePartitionRoleRequest$json = {
@@ -629,14 +629,14 @@ final $typed_data.Uint8List updatePartitionRoleRequestDescriptor = $convert.base
 const UpdatePartitionRoleResponse$json = {
   '1': 'UpdatePartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PartitionRoleObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdatePartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updatePartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChtVcGRhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USNQoEZGF0YRgBIAEoCzIhLnBhcnRpdGlvbi'
-    '52MS5QYXJ0aXRpb25Sb2xlT2JqZWN0UgRkYXRh');
+    'ChtVcGRhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
+    'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use removePartitionRoleRequestDescriptor instead')
 const RemovePartitionRoleRequest$json = {
@@ -683,14 +683,14 @@ final $typed_data.Uint8List listPartitionRoleRequestDescriptor = $convert.base64
 const ListPartitionRoleResponse$json = {
   '1': 'ListPartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.PartitionRoleObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListPartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listPartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChlMaXN0UGFydGl0aW9uUm9sZVJlc3BvbnNlEjUKBGRhdGEYASADKAsyIS5wYXJ0aXRpb24udj'
-    'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
+    'ChlMaXN0UGFydGl0aW9uUm9sZVJlc3BvbnNlEjMKBGRhdGEYASADKAsyHy50ZW5hbmN5LnYxLl'
+    'BhcnRpdGlvblJvbGVPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use createPageRequestDescriptor instead')
 const CreatePageRequest$json = {
@@ -714,14 +714,14 @@ final $typed_data.Uint8List createPageRequestDescriptor = $convert.base64Decode(
 const CreatePageResponse$json = {
   '1': 'CreatePageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PageObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreatePageResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createPageResponseDescriptor = $convert.base64Decode(
-    'ChJDcmVhdGVQYWdlUmVzcG9uc2USLAoEZGF0YRgBIAEoCzIYLnBhcnRpdGlvbi52MS5QYWdlT2'
-    'JqZWN0UgRkYXRh');
+    'ChJDcmVhdGVQYWdlUmVzcG9uc2USKgoEZGF0YRgBIAEoCzIWLnRlbmFuY3kudjEuUGFnZU9iam'
+    'VjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use getPageRequestDescriptor instead')
 const GetPageRequest$json = {
@@ -744,14 +744,14 @@ final $typed_data.Uint8List getPageRequestDescriptor = $convert.base64Decode(
 const GetPageResponse$json = {
   '1': 'GetPageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PageObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetPageResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getPageResponseDescriptor = $convert.base64Decode(
-    'Cg9HZXRQYWdlUmVzcG9uc2USLAoEZGF0YRgBIAEoCzIYLnBhcnRpdGlvbi52MS5QYWdlT2JqZW'
-    'N0UgRkYXRh');
+    'Cg9HZXRQYWdlUmVzcG9uc2USKgoEZGF0YRgBIAEoCzIWLnRlbmFuY3kudjEuUGFnZU9iamVjdF'
+    'IEZGF0YQ==');
 
 @$core.Deprecated('Use updatePageRequestDescriptor instead')
 const UpdatePageRequest$json = {
@@ -777,14 +777,14 @@ final $typed_data.Uint8List updatePageRequestDescriptor = $convert.base64Decode(
 const UpdatePageResponse$json = {
   '1': 'UpdatePageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.PageObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdatePageResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updatePageResponseDescriptor = $convert.base64Decode(
-    'ChJVcGRhdGVQYWdlUmVzcG9uc2USLAoEZGF0YRgBIAEoCzIYLnBhcnRpdGlvbi52MS5QYWdlT2'
-    'JqZWN0UgRkYXRh');
+    'ChJVcGRhdGVQYWdlUmVzcG9uc2USKgoEZGF0YRgBIAEoCzIWLnRlbmFuY3kudjEuUGFnZU9iam'
+    'VjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use listPageRequestDescriptor instead')
 const ListPageRequest$json = {
@@ -805,14 +805,14 @@ final $typed_data.Uint8List listPageRequestDescriptor = $convert.base64Decode(
 const ListPageResponse$json = {
   '1': 'ListPageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.PageObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListPageResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listPageResponseDescriptor = $convert.base64Decode(
-    'ChBMaXN0UGFnZVJlc3BvbnNlEiwKBGRhdGEYASADKAsyGC5wYXJ0aXRpb24udjEuUGFnZU9iam'
-    'VjdFIEZGF0YQ==');
+    'ChBMaXN0UGFnZVJlc3BvbnNlEioKBGRhdGEYASADKAsyFi50ZW5hbmN5LnYxLlBhZ2VPYmplY3'
+    'RSBGRhdGE=');
 
 @$core.Deprecated('Use removePageRequestDescriptor instead')
 const RemovePageRequest$json = {
@@ -864,14 +864,14 @@ final $typed_data.Uint8List createAccessRequestDescriptor = $convert.base64Decod
 const CreateAccessResponse$json = {
   '1': 'CreateAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.AccessObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreateAccessResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createAccessResponseDescriptor = $convert.base64Decode(
-    'ChRDcmVhdGVBY2Nlc3NSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLkFjY2'
-    'Vzc09iamVjdFIEZGF0YQ==');
+    'ChRDcmVhdGVBY2Nlc3NSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5BY2Nlc3'
+    'NPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use getAccessRequestDescriptor instead')
 const GetAccessRequest$json = {
@@ -900,14 +900,14 @@ final $typed_data.Uint8List getAccessRequestDescriptor = $convert.base64Decode(
 const GetAccessResponse$json = {
   '1': 'GetAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.AccessObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetAccessResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getAccessResponseDescriptor = $convert.base64Decode(
-    'ChFHZXRBY2Nlc3NSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLkFjY2Vzc0'
-    '9iamVjdFIEZGF0YQ==');
+    'ChFHZXRBY2Nlc3NSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5BY2Nlc3NPYm'
+    'plY3RSBGRhdGE=');
 
 @$core.Deprecated('Use listAccessRequestDescriptor instead')
 const ListAccessRequest$json = {
@@ -933,14 +933,14 @@ final $typed_data.Uint8List listAccessRequestDescriptor = $convert.base64Decode(
 const ListAccessResponse$json = {
   '1': 'ListAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.AccessObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListAccessResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listAccessResponseDescriptor = $convert.base64Decode(
-    'ChJMaXN0QWNjZXNzUmVzcG9uc2USLgoEZGF0YRgBIAMoCzIaLnBhcnRpdGlvbi52MS5BY2Nlc3'
-    'NPYmplY3RSBGRhdGE=');
+    'ChJMaXN0QWNjZXNzUmVzcG9uc2USLAoEZGF0YRgBIAMoCzIYLnRlbmFuY3kudjEuQWNjZXNzT2'
+    'JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use removeAccessRequestDescriptor instead')
 const RemoveAccessRequest$json = {
@@ -986,14 +986,14 @@ final $typed_data.Uint8List createAccessRoleRequestDescriptor = $convert.base64D
 const CreateAccessRoleResponse$json = {
   '1': 'CreateAccessRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.AccessRoleObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessRoleObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `CreateAccessRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createAccessRoleResponseDescriptor = $convert.base64Decode(
-    'ChhDcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2USMgoEZGF0YRgBIAEoCzIeLnBhcnRpdGlvbi52MS'
-    '5BY2Nlc3NSb2xlT2JqZWN0UgRkYXRh');
+    'ChhDcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2USMAoEZGF0YRgBIAEoCzIcLnRlbmFuY3kudjEuQW'
+    'NjZXNzUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use removeAccessRoleRequestDescriptor instead')
 const RemoveAccessRoleRequest$json = {
@@ -1040,14 +1040,14 @@ final $typed_data.Uint8List listAccessRoleRequestDescriptor = $convert.base64Dec
 const ListAccessRoleResponse$json = {
   '1': 'ListAccessRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.AccessRoleObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.AccessRoleObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListAccessRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listAccessRoleResponseDescriptor = $convert.base64Decode(
-    'ChZMaXN0QWNjZXNzUm9sZVJlc3BvbnNlEjIKBGRhdGEYASADKAsyHi5wYXJ0aXRpb24udjEuQW'
-    'NjZXNzUm9sZU9iamVjdFIEZGF0YQ==');
+    'ChZMaXN0QWNjZXNzUm9sZVJlc3BvbnNlEjAKBGRhdGEYASADKAsyHC50ZW5hbmN5LnYxLkFjY2'
+    'Vzc1JvbGVPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use createServiceAccountRequestDescriptor instead')
 const CreateServiceAccountRequest$json = {
@@ -1079,16 +1079,16 @@ final $typed_data.Uint8List createServiceAccountRequestDescriptor = $convert.bas
 const CreateServiceAccountResponse$json = {
   '1': 'CreateServiceAccountResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ServiceAccountObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
     {'1': 'client_secret', '3': 2, '4': 1, '5': 9, '10': 'clientSecret'},
   ],
 };
 
 /// Descriptor for `CreateServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChxDcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjYKBGRhdGEYASABKAsyIi5wYXJ0aXRpb2'
-    '4udjEuU2VydmljZUFjY291bnRPYmplY3RSBGRhdGESIwoNY2xpZW50X3NlY3JldBgCIAEoCVIM'
-    'Y2xpZW50U2VjcmV0');
+    'ChxDcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5Ln'
+    'YxLlNlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRhEiMKDWNsaWVudF9zZWNyZXQYAiABKAlSDGNs'
+    'aWVudFNlY3JldA==');
 
 @$core.Deprecated('Use getServiceAccountRequestDescriptor instead')
 const GetServiceAccountRequest$json = {
@@ -1111,14 +1111,14 @@ final $typed_data.Uint8List getServiceAccountRequestDescriptor = $convert.base64
 const GetServiceAccountResponse$json = {
   '1': 'GetServiceAccountResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ServiceAccountObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChlHZXRTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjYKBGRhdGEYASABKAsyIi5wYXJ0aXRpb24udj'
-    'EuU2VydmljZUFjY291bnRPYmplY3RSBGRhdGE=');
+    'ChlHZXRTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5LnYxLl'
+    'NlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use listServiceAccountRequestDescriptor instead')
 const ListServiceAccountRequest$json = {
@@ -1139,14 +1139,14 @@ final $typed_data.Uint8List listServiceAccountRequestDescriptor = $convert.base6
 const ListServiceAccountResponse$json = {
   '1': 'ListServiceAccountResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.ServiceAccountObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChpMaXN0U2VydmljZUFjY291bnRSZXNwb25zZRI2CgRkYXRhGAEgAygLMiIucGFydGl0aW9uLn'
-    'YxLlNlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRh');
+    'ChpMaXN0U2VydmljZUFjY291bnRSZXNwb25zZRI0CgRkYXRhGAEgAygLMiAudGVuYW5jeS52MS'
+    '5TZXJ2aWNlQWNjb3VudE9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use updateServiceAccountRequestDescriptor instead')
 const UpdateServiceAccountRequest$json = {
@@ -1177,14 +1177,14 @@ final $typed_data.Uint8List updateServiceAccountRequestDescriptor = $convert.bas
 const UpdateServiceAccountResponse$json = {
   '1': 'UpdateServiceAccountResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ServiceAccountObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdateServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updateServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChxVcGRhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjYKBGRhdGEYASABKAsyIi5wYXJ0aXRpb2'
-    '4udjEuU2VydmljZUFjY291bnRPYmplY3RSBGRhdGE=');
+    'ChxVcGRhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5Ln'
+    'YxLlNlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use removeServiceAccountRequestDescriptor instead')
 const RemoveServiceAccountRequest$json = {
@@ -1250,15 +1250,15 @@ final $typed_data.Uint8List createClientRequestDescriptor = $convert.base64Decod
 const CreateClientResponse$json = {
   '1': 'CreateClientResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ClientObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
     {'1': 'client_secret', '3': 2, '4': 1, '5': 9, '10': 'clientSecret'},
   ],
 };
 
 /// Descriptor for `CreateClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createClientResponseDescriptor = $convert.base64Decode(
-    'ChRDcmVhdGVDbGllbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLkNsaW'
-    'VudE9iamVjdFIEZGF0YRIjCg1jbGllbnRfc2VjcmV0GAIgASgJUgxjbGllbnRTZWNyZXQ=');
+    'ChRDcmVhdGVDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbn'
+    'RPYmplY3RSBGRhdGESIwoNY2xpZW50X3NlY3JldBgCIAEoCVIMY2xpZW50U2VjcmV0');
 
 @$core.Deprecated('Use getClientRequestDescriptor instead')
 const GetClientRequest$json = {
@@ -1278,14 +1278,14 @@ final $typed_data.Uint8List getClientRequestDescriptor = $convert.base64Decode(
 const GetClientResponse$json = {
   '1': 'GetClientResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ClientObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `GetClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getClientResponseDescriptor = $convert.base64Decode(
-    'ChFHZXRDbGllbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLkNsaWVudE'
-    '9iamVjdFIEZGF0YQ==');
+    'ChFHZXRDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbnRPYm'
+    'plY3RSBGRhdGE=');
 
 @$core.Deprecated('Use listClientRequestDescriptor instead')
 const ListClientRequest$json = {
@@ -1312,14 +1312,14 @@ final $typed_data.Uint8List listClientRequestDescriptor = $convert.base64Decode(
 const ListClientResponse$json = {
   '1': 'ListClientResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.partition.v1.ClientObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `ListClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listClientResponseDescriptor = $convert.base64Decode(
-    'ChJMaXN0Q2xpZW50UmVzcG9uc2USLgoEZGF0YRgBIAMoCzIaLnBhcnRpdGlvbi52MS5DbGllbn'
-    'RPYmplY3RSBGRhdGE=');
+    'ChJMaXN0Q2xpZW50UmVzcG9uc2USLAoEZGF0YRgBIAMoCzIYLnRlbmFuY3kudjEuQ2xpZW50T2'
+    'JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use updateClientRequestDescriptor instead')
 const UpdateClientRequest$json = {
@@ -1352,14 +1352,14 @@ final $typed_data.Uint8List updateClientRequestDescriptor = $convert.base64Decod
 const UpdateClientResponse$json = {
   '1': 'UpdateClientResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.partition.v1.ClientObject', '10': 'data'},
+    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
   ],
 };
 
 /// Descriptor for `UpdateClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List updateClientResponseDescriptor = $convert.base64Decode(
-    'ChRVcGRhdGVDbGllbnRSZXNwb25zZRIuCgRkYXRhGAEgASgLMhoucGFydGl0aW9uLnYxLkNsaW'
-    'VudE9iamVjdFIEZGF0YQ==');
+    'ChRVcGRhdGVDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbn'
+    'RPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use removeClientRequestDescriptor instead')
 const RemoveClientRequest$json = {
@@ -1386,418 +1386,416 @@ const RemoveClientResponse$json = {
 final $typed_data.Uint8List removeClientResponseDescriptor = $convert.base64Decode(
     'ChRSZW1vdmVDbGllbnRSZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA==');
 
-const $core.Map<$core.String, $core.dynamic> PartitionServiceBase$json = {
-  '1': 'PartitionService',
+const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
+  '1': 'TenancyService',
   '2': [
     {
       '1': 'GetTenant',
-      '2': '.partition.v1.GetTenantRequest',
-      '3': '.partition.v1.GetTenantResponse',
+      '2': '.tenancy.v1.GetTenantRequest',
+      '3': '.tenancy.v1.GetTenantResponse',
       '4': {'34': 1},
     },
     {
       '1': 'ListTenant',
-      '2': '.partition.v1.ListTenantRequest',
-      '3': '.partition.v1.ListTenantResponse',
+      '2': '.tenancy.v1.ListTenantRequest',
+      '3': '.tenancy.v1.ListTenantResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'CreateTenant', '2': '.partition.v1.CreateTenantRequest', '3': '.partition.v1.CreateTenantResponse', '4': {}},
-    {'1': 'UpdateTenant', '2': '.partition.v1.UpdateTenantRequest', '3': '.partition.v1.UpdateTenantResponse', '4': {}},
-    {'1': 'RemoveTenant', '2': '.partition.v1.RemoveTenantRequest', '3': '.partition.v1.RemoveTenantResponse', '4': {}},
+    {'1': 'CreateTenant', '2': '.tenancy.v1.CreateTenantRequest', '3': '.tenancy.v1.CreateTenantResponse', '4': {}},
+    {'1': 'UpdateTenant', '2': '.tenancy.v1.UpdateTenantRequest', '3': '.tenancy.v1.UpdateTenantResponse', '4': {}},
+    {'1': 'RemoveTenant', '2': '.tenancy.v1.RemoveTenantRequest', '3': '.tenancy.v1.RemoveTenantResponse', '4': {}},
     {
       '1': 'ListPartition',
-      '2': '.partition.v1.ListPartitionRequest',
-      '3': '.partition.v1.ListPartitionResponse',
+      '2': '.tenancy.v1.ListPartitionRequest',
+      '3': '.tenancy.v1.ListPartitionResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'CreatePartition', '2': '.partition.v1.CreatePartitionRequest', '3': '.partition.v1.CreatePartitionResponse', '4': {}},
+    {'1': 'CreatePartition', '2': '.tenancy.v1.CreatePartitionRequest', '3': '.tenancy.v1.CreatePartitionResponse', '4': {}},
     {
       '1': 'GetPartition',
-      '2': '.partition.v1.GetPartitionRequest',
-      '3': '.partition.v1.GetPartitionResponse',
+      '2': '.tenancy.v1.GetPartitionRequest',
+      '3': '.tenancy.v1.GetPartitionResponse',
       '4': {'34': 1},
     },
     {
       '1': 'GetPartitionParents',
-      '2': '.partition.v1.GetPartitionParentsRequest',
-      '3': '.partition.v1.GetPartitionParentsResponse',
+      '2': '.tenancy.v1.GetPartitionParentsRequest',
+      '3': '.tenancy.v1.GetPartitionParentsResponse',
       '4': {'34': 1},
     },
-    {'1': 'RemovePartition', '2': '.partition.v1.RemovePartitionRequest', '3': '.partition.v1.RemovePartitionResponse', '4': {}},
-    {'1': 'UpdatePartition', '2': '.partition.v1.UpdatePartitionRequest', '3': '.partition.v1.UpdatePartitionResponse', '4': {}},
-    {'1': 'CreatePartitionRole', '2': '.partition.v1.CreatePartitionRoleRequest', '3': '.partition.v1.CreatePartitionRoleResponse', '4': {}},
+    {'1': 'RemovePartition', '2': '.tenancy.v1.RemovePartitionRequest', '3': '.tenancy.v1.RemovePartitionResponse', '4': {}},
+    {'1': 'UpdatePartition', '2': '.tenancy.v1.UpdatePartitionRequest', '3': '.tenancy.v1.UpdatePartitionResponse', '4': {}},
+    {'1': 'CreatePartitionRole', '2': '.tenancy.v1.CreatePartitionRoleRequest', '3': '.tenancy.v1.CreatePartitionRoleResponse', '4': {}},
     {
       '1': 'ListPartitionRole',
-      '2': '.partition.v1.ListPartitionRoleRequest',
-      '3': '.partition.v1.ListPartitionRoleResponse',
+      '2': '.tenancy.v1.ListPartitionRoleRequest',
+      '3': '.tenancy.v1.ListPartitionRoleResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'UpdatePartitionRole', '2': '.partition.v1.UpdatePartitionRoleRequest', '3': '.partition.v1.UpdatePartitionRoleResponse', '4': {}},
-    {'1': 'RemovePartitionRole', '2': '.partition.v1.RemovePartitionRoleRequest', '3': '.partition.v1.RemovePartitionRoleResponse', '4': {}},
-    {'1': 'CreatePage', '2': '.partition.v1.CreatePageRequest', '3': '.partition.v1.CreatePageResponse', '4': {}},
+    {'1': 'UpdatePartitionRole', '2': '.tenancy.v1.UpdatePartitionRoleRequest', '3': '.tenancy.v1.UpdatePartitionRoleResponse', '4': {}},
+    {'1': 'RemovePartitionRole', '2': '.tenancy.v1.RemovePartitionRoleRequest', '3': '.tenancy.v1.RemovePartitionRoleResponse', '4': {}},
+    {'1': 'CreatePage', '2': '.tenancy.v1.CreatePageRequest', '3': '.tenancy.v1.CreatePageResponse', '4': {}},
     {
       '1': 'ListPage',
-      '2': '.partition.v1.ListPageRequest',
-      '3': '.partition.v1.ListPageResponse',
+      '2': '.tenancy.v1.ListPageRequest',
+      '3': '.tenancy.v1.ListPageResponse',
       '4': {'34': 1},
       '6': true,
     },
     {
       '1': 'GetPage',
-      '2': '.partition.v1.GetPageRequest',
-      '3': '.partition.v1.GetPageResponse',
+      '2': '.tenancy.v1.GetPageRequest',
+      '3': '.tenancy.v1.GetPageResponse',
       '4': {'34': 1},
     },
-    {'1': 'UpdatePage', '2': '.partition.v1.UpdatePageRequest', '3': '.partition.v1.UpdatePageResponse', '4': {}},
-    {'1': 'RemovePage', '2': '.partition.v1.RemovePageRequest', '3': '.partition.v1.RemovePageResponse', '4': {}},
-    {'1': 'CreateAccess', '2': '.partition.v1.CreateAccessRequest', '3': '.partition.v1.CreateAccessResponse', '4': {}},
+    {'1': 'UpdatePage', '2': '.tenancy.v1.UpdatePageRequest', '3': '.tenancy.v1.UpdatePageResponse', '4': {}},
+    {'1': 'RemovePage', '2': '.tenancy.v1.RemovePageRequest', '3': '.tenancy.v1.RemovePageResponse', '4': {}},
+    {'1': 'CreateAccess', '2': '.tenancy.v1.CreateAccessRequest', '3': '.tenancy.v1.CreateAccessResponse', '4': {}},
     {
       '1': 'GetAccess',
-      '2': '.partition.v1.GetAccessRequest',
-      '3': '.partition.v1.GetAccessResponse',
+      '2': '.tenancy.v1.GetAccessRequest',
+      '3': '.tenancy.v1.GetAccessResponse',
       '4': {'34': 1},
     },
     {
       '1': 'ListAccess',
-      '2': '.partition.v1.ListAccessRequest',
-      '3': '.partition.v1.ListAccessResponse',
+      '2': '.tenancy.v1.ListAccessRequest',
+      '3': '.tenancy.v1.ListAccessResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'RemoveAccess', '2': '.partition.v1.RemoveAccessRequest', '3': '.partition.v1.RemoveAccessResponse', '4': {}},
-    {'1': 'CreateAccessRole', '2': '.partition.v1.CreateAccessRoleRequest', '3': '.partition.v1.CreateAccessRoleResponse', '4': {}},
+    {'1': 'RemoveAccess', '2': '.tenancy.v1.RemoveAccessRequest', '3': '.tenancy.v1.RemoveAccessResponse', '4': {}},
+    {'1': 'CreateAccessRole', '2': '.tenancy.v1.CreateAccessRoleRequest', '3': '.tenancy.v1.CreateAccessRoleResponse', '4': {}},
     {
       '1': 'ListAccessRole',
-      '2': '.partition.v1.ListAccessRoleRequest',
-      '3': '.partition.v1.ListAccessRoleResponse',
+      '2': '.tenancy.v1.ListAccessRoleRequest',
+      '3': '.tenancy.v1.ListAccessRoleResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'RemoveAccessRole', '2': '.partition.v1.RemoveAccessRoleRequest', '3': '.partition.v1.RemoveAccessRoleResponse', '4': {}},
-    {'1': 'CreateServiceAccount', '2': '.partition.v1.CreateServiceAccountRequest', '3': '.partition.v1.CreateServiceAccountResponse', '4': {}},
+    {'1': 'RemoveAccessRole', '2': '.tenancy.v1.RemoveAccessRoleRequest', '3': '.tenancy.v1.RemoveAccessRoleResponse', '4': {}},
+    {'1': 'CreateServiceAccount', '2': '.tenancy.v1.CreateServiceAccountRequest', '3': '.tenancy.v1.CreateServiceAccountResponse', '4': {}},
     {
       '1': 'GetServiceAccount',
-      '2': '.partition.v1.GetServiceAccountRequest',
-      '3': '.partition.v1.GetServiceAccountResponse',
+      '2': '.tenancy.v1.GetServiceAccountRequest',
+      '3': '.tenancy.v1.GetServiceAccountResponse',
       '4': {'34': 1},
     },
-    {'1': 'UpdateServiceAccount', '2': '.partition.v1.UpdateServiceAccountRequest', '3': '.partition.v1.UpdateServiceAccountResponse', '4': {}},
+    {'1': 'UpdateServiceAccount', '2': '.tenancy.v1.UpdateServiceAccountRequest', '3': '.tenancy.v1.UpdateServiceAccountResponse', '4': {}},
     {
       '1': 'ListServiceAccount',
-      '2': '.partition.v1.ListServiceAccountRequest',
-      '3': '.partition.v1.ListServiceAccountResponse',
+      '2': '.tenancy.v1.ListServiceAccountRequest',
+      '3': '.tenancy.v1.ListServiceAccountResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'RemoveServiceAccount', '2': '.partition.v1.RemoveServiceAccountRequest', '3': '.partition.v1.RemoveServiceAccountResponse', '4': {}},
-    {'1': 'CreateClient', '2': '.partition.v1.CreateClientRequest', '3': '.partition.v1.CreateClientResponse', '4': {}},
+    {'1': 'RemoveServiceAccount', '2': '.tenancy.v1.RemoveServiceAccountRequest', '3': '.tenancy.v1.RemoveServiceAccountResponse', '4': {}},
+    {'1': 'CreateClient', '2': '.tenancy.v1.CreateClientRequest', '3': '.tenancy.v1.CreateClientResponse', '4': {}},
     {
       '1': 'GetClient',
-      '2': '.partition.v1.GetClientRequest',
-      '3': '.partition.v1.GetClientResponse',
+      '2': '.tenancy.v1.GetClientRequest',
+      '3': '.tenancy.v1.GetClientResponse',
       '4': {'34': 1},
     },
     {
       '1': 'ListClient',
-      '2': '.partition.v1.ListClientRequest',
-      '3': '.partition.v1.ListClientResponse',
+      '2': '.tenancy.v1.ListClientRequest',
+      '3': '.tenancy.v1.ListClientResponse',
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'UpdateClient', '2': '.partition.v1.UpdateClientRequest', '3': '.partition.v1.UpdateClientResponse', '4': {}},
-    {'1': 'RemoveClient', '2': '.partition.v1.RemoveClientRequest', '3': '.partition.v1.RemoveClientResponse', '4': {}},
+    {'1': 'UpdateClient', '2': '.tenancy.v1.UpdateClientRequest', '3': '.tenancy.v1.UpdateClientResponse', '4': {}},
+    {'1': 'RemoveClient', '2': '.tenancy.v1.RemoveClientRequest', '3': '.tenancy.v1.RemoveClientResponse', '4': {}},
   ],
   '3': {},
 };
 
-@$core.Deprecated('Use partitionServiceDescriptor instead')
-const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> PartitionServiceBase$messageJson = {
-  '.partition.v1.GetTenantRequest': GetTenantRequest$json,
-  '.partition.v1.GetTenantResponse': GetTenantResponse$json,
-  '.partition.v1.TenantObject': TenantObject$json,
+@$core.Deprecated('Use tenancyServiceDescriptor instead')
+const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> TenancyServiceBase$messageJson = {
+  '.tenancy.v1.GetTenantRequest': GetTenantRequest$json,
+  '.tenancy.v1.GetTenantResponse': GetTenantResponse$json,
+  '.tenancy.v1.TenantObject': TenantObject$json,
   '.google.protobuf.Struct': $6.Struct$json,
   '.google.protobuf.Struct.FieldsEntry': $6.Struct_FieldsEntry$json,
   '.google.protobuf.Value': $6.Value$json,
   '.google.protobuf.ListValue': $6.ListValue$json,
   '.google.protobuf.Timestamp': $2.Timestamp$json,
-  '.partition.v1.ListTenantRequest': ListTenantRequest$json,
+  '.tenancy.v1.ListTenantRequest': ListTenantRequest$json,
   '.common.v1.PageCursor': $7.PageCursor$json,
-  '.partition.v1.ListTenantResponse': ListTenantResponse$json,
-  '.partition.v1.CreateTenantRequest': CreateTenantRequest$json,
-  '.partition.v1.CreateTenantResponse': CreateTenantResponse$json,
-  '.partition.v1.UpdateTenantRequest': UpdateTenantRequest$json,
-  '.partition.v1.UpdateTenantResponse': UpdateTenantResponse$json,
-  '.partition.v1.RemoveTenantRequest': RemoveTenantRequest$json,
-  '.partition.v1.RemoveTenantResponse': RemoveTenantResponse$json,
-  '.partition.v1.ListPartitionRequest': ListPartitionRequest$json,
-  '.partition.v1.ListPartitionResponse': ListPartitionResponse$json,
-  '.partition.v1.PartitionObject': PartitionObject$json,
-  '.partition.v1.CreatePartitionRequest': CreatePartitionRequest$json,
-  '.partition.v1.CreatePartitionResponse': CreatePartitionResponse$json,
-  '.partition.v1.GetPartitionRequest': GetPartitionRequest$json,
-  '.partition.v1.GetPartitionResponse': GetPartitionResponse$json,
-  '.partition.v1.GetPartitionParentsRequest': GetPartitionParentsRequest$json,
-  '.partition.v1.GetPartitionParentsResponse': GetPartitionParentsResponse$json,
-  '.partition.v1.RemovePartitionRequest': RemovePartitionRequest$json,
-  '.partition.v1.RemovePartitionResponse': RemovePartitionResponse$json,
-  '.partition.v1.UpdatePartitionRequest': UpdatePartitionRequest$json,
-  '.partition.v1.UpdatePartitionResponse': UpdatePartitionResponse$json,
-  '.partition.v1.CreatePartitionRoleRequest': CreatePartitionRoleRequest$json,
-  '.partition.v1.CreatePartitionRoleResponse': CreatePartitionRoleResponse$json,
-  '.partition.v1.PartitionRoleObject': PartitionRoleObject$json,
-  '.partition.v1.ListPartitionRoleRequest': ListPartitionRoleRequest$json,
-  '.partition.v1.ListPartitionRoleResponse': ListPartitionRoleResponse$json,
-  '.partition.v1.UpdatePartitionRoleRequest': UpdatePartitionRoleRequest$json,
-  '.partition.v1.UpdatePartitionRoleResponse': UpdatePartitionRoleResponse$json,
-  '.partition.v1.RemovePartitionRoleRequest': RemovePartitionRoleRequest$json,
-  '.partition.v1.RemovePartitionRoleResponse': RemovePartitionRoleResponse$json,
-  '.partition.v1.CreatePageRequest': CreatePageRequest$json,
-  '.partition.v1.CreatePageResponse': CreatePageResponse$json,
-  '.partition.v1.PageObject': PageObject$json,
-  '.partition.v1.ListPageRequest': ListPageRequest$json,
-  '.partition.v1.ListPageResponse': ListPageResponse$json,
-  '.partition.v1.GetPageRequest': GetPageRequest$json,
-  '.partition.v1.GetPageResponse': GetPageResponse$json,
-  '.partition.v1.UpdatePageRequest': UpdatePageRequest$json,
-  '.partition.v1.UpdatePageResponse': UpdatePageResponse$json,
-  '.partition.v1.RemovePageRequest': RemovePageRequest$json,
-  '.partition.v1.RemovePageResponse': RemovePageResponse$json,
-  '.partition.v1.CreateAccessRequest': CreateAccessRequest$json,
-  '.partition.v1.CreateAccessResponse': CreateAccessResponse$json,
-  '.partition.v1.AccessObject': AccessObject$json,
-  '.partition.v1.GetAccessRequest': GetAccessRequest$json,
-  '.partition.v1.GetAccessResponse': GetAccessResponse$json,
-  '.partition.v1.ListAccessRequest': ListAccessRequest$json,
-  '.partition.v1.ListAccessResponse': ListAccessResponse$json,
-  '.partition.v1.RemoveAccessRequest': RemoveAccessRequest$json,
-  '.partition.v1.RemoveAccessResponse': RemoveAccessResponse$json,
-  '.partition.v1.CreateAccessRoleRequest': CreateAccessRoleRequest$json,
-  '.partition.v1.CreateAccessRoleResponse': CreateAccessRoleResponse$json,
-  '.partition.v1.AccessRoleObject': AccessRoleObject$json,
-  '.partition.v1.ListAccessRoleRequest': ListAccessRoleRequest$json,
-  '.partition.v1.ListAccessRoleResponse': ListAccessRoleResponse$json,
-  '.partition.v1.RemoveAccessRoleRequest': RemoveAccessRoleRequest$json,
-  '.partition.v1.RemoveAccessRoleResponse': RemoveAccessRoleResponse$json,
-  '.partition.v1.CreateServiceAccountRequest': CreateServiceAccountRequest$json,
-  '.partition.v1.CreateServiceAccountResponse': CreateServiceAccountResponse$json,
-  '.partition.v1.ServiceAccountObject': ServiceAccountObject$json,
-  '.partition.v1.GetServiceAccountRequest': GetServiceAccountRequest$json,
-  '.partition.v1.GetServiceAccountResponse': GetServiceAccountResponse$json,
-  '.partition.v1.UpdateServiceAccountRequest': UpdateServiceAccountRequest$json,
-  '.partition.v1.UpdateServiceAccountResponse': UpdateServiceAccountResponse$json,
-  '.partition.v1.ListServiceAccountRequest': ListServiceAccountRequest$json,
-  '.partition.v1.ListServiceAccountResponse': ListServiceAccountResponse$json,
-  '.partition.v1.RemoveServiceAccountRequest': RemoveServiceAccountRequest$json,
-  '.partition.v1.RemoveServiceAccountResponse': RemoveServiceAccountResponse$json,
-  '.partition.v1.CreateClientRequest': CreateClientRequest$json,
-  '.partition.v1.CreateClientResponse': CreateClientResponse$json,
-  '.partition.v1.ClientObject': ClientObject$json,
-  '.partition.v1.GetClientRequest': GetClientRequest$json,
-  '.partition.v1.GetClientResponse': GetClientResponse$json,
-  '.partition.v1.ListClientRequest': ListClientRequest$json,
-  '.partition.v1.ListClientResponse': ListClientResponse$json,
-  '.partition.v1.UpdateClientRequest': UpdateClientRequest$json,
-  '.partition.v1.UpdateClientResponse': UpdateClientResponse$json,
-  '.partition.v1.RemoveClientRequest': RemoveClientRequest$json,
-  '.partition.v1.RemoveClientResponse': RemoveClientResponse$json,
+  '.tenancy.v1.ListTenantResponse': ListTenantResponse$json,
+  '.tenancy.v1.CreateTenantRequest': CreateTenantRequest$json,
+  '.tenancy.v1.CreateTenantResponse': CreateTenantResponse$json,
+  '.tenancy.v1.UpdateTenantRequest': UpdateTenantRequest$json,
+  '.tenancy.v1.UpdateTenantResponse': UpdateTenantResponse$json,
+  '.tenancy.v1.RemoveTenantRequest': RemoveTenantRequest$json,
+  '.tenancy.v1.RemoveTenantResponse': RemoveTenantResponse$json,
+  '.tenancy.v1.ListPartitionRequest': ListPartitionRequest$json,
+  '.tenancy.v1.ListPartitionResponse': ListPartitionResponse$json,
+  '.tenancy.v1.PartitionObject': PartitionObject$json,
+  '.tenancy.v1.CreatePartitionRequest': CreatePartitionRequest$json,
+  '.tenancy.v1.CreatePartitionResponse': CreatePartitionResponse$json,
+  '.tenancy.v1.GetPartitionRequest': GetPartitionRequest$json,
+  '.tenancy.v1.GetPartitionResponse': GetPartitionResponse$json,
+  '.tenancy.v1.GetPartitionParentsRequest': GetPartitionParentsRequest$json,
+  '.tenancy.v1.GetPartitionParentsResponse': GetPartitionParentsResponse$json,
+  '.tenancy.v1.RemovePartitionRequest': RemovePartitionRequest$json,
+  '.tenancy.v1.RemovePartitionResponse': RemovePartitionResponse$json,
+  '.tenancy.v1.UpdatePartitionRequest': UpdatePartitionRequest$json,
+  '.tenancy.v1.UpdatePartitionResponse': UpdatePartitionResponse$json,
+  '.tenancy.v1.CreatePartitionRoleRequest': CreatePartitionRoleRequest$json,
+  '.tenancy.v1.CreatePartitionRoleResponse': CreatePartitionRoleResponse$json,
+  '.tenancy.v1.PartitionRoleObject': PartitionRoleObject$json,
+  '.tenancy.v1.ListPartitionRoleRequest': ListPartitionRoleRequest$json,
+  '.tenancy.v1.ListPartitionRoleResponse': ListPartitionRoleResponse$json,
+  '.tenancy.v1.UpdatePartitionRoleRequest': UpdatePartitionRoleRequest$json,
+  '.tenancy.v1.UpdatePartitionRoleResponse': UpdatePartitionRoleResponse$json,
+  '.tenancy.v1.RemovePartitionRoleRequest': RemovePartitionRoleRequest$json,
+  '.tenancy.v1.RemovePartitionRoleResponse': RemovePartitionRoleResponse$json,
+  '.tenancy.v1.CreatePageRequest': CreatePageRequest$json,
+  '.tenancy.v1.CreatePageResponse': CreatePageResponse$json,
+  '.tenancy.v1.PageObject': PageObject$json,
+  '.tenancy.v1.ListPageRequest': ListPageRequest$json,
+  '.tenancy.v1.ListPageResponse': ListPageResponse$json,
+  '.tenancy.v1.GetPageRequest': GetPageRequest$json,
+  '.tenancy.v1.GetPageResponse': GetPageResponse$json,
+  '.tenancy.v1.UpdatePageRequest': UpdatePageRequest$json,
+  '.tenancy.v1.UpdatePageResponse': UpdatePageResponse$json,
+  '.tenancy.v1.RemovePageRequest': RemovePageRequest$json,
+  '.tenancy.v1.RemovePageResponse': RemovePageResponse$json,
+  '.tenancy.v1.CreateAccessRequest': CreateAccessRequest$json,
+  '.tenancy.v1.CreateAccessResponse': CreateAccessResponse$json,
+  '.tenancy.v1.AccessObject': AccessObject$json,
+  '.tenancy.v1.GetAccessRequest': GetAccessRequest$json,
+  '.tenancy.v1.GetAccessResponse': GetAccessResponse$json,
+  '.tenancy.v1.ListAccessRequest': ListAccessRequest$json,
+  '.tenancy.v1.ListAccessResponse': ListAccessResponse$json,
+  '.tenancy.v1.RemoveAccessRequest': RemoveAccessRequest$json,
+  '.tenancy.v1.RemoveAccessResponse': RemoveAccessResponse$json,
+  '.tenancy.v1.CreateAccessRoleRequest': CreateAccessRoleRequest$json,
+  '.tenancy.v1.CreateAccessRoleResponse': CreateAccessRoleResponse$json,
+  '.tenancy.v1.AccessRoleObject': AccessRoleObject$json,
+  '.tenancy.v1.ListAccessRoleRequest': ListAccessRoleRequest$json,
+  '.tenancy.v1.ListAccessRoleResponse': ListAccessRoleResponse$json,
+  '.tenancy.v1.RemoveAccessRoleRequest': RemoveAccessRoleRequest$json,
+  '.tenancy.v1.RemoveAccessRoleResponse': RemoveAccessRoleResponse$json,
+  '.tenancy.v1.CreateServiceAccountRequest': CreateServiceAccountRequest$json,
+  '.tenancy.v1.CreateServiceAccountResponse': CreateServiceAccountResponse$json,
+  '.tenancy.v1.ServiceAccountObject': ServiceAccountObject$json,
+  '.tenancy.v1.GetServiceAccountRequest': GetServiceAccountRequest$json,
+  '.tenancy.v1.GetServiceAccountResponse': GetServiceAccountResponse$json,
+  '.tenancy.v1.UpdateServiceAccountRequest': UpdateServiceAccountRequest$json,
+  '.tenancy.v1.UpdateServiceAccountResponse': UpdateServiceAccountResponse$json,
+  '.tenancy.v1.ListServiceAccountRequest': ListServiceAccountRequest$json,
+  '.tenancy.v1.ListServiceAccountResponse': ListServiceAccountResponse$json,
+  '.tenancy.v1.RemoveServiceAccountRequest': RemoveServiceAccountRequest$json,
+  '.tenancy.v1.RemoveServiceAccountResponse': RemoveServiceAccountResponse$json,
+  '.tenancy.v1.CreateClientRequest': CreateClientRequest$json,
+  '.tenancy.v1.CreateClientResponse': CreateClientResponse$json,
+  '.tenancy.v1.ClientObject': ClientObject$json,
+  '.tenancy.v1.GetClientRequest': GetClientRequest$json,
+  '.tenancy.v1.GetClientResponse': GetClientResponse$json,
+  '.tenancy.v1.ListClientRequest': ListClientRequest$json,
+  '.tenancy.v1.ListClientResponse': ListClientResponse$json,
+  '.tenancy.v1.UpdateClientRequest': UpdateClientRequest$json,
+  '.tenancy.v1.UpdateClientResponse': UpdateClientResponse$json,
+  '.tenancy.v1.RemoveClientRequest': RemoveClientRequest$json,
+  '.tenancy.v1.RemoveClientResponse': RemoveClientResponse$json,
 };
 
-/// Descriptor for `PartitionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
-final $typed_data.Uint8List partitionServiceDescriptor = $convert.base64Decode(
-    'ChBQYXJ0aXRpb25TZXJ2aWNlEuEBCglHZXRUZW5hbnQSHi5wYXJ0aXRpb24udjEuR2V0VGVuYW'
-    '50UmVxdWVzdBofLnBhcnRpdGlvbi52MS5HZXRUZW5hbnRSZXNwb25zZSKSAZACAbpHewoHVGVu'
-    'YW50cxIKR2V0IHRlbmFudBpZUmV0cmlldmVzIGEgdGVuYW50IGJ5IGl0cyB1bmlxdWUgaWRlbn'
-    'RpZmllciBpbmNsdWRpbmcgYWxsIHRlbmFudCBtZXRhZGF0YSBhbmQgcHJvcGVydGllcy4qCWdl'
-    'dFRlbmFudIK1GA0KC3RlbmFudF92aWV3EowCCgpMaXN0VGVuYW50Eh8ucGFydGl0aW9uLnYxLk'
-    'xpc3RUZW5hbnRSZXF1ZXN0GiAucGFydGl0aW9uLnYxLkxpc3RUZW5hbnRSZXNwb25zZSK4AZAC'
-    'AbpHoAEKB1RlbmFudHMSDExpc3QgdGVuYW50cxp6TGlzdHMgYWxsIHRlbmFudHMgaW4gdGhlIH'
-    'N5c3RlbSB3aXRoIG9wdGlvbmFsIGZpbHRlcmluZyBieSBxdWVyeSwgZGF0ZSByYW5nZSwgYW5k'
-    'IHByb3BlcnRpZXMuIFJldHVybnMgYSBzdHJlYW0gb2YgdGVuYW50cy4qC2xpc3RUZW5hbnRzgr'
-    'UYDQoLdGVuYW50X3ZpZXcwARL6AQoMQ3JlYXRlVGVuYW50EiEucGFydGl0aW9uLnYxLkNyZWF0'
-    'ZVRlbmFudFJlcXVlc3QaIi5wYXJ0aXRpb24udjEuQ3JlYXRlVGVuYW50UmVzcG9uc2UiogG6R4'
-    'sBCgdUZW5hbnRzEg1DcmVhdGUgdGVuYW50GmNDcmVhdGVzIGEgbmV3IHRlbmFudCAodG9wLWxl'
-    'dmVsIG9yZ2FuaXphdGlvbmFsIHVuaXQpIHdpdGggbmFtZSwgZGVzY3JpcHRpb24sIGFuZCBjdX'
-    'N0b20gcHJvcGVydGllcy4qDGNyZWF0ZVRlbmFudIK1GA8KDXRlbmFudF9tYW5hZ2US3AEKDFVw'
-    'ZGF0ZVRlbmFudBIhLnBhcnRpdGlvbi52MS5VcGRhdGVUZW5hbnRSZXF1ZXN0GiIucGFydGl0aW'
-    '9uLnYxLlVwZGF0ZVRlbmFudFJlc3BvbnNlIoQBukduCgdUZW5hbnRzEg1VcGRhdGUgdGVuYW50'
-    'GkZVcGRhdGVzIGFuIGV4aXN0aW5nIHRlbmFudCdzIG5hbWUsIGRlc2NyaXB0aW9uLCBzdGF0ZS'
-    'wgYW5kIHByb3BlcnRpZXMuKgx1cGRhdGVUZW5hbnSCtRgPCg10ZW5hbnRfbWFuYWdlEoQCCgxS'
-    'ZW1vdmVUZW5hbnQSIS5wYXJ0aXRpb24udjEuUmVtb3ZlVGVuYW50UmVxdWVzdBoiLnBhcnRpdG'
-    'lvbi52MS5SZW1vdmVUZW5hbnRSZXNwb25zZSKsAbpHlQEKB1RlbmFudHMSDVJlbW92ZSB0ZW5h'
-    'bnQabVNvZnQtZGVsZXRlcyBhIHRlbmFudC4gQWxsIHBhcnRpdGlvbnMsIGFjY2VzcyBncmFudH'
-    'MsIGFuZCByb2xlcyB3aXRoaW4gdGhlIHRlbmFudCBhcmUgYWxzbyBtYXJrZWQgYXMgZGVsZXRl'
-    'ZC4qDHJlbW92ZVRlbmFudIK1GA8KDXRlbmFudF9tYW5hZ2USqAIKDUxpc3RQYXJ0aXRpb24SIi'
-    '5wYXJ0aXRpb24udjEuTGlzdFBhcnRpdGlvblJlcXVlc3QaIy5wYXJ0aXRpb24udjEuTGlzdFBh'
-    'cnRpdGlvblJlc3BvbnNlIssBkAIBukewAQoKUGFydGl0aW9ucxIPTGlzdCBwYXJ0aXRpb25zGo'
-    'ABTGlzdHMgYWxsIHBhcnRpdGlvbnMgaW4gdGhlIHN5c3RlbSB3aXRoIG9wdGlvbmFsIGZpbHRl'
-    'cmluZyBieSBxdWVyeSwgZGF0ZSByYW5nZSwgYW5kIHByb3BlcnRpZXMuIFJldHVybnMgYSBzdH'
-    'JlYW0gb2YgcGFydGl0aW9ucy4qDmxpc3RQYXJ0aXRpb25zgrUYEAoOcGFydGl0aW9uX3ZpZXcw'
-    'ARKNAgoPQ3JlYXRlUGFydGl0aW9uEiQucGFydGl0aW9uLnYxLkNyZWF0ZVBhcnRpdGlvblJlcX'
-    'Vlc3QaJS5wYXJ0aXRpb24udjEuQ3JlYXRlUGFydGl0aW9uUmVzcG9uc2UirAG6R5IBCgpQYXJ0'
-    'aXRpb25zEhBDcmVhdGUgcGFydGl0aW9uGmFDcmVhdGVzIGEgbmV3IHBhcnRpdGlvbiB3aXRoaW'
-    '4gYSB0ZW5hbnQuIFN1cHBvcnRzIGhpZXJhcmNoaWNhbCBzdHJ1Y3R1cmVzIHdpdGggcGFyZW50'
-    'IHBhcnRpdGlvbnMuKg9jcmVhdGVQYXJ0aXRpb26CtRgSChBwYXJ0aXRpb25fbWFuYWdlEogCCg'
-    'xHZXRQYXJ0aXRpb24SIS5wYXJ0aXRpb24udjEuR2V0UGFydGl0aW9uUmVxdWVzdBoiLnBhcnRp'
-    'dGlvbi52MS5HZXRQYXJ0aXRpb25SZXNwb25zZSKwAZACAbpHlQEKClBhcnRpdGlvbnMSDUdldC'
-    'BwYXJ0aXRpb24aalJldHJpZXZlcyBhIHBhcnRpdGlvbiBieSBpdHMgdW5pcXVlIGlkZW50aWZp'
-    'ZXIgb3IgZG9tYWluLCBpbmNsdWRpbmcgYWxsIHBhcnRpdGlvbiBtZXRhZGF0YSBhbmQgcHJvcG'
-    'VydGllcy4qDGdldFBhcnRpdGlvboK1GBAKDnBhcnRpdGlvbl92aWV3EqUCChNHZXRQYXJ0aXRp'
-    'b25QYXJlbnRzEigucGFydGl0aW9uLnYxLkdldFBhcnRpdGlvblBhcmVudHNSZXF1ZXN0GikucG'
-    'FydGl0aW9uLnYxLkdldFBhcnRpdGlvblBhcmVudHNSZXNwb25zZSK4AZACAbpHnQEKClBhcnRp'
-    'dGlvbnMSFUdldCBwYXJ0aXRpb24gcGFyZW50cxpjUmV0cmlldmVzIHRoZSBjb21wbGV0ZSBwYX'
-    'JlbnQgaGllcmFyY2h5IGZvciBhIHBhcnRpdGlvbiBmcm9tIHRoZSByb290IHRlbmFudCBkb3du'
-    'IHRvIHRoZSBwYXJ0aXRpb24uKhNnZXRQYXJ0aXRpb25QYXJlbnRzgrUYEAoOcGFydGl0aW9uX3'
-    'ZpZXcSrQIKD1JlbW92ZVBhcnRpdGlvbhIkLnBhcnRpdGlvbi52MS5SZW1vdmVQYXJ0aXRpb25S'
-    'ZXF1ZXN0GiUucGFydGl0aW9uLnYxLlJlbW92ZVBhcnRpdGlvblJlc3BvbnNlIswBukeyAQoKUG'
-    'FydGl0aW9ucxIQUmVtb3ZlIHBhcnRpdGlvbhqAAVNvZnQtZGVsZXRlcyBhIHBhcnRpdGlvbi4g'
-    'QWxsIGFjY2VzcyBncmFudHMsIHJvbGVzLCBwYWdlcywgYW5kIHNlcnZpY2UgYWNjb3VudHMgd2'
-    'l0aGluIHRoZSBwYXJ0aXRpb24gYXJlIGFsc28gbWFya2VkIGFzIGRlbGV0ZWQuKg9yZW1vdmVQ'
-    'YXJ0aXRpb26CtRgSChBwYXJ0aXRpb25fbWFuYWdlEv0BCg9VcGRhdGVQYXJ0aXRpb24SJC5wYX'
-    'J0aXRpb24udjEuVXBkYXRlUGFydGl0aW9uUmVxdWVzdBolLnBhcnRpdGlvbi52MS5VcGRhdGVQ'
-    'YXJ0aXRpb25SZXNwb25zZSKcAbpHggEKClBhcnRpdGlvbnMSEFVwZGF0ZSBwYXJ0aXRpb24aUV'
-    'VwZGF0ZXMgYW4gZXhpc3RpbmcgcGFydGl0aW9uJ3MgbmFtZSwgZGVzY3JpcHRpb24sIGRvbWFp'
-    'biwgc3RhdGUsIGFuZCBwcm9wZXJ0aWVzLioPdXBkYXRlUGFydGl0aW9ugrUYEgoQcGFydGl0aW'
-    '9uX21hbmFnZRKOAgoTQ3JlYXRlUGFydGl0aW9uUm9sZRIoLnBhcnRpdGlvbi52MS5DcmVhdGVQ'
-    'YXJ0aXRpb25Sb2xlUmVxdWVzdBopLnBhcnRpdGlvbi52MS5DcmVhdGVQYXJ0aXRpb25Sb2xlUm'
-    'VzcG9uc2UioQG6R4wBCgVSb2xlcxIVQ3JlYXRlIHBhcnRpdGlvbiByb2xlGldDcmVhdGVzIGEg'
-    'bmV3IHJvbGUgd2l0aGluIGEgcGFydGl0aW9uIGZvciBhY2Nlc3MgY29udHJvbCAoYWRtaW4sIG'
-    'VkaXRvciwgdmlld2VyLCBldGMuKS4qE2NyZWF0ZVBhcnRpdGlvblJvbGWCtRgNCgtyb2xlX21h'
-    'bmFnZRKMAgoRTGlzdFBhcnRpdGlvblJvbGUSJi5wYXJ0aXRpb24udjEuTGlzdFBhcnRpdGlvbl'
-    'JvbGVSZXF1ZXN0GicucGFydGl0aW9uLnYxLkxpc3RQYXJ0aXRpb25Sb2xlUmVzcG9uc2UiowGQ'
-    'AgG6R4sBCgVSb2xlcxIUTGlzdCBwYXJ0aXRpb24gcm9sZXMaWExpc3RzIGFsbCByb2xlcyBhdm'
-    'FpbGFibGUgZm9yIGEgc3BlY2lmaWMgcGFydGl0aW9uLiBSZXR1cm5zIGEgc3RyZWFtIG9mIHBh'
-    'cnRpdGlvbiByb2xlcy4qEmxpc3RQYXJ0aXRpb25Sb2xlc4K1GA0KC3JvbGVfbWFuYWdlMAES7Q'
-    'EKE1VwZGF0ZVBhcnRpdGlvblJvbGUSKC5wYXJ0aXRpb24udjEuVXBkYXRlUGFydGl0aW9uUm9s'
-    'ZVJlcXVlc3QaKS5wYXJ0aXRpb24udjEuVXBkYXRlUGFydGl0aW9uUm9sZVJlc3BvbnNlIoABuk'
-    'dsCgVSb2xlcxIVVXBkYXRlIHBhcnRpdGlvbiByb2xlGjdVcGRhdGVzIGEgcGFydGl0aW9uIHJv'
-    'bGUncyBuYW1lLCBwcm9wZXJ0aWVzLCBhbmQgc3RhdGUuKhN1cGRhdGVQYXJ0aXRpb25Sb2xlgr'
-    'UYDQoLcm9sZV9tYW5hZ2USiQIKE1JlbW92ZVBhcnRpdGlvblJvbGUSKC5wYXJ0aXRpb24udjEu'
-    'UmVtb3ZlUGFydGl0aW9uUm9sZVJlcXVlc3QaKS5wYXJ0aXRpb24udjEuUmVtb3ZlUGFydGl0aW'
-    '9uUm9sZVJlc3BvbnNlIpwBukeHAQoFUm9sZXMSFVJlbW92ZSBwYXJ0aXRpb24gcm9sZRpSUmVt'
-    'b3ZlcyBhIHBhcnRpdGlvbiByb2xlLiBBbGwgYWNjZXNzIGdyYW50cyB1c2luZyB0aGlzIHJvbG'
-    'UgbXVzdCBiZSByZW1vdmVkIGZpcnN0LioTcmVtb3ZlUGFydGl0aW9uUm9sZYK1GA0KC3JvbGVf'
-    'bWFuYWdlEoICCgpDcmVhdGVQYWdlEh8ucGFydGl0aW9uLnYxLkNyZWF0ZVBhZ2VSZXF1ZXN0Gi'
-    'AucGFydGl0aW9uLnYxLkNyZWF0ZVBhZ2VSZXNwb25zZSKwAbpHmwEKBVBhZ2VzEhJDcmVhdGUg'
-    'Y3VzdG9tIHBhZ2UackNyZWF0ZXMgYSBjdXN0b20gVUkgcGFnZSBmb3IgYSBwYXJ0aXRpb24gd2'
-    'l0aCBIVE1MIGNvbnRlbnQuIEVuYWJsZXMgcGFydGl0aW9uLXNwZWNpZmljIGJyYW5kaW5nIGFu'
-    'ZCBjdXN0b21pemF0aW9uLioKY3JlYXRlUGFnZYK1GA0KC3BhZ2VfbWFuYWdlEssBCghMaXN0UG'
-    'FnZRIdLnBhcnRpdGlvbi52MS5MaXN0UGFnZVJlcXVlc3QaHi5wYXJ0aXRpb24udjEuTGlzdFBh'
-    'Z2VSZXNwb25zZSJ+kAIBukdpCgVQYWdlcxIRTGlzdCBjdXN0b20gcGFnZXMaQkxpc3RzIGFsbC'
-    'BjdXN0b20gcGFnZXMgZm9yIGEgcGFydGl0aW9uLiBSZXR1cm5zIGEgc3RyZWFtIG9mIHBhZ2Vz'
-    'LioJbGlzdFBhZ2VzgrUYCwoJcGFnZV92aWV3MAESvwEKB0dldFBhZ2USHC5wYXJ0aXRpb24udj'
-    'EuR2V0UGFnZVJlcXVlc3QaHS5wYXJ0aXRpb24udjEuR2V0UGFnZVJlc3BvbnNlIneQAgG6R2IK'
-    'BVBhZ2VzEg9HZXQgY3VzdG9tIHBhZ2UaP1JldHJpZXZlcyBhIGN1c3RvbSBwYWdlIGJ5IHBhZ2'
-    'UgSUQsIHBhcnRpdGlvbiBJRCwgb3IgcGFnZSBuYW1lLioHZ2V0UGFnZYK1GAsKCXBhZ2Vfdmll'
-    'dxLQAQoKVXBkYXRlUGFnZRIfLnBhcnRpdGlvbi52MS5VcGRhdGVQYWdlUmVxdWVzdBogLnBhcn'
-    'RpdGlvbi52MS5VcGRhdGVQYWdlUmVzcG9uc2Uif7pHawoFUGFnZXMSElVwZGF0ZSBjdXN0b20g'
-    'cGFnZRpCVXBkYXRlcyBhIGN1c3RvbSBwYWdlJ3MgbmFtZSwgSFRNTCBjb250ZW50LCBzdGF0ZS'
-    'wgYW5kIHByb3BlcnRpZXMuKgp1cGRhdGVQYWdlgrUYDQoLcGFnZV9tYW5hZ2UStQEKClJlbW92'
-    'ZVBhZ2USHy5wYXJ0aXRpb24udjEuUmVtb3ZlUGFnZVJlcXVlc3QaIC5wYXJ0aXRpb24udjEuUm'
-    'Vtb3ZlUGFnZVJlc3BvbnNlImS6R1AKBVBhZ2VzEhJSZW1vdmUgY3VzdG9tIHBhZ2UaJ1JlbW92'
-    'ZXMgYSBjdXN0b20gcGFnZSBmcm9tIGEgcGFydGl0aW9uLioKcmVtb3ZlUGFnZYK1GA0KC3BhZ2'
-    'VfbWFuYWdlEoACCgxDcmVhdGVBY2Nlc3MSIS5wYXJ0aXRpb24udjEuQ3JlYXRlQWNjZXNzUmVx'
-    'dWVzdBoiLnBhcnRpdGlvbi52MS5DcmVhdGVBY2Nlc3NSZXNwb25zZSKoAbpHkQEKBkFjY2Vzcx'
-    'ITQ3JlYXRlIGFjY2VzcyBncmFudBpkR3JhbnRzIGEgcHJvZmlsZSBhY2Nlc3MgdG8gYSBwYXJ0'
-    'aXRpb24uIFRoZSBwcm9maWxlIGNhbiB0aGVuIGJlIGFzc2lnbmVkIHJvbGVzIHZpYSBDcmVhdG'
-    'VBY2Nlc3NSb2xlLioMY3JlYXRlQWNjZXNzgrUYDwoNYWNjZXNzX21hbmFnZRLfAQoJR2V0QWNj'
-    'ZXNzEh4ucGFydGl0aW9uLnYxLkdldEFjY2Vzc1JlcXVlc3QaHy5wYXJ0aXRpb24udjEuR2V0QW'
-    'NjZXNzUmVzcG9uc2UikAGQAgG6R3kKBkFjY2VzcxIQR2V0IGFjY2VzcyBncmFudBpSUmV0cmll'
-    'dmVzIGFuIGFjY2VzcyBncmFudCBieSBhY2Nlc3MgSUQgb3IgYnkgcGFydGl0aW9uIGFuZCBwcm'
-    '9maWxlIElEIGNvbWJpbmF0aW9uLioJZ2V0QWNjZXNzgrUYDQoLYWNjZXNzX3ZpZXcS9wEKCkxp'
-    'c3RBY2Nlc3MSHy5wYXJ0aXRpb24udjEuTGlzdEFjY2Vzc1JlcXVlc3QaIC5wYXJ0aXRpb24udj'
-    'EuTGlzdEFjY2Vzc1Jlc3BvbnNlIqMBkAIBukeLAQoGQWNjZXNzEhJMaXN0IGFjY2VzcyBncmFu'
-    'dHMaYUxpc3RzIGFsbCBhY2Nlc3MgZ3JhbnRzIGZvciBhIHBhcnRpdGlvbiAod2hvIGhhcyBhY2'
-    'Nlc3MpIG9yIGZvciBhIHByb2ZpbGUgKHdoYXQgdGhleSBjYW4gYWNjZXNzKS4qCmxpc3RBY2Nl'
-    'c3OCtRgNCgthY2Nlc3NfdmlldzABEvQBCgxSZW1vdmVBY2Nlc3MSIS5wYXJ0aXRpb24udjEuUm'
-    'Vtb3ZlQWNjZXNzUmVxdWVzdBoiLnBhcnRpdGlvbi52MS5SZW1vdmVBY2Nlc3NSZXNwb25zZSKc'
-    'AbpHhQEKBkFjY2VzcxITUmVtb3ZlIGFjY2VzcyBncmFudBpYUmV2b2tlcyBhIHByb2ZpbGUncy'
-    'BhY2Nlc3MgdG8gYSBwYXJ0aXRpb24uIEFsbCBhc3NvY2lhdGVkIGFjY2VzcyByb2xlcyBhcmUg'
-    'YWxzbyByZW1vdmVkLioMcmVtb3ZlQWNjZXNzgrUYDwoNYWNjZXNzX21hbmFnZRKdAgoQQ3JlYX'
-    'RlQWNjZXNzUm9sZRIlLnBhcnRpdGlvbi52MS5DcmVhdGVBY2Nlc3NSb2xlUmVxdWVzdBomLnBh'
-    'cnRpdGlvbi52MS5DcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2UiuQG6R58BCgZBY2Nlc3MSFUFzc2'
-    'lnbiByb2xlIHRvIGFjY2VzcxpsQXNzaWducyBhIHBhcnRpdGlvbiByb2xlIHRvIGFuIGFjY2Vz'
-    'cyBncmFudCwgZ3JhbnRpbmcgdGhlIHByb2ZpbGUgc3BlY2lmaWMgcGVybWlzc2lvbnMgd2l0aG'
-    'luIHRoZSBwYXJ0aXRpb24uKhBjcmVhdGVBY2Nlc3NSb2xlgrUYEgoQcGVybWlzc2lvbl9ncmFu'
-    'dBLzAQoOTGlzdEFjY2Vzc1JvbGUSIy5wYXJ0aXRpb24udjEuTGlzdEFjY2Vzc1JvbGVSZXF1ZX'
-    'N0GiQucGFydGl0aW9uLnYxLkxpc3RBY2Nlc3NSb2xlUmVzcG9uc2UikwGQAgG6R3wKBkFjY2Vz'
-    'cxIRTGlzdCBhY2Nlc3Mgcm9sZXMaTkxpc3RzIGFsbCByb2xlcyBhc3NpZ25lZCB0byBhbiBhY2'
-    'Nlc3MgZ3JhbnQuIFJldHVybnMgYSBzdHJlYW0gb2YgYWNjZXNzIHJvbGVzLioPbGlzdEFjY2Vz'
-    'c1JvbGVzgrUYDQoLYWNjZXNzX3ZpZXcwARKeAgoQUmVtb3ZlQWNjZXNzUm9sZRIlLnBhcnRpdG'
-    'lvbi52MS5SZW1vdmVBY2Nlc3NSb2xlUmVxdWVzdBomLnBhcnRpdGlvbi52MS5SZW1vdmVBY2Nl'
-    'c3NSb2xlUmVzcG9uc2UiugG6R6ABCgZBY2Nlc3MSElJlbW92ZSBhY2Nlc3Mgcm9sZRpwUmVtb3'
-    'ZlcyBhIHNwZWNpZmljIHJvbGUgZnJvbSBhbiBhY2Nlc3MgZ3JhbnQuIFRoZSBwcm9maWxlIHJl'
-    'dGFpbnMgYWNjZXNzIGJ1dCBsb3NlcyB0aGUgcGVybWlzc2lvbnMgb2YgdGhpcyByb2xlLioQcm'
-    'Vtb3ZlQWNjZXNzUm9sZYK1GBIKEHBlcm1pc3Npb25fZ3JhbnQSiwMKFENyZWF0ZVNlcnZpY2VB'
-    'Y2NvdW50EikucGFydGl0aW9uLnYxLkNyZWF0ZVNlcnZpY2VBY2NvdW50UmVxdWVzdBoqLnBhcn'
-    'RpdGlvbi52MS5DcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlIpsCukf7AQoPU2VydmljZUFj'
-    'Y291bnRzEhZDcmVhdGUgc2VydmljZSBhY2NvdW50GrkBUmVnaXN0ZXJzIGEgcHJlLWF1dGhvcm'
-    'l6ZWQgc2VydmljZSBhY2NvdW50IGZvciBtYWNoaW5lLXRvLW1hY2hpbmUgYXV0aGVudGljYXRp'
-    'b24uIENyZWF0ZXMgYSBkZWRpY2F0ZWQgY2hpbGQgcGFydGl0aW9uIHdpdGggY2xpZW50X2NyZW'
-    'RlbnRpYWxzIGdyYW50IHR5cGUgYW5kIHdyaXRlcyBhdXRob3JpemF0aW9uIHR1cGxlcy4qFGNy'
-    'ZWF0ZVNlcnZpY2VBY2NvdW50grUYGAoWc2VydmljZV9hY2NvdW50X21hbmFnZRL+AQoRR2V0U2'
-    'VydmljZUFjY291bnQSJi5wYXJ0aXRpb24udjEuR2V0U2VydmljZUFjY291bnRSZXF1ZXN0Gicu'
-    'cGFydGl0aW9uLnYxLkdldFNlcnZpY2VBY2NvdW50UmVzcG9uc2UilwGQAgG6R3cKD1NlcnZpY2'
-    'VBY2NvdW50cxITR2V0IHNlcnZpY2UgYWNjb3VudBo8UmV0cmlldmVzIGEgc2VydmljZSBhY2Nv'
-    'dW50IGJ5IElELCBjbGllbnQgSUQsIG9yIHByb2ZpbGUgSUQuKhFnZXRTZXJ2aWNlQWNjb3VudI'
-    'K1GBYKFHNlcnZpY2VfYWNjb3VudF92aWV3EqcCChRVcGRhdGVTZXJ2aWNlQWNjb3VudBIpLnBh'
-    'cnRpdGlvbi52MS5VcGRhdGVTZXJ2aWNlQWNjb3VudFJlcXVlc3QaKi5wYXJ0aXRpb24udjEuVX'
-    'BkYXRlU2VydmljZUFjY291bnRSZXNwb25zZSK3AbpHlwEKD1NlcnZpY2VBY2NvdW50cxIWVXBk'
-    'YXRlIHNlcnZpY2UgYWNjb3VudBpWVXBkYXRlcyBhIHNlcnZpY2UgYWNjb3VudCdzIG5hbWUsIG'
-    'F1ZGllbmNlcywgdHlwZSwgcm9sZXMsIHB1YmxpYyBrZXlzLCBhbmQgcHJvcGVydGllcy4qFHVw'
-    'ZGF0ZVNlcnZpY2VBY2NvdW50grUYGAoWc2VydmljZV9hY2NvdW50X21hbmFnZRKBAgoSTGlzdF'
-    'NlcnZpY2VBY2NvdW50EicucGFydGl0aW9uLnYxLkxpc3RTZXJ2aWNlQWNjb3VudFJlcXVlc3Qa'
-    'KC5wYXJ0aXRpb24udjEuTGlzdFNlcnZpY2VBY2NvdW50UmVzcG9uc2UilQGQAgG6R3UKD1Nlcn'
-    'ZpY2VBY2NvdW50cxIVTGlzdCBzZXJ2aWNlIGFjY291bnRzGjZMaXN0cyBhbGwgc2VydmljZSBh'
-    'Y2NvdW50cyByZWdpc3RlcmVkIGZvciBhIHBhcnRpdGlvbi4qE2xpc3RTZXJ2aWNlQWNjb3VudH'
-    'OCtRgWChRzZXJ2aWNlX2FjY291bnRfdmlldzABEq8CChRSZW1vdmVTZXJ2aWNlQWNjb3VudBIp'
-    'LnBhcnRpdGlvbi52MS5SZW1vdmVTZXJ2aWNlQWNjb3VudFJlcXVlc3QaKi5wYXJ0aXRpb24udj'
-    'EuUmVtb3ZlU2VydmljZUFjY291bnRSZXNwb25zZSK/AbpHnwEKD1NlcnZpY2VBY2NvdW50cxIW'
-    'UmVtb3ZlIHNlcnZpY2UgYWNjb3VudBpeRGVyZWdpc3RlcnMgYSBzZXJ2aWNlIGFjY291bnQsIG'
-    'RlbGV0aW5nIGl0cyBjaGlsZCBwYXJ0aXRpb24gYW5kIHJldm9raW5nIGF1dGhvcml6YXRpb24g'
-    'dHVwbGVzLioUcmVtb3ZlU2VydmljZUFjY291bnSCtRgYChZzZXJ2aWNlX2FjY291bnRfbWFuYW'
-    'dlEssCCgxDcmVhdGVDbGllbnQSIS5wYXJ0aXRpb24udjEuQ3JlYXRlQ2xpZW50UmVxdWVzdBoi'
-    'LnBhcnRpdGlvbi52MS5DcmVhdGVDbGllbnRSZXNwb25zZSLzAbpH3AEKB0NsaWVudHMSFENyZW'
-    'F0ZSBPQXV0aDIgY2xpZW50GqwBQ3JlYXRlcyBhIG5ldyBPQXV0aDIgY2xpZW50IGF0dGFjaGVk'
-    'IHRvIGVpdGhlciBhIHBhcnRpdGlvbiAoZm9yIHVzZXIgYXV0aCBmbG93cykgb3IgYSBzZXJ2aW'
-    'NlIGFjY291bnQgKGZvciBjbGllbnRfY3JlZGVudGlhbHMgZmxvd3MpLiBSZXR1cm5zIHRoZSBj'
-    'bGllbnQgc2VjcmV0IG9uIGNyZWF0aW9uLioMY3JlYXRlQ2xpZW50grUYDwoNY2xpZW50X21hbm'
-    'FnZRLPAQoJR2V0Q2xpZW50Eh4ucGFydGl0aW9uLnYxLkdldENsaWVudFJlcXVlc3QaHy5wYXJ0'
-    'aXRpb24udjEuR2V0Q2xpZW50UmVzcG9uc2UigAGQAgG6R2kKB0NsaWVudHMSEUdldCBPQXV0aD'
-    'IgY2xpZW50GkBSZXRyaWV2ZXMgYW4gT0F1dGgyIGNsaWVudCBieSBpdHMgcmVjb3JkIElEIG9y'
-    'IE9BdXRoMiBjbGllbnRfaWQuKglnZXRDbGllbnSCtRgNCgtjbGllbnRfdmlldxLdAQoKTGlzdE'
-    'NsaWVudBIfLnBhcnRpdGlvbi52MS5MaXN0Q2xpZW50UmVxdWVzdBogLnBhcnRpdGlvbi52MS5M'
-    'aXN0Q2xpZW50UmVzcG9uc2UiiQGQAgG6R3IKB0NsaWVudHMSE0xpc3QgT0F1dGgyIGNsaWVudH'
-    'MaRUxpc3RzIGFsbCBPQXV0aDIgY2xpZW50cyBiZWxvbmdpbmcgdG8gYSBwYXJ0aXRpb24gb3Ig'
-    'c2VydmljZSBhY2NvdW50LioLbGlzdENsaWVudHOCtRgNCgtjbGllbnRfdmlldzABEoACCgxVcG'
-    'RhdGVDbGllbnQSIS5wYXJ0aXRpb24udjEuVXBkYXRlQ2xpZW50UmVxdWVzdBoiLnBhcnRpdGlv'
-    'bi52MS5VcGRhdGVDbGllbnRSZXNwb25zZSKoAbpHkQEKB0NsaWVudHMSFFVwZGF0ZSBPQXV0aD'
-    'IgY2xpZW50GmJVcGRhdGVzIGFuIGV4aXN0aW5nIE9BdXRoMiBjbGllbnQncyBuYW1lLCByZWRp'
-    'cmVjdCBVUklzLCBzY29wZXMsIGF1ZGllbmNlcywgcm9sZXMsIGFuZCBwcm9wZXJ0aWVzLioMdX'
-    'BkYXRlQ2xpZW50grUYDwoNY2xpZW50X21hbmFnZRLQAQoMUmVtb3ZlQ2xpZW50EiEucGFydGl0'
-    'aW9uLnYxLlJlbW92ZUNsaWVudFJlcXVlc3QaIi5wYXJ0aXRpb24udjEuUmVtb3ZlQ2xpZW50Um'
-    'VzcG9uc2UiebpHYwoHQ2xpZW50cxIUUmVtb3ZlIE9BdXRoMiBjbGllbnQaNFJlbW92ZXMgYW4g'
-    'T0F1dGgyIGNsaWVudCBhbmQgaXRzIEh5ZHJhIHJlZ2lzdHJhdGlvbi4qDHJlbW92ZUNsaWVudI'
-    'K1GA8KDWNsaWVudF9tYW5hZ2UauAiCtRizCAoRc2VydmljZV9wYXJ0aXRpb24SC3RlbmFudF92'
-    'aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFydGl0aW9uX21hbmFnZRILYW'
-    'NjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEglwYWdlX3ZpZXcSC3BhZ2Vf'
-    'bWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291bnRfdmlldxIWc2VydmljZV'
-    '9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW5hZ2Ua3QEIARILdGVuYW50'
-    'X3ZpZXcSDXRlbmFudF9tYW5hZ2USDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb25fbWFuYWdlEg'
-    'thY2Nlc3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2VfdmlldxILcGFn'
-    'ZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aWV3EhZzZXJ2aW'
-    'NlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRrOAQgCEgt0ZW5h'
-    'bnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdGlvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg'
-    '1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcGFnZV92aWV3EgtwYWdlX21hbmFnZRIQcGVy'
-    'bWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50X3ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW'
-    '5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdlGloIAxILdGVuYW50X3ZpZXcSDnBhcnRp'
-    'dGlvbl92aWV3EgthY2Nlc3NfdmlldxIJcGFnZV92aWV3EhRzZXJ2aWNlX2FjY291bnRfdmlldx'
-    'ILY2xpZW50X3ZpZXcaKggEEgt0ZW5hbnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSCXBhZ2Vfdmll'
-    'dxoqCAUSC3RlbmFudF92aWV3Eg5wYXJ0aXRpb25fdmlldxIJcGFnZV92aWV3Gt0BCAYSC3Rlbm'
-    'FudF92aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFydGl0aW9uX21hbmFn'
-    'ZRILYWNjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEglwYWdlX3ZpZXcSC3'
-    'BhZ2VfbWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291bnRfdmlldxIWc2Vy'
-    'dmljZV9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW5hZ2U=');
+/// Descriptor for `TenancyService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
+final $typed_data.Uint8List tenancyServiceDescriptor = $convert.base64Decode(
+    'Cg5UZW5hbmN5U2VydmljZRLdAQoJR2V0VGVuYW50EhwudGVuYW5jeS52MS5HZXRUZW5hbnRSZX'
+    'F1ZXN0Gh0udGVuYW5jeS52MS5HZXRUZW5hbnRSZXNwb25zZSKSAZACAbpHewoHVGVuYW50cxIK'
+    'R2V0IHRlbmFudBpZUmV0cmlldmVzIGEgdGVuYW50IGJ5IGl0cyB1bmlxdWUgaWRlbnRpZmllci'
+    'BpbmNsdWRpbmcgYWxsIHRlbmFudCBtZXRhZGF0YSBhbmQgcHJvcGVydGllcy4qCWdldFRlbmFu'
+    'dIK1GA0KC3RlbmFudF92aWV3EogCCgpMaXN0VGVuYW50Eh0udGVuYW5jeS52MS5MaXN0VGVuYW'
+    '50UmVxdWVzdBoeLnRlbmFuY3kudjEuTGlzdFRlbmFudFJlc3BvbnNlIrgBkAIBukegAQoHVGVu'
+    'YW50cxIMTGlzdCB0ZW5hbnRzGnpMaXN0cyBhbGwgdGVuYW50cyBpbiB0aGUgc3lzdGVtIHdpdG'
+    'ggb3B0aW9uYWwgZmlsdGVyaW5nIGJ5IHF1ZXJ5LCBkYXRlIHJhbmdlLCBhbmQgcHJvcGVydGll'
+    'cy4gUmV0dXJucyBhIHN0cmVhbSBvZiB0ZW5hbnRzLioLbGlzdFRlbmFudHOCtRgNCgt0ZW5hbn'
+    'RfdmlldzABEvYBCgxDcmVhdGVUZW5hbnQSHy50ZW5hbmN5LnYxLkNyZWF0ZVRlbmFudFJlcXVl'
+    'c3QaIC50ZW5hbmN5LnYxLkNyZWF0ZVRlbmFudFJlc3BvbnNlIqIBukeLAQoHVGVuYW50cxINQ3'
+    'JlYXRlIHRlbmFudBpjQ3JlYXRlcyBhIG5ldyB0ZW5hbnQgKHRvcC1sZXZlbCBvcmdhbml6YXRp'
+    'b25hbCB1bml0KSB3aXRoIG5hbWUsIGRlc2NyaXB0aW9uLCBhbmQgY3VzdG9tIHByb3BlcnRpZX'
+    'MuKgxjcmVhdGVUZW5hbnSCtRgPCg10ZW5hbnRfbWFuYWdlEtgBCgxVcGRhdGVUZW5hbnQSHy50'
+    'ZW5hbmN5LnYxLlVwZGF0ZVRlbmFudFJlcXVlc3QaIC50ZW5hbmN5LnYxLlVwZGF0ZVRlbmFudF'
+    'Jlc3BvbnNlIoQBukduCgdUZW5hbnRzEg1VcGRhdGUgdGVuYW50GkZVcGRhdGVzIGFuIGV4aXN0'
+    'aW5nIHRlbmFudCdzIG5hbWUsIGRlc2NyaXB0aW9uLCBzdGF0ZSwgYW5kIHByb3BlcnRpZXMuKg'
+    'x1cGRhdGVUZW5hbnSCtRgPCg10ZW5hbnRfbWFuYWdlEoACCgxSZW1vdmVUZW5hbnQSHy50ZW5h'
+    'bmN5LnYxLlJlbW92ZVRlbmFudFJlcXVlc3QaIC50ZW5hbmN5LnYxLlJlbW92ZVRlbmFudFJlc3'
+    'BvbnNlIqwBukeVAQoHVGVuYW50cxINUmVtb3ZlIHRlbmFudBptU29mdC1kZWxldGVzIGEgdGVu'
+    'YW50LiBBbGwgcGFydGl0aW9ucywgYWNjZXNzIGdyYW50cywgYW5kIHJvbGVzIHdpdGhpbiB0aG'
+    'UgdGVuYW50IGFyZSBhbHNvIG1hcmtlZCBhcyBkZWxldGVkLioMcmVtb3ZlVGVuYW50grUYDwoN'
+    'dGVuYW50X21hbmFnZRKkAgoNTGlzdFBhcnRpdGlvbhIgLnRlbmFuY3kudjEuTGlzdFBhcnRpdG'
+    'lvblJlcXVlc3QaIS50ZW5hbmN5LnYxLkxpc3RQYXJ0aXRpb25SZXNwb25zZSLLAZACAbpHsAEK'
+    'ClBhcnRpdGlvbnMSD0xpc3QgcGFydGl0aW9ucxqAAUxpc3RzIGFsbCBwYXJ0aXRpb25zIGluIH'
+    'RoZSBzeXN0ZW0gd2l0aCBvcHRpb25hbCBmaWx0ZXJpbmcgYnkgcXVlcnksIGRhdGUgcmFuZ2Us'
+    'IGFuZCBwcm9wZXJ0aWVzLiBSZXR1cm5zIGEgc3RyZWFtIG9mIHBhcnRpdGlvbnMuKg5saXN0UG'
+    'FydGl0aW9uc4K1GBAKDnBhcnRpdGlvbl92aWV3MAESiQIKD0NyZWF0ZVBhcnRpdGlvbhIiLnRl'
+    'bmFuY3kudjEuQ3JlYXRlUGFydGl0aW9uUmVxdWVzdBojLnRlbmFuY3kudjEuQ3JlYXRlUGFydG'
+    'l0aW9uUmVzcG9uc2UirAG6R5IBCgpQYXJ0aXRpb25zEhBDcmVhdGUgcGFydGl0aW9uGmFDcmVh'
+    'dGVzIGEgbmV3IHBhcnRpdGlvbiB3aXRoaW4gYSB0ZW5hbnQuIFN1cHBvcnRzIGhpZXJhcmNoaW'
+    'NhbCBzdHJ1Y3R1cmVzIHdpdGggcGFyZW50IHBhcnRpdGlvbnMuKg9jcmVhdGVQYXJ0aXRpb26C'
+    'tRgSChBwYXJ0aXRpb25fbWFuYWdlEoQCCgxHZXRQYXJ0aXRpb24SHy50ZW5hbmN5LnYxLkdldF'
+    'BhcnRpdGlvblJlcXVlc3QaIC50ZW5hbmN5LnYxLkdldFBhcnRpdGlvblJlc3BvbnNlIrABkAIB'
+    'ukeVAQoKUGFydGl0aW9ucxINR2V0IHBhcnRpdGlvbhpqUmV0cmlldmVzIGEgcGFydGl0aW9uIG'
+    'J5IGl0cyB1bmlxdWUgaWRlbnRpZmllciBvciBkb21haW4sIGluY2x1ZGluZyBhbGwgcGFydGl0'
+    'aW9uIG1ldGFkYXRhIGFuZCBwcm9wZXJ0aWVzLioMZ2V0UGFydGl0aW9ugrUYEAoOcGFydGl0aW'
+    '9uX3ZpZXcSoQIKE0dldFBhcnRpdGlvblBhcmVudHMSJi50ZW5hbmN5LnYxLkdldFBhcnRpdGlv'
+    'blBhcmVudHNSZXF1ZXN0GicudGVuYW5jeS52MS5HZXRQYXJ0aXRpb25QYXJlbnRzUmVzcG9uc2'
+    'UiuAGQAgG6R50BCgpQYXJ0aXRpb25zEhVHZXQgcGFydGl0aW9uIHBhcmVudHMaY1JldHJpZXZl'
+    'cyB0aGUgY29tcGxldGUgcGFyZW50IGhpZXJhcmNoeSBmb3IgYSBwYXJ0aXRpb24gZnJvbSB0aG'
+    'Ugcm9vdCB0ZW5hbnQgZG93biB0byB0aGUgcGFydGl0aW9uLioTZ2V0UGFydGl0aW9uUGFyZW50'
+    'c4K1GBAKDnBhcnRpdGlvbl92aWV3EqkCCg9SZW1vdmVQYXJ0aXRpb24SIi50ZW5hbmN5LnYxLl'
+    'JlbW92ZVBhcnRpdGlvblJlcXVlc3QaIy50ZW5hbmN5LnYxLlJlbW92ZVBhcnRpdGlvblJlc3Bv'
+    'bnNlIswBukeyAQoKUGFydGl0aW9ucxIQUmVtb3ZlIHBhcnRpdGlvbhqAAVNvZnQtZGVsZXRlcy'
+    'BhIHBhcnRpdGlvbi4gQWxsIGFjY2VzcyBncmFudHMsIHJvbGVzLCBwYWdlcywgYW5kIHNlcnZp'
+    'Y2UgYWNjb3VudHMgd2l0aGluIHRoZSBwYXJ0aXRpb24gYXJlIGFsc28gbWFya2VkIGFzIGRlbG'
+    'V0ZWQuKg9yZW1vdmVQYXJ0aXRpb26CtRgSChBwYXJ0aXRpb25fbWFuYWdlEvkBCg9VcGRhdGVQ'
+    'YXJ0aXRpb24SIi50ZW5hbmN5LnYxLlVwZGF0ZVBhcnRpdGlvblJlcXVlc3QaIy50ZW5hbmN5Ln'
+    'YxLlVwZGF0ZVBhcnRpdGlvblJlc3BvbnNlIpwBukeCAQoKUGFydGl0aW9ucxIQVXBkYXRlIHBh'
+    'cnRpdGlvbhpRVXBkYXRlcyBhbiBleGlzdGluZyBwYXJ0aXRpb24ncyBuYW1lLCBkZXNjcmlwdG'
+    'lvbiwgZG9tYWluLCBzdGF0ZSwgYW5kIHByb3BlcnRpZXMuKg91cGRhdGVQYXJ0aXRpb26CtRgS'
+    'ChBwYXJ0aXRpb25fbWFuYWdlEooCChNDcmVhdGVQYXJ0aXRpb25Sb2xlEiYudGVuYW5jeS52MS'
+    '5DcmVhdGVQYXJ0aXRpb25Sb2xlUmVxdWVzdBonLnRlbmFuY3kudjEuQ3JlYXRlUGFydGl0aW9u'
+    'Um9sZVJlc3BvbnNlIqEBukeMAQoFUm9sZXMSFUNyZWF0ZSBwYXJ0aXRpb24gcm9sZRpXQ3JlYX'
+    'RlcyBhIG5ldyByb2xlIHdpdGhpbiBhIHBhcnRpdGlvbiBmb3IgYWNjZXNzIGNvbnRyb2wgKGFk'
+    'bWluLCBlZGl0b3IsIHZpZXdlciwgZXRjLikuKhNjcmVhdGVQYXJ0aXRpb25Sb2xlgrUYDQoLcm'
+    '9sZV9tYW5hZ2USiAIKEUxpc3RQYXJ0aXRpb25Sb2xlEiQudGVuYW5jeS52MS5MaXN0UGFydGl0'
+    'aW9uUm9sZVJlcXVlc3QaJS50ZW5hbmN5LnYxLkxpc3RQYXJ0aXRpb25Sb2xlUmVzcG9uc2Uiow'
+    'GQAgG6R4sBCgVSb2xlcxIUTGlzdCBwYXJ0aXRpb24gcm9sZXMaWExpc3RzIGFsbCByb2xlcyBh'
+    'dmFpbGFibGUgZm9yIGEgc3BlY2lmaWMgcGFydGl0aW9uLiBSZXR1cm5zIGEgc3RyZWFtIG9mIH'
+    'BhcnRpdGlvbiByb2xlcy4qEmxpc3RQYXJ0aXRpb25Sb2xlc4K1GA0KC3JvbGVfbWFuYWdlMAES'
+    '6QEKE1VwZGF0ZVBhcnRpdGlvblJvbGUSJi50ZW5hbmN5LnYxLlVwZGF0ZVBhcnRpdGlvblJvbG'
+    'VSZXF1ZXN0GicudGVuYW5jeS52MS5VcGRhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2UigAG6R2wK'
+    'BVJvbGVzEhVVcGRhdGUgcGFydGl0aW9uIHJvbGUaN1VwZGF0ZXMgYSBwYXJ0aXRpb24gcm9sZS'
+    'dzIG5hbWUsIHByb3BlcnRpZXMsIGFuZCBzdGF0ZS4qE3VwZGF0ZVBhcnRpdGlvblJvbGWCtRgN'
+    'Cgtyb2xlX21hbmFnZRKFAgoTUmVtb3ZlUGFydGl0aW9uUm9sZRImLnRlbmFuY3kudjEuUmVtb3'
+    'ZlUGFydGl0aW9uUm9sZVJlcXVlc3QaJy50ZW5hbmN5LnYxLlJlbW92ZVBhcnRpdGlvblJvbGVS'
+    'ZXNwb25zZSKcAbpHhwEKBVJvbGVzEhVSZW1vdmUgcGFydGl0aW9uIHJvbGUaUlJlbW92ZXMgYS'
+    'BwYXJ0aXRpb24gcm9sZS4gQWxsIGFjY2VzcyBncmFudHMgdXNpbmcgdGhpcyByb2xlIG11c3Qg'
+    'YmUgcmVtb3ZlZCBmaXJzdC4qE3JlbW92ZVBhcnRpdGlvblJvbGWCtRgNCgtyb2xlX21hbmFnZR'
+    'L+AQoKQ3JlYXRlUGFnZRIdLnRlbmFuY3kudjEuQ3JlYXRlUGFnZVJlcXVlc3QaHi50ZW5hbmN5'
+    'LnYxLkNyZWF0ZVBhZ2VSZXNwb25zZSKwAbpHmwEKBVBhZ2VzEhJDcmVhdGUgY3VzdG9tIHBhZ2'
+    'UackNyZWF0ZXMgYSBjdXN0b20gVUkgcGFnZSBmb3IgYSBwYXJ0aXRpb24gd2l0aCBIVE1MIGNv'
+    'bnRlbnQuIEVuYWJsZXMgcGFydGl0aW9uLXNwZWNpZmljIGJyYW5kaW5nIGFuZCBjdXN0b21pem'
+    'F0aW9uLioKY3JlYXRlUGFnZYK1GA0KC3BhZ2VfbWFuYWdlEscBCghMaXN0UGFnZRIbLnRlbmFu'
+    'Y3kudjEuTGlzdFBhZ2VSZXF1ZXN0GhwudGVuYW5jeS52MS5MaXN0UGFnZVJlc3BvbnNlIn6QAg'
+    'G6R2kKBVBhZ2VzEhFMaXN0IGN1c3RvbSBwYWdlcxpCTGlzdHMgYWxsIGN1c3RvbSBwYWdlcyBm'
+    'b3IgYSBwYXJ0aXRpb24uIFJldHVybnMgYSBzdHJlYW0gb2YgcGFnZXMuKglsaXN0UGFnZXOCtR'
+    'gLCglwYWdlX3ZpZXcwARK7AQoHR2V0UGFnZRIaLnRlbmFuY3kudjEuR2V0UGFnZVJlcXVlc3Qa'
+    'Gy50ZW5hbmN5LnYxLkdldFBhZ2VSZXNwb25zZSJ3kAIBukdiCgVQYWdlcxIPR2V0IGN1c3RvbS'
+    'BwYWdlGj9SZXRyaWV2ZXMgYSBjdXN0b20gcGFnZSBieSBwYWdlIElELCBwYXJ0aXRpb24gSUQs'
+    'IG9yIHBhZ2UgbmFtZS4qB2dldFBhZ2WCtRgLCglwYWdlX3ZpZXcSzAEKClVwZGF0ZVBhZ2USHS'
+    '50ZW5hbmN5LnYxLlVwZGF0ZVBhZ2VSZXF1ZXN0Gh4udGVuYW5jeS52MS5VcGRhdGVQYWdlUmVz'
+    'cG9uc2Uif7pHawoFUGFnZXMSElVwZGF0ZSBjdXN0b20gcGFnZRpCVXBkYXRlcyBhIGN1c3RvbS'
+    'BwYWdlJ3MgbmFtZSwgSFRNTCBjb250ZW50LCBzdGF0ZSwgYW5kIHByb3BlcnRpZXMuKgp1cGRh'
+    'dGVQYWdlgrUYDQoLcGFnZV9tYW5hZ2USsQEKClJlbW92ZVBhZ2USHS50ZW5hbmN5LnYxLlJlbW'
+    '92ZVBhZ2VSZXF1ZXN0Gh4udGVuYW5jeS52MS5SZW1vdmVQYWdlUmVzcG9uc2UiZLpHUAoFUGFn'
+    'ZXMSElJlbW92ZSBjdXN0b20gcGFnZRonUmVtb3ZlcyBhIGN1c3RvbSBwYWdlIGZyb20gYSBwYX'
+    'J0aXRpb24uKgpyZW1vdmVQYWdlgrUYDQoLcGFnZV9tYW5hZ2US/AEKDENyZWF0ZUFjY2VzcxIf'
+    'LnRlbmFuY3kudjEuQ3JlYXRlQWNjZXNzUmVxdWVzdBogLnRlbmFuY3kudjEuQ3JlYXRlQWNjZX'
+    'NzUmVzcG9uc2UiqAG6R5EBCgZBY2Nlc3MSE0NyZWF0ZSBhY2Nlc3MgZ3JhbnQaZEdyYW50cyBh'
+    'IHByb2ZpbGUgYWNjZXNzIHRvIGEgcGFydGl0aW9uLiBUaGUgcHJvZmlsZSBjYW4gdGhlbiBiZS'
+    'Bhc3NpZ25lZCByb2xlcyB2aWEgQ3JlYXRlQWNjZXNzUm9sZS4qDGNyZWF0ZUFjY2Vzc4K1GA8K'
+    'DWFjY2Vzc19tYW5hZ2US2wEKCUdldEFjY2VzcxIcLnRlbmFuY3kudjEuR2V0QWNjZXNzUmVxdW'
+    'VzdBodLnRlbmFuY3kudjEuR2V0QWNjZXNzUmVzcG9uc2UikAGQAgG6R3kKBkFjY2VzcxIQR2V0'
+    'IGFjY2VzcyBncmFudBpSUmV0cmlldmVzIGFuIGFjY2VzcyBncmFudCBieSBhY2Nlc3MgSUQgb3'
+    'IgYnkgcGFydGl0aW9uIGFuZCBwcm9maWxlIElEIGNvbWJpbmF0aW9uLioJZ2V0QWNjZXNzgrUY'
+    'DQoLYWNjZXNzX3ZpZXcS8wEKCkxpc3RBY2Nlc3MSHS50ZW5hbmN5LnYxLkxpc3RBY2Nlc3NSZX'
+    'F1ZXN0Gh4udGVuYW5jeS52MS5MaXN0QWNjZXNzUmVzcG9uc2UiowGQAgG6R4sBCgZBY2Nlc3MS'
+    'Ekxpc3QgYWNjZXNzIGdyYW50cxphTGlzdHMgYWxsIGFjY2VzcyBncmFudHMgZm9yIGEgcGFydG'
+    'l0aW9uICh3aG8gaGFzIGFjY2Vzcykgb3IgZm9yIGEgcHJvZmlsZSAod2hhdCB0aGV5IGNhbiBh'
+    'Y2Nlc3MpLioKbGlzdEFjY2Vzc4K1GA0KC2FjY2Vzc192aWV3MAES8AEKDFJlbW92ZUFjY2Vzcx'
+    'IfLnRlbmFuY3kudjEuUmVtb3ZlQWNjZXNzUmVxdWVzdBogLnRlbmFuY3kudjEuUmVtb3ZlQWNj'
+    'ZXNzUmVzcG9uc2UinAG6R4UBCgZBY2Nlc3MSE1JlbW92ZSBhY2Nlc3MgZ3JhbnQaWFJldm9rZX'
+    'MgYSBwcm9maWxlJ3MgYWNjZXNzIHRvIGEgcGFydGl0aW9uLiBBbGwgYXNzb2NpYXRlZCBhY2Nl'
+    'c3Mgcm9sZXMgYXJlIGFsc28gcmVtb3ZlZC4qDHJlbW92ZUFjY2Vzc4K1GA8KDWFjY2Vzc19tYW'
+    '5hZ2USmQIKEENyZWF0ZUFjY2Vzc1JvbGUSIy50ZW5hbmN5LnYxLkNyZWF0ZUFjY2Vzc1JvbGVS'
+    'ZXF1ZXN0GiQudGVuYW5jeS52MS5DcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2UiuQG6R58BCgZBY2'
+    'Nlc3MSFUFzc2lnbiByb2xlIHRvIGFjY2VzcxpsQXNzaWducyBhIHBhcnRpdGlvbiByb2xlIHRv'
+    'IGFuIGFjY2VzcyBncmFudCwgZ3JhbnRpbmcgdGhlIHByb2ZpbGUgc3BlY2lmaWMgcGVybWlzc2'
+    'lvbnMgd2l0aGluIHRoZSBwYXJ0aXRpb24uKhBjcmVhdGVBY2Nlc3NSb2xlgrUYEgoQcGVybWlz'
+    'c2lvbl9ncmFudBLvAQoOTGlzdEFjY2Vzc1JvbGUSIS50ZW5hbmN5LnYxLkxpc3RBY2Nlc3NSb2'
+    'xlUmVxdWVzdBoiLnRlbmFuY3kudjEuTGlzdEFjY2Vzc1JvbGVSZXNwb25zZSKTAZACAbpHfAoG'
+    'QWNjZXNzEhFMaXN0IGFjY2VzcyByb2xlcxpOTGlzdHMgYWxsIHJvbGVzIGFzc2lnbmVkIHRvIG'
+    'FuIGFjY2VzcyBncmFudC4gUmV0dXJucyBhIHN0cmVhbSBvZiBhY2Nlc3Mgcm9sZXMuKg9saXN0'
+    'QWNjZXNzUm9sZXOCtRgNCgthY2Nlc3NfdmlldzABEpoCChBSZW1vdmVBY2Nlc3NSb2xlEiMudG'
+    'VuYW5jeS52MS5SZW1vdmVBY2Nlc3NSb2xlUmVxdWVzdBokLnRlbmFuY3kudjEuUmVtb3ZlQWNj'
+    'ZXNzUm9sZVJlc3BvbnNlIroBukegAQoGQWNjZXNzEhJSZW1vdmUgYWNjZXNzIHJvbGUacFJlbW'
+    '92ZXMgYSBzcGVjaWZpYyByb2xlIGZyb20gYW4gYWNjZXNzIGdyYW50LiBUaGUgcHJvZmlsZSBy'
+    'ZXRhaW5zIGFjY2VzcyBidXQgbG9zZXMgdGhlIHBlcm1pc3Npb25zIG9mIHRoaXMgcm9sZS4qEH'
+    'JlbW92ZUFjY2Vzc1JvbGWCtRgSChBwZXJtaXNzaW9uX2dyYW50EocDChRDcmVhdGVTZXJ2aWNl'
+    'QWNjb3VudBInLnRlbmFuY3kudjEuQ3JlYXRlU2VydmljZUFjY291bnRSZXF1ZXN0GigudGVuYW'
+    '5jeS52MS5DcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlIpsCukf7AQoPU2VydmljZUFjY291'
+    'bnRzEhZDcmVhdGUgc2VydmljZSBhY2NvdW50GrkBUmVnaXN0ZXJzIGEgcHJlLWF1dGhvcml6ZW'
+    'Qgc2VydmljZSBhY2NvdW50IGZvciBtYWNoaW5lLXRvLW1hY2hpbmUgYXV0aGVudGljYXRpb24u'
+    'IENyZWF0ZXMgYSBkZWRpY2F0ZWQgY2hpbGQgcGFydGl0aW9uIHdpdGggY2xpZW50X2NyZWRlbn'
+    'RpYWxzIGdyYW50IHR5cGUgYW5kIHdyaXRlcyBhdXRob3JpemF0aW9uIHR1cGxlcy4qFGNyZWF0'
+    'ZVNlcnZpY2VBY2NvdW50grUYGAoWc2VydmljZV9hY2NvdW50X21hbmFnZRL6AQoRR2V0U2Vydm'
+    'ljZUFjY291bnQSJC50ZW5hbmN5LnYxLkdldFNlcnZpY2VBY2NvdW50UmVxdWVzdBolLnRlbmFu'
+    'Y3kudjEuR2V0U2VydmljZUFjY291bnRSZXNwb25zZSKXAZACAbpHdwoPU2VydmljZUFjY291bn'
+    'RzEhNHZXQgc2VydmljZSBhY2NvdW50GjxSZXRyaWV2ZXMgYSBzZXJ2aWNlIGFjY291bnQgYnkg'
+    'SUQsIGNsaWVudCBJRCwgb3IgcHJvZmlsZSBJRC4qEWdldFNlcnZpY2VBY2NvdW50grUYFgoUc2'
+    'VydmljZV9hY2NvdW50X3ZpZXcSowIKFFVwZGF0ZVNlcnZpY2VBY2NvdW50EicudGVuYW5jeS52'
+    'MS5VcGRhdGVTZXJ2aWNlQWNjb3VudFJlcXVlc3QaKC50ZW5hbmN5LnYxLlVwZGF0ZVNlcnZpY2'
+    'VBY2NvdW50UmVzcG9uc2UitwG6R5cBCg9TZXJ2aWNlQWNjb3VudHMSFlVwZGF0ZSBzZXJ2aWNl'
+    'IGFjY291bnQaVlVwZGF0ZXMgYSBzZXJ2aWNlIGFjY291bnQncyBuYW1lLCBhdWRpZW5jZXMsIH'
+    'R5cGUsIHJvbGVzLCBwdWJsaWMga2V5cywgYW5kIHByb3BlcnRpZXMuKhR1cGRhdGVTZXJ2aWNl'
+    'QWNjb3VudIK1GBgKFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2US/QEKEkxpc3RTZXJ2aWNlQWNjb3'
+    'VudBIlLnRlbmFuY3kudjEuTGlzdFNlcnZpY2VBY2NvdW50UmVxdWVzdBomLnRlbmFuY3kudjEu'
+    'TGlzdFNlcnZpY2VBY2NvdW50UmVzcG9uc2UilQGQAgG6R3UKD1NlcnZpY2VBY2NvdW50cxIVTG'
+    'lzdCBzZXJ2aWNlIGFjY291bnRzGjZMaXN0cyBhbGwgc2VydmljZSBhY2NvdW50cyByZWdpc3Rl'
+    'cmVkIGZvciBhIHBhcnRpdGlvbi4qE2xpc3RTZXJ2aWNlQWNjb3VudHOCtRgWChRzZXJ2aWNlX2'
+    'FjY291bnRfdmlldzABEqsCChRSZW1vdmVTZXJ2aWNlQWNjb3VudBInLnRlbmFuY3kudjEuUmVt'
+    'b3ZlU2VydmljZUFjY291bnRSZXF1ZXN0GigudGVuYW5jeS52MS5SZW1vdmVTZXJ2aWNlQWNjb3'
+    'VudFJlc3BvbnNlIr8BukefAQoPU2VydmljZUFjY291bnRzEhZSZW1vdmUgc2VydmljZSBhY2Nv'
+    'dW50Gl5EZXJlZ2lzdGVycyBhIHNlcnZpY2UgYWNjb3VudCwgZGVsZXRpbmcgaXRzIGNoaWxkIH'
+    'BhcnRpdGlvbiBhbmQgcmV2b2tpbmcgYXV0aG9yaXphdGlvbiB0dXBsZXMuKhRyZW1vdmVTZXJ2'
+    'aWNlQWNjb3VudIK1GBgKFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USxwIKDENyZWF0ZUNsaWVudB'
+    'IfLnRlbmFuY3kudjEuQ3JlYXRlQ2xpZW50UmVxdWVzdBogLnRlbmFuY3kudjEuQ3JlYXRlQ2xp'
+    'ZW50UmVzcG9uc2Ui8wG6R9wBCgdDbGllbnRzEhRDcmVhdGUgT0F1dGgyIGNsaWVudBqsAUNyZW'
+    'F0ZXMgYSBuZXcgT0F1dGgyIGNsaWVudCBhdHRhY2hlZCB0byBlaXRoZXIgYSBwYXJ0aXRpb24g'
+    'KGZvciB1c2VyIGF1dGggZmxvd3MpIG9yIGEgc2VydmljZSBhY2NvdW50IChmb3IgY2xpZW50X2'
+    'NyZWRlbnRpYWxzIGZsb3dzKS4gUmV0dXJucyB0aGUgY2xpZW50IHNlY3JldCBvbiBjcmVhdGlv'
+    'bi4qDGNyZWF0ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USywEKCUdldENsaWVudBIcLnRlbm'
+    'FuY3kudjEuR2V0Q2xpZW50UmVxdWVzdBodLnRlbmFuY3kudjEuR2V0Q2xpZW50UmVzcG9uc2Ui'
+    'gAGQAgG6R2kKB0NsaWVudHMSEUdldCBPQXV0aDIgY2xpZW50GkBSZXRyaWV2ZXMgYW4gT0F1dG'
+    'gyIGNsaWVudCBieSBpdHMgcmVjb3JkIElEIG9yIE9BdXRoMiBjbGllbnRfaWQuKglnZXRDbGll'
+    'bnSCtRgNCgtjbGllbnRfdmlldxLZAQoKTGlzdENsaWVudBIdLnRlbmFuY3kudjEuTGlzdENsaW'
+    'VudFJlcXVlc3QaHi50ZW5hbmN5LnYxLkxpc3RDbGllbnRSZXNwb25zZSKJAZACAbpHcgoHQ2xp'
+    'ZW50cxITTGlzdCBPQXV0aDIgY2xpZW50cxpFTGlzdHMgYWxsIE9BdXRoMiBjbGllbnRzIGJlbG'
+    '9uZ2luZyB0byBhIHBhcnRpdGlvbiBvciBzZXJ2aWNlIGFjY291bnQuKgtsaXN0Q2xpZW50c4K1'
+    'GA0KC2NsaWVudF92aWV3MAES/AEKDFVwZGF0ZUNsaWVudBIfLnRlbmFuY3kudjEuVXBkYXRlQ2'
+    'xpZW50UmVxdWVzdBogLnRlbmFuY3kudjEuVXBkYXRlQ2xpZW50UmVzcG9uc2UiqAG6R5EBCgdD'
+    'bGllbnRzEhRVcGRhdGUgT0F1dGgyIGNsaWVudBpiVXBkYXRlcyBhbiBleGlzdGluZyBPQXV0aD'
+    'IgY2xpZW50J3MgbmFtZSwgcmVkaXJlY3QgVVJJcywgc2NvcGVzLCBhdWRpZW5jZXMsIHJvbGVz'
+    'LCBhbmQgcHJvcGVydGllcy4qDHVwZGF0ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USzAEKDF'
+    'JlbW92ZUNsaWVudBIfLnRlbmFuY3kudjEuUmVtb3ZlQ2xpZW50UmVxdWVzdBogLnRlbmFuY3ku'
+    'djEuUmVtb3ZlQ2xpZW50UmVzcG9uc2UiebpHYwoHQ2xpZW50cxIUUmVtb3ZlIE9BdXRoMiBjbG'
+    'llbnQaNFJlbW92ZXMgYW4gT0F1dGgyIGNsaWVudCBhbmQgaXRzIEh5ZHJhIHJlZ2lzdHJhdGlv'
+    'bi4qDHJlbW92ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2UatgiCtRixCAoPc2VydmljZV90ZW'
+    '5hbmN5Egt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRp'
+    'dGlvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcG'
+    'FnZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50'
+    'X3ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYW'
+    'dlGt0BCAESC3RlbmFudF92aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFy'
+    'dGl0aW9uX21hbmFnZRILYWNjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEg'
+    'lwYWdlX3ZpZXcSC3BhZ2VfbWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291'
+    'bnRfdmlldxIWc2VydmljZV9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW'
+    '5hZ2UazgEIAhILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb25fbWFuYWdl'
+    'EgthY2Nlc3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2VfdmlldxILcG'
+    'FnZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aWV3EhZzZXJ2'
+    'aWNlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRpaCAMSC3Rlbm'
+    'FudF92aWV3Eg5wYXJ0aXRpb25fdmlldxILYWNjZXNzX3ZpZXcSCXBhZ2VfdmlldxIUc2Vydmlj'
+    'ZV9hY2NvdW50X3ZpZXcSC2NsaWVudF92aWV3GioIBBILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl'
+    '92aWV3EglwYWdlX3ZpZXcaKggFEgt0ZW5hbnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSCXBhZ2Vf'
+    'dmlldxrdAQgGEgt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEH'
+    'BhcnRpdGlvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFn'
+    'ZRIJcGFnZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2'
+    'NvdW50X3ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRf'
+    'bWFuYWdl');
 

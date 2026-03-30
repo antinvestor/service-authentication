@@ -124,7 +124,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"HTTP_PORT":             strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":          databaseURL,
 			"PROFILE_SERVICE_WORKLOAD_API_TARGET_PATH":      " ",
-			"PARTITION_SERVICE_WORKLOAD_API_TARGET_PATH":    " ",
+			"TENANCY_SERVICE_WORKLOAD_API_TARGET_PATH":      " ",
 			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": " ",
 			"CORS_ENABLED":                      "true",
 			"CORS_ALLOW_CREDENTIALS":            "true",

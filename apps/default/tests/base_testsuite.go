@@ -10,9 +10,9 @@ import (
 
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common"
 	commonconnection "github.com/antinvestor/common/connection"
@@ -42,7 +42,7 @@ type DepsBuilder struct {
 
 	ProfileCli      profilev1connect.ProfileServiceClient
 	DeviceCli       devicev1connect.DeviceServiceClient
-	PartitionCli    partitionv1connect.PartitionServiceClient
+	PartitionCli    tenancyv1connect.TenancyServiceClient
 	NotificationCli notificationv1connect.NotificationServiceClient
 }
 
@@ -233,7 +233,7 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.DatabasePrimaryURL = []string{testDS.String()}
 	cfg.DatabaseReplicaURL = []string{testDS.String()}
 
-	cfg.PartitionServiceURI = partitionDR.GetDS(ctx).String()
+	cfg.TenancyServiceURI = partitionDR.GetDS(ctx).String()
 	cfg.ProfileServiceURI = profileDR.GetDS(ctx).String()
 	cfg.DeviceServiceURI = deviceDR.GetDS(ctx).String()
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
@@ -421,16 +421,16 @@ func setupNotificationClient(
 // setupPartitionClient creates and configures the partition client.
 func setupPartitionClient(
 	ctx context.Context,
-	cfg *aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
+	cfg *aconfig.AuthenticationConfig) (tenancyv1connect.TenancyServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
-		Endpoint:  cfg.PartitionServiceURI,
+		Endpoint:  cfg.TenancyServiceURI,
 		Audiences: []string{"service_tenancy"},
 	}, common.WithTraceRequests(), common.WithTraceResponses(), common.WithTraceHeaders())
 	if err != nil {
 		return nil, err
 	}
 
-	return newTestConnectClient(ctx, partitionv1connect.NewPartitionServiceClient, opts...)
+	return newTestConnectClient(ctx, tenancyv1connect.NewTenancyServiceClient, opts...)
 }
 
 // setupProfileClient creates and configures the profile client.
@@ -448,14 +448,14 @@ func setupProfileClient(
 	return newTestConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
 }
 
-func NewPartitionForOauthCli(ctx context.Context, partitionCli partitionv1connect.PartitionServiceClient, name, description string, properties data.JSONMap) (*partitionv1.PartitionObject, error) {
+func NewPartitionForOauthCli(ctx context.Context, partitionCli tenancyv1connect.TenancyServiceClient, name, description string, properties data.JSONMap) (*tenancyv1.PartitionObject, error) {
 
 	var propsStruct *structpb.Struct
 	if properties != nil {
 		propsStruct = properties.ToProtoStruct()
 	}
 
-	result, err := partitionCli.CreatePartition(ctx, connect.NewRequest(&partitionv1.CreatePartitionRequest{
+	result, err := partitionCli.CreatePartition(ctx, connect.NewRequest(&tenancyv1.CreatePartitionRequest{
 		TenantId:    "c2f4j7au6s7f91uqnojg",
 		ParentId:    "c2f4j7au6s7f91uqnokg",
 		Name:        name,

@@ -1,6 +1,6 @@
 //
 //  Generated code. Do not modify.
-//  source: partition/v1/partition.proto
+//  source: tenancy/v1/tenancy.proto
 //
 // @dart = 2.12
 
@@ -15,12 +15,12 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'partition.pb.dart' as $8;
-import 'partition.pbjson.dart';
+import 'tenancy.pb.dart' as $8;
+import 'tenancy.pbjson.dart';
 
-export 'partition.pb.dart';
+export 'tenancy.pb.dart';
 
-abstract class PartitionServiceBase extends $pb.GeneratedService {
+abstract class TenancyServiceBase extends $pb.GeneratedService {
   $async.Future<$8.GetTenantResponse> getTenant($pb.ServerContext ctx, $8.GetTenantRequest request);
   $async.Future<$8.ListTenantResponse> listTenant($pb.ServerContext ctx, $8.ListTenantRequest request);
   $async.Future<$8.CreateTenantResponse> createTenant($pb.ServerContext ctx, $8.CreateTenantRequest request);
@@ -145,7 +145,7 @@ abstract class PartitionServiceBase extends $pb.GeneratedService {
     }
   }
 
-  $core.Map<$core.String, $core.dynamic> get $json => PartitionServiceBase$json;
-  $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> get $messageJson => PartitionServiceBase$messageJson;
+  $core.Map<$core.String, $core.dynamic> get $json => TenancyServiceBase$json;
+  $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> get $messageJson => TenancyServiceBase$messageJson;
 }
 

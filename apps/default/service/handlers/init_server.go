@@ -16,8 +16,8 @@ import (
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
@@ -54,7 +54,7 @@ type AuthServer struct {
 
 	profileCli      profilev1connect.ProfileServiceClient
 	deviceCli       devicev1connect.DeviceServiceClient
-	partitionCli    partitionv1connect.PartitionServiceClient
+	partitionCli    tenancyv1connect.TenancyServiceClient
 	notificationCli notificationv1connect.NotificationServiceClient
 
 	iCache cache.Cache[string, models.LoginEvent]
@@ -85,7 +85,7 @@ func NewAuthServer(ctx context.Context,
 	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
 	profileCli profilev1connect.ProfileServiceClient,
 	deviceCli devicev1connect.DeviceServiceClient,
-	partitionCli partitionv1connect.PartitionServiceClient,
+	partitionCli tenancyv1connect.TenancyServiceClient,
 	notificationCli notificationv1connect.NotificationServiceClient,
 	localizationMan localization.Manager) *AuthServer {
 
@@ -181,7 +181,7 @@ func (h *AuthServer) DeviceCli() devicev1connect.DeviceServiceClient {
 	return h.deviceCli
 }
 
-func (h *AuthServer) PartitionCli() partitionv1connect.PartitionServiceClient {
+func (h *AuthServer) PartitionCli() tenancyv1connect.TenancyServiceClient {
 	return h.partitionCli
 }
 

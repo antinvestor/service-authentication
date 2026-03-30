@@ -1,21 +1,21 @@
 openapi: 3.1.0
 info:
-  title: Partition Service
+  title: Tenancy Service
   description: The Partition Service provides multi-tenancy and data isolation capabilities with hierarchical partitions, role-based access control (RBAC), and custom UI pages. Tenants represent top-level organizational units containing hierarchical partitions for departments, projects, or teams. The service supports fine-grained access control through partition roles and access grants, enabling secure multi-tenant applications with customizable user experiences.
   contact:
     name: Ant Investor Ltd
-    url: https://github.com/antinvestor/service-partition
+    url: https://github.com/antinvestor/service-authentication
     email: info@antinvestor.com
   license:
     name: Apache License
     url: https://github.com/antinvestor/apis/blob/master/LICENSE
   version: v1.0.0
 paths:
-  /partition.v1.PartitionService/CreateAccess:
+  /tenancy.v1.TenancyService/CreateAccess:
     post:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create access grant
       description: Grants a profile access to a partition. The profile can then be assigned roles via CreateAccessRole.
       operationId: createAccess
@@ -33,7 +33,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreateAccessRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreateAccessRequest'
         required: true
       responses:
         default:
@@ -47,12 +47,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreateAccessResponse'
-  /partition.v1.PartitionService/CreateAccessRole:
+                $ref: '#/components/schemas/tenancy.v1.CreateAccessResponse'
+  /tenancy.v1.TenancyService/CreateAccessRole:
     post:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Assign role to access
       description: Assigns a partition role to an access grant, granting the profile specific permissions within the partition.
       operationId: createAccessRole
@@ -70,7 +70,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreateAccessRoleRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreateAccessRoleRequest'
         required: true
       responses:
         default:
@@ -84,12 +84,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreateAccessRoleResponse'
-  /partition.v1.PartitionService/CreateClient:
+                $ref: '#/components/schemas/tenancy.v1.CreateAccessRoleResponse'
+  /tenancy.v1.TenancyService/CreateClient:
     post:
       tags:
         - Clients
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create OAuth2 client
       description: Creates a new OAuth2 client attached to either a partition (for user auth flows) or a service account (for client_credentials flows). Returns the client secret on creation.
       operationId: createClient
@@ -107,7 +107,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreateClientRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreateClientRequest'
         required: true
       responses:
         default:
@@ -121,12 +121,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreateClientResponse'
-  /partition.v1.PartitionService/CreatePage:
+                $ref: '#/components/schemas/tenancy.v1.CreateClientResponse'
+  /tenancy.v1.TenancyService/CreatePage:
     post:
       tags:
         - Pages
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create custom page
       description: Creates a custom UI page for a partition with HTML content. Enables partition-specific branding and customization.
       operationId: createPage
@@ -144,7 +144,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreatePageRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreatePageRequest'
         required: true
       responses:
         default:
@@ -158,12 +158,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreatePageResponse'
-  /partition.v1.PartitionService/CreatePartition:
+                $ref: '#/components/schemas/tenancy.v1.CreatePageResponse'
+  /tenancy.v1.TenancyService/CreatePartition:
     post:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create partition
       description: Creates a new partition within a tenant. Supports hierarchical structures with parent partitions.
       operationId: createPartition
@@ -181,7 +181,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreatePartitionRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreatePartitionRequest'
         required: true
       responses:
         default:
@@ -195,12 +195,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreatePartitionResponse'
-  /partition.v1.PartitionService/CreatePartitionRole:
+                $ref: '#/components/schemas/tenancy.v1.CreatePartitionResponse'
+  /tenancy.v1.TenancyService/CreatePartitionRole:
     post:
       tags:
         - Roles
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create partition role
       description: Creates a new role within a partition for access control (admin, editor, viewer, etc.).
       operationId: createPartitionRole
@@ -218,7 +218,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreatePartitionRoleRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreatePartitionRoleRequest'
         required: true
       responses:
         default:
@@ -232,12 +232,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreatePartitionRoleResponse'
-  /partition.v1.PartitionService/CreateServiceAccount:
+                $ref: '#/components/schemas/tenancy.v1.CreatePartitionRoleResponse'
+  /tenancy.v1.TenancyService/CreateServiceAccount:
     post:
       tags:
         - ServiceAccounts
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create service account
       description: Registers a pre-authorized service account for machine-to-machine authentication. Creates a dedicated child partition with client_credentials grant type and writes authorization tuples.
       operationId: createServiceAccount
@@ -255,7 +255,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreateServiceAccountRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountRequest'
         required: true
       responses:
         default:
@@ -269,12 +269,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreateServiceAccountResponse'
-  /partition.v1.PartitionService/CreateTenant:
+                $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountResponse'
+  /tenancy.v1.TenancyService/CreateTenant:
     post:
       tags:
         - Tenants
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Create tenant
       description: Creates a new tenant (top-level organizational unit) with name, description, and custom properties.
       operationId: createTenant
@@ -292,7 +292,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.CreateTenantRequest'
+              $ref: '#/components/schemas/tenancy.v1.CreateTenantRequest'
         required: true
       responses:
         default:
@@ -306,12 +306,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.CreateTenantResponse'
-  /partition.v1.PartitionService/GetAccess:
+                $ref: '#/components/schemas/tenancy.v1.CreateTenantResponse'
+  /tenancy.v1.TenancyService/GetAccess:
     get:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get access grant
       description: Retrieves an access grant by access ID or by partition and profile ID combination.
       operationId: getAccess
@@ -330,7 +330,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetAccessRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetAccessRequest'
         - name: encoding
           in: query
           required: true
@@ -360,11 +360,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetAccessResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
     post:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get access grant
       description: Retrieves an access grant by access ID or by partition and profile ID combination.
       operationId: getAccess
@@ -382,7 +382,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetAccessRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetAccessRequest'
         required: true
       responses:
         default:
@@ -396,12 +396,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetAccessResponse'
-  /partition.v1.PartitionService/GetClient:
+                $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
+  /tenancy.v1.TenancyService/GetClient:
     get:
       tags:
         - Clients
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get OAuth2 client
       description: Retrieves an OAuth2 client by its record ID or OAuth2 client_id.
       operationId: getClient
@@ -420,7 +420,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetClientRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetClientRequest'
         - name: encoding
           in: query
           required: true
@@ -450,11 +450,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetClientResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
     post:
       tags:
         - Clients
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get OAuth2 client
       description: Retrieves an OAuth2 client by its record ID or OAuth2 client_id.
       operationId: getClient
@@ -472,7 +472,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetClientRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetClientRequest'
         required: true
       responses:
         default:
@@ -486,12 +486,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetClientResponse'
-  /partition.v1.PartitionService/GetPage:
+                $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
+  /tenancy.v1.TenancyService/GetPage:
     get:
       tags:
         - Pages
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get custom page
       description: Retrieves a custom page by page ID, partition ID, or page name.
       operationId: getPage
@@ -510,7 +510,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPageRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetPageRequest'
         - name: encoding
           in: query
           required: true
@@ -540,11 +540,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPageResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
     post:
       tags:
         - Pages
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get custom page
       description: Retrieves a custom page by page ID, partition ID, or page name.
       operationId: getPage
@@ -562,7 +562,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetPageRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetPageRequest'
         required: true
       responses:
         default:
@@ -576,12 +576,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPageResponse'
-  /partition.v1.PartitionService/GetPartition:
+                $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
+  /tenancy.v1.TenancyService/GetPartition:
     get:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get partition
       description: Retrieves a partition by its unique identifier or domain, including all partition metadata and properties.
       operationId: getPartition
@@ -600,7 +600,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionRequest'
         - name: encoding
           in: query
           required: true
@@ -630,11 +630,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
     post:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get partition
       description: Retrieves a partition by its unique identifier or domain, including all partition metadata and properties.
       operationId: getPartition
@@ -652,7 +652,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetPartitionRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetPartitionRequest'
         required: true
       responses:
         default:
@@ -666,12 +666,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionResponse'
-  /partition.v1.PartitionService/GetPartitionParents:
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
+  /tenancy.v1.TenancyService/GetPartitionParents:
     get:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get partition parents
       description: Retrieves the complete parent hierarchy for a partition from the root tenant down to the partition.
       operationId: getPartitionParents
@@ -690,7 +690,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionParentsRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsRequest'
         - name: encoding
           in: query
           required: true
@@ -720,11 +720,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionParentsResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
     post:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get partition parents
       description: Retrieves the complete parent hierarchy for a partition from the root tenant down to the partition.
       operationId: getPartitionParents
@@ -742,7 +742,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetPartitionParentsRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsRequest'
         required: true
       responses:
         default:
@@ -756,12 +756,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetPartitionParentsResponse'
-  /partition.v1.PartitionService/GetServiceAccount:
+                $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
+  /tenancy.v1.TenancyService/GetServiceAccount:
     get:
       tags:
         - ServiceAccounts
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get service account
       description: Retrieves a service account by ID, client ID, or profile ID.
       operationId: getServiceAccount
@@ -780,7 +780,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetServiceAccountRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountRequest'
         - name: encoding
           in: query
           required: true
@@ -810,11 +810,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetServiceAccountResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
     post:
       tags:
         - ServiceAccounts
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get service account
       description: Retrieves a service account by ID, client ID, or profile ID.
       operationId: getServiceAccount
@@ -832,7 +832,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetServiceAccountRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetServiceAccountRequest'
         required: true
       responses:
         default:
@@ -846,12 +846,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetServiceAccountResponse'
-  /partition.v1.PartitionService/GetTenant:
+                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
+  /tenancy.v1.TenancyService/GetTenant:
     get:
       tags:
         - Tenants
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get tenant
       description: Retrieves a tenant by its unique identifier including all tenant metadata and properties.
       operationId: getTenant
@@ -870,7 +870,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetTenantRequest'
+                $ref: '#/components/schemas/tenancy.v1.GetTenantRequest'
         - name: encoding
           in: query
           required: true
@@ -900,11 +900,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetTenantResponse'
+                $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
     post:
       tags:
         - Tenants
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Get tenant
       description: Retrieves a tenant by its unique identifier including all tenant metadata and properties.
       operationId: getTenant
@@ -922,7 +922,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.GetTenantRequest'
+              $ref: '#/components/schemas/tenancy.v1.GetTenantRequest'
         required: true
       responses:
         default:
@@ -936,20 +936,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.GetTenantResponse'
-  /partition.v1.PartitionService/ListAccess: {}
-  /partition.v1.PartitionService/ListAccessRole: {}
-  /partition.v1.PartitionService/ListClient: {}
-  /partition.v1.PartitionService/ListPage: {}
-  /partition.v1.PartitionService/ListPartition: {}
-  /partition.v1.PartitionService/ListPartitionRole: {}
-  /partition.v1.PartitionService/ListServiceAccount: {}
-  /partition.v1.PartitionService/ListTenant: {}
-  /partition.v1.PartitionService/RemoveAccess:
+                $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
+  /tenancy.v1.TenancyService/ListAccess: {}
+  /tenancy.v1.TenancyService/ListAccessRole: {}
+  /tenancy.v1.TenancyService/ListClient: {}
+  /tenancy.v1.TenancyService/ListPage: {}
+  /tenancy.v1.TenancyService/ListPartition: {}
+  /tenancy.v1.TenancyService/ListPartitionRole: {}
+  /tenancy.v1.TenancyService/ListServiceAccount: {}
+  /tenancy.v1.TenancyService/ListTenant: {}
+  /tenancy.v1.TenancyService/RemoveAccess:
     post:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove access grant
       description: Revokes a profile's access to a partition. All associated access roles are also removed.
       operationId: removeAccess
@@ -967,7 +967,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemoveAccessRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemoveAccessRequest'
         required: true
       responses:
         default:
@@ -981,12 +981,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemoveAccessResponse'
-  /partition.v1.PartitionService/RemoveAccessRole:
+                $ref: '#/components/schemas/tenancy.v1.RemoveAccessResponse'
+  /tenancy.v1.TenancyService/RemoveAccessRole:
     post:
       tags:
         - Access
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove access role
       description: Removes a specific role from an access grant. The profile retains access but loses the permissions of this role.
       operationId: removeAccessRole
@@ -1004,7 +1004,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemoveAccessRoleRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemoveAccessRoleRequest'
         required: true
       responses:
         default:
@@ -1018,12 +1018,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemoveAccessRoleResponse'
-  /partition.v1.PartitionService/RemoveClient:
+                $ref: '#/components/schemas/tenancy.v1.RemoveAccessRoleResponse'
+  /tenancy.v1.TenancyService/RemoveClient:
     post:
       tags:
         - Clients
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove OAuth2 client
       description: Removes an OAuth2 client and its Hydra registration.
       operationId: removeClient
@@ -1041,7 +1041,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemoveClientRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemoveClientRequest'
         required: true
       responses:
         default:
@@ -1055,12 +1055,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemoveClientResponse'
-  /partition.v1.PartitionService/RemovePage:
+                $ref: '#/components/schemas/tenancy.v1.RemoveClientResponse'
+  /tenancy.v1.TenancyService/RemovePage:
     post:
       tags:
         - Pages
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove custom page
       description: Removes a custom page from a partition.
       operationId: removePage
@@ -1078,7 +1078,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemovePageRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemovePageRequest'
         required: true
       responses:
         default:
@@ -1092,12 +1092,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemovePageResponse'
-  /partition.v1.PartitionService/RemovePartition:
+                $ref: '#/components/schemas/tenancy.v1.RemovePageResponse'
+  /tenancy.v1.TenancyService/RemovePartition:
     post:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove partition
       description: Soft-deletes a partition. All access grants, roles, pages, and service accounts within the partition are also marked as deleted.
       operationId: removePartition
@@ -1115,7 +1115,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemovePartitionRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemovePartitionRequest'
         required: true
       responses:
         default:
@@ -1129,12 +1129,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemovePartitionResponse'
-  /partition.v1.PartitionService/RemovePartitionRole:
+                $ref: '#/components/schemas/tenancy.v1.RemovePartitionResponse'
+  /tenancy.v1.TenancyService/RemovePartitionRole:
     post:
       tags:
         - Roles
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove partition role
       description: Removes a partition role. All access grants using this role must be removed first.
       operationId: removePartitionRole
@@ -1152,7 +1152,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemovePartitionRoleRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemovePartitionRoleRequest'
         required: true
       responses:
         default:
@@ -1166,12 +1166,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemovePartitionRoleResponse'
-  /partition.v1.PartitionService/RemoveServiceAccount:
+                $ref: '#/components/schemas/tenancy.v1.RemovePartitionRoleResponse'
+  /tenancy.v1.TenancyService/RemoveServiceAccount:
     post:
       tags:
         - ServiceAccounts
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove service account
       description: Deregisters a service account, deleting its child partition and revoking authorization tuples.
       operationId: removeServiceAccount
@@ -1189,7 +1189,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemoveServiceAccountRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountRequest'
         required: true
       responses:
         default:
@@ -1203,12 +1203,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemoveServiceAccountResponse'
-  /partition.v1.PartitionService/RemoveTenant:
+                $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountResponse'
+  /tenancy.v1.TenancyService/RemoveTenant:
     post:
       tags:
         - Tenants
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Remove tenant
       description: Soft-deletes a tenant. All partitions, access grants, and roles within the tenant are also marked as deleted.
       operationId: removeTenant
@@ -1226,7 +1226,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.RemoveTenantRequest'
+              $ref: '#/components/schemas/tenancy.v1.RemoveTenantRequest'
         required: true
       responses:
         default:
@@ -1240,12 +1240,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.RemoveTenantResponse'
-  /partition.v1.PartitionService/UpdateClient:
+                $ref: '#/components/schemas/tenancy.v1.RemoveTenantResponse'
+  /tenancy.v1.TenancyService/UpdateClient:
     post:
       tags:
         - Clients
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update OAuth2 client
       description: Updates an existing OAuth2 client's name, redirect URIs, scopes, audiences, roles, and properties.
       operationId: updateClient
@@ -1263,7 +1263,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdateClientRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdateClientRequest'
         required: true
       responses:
         default:
@@ -1277,12 +1277,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdateClientResponse'
-  /partition.v1.PartitionService/UpdatePage:
+                $ref: '#/components/schemas/tenancy.v1.UpdateClientResponse'
+  /tenancy.v1.TenancyService/UpdatePage:
     post:
       tags:
         - Pages
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update custom page
       description: Updates a custom page's name, HTML content, state, and properties.
       operationId: updatePage
@@ -1300,7 +1300,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdatePageRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdatePageRequest'
         required: true
       responses:
         default:
@@ -1314,12 +1314,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdatePageResponse'
-  /partition.v1.PartitionService/UpdatePartition:
+                $ref: '#/components/schemas/tenancy.v1.UpdatePageResponse'
+  /tenancy.v1.TenancyService/UpdatePartition:
     post:
       tags:
         - Partitions
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update partition
       description: Updates an existing partition's name, description, domain, state, and properties.
       operationId: updatePartition
@@ -1337,7 +1337,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdatePartitionRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRequest'
         required: true
       responses:
         default:
@@ -1351,12 +1351,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdatePartitionResponse'
-  /partition.v1.PartitionService/UpdatePartitionRole:
+                $ref: '#/components/schemas/tenancy.v1.UpdatePartitionResponse'
+  /tenancy.v1.TenancyService/UpdatePartitionRole:
     post:
       tags:
         - Roles
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update partition role
       description: Updates a partition role's name, properties, and state.
       operationId: updatePartitionRole
@@ -1374,7 +1374,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdatePartitionRoleRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRoleRequest'
         required: true
       responses:
         default:
@@ -1388,12 +1388,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdatePartitionRoleResponse'
-  /partition.v1.PartitionService/UpdateServiceAccount:
+                $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRoleResponse'
+  /tenancy.v1.TenancyService/UpdateServiceAccount:
     post:
       tags:
         - ServiceAccounts
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update service account
       description: Updates a service account's name, audiences, type, roles, public keys, and properties.
       operationId: updateServiceAccount
@@ -1411,7 +1411,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdateServiceAccountRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountRequest'
         required: true
       responses:
         default:
@@ -1425,12 +1425,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdateServiceAccountResponse'
-  /partition.v1.PartitionService/UpdateTenant:
+                $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountResponse'
+  /tenancy.v1.TenancyService/UpdateTenant:
     post:
       tags:
         - Tenants
-        - partition.v1.PartitionService
+        - tenancy.v1.TenancyService
       summary: Update tenant
       description: Updates an existing tenant's name, description, state, and properties.
       operationId: updateTenant
@@ -1448,7 +1448,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/partition.v1.UpdateTenantRequest'
+              $ref: '#/components/schemas/tenancy.v1.UpdateTenantRequest'
         required: true
       responses:
         default:
@@ -1462,7 +1462,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/partition.v1.UpdateTenantResponse'
+                $ref: '#/components/schemas/tenancy.v1.UpdateTenantResponse'
 components:
   schemas:
     base64:
@@ -1747,7 +1747,7 @@ components:
          variants. Absence of any variant indicates an error.
 
          The JSON representation for `Value` is JSON value.
-    partition.v1.AccessObject:
+    tenancy.v1.AccessObject:
       type: object
       properties:
         id:
@@ -1767,7 +1767,7 @@ components:
         partition:
           title: partition
           description: Partition being accessed
-          $ref: '#/components/schemas/partition.v1.PartitionObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionObject'
         state:
           title: state
           description: Access state
@@ -1779,7 +1779,7 @@ components:
       title: AccessObject
       additionalProperties: false
       description: AccessObject represents a profile's access to a partition.
-    partition.v1.AccessRoleObject:
+    tenancy.v1.AccessRoleObject:
       type: object
       properties:
         id:
@@ -1799,11 +1799,11 @@ components:
         role:
           title: role
           description: Assigned partition role
-          $ref: '#/components/schemas/partition.v1.PartitionRoleObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
       title: AccessRoleObject
       additionalProperties: false
       description: AccessRoleObject links an access grant to a partition role.
-    partition.v1.ClientObject:
+    tenancy.v1.ClientObject:
       type: object
       allOf:
         - properties:
@@ -1887,7 +1887,7 @@ components:
                 partition:
                   title: partition
                   description: Partition that owns this client (user auth flows)
-                  $ref: '#/components/schemas/partition.v1.PartitionObject'
+                  $ref: '#/components/schemas/tenancy.v1.PartitionObject'
               title: partition
               required:
                 - partition
@@ -1896,7 +1896,7 @@ components:
                 serviceAccount:
                   title: service_account
                   description: Service account that owns this client (client_credentials flows)
-                  $ref: '#/components/schemas/partition.v1.ServiceAccountObject'
+                  $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
               title: service_account
               required:
                 - serviceAccount
@@ -1906,7 +1906,7 @@ components:
         ClientObject represents an OAuth2 client configuration.
          A client can be owned by either a partition (for user auth flows like PKCE)
          or a service account (for client_credentials machine-to-machine flows).
-    partition.v1.CreateAccessRequest:
+    tenancy.v1.CreateAccessRequest:
       type: object
       allOf:
         - properties:
@@ -1941,15 +1941,15 @@ components:
                 - partitionId
       title: CreateAccessRequest
       additionalProperties: false
-    partition.v1.CreateAccessResponse:
+    tenancy.v1.CreateAccessResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.AccessObject'
+          $ref: '#/components/schemas/tenancy.v1.AccessObject'
       title: CreateAccessResponse
       additionalProperties: false
-    partition.v1.CreateAccessRoleRequest:
+    tenancy.v1.CreateAccessRoleRequest:
       type: object
       properties:
         accessId:
@@ -1966,15 +1966,15 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: CreateAccessRoleRequest
       additionalProperties: false
-    partition.v1.CreateAccessRoleResponse:
+    tenancy.v1.CreateAccessRoleResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.AccessRoleObject'
+          $ref: '#/components/schemas/tenancy.v1.AccessRoleObject'
       title: CreateAccessRoleResponse
       additionalProperties: false
-    partition.v1.CreateClientRequest:
+    tenancy.v1.CreateClientRequest:
       type: object
       allOf:
         - properties:
@@ -2047,19 +2047,19 @@ components:
                 - serviceAccountId
       title: CreateClientRequest
       additionalProperties: false
-    partition.v1.CreateClientResponse:
+    tenancy.v1.CreateClientResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ClientObject'
+          $ref: '#/components/schemas/tenancy.v1.ClientObject'
         clientSecret:
           type: string
           title: client_secret
           description: Only returned on creation
       title: CreateClientResponse
       additionalProperties: false
-    partition.v1.CreatePageRequest:
+    tenancy.v1.CreatePageRequest:
       type: object
       properties:
         partitionId:
@@ -2083,15 +2083,15 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
       title: CreatePageRequest
       additionalProperties: false
-    partition.v1.CreatePageResponse:
+    tenancy.v1.CreatePageResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PageObject'
+          $ref: '#/components/schemas/tenancy.v1.PageObject'
       title: CreatePageResponse
       additionalProperties: false
-    partition.v1.CreatePartitionRequest:
+    tenancy.v1.CreatePartitionRequest:
       type: object
       properties:
         tenantId:
@@ -2125,15 +2125,15 @@ components:
           maxLength: 255
       title: CreatePartitionRequest
       additionalProperties: false
-    partition.v1.CreatePartitionResponse:
+    tenancy.v1.CreatePartitionResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PartitionObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionObject'
       title: CreatePartitionResponse
       additionalProperties: false
-    partition.v1.CreatePartitionRoleRequest:
+    tenancy.v1.CreatePartitionRoleRequest:
       type: object
       properties:
         partitionId:
@@ -2152,15 +2152,15 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
       title: CreatePartitionRoleRequest
       additionalProperties: false
-    partition.v1.CreatePartitionRoleResponse:
+    tenancy.v1.CreatePartitionRoleResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PartitionRoleObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
       title: CreatePartitionRoleResponse
       additionalProperties: false
-    partition.v1.CreateServiceAccountRequest:
+    tenancy.v1.CreateServiceAccountRequest:
       type: object
       properties:
         partitionId:
@@ -2212,19 +2212,19 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
       title: CreateServiceAccountRequest
       additionalProperties: false
-    partition.v1.CreateServiceAccountResponse:
+    tenancy.v1.CreateServiceAccountResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ServiceAccountObject'
+          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
         clientSecret:
           type: string
           title: client_secret
           description: Only returned on creation
       title: CreateServiceAccountResponse
       additionalProperties: false
-    partition.v1.CreateTenantRequest:
+    tenancy.v1.CreateTenantRequest:
       type: object
       properties:
         name:
@@ -2242,18 +2242,18 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
         environment:
           title: environment
-          $ref: '#/components/schemas/partition.v1.TenantEnvironment'
+          $ref: '#/components/schemas/tenancy.v1.TenantEnvironment'
       title: CreateTenantRequest
       additionalProperties: false
-    partition.v1.CreateTenantResponse:
+    tenancy.v1.CreateTenantResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.TenantObject'
+          $ref: '#/components/schemas/tenancy.v1.TenantObject'
       title: CreateTenantResponse
       additionalProperties: false
-    partition.v1.GetAccessRequest:
+    tenancy.v1.GetAccessRequest:
       type: object
       allOf:
         - properties:
@@ -2294,15 +2294,15 @@ components:
                 - partitionId
       title: GetAccessRequest
       additionalProperties: false
-    partition.v1.GetAccessResponse:
+    tenancy.v1.GetAccessResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.AccessObject'
+          $ref: '#/components/schemas/tenancy.v1.AccessObject'
       title: GetAccessResponse
       additionalProperties: false
-    partition.v1.GetClientRequest:
+    tenancy.v1.GetClientRequest:
       type: object
       properties:
         id:
@@ -2320,15 +2320,15 @@ components:
           description: OAuth2 client_id
       title: GetClientRequest
       additionalProperties: false
-    partition.v1.GetClientResponse:
+    tenancy.v1.GetClientResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ClientObject'
+          $ref: '#/components/schemas/tenancy.v1.ClientObject'
       title: GetClientResponse
       additionalProperties: false
-    partition.v1.GetPageRequest:
+    tenancy.v1.GetPageRequest:
       type: object
       properties:
         pageId:
@@ -2350,15 +2350,15 @@ components:
           minLength: 3
       title: GetPageRequest
       additionalProperties: false
-    partition.v1.GetPageResponse:
+    tenancy.v1.GetPageResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PageObject'
+          $ref: '#/components/schemas/tenancy.v1.PageObject'
       title: GetPageResponse
       additionalProperties: false
-    partition.v1.GetPartitionParentsRequest:
+    tenancy.v1.GetPartitionParentsRequest:
       type: object
       properties:
         id:
@@ -2369,17 +2369,17 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: GetPartitionParentsRequest
       additionalProperties: false
-    partition.v1.GetPartitionParentsResponse:
+    tenancy.v1.GetPartitionParentsResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.PartitionObject'
+            $ref: '#/components/schemas/tenancy.v1.PartitionObject'
           title: data
       title: GetPartitionParentsResponse
       additionalProperties: false
-    partition.v1.GetPartitionRequest:
+    tenancy.v1.GetPartitionRequest:
       type: object
       properties:
         id:
@@ -2396,15 +2396,15 @@ components:
           description: Partition domain (unique)
       title: GetPartitionRequest
       additionalProperties: false
-    partition.v1.GetPartitionResponse:
+    tenancy.v1.GetPartitionResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PartitionObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionObject'
       title: GetPartitionResponse
       additionalProperties: false
-    partition.v1.GetServiceAccountRequest:
+    tenancy.v1.GetServiceAccountRequest:
       type: object
       properties:
         id:
@@ -2430,15 +2430,15 @@ components:
           description: Identity/subject of the service bot
       title: GetServiceAccountRequest
       additionalProperties: false
-    partition.v1.GetServiceAccountResponse:
+    tenancy.v1.GetServiceAccountResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ServiceAccountObject'
+          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
       title: GetServiceAccountResponse
       additionalProperties: false
-    partition.v1.GetTenantRequest:
+    tenancy.v1.GetTenantRequest:
       type: object
       properties:
         id:
@@ -2449,15 +2449,15 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: GetTenantRequest
       additionalProperties: false
-    partition.v1.GetTenantResponse:
+    tenancy.v1.GetTenantResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.TenantObject'
+          $ref: '#/components/schemas/tenancy.v1.TenantObject'
       title: GetTenantResponse
       additionalProperties: false
-    partition.v1.ListAccessRequest:
+    tenancy.v1.ListAccessRequest:
       type: object
       allOf:
         - properties:
@@ -2491,17 +2491,17 @@ components:
                 - profileId
       title: ListAccessRequest
       additionalProperties: false
-    partition.v1.ListAccessResponse:
+    tenancy.v1.ListAccessResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.AccessObject'
+            $ref: '#/components/schemas/tenancy.v1.AccessObject'
           title: data
       title: ListAccessResponse
       additionalProperties: false
-    partition.v1.ListAccessRoleRequest:
+    tenancy.v1.ListAccessRoleRequest:
       type: object
       properties:
         accessId:
@@ -2515,17 +2515,17 @@ components:
           $ref: '#/components/schemas/common.v1.PageCursor'
       title: ListAccessRoleRequest
       additionalProperties: false
-    partition.v1.ListAccessRoleResponse:
+    tenancy.v1.ListAccessRoleResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.AccessRoleObject'
+            $ref: '#/components/schemas/tenancy.v1.AccessRoleObject'
           title: data
       title: ListAccessRoleResponse
       additionalProperties: false
-    partition.v1.ListClientRequest:
+    tenancy.v1.ListClientRequest:
       type: object
       allOf:
         - properties:
@@ -2557,17 +2557,17 @@ components:
                 - serviceAccountId
       title: ListClientRequest
       additionalProperties: false
-    partition.v1.ListClientResponse:
+    tenancy.v1.ListClientResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.ClientObject'
+            $ref: '#/components/schemas/tenancy.v1.ClientObject'
           title: data
       title: ListClientResponse
       additionalProperties: false
-    partition.v1.ListPageRequest:
+    tenancy.v1.ListPageRequest:
       type: object
       properties:
         partitionId:
@@ -2581,17 +2581,17 @@ components:
           $ref: '#/components/schemas/common.v1.PageCursor'
       title: ListPageRequest
       additionalProperties: false
-    partition.v1.ListPageResponse:
+    tenancy.v1.ListPageResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.PageObject'
+            $ref: '#/components/schemas/tenancy.v1.PageObject'
           title: data
       title: ListPageResponse
       additionalProperties: false
-    partition.v1.ListPartitionRequest:
+    tenancy.v1.ListPartitionRequest:
       type: object
       properties:
         query:
@@ -2616,17 +2616,17 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
       title: ListPartitionRequest
       additionalProperties: false
-    partition.v1.ListPartitionResponse:
+    tenancy.v1.ListPartitionResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.PartitionObject'
+            $ref: '#/components/schemas/tenancy.v1.PartitionObject'
           title: data
       title: ListPartitionResponse
       additionalProperties: false
-    partition.v1.ListPartitionRoleRequest:
+    tenancy.v1.ListPartitionRoleRequest:
       type: object
       properties:
         partitionId:
@@ -2640,17 +2640,17 @@ components:
           $ref: '#/components/schemas/common.v1.PageCursor'
       title: ListPartitionRoleRequest
       additionalProperties: false
-    partition.v1.ListPartitionRoleResponse:
+    tenancy.v1.ListPartitionRoleResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.PartitionRoleObject'
+            $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
           title: data
       title: ListPartitionRoleResponse
       additionalProperties: false
-    partition.v1.ListServiceAccountRequest:
+    tenancy.v1.ListServiceAccountRequest:
       type: object
       properties:
         partitionId:
@@ -2664,17 +2664,17 @@ components:
           $ref: '#/components/schemas/common.v1.PageCursor'
       title: ListServiceAccountRequest
       additionalProperties: false
-    partition.v1.ListServiceAccountResponse:
+    tenancy.v1.ListServiceAccountResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.ServiceAccountObject'
+            $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
           title: data
       title: ListServiceAccountResponse
       additionalProperties: false
-    partition.v1.ListTenantRequest:
+    tenancy.v1.ListTenantRequest:
       type: object
       properties:
         query:
@@ -2699,20 +2699,20 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
         environment:
           title: environment
-          $ref: '#/components/schemas/partition.v1.TenantEnvironment'
+          $ref: '#/components/schemas/tenancy.v1.TenantEnvironment'
       title: ListTenantRequest
       additionalProperties: false
-    partition.v1.ListTenantResponse:
+    tenancy.v1.ListTenantResponse:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/partition.v1.TenantObject'
+            $ref: '#/components/schemas/tenancy.v1.TenantObject'
           title: data
       title: ListTenantResponse
       additionalProperties: false
-    partition.v1.PageObject:
+    tenancy.v1.PageObject:
       type: object
       properties:
         id:
@@ -2756,7 +2756,7 @@ components:
       title: PageObject
       additionalProperties: false
       description: PageObject represents a custom UI page for a partition.
-    partition.v1.PartitionObject:
+    tenancy.v1.PartitionObject:
       type: object
       properties:
         id:
@@ -2811,7 +2811,7 @@ components:
       title: PartitionObject
       additionalProperties: false
       description: PartitionObject represents a data partition within a tenant.
-    partition.v1.PartitionRoleObject:
+    tenancy.v1.PartitionRoleObject:
       type: object
       properties:
         id:
@@ -2849,7 +2849,7 @@ components:
       title: PartitionRoleObject
       additionalProperties: false
       description: PartitionRoleObject represents a role within a partition.
-    partition.v1.RemoveAccessRequest:
+    tenancy.v1.RemoveAccessRequest:
       type: object
       properties:
         id:
@@ -2860,7 +2860,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemoveAccessRequest
       additionalProperties: false
-    partition.v1.RemoveAccessResponse:
+    tenancy.v1.RemoveAccessResponse:
       type: object
       properties:
         succeeded:
@@ -2868,7 +2868,7 @@ components:
           title: succeeded
       title: RemoveAccessResponse
       additionalProperties: false
-    partition.v1.RemoveAccessRoleRequest:
+    tenancy.v1.RemoveAccessRoleRequest:
       type: object
       properties:
         id:
@@ -2879,7 +2879,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemoveAccessRoleRequest
       additionalProperties: false
-    partition.v1.RemoveAccessRoleResponse:
+    tenancy.v1.RemoveAccessRoleResponse:
       type: object
       properties:
         succeeded:
@@ -2887,7 +2887,7 @@ components:
           title: succeeded
       title: RemoveAccessRoleResponse
       additionalProperties: false
-    partition.v1.RemoveClientRequest:
+    tenancy.v1.RemoveClientRequest:
       type: object
       properties:
         id:
@@ -2898,7 +2898,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemoveClientRequest
       additionalProperties: false
-    partition.v1.RemoveClientResponse:
+    tenancy.v1.RemoveClientResponse:
       type: object
       properties:
         succeeded:
@@ -2906,7 +2906,7 @@ components:
           title: succeeded
       title: RemoveClientResponse
       additionalProperties: false
-    partition.v1.RemovePageRequest:
+    tenancy.v1.RemovePageRequest:
       type: object
       properties:
         id:
@@ -2917,7 +2917,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemovePageRequest
       additionalProperties: false
-    partition.v1.RemovePageResponse:
+    tenancy.v1.RemovePageResponse:
       type: object
       properties:
         succeeded:
@@ -2925,7 +2925,7 @@ components:
           title: succeeded
       title: RemovePageResponse
       additionalProperties: false
-    partition.v1.RemovePartitionRequest:
+    tenancy.v1.RemovePartitionRequest:
       type: object
       properties:
         id:
@@ -2936,7 +2936,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemovePartitionRequest
       additionalProperties: false
-    partition.v1.RemovePartitionResponse:
+    tenancy.v1.RemovePartitionResponse:
       type: object
       properties:
         succeeded:
@@ -2944,7 +2944,7 @@ components:
           title: succeeded
       title: RemovePartitionResponse
       additionalProperties: false
-    partition.v1.RemovePartitionRoleRequest:
+    tenancy.v1.RemovePartitionRoleRequest:
       type: object
       properties:
         id:
@@ -2955,7 +2955,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemovePartitionRoleRequest
       additionalProperties: false
-    partition.v1.RemovePartitionRoleResponse:
+    tenancy.v1.RemovePartitionRoleResponse:
       type: object
       properties:
         succeeded:
@@ -2963,7 +2963,7 @@ components:
           title: succeeded
       title: RemovePartitionRoleResponse
       additionalProperties: false
-    partition.v1.RemoveServiceAccountRequest:
+    tenancy.v1.RemoveServiceAccountRequest:
       type: object
       properties:
         id:
@@ -2974,7 +2974,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemoveServiceAccountRequest
       additionalProperties: false
-    partition.v1.RemoveServiceAccountResponse:
+    tenancy.v1.RemoveServiceAccountResponse:
       type: object
       properties:
         succeeded:
@@ -2982,7 +2982,7 @@ components:
           title: succeeded
       title: RemoveServiceAccountResponse
       additionalProperties: false
-    partition.v1.RemoveTenantRequest:
+    tenancy.v1.RemoveTenantRequest:
       type: object
       properties:
         id:
@@ -2993,7 +2993,7 @@ components:
           pattern: '[0-9a-z_-]{3,40}'
       title: RemoveTenantRequest
       additionalProperties: false
-    partition.v1.RemoveTenantResponse:
+    tenancy.v1.RemoveTenantResponse:
       type: object
       properties:
         succeeded:
@@ -3001,7 +3001,7 @@ components:
           title: succeeded
       title: RemoveTenantResponse
       additionalProperties: false
-    partition.v1.ServiceAccountObject:
+    tenancy.v1.ServiceAccountObject:
       type: object
       properties:
         id:
@@ -3069,7 +3069,7 @@ components:
       description: |-
         ServiceAccountObject represents a pre-registered service account (bot) for a partition.
          Service accounts get a dedicated child partition with client_credentials grant type.
-    partition.v1.TenantEnvironment:
+    tenancy.v1.TenantEnvironment:
       type: string
       title: TenantEnvironment
       enum:
@@ -3077,7 +3077,7 @@ components:
         - TENANT_ENVIRONMENT_PRODUCTION
         - TENANT_ENVIRONMENT_STAGING
       description: TenantEnvironment identifies the deployment environment a tenant belongs to.
-    partition.v1.TenantObject:
+    tenancy.v1.TenantObject:
       type: object
       properties:
         id:
@@ -3113,11 +3113,11 @@ components:
         environment:
           title: environment
           description: Deployment environment
-          $ref: '#/components/schemas/partition.v1.TenantEnvironment'
+          $ref: '#/components/schemas/tenancy.v1.TenantEnvironment'
       title: TenantObject
       additionalProperties: false
       description: TenantObject represents a top-level organizational unit.
-    partition.v1.UpdateClientRequest:
+    tenancy.v1.UpdateClientRequest:
       type: object
       properties:
         id:
@@ -3167,15 +3167,15 @@ components:
           $ref: '#/components/schemas/common.v1.STATE'
       title: UpdateClientRequest
       additionalProperties: false
-    partition.v1.UpdateClientResponse:
+    tenancy.v1.UpdateClientResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ClientObject'
+          $ref: '#/components/schemas/tenancy.v1.ClientObject'
       title: UpdateClientResponse
       additionalProperties: false
-    partition.v1.UpdatePageRequest:
+    tenancy.v1.UpdatePageRequest:
       type: object
       properties:
         id:
@@ -3202,15 +3202,15 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
       title: UpdatePageRequest
       additionalProperties: false
-    partition.v1.UpdatePageResponse:
+    tenancy.v1.UpdatePageResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PageObject'
+          $ref: '#/components/schemas/tenancy.v1.PageObject'
       title: UpdatePageResponse
       additionalProperties: false
-    partition.v1.UpdatePartitionRequest:
+    tenancy.v1.UpdatePartitionRequest:
       type: object
       properties:
         id:
@@ -3241,15 +3241,15 @@ components:
           maxLength: 255
       title: UpdatePartitionRequest
       additionalProperties: false
-    partition.v1.UpdatePartitionResponse:
+    tenancy.v1.UpdatePartitionResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PartitionObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionObject'
       title: UpdatePartitionResponse
       additionalProperties: false
-    partition.v1.UpdatePartitionRoleRequest:
+    tenancy.v1.UpdatePartitionRoleRequest:
       type: object
       properties:
         id:
@@ -3271,15 +3271,15 @@ components:
           $ref: '#/components/schemas/common.v1.STATE'
       title: UpdatePartitionRoleRequest
       additionalProperties: false
-    partition.v1.UpdatePartitionRoleResponse:
+    tenancy.v1.UpdatePartitionRoleResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.PartitionRoleObject'
+          $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
       title: UpdatePartitionRoleResponse
       additionalProperties: false
-    partition.v1.UpdateServiceAccountRequest:
+    tenancy.v1.UpdateServiceAccountRequest:
       type: object
       properties:
         id:
@@ -3322,15 +3322,15 @@ components:
           $ref: '#/components/schemas/common.v1.STATE'
       title: UpdateServiceAccountRequest
       additionalProperties: false
-    partition.v1.UpdateServiceAccountResponse:
+    tenancy.v1.UpdateServiceAccountResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.ServiceAccountObject'
+          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
       title: UpdateServiceAccountResponse
       additionalProperties: false
-    partition.v1.UpdateTenantRequest:
+    tenancy.v1.UpdateTenantRequest:
       type: object
       properties:
         id:
@@ -3357,15 +3357,15 @@ components:
           $ref: '#/components/schemas/google.protobuf.Struct'
         environment:
           title: environment
-          $ref: '#/components/schemas/partition.v1.TenantEnvironment'
+          $ref: '#/components/schemas/tenancy.v1.TenantEnvironment'
       title: UpdateTenantRequest
       additionalProperties: false
-    partition.v1.UpdateTenantResponse:
+    tenancy.v1.UpdateTenantResponse:
       type: object
       properties:
         data:
           title: data
-          $ref: '#/components/schemas/partition.v1.TenantObject'
+          $ref: '#/components/schemas/tenancy.v1.TenantObject'
       title: UpdateTenantResponse
       additionalProperties: false
   securitySchemes:
@@ -3375,7 +3375,7 @@ components:
       bearerFormat: JWT
 security: []
 tags:
-  - name: partition.v1.PartitionService
+  - name: tenancy.v1.TenancyService
     description: |-
-      PartitionService provides multi-tenancy and data isolation.
+      TenancyService provides multi-tenancy and data isolation.
        All RPCs require authentication via Bearer token.

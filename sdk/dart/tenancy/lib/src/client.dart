@@ -16,13 +16,13 @@ import 'package:antinvestor_api_common/antinvestor_api_common.dart';
 import 'package:connectrpc/connect.dart' show Interceptor;
 import '../antinvestor_api_tenancy.dart';
 
-/// Default endpoint for the Partition service.
-const String defaultPartitionEndpoint = 'https://partition.antinvestor.com';
+/// Default endpoint for the Tenancy service.
+const String defaultTenancyEndpoint = 'https://tenancy.antinvestor.com';
 
-/// Creates a new Partition service client.
+/// Creates a new Tenancy service client.
 ///
-/// This is the Dart equivalent of Go's `partition.NewClient()` .
-Future<ConnectClientBase<PartitionServiceClient>> newPartitionClient({
+/// This is the Dart equivalent of Go's `tenancy.NewClient()` .
+Future<ConnectClientBase<TenancyServiceClient>> newTenancyClient({
   required TransportFactory createTransport,
   String? endpoint,
   TokenManager? tokenManager,
@@ -30,9 +30,9 @@ Future<ConnectClientBase<PartitionServiceClient>> newPartitionClient({
   List<Interceptor>? additionalInterceptors,
   bool noAuth = false,
 }) {
-  return newClient<PartitionServiceClient>(
-    defaultEndpoint: defaultPartitionEndpoint,
-    createServiceClient: PartitionServiceClient.new,
+  return newClient<TenancyServiceClient>(
+    defaultEndpoint: defaultTenancyEndpoint,
+    createServiceClient: TenancyServiceClient.new,
     createTransport: createTransport,
     endpoint: endpoint,
     tokenManager: tokenManager,
@@ -42,5 +42,5 @@ Future<ConnectClientBase<PartitionServiceClient>> newPartitionClient({
   );
 }
 
-/// Type alias for Partition client for convenience.
-typedef PartitionClient = ConnectClientBase<PartitionServiceClient>;
+/// Type alias for Tenancy client for convenience.
+typedef TenancyClient = ConnectClientBase<TenancyServiceClient>;

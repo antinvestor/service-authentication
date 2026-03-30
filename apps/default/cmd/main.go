@@ -5,8 +5,8 @@ import (
 
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	"github.com/antinvestor/common"
 	"github.com/antinvestor/common/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
@@ -175,12 +175,12 @@ func setupNotificationClient(
 // setupPartitionClient creates and configures the partition client.
 func setupPartitionClient(
 	ctx context.Context,
-	cfg aconfig.AuthenticationConfig) (partitionv1connect.PartitionServiceClient, error) {
+	cfg aconfig.AuthenticationConfig) (tenancyv1connect.TenancyServiceClient, error) {
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
-		Endpoint:              cfg.PartitionServiceURI,
-		WorkloadAPITargetPath: cfg.PartitionServiceWorkloadAPITargetPath,
+		Endpoint:              cfg.TenancyServiceURI,
+		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_tenancy"},
-	}, partitionv1connect.NewPartitionServiceClient)
+	}, tenancyv1connect.NewTenancyServiceClient)
 }
 
 // setupProfileClient creates and configures the profile client.

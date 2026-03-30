@@ -35,7 +35,7 @@ services:
       timeout: 5s
       retries: 5
 
-  partition_svc:
+  tenancy_svc:
     image: ghcr.io/antinvestor/service-authentication-tenancy:latest
     depends_on:
       - authentication_db
@@ -79,7 +79,7 @@ services:
     depends_on:
       - authentication_db
       - hydra
-      - partition_svc
+      - tenancy_svc
       - notification_svc
     environment:
       - LOG_LEVEL=debug
@@ -99,7 +99,7 @@ services:
       - OAUTH2_JWT_VERIFY_AUDIENCE=service_profile
       - OAUTH2_JWT_VERIFY_ISSUER=http://127.0.0.1:4444
       - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
-      - PARTITION_SERVICE_URI=http://partition_svc:8083
+      - TENANCY_SERVICE_URI=http://tenancy_svc:8083
     ports:
       - "50056:50056"
       - "8086:8086"
@@ -137,7 +137,7 @@ services:
     depends_on:
       - authentication_db
       - hydra
-      - partition_svc
+      - tenancy_svc
       - notification_svc
       - profile_svc
       - device_svc
@@ -151,7 +151,7 @@ services:
       - OAUTH2_JWT_VERIFY_AUDIENCE=authentication_tests
       - OAUTH2_JWT_VERIFY_ISSUER=http://hydra:4444
       - PROFILE_SERVICE_URI=http://profile_svc:8086
-      - PARTITION_SERVICE_URI=http://partition_svc:8083
+      - TENANCY_SERVICE_URI=http://tenancy_svc:8083
       - DEVICE_SERVICE_URI=http://device_svc:8085
       - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
     ports:

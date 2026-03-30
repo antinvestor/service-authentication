@@ -108,7 +108,7 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 			"DATABASE_LOG_QUERIES": "true",
 			"HTTP_PORT":            strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),
 			"DATABASE_URL":         databaseURL,
-			"PARTITION_SERVICE_WORKLOAD_API_TARGET_PATH":    " ",
+			"TENANCY_SERVICE_WORKLOAD_API_TARGET_PATH":      " ",
 			"PROFILE_SERVICE_WORKLOAD_API_TARGET_PATH":      " ",
 			"DEVICE_SERVICE_WORKLOAD_API_TARGET_PATH":       " ",
 			"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH": " ",

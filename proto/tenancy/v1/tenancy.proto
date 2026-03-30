@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package partition.v1;
+package tenancy.v1;
 
 // -----------------------------------------------------
 // Core notes (normative):
@@ -33,17 +33,17 @@ import "gnostic/openapi/v3/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/antinvestor/apis/go/partition/v1;partitionv1";
+option go_package = "github.com/antinvestor/apis/go/tenancy/v1;tenancyv1";
 option java_multiple_files = true;
-option java_package = "partitionv1";
+option java_package = "tenancyv1";
 option (gnostic.openapi.v3.document) = {
   info: {
-    title: "Partition Service"
+    title: "Tenancy Service"
     version: "v1.0.0"
     description: "The Partition Service provides multi-tenancy and data isolation capabilities with hierarchical partitions, role-based access control (RBAC), and custom UI pages. Tenants represent top-level organizational units containing hierarchical partitions for departments, projects, or teams. The service supports fine-grained access control through partition roles and access grants, enabling secure multi-tenant applications with customizable user experiences."
     contact: {
       name: "Ant Investor Ltd"
-      url: "https://github.com/antinvestor/service-partition"
+      url: "https://github.com/antinvestor/service-authentication"
       email: "info@antinvestor.com"
     }
     license: {
@@ -1042,11 +1042,11 @@ message RemoveClientResponse {
 // Partition Service
 // -----------------------------------------------------
 
-// PartitionService provides multi-tenancy and data isolation.
+// TenancyService provides multi-tenancy and data isolation.
 // All RPCs require authentication via Bearer token.
-service PartitionService {
+service TenancyService {
   option (common.v1.service_permissions) = {
-    namespace: "service_partition"
+    namespace: "service_tenancy"
     permissions: [
       "tenant_view",
       "tenant_manage",

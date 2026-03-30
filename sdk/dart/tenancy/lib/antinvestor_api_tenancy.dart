@@ -1,6 +1,6 @@
 /// Dart client library for Ant Investor Tenancy Service.
 ///
-/// Provides Partition service functionality using Connect RPC protocol.
+/// Provides Tenancy service functionality using Connect RPC protocol.
 ///
 /// ## Usage
 ///
@@ -9,7 +9,7 @@
 /// import 'package:connectrpc/connect.dart';
 ///
 /// void main() async {
-///   final interceptors = PartitionClientFactory.createAuthInterceptors(
+///   final interceptors = TenancyClientFactory.createAuthInterceptors(
 ///     tokenManager: tokenManager,
 ///     onTokenRefresh: (refreshToken) async {
 ///       return await authClient.refresh(refreshToken);
@@ -17,11 +17,11 @@
 ///   );
 ///
 ///   final transport = YourTransportImplementation(
-///     baseUrl: Uri.parse(defaultPartitionEndpoint),
+///     baseUrl: Uri.parse(defaultTenancyEndpoint),
 ///     interceptors: interceptors,
 ///   );
 ///
-///   final client = PartitionServiceClient(transport);
+///   final client = TenancyServiceClient(transport);
 /// }
 /// ```
 library;
@@ -30,13 +30,13 @@ library;
 export 'src/client.dart';
 
 // Export generated protobuf files
-export 'src/partition/v1/partition.pb.dart';
-export 'src/partition/v1/partition.pbenum.dart';
-export 'src/partition/v1/partition.pbjson.dart';
-export 'src/partition/v1/partition.connect.client.dart';
-export 'src/partition/v1/partition.connect.spec.dart';
+export 'src/tenancy/v1/tenancy.pb.dart';
+export 'src/tenancy/v1/tenancy.pbenum.dart';
+export 'src/tenancy/v1/tenancy.pbjson.dart';
+export 'src/tenancy/v1/tenancy.connect.client.dart';
+export 'src/tenancy/v1/tenancy.connect.spec.dart';
 
-// Export common types used in partition API
+// Export common types used in tenancy API
 export 'src/common/v1/common.pb.dart';
 export 'src/common/v1/common.pbenum.dart';
 export 'src/google/protobuf/struct.pb.dart';

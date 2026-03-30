@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -17,18 +17,18 @@ import (
 )
 
 type AccessBusiness interface {
-	GetAccess(ctx context.Context, request *partitionv1.GetAccessRequest) (*partitionv1.AccessObject, error)
-	ListAccess(ctx context.Context, request *partitionv1.ListAccessRequest) ([]*partitionv1.AccessObject, error)
-	RemoveAccess(ctx context.Context, request *partitionv1.RemoveAccessRequest) error
-	CreateAccess(ctx context.Context, request *partitionv1.CreateAccessRequest) (*partitionv1.AccessObject, error)
+	GetAccess(ctx context.Context, request *tenancyv1.GetAccessRequest) (*tenancyv1.AccessObject, error)
+	ListAccess(ctx context.Context, request *tenancyv1.ListAccessRequest) ([]*tenancyv1.AccessObject, error)
+	RemoveAccess(ctx context.Context, request *tenancyv1.RemoveAccessRequest) error
+	CreateAccess(ctx context.Context, request *tenancyv1.CreateAccessRequest) (*tenancyv1.AccessObject, error)
 
-	RemoveAccessRole(ctx context.Context, request *partitionv1.RemoveAccessRoleRequest) error
+	RemoveAccessRole(ctx context.Context, request *tenancyv1.RemoveAccessRoleRequest) error
 	ListAccessRoles(
 		ctx context.Context,
-		request *partitionv1.ListAccessRoleRequest) (*partitionv1.ListAccessRoleResponse, error)
+		request *tenancyv1.ListAccessRoleRequest) (*tenancyv1.ListAccessRoleResponse, error)
 	CreateAccessRole(
 		ctx context.Context,
-		request *partitionv1.CreateAccessRoleRequest) (*partitionv1.AccessRoleObject, error)
+		request *tenancyv1.CreateAccessRoleRequest) (*tenancyv1.AccessRoleObject, error)
 }
 
 func NewAccessBusiness(
@@ -91,7 +91,7 @@ func (ab *accessBusiness) resolvePartition(ctx context.Context, partitionID, cli
 
 func (ab *accessBusiness) GetAccess(
 	ctx context.Context,
-	request *partitionv1.GetAccessRequest) (*partitionv1.AccessObject, error) {
+	request *tenancyv1.GetAccessRequest) (*tenancyv1.AccessObject, error) {
 	var err error
 	var access *models.Access
 
@@ -128,8 +128,8 @@ func (ab *accessBusiness) GetAccess(
 
 func (ab *accessBusiness) ListAccess(
 	ctx context.Context,
-	request *partitionv1.ListAccessRequest,
-) ([]*partitionv1.AccessObject, error) {
+	request *tenancyv1.ListAccessRequest,
+) ([]*tenancyv1.AccessObject, error) {
 	var accesses []*models.Access
 	var err error
 
@@ -144,7 +144,7 @@ func (ab *accessBusiness) ListAccess(
 		return nil, err
 	}
 
-	result := make([]*partitionv1.AccessObject, 0, len(accesses))
+	result := make([]*tenancyv1.AccessObject, 0, len(accesses))
 	for _, access := range accesses {
 		partition, partitionErr := ab.partitionRepo.GetByID(ctx, access.PartitionID)
 		if partitionErr != nil {
@@ -162,7 +162,7 @@ func (ab *accessBusiness) ListAccess(
 
 func (ab *accessBusiness) RemoveAccess(
 	ctx context.Context,
-	request *partitionv1.RemoveAccessRequest) error {
+	request *tenancyv1.RemoveAccessRequest) error {
 	// Look up the access record before deleting to get tenant/partition info
 	access, err := ab.accessRepo.GetByID(ctx, request.GetId())
 	if err != nil {
@@ -189,7 +189,7 @@ func (ab *accessBusiness) RemoveAccess(
 
 func (ab *accessBusiness) CreateAccess(
 	ctx context.Context,
-	request *partitionv1.CreateAccessRequest) (*partitionv1.AccessObject, error) {
+	request *tenancyv1.CreateAccessRequest) (*tenancyv1.AccessObject, error) {
 	logger := ab.service.Log(ctx)
 
 	logger.WithField("request", request).Debug(" supplied request")
@@ -266,7 +266,7 @@ func (ab *accessBusiness) CreateAccess(
 
 func (ab *accessBusiness) ListAccessRoles(
 	ctx context.Context,
-	request *partitionv1.ListAccessRoleRequest) (*partitionv1.ListAccessRoleResponse, error) {
+	request *tenancyv1.ListAccessRoleRequest) (*tenancyv1.ListAccessRoleResponse, error) {
 	accessRoleList, err := ab.accessRoleRepo.GetByAccessID(ctx, request.GetAccessId())
 	if err != nil {
 		return nil, err
@@ -283,25 +283,25 @@ func (ab *accessBusiness) ListAccessRoles(
 		return nil, err
 	}
 
-	partitionRoleIDMap := make(map[string]*partitionv1.PartitionRoleObject)
+	partitionRoleIDMap := make(map[string]*tenancyv1.PartitionRoleObject)
 	for _, partitionRole := range partitionRoles {
 		partitionRoleIDMap[partitionRole.ID] = toAPIPartitionRole(partitionRole)
 	}
 
-	response := make([]*partitionv1.AccessRoleObject, 0)
+	response := make([]*tenancyv1.AccessRoleObject, 0)
 
 	for _, acc := range accessRoleList {
 		response = append(response, acc.ToAPI(partitionRoleIDMap[acc.PartitionRoleID]))
 	}
 
-	return &partitionv1.ListAccessRoleResponse{
+	return &tenancyv1.ListAccessRoleResponse{
 		Data: response,
 	}, nil
 }
 
 func (ab *accessBusiness) RemoveAccessRole(
 	ctx context.Context,
-	request *partitionv1.RemoveAccessRoleRequest) error {
+	request *tenancyv1.RemoveAccessRoleRequest) error {
 	// Look up the access role to get the profile and role info before deleting
 	accessRole, err := ab.accessRoleRepo.GetByID(ctx, request.GetId())
 	if err != nil {
@@ -339,7 +339,7 @@ func (ab *accessBusiness) RemoveAccessRole(
 
 func (ab *accessBusiness) CreateAccessRole(
 	ctx context.Context,
-	request *partitionv1.CreateAccessRoleRequest) (*partitionv1.AccessRoleObject, error) {
+	request *tenancyv1.CreateAccessRoleRequest) (*tenancyv1.AccessRoleObject, error) {
 	access, err := ab.accessRepo.GetByID(ctx, request.GetAccessId())
 	if err != nil {
 		return nil, err

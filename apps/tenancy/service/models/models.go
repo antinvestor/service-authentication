@@ -7,7 +7,7 @@ import (
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame/data"
@@ -22,8 +22,8 @@ type Tenant struct {
 	Properties  data.JSONMap
 }
 
-func (t *Tenant) ToAPI() *partitionv1.TenantObject {
-	return &partitionv1.TenantObject{
+func (t *Tenant) ToAPI() *tenancyv1.TenantObject {
+	return &tenancyv1.TenantObject{
 		Id:          t.ID,
 		Name:        t.Name,
 		Description: t.Description,
@@ -60,7 +60,7 @@ func (p *Partition) SetAllowAutoAccess(allow bool) {
 	p.AllowAutoAccess = &allow
 }
 
-func (p *Partition) ToAPI() *partitionv1.PartitionObject {
+func (p *Partition) ToAPI() *tenancyv1.PartitionObject {
 	props := make(data.JSONMap)
 	if p.Properties != nil {
 		maps.Copy(props, p.Properties)
@@ -68,7 +68,7 @@ func (p *Partition) ToAPI() *partitionv1.PartitionObject {
 	delete(props, partitionpolicy.PropertyAllowAutoAccessSetup)
 	props[partitionpolicy.PropertyAllowAutoAccess] = p.AutoAccessAllowed()
 
-	return &partitionv1.PartitionObject{
+	return &tenancyv1.PartitionObject{
 		Id:          p.ID,
 		TenantId:    p.TenantID,
 		ParentId:    p.ParentID,
@@ -88,7 +88,7 @@ type PartitionRole struct {
 	Properties data.JSONMap
 }
 
-func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
+func (pr *PartitionRole) ToAPI() *tenancyv1.PartitionRoleObject {
 	state := commonv1.STATE_ACTIVE
 	if pr.DeletedAt.Valid {
 		state = commonv1.STATE_DELETED
@@ -98,7 +98,7 @@ func (pr *PartitionRole) ToAPI() *partitionv1.PartitionRoleObject {
 	maps.Copy(props, pr.Properties)
 	props["is_default"] = pr.IsDefault
 
-	return &partitionv1.PartitionRoleObject{
+	return &tenancyv1.PartitionRoleObject{
 		Id:          pr.ID,
 		PartitionId: pr.PartitionID,
 		Name:        pr.Name,
@@ -116,8 +116,8 @@ type Page struct {
 	Properties data.JSONMap
 }
 
-func (p *Page) ToAPI() *partitionv1.PageObject {
-	return &partitionv1.PageObject{
+func (p *Page) ToAPI() *tenancyv1.PageObject {
+	return &tenancyv1.PageObject{
 		Id:         p.GetID(),
 		Name:       p.Name,
 		Html:       p.HTML,
@@ -133,13 +133,13 @@ type Access struct {
 	State     int32
 }
 
-func (a *Access) ToAPI(partitionObject *partitionv1.PartitionObject) (*partitionv1.AccessObject, error) {
+func (a *Access) ToAPI(partitionObject *tenancyv1.PartitionObject) (*tenancyv1.AccessObject, error) {
 
 	if partitionObject == nil {
 		return nil, errors.New("no partition exists for this access")
 	}
 
-	return &partitionv1.AccessObject{
+	return &tenancyv1.AccessObject{
 		Id:        a.GetID(),
 		ProfileId: a.ProfileID,
 		Partition: partitionObject,
@@ -177,13 +177,13 @@ type Client struct {
 	SyncedAt                *time.Time   `gorm:"index"                                                                      json:"synced_at"`
 }
 
-func (c *Client) ToAPI() *partitionv1.ClientObject {
+func (c *Client) ToAPI() *tenancyv1.ClientObject {
 	state := commonv1.STATE_ACTIVE
 	if c.DeletedAt.Valid {
 		state = commonv1.STATE_DELETED
 	}
 
-	obj := &partitionv1.ClientObject{
+	obj := &tenancyv1.ClientObject{
 		Id:            c.ID,
 		Name:          c.Name,
 		ClientId:      c.ClientID,
@@ -222,7 +222,7 @@ func (c *Client) ToAPI() *partitionv1.ClientObject {
 }
 
 // ToServiceAccountAPI returns a ServiceAccountObject view of this client for backward compatibility.
-func (c *Client) ToServiceAccountAPI() *partitionv1.ServiceAccountObject {
+func (c *Client) ToServiceAccountAPI() *tenancyv1.ServiceAccountObject {
 	state := commonv1.STATE_ACTIVE
 	if c.DeletedAt.Valid {
 		state = commonv1.STATE_DELETED
@@ -241,7 +241,7 @@ func (c *Client) ToServiceAccountAPI() *partitionv1.ServiceAccountObject {
 		props["roles"] = c.Roles
 	}
 
-	obj := &partitionv1.ServiceAccountObject{
+	obj := &tenancyv1.ServiceAccountObject{
 		Id:          c.ID,
 		TenantId:    c.TenantID,
 		PartitionId: c.PartitionID,
@@ -293,13 +293,13 @@ type ServiceAccount struct {
 	Properties   data.JSONMap
 }
 
-func (sa *ServiceAccount) ToAPI() *partitionv1.ServiceAccountObject {
+func (sa *ServiceAccount) ToAPI() *tenancyv1.ServiceAccountObject {
 	state := commonv1.STATE_ACTIVE
 	if sa.DeletedAt.Valid {
 		state = commonv1.STATE_DELETED
 	}
 
-	obj := &partitionv1.ServiceAccountObject{
+	obj := &tenancyv1.ServiceAccountObject{
 		Id:          sa.ID,
 		TenantId:    sa.TenantID,
 		PartitionId: sa.PartitionID,
@@ -327,8 +327,8 @@ type AccessRole struct {
 	PartitionRoleID string `gorm:"type:varchar(50);"`
 }
 
-func (ar *AccessRole) ToAPI(partitionRoleObj *partitionv1.PartitionRoleObject) *partitionv1.AccessRoleObject {
-	return &partitionv1.AccessRoleObject{
+func (ar *AccessRole) ToAPI(partitionRoleObj *tenancyv1.PartitionRoleObject) *tenancyv1.AccessRoleObject {
+	return &tenancyv1.AccessRoleObject{
 		Id:       ar.GetID(),
 		AccessId: ar.AccessID,
 		Role:     partitionRoleObj,

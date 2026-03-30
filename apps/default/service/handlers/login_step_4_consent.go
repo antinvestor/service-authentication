@@ -8,7 +8,7 @@ import (
 	"time"
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -53,8 +53,8 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
 
-	clientResp, err := h.partitionCli.GetClient(ctx, connect.NewRequest(&partitionv1.GetClientRequest{ClientId: clientID}))
-	var clientObj *partitionv1.ClientObject
+	clientResp, err := h.partitionCli.GetClient(ctx, connect.NewRequest(&tenancyv1.GetClientRequest{ClientId: clientID}))
+	var clientObj *tenancyv1.ClientObject
 	if err == nil && clientResp.Msg.GetData() != nil {
 		clientObj = clientResp.Msg.GetData()
 	}
@@ -72,9 +72,9 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 		// Legacy partition-backed OAuth2 clients use the partition ID as the Hydra client_id
 		// without a separate tenancy Client record.
-		clientObj = &partitionv1.ClientObject{
+		clientObj = &tenancyv1.ClientObject{
 			ClientId: clientID,
-			Owner:    &partitionv1.ClientObject_Partition{Partition: partitionObj},
+			Owner:    &tenancyv1.ClientObject_Partition{Partition: partitionObj},
 		}
 	}
 
@@ -118,16 +118,16 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 }
 
 // buildConsentTokenClaims builds token claims based on the client type (service account or user).
-func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *partitionv1.ClientObject) (map[string]any, error) {
+func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv1.ClientObject) (map[string]any, error) {
 	requestedScope := consentReq.GetRequestedScope()
 	subjectID := consentReq.GetSubject()
 
 	switch owner := clientObj.GetOwner().(type) {
 
-	case *partitionv1.ClientObject_Partition:
+	case *tenancyv1.ClientObject_Partition:
 		return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientObj, subjectID)
 
-	case *partitionv1.ClientObject_ServiceAccount:
+	case *tenancyv1.ClientObject_ServiceAccount:
 
 		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
 		return h.buildServiceAccountConsentClaims(ctx, consentReq, clientObj, owner.ServiceAccount, subjectID, requestedScope, requestedAudiences)
@@ -141,7 +141,7 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 // buildServiceAccountConsentClaims builds token claims for service account clients
 // (both system_internal and system_external).
 // Service accounts are looked up via the tenancy service API by client_id.
-func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *partitionv1.ClientObject, sa *partitionv1.ServiceAccountObject, subjectID string, requestedScope, _ []string) (map[string]any, error) {
+func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv1.ClientObject, sa *tenancyv1.ServiceAccountObject, subjectID string, requestedScope, _ []string) (map[string]any, error) {
 	log := util.Log(ctx).WithFields(map[string]any{
 		"client_id":     clientObj.GetClientId(),
 		"subject_id":    subjectID,
@@ -236,7 +236,7 @@ func (h *AuthServer) buildUserTokenClaims(
 	rw http.ResponseWriter,
 	req *http.Request,
 	consentReq *hydraclientgo.OAuth2ConsentRequest,
-	clientObj *partitionv1.ClientObject,
+	clientObj *tenancyv1.ClientObject,
 	subjectID string,
 ) (map[string]any, error) {
 	log := util.Log(ctx)
@@ -365,8 +365,8 @@ func (h *AuthServer) logConsentSuccess(log *util.LogEntry, tokenMap map[string]a
 }
 
 // shouldRenderBrowserInterstitial determines if we should render an HTML interstitial page.
-func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, clientObj *partitionv1.ClientObject) bool {
-	_, isPartition := clientObj.GetOwner().(*partitionv1.ClientObject_Partition)
+func (h *AuthServer) shouldRenderBrowserInterstitial(req *http.Request, clientObj *tenancyv1.ClientObject) bool {
+	_, isPartition := clientObj.GetOwner().(*tenancyv1.ClientObject_Partition)
 	if !isPartition {
 		return false
 	}

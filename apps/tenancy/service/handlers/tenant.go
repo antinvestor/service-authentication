@@ -3,71 +3,71 @@ package handlers
 import (
 	"context"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/pitabwire/util"
 )
 
-func (prtSrv *PartitionServer) GetTenant(
+func (prtSrv *TenancyServer) GetTenant(
 	ctx context.Context,
-	req *connect.Request[partitionv1.GetTenantRequest]) (*connect.Response[partitionv1.GetTenantResponse], error) {
+	req *connect.Request[tenancyv1.GetTenantRequest]) (*connect.Response[tenancyv1.GetTenantResponse], error) {
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.GetTenant(ctx, req.Msg.GetId())
 	if err != nil {
 		logger.Debug("could not obtain the specified tenant")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.GetTenantResponse{Data: tenant}), nil
+	return connect.NewResponse(&tenancyv1.GetTenantResponse{Data: tenant}), nil
 }
 
-func (prtSrv *PartitionServer) ListTenant(
+func (prtSrv *TenancyServer) ListTenant(
 	ctx context.Context,
-	req *connect.Request[partitionv1.ListTenantRequest],
-	stream *connect.ServerStream[partitionv1.ListTenantResponse]) error {
+	req *connect.Request[tenancyv1.ListTenantRequest],
+	stream *connect.ServerStream[tenancyv1.ListTenantResponse]) error {
 	logger := util.Log(ctx)
 	tenants, err := prtSrv.TenantBusiness.ListTenant(ctx, req.Msg)
 	if err != nil {
 		logger.Debug("could not list tenants")
 		return prtSrv.toAPIError(err)
 	}
-	return stream.Send(&partitionv1.ListTenantResponse{Data: tenants})
+	return stream.Send(&tenancyv1.ListTenantResponse{Data: tenants})
 }
 
-func (prtSrv *PartitionServer) CreateTenant(
+func (prtSrv *TenancyServer) CreateTenant(
 	ctx context.Context,
-	req *connect.Request[partitionv1.CreateTenantRequest],
-) (*connect.Response[partitionv1.CreateTenantResponse], error) {
+	req *connect.Request[tenancyv1.CreateTenantRequest],
+) (*connect.Response[tenancyv1.CreateTenantResponse], error) {
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.CreateTenant(ctx, req.Msg)
 	if err != nil {
 		logger.Debug("could not create a new tenant")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.CreateTenantResponse{Data: tenant}), nil
+	return connect.NewResponse(&tenancyv1.CreateTenantResponse{Data: tenant}), nil
 }
 
-func (prtSrv *PartitionServer) RemoveTenant(
+func (prtSrv *TenancyServer) RemoveTenant(
 	ctx context.Context,
-	req *connect.Request[partitionv1.RemoveTenantRequest],
-) (*connect.Response[partitionv1.RemoveTenantResponse], error) {
+	req *connect.Request[tenancyv1.RemoveTenantRequest],
+) (*connect.Response[tenancyv1.RemoveTenantResponse], error) {
 	logger := util.Log(ctx)
 	err := prtSrv.TenantBusiness.RemoveTenant(ctx, req.Msg.GetId())
 	if err != nil {
 		logger.WithError(err).Debug("could not remove tenant")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.RemoveTenantResponse{Succeeded: true}), nil
+	return connect.NewResponse(&tenancyv1.RemoveTenantResponse{Succeeded: true}), nil
 }
 
-func (prtSrv *PartitionServer) UpdateTenant(
+func (prtSrv *TenancyServer) UpdateTenant(
 	ctx context.Context,
-	req *connect.Request[partitionv1.UpdateTenantRequest],
-) (*connect.Response[partitionv1.UpdateTenantResponse], error) {
+	req *connect.Request[tenancyv1.UpdateTenantRequest],
+) (*connect.Response[tenancyv1.UpdateTenantResponse], error) {
 	logger := util.Log(ctx)
 	tenant, err := prtSrv.TenantBusiness.UpdateTenant(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not update our tenant")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.UpdateTenantResponse{Data: tenant}), nil
+	return connect.NewResponse(&tenancyv1.UpdateTenantResponse{Data: tenant}), nil
 }

@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
@@ -17,7 +17,7 @@ import (
 	"github.com/pitabwire/util"
 )
 
-type PartitionServer struct {
+type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
 
@@ -32,11 +32,11 @@ type PartitionServer struct {
 	PageBusiness           business.PageBusiness
 	ClientBusiness         business.ClientBusiness
 	ServiceAccountBusiness business.ServiceAccountBusiness
-	partitionv1connect.UnimplementedPartitionServiceHandler
+	tenancyv1connect.UnimplementedTenancyServiceHandler
 }
 
-// NewPartitionServer creates a new PartitionServer with injected dependencies
-func NewPartitionServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *PartitionServer {
+// NewTenancyServer creates a new TenancyServer with injected dependencies
+func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *TenancyServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -50,11 +50,11 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, auth securi
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
 
-	cfg := service.Config().(*config.PartitionConfig)
+	cfg := service.Config().(*config.TenancyConfig)
 	eventsMan := service.EventsManager()
 
 	// Create business layers with repository dependencies
-	return &PartitionServer{
+	return &TenancyServer{
 		svc:                    service,
 		eventsMan:              eventsMan,
 		ProfileCli:             profileCli,
@@ -70,83 +70,83 @@ func NewPartitionServer(ctx context.Context, service *frame.Service, auth securi
 	}
 }
 
-func (prtSrv *PartitionServer) ListPartition(
+func (prtSrv *TenancyServer) ListPartition(
 	ctx context.Context,
-	req *connect.Request[partitionv1.ListPartitionRequest],
-	stream *connect.ServerStream[partitionv1.ListPartitionResponse]) error {
+	req *connect.Request[tenancyv1.ListPartitionRequest],
+	stream *connect.ServerStream[tenancyv1.ListPartitionResponse]) error {
 	logger := util.Log(ctx)
 	partitions, err := prtSrv.PartitionBusiness.ListPartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not list partition")
 		return prtSrv.toAPIError(err)
 	}
-	return stream.Send(&partitionv1.ListPartitionResponse{Data: partitions})
+	return stream.Send(&tenancyv1.ListPartitionResponse{Data: partitions})
 }
 
-func (prtSrv *PartitionServer) CreatePartition(
+func (prtSrv *TenancyServer) CreatePartition(
 	ctx context.Context,
-	req *connect.Request[partitionv1.CreatePartitionRequest]) (*connect.Response[partitionv1.CreatePartitionResponse], error) {
+	req *connect.Request[tenancyv1.CreatePartitionRequest]) (*connect.Response[tenancyv1.CreatePartitionResponse], error) {
 	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.CreatePartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not create a new partition")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.CreatePartitionResponse{Data: partition}), nil
+	return connect.NewResponse(&tenancyv1.CreatePartitionResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) GetPartition(
+func (prtSrv *TenancyServer) GetPartition(
 	ctx context.Context,
-	req *connect.Request[partitionv1.GetPartitionRequest]) (*connect.Response[partitionv1.GetPartitionResponse], error) {
+	req *connect.Request[tenancyv1.GetPartitionRequest]) (*connect.Response[tenancyv1.GetPartitionResponse], error) {
 	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.GetPartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not obtain the specified partition")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.GetPartitionResponse{Data: partition}), nil
+	return connect.NewResponse(&tenancyv1.GetPartitionResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) GetPartitionParents(
+func (prtSrv *TenancyServer) GetPartitionParents(
 	ctx context.Context,
-	req *connect.Request[partitionv1.GetPartitionParentsRequest]) (*connect.Response[partitionv1.GetPartitionParentsResponse], error) {
+	req *connect.Request[tenancyv1.GetPartitionParentsRequest]) (*connect.Response[tenancyv1.GetPartitionParentsResponse], error) {
 	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.GetPartitionParents(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not obtain the specified partition")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.GetPartitionParentsResponse{Data: partition}), nil
+	return connect.NewResponse(&tenancyv1.GetPartitionParentsResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) UpdatePartition(
+func (prtSrv *TenancyServer) UpdatePartition(
 	ctx context.Context,
-	req *connect.Request[partitionv1.UpdatePartitionRequest]) (*connect.Response[partitionv1.UpdatePartitionResponse], error) {
+	req *connect.Request[tenancyv1.UpdatePartitionRequest]) (*connect.Response[tenancyv1.UpdatePartitionResponse], error) {
 	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.UpdatePartition(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not update existing partition")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.UpdatePartitionResponse{Data: partition}), nil
+	return connect.NewResponse(&tenancyv1.UpdatePartitionResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) CreatePartitionRole(
+func (prtSrv *TenancyServer) CreatePartitionRole(
 	ctx context.Context,
-	req *connect.Request[partitionv1.CreatePartitionRoleRequest]) (*connect.Response[partitionv1.CreatePartitionRoleResponse], error) {
+	req *connect.Request[tenancyv1.CreatePartitionRoleRequest]) (*connect.Response[tenancyv1.CreatePartitionRoleResponse], error) {
 	logger := util.Log(ctx)
 	partition, err := prtSrv.PartitionBusiness.CreatePartitionRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not create a new partition role")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.CreatePartitionRoleResponse{Data: partition}), nil
+	return connect.NewResponse(&tenancyv1.CreatePartitionRoleResponse{Data: partition}), nil
 }
 
-func (prtSrv *PartitionServer) ListPartitionRole(
+func (prtSrv *TenancyServer) ListPartitionRole(
 	ctx context.Context,
-	req *connect.Request[partitionv1.ListPartitionRoleRequest],
-	stream *connect.ServerStream[partitionv1.ListPartitionRoleResponse]) error {
+	req *connect.Request[tenancyv1.ListPartitionRoleRequest],
+	stream *connect.ServerStream[tenancyv1.ListPartitionRoleResponse]) error {
 	logger := util.Log(ctx)
 	resp, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req.Msg)
 	if err != nil {
@@ -156,40 +156,40 @@ func (prtSrv *PartitionServer) ListPartitionRole(
 	return stream.Send(resp)
 }
 
-func (prtSrv *PartitionServer) UpdatePartitionRole(
+func (prtSrv *TenancyServer) UpdatePartitionRole(
 	ctx context.Context,
-	req *connect.Request[partitionv1.UpdatePartitionRoleRequest]) (*connect.Response[partitionv1.UpdatePartitionRoleResponse], error) {
+	req *connect.Request[tenancyv1.UpdatePartitionRoleRequest]) (*connect.Response[tenancyv1.UpdatePartitionRoleResponse], error) {
 	logger := util.Log(ctx)
 	role, err := prtSrv.PartitionBusiness.UpdatePartitionRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug("could not update partition role")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.UpdatePartitionRoleResponse{Data: role}), nil
+	return connect.NewResponse(&tenancyv1.UpdatePartitionRoleResponse{Data: role}), nil
 }
 
-func (prtSrv *PartitionServer) RemovePartition(
+func (prtSrv *TenancyServer) RemovePartition(
 	ctx context.Context,
-	req *connect.Request[partitionv1.RemovePartitionRequest]) (*connect.Response[partitionv1.RemovePartitionResponse], error) {
+	req *connect.Request[tenancyv1.RemovePartitionRequest]) (*connect.Response[tenancyv1.RemovePartitionResponse], error) {
 	logger := util.Log(ctx)
 	err := prtSrv.PartitionBusiness.RemovePartition(ctx, req.Msg.GetId())
 	if err != nil {
 		logger.WithError(err).Debug("could not remove partition")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.RemovePartitionResponse{Succeeded: true}), nil
+	return connect.NewResponse(&tenancyv1.RemovePartitionResponse{Succeeded: true}), nil
 }
 
-func (prtSrv *PartitionServer) RemovePartitionRole(
+func (prtSrv *TenancyServer) RemovePartitionRole(
 	ctx context.Context,
-	req *connect.Request[partitionv1.RemovePartitionRoleRequest]) (*connect.Response[partitionv1.RemovePartitionRoleResponse], error) {
+	req *connect.Request[tenancyv1.RemovePartitionRoleRequest]) (*connect.Response[tenancyv1.RemovePartitionRoleResponse], error) {
 	logger := util.Log(ctx)
 	err := prtSrv.PartitionBusiness.RemovePartitionRole(ctx, req.Msg)
 	if err != nil {
 		logger.WithError(err).Debug(" could not remove the specified partition role")
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&partitionv1.RemovePartitionRoleResponse{
+	return connect.NewResponse(&tenancyv1.RemovePartitionRoleResponse{
 		Succeeded: true,
 	}), nil
 }

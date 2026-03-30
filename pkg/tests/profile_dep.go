@@ -155,7 +155,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"OAUTH2_JWT_VERIFY_ISSUER":          issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,
 			"NOTIFICATION_SERVICE_URI":          notificationService,
-			"PARTITION_SERVICE_URI":             partitionService,
+			"TENANCY_SERVICE_URI":               partitionService,
 		},
 
 		WaitingFor: wait.ForLog("Initiating server operations"),

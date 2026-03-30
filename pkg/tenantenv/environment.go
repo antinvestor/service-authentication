@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 )
 
 const (
@@ -25,31 +25,31 @@ func IsValid(environment string) bool {
 	}
 }
 
-func FromProto(environment partitionv1.TenantEnvironment) string {
+func FromProto(environment tenancyv1.TenantEnvironment) string {
 	switch environment {
-	case partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION:
+	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION:
 		return Production
-	case partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
+	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
 		return Staging
 	default:
 		return ""
 	}
 }
 
-func ToProto(environment string) partitionv1.TenantEnvironment {
+func ToProto(environment string) tenancyv1.TenantEnvironment {
 	switch Normalise(environment) {
 	case Production:
-		return partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION
+		return tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION
 	case Staging:
-		return partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING
+		return tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING
 	default:
-		return partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED
+		return tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED
 	}
 }
 
-func ParseToProto(environment string) (partitionv1.TenantEnvironment, error) {
+func ParseToProto(environment string) (tenancyv1.TenantEnvironment, error) {
 	value := ToProto(environment)
-	if value == partitionv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED {
+	if value == tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_UNSPECIFIED {
 		return value, fmt.Errorf("unsupported environment %q: use %s or %s", environment, Production, Staging)
 	}
 

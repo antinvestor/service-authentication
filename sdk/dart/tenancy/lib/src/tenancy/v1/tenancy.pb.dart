@@ -1,6 +1,6 @@
 //
 //  Generated code. Do not modify.
-//  source: partition/v1/partition.proto
+//  source: tenancy/v1/tenancy.proto
 //
 // @dart = 2.12
 
@@ -18,9 +18,9 @@ import '../../common/v1/common.pb.dart' as $7;
 import '../../common/v1/common.pbenum.dart' as $7;
 import '../../google/protobuf/struct.pb.dart' as $6;
 import '../../google/protobuf/timestamp.pb.dart' as $2;
-import 'partition.pbenum.dart';
+import 'tenancy.pbenum.dart';
 
-export 'partition.pbenum.dart';
+export 'tenancy.pbenum.dart';
 
 /// TenantObject represents a top-level organizational unit.
 class TenantObject extends $pb.GeneratedMessage {
@@ -61,7 +61,7 @@ class TenantObject extends $pb.GeneratedMessage {
   factory TenantObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory TenantObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TenantObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TenantObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
@@ -208,7 +208,7 @@ class PartitionObject extends $pb.GeneratedMessage {
   factory PartitionObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PartitionObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'tenantId')
@@ -363,7 +363,7 @@ class PartitionRoleObject extends $pb.GeneratedMessage {
   factory PartitionRoleObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PartitionRoleObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
@@ -492,7 +492,7 @@ class PageObject extends $pb.GeneratedMessage {
   factory PageObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PageObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PageObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PageObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
@@ -623,7 +623,7 @@ class AccessObject extends $pb.GeneratedMessage {
   factory AccessObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
     ..aOM<PartitionObject>(3, _omitFieldNames ? '' : 'partition', subBuilder: PartitionObject.create)
@@ -726,7 +726,7 @@ class AccessRoleObject extends $pb.GeneratedMessage {
   factory AccessRoleObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessRoleObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'accessId')
     ..aOM<PartitionRoleObject>(3, _omitFieldNames ? '' : 'role', subBuilder: PartitionRoleObject.create)
@@ -836,7 +836,7 @@ class ServiceAccountObject extends $pb.GeneratedMessage {
   factory ServiceAccountObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServiceAccountObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServiceAccountObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServiceAccountObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'tenantId')
     ..aOS(3, _omitFieldNames ? '' : 'partitionId')
@@ -1044,7 +1044,7 @@ class ClientObject extends $pb.GeneratedMessage {
     15 : ClientObject_Owner.serviceAccount,
     0 : ClientObject_Owner.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ClientObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ClientObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [14, 15])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
@@ -1216,7 +1216,7 @@ class GetTenantRequest extends $pb.GeneratedMessage {
   factory GetTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -1266,7 +1266,7 @@ class GetTenantResponse extends $pb.GeneratedMessage {
   factory GetTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
     ..hasRequiredFields = false
   ;
@@ -1342,7 +1342,7 @@ class ListTenantRequest extends $pb.GeneratedMessage {
   factory ListTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'query')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..aOS(4, _omitFieldNames ? '' : 'startDate')
@@ -1450,7 +1450,7 @@ class ListTenantResponse extends $pb.GeneratedMessage {
   factory ListTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<TenantObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: TenantObject.create)
     ..hasRequiredFields = false
   ;
@@ -1506,7 +1506,7 @@ class CreateTenantRequest extends $pb.GeneratedMessage {
   factory CreateTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'description')
     ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
@@ -1588,7 +1588,7 @@ class CreateTenantResponse extends $pb.GeneratedMessage {
   factory CreateTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
     ..hasRequiredFields = false
   ;
@@ -1660,7 +1660,7 @@ class UpdateTenantRequest extends $pb.GeneratedMessage {
   factory UpdateTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
@@ -1762,7 +1762,7 @@ class UpdateTenantResponse extends $pb.GeneratedMessage {
   factory UpdateTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
     ..hasRequiredFields = false
   ;
@@ -1814,7 +1814,7 @@ class RemoveTenantRequest extends $pb.GeneratedMessage {
   factory RemoveTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -1864,7 +1864,7 @@ class RemoveTenantResponse extends $pb.GeneratedMessage {
   factory RemoveTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -1918,7 +1918,7 @@ class GetPartitionRequest extends $pb.GeneratedMessage {
   factory GetPartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'domain')
     ..hasRequiredFields = false
@@ -1978,7 +1978,7 @@ class GetPartitionResponse extends $pb.GeneratedMessage {
   factory GetPartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
     ..hasRequiredFields = false
   ;
@@ -2030,7 +2030,7 @@ class GetPartitionParentsRequest extends $pb.GeneratedMessage {
   factory GetPartitionParentsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPartitionParentsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -2080,7 +2080,7 @@ class GetPartitionParentsResponse extends $pb.GeneratedMessage {
   factory GetPartitionParentsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPartitionParentsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<PartitionObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionObject.create)
     ..hasRequiredFields = false
   ;
@@ -2144,7 +2144,7 @@ class ListPartitionRequest extends $pb.GeneratedMessage {
   factory ListPartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'query')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..aOS(4, _omitFieldNames ? '' : 'startDate')
@@ -2242,7 +2242,7 @@ class ListPartitionResponse extends $pb.GeneratedMessage {
   factory ListPartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<PartitionObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionObject.create)
     ..hasRequiredFields = false
   ;
@@ -2306,7 +2306,7 @@ class CreatePartitionRequest extends $pb.GeneratedMessage {
   factory CreatePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'tenantId')
     ..aOS(2, _omitFieldNames ? '' : 'parentId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
@@ -2408,7 +2408,7 @@ class CreatePartitionResponse extends $pb.GeneratedMessage {
   factory CreatePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
     ..hasRequiredFields = false
   ;
@@ -2480,7 +2480,7 @@ class UpdatePartitionRequest extends $pb.GeneratedMessage {
   factory UpdatePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
@@ -2582,7 +2582,7 @@ class UpdatePartitionResponse extends $pb.GeneratedMessage {
   factory UpdatePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
     ..hasRequiredFields = false
   ;
@@ -2634,7 +2634,7 @@ class RemovePartitionRequest extends $pb.GeneratedMessage {
   factory RemovePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -2684,7 +2684,7 @@ class RemovePartitionResponse extends $pb.GeneratedMessage {
   factory RemovePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -2742,7 +2742,7 @@ class CreatePartitionRoleRequest extends $pb.GeneratedMessage {
   factory CreatePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
@@ -2814,7 +2814,7 @@ class CreatePartitionRoleResponse extends $pb.GeneratedMessage {
   factory CreatePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionRoleObject.create)
     ..hasRequiredFields = false
   ;
@@ -2878,7 +2878,7 @@ class UpdatePartitionRoleRequest extends $pb.GeneratedMessage {
   factory UpdatePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
@@ -2960,7 +2960,7 @@ class UpdatePartitionRoleResponse extends $pb.GeneratedMessage {
   factory UpdatePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionRoleObject.create)
     ..hasRequiredFields = false
   ;
@@ -3012,7 +3012,7 @@ class RemovePartitionRoleRequest extends $pb.GeneratedMessage {
   factory RemovePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -3062,7 +3062,7 @@ class RemovePartitionRoleResponse extends $pb.GeneratedMessage {
   factory RemovePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -3116,7 +3116,7 @@ class ListPartitionRoleRequest extends $pb.GeneratedMessage {
   factory ListPartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..hasRequiredFields = false
@@ -3178,7 +3178,7 @@ class ListPartitionRoleResponse extends $pb.GeneratedMessage {
   factory ListPartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionRoleObject.create)
     ..hasRequiredFields = false
   ;
@@ -3234,7 +3234,7 @@ class CreatePageRequest extends $pb.GeneratedMessage {
   factory CreatePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
@@ -3316,7 +3316,7 @@ class CreatePageResponse extends $pb.GeneratedMessage {
   factory CreatePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreatePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
     ..hasRequiredFields = false
   ;
@@ -3376,7 +3376,7 @@ class GetPageRequest extends $pb.GeneratedMessage {
   factory GetPageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'pageId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
@@ -3446,7 +3446,7 @@ class GetPageResponse extends $pb.GeneratedMessage {
   factory GetPageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
     ..hasRequiredFields = false
   ;
@@ -3514,7 +3514,7 @@ class UpdatePageRequest extends $pb.GeneratedMessage {
   factory UpdatePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
@@ -3606,7 +3606,7 @@ class UpdatePageResponse extends $pb.GeneratedMessage {
   factory UpdatePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdatePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
     ..hasRequiredFields = false
   ;
@@ -3662,7 +3662,7 @@ class ListPageRequest extends $pb.GeneratedMessage {
   factory ListPageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..hasRequiredFields = false
@@ -3724,7 +3724,7 @@ class ListPageResponse extends $pb.GeneratedMessage {
   factory ListPageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListPageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<PageObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PageObject.create)
     ..hasRequiredFields = false
   ;
@@ -3768,7 +3768,7 @@ class RemovePageRequest extends $pb.GeneratedMessage {
   factory RemovePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -3818,7 +3818,7 @@ class RemovePageResponse extends $pb.GeneratedMessage {
   factory RemovePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemovePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -3887,7 +3887,7 @@ class CreateAccessRequest extends $pb.GeneratedMessage {
     3 : CreateAccessRequest_Partition.clientId,
     0 : CreateAccessRequest_Partition.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [1, 3])
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
@@ -3961,7 +3961,7 @@ class CreateAccessResponse extends $pb.GeneratedMessage {
   factory CreateAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessObject.create)
     ..hasRequiredFields = false
   ;
@@ -4036,7 +4036,7 @@ class GetAccessRequest extends $pb.GeneratedMessage {
     3 : GetAccessRequest_Partition.clientId,
     0 : GetAccessRequest_Partition.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [2, 3])
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
@@ -4120,7 +4120,7 @@ class GetAccessResponse extends $pb.GeneratedMessage {
   factory GetAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessObject.create)
     ..hasRequiredFields = false
   ;
@@ -4191,7 +4191,7 @@ class ListAccessRequest extends $pb.GeneratedMessage {
     2 : ListAccessRequest_Scope.profileId,
     0 : ListAccessRequest_Scope.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [1, 2])
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
@@ -4269,7 +4269,7 @@ class ListAccessResponse extends $pb.GeneratedMessage {
   factory ListAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<AccessObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: AccessObject.create)
     ..hasRequiredFields = false
   ;
@@ -4313,7 +4313,7 @@ class RemoveAccessRequest extends $pb.GeneratedMessage {
   factory RemoveAccessRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveAccessRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -4363,7 +4363,7 @@ class RemoveAccessResponse extends $pb.GeneratedMessage {
   factory RemoveAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -4417,7 +4417,7 @@ class CreateAccessRoleRequest extends $pb.GeneratedMessage {
   factory CreateAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionRoleId')
     ..hasRequiredFields = false
@@ -4477,7 +4477,7 @@ class CreateAccessRoleResponse extends $pb.GeneratedMessage {
   factory CreateAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<AccessRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessRoleObject.create)
     ..hasRequiredFields = false
   ;
@@ -4529,7 +4529,7 @@ class RemoveAccessRoleRequest extends $pb.GeneratedMessage {
   factory RemoveAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -4579,7 +4579,7 @@ class RemoveAccessRoleResponse extends $pb.GeneratedMessage {
   factory RemoveAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -4633,7 +4633,7 @@ class ListAccessRoleRequest extends $pb.GeneratedMessage {
   factory ListAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..hasRequiredFields = false
@@ -4695,7 +4695,7 @@ class ListAccessRoleResponse extends $pb.GeneratedMessage {
   factory ListAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<AccessRoleObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: AccessRoleObject.create)
     ..hasRequiredFields = false
   ;
@@ -4767,7 +4767,7 @@ class CreateServiceAccountRequest extends $pb.GeneratedMessage {
   factory CreateServiceAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateServiceAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
@@ -4883,7 +4883,7 @@ class CreateServiceAccountResponse extends $pb.GeneratedMessage {
   factory CreateServiceAccountResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateServiceAccountResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ServiceAccountObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ServiceAccountObject.create)
     ..aOS(2, _omitFieldNames ? '' : 'clientSecret')
     ..hasRequiredFields = false
@@ -4953,7 +4953,7 @@ class GetServiceAccountRequest extends $pb.GeneratedMessage {
   factory GetServiceAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetServiceAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'clientId')
     ..aOS(3, _omitFieldNames ? '' : 'profileId')
@@ -5023,7 +5023,7 @@ class GetServiceAccountResponse extends $pb.GeneratedMessage {
   factory GetServiceAccountResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetServiceAccountResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ServiceAccountObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ServiceAccountObject.create)
     ..hasRequiredFields = false
   ;
@@ -5079,7 +5079,7 @@ class ListServiceAccountRequest extends $pb.GeneratedMessage {
   factory ListServiceAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListServiceAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
     ..hasRequiredFields = false
@@ -5141,7 +5141,7 @@ class ListServiceAccountResponse extends $pb.GeneratedMessage {
   factory ListServiceAccountResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListServiceAccountResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<ServiceAccountObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: ServiceAccountObject.create)
     ..hasRequiredFields = false
   ;
@@ -5213,7 +5213,7 @@ class UpdateServiceAccountRequest extends $pb.GeneratedMessage {
   factory UpdateServiceAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateServiceAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..pPS(3, _omitFieldNames ? '' : 'audiences')
@@ -5325,7 +5325,7 @@ class UpdateServiceAccountResponse extends $pb.GeneratedMessage {
   factory UpdateServiceAccountResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateServiceAccountResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ServiceAccountObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ServiceAccountObject.create)
     ..hasRequiredFields = false
   ;
@@ -5377,7 +5377,7 @@ class RemoveServiceAccountRequest extends $pb.GeneratedMessage {
   factory RemoveServiceAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveServiceAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveServiceAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -5427,7 +5427,7 @@ class RemoveServiceAccountResponse extends $pb.GeneratedMessage {
   factory RemoveServiceAccountResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveServiceAccountResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveServiceAccountResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -5528,7 +5528,7 @@ class CreateClientRequest extends $pb.GeneratedMessage {
     11 : CreateClientRequest_Owner.serviceAccountId,
     0 : CreateClientRequest_Owner.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [10, 11])
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'type')
@@ -5658,7 +5658,7 @@ class CreateClientResponse extends $pb.GeneratedMessage {
   factory CreateClientResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateClientResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ClientObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ClientObject.create)
     ..aOS(2, _omitFieldNames ? '' : 'clientSecret')
     ..hasRequiredFields = false
@@ -5724,7 +5724,7 @@ class GetClientRequest extends $pb.GeneratedMessage {
   factory GetClientRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetClientRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'clientId')
     ..hasRequiredFields = false
@@ -5784,7 +5784,7 @@ class GetClientResponse extends $pb.GeneratedMessage {
   factory GetClientResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetClientResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ClientObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ClientObject.create)
     ..hasRequiredFields = false
   ;
@@ -5855,7 +5855,7 @@ class ListClientRequest extends $pb.GeneratedMessage {
     2 : ListClientRequest_Owner.serviceAccountId,
     0 : ListClientRequest_Owner.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..oo(0, [1, 2])
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'serviceAccountId')
@@ -5931,7 +5931,7 @@ class ListClientResponse extends $pb.GeneratedMessage {
   factory ListClientResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ListClientResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..pc<ClientObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: ClientObject.create)
     ..hasRequiredFields = false
   ;
@@ -6011,7 +6011,7 @@ class UpdateClientRequest extends $pb.GeneratedMessage {
   factory UpdateClientRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateClientRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..pPS(3, _omitFieldNames ? '' : 'grantTypes')
@@ -6123,7 +6123,7 @@ class UpdateClientResponse extends $pb.GeneratedMessage {
   factory UpdateClientResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UpdateClientResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOM<ClientObject>(1, _omitFieldNames ? '' : 'data', subBuilder: ClientObject.create)
     ..hasRequiredFields = false
   ;
@@ -6175,7 +6175,7 @@ class RemoveClientRequest extends $pb.GeneratedMessage {
   factory RemoveClientRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveClientRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveClientRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..hasRequiredFields = false
   ;
@@ -6225,7 +6225,7 @@ class RemoveClientResponse extends $pb.GeneratedMessage {
   factory RemoveClientResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RemoveClientResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'partition.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveClientResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
     ..hasRequiredFields = false
   ;
@@ -6261,120 +6261,120 @@ class RemoveClientResponse extends $pb.GeneratedMessage {
   void clearSucceeded() => clearField(1);
 }
 
-class PartitionServiceApi {
+class TenancyServiceApi {
   $pb.RpcClient _client;
-  PartitionServiceApi(this._client);
+  TenancyServiceApi(this._client);
 
   $async.Future<GetTenantResponse> getTenant($pb.ClientContext? ctx, GetTenantRequest request) =>
-    _client.invoke<GetTenantResponse>(ctx, 'PartitionService', 'GetTenant', request, GetTenantResponse())
+    _client.invoke<GetTenantResponse>(ctx, 'TenancyService', 'GetTenant', request, GetTenantResponse())
   ;
   $async.Future<ListTenantResponse> listTenant($pb.ClientContext? ctx, ListTenantRequest request) =>
-    _client.invoke<ListTenantResponse>(ctx, 'PartitionService', 'ListTenant', request, ListTenantResponse())
+    _client.invoke<ListTenantResponse>(ctx, 'TenancyService', 'ListTenant', request, ListTenantResponse())
   ;
   $async.Future<CreateTenantResponse> createTenant($pb.ClientContext? ctx, CreateTenantRequest request) =>
-    _client.invoke<CreateTenantResponse>(ctx, 'PartitionService', 'CreateTenant', request, CreateTenantResponse())
+    _client.invoke<CreateTenantResponse>(ctx, 'TenancyService', 'CreateTenant', request, CreateTenantResponse())
   ;
   $async.Future<UpdateTenantResponse> updateTenant($pb.ClientContext? ctx, UpdateTenantRequest request) =>
-    _client.invoke<UpdateTenantResponse>(ctx, 'PartitionService', 'UpdateTenant', request, UpdateTenantResponse())
+    _client.invoke<UpdateTenantResponse>(ctx, 'TenancyService', 'UpdateTenant', request, UpdateTenantResponse())
   ;
   $async.Future<RemoveTenantResponse> removeTenant($pb.ClientContext? ctx, RemoveTenantRequest request) =>
-    _client.invoke<RemoveTenantResponse>(ctx, 'PartitionService', 'RemoveTenant', request, RemoveTenantResponse())
+    _client.invoke<RemoveTenantResponse>(ctx, 'TenancyService', 'RemoveTenant', request, RemoveTenantResponse())
   ;
   $async.Future<ListPartitionResponse> listPartition($pb.ClientContext? ctx, ListPartitionRequest request) =>
-    _client.invoke<ListPartitionResponse>(ctx, 'PartitionService', 'ListPartition', request, ListPartitionResponse())
+    _client.invoke<ListPartitionResponse>(ctx, 'TenancyService', 'ListPartition', request, ListPartitionResponse())
   ;
   $async.Future<CreatePartitionResponse> createPartition($pb.ClientContext? ctx, CreatePartitionRequest request) =>
-    _client.invoke<CreatePartitionResponse>(ctx, 'PartitionService', 'CreatePartition', request, CreatePartitionResponse())
+    _client.invoke<CreatePartitionResponse>(ctx, 'TenancyService', 'CreatePartition', request, CreatePartitionResponse())
   ;
   $async.Future<GetPartitionResponse> getPartition($pb.ClientContext? ctx, GetPartitionRequest request) =>
-    _client.invoke<GetPartitionResponse>(ctx, 'PartitionService', 'GetPartition', request, GetPartitionResponse())
+    _client.invoke<GetPartitionResponse>(ctx, 'TenancyService', 'GetPartition', request, GetPartitionResponse())
   ;
   $async.Future<GetPartitionParentsResponse> getPartitionParents($pb.ClientContext? ctx, GetPartitionParentsRequest request) =>
-    _client.invoke<GetPartitionParentsResponse>(ctx, 'PartitionService', 'GetPartitionParents', request, GetPartitionParentsResponse())
+    _client.invoke<GetPartitionParentsResponse>(ctx, 'TenancyService', 'GetPartitionParents', request, GetPartitionParentsResponse())
   ;
   $async.Future<RemovePartitionResponse> removePartition($pb.ClientContext? ctx, RemovePartitionRequest request) =>
-    _client.invoke<RemovePartitionResponse>(ctx, 'PartitionService', 'RemovePartition', request, RemovePartitionResponse())
+    _client.invoke<RemovePartitionResponse>(ctx, 'TenancyService', 'RemovePartition', request, RemovePartitionResponse())
   ;
   $async.Future<UpdatePartitionResponse> updatePartition($pb.ClientContext? ctx, UpdatePartitionRequest request) =>
-    _client.invoke<UpdatePartitionResponse>(ctx, 'PartitionService', 'UpdatePartition', request, UpdatePartitionResponse())
+    _client.invoke<UpdatePartitionResponse>(ctx, 'TenancyService', 'UpdatePartition', request, UpdatePartitionResponse())
   ;
   $async.Future<CreatePartitionRoleResponse> createPartitionRole($pb.ClientContext? ctx, CreatePartitionRoleRequest request) =>
-    _client.invoke<CreatePartitionRoleResponse>(ctx, 'PartitionService', 'CreatePartitionRole', request, CreatePartitionRoleResponse())
+    _client.invoke<CreatePartitionRoleResponse>(ctx, 'TenancyService', 'CreatePartitionRole', request, CreatePartitionRoleResponse())
   ;
   $async.Future<ListPartitionRoleResponse> listPartitionRole($pb.ClientContext? ctx, ListPartitionRoleRequest request) =>
-    _client.invoke<ListPartitionRoleResponse>(ctx, 'PartitionService', 'ListPartitionRole', request, ListPartitionRoleResponse())
+    _client.invoke<ListPartitionRoleResponse>(ctx, 'TenancyService', 'ListPartitionRole', request, ListPartitionRoleResponse())
   ;
   $async.Future<UpdatePartitionRoleResponse> updatePartitionRole($pb.ClientContext? ctx, UpdatePartitionRoleRequest request) =>
-    _client.invoke<UpdatePartitionRoleResponse>(ctx, 'PartitionService', 'UpdatePartitionRole', request, UpdatePartitionRoleResponse())
+    _client.invoke<UpdatePartitionRoleResponse>(ctx, 'TenancyService', 'UpdatePartitionRole', request, UpdatePartitionRoleResponse())
   ;
   $async.Future<RemovePartitionRoleResponse> removePartitionRole($pb.ClientContext? ctx, RemovePartitionRoleRequest request) =>
-    _client.invoke<RemovePartitionRoleResponse>(ctx, 'PartitionService', 'RemovePartitionRole', request, RemovePartitionRoleResponse())
+    _client.invoke<RemovePartitionRoleResponse>(ctx, 'TenancyService', 'RemovePartitionRole', request, RemovePartitionRoleResponse())
   ;
   $async.Future<CreatePageResponse> createPage($pb.ClientContext? ctx, CreatePageRequest request) =>
-    _client.invoke<CreatePageResponse>(ctx, 'PartitionService', 'CreatePage', request, CreatePageResponse())
+    _client.invoke<CreatePageResponse>(ctx, 'TenancyService', 'CreatePage', request, CreatePageResponse())
   ;
   $async.Future<ListPageResponse> listPage($pb.ClientContext? ctx, ListPageRequest request) =>
-    _client.invoke<ListPageResponse>(ctx, 'PartitionService', 'ListPage', request, ListPageResponse())
+    _client.invoke<ListPageResponse>(ctx, 'TenancyService', 'ListPage', request, ListPageResponse())
   ;
   $async.Future<GetPageResponse> getPage($pb.ClientContext? ctx, GetPageRequest request) =>
-    _client.invoke<GetPageResponse>(ctx, 'PartitionService', 'GetPage', request, GetPageResponse())
+    _client.invoke<GetPageResponse>(ctx, 'TenancyService', 'GetPage', request, GetPageResponse())
   ;
   $async.Future<UpdatePageResponse> updatePage($pb.ClientContext? ctx, UpdatePageRequest request) =>
-    _client.invoke<UpdatePageResponse>(ctx, 'PartitionService', 'UpdatePage', request, UpdatePageResponse())
+    _client.invoke<UpdatePageResponse>(ctx, 'TenancyService', 'UpdatePage', request, UpdatePageResponse())
   ;
   $async.Future<RemovePageResponse> removePage($pb.ClientContext? ctx, RemovePageRequest request) =>
-    _client.invoke<RemovePageResponse>(ctx, 'PartitionService', 'RemovePage', request, RemovePageResponse())
+    _client.invoke<RemovePageResponse>(ctx, 'TenancyService', 'RemovePage', request, RemovePageResponse())
   ;
   $async.Future<CreateAccessResponse> createAccess($pb.ClientContext? ctx, CreateAccessRequest request) =>
-    _client.invoke<CreateAccessResponse>(ctx, 'PartitionService', 'CreateAccess', request, CreateAccessResponse())
+    _client.invoke<CreateAccessResponse>(ctx, 'TenancyService', 'CreateAccess', request, CreateAccessResponse())
   ;
   $async.Future<GetAccessResponse> getAccess($pb.ClientContext? ctx, GetAccessRequest request) =>
-    _client.invoke<GetAccessResponse>(ctx, 'PartitionService', 'GetAccess', request, GetAccessResponse())
+    _client.invoke<GetAccessResponse>(ctx, 'TenancyService', 'GetAccess', request, GetAccessResponse())
   ;
   $async.Future<ListAccessResponse> listAccess($pb.ClientContext? ctx, ListAccessRequest request) =>
-    _client.invoke<ListAccessResponse>(ctx, 'PartitionService', 'ListAccess', request, ListAccessResponse())
+    _client.invoke<ListAccessResponse>(ctx, 'TenancyService', 'ListAccess', request, ListAccessResponse())
   ;
   $async.Future<RemoveAccessResponse> removeAccess($pb.ClientContext? ctx, RemoveAccessRequest request) =>
-    _client.invoke<RemoveAccessResponse>(ctx, 'PartitionService', 'RemoveAccess', request, RemoveAccessResponse())
+    _client.invoke<RemoveAccessResponse>(ctx, 'TenancyService', 'RemoveAccess', request, RemoveAccessResponse())
   ;
   $async.Future<CreateAccessRoleResponse> createAccessRole($pb.ClientContext? ctx, CreateAccessRoleRequest request) =>
-    _client.invoke<CreateAccessRoleResponse>(ctx, 'PartitionService', 'CreateAccessRole', request, CreateAccessRoleResponse())
+    _client.invoke<CreateAccessRoleResponse>(ctx, 'TenancyService', 'CreateAccessRole', request, CreateAccessRoleResponse())
   ;
   $async.Future<ListAccessRoleResponse> listAccessRole($pb.ClientContext? ctx, ListAccessRoleRequest request) =>
-    _client.invoke<ListAccessRoleResponse>(ctx, 'PartitionService', 'ListAccessRole', request, ListAccessRoleResponse())
+    _client.invoke<ListAccessRoleResponse>(ctx, 'TenancyService', 'ListAccessRole', request, ListAccessRoleResponse())
   ;
   $async.Future<RemoveAccessRoleResponse> removeAccessRole($pb.ClientContext? ctx, RemoveAccessRoleRequest request) =>
-    _client.invoke<RemoveAccessRoleResponse>(ctx, 'PartitionService', 'RemoveAccessRole', request, RemoveAccessRoleResponse())
+    _client.invoke<RemoveAccessRoleResponse>(ctx, 'TenancyService', 'RemoveAccessRole', request, RemoveAccessRoleResponse())
   ;
   $async.Future<CreateServiceAccountResponse> createServiceAccount($pb.ClientContext? ctx, CreateServiceAccountRequest request) =>
-    _client.invoke<CreateServiceAccountResponse>(ctx, 'PartitionService', 'CreateServiceAccount', request, CreateServiceAccountResponse())
+    _client.invoke<CreateServiceAccountResponse>(ctx, 'TenancyService', 'CreateServiceAccount', request, CreateServiceAccountResponse())
   ;
   $async.Future<GetServiceAccountResponse> getServiceAccount($pb.ClientContext? ctx, GetServiceAccountRequest request) =>
-    _client.invoke<GetServiceAccountResponse>(ctx, 'PartitionService', 'GetServiceAccount', request, GetServiceAccountResponse())
+    _client.invoke<GetServiceAccountResponse>(ctx, 'TenancyService', 'GetServiceAccount', request, GetServiceAccountResponse())
   ;
   $async.Future<UpdateServiceAccountResponse> updateServiceAccount($pb.ClientContext? ctx, UpdateServiceAccountRequest request) =>
-    _client.invoke<UpdateServiceAccountResponse>(ctx, 'PartitionService', 'UpdateServiceAccount', request, UpdateServiceAccountResponse())
+    _client.invoke<UpdateServiceAccountResponse>(ctx, 'TenancyService', 'UpdateServiceAccount', request, UpdateServiceAccountResponse())
   ;
   $async.Future<ListServiceAccountResponse> listServiceAccount($pb.ClientContext? ctx, ListServiceAccountRequest request) =>
-    _client.invoke<ListServiceAccountResponse>(ctx, 'PartitionService', 'ListServiceAccount', request, ListServiceAccountResponse())
+    _client.invoke<ListServiceAccountResponse>(ctx, 'TenancyService', 'ListServiceAccount', request, ListServiceAccountResponse())
   ;
   $async.Future<RemoveServiceAccountResponse> removeServiceAccount($pb.ClientContext? ctx, RemoveServiceAccountRequest request) =>
-    _client.invoke<RemoveServiceAccountResponse>(ctx, 'PartitionService', 'RemoveServiceAccount', request, RemoveServiceAccountResponse())
+    _client.invoke<RemoveServiceAccountResponse>(ctx, 'TenancyService', 'RemoveServiceAccount', request, RemoveServiceAccountResponse())
   ;
   $async.Future<CreateClientResponse> createClient($pb.ClientContext? ctx, CreateClientRequest request) =>
-    _client.invoke<CreateClientResponse>(ctx, 'PartitionService', 'CreateClient', request, CreateClientResponse())
+    _client.invoke<CreateClientResponse>(ctx, 'TenancyService', 'CreateClient', request, CreateClientResponse())
   ;
   $async.Future<GetClientResponse> getClient($pb.ClientContext? ctx, GetClientRequest request) =>
-    _client.invoke<GetClientResponse>(ctx, 'PartitionService', 'GetClient', request, GetClientResponse())
+    _client.invoke<GetClientResponse>(ctx, 'TenancyService', 'GetClient', request, GetClientResponse())
   ;
   $async.Future<ListClientResponse> listClient($pb.ClientContext? ctx, ListClientRequest request) =>
-    _client.invoke<ListClientResponse>(ctx, 'PartitionService', 'ListClient', request, ListClientResponse())
+    _client.invoke<ListClientResponse>(ctx, 'TenancyService', 'ListClient', request, ListClientResponse())
   ;
   $async.Future<UpdateClientResponse> updateClient($pb.ClientContext? ctx, UpdateClientRequest request) =>
-    _client.invoke<UpdateClientResponse>(ctx, 'PartitionService', 'UpdateClient', request, UpdateClientResponse())
+    _client.invoke<UpdateClientResponse>(ctx, 'TenancyService', 'UpdateClient', request, UpdateClientResponse())
   ;
   $async.Future<RemoveClientResponse> removeClient($pb.ClientContext? ctx, RemoveClientRequest request) =>
-    _client.invoke<RemoveClientResponse>(ctx, 'PartitionService', 'RemoveClient', request, RemoveClientResponse())
+    _client.invoke<RemoveClientResponse>(ctx, 'TenancyService', 'RemoveClient', request, RemoveClientResponse())
   ;
 }
 

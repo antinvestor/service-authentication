@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
@@ -134,8 +134,8 @@ func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperti
 	}
 
 	clientID := partition.GetId()
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
-		resp, getErr := testCtx.AuthServer.PartitionCli().GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
+		resp, getErr := testCtx.AuthServer.PartitionCli().GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
 			Id: clientID,
 		}))
 		if getErr != nil {

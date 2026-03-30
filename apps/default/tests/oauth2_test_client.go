@@ -19,8 +19,8 @@ import (
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
-	"buf.build/gen/go/antinvestor/partition/connectrpc/go/partition/v1/partitionv1connect"
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common"
 	commonconnection "github.com/antinvestor/common/connection"
@@ -39,7 +39,7 @@ type OAuth2TestClient struct {
 	HydraAdminURL  string
 	HydraPublicURL string
 	AuthServiceURL string
-	PartitionCli   partitionv1connect.PartitionServiceClient
+	PartitionCli   tenancyv1connect.TenancyServiceClient
 	Client         *http.Client
 	t              *testing.T
 	cfg            *aconfig.AuthenticationConfig
@@ -165,7 +165,7 @@ func (c *OAuth2TestClient) PostLoginRedirectHandler() {
 
 }
 
-func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (partitionv1connect.PartitionServiceClient, error) {
+func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (tenancyv1connect.TenancyServiceClient, error) {
 	if c.cfg == nil {
 		return c.PartitionCli, nil
 	}
@@ -182,8 +182,8 @@ func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (pa
 
 	client, err := commonconnection.NewConnectClient(
 		ctx,
-		partitionv1connect.NewPartitionServiceClient,
-		common.WithEndpoint(c.cfg.PartitionServiceURI),
+		tenancyv1connect.NewTenancyServiceClient,
+		common.WithEndpoint(c.cfg.TenancyServiceURI),
 		common.WithAudiences("service_tenancy"),
 		common.WithTokenSource(tokenCfg.TokenSource(ctx)),
 	)
@@ -225,8 +225,8 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 
 	// Wait for partition sync to Hydra (client_id appears in properties)
 	clientID := partition.GetId()
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*partitionv1.PartitionObject, error) {
-		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{
+	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
+		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
 			Id: clientID,
 		}))
 		if err0 != nil {

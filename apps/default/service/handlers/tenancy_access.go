@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
@@ -33,7 +33,7 @@ func (e *accessInstructionsRedirectError) RedirectURI() string {
 	return e.URI
 }
 
-func partitionAllowsAutoAccess(partition *partitionv1.PartitionObject) bool {
+func partitionAllowsAutoAccess(partition *tenancyv1.PartitionObject) bool {
 	if partition == nil || partition.GetProperties() == nil {
 		return true
 	}
@@ -41,7 +41,7 @@ func partitionAllowsAutoAccess(partition *partitionv1.PartitionObject) bool {
 	return partitionpolicy.AllowAutoAccess(partition.GetProperties().AsMap(), true)
 }
 
-func partitionAccessRequestURI(partition *partitionv1.PartitionObject) string {
+func partitionAccessRequestURI(partition *tenancyv1.PartitionObject) string {
 	if partition == nil || partition.GetProperties() == nil {
 		return ""
 	}
@@ -49,7 +49,7 @@ func partitionAccessRequestURI(partition *partitionv1.PartitionObject) string {
 	return partitionpolicy.AccessRequestURI(partition.GetProperties().AsMap())
 }
 
-func partitionSupportContacts(partition *partitionv1.PartitionObject) map[string]string {
+func partitionSupportContacts(partition *tenancyv1.PartitionObject) map[string]string {
 	if partition == nil || partition.GetProperties() == nil {
 		return map[string]string{}
 	}
@@ -60,13 +60,13 @@ func partitionSupportContacts(partition *partitionv1.PartitionObject) map[string
 // resolvePartitionByClientID resolves a partition from a Hydra client_id.
 // It first tries treating the client_id as a partition ID (backward compat),
 // then falls back to looking up the Client record to get the partition.
-func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID string) (*partitionv1.PartitionObject, error) {
+func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID string) (*tenancyv1.PartitionObject, error) {
 	if clientID == "" {
 		return nil, fmt.Errorf("client_id is required")
 	}
 
 	// Try direct partition lookup (backward compat: client_id == partition_id)
-	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&partitionv1.GetPartitionRequest{Id: clientID}))
+	partitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{Id: clientID}))
 	if err == nil {
 		if obj := partitionResp.Msg.GetData(); obj != nil {
 			return obj, nil
@@ -74,7 +74,7 @@ func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID st
 	}
 
 	// Fall back to looking up the Client record by its Hydra client_id
-	clientResp, clientErr := h.partitionCli.GetClient(ctx, connect.NewRequest(&partitionv1.GetClientRequest{ClientId: clientID}))
+	clientResp, clientErr := h.partitionCli.GetClient(ctx, connect.NewRequest(&tenancyv1.GetClientRequest{ClientId: clientID}))
 	if clientErr != nil {
 		return nil, fmt.Errorf("no partition or client found for id %q: %w", clientID, clientErr)
 	}
@@ -91,7 +91,7 @@ func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID st
 			partitionID, _ := meta["partition_id"].(string)
 			tenantID, _ := meta["tenant_id"].(string)
 			if partitionID != "" {
-				return &partitionv1.PartitionObject{
+				return &tenancyv1.PartitionObject{
 					Id:       partitionID,
 					TenantId: tenantID,
 				}, nil
@@ -116,7 +116,7 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string, 
 	}
 
 	stream, err := h.partitionCli.ListAccessRole(ctx, connect.NewRequest(
-		&partitionv1.ListAccessRoleRequest{AccessId: accessID}))
+		&tenancyv1.ListAccessRoleRequest{AccessId: accessID}))
 	if err != nil {
 		util.Log(ctx).WithError(err).Warn("failed to list access roles")
 		return roles
@@ -139,7 +139,7 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string, 
 
 // partitionDefaultRole extracts the "default_role" property from a partition object.
 // Returns an empty string if unset, letting callers fall back to "user".
-func partitionDefaultRole(partition *partitionv1.PartitionObject) string {
+func partitionDefaultRole(partition *tenancyv1.PartitionObject) string {
 	if partition == nil {
 		return ""
 	}
@@ -153,7 +153,7 @@ func partitionDefaultRole(partition *partitionv1.PartitionObject) string {
 	return ""
 }
 
-func (h *AuthServer) getTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) getTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*tenancyv1.AccessObject, error) {
 	if clientID == "" {
 		return nil, fmt.Errorf("client_id is required")
 	}
@@ -161,8 +161,8 @@ func (h *AuthServer) getTenancyAccessByClientID(ctx context.Context, clientID, p
 		return nil, fmt.Errorf("profile_id is required")
 	}
 
-	getReq := &partitionv1.GetAccessRequest{
-		Partition: &partitionv1.GetAccessRequest_ClientId{ClientId: clientID},
+	getReq := &tenancyv1.GetAccessRequest{
+		Partition: &tenancyv1.GetAccessRequest_ClientId{ClientId: clientID},
 		ProfileId: profileID,
 	}
 
@@ -174,7 +174,7 @@ func (h *AuthServer) getTenancyAccessByClientID(ctx context.Context, clientID, p
 	return nil, err
 }
 
-func (h *AuthServer) createTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) createTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*tenancyv1.AccessObject, error) {
 	if clientID == "" {
 		return nil, fmt.Errorf("client_id is required")
 	}
@@ -182,8 +182,8 @@ func (h *AuthServer) createTenancyAccessByClientID(ctx context.Context, clientID
 		return nil, fmt.Errorf("profile_id is required")
 	}
 
-	createReq := &partitionv1.CreateAccessRequest{
-		Partition: &partitionv1.CreateAccessRequest_ClientId{ClientId: clientID},
+	createReq := &tenancyv1.CreateAccessRequest{
+		Partition: &tenancyv1.CreateAccessRequest_ClientId{ClientId: clientID},
 		ProfileId: profileID,
 	}
 	createResp, createErr := h.partitionCli.CreateAccess(ctx, connect.NewRequest(createReq))
@@ -196,7 +196,7 @@ func (h *AuthServer) createTenancyAccessByClientID(ctx context.Context, clientID
 
 // getOrCreateTenancyAccess resolves a tenancy access object for the given profile/client.
 // If no access exists, it creates one via the partition service.
-func (h *AuthServer) getOrCreateTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) getOrCreateTenancyAccessByClientID(ctx context.Context, clientID, profileID string) (*tenancyv1.AccessObject, error) {
 	access, err := h.getTenancyAccessByClientID(ctx, clientID, profileID)
 	if err == nil {
 		return access, nil
@@ -208,7 +208,7 @@ func (h *AuthServer) getOrCreateTenancyAccessByClientID(ctx context.Context, cli
 	return h.createTenancyAccessByClientID(ctx, clientID, profileID)
 }
 
-func (h *AuthServer) getTenancyAccessByPartitionID(ctx context.Context, partitionID, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) getTenancyAccessByPartitionID(ctx context.Context, partitionID, profileID string) (*tenancyv1.AccessObject, error) {
 	if partitionID == "" {
 		return nil, fmt.Errorf("partition_id is required")
 	}
@@ -216,8 +216,8 @@ func (h *AuthServer) getTenancyAccessByPartitionID(ctx context.Context, partitio
 		return nil, fmt.Errorf("profile_id is required")
 	}
 
-	getReq := &partitionv1.GetAccessRequest{
-		Partition: &partitionv1.GetAccessRequest_PartitionId{PartitionId: partitionID},
+	getReq := &tenancyv1.GetAccessRequest{
+		Partition: &tenancyv1.GetAccessRequest_PartitionId{PartitionId: partitionID},
 		ProfileId: profileID,
 	}
 
@@ -229,7 +229,7 @@ func (h *AuthServer) getTenancyAccessByPartitionID(ctx context.Context, partitio
 	return nil, err
 }
 
-func (h *AuthServer) createTenancyAccessByPartitionID(ctx context.Context, partitionID, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) createTenancyAccessByPartitionID(ctx context.Context, partitionID, profileID string) (*tenancyv1.AccessObject, error) {
 	if partitionID == "" {
 		return nil, fmt.Errorf("partition_id is required")
 	}
@@ -237,8 +237,8 @@ func (h *AuthServer) createTenancyAccessByPartitionID(ctx context.Context, parti
 		return nil, fmt.Errorf("profile_id is required")
 	}
 
-	createReq := &partitionv1.CreateAccessRequest{
-		Partition: &partitionv1.CreateAccessRequest_PartitionId{PartitionId: partitionID},
+	createReq := &tenancyv1.CreateAccessRequest{
+		Partition: &tenancyv1.CreateAccessRequest_PartitionId{PartitionId: partitionID},
 		ProfileId: profileID,
 	}
 	createResp, createErr := h.partitionCli.CreateAccess(ctx, connect.NewRequest(createReq))
@@ -249,7 +249,7 @@ func (h *AuthServer) createTenancyAccessByPartitionID(ctx context.Context, parti
 	return accessFromResponse(createResp.Msg.GetData())
 }
 
-func accessFromResponse(access *partitionv1.AccessObject) (*partitionv1.AccessObject, error) {
+func accessFromResponse(access *tenancyv1.AccessObject) (*tenancyv1.AccessObject, error) {
 	if access == nil {
 		return nil, fmt.Errorf("partition service returned empty access object")
 	}
@@ -259,7 +259,7 @@ func accessFromResponse(access *partitionv1.AccessObject) (*partitionv1.AccessOb
 
 // getOrCreateTenancyAccess resolves a tenancy access object for the given profile/client.
 // If no access exists, it creates one via the partition service.
-func (h *AuthServer) getOrCreateTenancyAccessByPartitionID(ctx context.Context, partition *partitionv1.PartitionObject, profileID string) (*partitionv1.AccessObject, error) {
+func (h *AuthServer) getOrCreateTenancyAccessByPartitionID(ctx context.Context, partition *tenancyv1.PartitionObject, profileID string) (*tenancyv1.AccessObject, error) {
 	if partition == nil || partition.GetId() == "" {
 		return nil, fmt.Errorf("partition is required")
 	}
@@ -306,7 +306,7 @@ func (h *AuthServer) ensureLoginEventTenancyAccess(
 	// Resolve the partition first, then use partition_id for access operations.
 	// This handles the case where Hydra client_id != partition_id (new Client model).
 	partitionObj, resolveErr := h.resolvePartitionByClientID(ctx, clientID)
-	var accessObj *partitionv1.AccessObject
+	var accessObj *tenancyv1.AccessObject
 	var err error
 	if resolveErr == nil && partitionObj.GetId() != "" {
 		accessObj, err = h.getOrCreateTenancyAccessByPartitionID(ctx, partitionObj, profileID)

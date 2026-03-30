@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	partitionv1 "buf.build/gen/go/antinvestor/partition/protocolbuffers/go/partition/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
@@ -13,13 +13,13 @@ import (
 )
 
 type TenantBusiness interface {
-	GetTenant(ctx context.Context, tenantID string) (*partitionv1.TenantObject, error)
-	CreateTenant(ctx context.Context, request *partitionv1.CreateTenantRequest) (*partitionv1.TenantObject, error)
-	UpdateTenant(ctx context.Context, request *partitionv1.UpdateTenantRequest) (*partitionv1.TenantObject, error)
+	GetTenant(ctx context.Context, tenantID string) (*tenancyv1.TenantObject, error)
+	CreateTenant(ctx context.Context, request *tenancyv1.CreateTenantRequest) (*tenancyv1.TenantObject, error)
+	UpdateTenant(ctx context.Context, request *tenancyv1.UpdateTenantRequest) (*tenancyv1.TenantObject, error)
 	RemoveTenant(ctx context.Context, id string) error
 	ListTenant(
 		ctx context.Context,
-		request *partitionv1.ListTenantRequest) ([]*partitionv1.TenantObject, error)
+		request *tenancyv1.ListTenantRequest) ([]*tenancyv1.TenantObject, error)
 }
 
 func NewTenantBusiness(
@@ -40,7 +40,7 @@ type tenantBusiness struct {
 	partitionRepo repository.PartitionRepository
 }
 
-func ToModelTenant(tenantAPI *partitionv1.TenantObject) *models.Tenant {
+func ToModelTenant(tenantAPI *tenancyv1.TenantObject) *models.Tenant {
 	return &models.Tenant{
 		Name:        tenantAPI.GetName(),
 		Description: tenantAPI.GetDescription(),
@@ -49,7 +49,7 @@ func ToModelTenant(tenantAPI *partitionv1.TenantObject) *models.Tenant {
 	}
 }
 
-func (t *tenantBusiness) GetTenant(ctx context.Context, tenantID string) (*partitionv1.TenantObject, error) {
+func (t *tenantBusiness) GetTenant(ctx context.Context, tenantID string) (*tenancyv1.TenantObject, error) {
 	// err := request.Validate()
 	// if err != nil {
 	//	return nil, err
@@ -65,8 +65,8 @@ func (t *tenantBusiness) GetTenant(ctx context.Context, tenantID string) (*parti
 
 func (t *tenantBusiness) CreateTenant(
 	ctx context.Context,
-	request *partitionv1.CreateTenantRequest,
-) (*partitionv1.TenantObject, error) {
+	request *tenancyv1.CreateTenantRequest,
+) (*tenancyv1.TenantObject, error) {
 	environment := tenantenv.FromProto(request.GetEnvironment())
 	if environment == "" {
 		return nil, fmt.Errorf("tenant environment is required")
@@ -87,7 +87,7 @@ func (t *tenantBusiness) CreateTenant(
 	return tenantModel.ToAPI(), nil
 }
 
-func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *partitionv1.UpdateTenantRequest) (*partitionv1.TenantObject, error) {
+func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *tenancyv1.UpdateTenantRequest) (*tenancyv1.TenantObject, error) {
 
 	tenant, err := t.tenantRepo.GetByID(ctx, request.GetId())
 	if err != nil {
@@ -135,7 +135,7 @@ func (t *tenantBusiness) RemoveTenant(ctx context.Context, id string) error {
 
 func (t *tenantBusiness) ListTenant(
 	ctx context.Context,
-	request *partitionv1.ListTenantRequest) ([]*partitionv1.TenantObject, error) {
+	request *tenancyv1.ListTenantRequest) ([]*tenancyv1.TenantObject, error) {
 
 	filterProperties := map[string]any{}
 
@@ -165,7 +165,7 @@ func (t *tenantBusiness) ListTenant(
 		return nil, err
 	}
 
-	var responseObjects []*partitionv1.TenantObject
+	var responseObjects []*tenancyv1.TenantObject
 	for {
 		result, ok := jobResult.ReadResult(ctx)
 
