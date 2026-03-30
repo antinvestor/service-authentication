@@ -79,7 +79,7 @@ func (suite *RoleMappingTestSuite) TestRolePermissions_OwnerHasAll() {
 	perms := authz.RolePermissions[authz.RoleOwner]
 	assert.Contains(t, perms, authz.PermissionTenantManage)
 	assert.Contains(t, perms, authz.PermissionPermissionGrant)
-	assert.Len(t, perms, 10)
+	assert.Len(t, perms, 14)
 }
 
 func (suite *RoleMappingTestSuite) TestRolePermissions_MemberViewOnly() {

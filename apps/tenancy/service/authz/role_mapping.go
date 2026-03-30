@@ -24,6 +24,10 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 		PermissionPagesManage,
 		PermissionPagesView,
 		PermissionPermissionGrant,
+		PermissionServiceAccountView,
+		PermissionServiceAccountManage,
+		PermissionClientView,
+		PermissionClientManage,
 	},
 	RoleAdmin: {
 		PermissionTenantView,
@@ -35,6 +39,8 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 		PermissionPagesManage,
 		PermissionPagesView,
 		PermissionPermissionGrant,
+		PermissionServiceAccountView,
+		PermissionClientView,
 	},
 	RoleMember: {
 		PermissionTenantView,
@@ -52,6 +58,10 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 		PermissionPagesManage,
 		PermissionPagesView,
 		PermissionPermissionGrant,
+		PermissionServiceAccountView,
+		PermissionServiceAccountManage,
+		PermissionClientView,
+		PermissionClientManage,
 	},
 }
 
