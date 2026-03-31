@@ -2,19 +2,39 @@ package handlers
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"math"
 	"strings"
 
-	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
-	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 )
 
-const botEmailDomain = "stawi.org"
+// staticServiceProfiles maps service account client_id values (as used in
+// the tenancy migrations) to the static profile IDs created by the profile
+// service's bootstrap migration (20260331_bootstrap_profiles.sql).
+//
+// This eliminates the need to call the profile service API at sync time.
+// When adding a new service, add its mapping here and in both migrations.
+var staticServiceProfiles = map[string]string{
+	"service-authentication":              "d75qclkpf2t1uum8ij40",
+	"service-profile":                     "d75qclkpf2t1uum8ij4g",
+	"service-tenancy":                     "d75qclkpf2t1uum8ij50",
+	"service-notification":                "d75qclkpf2t1uum8ij5g",
+	"service-devices":                     "d75qclkpf2t1uum8ij60",
+	"service-setting":                     "d75qclkpf2t1uum8ij6g",
+	"service-payment":                     "d75qclkpf2t1uum8ij70",
+	"service-payment-jenga":               "d75qclkpf2t1uum8ij7g",
+	"service-ledger":                      "d75qclkpf2t1uum8ij80",
+	"service-billing":                     "d75qclkpf2t1uum8ij8g",
+	"service-file":                        "d75qclkpf2t1uum8ij90",
+	"service-chat-drone":                  "d75qclkpf2t1uum8ij9g",
+	"service-chat-gateway":                "d75qclkpf2t1uum8ija0",
+	"foundry":                             "d75qclkpf2t1uum8ijag",
+	"gitvault":                            "d75qclkpf2t1uum8ijb0",
+	"trustage":                            "d75qclkpf2t1uum8ijbg",
+	"service-notification-africastalking": "d75qclkpf2t1uum8ijc0",
+	"service-notification-integration-emailsmtp": "d75qclkpf2t1uum8ijcg",
+	"service-lender": "d75qclkpf2t1uum8ijd0",
+}
 
 type botProfileResolution struct {
 	Scanned    int
@@ -23,27 +43,20 @@ type botProfileResolution struct {
 	Skipped    int
 }
 
-// resolveBotProfiles ensures every service account has a real profile_id
-// from the profile service. Migration-seeded SAs use placeholder profile_ids
-// (e.g. "service_authentication") — this step replaces them with actual
-// ProfileType_BOT profile IDs before Hydra sync so tokens carry valid subjects.
+// resolveBotProfiles ensures every service account has a real profile_id.
+// Migration-seeded SAs use placeholder profile_ids (e.g. "service_authentication")
+// — this step replaces them with the static IDs defined in the profile service
+// migration (e.g. "svc_authentication_01").
 //
-// The bot email is derived from the SA's ClientID field:
-//
-//	"service-authentication" → authentication.bot@stawi.org
-//	"foundry"                → foundry.bot@stawi.org
+// The mapping is driven by staticServiceProfiles which maps client_id values
+// to static profile IDs. No profile service RPC calls are needed.
 func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileResolution {
 	result := botProfileResolution{}
-
-	if prtSrv.ProfileCli == nil {
-		util.Log(ctx).Warn("profile client not configured, skipping bot profile resolution")
-		return result
-	}
 
 	ctx = security.SkipTenancyChecksOnClaims(ctx)
 	log := util.Log(ctx)
 
-	allSAs, err := prtSrv.ServiceAccountRepo.GetAllBy(ctx, nil, 0, math.MaxInt32)
+	allSAs, err := prtSrv.ServiceAccountRepo.GetAllBy(ctx, nil, 0, 0)
 	if err != nil {
 		log.WithError(err).Error("failed to list service accounts for bot profile resolution")
 		return result
@@ -57,29 +70,21 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 			continue
 		}
 
-		email := botEmailFromClientID(sa.ClientID)
-		if email == "" {
+		// Look up static profile ID by client_id.
+		staticID, ok := staticServiceProfiles[sa.ClientID]
+		if !ok {
 			log.WithField("client_id", sa.ClientID).
-				Debug("cannot derive bot email from service account client_id, skipping")
-			result.Skipped++
-			continue
-		}
-
-		profileID, profileErr := prtSrv.ensureBotProfile(ctx, email)
-		if profileErr != nil {
-			log.WithFields(map[string]any{
-				"sa_id": sa.GetID(),
-				"email": email,
-			}).WithError(profileErr).Error("failed to create bot profile for service account")
+				WithField("profile_id", sa.ProfileID).
+				Warn("no static profile mapping for service account, skipping")
 			result.Unresolved++
 			continue
 		}
 
-		sa.ProfileID = profileID
+		sa.ProfileID = staticID
 		if _, updateErr := prtSrv.ServiceAccountRepo.Update(ctx, sa, "profile_id"); updateErr != nil {
 			log.WithFields(map[string]any{
 				"sa_id":      sa.GetID(),
-				"profile_id": profileID,
+				"profile_id": staticID,
 			}).WithError(updateErr).Error("failed to update service account profile_id")
 			result.Unresolved++
 			continue
@@ -88,8 +93,7 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 		log.WithFields(map[string]any{
 			"sa_id":      sa.GetID(),
 			"client_id":  sa.ClientID,
-			"email":      email,
-			"profile_id": profileID,
+			"profile_id": staticID,
 		}).Info("resolved bot profile for service account")
 		result.Resolved++
 	}
@@ -104,50 +108,11 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 	return result
 }
 
-// ensureBotProfile looks up or creates a ProfileType_BOT profile for the given email.
-func (prtSrv *TenancyServer) ensureBotProfile(ctx context.Context, email string) (string, error) {
-	resp, err := prtSrv.ProfileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{
-		Contact: email,
-	}))
-	if err == nil && resp.Msg.GetData() != nil && resp.Msg.GetData().GetId() != "" {
-		return resp.Msg.GetData().GetId(), nil
-	}
-
-	if err != nil && !frame.ErrorIsNotFound(err) && connect.CodeOf(err) != connect.CodeNotFound {
-		return "", err
-	}
-
-	req := &profilev1.CreateRequest{}
-	req.SetType(profilev1.ProfileType_BOT)
-	req.SetContact(email)
-
-	createResp, createErr := prtSrv.ProfileCli.Create(ctx, connect.NewRequest(req))
-	if createErr != nil {
-		return "", createErr
-	}
-	if createResp.Msg.GetData() == nil {
-		return "", errors.New("profile service returned empty bot profile")
-	}
-
-	return createResp.Msg.GetData().GetId(), nil
-}
-
-// botEmailFromClientID derives a bot email from a service account's client_id.
-// The client_id from migrations follows patterns like "service-authentication",
-// "service-notification-integration-africastalking", or bare names like "foundry".
-func botEmailFromClientID(clientID string) string {
-	if clientID == "" {
-		return ""
-	}
-	name := strings.TrimPrefix(clientID, "service-")
-	return fmt.Sprintf("%s.bot@%s", name, botEmailDomain)
-}
-
 // isPlaceholderProfileID returns true if the profile_id looks like a
-// human-readable placeholder rather than a real profile service ID.
-// Placeholder values from migrations contain underscores (e.g.
-// "service_authentication") or are short alphabetic names (e.g. "foundry").
-// Real profile IDs are exactly 20 characters long with no underscores.
+// human-readable placeholder rather than a real xid. Placeholder values
+// from migrations contain underscores (e.g. "service_authentication") or
+// are short names (e.g. "foundry"). Real xid IDs are exactly 20 characters
+// with no underscores.
 func isPlaceholderProfileID(profileID string) bool {
 	if profileID == "" {
 		return true

@@ -1,7 +1,7 @@
 package authz
 
 const (
-	NamespaceTenancy       = "service_partition"
+	NamespaceTenancy       = "service_tenancy"
 	NamespaceTenancyAccess = "tenancy_access"
 	NamespaceProfile       = "profile_user"
 )

@@ -9,7 +9,7 @@ class tenancy_access implements Namespace {
   }
 }
 
-class service_partition implements Namespace {
+class service_tenancy implements Namespace {
   related: {
     owner: profile_user[]
     admin: profile_user[]
@@ -18,20 +18,20 @@ class service_partition implements Namespace {
     member: profile_user[]
     service: (profile_user | tenancy_access)[]
 
-    granted_tenant_view: (profile_user | service_partition)[]
-    granted_tenant_manage: (profile_user | service_partition)[]
-    granted_partition_view: (profile_user | service_partition)[]
-    granted_partition_manage: (profile_user | service_partition)[]
-    granted_access_view: (profile_user | service_partition)[]
-    granted_access_manage: (profile_user | service_partition)[]
-    granted_role_manage: (profile_user | service_partition)[]
-    granted_page_view: (profile_user | service_partition)[]
-    granted_page_manage: (profile_user | service_partition)[]
-    granted_permission_grant: (profile_user | service_partition)[]
-    granted_service_account_view: (profile_user | service_partition)[]
-    granted_service_account_manage: (profile_user | service_partition)[]
-    granted_client_view: (profile_user | service_partition)[]
-    granted_client_manage: (profile_user | service_partition)[]
+    granted_tenant_view: (profile_user | service_tenancy)[]
+    granted_tenant_manage: (profile_user | service_tenancy)[]
+    granted_partition_view: (profile_user | service_tenancy)[]
+    granted_partition_manage: (profile_user | service_tenancy)[]
+    granted_access_view: (profile_user | service_tenancy)[]
+    granted_access_manage: (profile_user | service_tenancy)[]
+    granted_role_manage: (profile_user | service_tenancy)[]
+    granted_page_view: (profile_user | service_tenancy)[]
+    granted_page_manage: (profile_user | service_tenancy)[]
+    granted_permission_grant: (profile_user | service_tenancy)[]
+    granted_service_account_view: (profile_user | service_tenancy)[]
+    granted_service_account_manage: (profile_user | service_tenancy)[]
+    granted_client_view: (profile_user | service_tenancy)[]
+    granted_client_manage: (profile_user | service_tenancy)[]
   }
 
   permits = {

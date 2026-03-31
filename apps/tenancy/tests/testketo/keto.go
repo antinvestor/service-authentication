@@ -60,6 +60,10 @@ class service_tenancy implements Namespace {
     granted_pages_manage: (profile_user | service_tenancy)[]
     granted_pages_view: (profile_user | service_tenancy)[]
     granted_permission_grant: (profile_user | service_tenancy)[]
+    granted_service_account_view: (profile_user | service_tenancy)[]
+    granted_service_account_manage: (profile_user | service_tenancy)[]
+    granted_client_view: (profile_user | service_tenancy)[]
+    granted_client_manage: (profile_user | service_tenancy)[]
   }
 
   permits = {
@@ -121,6 +125,28 @@ class service_tenancy implements Namespace {
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_permission_grant.includes(ctx.subject),
+
+    service_account_view: (ctx: Context): boolean =>
+      this.related.service.includes(ctx.subject) ||
+      this.related.owner.includes(ctx.subject) ||
+      this.related.admin.includes(ctx.subject) ||
+      this.related.granted_service_account_view.includes(ctx.subject),
+
+    service_account_manage: (ctx: Context): boolean =>
+      this.related.service.includes(ctx.subject) ||
+      this.related.owner.includes(ctx.subject) ||
+      this.related.granted_service_account_manage.includes(ctx.subject),
+
+    client_view: (ctx: Context): boolean =>
+      this.related.service.includes(ctx.subject) ||
+      this.related.owner.includes(ctx.subject) ||
+      this.related.admin.includes(ctx.subject) ||
+      this.related.granted_client_view.includes(ctx.subject),
+
+    client_manage: (ctx: Context): boolean =>
+      this.related.service.includes(ctx.subject) ||
+      this.related.owner.includes(ctx.subject) ||
+      this.related.granted_client_manage.includes(ctx.subject),
   }
 }
 `

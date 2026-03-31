@@ -6,29 +6,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBotEmailFromClientID(t *testing.T) {
+func TestStaticServiceProfileMapping(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		clientID string
-		expected string
+		clientID  string
+		profileID string
+		found     bool
 	}{
-		{"service-authentication", "authentication.bot@stawi.org"},
-		{"service-profile", "profile.bot@stawi.org"},
-		{"service-notification", "notification.bot@stawi.org"},
-		{"service-devices", "devices.bot@stawi.org"},
-		{"service-payment-jenga", "payment-jenga.bot@stawi.org"},
-		{"service-notification-integration-africastalking", "notification-integration-africastalking.bot@stawi.org"},
-		{"foundry", "foundry.bot@stawi.org"},
-		{"gitvault", "gitvault.bot@stawi.org"},
-		{"trustage", "trustage.bot@stawi.org"},
-		{"", ""},
+		{"service-authentication", "d75qclkpf2t1uum8ij40", true},
+		{"service-profile", "d75qclkpf2t1uum8ij4g", true},
+		{"service-tenancy", "d75qclkpf2t1uum8ij50", true},
+		{"service-notification", "d75qclkpf2t1uum8ij5g", true},
+		{"service-devices", "d75qclkpf2t1uum8ij60", true},
+		{"foundry", "d75qclkpf2t1uum8ijag", true},
+		{"gitvault", "d75qclkpf2t1uum8ijb0", true},
+		{"trustage", "d75qclkpf2t1uum8ijbg", true},
+		{"unknown-service", "", false},
+		{"", "", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.clientID, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.expected, botEmailFromClientID(tt.clientID))
+			id, ok := staticServiceProfiles[tt.clientID]
+			require.Equal(t, tt.found, ok)
+			if ok {
+				require.Equal(t, tt.profileID, id)
+			}
 		})
 	}
 }
@@ -42,12 +47,13 @@ func TestIsPlaceholderProfileID(t *testing.T) {
 		isPlaceholder bool
 	}{
 		{"empty", "", true},
-		{"service_authentication", "service_authentication", true},
-		{"service_notification", "service_notification", true},
-		{"foundry", "foundry", true},
-		{"trustage", "trustage", true},
-		{"valid_xid_1", "c2f4j7au6s7f91uqnolg", false},
-		{"valid_xid_2", "9bsv0s3pbdv002o80qhg", false},
+		{"old placeholder service_authentication", "service_authentication", true},
+		{"old placeholder service_notification", "service_notification", true},
+		{"old placeholder foundry", "foundry", true},
+		{"old placeholder trustage", "trustage", true},
+		{"real xid 1", "c2f4j7au6s7f91uqnolg", false},
+		{"real xid 2", "9bsv0s3pbdv002o80qhg", false},
+		{"bootstrap xid", "d75qclkpf2t1uum8ij40", false},
 	}
 
 	for _, tt := range tests {
