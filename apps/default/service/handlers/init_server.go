@@ -241,7 +241,7 @@ func (h *AuthServer) redirectToErrorPage(w http.ResponseWriter, r *http.Request,
 			redirectURI = buildAccessInstructionsPageURL(r, redirectErr)
 		}
 		if redirectURI != "" {
-			log.WithField("redirect_uri", redirectURI).Info("redirecting to access instructions")
+			log.WithField("redirect_uri", redirectURI).Debug("redirecting to access instructions")
 			http.Redirect(w, r, redirectURI, http.StatusSeeOther)
 			return
 		}
@@ -362,9 +362,10 @@ func (h *AuthServer) buildTranslationMap(ctx context.Context, req *http.Request)
 func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 
-	log := util.Log(ctx).
-		WithField("code", code).
-		WithField("message", msg).WithError(err)
+	log := util.Log(ctx).WithError(err).WithFields(map[string]any{
+		"code":    code,
+		"message": msg,
+	})
 	log.Error("API error")
 	w.WriteHeader(code)
 
@@ -414,7 +415,10 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 
 		_, err := h.DeviceCli().Log(ctx, connect.NewRequest(&req))
 		if err != nil {
-			util.Log(ctx).WithField("device_id", deviceID).WithField("session_id", sessionID).WithError(err).Debug("device session log error")
+			util.Log(ctx).WithError(err).WithFields(map[string]any{
+				"device_id":  deviceID,
+				"session_id": sessionID,
+			}).Debug("device session log error")
 		}
 	}
 

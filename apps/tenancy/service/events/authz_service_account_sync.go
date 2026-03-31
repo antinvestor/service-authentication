@@ -68,9 +68,10 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
 
 	serviceAccountID := jsonPayload.GetString("id")
-	logger := util.Log(ctx).
-		WithField("service_account_id", serviceAccountID).
-		WithField("type", e.Name())
+	logger := util.Log(ctx).WithFields(map[string]any{
+		"service_account_id": serviceAccountID,
+		"type":               e.Name(),
+	})
 
 	sa, err := e.serviceAccountRepo.GetByID(ctx, serviceAccountID)
 	if err != nil {
@@ -128,12 +129,12 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		return fmt.Errorf("failed to write service account tuples: %w", writeErr)
 	}
 
-	logger.
-		WithField("tenancy_path", tenancyPath).
-		WithField("subject_id", subjectID).
-		WithField("namespace_count", len(audiencePerms)).
-		WithField("tuple_count", len(tuples)).
-		Info("wrote service account authorization tuples")
+	logger.WithFields(map[string]any{
+		"tenancy_path":    tenancyPath,
+		"subject_id":      subjectID,
+		"namespace_count": len(audiencePerms),
+		"tuple_count":     len(tuples),
+	}).Debug("wrote service account authorization tuples")
 
 	return nil
 }

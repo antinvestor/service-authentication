@@ -228,7 +228,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		"login_event_id": loginEvent.GetID(),
 		"client_id":      loginEvent.ClientID,
 		"duration_ms":    time.Since(start).Milliseconds(),
-	}).Info("login page rendered")
+	}).Debug("login page rendered")
 
 	return loginTmpl.Execute(rw, payload)
 }

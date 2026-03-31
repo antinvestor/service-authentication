@@ -62,11 +62,11 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	if clientObj == nil {
 		partitionObj, resolveErr := h.resolvePartitionByClientID(ctx, clientID)
 		if resolveErr != nil {
-			log.WithFields(map[string]any{
-				"client_id":  clientID,
-				"subject_id": getConseReq.GetSubject(),
-			}).WithError(err).WithField("resolve_error", resolveErr.Error()).
-				Error("could not obtain appropriate client object")
+			log.WithError(resolveErr).WithFields(map[string]any{
+				"client_id":           clientID,
+				"subject_id":          getConseReq.GetSubject(),
+				"client_lookup_error": fmt.Sprintf("%v", err),
+			}).Error("could not obtain appropriate client object")
 			return fmt.Errorf("failed to resolve consent client %s: %w", clientID, resolveErr)
 		}
 
@@ -165,13 +165,13 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 	accessObj, err := h.getTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
-			log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to resolve access for SA")
+			log.WithError(err).Error("failed to resolve access for SA")
 			return nil, fmt.Errorf("failed to resolve access for service account: %w", err)
 		}
 
 		accessObj, err = h.createTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
 		if err != nil {
-			log.WithError(err).WithField("client_id", clientObj.GetClientId()).Error("failed to create access for SA")
+			log.WithError(err).Error("failed to create access for SA")
 			return nil, fmt.Errorf("failed to create access for service account: %w", err)
 		}
 	}
@@ -182,8 +182,7 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 
 	loginRecord, err := h.getOrCreateLoginRecord(ctx, subjectID, clientObj.GetClientId(), string(models.LoginSourceServiceAccount))
 	if err != nil {
-		log.WithError(err).WithField("client_id", clientObj.GetClientId()).
-			Error("failed to resolve login record for service account consent")
+		log.WithError(err).Error("failed to resolve login record for service account consent")
 		return nil, fmt.Errorf("failed to resolve login record: %w", err)
 	}
 
@@ -214,8 +213,7 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 	loginEvt.ID = util.IDString()
 
 	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
-		log.WithError(createErr).WithField("client_id", clientObj.GetClientId()).
-			Error("failed to create login event for service account consent")
+		log.WithError(createErr).Error("failed to create login event for service account consent")
 		return nil, fmt.Errorf("failed to create login event: %w", createErr)
 	}
 

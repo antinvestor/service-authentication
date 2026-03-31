@@ -192,7 +192,7 @@ func (ab *accessBusiness) CreateAccess(
 	request *tenancyv1.CreateAccessRequest) (*tenancyv1.AccessObject, error) {
 	logger := ab.service.Log(ctx)
 
-	logger.WithField("request", request).Debug(" supplied request")
+	logger.Debug("creating access record")
 
 	partition, err := ab.resolvePartition(ctx, request.GetPartitionId(), request.GetClientId())
 	if err != nil {
@@ -258,7 +258,7 @@ func (ab *accessBusiness) CreateAccess(
 		}
 	}
 
-	logger.WithField("access", access).Debug(" access created")
+	logger.WithField("access_id", access.GetID()).Debug("access created")
 	partitionObject := partition.ToAPI()
 
 	return access.ToAPI(partitionObject)

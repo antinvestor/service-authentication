@@ -51,7 +51,6 @@ func (prtSrv *TenancyServer) GetClient(
 	ctx context.Context,
 	req *connect.Request[tenancyv1.GetClientRequest],
 ) (*connect.Response[tenancyv1.GetClientResponse], error) {
-	logger := util.Log(ctx)
 	msg := req.Msg
 
 	var cl *models.Client
@@ -59,13 +58,11 @@ func (prtSrv *TenancyServer) GetClient(
 	if msg.GetId() != "" {
 		cl, err = prtSrv.ClientBusiness.GetClient(ctx, msg.GetId())
 		if err != nil {
-			logger.WithError(err).Debug("could not get client by id")
 			return nil, prtSrv.toAPIError(err)
 		}
 	} else if msg.GetClientId() != "" {
 		cl, err = prtSrv.ClientBusiness.GetClientByClientID(ctx, msg.GetClientId())
 		if err != nil {
-			logger.WithError(err).Debug("could not get client by client_id")
 			return nil, prtSrv.toAPIError(err)
 		}
 	} else {
@@ -78,7 +75,10 @@ func (prtSrv *TenancyServer) GetClient(
 	if cl.Type == "internal" || cl.Type == "external" {
 		sa, saErr := prtSrv.ServiceAccountBusiness.GetServiceAccountByClientID(ctx, cl.ClientID)
 		if saErr != nil {
-			logger.WithError(saErr).Debug("no service account found for SA-type client")
+			util.Log(ctx).WithFields(map[string]any{
+				"client_id":    cl.ClientID,
+				"client_db_id": cl.GetID(),
+			}).WithError(saErr).Debug("no service account found for SA-type client")
 		} else {
 			client.SetServiceAccount(sa.ToAPI())
 		}
@@ -89,7 +89,8 @@ func (prtSrv *TenancyServer) GetClient(
 	if client.GetPartition() == nil && cl.PartitionID != "" {
 		part, partErr := prtSrv.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: cl.PartitionID})
 		if partErr != nil {
-			logger.WithError(partErr).Debug("could not populate partition owner on client")
+			util.Log(ctx).WithField("partition_id", cl.PartitionID).
+				WithError(partErr).Debug("could not populate partition owner on client")
 		} else {
 			client.SetPartition(part)
 		}
@@ -104,10 +105,8 @@ func (prtSrv *TenancyServer) ListClient(
 	req *connect.Request[tenancyv1.ListClientRequest],
 	stream *connect.ServerStream[tenancyv1.ListClientResponse],
 ) error {
-	logger := util.Log(ctx)
 	clients, err := prtSrv.ClientBusiness.ListClients(ctx, req.Msg.GetPartitionId())
 	if err != nil {
-		logger.WithError(err).Debug("could not list clients")
 		return prtSrv.toAPIError(err)
 	}
 
@@ -124,10 +123,8 @@ func (prtSrv *TenancyServer) UpdateClient(
 	ctx context.Context,
 	req *connect.Request[tenancyv1.UpdateClientRequest],
 ) (*connect.Response[tenancyv1.UpdateClientResponse], error) {
-	logger := util.Log(ctx)
 	client, err := prtSrv.ClientBusiness.UpdateClient(ctx, req.Msg)
 	if err != nil {
-		logger.WithError(err).Debug("could not update client")
 		return nil, prtSrv.toAPIError(err)
 	}
 	return connect.NewResponse(&tenancyv1.UpdateClientResponse{Data: client}), nil
@@ -138,10 +135,8 @@ func (prtSrv *TenancyServer) RemoveClient(
 	ctx context.Context,
 	req *connect.Request[tenancyv1.RemoveClientRequest],
 ) (*connect.Response[tenancyv1.RemoveClientResponse], error) {
-	logger := util.Log(ctx)
 	err := prtSrv.ClientBusiness.RemoveClient(ctx, req.Msg.GetId())
 	if err != nil {
-		logger.WithError(err).Debug("could not remove client")
 		return nil, prtSrv.toAPIError(err)
 	}
 	return connect.NewResponse(&tenancyv1.RemoveClientResponse{Succeeded: true}), nil

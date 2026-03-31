@@ -67,29 +67,30 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 
 		profileID, profileErr := prtSrv.ensureBotProfile(ctx, email)
 		if profileErr != nil {
-			log.WithError(profileErr).
-				WithField("sa_id", sa.GetID()).
-				WithField("email", email).
-				Error("failed to create bot profile for service account")
+			log.WithFields(map[string]any{
+				"sa_id": sa.GetID(),
+				"email": email,
+			}).WithError(profileErr).Error("failed to create bot profile for service account")
 			result.Unresolved++
 			continue
 		}
 
 		sa.ProfileID = profileID
 		if _, updateErr := prtSrv.ServiceAccountRepo.Update(ctx, sa, "profile_id"); updateErr != nil {
-			log.WithError(updateErr).
-				WithField("sa_id", sa.GetID()).
-				WithField("profile_id", profileID).
-				Error("failed to update service account profile_id")
+			log.WithFields(map[string]any{
+				"sa_id":      sa.GetID(),
+				"profile_id": profileID,
+			}).WithError(updateErr).Error("failed to update service account profile_id")
 			result.Unresolved++
 			continue
 		}
 
-		log.WithField("sa_id", sa.GetID()).
-			WithField("client_id", sa.ClientID).
-			WithField("email", email).
-			WithField("profile_id", profileID).
-			Info("resolved bot profile for service account")
+		log.WithFields(map[string]any{
+			"sa_id":      sa.GetID(),
+			"client_id":  sa.ClientID,
+			"email":      email,
+			"profile_id": profileID,
+		}).Info("resolved bot profile for service account")
 		result.Resolved++
 	}
 

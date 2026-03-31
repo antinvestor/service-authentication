@@ -566,7 +566,8 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		log.Error("client_id not found in any location")
 		return h.writeWebhookError(rw, "client_id not found")
 	}
-	log.WithField("client_id", clientID).Info("processing token enrichment for client")
+	log = log.WithField("client_id", clientID)
+	ctx = util.ContextWithLogger(ctx, log)
 
 	// Handle service account scoped tokens (system_internal or system_external).
 	// For client_credentials grants Hydra does NOT call consent — only this webhook.
@@ -596,7 +597,7 @@ func (h *AuthServer) parseTokenWebhookRequest(ctx context.Context, req *http.Req
 		return nil, err
 	}
 
-	log.WithField("payload_keys", getMapKeys(tokenObject)).Info("token enrichment webhook received")
+	log.WithField("payload_keys", getMapKeys(tokenObject)).Debug("token enrichment webhook received")
 	return tokenObject, nil
 }
 
@@ -740,9 +741,10 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	log := util.Log(ctx)
 	session, sessionOk := tokenObject["session"].(map[string]any)
 	if !sessionOk {
-		log.WithField("session_type", fmt.Sprintf("%T", tokenObject["session"])).Warn("session is not a map")
-	} else {
-		log.WithField("session_keys", getMapKeys(session)).Debug("session structure")
+		log.WithFields(map[string]any{
+			"session_type": fmt.Sprintf("%T", tokenObject["session"]),
+			"client_id":    clientID,
+		}).Warn("session is not a map")
 	}
 
 	// Extract claims from various Hydra v2 locations
@@ -764,8 +766,6 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	finalClaims := selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims)
 	if finalClaims == nil {
 		finalClaims = h.lookupClaimsFromDB(ctx, tokenObject, idTokenWrapper, nestedIdTokenClaims, session)
-	} else {
-		log.Debug("using claims from session")
 	}
 
 	if len(finalClaims) == 0 {
@@ -777,7 +777,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	// pass them through directly. These tokens were set server-side during consent
 	// and do not require login event lookup.
 	if isNonUserRole(finalClaims["roles"]) {
-		log.Info("non-user role detected in session claims - passing through without login event lookup")
+		log.Debug("non-user role detected in session claims - passing through without login event lookup")
 		return writeTokenHookResponse(rw, finalClaims)
 	}
 
@@ -790,8 +790,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 			"login_event_id": claimString(finalClaims, "session_id"),
 			"token_type":     tokenType,
 			"grant_type":     grantType,
-		}).Info("complete consent claims - passing through without DB reconstruction")
-		log.WithField("claims_keys", getMapKeys(finalClaims)).Info("complete consent claims - passing through without DB lookup")
+		}).Debug("complete consent claims - passing through without DB reconstruction")
 		return writeTokenHookResponse(rw, finalClaims)
 	}
 
@@ -808,7 +807,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	}
 
 	h.traceUserTokenWebhook(ctx, tokenObject, canonicalClaims, tokenType, grantType, grantedScopes)
-	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Info("enriching token with reconstructed user claims")
+	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Debug("enriching token with reconstructed user claims")
 	return writeTokenHookResponse(rw, canonicalClaims)
 }
 
@@ -1037,7 +1036,7 @@ func (h *AuthServer) traceUserTokenWebhook(
 		"tenant_id":      loginEvent.TenantID,
 		"token_type":     tokenType,
 		"grant_type":     grantType,
-	}).Info("traced token webhook against user login event")
+	}).Debug("traced token webhook against user login event")
 }
 
 // lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.

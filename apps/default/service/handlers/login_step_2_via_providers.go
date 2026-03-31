@@ -88,7 +88,7 @@ func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.R
 
 	log.WithFields(map[string]any{
 		"duration_ms": time.Since(start).Milliseconds(),
-	}).Info("redirecting user to external provider for authentication")
+	}).Debug("redirecting to external provider")
 
 	http.Redirect(rw, req, authURL, http.StatusSeeOther)
 	return nil

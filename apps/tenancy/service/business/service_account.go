@@ -75,9 +75,10 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 	audiences, roles []string,
 	publicKeys, properties map[string]any,
 ) (*ServiceAccountResult, error) {
-	log := util.Log(ctx).
-		WithField("partition_id", partitionID).
-		WithField("profile_id", profileID)
+	log := util.Log(ctx).WithFields(map[string]any{
+		"partition_id": partitionID,
+		"profile_id":   profileID,
+	})
 
 	// Validate target partition exists
 	partition, err := sb.partitionRepo.GetByID(ctx, partitionID)
@@ -164,12 +165,14 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 	// Link client to its owning service account
 	client.ServiceAccountID = sa.GetID()
 	if _, updateErr := sb.clientRepo.Update(ctx, client, "service_account_id"); updateErr != nil {
-		util.Log(ctx).WithError(updateErr).Warn("failed to set client service_account_id")
+		log.WithError(updateErr).Warn("failed to set client service_account_id")
 	}
 
-	log = log.WithField("service_account_id", sa.GetID()).
-		WithField("client_id", clientID).
-		WithField("client_db_id", client.GetID())
+	log = log.WithFields(map[string]any{
+		"service_account_id": sa.GetID(),
+		"client_id":          clientID,
+		"client_db_id":       client.GetID(),
+	})
 
 	// Provision Access + AccessRoles for the SA's profile in the partition
 	accessID, provisionErr := sb.provisionAccessAndRoles(ctx, partition, profileID, roles)
@@ -205,7 +208,7 @@ func (sb *serviceAccountBusiness) CreateServiceAccount(
 		log.WithError(emitErr).Warn("failed to emit service account authz sync event")
 	}
 
-	log.Info("service account created successfully")
+	log.Debug("service account created")
 
 	return &ServiceAccountResult{
 		ServiceAccount: sa,
@@ -222,9 +225,10 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 	profileID string,
 	roleNames []string,
 ) (string, error) {
-	log := util.Log(ctx).
-		WithField("partition_id", partition.GetID()).
-		WithField("profile_id", profileID)
+	log := util.Log(ctx).WithFields(map[string]any{
+		"partition_id": partition.GetID(),
+		"profile_id":   profileID,
+	})
 
 	// Create or get existing access
 	access, err := sb.accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), profileID)
@@ -435,7 +439,7 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		log.WithError(delErr).Warn("failed to delete service account tuples")
 	}
 
-	log.Info("service account removed successfully")
+	log.Debug("service account removed")
 	return nil
 }
 

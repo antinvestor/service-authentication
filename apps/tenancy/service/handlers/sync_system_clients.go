@@ -23,9 +23,10 @@ func (prtSrv *TenancyServer) SynchronizeSystemClients(rw http.ResponseWriter, re
 	ctx := req.Context()
 	log := util.Log(ctx)
 
-	log.WithField("method", req.Method).
-		WithField("url", req.URL.String()).
-		Info("synchronise system clients called")
+	log.WithFields(map[string]any{
+		"method": req.Method,
+		"url":    req.URL.String(),
+	}).Info("synchronise system clients called")
 
 	prtSrv.executeSyncClients(rw, req)
 }
@@ -51,7 +52,7 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	log.WithField("limit", limit).Info("starting synchronisation")
+	log.WithField("limit", limit).Debug("starting synchronisation")
 
 	// Resolve bot profiles before syncing to Hydra. This ensures service
 	// accounts seeded via SQL migrations get real profile_id values from
@@ -74,8 +75,6 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising partitions")
 		response["partition_sync_error"] = err.Error()
-	} else {
-		log.Info("partition sync queued successfully")
 	}
 
 	// Sync clients — register/update Hydra OAuth2 clients for Client records
@@ -83,8 +82,6 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising clients on Hydra")
 		response["client_hydra_sync_error"] = err.Error()
-	} else {
-		log.Info("client hydra sync queued successfully")
 	}
 
 	// Sync service accounts — register/update Hydra OAuth2 clients (legacy SAs without ClientRef)
@@ -92,8 +89,6 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising service accounts on Hydra")
 		response["service_account_hydra_sync_error"] = err.Error()
-	} else {
-		log.Info("service account hydra sync queued successfully")
 	}
 
 	// Also sync service account Keto tuples
@@ -101,11 +96,7 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising service account authz")
 		response["service_account_authz_sync_error"] = err.Error()
-	} else {
-		log.Info("service account authz sync queued successfully")
 	}
-
-	log.Info("synchronise system clients completed")
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
@@ -127,7 +118,7 @@ func (prtSrv *TenancyServer) NewSecureRouterV1() *http.ServeMux {
 func (prtSrv *TenancyServer) NewInternalSyncHandler() http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		log := util.Log(req.Context())
-		log.Info("internal sync endpoint called (unauthenticated)")
+		log.Debug("internal sync endpoint called")
 		prtSrv.executeSyncClients(rw, req)
 	})
 }

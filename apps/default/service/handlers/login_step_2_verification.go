@@ -102,7 +102,7 @@ func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Requ
 	verificationPage := fmt.Sprintf("/s/verify/contact/%s?%s", url.PathEscape(loginEventID), params.Encode())
 
 	log := util.Log(req.Context())
-	log.WithField("redirect_url", verificationPage).Info("Redirecting to :", verificationPage)
+	log.WithField("redirect_url", verificationPage).Debug("redirecting to verification page")
 
 	http.Redirect(rw, req, verificationPage, http.StatusSeeOther)
 	return nil

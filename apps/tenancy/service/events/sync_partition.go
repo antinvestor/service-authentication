@@ -75,11 +75,10 @@ func (csq *PartitionSyncEvent) Execute(ictx context.Context, payload any) error 
 
 	partitionID := jsonPayload.GetString("id")
 
-	logger := util.Log(ctx).
-		WithField("payload", payload).
-		WithField("type", csq.Name())
-
-	logger.Info("initiated synchronisation of partition")
+	logger := util.Log(ctx).WithFields(map[string]any{
+		"partition_id": partitionID,
+		"type":         csq.Name(),
+	})
 
 	partition, err := csq.partitionRepository.GetByID(ctx, partitionID)
 	if err != nil {
@@ -91,8 +90,7 @@ func (csq *PartitionSyncEvent) Execute(ictx context.Context, payload any) error 
 		return err
 	}
 
-	logger.
-		Info(" We have successfully synchronised partitions")
+	logger.Debug("partition synchronised on hydra")
 
 	return nil
 }

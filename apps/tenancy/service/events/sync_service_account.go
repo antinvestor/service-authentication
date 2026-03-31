@@ -73,11 +73,10 @@ func (e *ServiceAccountSyncEvent) Execute(ictx context.Context, payload any) err
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
 
 	serviceAccountID := jsonPayload.GetString("id")
-	logger := util.Log(ctx).
-		WithField("service_account_id", serviceAccountID).
-		WithField("type", e.Name())
-
-	logger.Info("initiated synchronisation of service account on Hydra")
+	logger := util.Log(ctx).WithFields(map[string]any{
+		"service_account_id": serviceAccountID,
+		"type":               e.Name(),
+	})
 
 	sa, err := e.serviceAccountRepo.GetByID(ctx, serviceAccountID)
 	if err != nil {
@@ -89,7 +88,7 @@ func (e *ServiceAccountSyncEvent) Execute(ictx context.Context, payload any) err
 		return err
 	}
 
-	logger.Info("successfully synchronised service account on Hydra")
+	logger.Debug("service account synchronised on hydra")
 	return nil
 }
 

@@ -140,14 +140,17 @@ func (cb *clientBusiness) CreateClient(
 		return nil, fmt.Errorf("failed to create client record: %w", createErr)
 	}
 
-	log = log.WithField("client_id", clientID).WithField("client_db_id", client.GetID())
+	log = log.WithFields(map[string]any{
+		"client_id":    clientID,
+		"client_db_id": client.GetID(),
+	})
 
 	// Emit client sync event to register with Hydra
 	if emitErr := cb.eventsMan.Emit(ctx, events.EventKeyClientSynchronization, data.JSONMap{"id": client.GetID()}); emitErr != nil {
 		return nil, fmt.Errorf("failed to emit client sync event: %w", emitErr)
 	}
 
-	log.Info("client created successfully")
+	log.Debug("client created")
 
 	return &ClientResult{
 		Client:       client,
@@ -225,7 +228,7 @@ func (cb *clientBusiness) UpdateClient(
 		log.WithError(emitErr).Warn("failed to emit client sync after update")
 	}
 
-	log.Info("client updated successfully")
+	log.Debug("client updated")
 	return client.ToAPI(), nil
 }
 
@@ -248,7 +251,7 @@ func (cb *clientBusiness) RemoveClient(ctx context.Context, id string) error {
 		}
 	}
 
-	log.Info("client removed successfully")
+	log.Debug("client removed")
 	return nil
 }
 

@@ -15,7 +15,7 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 
 	logoutChallenge, err := hydra.GetLogoutChallengeID(req)
 	if err != nil {
-		util.Log(ctx).WithError(err).Error("couldn't get a valid login challenge")
+		util.Log(ctx).WithError(err).Warn("missing or invalid logout_challenge parameter")
 		return err
 	}
 

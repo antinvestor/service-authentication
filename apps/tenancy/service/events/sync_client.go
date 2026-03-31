@@ -77,11 +77,10 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 	clientDBID := jsonPayload.GetString("id")
 	profileID := jsonPayload.GetString("profile_id")
 
-	logger := util.Log(ctx).
-		WithField("client_db_id", clientDBID).
-		WithField("type", e.Name())
-
-	logger.Info("initiated synchronisation of client on Hydra")
+	logger := util.Log(ctx).WithFields(map[string]any{
+		"client_db_id": clientDBID,
+		"type":         e.Name(),
+	})
 
 	cl, err := e.clientRepository.GetByID(ctx, clientDBID)
 	if err != nil {
@@ -101,7 +100,7 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 		return err
 	}
 
-	logger.Info("successfully synchronised client on Hydra")
+	logger.Debug("client synchronised on hydra")
 	return nil
 }
 

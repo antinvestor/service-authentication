@@ -105,7 +105,7 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	log.WithFields(map[string]any{
 		"client_id":   loginEvt.ClientID,
 		"duration_ms": time.Since(start).Milliseconds(),
-	}).Info("provider callback processed, completing user login")
+	}).Debug("provider callback processed, completing user login")
 
 	// Step 7: Complete the login flow
 	return h.postUserLogin(ctx, rw, req, loginEvt, user, provider.Name())

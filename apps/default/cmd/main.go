@@ -70,22 +70,22 @@ func main() {
 
 	partitionCli, err := setupPartitionClient(ctx, cfg)
 	if err != nil {
-		log.WithError(err).Fatal("could not setup partition service client: %v", err)
+		log.WithError(err).Fatal("could not setup partition service client")
 	}
 
 	notificationCli, err := setupNotificationClient(ctx, cfg)
 	if err != nil {
-		log.WithError(err).Fatal("could not setup notification service client: %v", err)
+		log.WithError(err).Fatal("could not setup notification service client")
 	}
 
 	profileCli, err := setupProfileClient(ctx, cfg)
 	if err != nil {
-		log.WithError(err).Fatal("could not setup profile service : %v", err)
+		log.WithError(err).Fatal("could not setup profile service")
 	}
 
 	deviceCli, err := setupDeviceClient(ctx, cfg)
 	if err != nil {
-		log.WithError(err).Fatal("could not setup devices service : %v", err)
+		log.WithError(err).Fatal("could not setup device service")
 	}
 
 	serviceTranslations := frame.WithTranslation("/localization", "en", "sw", "lg", "fr", "ar", "es")
@@ -122,7 +122,7 @@ func handleDatabaseMigration(
 
 		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
 		if err != nil {
-			util.Log(ctx).WithError(err).Fatal("main -- Could not migrate successfully")
+			util.Log(ctx).WithError(err).Fatal("database migration failed")
 		}
 		return true
 	}

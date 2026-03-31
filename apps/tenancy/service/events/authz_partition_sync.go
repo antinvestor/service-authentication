@@ -70,9 +70,10 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
 
 	partitionID := jsonPayload.GetString("id")
-	logger := util.Log(ctx).
-		WithField("partition_id", partitionID).
-		WithField("type", e.Name())
+	logger := util.Log(ctx).WithFields(map[string]any{
+		"partition_id": partitionID,
+		"type":         e.Name(),
+	})
 
 	partition, err := e.partitionRepo.GetByID(ctx, partitionID)
 	if err != nil {
@@ -82,7 +83,7 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 
 	logger.WithField("tenancy_path", tenancyPath).
-		Info("partition sync processed")
+		Debug("partition authz sync processed")
 
 	// Write partition inheritance tuple if this partition has a parent.
 	// This creates a Keto subject set so members of the parent partition
@@ -135,16 +136,16 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 			return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
 		}
 
-		logger.
-			WithField("parent_path", parentPath).
-			WithField("child_path", tenancyPath).
-			WithField("bridge_ns_count", len(bridgeTuples)).
-			Info("wrote partition inheritance, service inheritance, and namespace bridge tuples")
+		logger.WithFields(map[string]any{
+			"parent_path":     parentPath,
+			"child_path":      tenancyPath,
+			"bridge_ns_count": len(bridgeTuples),
+		}).Debug("wrote partition inheritance and namespace bridge tuples")
 	} else {
-		logger.
-			WithField("parent_path", parentPath).
-			WithField("child_path", tenancyPath).
-			Info("wrote partition and service inheritance tuples (no SA namespaces for bridge tuples)")
+		logger.WithFields(map[string]any{
+			"parent_path": parentPath,
+			"child_path":  tenancyPath,
+		}).Debug("wrote partition and service inheritance tuples")
 	}
 
 	return nil

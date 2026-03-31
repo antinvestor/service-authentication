@@ -95,7 +95,7 @@ func (e *TupleWriteEvent) Execute(ctx context.Context, payload any) error {
 
 	tuples := payloadToTuples(p)
 
-	util.Log(ctx).WithField("count", len(tuples)).Info("writing authorization tuples via event")
+	util.Log(ctx).WithField("count", len(tuples)).Debug("writing authorization tuples")
 
 	return e.authorizer.WriteTuples(ctx, tuples)
 }
@@ -137,7 +137,7 @@ func (e *TupleDeleteEvent) Execute(ctx context.Context, payload any) error {
 
 	tuples := payloadToTuples(p)
 
-	util.Log(ctx).WithField("count", len(tuples)).Info("deleting authorization tuples via event")
+	util.Log(ctx).WithField("count", len(tuples)).Debug("deleting authorization tuples")
 
 	return e.authorizer.DeleteTuples(ctx, tuples)
 }

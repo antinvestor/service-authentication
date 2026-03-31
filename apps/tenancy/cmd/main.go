@@ -111,7 +111,7 @@ func handleDatabaseMigration(
 
 		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
 		if err != nil {
-			util.Log(ctx).WithError(err).Fatal("main -- Could not migrate successfully")
+			util.Log(ctx).WithError(err).Fatal("database migration failed")
 		}
 		return true
 	}
@@ -141,7 +141,7 @@ func setupConnectServer(
 
 	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
 	if err != nil {
-		util.Log(ctx).WithError(err).Fatal("main -- Could not create default interceptors")
+		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors")
 	}
 
 	_, serverHandler := tenancyv1connect.NewTenancyServiceHandler(
