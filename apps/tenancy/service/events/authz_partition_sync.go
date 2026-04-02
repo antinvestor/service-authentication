@@ -115,6 +115,8 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
 
 	if writeErr := e.authorizer.WriteTuple(ctx, memberTuple); writeErr != nil {
+		logger.WithError(writeErr).WithField("tuple", formatTuple(memberTuple)).
+			Error("failed to write partition inheritance tuple")
 		return fmt.Errorf("failed to write partition inheritance tuple: %w", writeErr)
 	}
 
@@ -122,6 +124,8 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	// partition automatically get service access to the child partition.
 	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
 	if writeErr := e.authorizer.WriteTuple(ctx, serviceTuple); writeErr != nil {
+		logger.WithError(writeErr).WithField("tuple", formatTuple(serviceTuple)).
+			Error("failed to write service partition inheritance tuple")
 		return fmt.Errorf("failed to write service partition inheritance tuple: %w", writeErr)
 	}
 
@@ -147,6 +151,11 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 		bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
 		if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
+			logger.WithError(writeErr).WithFields(map[string]any{
+				"namespaces":  namespaces,
+				"tuple_count": len(bridgeTuples),
+				"tuples":      formatTuples(bridgeTuples),
+			}).Error("failed to write service namespace bridge tuples")
 			return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
 		}
 

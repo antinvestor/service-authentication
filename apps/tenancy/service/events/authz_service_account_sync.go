@@ -140,6 +140,15 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	}
 
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
+		logger.WithError(writeErr).WithFields(map[string]any{
+			"tenancy_path":      tenancyPath,
+			"subject_id":        subjectID,
+			"client_id":         sa.ClientID,
+			"audiences":         sa.Audiences,
+			"bridge_namespaces": bridgeNamespaces,
+			"tuple_count":       len(tuples),
+			"tuples":            formatTuples(tuples),
+		}).Error("failed to write service account tuples")
 		return fmt.Errorf("failed to write service account tuples: %w", writeErr)
 	}
 

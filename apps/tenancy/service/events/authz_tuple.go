@@ -60,6 +60,27 @@ func TuplesToPayload(tuples []security.RelationTuple) *TuplePayload {
 	return &TuplePayload{Tuples: data}
 }
 
+// formatTuple returns a human-readable Keto tuple string for logging:
+// namespace:object#relation@subject_namespace:subject_id#subject_relation
+func formatTuple(t security.RelationTuple) string {
+	s := fmt.Sprintf("%s:%s#%s@%s:%s",
+		t.Object.Namespace, t.Object.ID, t.Relation,
+		t.Subject.Namespace, t.Subject.ID)
+	if t.Subject.Relation != "" {
+		s += "#" + t.Subject.Relation
+	}
+	return s
+}
+
+// formatTuples returns a slice of human-readable tuple strings for logging.
+func formatTuples(tuples []security.RelationTuple) []string {
+	out := make([]string, len(tuples))
+	for i, t := range tuples {
+		out[i] = formatTuple(t)
+	}
+	return out
+}
+
 func payloadToTuples(p *TuplePayload) []security.RelationTuple {
 	tuples := make([]security.RelationTuple, len(p.Tuples))
 	for i, d := range p.Tuples {
@@ -111,7 +132,14 @@ func (e *TupleWriteEvent) Execute(ctx context.Context, payload any) error {
 
 	util.Log(ctx).WithField("count", len(tuples)).Debug("writing authorization tuples")
 
-	return e.authorizer.WriteTuples(ctx, tuples)
+	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
+		util.Log(ctx).WithError(writeErr).WithFields(map[string]any{
+			"tuple_count": len(tuples),
+			"tuples":      formatTuples(tuples),
+		}).Error("failed to write authorization tuples")
+		return writeErr
+	}
+	return nil
 }
 
 // --- TupleDeleteEvent ---
@@ -153,5 +181,12 @@ func (e *TupleDeleteEvent) Execute(ctx context.Context, payload any) error {
 
 	util.Log(ctx).WithField("count", len(tuples)).Debug("deleting authorization tuples")
 
-	return e.authorizer.DeleteTuples(ctx, tuples)
+	if delErr := e.authorizer.DeleteTuples(ctx, tuples); delErr != nil {
+		util.Log(ctx).WithError(delErr).WithFields(map[string]any{
+			"tuple_count": len(tuples),
+			"tuples":      formatTuples(tuples),
+		}).Error("failed to delete authorization tuples")
+		return delErr
+	}
+	return nil
 }
