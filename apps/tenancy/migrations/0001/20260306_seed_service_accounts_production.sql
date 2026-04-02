@@ -51,7 +51,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnolg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -68,7 +68,7 @@ INSERT INTO service_accounts (
     'service-authentication',
     'c2f4j7au6s7f91uqnoog',
     'internal',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
