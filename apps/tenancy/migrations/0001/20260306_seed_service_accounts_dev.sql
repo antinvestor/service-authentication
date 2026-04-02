@@ -194,7 +194,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn840'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -210,12 +210,12 @@ INSERT INTO service_accounts (
     'dev_service_notification',
     'd6l82t4pf2t82gudn83g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
--- dev_service_devices
+-- dev_service_device
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -224,8 +224,8 @@ INSERT INTO clients (
     'd6l82t4pf2t82gudn84g',
     '9bsv0s3pbdv002o80qfg',
     '9bsv0s3pbdv002o80qhg',
-    'sa-service_devices',
-    'dev_service_devices',
+    'sa-service_device',
+    'dev_service_device',
     'hkBaJroO9cDGleFnuaAZ',
     'internal',
     '{"types": ["client_credentials"]}',
@@ -242,8 +242,8 @@ INSERT INTO service_accounts (
     'd6l82t4pf2t82gudn850',
     '9bsv0s3pbdv002o80qfg',
     '9bsv0s3pbdv002o80qhg',
-    'dev_service_devices',
-    'dev_service_devices',
+    'dev_service_device',
+    'dev_service_device',
     'd6l82t4pf2t82gudn84g',                        -- client_ref → Client.id above
     'internal',
     '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',

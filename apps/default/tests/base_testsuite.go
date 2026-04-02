@@ -337,11 +337,11 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ProfileID:  "dev_service_notification",
 		},
 		{
-			ClientID:   "dev_service_devices",
-			ClientName: "sa-service_devices",
+			ClientID:   "dev_service_device",
+			ClientName: "sa-service_device",
 			Secret:     "hkBaJroO9cDGleFnuaAZ",
 			Audience:   []string{"service_notification", "service_tenancy", "service_profile", "authentication_tests"},
-			ProfileID:  "dev_service_devices",
+			ProfileID:  "dev_service_device",
 		},
 	}
 

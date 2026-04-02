@@ -140,7 +140,7 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 			"DATABASE_URL":                      databaseURL,
 			"OAUTH2_SERVICE_URI":                oauth2ServiceURI,
 			"OAUTH2_SERVICE_ADMIN_URI":          oauth2ServiceURIAdmin,
-			"OAUTH2_SERVICE_CLIENT_ID":          "dev_service_devices",
+			"OAUTH2_SERVICE_CLIENT_ID":          "dev_service_device",
 			"OAUTH2_SERVICE_CLIENT_SECRET":      "hkBaJroO9cDGleFnuaAZ",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD": "client_secret_post",
 			"OAUTH2_SERVICE_AUDIENCE":           "service_notification,service_tenancy,service_profile,authentication_tests",

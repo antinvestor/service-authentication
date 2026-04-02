@@ -162,7 +162,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnoug',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -179,12 +179,12 @@ INSERT INTO service_accounts (
     'service-notification',
     'c2f4j7au6s7f91uqnotg',
     'internal',
-    '{"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
--- service-devices
+-- service-device
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -193,8 +193,8 @@ INSERT INTO clients (
     'c2f4j7au6s7f91uqnovg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-service_devices',
-    'service-devices',
+    'sa-service_device',
+    'service-device',
     '',
     'internal',
     '{"types": ["client_credentials"]}',
@@ -212,8 +212,8 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp0g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_devices',
-    'service-devices',
+    'service_device',
+    'service-device',
     'c2f4j7au6s7f91uqnovg',
     'internal',
     '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',
@@ -643,7 +643,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpog',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -660,7 +660,7 @@ INSERT INTO service_accounts (
     'service-notification-integration-africastalking',
     'c2f4j7au6s7f91uqnpng',
     'internal',
-    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -680,7 +680,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpqg',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -697,7 +697,7 @@ INSERT INTO service_accounts (
     'service-notification-integration-emailsmtp',
     'c2f4j7au6s7f91uqnppg',
     'internal',
-    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_settings": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
+    '{"service_notification": ["notification_status_update","notification_release"],"service_profile": ["profile_view"],"service_setting": ["*"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 

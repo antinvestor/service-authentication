@@ -42,7 +42,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"service_chat": [],"service_device": [],"service_files": [],"service_profile": []}',
+    '{"service_chat": [],"service_device": [],"service_file": [],"service_profile": []}',
     '{"uris": ["https://app-dev.stawi.im/sso/redirect","com.antinvestor.chat://sso/redirect","https://localhost:5170/sso/redirect"]}',
     'https://static.stawi.im/logo.png',
     '{"uris": ["https://app-dev.stawi.im/sso/logout","com.antinvestor.chat://sso/logout","https://localhost:5170/sso/logout"]}',

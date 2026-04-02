@@ -30,7 +30,7 @@ UPDATE service_accounts SET profile_id = 'd75qclkpf2t1uum8ij5g'
 WHERE profile_id = 'service_notification' AND deleted_at IS NULL;
 
 UPDATE service_accounts SET profile_id = 'd75qclkpf2t1uum8ij60'
-WHERE profile_id = 'service_devices' AND deleted_at IS NULL;
+WHERE profile_id = 'service_device' AND deleted_at IS NULL;
 
 UPDATE service_accounts SET profile_id = 'd75qclkpf2t1uum8ij6g'
 WHERE profile_id = 'service_setting' AND deleted_at IS NULL;
