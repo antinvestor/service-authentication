@@ -50,7 +50,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn800'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -66,7 +66,7 @@ INSERT INTO service_accounts (
     'dev_authentication_tests',                     -- client_id (denormalized for lookup)
     'd6l82t4pf2t82gudn7vg',                        -- client_ref → Client.id above
     'internal',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -86,7 +86,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     'client_secret_post',
     'd6l82t4pf2t82gudn810'                        -- service_account_id → SA.id below
 ) ON CONFLICT (id) DO NOTHING;
@@ -102,7 +102,7 @@ INSERT INTO service_accounts (
     'dev_service_authentication',
     'd6l82t4pf2t82gudn80g',                        -- client_ref → Client.id above
     'internal',
-    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contacts_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
+    '{"service_device": ["*"],"service_notification": ["notification_send"],"service_profile": ["profile_view","profile_create","profile_update","contact_manage"],"service_tenancy": ["partition_view","access_manage","access_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
