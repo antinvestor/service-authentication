@@ -33,7 +33,7 @@ var staticServiceProfiles = map[string]string{
 	"service-profile":                     "d75qclkpf2t1uum8ij4g",
 	"service-tenancy":                     "d75qclkpf2t1uum8ij50",
 	"service-notification":                "d75qclkpf2t1uum8ij5g",
-	"service-devices":                     "d75qclkpf2t1uum8ij60",
+	"service-device":                      "d75qclkpf2t1uum8ij60",
 	"service-setting":                     "d75qclkpf2t1uum8ij6g",
 	"service-payment":                     "d75qclkpf2t1uum8ij70",
 	"service-payment-jenga":               "d75qclkpf2t1uum8ij7g",
