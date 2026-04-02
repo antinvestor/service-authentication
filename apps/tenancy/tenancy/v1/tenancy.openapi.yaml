@@ -10,6 +10,22 @@ info:
     name: Apache License
     url: https://github.com/antinvestor/apis/blob/master/LICENSE
   version: v1.0.0
+x-service-namespace: service_tenancy
+x-service-permissions:
+  - tenant_view
+  - tenant_manage
+  - partition_view
+  - partition_manage
+  - access_view
+  - access_manage
+  - role_manage
+  - page_view
+  - page_manage
+  - permission_grant
+  - service_account_view
+  - service_account_manage
+  - client_view
+  - client_manage
 paths:
   /tenancy.v1.TenancyService/CreateAccess:
     post:
@@ -48,6 +64,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateAccessResponse'
+      x-required-permissions:
+        - access_manage
   /tenancy.v1.TenancyService/CreateAccessRole:
     post:
       tags:
@@ -85,6 +103,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateAccessRoleResponse'
+      x-required-permissions:
+        - permission_grant
   /tenancy.v1.TenancyService/CreateClient:
     post:
       tags:
@@ -122,6 +142,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateClientResponse'
+      x-required-permissions:
+        - client_manage
   /tenancy.v1.TenancyService/CreatePage:
     post:
       tags:
@@ -159,6 +181,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePageResponse'
+      x-required-permissions:
+        - page_manage
   /tenancy.v1.TenancyService/CreatePartition:
     post:
       tags:
@@ -196,6 +220,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePartitionResponse'
+      x-required-permissions:
+        - partition_manage
   /tenancy.v1.TenancyService/CreatePartitionRole:
     post:
       tags:
@@ -233,6 +259,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePartitionRoleResponse'
+      x-required-permissions:
+        - role_manage
   /tenancy.v1.TenancyService/CreateServiceAccount:
     post:
       tags:
@@ -270,6 +298,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountResponse'
+      x-required-permissions:
+        - service_account_manage
   /tenancy.v1.TenancyService/CreateTenant:
     post:
       tags:
@@ -307,6 +337,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateTenantResponse'
+      x-required-permissions:
+        - tenant_manage
   /tenancy.v1.TenancyService/GetAccess:
     get:
       tags:
@@ -361,6 +393,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
+      x-required-permissions:
+        - access_view
     post:
       tags:
         - Access
@@ -397,6 +431,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
+      x-required-permissions:
+        - access_view
   /tenancy.v1.TenancyService/GetClient:
     get:
       tags:
@@ -451,6 +487,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
+      x-required-permissions:
+        - client_view
     post:
       tags:
         - Clients
@@ -487,6 +525,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
+      x-required-permissions:
+        - client_view
   /tenancy.v1.TenancyService/GetPage:
     get:
       tags:
@@ -541,6 +581,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
+      x-required-permissions:
+        - page_view
     post:
       tags:
         - Pages
@@ -577,6 +619,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
+      x-required-permissions:
+        - page_view
   /tenancy.v1.TenancyService/GetPartition:
     get:
       tags:
@@ -631,6 +675,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
+      x-required-permissions:
+        - partition_view
     post:
       tags:
         - Partitions
@@ -667,6 +713,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
+      x-required-permissions:
+        - partition_view
   /tenancy.v1.TenancyService/GetPartitionParents:
     get:
       tags:
@@ -721,6 +769,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
+      x-required-permissions:
+        - partition_view
     post:
       tags:
         - Partitions
@@ -757,6 +807,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
+      x-required-permissions:
+        - partition_view
   /tenancy.v1.TenancyService/GetServiceAccount:
     get:
       tags:
@@ -811,6 +863,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
+      x-required-permissions:
+        - service_account_view
     post:
       tags:
         - ServiceAccounts
@@ -847,6 +901,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
+      x-required-permissions:
+        - service_account_view
   /tenancy.v1.TenancyService/GetTenant:
     get:
       tags:
@@ -901,6 +957,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
+      x-required-permissions:
+        - tenant_view
     post:
       tags:
         - Tenants
@@ -937,6 +995,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
+      x-required-permissions:
+        - tenant_view
   /tenancy.v1.TenancyService/ListAccess: {}
   /tenancy.v1.TenancyService/ListAccessRole: {}
   /tenancy.v1.TenancyService/ListClient: {}
@@ -982,6 +1042,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveAccessResponse'
+      x-required-permissions:
+        - access_manage
   /tenancy.v1.TenancyService/RemoveAccessRole:
     post:
       tags:
@@ -1019,6 +1081,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveAccessRoleResponse'
+      x-required-permissions:
+        - permission_grant
   /tenancy.v1.TenancyService/RemoveClient:
     post:
       tags:
@@ -1056,6 +1120,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveClientResponse'
+      x-required-permissions:
+        - client_manage
   /tenancy.v1.TenancyService/RemovePage:
     post:
       tags:
@@ -1093,6 +1159,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePageResponse'
+      x-required-permissions:
+        - page_manage
   /tenancy.v1.TenancyService/RemovePartition:
     post:
       tags:
@@ -1130,6 +1198,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePartitionResponse'
+      x-required-permissions:
+        - partition_manage
   /tenancy.v1.TenancyService/RemovePartitionRole:
     post:
       tags:
@@ -1167,6 +1237,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePartitionRoleResponse'
+      x-required-permissions:
+        - role_manage
   /tenancy.v1.TenancyService/RemoveServiceAccount:
     post:
       tags:
@@ -1204,6 +1276,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountResponse'
+      x-required-permissions:
+        - service_account_manage
   /tenancy.v1.TenancyService/RemoveTenant:
     post:
       tags:
@@ -1241,6 +1315,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveTenantResponse'
+      x-required-permissions:
+        - tenant_manage
   /tenancy.v1.TenancyService/UpdateClient:
     post:
       tags:
@@ -1278,6 +1354,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateClientResponse'
+      x-required-permissions:
+        - client_manage
   /tenancy.v1.TenancyService/UpdatePage:
     post:
       tags:
@@ -1315,6 +1393,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePageResponse'
+      x-required-permissions:
+        - page_manage
   /tenancy.v1.TenancyService/UpdatePartition:
     post:
       tags:
@@ -1352,6 +1432,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePartitionResponse'
+      x-required-permissions:
+        - partition_manage
   /tenancy.v1.TenancyService/UpdatePartitionRole:
     post:
       tags:
@@ -1389,6 +1471,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRoleResponse'
+      x-required-permissions:
+        - role_manage
   /tenancy.v1.TenancyService/UpdateServiceAccount:
     post:
       tags:
@@ -1426,6 +1510,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountResponse'
+      x-required-permissions:
+        - service_account_manage
   /tenancy.v1.TenancyService/UpdateTenant:
     post:
       tags:
@@ -1463,6 +1549,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateTenantResponse'
+      x-required-permissions:
+        - tenant_manage
 components:
   schemas:
     base64:
