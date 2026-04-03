@@ -30,19 +30,27 @@ func TestRoleMappingTestSuite(t *testing.T) {
 	suite.Run(t, new(RoleMappingTestSuite))
 }
 
-func (suite *RoleMappingTestSuite) TestBuildRoleTuples_TenancyNamespaceOnly() {
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_TenancyAndAccessNamespaces() {
 	t := suite.T()
 	role := authz.RoleAdmin
 	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role)
 
-	// Only 1 role tuple — OPL permits handle permission resolution
-	assert.Len(t, tuples, 1)
+	// 2 tuples: service_tenancy + tenancy_access (for cross-service bridge propagation)
+	assert.Len(t, tuples, 2)
 
+	// Tuple 1: service_tenancy role
 	assert.Equal(t, authz.NamespaceTenancy, tuples[0].Object.Namespace)
 	assert.Equal(t, "tenant1/partition1", tuples[0].Object.ID)
 	assert.Equal(t, role, tuples[0].Relation)
 	assert.Equal(t, authz.NamespaceProfile, tuples[0].Subject.Namespace)
 	assert.Equal(t, "profile1", tuples[0].Subject.ID)
+
+	// Tuple 2: tenancy_access role (bridges propagate this to all service namespaces)
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuples[1].Object.Namespace)
+	assert.Equal(t, "tenant1/partition1", tuples[1].Object.ID)
+	assert.Equal(t, role, tuples[1].Relation)
+	assert.Equal(t, authz.NamespaceProfile, tuples[1].Subject.Namespace)
+	assert.Equal(t, "profile1", tuples[1].Subject.ID)
 }
 
 func (suite *RoleMappingTestSuite) TestBuildPermissionTuple() {
