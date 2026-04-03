@@ -356,8 +356,8 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 		client.SetAudience(seed.Audience)
 		client.SetTokenEndpointAuthMethod(common.TokenEndpointAuthMethodClientSecretPost)
 		client.SetMetadata(map[string]any{
-			"tenant_id":    "9bsv0s3pbdv002o80qfg",
-			"partition_id": "9bsv0s3pbdv002o80qhg",
+			"tenant_id":    "c2f4j7au6s7f91uqnojg",
+			"partition_id": "c2f4j7au6s7f91uqnokg",
 			"profile_id":   seed.ProfileID,
 			"type":         "internal",
 		})

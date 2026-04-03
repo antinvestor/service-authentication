@@ -18,7 +18,7 @@
 --
 -- Entity relationships:
 --
---   Tenant (Ant Investor Development) — child of Testing Manager
+--   Tenant (Ant Investor Development) — child of Thesa (origin)
 --     └─ Partition (Ant Investor Development)         ← the "home" partition
 --          └─ Client (d6qbqdkpf2t52mcunf6g)             ← public, for user login (authorization_code)
 --
@@ -26,13 +26,13 @@
 
 -- Tenant
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
-VALUES ('d6q1aekpf2taeg5iovqg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg',
+VALUES ('d6q1aekpf2taeg5iovqg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
         'Ant Investor Development', 'Default base tenant for testing and building Ant Investor', 'staging');
 
--- Partition (child of Dev Backoffice)
+-- Partition (child of Thesa origin)
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d6q1aekpf2taeg5iovr0', 'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
-        '9bsv0s3pbdv002o80qhg',                          -- parent: Dev Backoffice
+        'c2f4j7au6s7f91uqnokg',                          -- parent: Thesa (origin)
         'Ant Investor Development', 'Default Ant Investor development partition', 'false',
         '{
           "default_role": "user",

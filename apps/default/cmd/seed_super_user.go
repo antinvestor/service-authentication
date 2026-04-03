@@ -39,11 +39,8 @@ import (
 )
 
 const (
-	seedSuperUserCommandName  = "seed-super-user"
-	rootEnvironmentProduction = tenantenv.Production
-	rootEnvironmentStaging    = tenantenv.Staging
-	rootPartitionProductionID = "c2f4j7au6s7f91uqnokg"
-	rootPartitionStagingID    = "9bsv0s3pbdv002o80qhg"
+	seedSuperUserCommandName = "seed-super-user"
+	rootPartitionID          = "c2f4j7au6s7f91uqnokg" // Thesa origin root partition
 )
 
 type seedSuperUserResult struct {
@@ -319,10 +316,9 @@ func normalizeRootEnvironment(environment string) string {
 
 func rootPartitionIDForEnvironment(environment tenancyv1.TenantEnvironment) (string, error) {
 	switch environment {
-	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION:
-		return rootPartitionProductionID, nil
-	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
-		return rootPartitionStagingID, nil
+	case tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
+		tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING:
+		return rootPartitionID, nil
 	default:
 		return "", fmt.Errorf("unsupported environment %s", environment.String())
 	}

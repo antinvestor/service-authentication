@@ -200,8 +200,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 			"grant_type":     "client_credentials",
 			"session": map[string]any{
 				"access_token": map[string]any{
-					"tenant_id":    "9bsv0s3pbdv002o80qfg",
-					"partition_id": "9bsv0s3pbdv002o80qhg",
+					"tenant_id":    "c2f4j7au6s7f91uqnojg",
+					"partition_id": "c2f4j7au6s7f91uqnokg",
 					"roles":        []string{"internal"},
 					"profile_id":   "dev_authentication_tests",
 				},
@@ -235,8 +235,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentWithSystemInternal() {
 		assert.Contains(t, roles, "internal")
 
 		assert.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
-		assert.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
-		assert.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
+		assert.Equal(t, "c2f4j7au6s7f91uqnojg", accessToken["tenant_id"])
+		assert.Equal(t, "c2f4j7au6s7f91uqnokg", accessToken["partition_id"])
 	})
 }
 
@@ -291,8 +291,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsCreatesLogin
 		require.NotEmpty(t, loginEventID)
 		require.Equal(t, loginEventID, sessionID)
 		require.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
-		require.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
-		require.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
+		require.Equal(t, "c2f4j7au6s7f91uqnojg", accessToken["tenant_id"])
+		require.Equal(t, "c2f4j7au6s7f91uqnokg", accessToken["partition_id"])
 
 		loginEvent, err := authServer.LoginEventRepo().GetByID(opCtx, loginEventID)
 		require.NoError(t, err)
@@ -331,8 +331,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
 			"grant_type": "client_credentials",
 			"session": map[string]any{
 				"access_token": map[string]any{
-					"tenant_id":    "9bsv0s3pbdv002o80qfg",
-					"partition_id": "9bsv0s3pbdv002o80qhg",
+					"tenant_id":    "c2f4j7au6s7f91uqnojg",
+					"partition_id": "c2f4j7au6s7f91uqnokg",
 					"roles":        []string{"internal"},
 					"profile_id":   "dev_authentication_tests",
 				},
@@ -361,8 +361,8 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsNoScopes() {
 		accessToken, ok := session["access_token"].(map[string]any)
 		require.True(t, ok)
 
-		assert.Equal(t, "9bsv0s3pbdv002o80qfg", accessToken["tenant_id"])
-		assert.Equal(t, "9bsv0s3pbdv002o80qhg", accessToken["partition_id"])
+		assert.Equal(t, "c2f4j7au6s7f91uqnojg", accessToken["tenant_id"])
+		assert.Equal(t, "c2f4j7au6s7f91uqnokg", accessToken["partition_id"])
 	})
 }
 

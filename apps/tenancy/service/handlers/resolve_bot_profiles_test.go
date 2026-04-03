@@ -32,7 +32,7 @@ func TestStaticServiceProfileMapping(t *testing.T) {
 		{"service-profile", "d75qclkpf2t1uum8ij4g", true},
 		{"service-tenancy", "d75qclkpf2t1uum8ij50", true},
 		{"service-notification", "d75qclkpf2t1uum8ij5g", true},
-		{"service-devices", "d75qclkpf2t1uum8ij60", true},
+		{"service-device", "d75qclkpf2t1uum8ij60", true},
 		{"foundry", "d75qclkpf2t1uum8ijag", true},
 		{"gitvault", "d75qclkpf2t1uum8ijb0", true},
 		{"trustage", "d75qclkpf2t1uum8ijbg", true},

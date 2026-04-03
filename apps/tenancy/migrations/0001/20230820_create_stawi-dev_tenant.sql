@@ -18,7 +18,7 @@ VALUES ('9bsv0s0hijjg02z5lr4g', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 
         'Default base tenant for stawi', 'production');
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
-        'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
+        'c2f4j7au6s7f91uqnokg',                          -- parent: Thesa (origin)
         'Stawi AI Builder', 'Default stawi ai builder partition to serve the masses', 'true',
         '{
           "default_role": "user",

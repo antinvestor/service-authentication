@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,12 +34,12 @@ func TestRootPartitionIDForEnvironment(t *testing.T) {
 		{
 			name:        "production",
 			environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
-			expectedID:  rootPartitionProductionID,
+			expectedID:  rootPartitionID,
 		},
 		{
 			name:        "staging",
 			environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
-			expectedID:  rootPartitionStagingID,
+			expectedID:  rootPartitionID,
 		},
 	}
 
@@ -73,7 +74,7 @@ func TestSeedSuperUserRejectsInvalidArguments(t *testing.T) {
 		{
 			name:        "invalid_email",
 			email:       "not-an-email",
-			environment: rootEnvironmentProduction,
+			environment: tenantenv.Production,
 			errContains: "invalid email",
 		},
 		{

@@ -18,7 +18,7 @@
 --
 -- Entity relationships:
 --
---   Tenant (Ant Investor) — child of System Manager
+--   Tenant (Ant Investor) — child of Thesa (origin)
 --     └─ Partition (Ant Investor)                    ← the "home" partition
 --          └─ Client (d6qbqdkpf2t52mcunf60)            ← public, for user login (authorization_code)
 --
@@ -32,7 +32,7 @@ VALUES ('d6q1aekpf2taeg5iovp0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
 -- Partition (child of System Manager)
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d6q1aekpf2taeg5iovpg', 'd6q1aekpf2taeg5iovp0', 'd6q1aekpf2taeg5iovpg',
-        'c2f4j7au6s7f91uqnokg',                          -- parent: System Manager
+        'c2f4j7au6s7f91uqnokg',                          -- parent: Thesa (origin)
         'Ant Investor', 'Default Ant Investor partition to serve the masses', 'false',
         '{
           "default_role": "user",

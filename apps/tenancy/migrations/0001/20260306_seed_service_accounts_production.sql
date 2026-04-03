@@ -13,11 +13,11 @@
 --- limitations under the License.
 
 -- ==========================================================================
--- PRODUCTION service account clients + service_accounts
+-- ORIGIN ROOT service account clients + service_accounts
 -- ==========================================================================
 --
--- Partition: System Manager (c2f4j7au6s7f91uqnokg)
--- Tenant:    System Manager (c2f4j7au6s7f91uqnojg)
+-- Partition: Thesa (c2f4j7au6s7f91uqnokg)
+-- Tenant:    Thesa (c2f4j7au6s7f91uqnojg)
 --
 -- Each service gets a Client + ServiceAccount pair:
 --

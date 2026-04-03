@@ -13,10 +13,10 @@
 --- limitations under the License.
 
 -- Default base partition
-INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment) VALUES('9bsv0s0hijjg09bzz6dg', '9bsv0s3pbdv002o80qfg', '9bsv0s3pbdv002o80qhg', 'Stawi Development', 'Default base tenant for testing and building stawi', 'staging');
+INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment) VALUES('9bsv0s0hijjg09bzz6dg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'Stawi Development', 'Default base tenant for testing and building stawi', 'staging');
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
     VALUES('9bsv0s0hijjg02qks6i0', '9bsv0s0hijjg09bzz6dg', '9bsv0s0hijjg02qks6i0',
-           '9bsv0s3pbdv002o80qhg',                        -- parent: Dev Backoffice
+           'c2f4j7au6s7f91uqnokg',                        -- parent: Thesa (origin)
            'Stawi Development', 'Default Stawi development partition', 'true',
            '{
             "default_role": "user",
