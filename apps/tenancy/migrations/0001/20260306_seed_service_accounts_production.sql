@@ -33,10 +33,38 @@
 --
 -- All service accounts use private_key_jwt authentication (no client_secret).
 -- Services authenticate via JWT signed with their private key.
+--
+-- Profile IDs are static xids matching the profile service migration
+-- (20260331_bootstrap_profiles.sql). Each profile_id becomes the `sub`
+-- claim in service-to-service JWT tokens. Contacts for these profiles
+-- are encrypted and linked at app startup by SeedBootstrapContacts().
+--
+-- Profile ID Reference:
+--   d75qclkpf2t1uum8ij40  service-authentication    authentication.bot@stawi.org
+--   d75qclkpf2t1uum8ij4g  service-profile            profile.bot@stawi.org
+--   d75qclkpf2t1uum8ij50  service-tenancy             tenancy.bot@stawi.org
+--   d75qclkpf2t1uum8ij5g  service-notification       notification.bot@stawi.org
+--   d75qclkpf2t1uum8ij60  service-device              devices.bot@stawi.org
+--   d75qclkpf2t1uum8ij6g  service-setting             setting.bot@stawi.org
+--   d75qclkpf2t1uum8ij70  service-payment             payment.bot@stawi.org
+--   d75qclkpf2t1uum8ij7g  service-payment-jenga      payment-jenga.bot@stawi.org
+--   d75qclkpf2t1uum8ij80  service-ledger              ledger.bot@stawi.org
+--   d75qclkpf2t1uum8ij8g  service-billing             billing.bot@stawi.org
+--   d75qclkpf2t1uum8ij90  service-files               file.bot@stawi.org
+--   d75qclkpf2t1uum8ij9g  service-chat-drone         chat-drone.bot@stawi.org
+--   d75qclkpf2t1uum8ija0  service-chat-gateway       chat-gateway.bot@stawi.org
+--   d75qclkpf2t1uum8ijag  foundry                     foundry.bot@stawi.org
+--   d75qclkpf2t1uum8ijb0  gitvault                    gitvault.bot@stawi.org
+--   d75qclkpf2t1uum8ijbg  trustage                    trustage.bot@stawi.org
+--   d75qclkpf2t1uum8ijc0  notification-africastalking notification-africastalking.bot@stawi.org
+--   d75qclkpf2t1uum8ijcg  notification-emailsmtp     notification-emailsmtp.bot@stawi.org
 -- ==========================================================================
 
 -- ──────────────────────────────────────────────────────────────
 -- service-authentication
+-- Core identity provider. Manages OAuth2 flows, login/consent,
+-- and token issuance. Needs profile CRUD for user provisioning,
+-- device access for MFA, and notification for verification emails.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -64,7 +92,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnolg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_authentication',
+    'd75qclkpf2t1uum8ij40',                           -- profile: service-authentication (authentication.bot@stawi.org)
     'service-authentication',
     'c2f4j7au6s7f91uqnoog',
     'internal',
@@ -74,6 +102,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-profile
+-- User profile and contact management. Needs device service for
+-- linking profiles to devices, notification for welcome messages,
+-- and tenancy for partition/tenant lookups.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -101,7 +132,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnoqg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_profile',
+    'd75qclkpf2t1uum8ij4g',                           -- profile: service-profile (profile.bot@stawi.org)
     'service-profile',
     'c2f4j7au6s7f91uqnopg',
     'internal',
@@ -111,6 +142,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-tenancy
+-- Partition, tenant, and access management. Needs notification
+-- for sending invitations and profile for user provisioning
+-- during access grants.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -138,7 +172,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnosg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_tenancy',
+    'd75qclkpf2t1uum8ij50',                           -- profile: service-tenancy (tenancy.bot@stawi.org)
     'service-tenancy',
     'c2f4j7au6s7f91uqnorg',
     'internal',
@@ -148,6 +182,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-notification
+-- Notification dispatch (email, SMS, push). Needs profile for
+-- recipient lookup, settings for template/provider config, and
+-- tenancy for partition-scoped routing.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -175,7 +212,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnoug',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_notification',
+    'd75qclkpf2t1uum8ij5g',                           -- profile: service-notification (notification.bot@stawi.org)
     'service-notification',
     'c2f4j7au6s7f91uqnotg',
     'internal',
@@ -185,6 +222,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-device
+-- Device registry and management. Tracks user devices for push
+-- notifications and MFA. Needs profile for owner lookup,
+-- notification for device alerts, and tenancy for scoping.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -212,7 +252,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp0g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_device',
+    'd75qclkpf2t1uum8ij60',                           -- profile: service-device (devices.bot@stawi.org)
     'service-device',
     'c2f4j7au6s7f91uqnovg',
     'internal',
@@ -222,6 +262,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-settings
+-- Application configuration store. Manages key-value settings
+-- scoped by module, object, and language. Needs profile, device,
+-- notification, and tenancy for cross-service config reads.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -249,7 +292,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp2g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_setting',
+    'd75qclkpf2t1uum8ij6g',                           -- profile: service-setting (setting.bot@stawi.org)
     'service-settings',
     'c2f4j7au6s7f91uqnp1g',
     'internal',
@@ -259,6 +302,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-payment
+-- Payment processing engine. Orchestrates payment flows via
+-- provider integrations. Needs ledger for double-entry accounting,
+-- notification for payment receipts, and profile/tenancy for scoping.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -286,7 +332,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp4g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_payment',
+    'd75qclkpf2t1uum8ij70',                           -- profile: service-payment (payment.bot@stawi.org)
     'service-payment',
     'c2f4j7au6s7f91uqnp3g',
     'internal',
@@ -296,6 +342,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-payment-jenga
+-- Jenga API payment provider integration. Bridges the payment
+-- service to Equity Bank's Jenga API for mobile money and bank
+-- transfers. Needs payment service for status callbacks.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -323,7 +372,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp6g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_payment_jenga',
+    'd75qclkpf2t1uum8ij7g',                           -- profile: service-payment-jenga (payment-jenga.bot@stawi.org)
     'service-payment-jenga',
     'c2f4j7au6s7f91uqnp5g',
     'internal',
@@ -333,6 +382,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-ledger
+-- Double-entry accounting ledger. Manages accounts, transactions,
+-- and journal entries. Needs notification for balance alerts and
+-- profile/tenancy for scoping.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -360,7 +412,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnp8g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_ledger',
+    'd75qclkpf2t1uum8ij80',                           -- profile: service-ledger (ledger.bot@stawi.org)
     'service-ledger',
     'c2f4j7au6s7f91uqnp7g',
     'internal',
@@ -370,6 +422,8 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-billing
+-- Subscription and invoice management. Charges customers via
+-- the payment service and records entries in the ledger.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -397,7 +451,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpag',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_billing',
+    'd75qclkpf2t1uum8ij8g',                           -- profile: service-billing (billing.bot@stawi.org)
     'service-billing',
     'c2f4j7au6s7f91uqnp9g',
     'internal',
@@ -407,6 +461,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-files
+-- File storage and OCR processing. Manages uploads, property
+-- documents, and text extraction. Needs profile for ownership
+-- tracking and tenancy for scoping.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -434,7 +491,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpcg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_file',
+    'd75qclkpf2t1uum8ij90',                           -- profile: service-file (file.bot@stawi.org)
     'service-files',
     'c2f4j7au6s7f91uqnpbg',
     'internal',
@@ -444,6 +501,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-chat-drone
+-- Chat bot worker. Processes messages and executes automated
+-- responses. Needs device for push delivery, notification for
+-- alerts, and profile/tenancy for user context.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -471,7 +531,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpeg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_chat_drone',
+    'd75qclkpf2t1uum8ij9g',                           -- profile: service-chat-drone (chat-drone.bot@stawi.org)
     'service-chat-drone',
     'c2f4j7au6s7f91uqnpdg',
     'internal',
@@ -481,6 +541,8 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-chat-gateway
+-- Chat gateway. Routes messages between users and chat drones.
+-- Full chat access plus device/notification/profile for delivery.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -508,7 +570,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpgg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_chat_gateway',
+    'd75qclkpf2t1uum8ija0',                           -- profile: service-chat-gateway (chat-gateway.bot@stawi.org)
     'service-chat-gateway',
     'c2f4j7au6s7f91uqnpfg',
     'internal',
@@ -518,6 +580,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- foundry
+-- Platform provisioning service. Creates and configures new
+-- partitions/tenants. Needs partition_manage for full CRUD and
+-- profile_create for initial admin user setup.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -545,7 +610,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpig',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'foundry',
+    'd75qclkpf2t1uum8ijag',                           -- profile: foundry (foundry.bot@stawi.org)
     'foundry',
     'c2f4j7au6s7f91uqnphg',
     'internal',
@@ -555,6 +620,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- gitvault
+-- Git repository hosting and access management. Stores code
+-- artifacts and manages repository permissions. Needs profile
+-- for author identity and tenancy for org scoping.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -582,7 +650,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpkg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'gitvault',
+    'd75qclkpf2t1uum8ijb0',                           -- profile: gitvault (gitvault.bot@stawi.org)
     'gitvault',
     'c2f4j7au6s7f91uqnpjg',
     'internal',
@@ -592,6 +660,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- trustage
+-- Trust and escrow management. Handles held funds and conditional
+-- releases. Needs notification for status updates and profile/
+-- tenancy for participant identity.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -619,7 +690,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpmg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'trustage',
+    'd75qclkpf2t1uum8ijbg',                           -- profile: trustage (trustage.bot@stawi.org)
     'trustage',
     'c2f4j7au6s7f91uqnplg',
     'internal',
@@ -629,6 +700,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-notification-integration-africastalking
+-- Africastalking SMS/USSD provider integration. Delivers
+-- notifications via Africastalking APIs and reports delivery
+-- status back to the notification service.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -656,7 +730,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpog',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_notification_africastalking',
+    'd75qclkpf2t1uum8ijc0',                           -- profile: notification-africastalking (notification-africastalking.bot@stawi.org)
     'service-notification-integration-africastalking',
     'c2f4j7au6s7f91uqnpng',
     'internal',
@@ -666,6 +740,9 @@ INSERT INTO service_accounts (
 
 -- ──────────────────────────────────────────────────────────────
 -- service-notification-integration-emailsmtp
+-- Email SMTP provider integration. Delivers notifications via
+-- SMTP and reports delivery status back to the notification
+-- service. Uses settings for SMTP server configuration.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -693,7 +770,7 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpqg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'service_notification_emailsmtp',
+    'd75qclkpf2t1uum8ijcg',                           -- profile: notification-emailsmtp (notification-emailsmtp.bot@stawi.org)
     'service-notification-integration-emailsmtp',
     'c2f4j7au6s7f91uqnppg',
     'internal',
@@ -702,7 +779,10 @@ INSERT INTO service_accounts (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
--- synchronise-partitions (CronJob for periodic tenancy sync)
+-- synchronise-partitions
+-- CronJob that periodically syncs partition state between the
+-- tenancy service and the OAuth2 provider (Hydra). No dedicated
+-- profile — uses its service account name as the identity.
 -- ──────────────────────────────────────────────────────────────
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -730,11 +810,10 @@ INSERT INTO service_accounts (
     'c2f4j7au6s7f91uqnpsg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'synchronise_partitions',
+    'synchronise_partitions',                          -- no dedicated profile (CronJob utility)
     'synchronise-partitions',
     'c2f4j7au6s7f91uqnprg',
     'internal',
     '{"service_tenancy": ["partition_view","tenant_view","partition_manage"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
-

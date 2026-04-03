@@ -25,10 +25,15 @@
 --   Tenant (Thesa)
 --     └─ Partition (Thesa)                         ← the origin partition
 --          ├─ Client (d6qbqdkpf2t52mcunf30)          ← Thesa production (authorization_code)
---          └─ Client (d6qbqdkpf2t52mcunf3g)          ← Thesa dev (authorization_code)
+--          ├─ Client (d6qbqdkpf2t52mcunf3g)          ← Thesa dev (authorization_code)
+--          └─ Access (d75qclkpf2t1uum8ij30)          ← Platform Admin (bwire517@gmail.com)
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_service_accounts_production.sql
+--
+-- The Platform Admin profile (d75qclkpf2t1uum8ij3g) is created by the
+-- profile service migration (20260331_bootstrap_profiles.sql). Its contact
+-- (bwire517@gmail.com) is encrypted and linked at app startup.
 -- ==========================================================================
 
 -- Tenant
@@ -89,4 +94,38 @@ INSERT INTO clients (
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["http://localhost:5173/","https://thesa-dev.stawi.org/"]}',
     'none'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================================================
+-- PLATFORM ADMIN ACCESS: bwire517@gmail.com → Thesa root partition
+-- ==========================================================================
+--
+-- The root Thesa partition has allow_auto_access = false, which prevents
+-- automatic access creation during login. Without an explicit access record,
+-- the admin user's first login falls through to a child partition that has
+-- auto-access enabled (e.g. Stawi), landing them in the wrong context.
+--
+-- This seeds an explicit access record so the platform admin is bound to the
+-- root partition on first login. The profile_id references the "Platform Admin"
+-- profile created by the profile service migration:
+--
+--   Profile:   d75qclkpf2t1uum8ij3g  (person type, "Platform Admin")
+--   Contact:   bwire517@gmail.com     (seeded at app startup by SeedBootstrapContacts)
+--   Partition: c2f4j7au6s7f91uqnokg  (Thesa — origin root)
+--   Tenant:    c2f4j7au6s7f91uqnojg  (Thesa)
+--
+-- State 1 = ACTIVE (matches commonv1.STATE_ACTIVE).
+-- ==========================================================================
+INSERT INTO accesses (
+    id, created_at, modified_at, version,
+    tenant_id, partition_id, access_id,
+    profile_id, state
+) VALUES (
+    'd75qclkpf2t1uum8ij30',                       -- static xid for the admin access record
+    NOW(), NOW(), 1,
+    'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
+    'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
+    '',                                            -- no parent access
+    'd75qclkpf2t1uum8ij3g',                       -- profile: Platform Admin (bwire517@gmail.com)
+    1                                              -- state: ACTIVE
 ) ON CONFLICT (id) DO NOTHING;
