@@ -15,6 +15,7 @@
 package events_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
@@ -46,6 +48,8 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_Internal
 		ctx, svc, deps := suite.CreateService(t, dep)
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 		saRepo := deps.Server.ServiceAccountRepo
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		sa := &models.ServiceAccount{
 			ClientID:     util.IDString(),
@@ -56,7 +60,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_Internal
 			Properties:   data.JSONMap{},
 		}
 
-		err := events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err := events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		if err != nil {
 			t.Logf("SyncServiceAccountOnHydra error (may be expected in test env): %v", err)
 		} else {
@@ -76,6 +80,8 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_External
 		ctx, svc, deps := suite.CreateService(t, dep)
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 		saRepo := deps.Server.ServiceAccountRepo
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		sa := &models.ServiceAccount{
 			ClientID:     util.IDString(),
@@ -86,7 +92,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_External
 			Properties:   data.JSONMap{},
 		}
 
-		err := events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err := events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		if err != nil {
 			t.Logf("SyncServiceAccountOnHydra error (may be expected in test env): %v", err)
 		} else {
@@ -104,6 +110,8 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_NoSecret
 		ctx, svc, deps := suite.CreateService(t, dep)
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 		saRepo := deps.Server.ServiceAccountRepo
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		sa := &models.ServiceAccount{
 			ClientID:   util.IDString(),
@@ -112,7 +120,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_NoSecret
 			Properties: data.JSONMap{},
 		}
 
-		err := events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err := events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		if err != nil {
 			t.Logf("SyncServiceAccountOnHydra no-secret error: %v", err)
 		} else {
@@ -127,6 +135,8 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_DeletedS
 		ctx, svc, deps := suite.CreateService(t, dep)
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 		saRepo := deps.Server.ServiceAccountRepo
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		sa := &models.ServiceAccount{
 			BaseModel: data.BaseModel{
@@ -141,7 +151,7 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_DeletedS
 			ProfileID: util.IDString(),
 		}
 
-		err := events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err := events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		if err != nil {
 			t.Logf("Delete SA sync error (expected if client doesn't exist on Hydra): %v", err)
 		} else {
@@ -259,12 +269,15 @@ func (suite *SyncServiceAccountTestSuite) TestSyncServiceAccountOnHydra_Idempote
 		err = saRepo.Create(ctx, sa)
 		require.NoError(t, err)
 
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
+
 		// First sync — creates Hydra client
-		err = events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err = events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		require.NoError(t, err, "first sync should succeed")
 
 		// Second sync — updates Hydra client (idempotent)
-		err = events.SyncServiceAccountOnHydra(ctx, cfg, svc.HTTPClientManager(), saRepo, sa)
+		err = events.SyncServiceAccountOnHydra(ctx, cfg, plainCli, saRepo, sa)
 		require.NoError(t, err, "second sync should succeed (idempotent)")
 	})
 }

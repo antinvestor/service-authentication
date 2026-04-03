@@ -15,6 +15,7 @@
 package events_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
@@ -149,6 +151,8 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 		ctx, svc, deps := suite.CreateService(t, dep)
 
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
@@ -163,7 +167,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ComprehensiveScena
 				}
 
 				// Execute SyncPartitionOnHydra
-				err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, cfg, plainCli, deps.PartitionRepo, tc.partition)
 
 				// Log the result
 				if err != nil {
@@ -220,9 +224,11 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_DeletedPartition()
 		ctx, svc, deps := suite.CreateService(t, dep)
 
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		// Execute sync operation
-		err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, partition)
+		err := events.SyncPartitionOnHydra(ctx, cfg, plainCli, deps.PartitionRepo, partition)
 
 		// Log result
 		if err != nil {
@@ -295,11 +301,14 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ErrorScenarios() {
 
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
 
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
+
 		for _, tc := range errorTestCases {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Logf("Testing error scenario: %s", tc.description)
 
-				err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, tc.partition)
+				err := events.SyncPartitionOnHydra(ctx, cfg, plainCli, deps.PartitionRepo, tc.partition)
 
 				if tc.expectError {
 					require.Error(t, err, "Expected error for %s", tc.name)
@@ -337,10 +346,12 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_Performance() {
 	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
 		ctx, svc, deps := suite.CreateService(t, dep)
 		cfg, _ := svc.Config().(config.ConfigurationOAUTH2)
+		plainCli := client.NewManager(context.Background())
+		defer plainCli.Close()
 
 		// Measure execution time
 		start := time.Now()
-		err := events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), deps.PartitionRepo, partition)
+		err := events.SyncPartitionOnHydra(ctx, cfg, plainCli, deps.PartitionRepo, partition)
 		duration := time.Since(start)
 
 		// Log performance metrics

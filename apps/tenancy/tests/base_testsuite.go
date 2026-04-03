@@ -289,10 +289,15 @@ func (bs *BaseTestSuite) createServiceInternal(
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
 
+	// Use a plain HTTP client for Hydra admin API calls (no OAuth2 transport).
+	// This matches production (cmd/main.go) where hydraClient is unauthenticated
+	// because Hydra admin is cluster-internal and doesn't require OAuth2 tokens.
+	hydraClient := client.NewManager(context.Background())
+
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.PartitionRepo),
-		events.NewClientSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ClientRepo, implementation.ServiceAccountRepo),
-		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, svc.HTTPClientManager(), implementation.ServiceAccountRepo, implementation.PartitionRepo),
+		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.PartitionRepo),
+		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.ServiceAccountRepo),
+		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ServiceAccountRepo, implementation.PartitionRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
 		events.NewTupleWriteEventHandler(auth),

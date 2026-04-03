@@ -15,15 +15,16 @@
 package business_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
+	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testoryhydra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -31,36 +32,6 @@ import (
 
 type PartitionBusinessTestSuite struct {
 	tests.BaseTestSuite
-
-	hydraContainer definition.TestResource
-}
-
-func (p *PartitionBusinessTestSuite) SetupSuite() {
-	p.BaseTestSuite.SetupSuite()
-
-	t := p.T()
-	ctx := t.Context()
-
-	for _, res := range p.Resources() {
-		if res.GetInternalDS(ctx).IsPostgres() {
-			p.hydraContainer = testoryhydra.NewWithOpts(
-				testoryhydra.HydraConfiguration, definition.WithDependancies(res),
-			)
-
-			err := p.hydraContainer.Setup(ctx, p.Network)
-			require.NoError(t, err)
-		}
-	}
-}
-
-func (p *PartitionBusinessTestSuite) TearDownSuite() {
-	if p.hydraContainer != nil {
-		t := p.T()
-		ctx := t.Context()
-		p.hydraContainer.Cleanup(ctx)
-	}
-
-	p.BaseTestSuite.TearDownSuite()
 }
 
 func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
@@ -69,10 +40,7 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 	dep := definition.NewDependancyOption("partition_test", "partition_sync", nil)
 	ctx, svc, deps := p.CreateService(t, dep)
 
-	cfg, ok := svc.Config().(*config.TenancyConfig)
-	if ok {
-		cfg.Oauth2ServiceAdminURI = p.hydraContainer.GetInternalDS(ctx).String()
-	}
+	cfg, _ := svc.Config().(*config.TenancyConfig)
 
 	tenantRepo := deps.TenantRepo
 	partitionRepo := deps.PartitionRepo
@@ -97,8 +65,12 @@ func (p *PartitionBusinessTestSuite) TestSyncPartitionOnHydra() {
 	err = partitionRepo.Create(ctx, partition)
 	require.NoError(t, err)
 
-	// Execute
-	err = events.SyncPartitionOnHydra(ctx, cfg, svc.HTTPClientManager(), partitionRepo, partition)
+	// Execute — use a plain HTTP client (no OAuth2 transport) for Hydra admin API,
+	// matching production where Hydra admin is unauthenticated.
+	plainCli := client.NewManager(context.Background())
+	defer plainCli.Close()
+
+	err = events.SyncPartitionOnHydra(ctx, cfg, plainCli, partitionRepo, partition)
 
 	// Verify
 	assert.NoError(t, err, "Could not sync this partition")
