@@ -26,7 +26,9 @@
 --     └─ Partition (Thesa)                         ← the origin partition
 --          ├─ Client (d6qbqdkpf2t52mcunf30)          ← Thesa production (authorization_code)
 --          ├─ Client (d6qbqdkpf2t52mcunf3g)          ← Thesa dev (authorization_code)
---          └─ Access (d75qclkpf2t1uum8ij30)          ← Platform Admin (bwire517@gmail.com)
+--          ├─ PartitionRole (owner, admin, member)   ← standard role set
+--          ├─ Access (d75qclkpf2t1uum8ij30)          ← Platform Admin (bwire517@gmail.com)
+--          └─ AccessRole (d75qclkpf2t1uum8ij23)     ← Admin → owner role
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_service_accounts_production.sql
@@ -97,6 +99,36 @@ INSERT INTO clients (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ==========================================================================
+-- PARTITION ROLES: standard roles for the Thesa root partition
+-- ==========================================================================
+--
+-- Every partition needs roles that can be assigned to users via access_roles.
+-- When an access_role is created, the tenancy service emits a Keto tuple
+-- write event that grants the user the role in the service_tenancy namespace
+-- and all service namespaces declared in the partition's client audiences.
+--
+-- Roles:
+--   owner  — Full control across all services. Intended for platform admins.
+--   admin  — Manage partitions, access, roles, pages. No tenant-level ops.
+--   member — Read-only default role assigned on access creation.
+--
+-- is_default=true on member means it is auto-assigned when a new access
+-- record is created (see accessBusiness.CreateAccess).
+-- ==========================================================================
+INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties)
+VALUES
+    ('d75qclkpf2t1uum8ij20', NOW(), NOW(), 1,
+     'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
+     'owner', false, '{"description": "Full control across all services"}'),
+    ('d75qclkpf2t1uum8ij21', NOW(), NOW(), 1,
+     'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
+     'admin', false, '{"description": "Manage partitions, access, roles, and pages"}'),
+    ('d75qclkpf2t1uum8ij22', NOW(), NOW(), 1,
+     'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg',
+     'member', true, '{"description": "Read-only access, auto-assigned on access creation"}')
+ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================================================
 -- PLATFORM ADMIN ACCESS: bwire517@gmail.com → Thesa root partition
 -- ==========================================================================
 --
@@ -128,4 +160,25 @@ INSERT INTO accesses (
     '',                                            -- no parent access
     'd75qclkpf2t1uum8ij3g',                       -- profile: Platform Admin (bwire517@gmail.com)
     1                                              -- state: ACTIVE
+) ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================================================
+-- PLATFORM ADMIN ROLE: assign owner role to the platform admin
+-- ==========================================================================
+--
+-- Links the admin's access record to the "owner" partition role, granting
+-- full permissions across all services. The tenancy service writes Keto
+-- tuples for this role assignment on startup (partition sync) or when the
+-- access_role is created via API.
+--
+-- access_roles junction: access (d75qclkpf2t1uum8ij30) → owner role (d75qclkpf2t1uum8ij20)
+-- ==========================================================================
+INSERT INTO access_roles (id, created_at, modified_at, version, tenant_id, partition_id, access_id, partition_role_id)
+VALUES (
+    'd75qclkpf2t1uum8ij23',                       -- static xid for the admin access role
+    NOW(), NOW(), 1,
+    'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
+    'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
+    'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
+    'd75qclkpf2t1uum8ij20'                         -- role: owner
 ) ON CONFLICT (id) DO NOTHING;

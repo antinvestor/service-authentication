@@ -79,9 +79,12 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 	},
 }
 
-// BuildRoleTuples creates a role relation tuple in the service_tenancy namespace.
-// Only the role tuple is written; Keto evaluates OPL permits to resolve the
-// individual permissions granted by the role.
+// BuildRoleTuples creates role relation tuples for a user on a partition.
+//
+// Writes to both service_tenancy (for tenancy-specific permission checks)
+// and tenancy_access (for cross-service propagation). OPL bridge tuples
+// written during partition sync propagate the tenancy_access role to every
+// service namespace — no per-namespace logic needed here.
 //
 // The tenancyPath should be "tenantID/partitionID" to match the object ID
 // format used by FunctionChecker.Check().
@@ -89,6 +92,11 @@ func BuildRoleTuples(tenancyPath, profileID, role string) []security.RelationTup
 	return []security.RelationTuple{
 		{
 			Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenancyPath},
+			Relation: role,
+			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
+		},
+		{
+			Object:   security.ObjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath},
 			Relation: role,
 			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
 		},
@@ -173,6 +181,37 @@ func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []se
 			Relation: RoleService,
 			Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath, Relation: RoleService},
 		})
+	}
+	return tuples
+}
+
+// StandardRoles lists the human-assignable roles that OPL recognises.
+// When a partition is synced, bridge tuples are written for each of these
+// roles so that a role assigned in tenancy_access propagates to every
+// service namespace. Custom partition roles work the same way as long as
+// they are declared in the OPL for the relevant service namespaces.
+var StandardRoles = []string{RoleOwner, RoleAdmin, RoleMember} //nolint:gochecknoglobals // role registry
+
+// BuildRoleInheritanceTuples creates bridge tuples that propagate human roles
+// from tenancy_access to each service namespace.
+//
+// For every (namespace, role) pair it writes:
+//
+//	ns:tenancyPath#role ← tenancy_access:tenancyPath#role
+//
+// This lets Keto resolve: "user is owner in tenancy_access for this partition"
+// → "user is owner in service_profile for this partition" → OPL grants permissions.
+func BuildRoleInheritanceTuples(tenancyPath string, namespaces []string, roles []string) []security.RelationTuple {
+	tuples := make([]security.RelationTuple, 0, len(namespaces)*len(roles))
+
+	for _, ns := range namespaces {
+		for _, role := range roles {
+			tuples = append(tuples, security.RelationTuple{
+				Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
+				Relation: role,
+				Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath, Relation: role},
+			})
+		}
 	}
 	return tuples
 }

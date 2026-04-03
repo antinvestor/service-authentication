@@ -149,14 +149,24 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 			namespaces = append(namespaces, ns)
 		}
 
+		// Service account bridge tuples: ns#service ← tenancy_access#service
 		bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
+
+		// Human role bridge tuples: ns#role ← tenancy_access#role
+		// This propagates owner/admin/member from tenancy_access to every
+		// service namespace so that a single role assignment on a partition
+		// grants permissions across all services. OPL defines what each role
+		// can do per service.
+		roleBridgeTuples := authz.BuildRoleInheritanceTuples(tenancyPath, namespaces, authz.StandardRoles)
+		bridgeTuples = append(bridgeTuples, roleBridgeTuples...)
+
 		if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
 			logger.WithError(writeErr).WithFields(map[string]any{
 				"namespaces":  namespaces,
 				"tuple_count": len(bridgeTuples),
 				"tuples":      formatTuples(bridgeTuples),
-			}).Error("failed to write service namespace bridge tuples")
-			return fmt.Errorf("failed to write service namespace bridge tuples: %w", writeErr)
+			}).Error("failed to write namespace bridge tuples")
+			return fmt.Errorf("failed to write namespace bridge tuples: %w", writeErr)
 		}
 
 		logger.WithFields(map[string]any{

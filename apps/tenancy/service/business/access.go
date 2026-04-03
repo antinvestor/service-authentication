@@ -374,7 +374,11 @@ func (ab *accessBusiness) CreateAccessRole(
 		return nil, err
 	}
 
-	// Emit event to write cross-service Keto tuples asynchronously
+	// Emit event to write Keto tuples asynchronously.
+	// Tuples are written to both service_tenancy and tenancy_access.
+	// OPL bridge tuples (written during partition sync) propagate the role
+	// from tenancy_access to all service namespaces — no per-namespace
+	// code needed here.
 	if ab.eventsMan != nil {
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
