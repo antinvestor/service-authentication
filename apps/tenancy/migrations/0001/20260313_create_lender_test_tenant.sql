@@ -42,6 +42,20 @@ VALUES ('d6q1aekpf2taeg5iovr0', 'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
           }
         }');
 
+-- Standard partition roles (owner, admin, member)
+INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties)
+VALUES
+    ('d6q1aekpf2taeg5iovr1', NOW(), NOW(), 1,
+     'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
+     'owner', false, '{"description": "Full control across all services"}'),
+    ('d6q1aekpf2taeg5iovr2', NOW(), NOW(), 1,
+     'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
+     'admin', false, '{"description": "Manage partitions, access, roles, and pages"}'),
+    ('d6q1aekpf2taeg5iovr3', NOW(), NOW(), 1,
+     'd6q1aekpf2taeg5iovqg', 'd6q1aekpf2taeg5iovr0',
+     'member', true, '{"description": "Read-only access, auto-assigned on access creation"}')
+ON CONFLICT (id) DO NOTHING;
+
 -- Public client: user login via authorization_code + PKCE
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,

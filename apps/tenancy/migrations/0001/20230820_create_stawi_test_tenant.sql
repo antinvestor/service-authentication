@@ -27,6 +27,20 @@ INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, descriptio
             }
            }');
 
+-- Standard partition roles (owner, admin, member)
+INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties)
+VALUES
+    ('9bsv0s0hijjg02qks6j0', NOW(), NOW(), 1,
+     '9bsv0s0hijjg09bzz6dg', '9bsv0s0hijjg02qks6i0',
+     'owner', false, '{"description": "Full control across all services"}'),
+    ('9bsv0s0hijjg02qks6j1', NOW(), NOW(), 1,
+     '9bsv0s0hijjg09bzz6dg', '9bsv0s0hijjg02qks6i0',
+     'admin', false, '{"description": "Manage partitions, access, roles, and pages"}'),
+    ('9bsv0s0hijjg02qks6j2', NOW(), NOW(), 1,
+     '9bsv0s0hijjg09bzz6dg', '9bsv0s0hijjg02qks6i0',
+     'member', true, '{"description": "Read-only access, auto-assigned on access creation"}')
+ON CONFLICT (id) DO NOTHING;
+
 -- Public client for Stawi Development partition (user authorization_code flows)
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,

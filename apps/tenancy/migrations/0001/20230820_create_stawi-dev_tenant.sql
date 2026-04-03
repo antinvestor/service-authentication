@@ -29,6 +29,20 @@ VALUES ('9bsv0s0hid5g02qkl7gjg', '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg'
           }
         }');
 
+-- Standard partition roles (owner, admin, member)
+INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties)
+VALUES
+    ('9bsv0s0hid5g02qkl7h0', NOW(), NOW(), 1,
+     '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
+     'owner', false, '{"description": "Full control across all services"}'),
+    ('9bsv0s0hid5g02qkl7h1', NOW(), NOW(), 1,
+     '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
+     'admin', false, '{"description": "Manage partitions, access, roles, and pages"}'),
+    ('9bsv0s0hid5g02qkl7h2', NOW(), NOW(), 1,
+     '9bsv0s0hijjg02z5lr4g', '9bsv0s0hid5g02qkl7gjg',
+     'member', true, '{"description": "Read-only access, auto-assigned on access creation"}')
+ON CONFLICT (id) DO NOTHING;
+
 -- Public client for Stawi AI Builder partition (user authorization_code flows)
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
