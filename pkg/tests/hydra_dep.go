@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
@@ -221,11 +222,12 @@ func (d *hydraDependency) Setup(ctx context.Context, ntwk *testcontainers.Docker
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			// Bind the public port (4444) to the pre-allocated host port
 			// so OIDC discovery URLs match the actual host port.
+			publicPort, _ := network.ParsePort("4444/tcp")
 			if hostConfig.PortBindings == nil {
-				hostConfig.PortBindings = nat.PortMap{}
+				hostConfig.PortBindings = network.PortMap{}
 			}
-			hostConfig.PortBindings["4444/tcp"] = []nat.PortBinding{
-				{HostIP: "0.0.0.0", HostPort: publicPortStr},
+			hostConfig.PortBindings[publicPort] = []network.PortBinding{
+				{HostIP: netip.IPv4Unspecified(), HostPort: publicPortStr},
 			}
 		},
 	}
