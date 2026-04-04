@@ -300,6 +300,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ServiceAccountRepo, implementation.PartitionRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
+		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),
 	)}

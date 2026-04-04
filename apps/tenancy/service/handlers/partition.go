@@ -38,6 +38,9 @@ type TenancyServer struct {
 	PartitionRepo      repository.PartitionRepository
 	ClientRepo         repository.ClientRepository
 	ServiceAccountRepo repository.ServiceAccountRepository
+	AccessRepo         repository.AccessRepository
+	AccessRoleRepo     repository.AccessRoleRepository
+	PartitionRoleRepo  repository.PartitionRoleRepository
 
 	PartitionBusiness      business.PartitionBusiness
 	TenantBusiness         business.TenantBusiness
@@ -74,6 +77,9 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 		PartitionRepo:          partitionRepo,
 		ClientRepo:             clientRepo,
 		ServiceAccountRepo:     serviceAccountRepo,
+		AccessRepo:             accessRepo,
+		AccessRoleRepo:         accessRoleRepo,
+		PartitionRoleRepo:      partitionRoleRepo,
 		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
 		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
 		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo),

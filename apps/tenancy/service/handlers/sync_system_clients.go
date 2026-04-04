@@ -112,6 +112,13 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 		response["service_account_authz_sync_error"] = err.Error()
 	}
 
+	// Sync user access records — ensures migration-seeded accesses get Keto tuples
+	err = business.ReQueueAccessesForSync(ctx, prtSrv.AccessRepo, prtSrv.eventsMan, syncQuery())
+	if err != nil {
+		log.WithError(err).Error("internal service error synchronising user access authz")
+		response["access_authz_sync_error"] = err.Error()
+	}
+
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(rw).Encode(response)

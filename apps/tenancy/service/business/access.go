@@ -392,3 +392,29 @@ func (ab *accessBusiness) CreateAccessRole(
 	partitionRoleObj := toAPIPartitionRole(partitionRoles[0])
 	return accessRole.ToAPI(partitionRoleObj), nil
 }
+
+// ReQueueAccessesForSync re-queues all access records for authorization tuple sync.
+// This ensures that access records created outside the normal RPC flow (e.g. via
+// SQL migrations) get their tenancy_access tuples written to Keto.
+func ReQueueAccessesForSync(ctx context.Context, accessRepo repository.AccessRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
+	jobResult, err := accessRepo.Search(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	for {
+		result, ok := jobResult.ReadResult(ctx)
+		if !ok {
+			return nil
+		}
+		if result.IsError() {
+			return result.Error()
+		}
+		for _, access := range result.Item() {
+			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzAccessSync, data.JSONMap{"id": access.GetID()}); emitErr != nil {
+				util.Log(ctx).WithError(emitErr).WithField("access_id", access.GetID()).
+					Warn("failed to emit access authz sync event")
+			}
+		}
+	}
+}

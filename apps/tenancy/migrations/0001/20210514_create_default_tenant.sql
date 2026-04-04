@@ -28,7 +28,8 @@
 --          ├─ Client (d6qbqdkpf2t52mcunf3g)          ← Thesa dev (authorization_code)
 --          ├─ PartitionRole (owner, admin, member)   ← standard role set
 --          ├─ Access (d75qclkpf2t1uum8ij30)          ← Platform Admin (bwire517@gmail.com)
---          └─ AccessRole (d75qclkpf2t1uum8ij23)     ← Admin → owner role
+--          ├─ AccessRole (d75qclkpf2t1uum8ij23)     ← Admin → owner role
+--          └─ AccessRole (d75qclkpf2t1uum8ij24)     ← Admin → member role (base access)
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_service_accounts_production.sql
@@ -163,22 +164,35 @@ INSERT INTO accesses (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ==========================================================================
--- PLATFORM ADMIN ROLE: assign owner role to the platform admin
+-- PLATFORM ADMIN ROLES: assign owner + member roles to the platform admin
 -- ==========================================================================
 --
--- Links the admin's access record to the "owner" partition role, granting
--- full permissions across all services. The tenancy service writes Keto
--- tuples for this role assignment on startup (partition sync) or when the
--- access_role is created via API.
+-- Links the admin's access record to partition roles, granting full
+-- permissions across all services. The tenancy service writes Keto
+-- tuples for these role assignments during partition sync or when
+-- access_roles are created via API.
 --
--- access_roles junction: access (d75qclkpf2t1uum8ij30) → owner role (d75qclkpf2t1uum8ij20)
+-- Both owner AND member are required because:
+-- - owner: grants administrative permissions across all services
+-- - member: grants base data-access (tenancy_access#member) which services
+--   check before evaluating any functional permissions
+--
+-- The tenancy_access namespace has NO OPL permits — only direct relations —
+-- so owner does NOT imply member. Without the member tuple, even an owner
+-- gets "permission denied: cannot member on tenancy_access".
 -- ==========================================================================
 INSERT INTO access_roles (id, created_at, modified_at, version, tenant_id, partition_id, access_id, partition_role_id)
-VALUES (
-    'd75qclkpf2t1uum8ij23',                       -- static xid for the admin access role
-    NOW(), NOW(), 1,
-    'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
-    'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
-    'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
-    'd75qclkpf2t1uum8ij20'                         -- role: owner
-) ON CONFLICT (id) DO NOTHING;
+VALUES
+    ('d75qclkpf2t1uum8ij23',                       -- static xid for the admin owner role
+     NOW(), NOW(), 1,
+     'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
+     'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
+     'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
+     'd75qclkpf2t1uum8ij20'),                      -- role: owner
+    ('d75qclkpf2t1uum8ij24',                       -- static xid for the admin member role
+     NOW(), NOW(), 1,
+     'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
+     'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
+     'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
+     'd75qclkpf2t1uum8ij22')                       -- role: member
+ON CONFLICT (id) DO NOTHING;
