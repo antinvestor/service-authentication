@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/url"
 	"strings"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
@@ -115,6 +116,51 @@ func (cb *clientBusiness) CreateClient(
 		default:
 			scopes = "openid offline_access profile"
 		}
+	}
+
+	// Validate redirect URIs
+	for i, uri := range redirectURIs {
+		uri = strings.TrimSpace(uri)
+		if uri == "" {
+			continue
+		}
+		parsedURI, parseErr := url.Parse(uri)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid redirect_uri at index %d: %w", i, parseErr)
+		}
+		if parsedURI.Scheme == "" || parsedURI.Host == "" {
+			return nil, fmt.Errorf("redirect_uri at index %d must have scheme and host: %q", i, uri)
+		}
+		redirectURIs[i] = parsedURI.String()
+	}
+	// Remove empty entries
+	redirectURIs = filterEmpty(redirectURIs)
+
+	// Validate grant types
+	validGrantTypes := map[string]bool{
+		"authorization_code": true, "client_credentials": true,
+		"refresh_token": true, "implicit": true,
+	}
+	for _, gt := range grantTypes {
+		if !validGrantTypes[gt] {
+			return nil, fmt.Errorf("invalid grant_type %q", gt)
+		}
+	}
+
+	// Validate response types
+	validResponseTypes := map[string]bool{
+		"code": true, "token": true, "id_token": true,
+	}
+	for _, rt := range responseTypes {
+		if !validResponseTypes[rt] {
+			return nil, fmt.Errorf("invalid response_type %q", rt)
+		}
+	}
+
+	// Validate name
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, fmt.Errorf("client name is required")
 	}
 
 	// Generate credentials
@@ -349,4 +395,14 @@ func GetStringSlice(m data.JSONMap, key string) []string {
 		}
 	}
 	return nil
+}
+
+func filterEmpty(ss []string) []string {
+	result := make([]string, 0, len(ss))
+	for _, s := range ss {
+		if s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
 }
