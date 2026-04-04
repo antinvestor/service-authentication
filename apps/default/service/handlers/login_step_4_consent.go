@@ -34,6 +34,40 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const (
+	// Root tenant and partition IDs — admin/owner users on these get the
+	// "internal" role so they can use cross-tenant impersonation.
+	rootTenantID    = "c2f4j7au6s7f91uqnojg"
+	rootPartitionID = "c2f4j7au6s7f91uqnokg"
+)
+
+// filterInternalScope removes the "internal" scope from a requested scope list.
+// The "internal" capability is granted server-side based on roles, not requested
+// by clients.
+func filterInternalScope(scopes []string) []string {
+	filtered := make([]string, 0, len(scopes))
+	for _, s := range scopes {
+		if !strings.EqualFold(s, SATypeInternal) {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
+}
+
+// isRootAdminOrOwner checks if the given tenant/partition match the root and
+// the roles include "admin" or "owner".
+func isRootAdminOrOwner(tenantID, partitionID string, roles []string) bool {
+	if tenantID != rootTenantID || partitionID != rootPartitionID {
+		return false
+	}
+	for _, r := range roles {
+		if strings.EqualFold(r, "owner") || strings.EqualFold(r, "admin") {
+			return true
+		}
+	}
+	return false
+}
+
 // ShowConsentEndpoint handles the OAuth2 consent flow.
 // It retrieves consent challenge, processes device session, and grants consent.
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
@@ -98,10 +132,14 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		return err
 	}
 
-	// Step 4: Accept consent and get redirect URL
+	// Step 4: Accept consent and get redirect URL.
+	// Filter out "internal" from granted scopes — it is a server-side capability
+	// granted based on roles, not a client-requestable scope.
+	grantedScopes := filterInternalScope(getConseReq.GetRequestedScope())
+
 	params := &hydra.AcceptConsentRequestParams{
 		ConsentChallenge:  consentChallenge,
-		GrantScope:        getConseReq.GetRequestedScope(),
+		GrantScope:        grantedScopes,
 		GrantAudience:     client.GetAudience(),
 		AccessTokenExtras: tokenMap,
 		IdTokenExtras:     tokenMap,
@@ -321,6 +359,21 @@ func (h *AuthServer) buildUserTokenClaims(
 
 	defaultRole := partitionDefaultRole(clientObj.GetPartition())
 	roles := h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID(), defaultRole)
+
+	// Grant "internal" role to admin/owner users on the root tenant+partition.
+	// This enables cross-tenant impersonation via EnrichTenancyClaims headers.
+	if isRootAdminOrOwner(loginEvent.GetTenantID(), loginEvent.GetPartitionID(), roles) {
+		hasInternal := false
+		for _, r := range roles {
+			if strings.EqualFold(r, SATypeInternal) {
+				hasInternal = true
+				break
+			}
+		}
+		if !hasInternal {
+			roles = append(roles, SATypeInternal)
+		}
+	}
 
 	// Persist resolved roles in login event properties so the webhook fallback can use them
 	// without calling the partition service (avoids circular dependency).
