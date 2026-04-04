@@ -118,7 +118,7 @@ func (cb *clientBusiness) CreateClient(
 		}
 	}
 
-	// Validate redirect URIs
+	// Validate redirect URIs — accepts both https:// and custom schemes (e.g. myapp://)
 	for i, uri := range redirectURIs {
 		uri = strings.TrimSpace(uri)
 		if uri == "" {
@@ -128,8 +128,8 @@ func (cb *clientBusiness) CreateClient(
 		if parseErr != nil {
 			return nil, fmt.Errorf("invalid redirect_uri at index %d: %w", i, parseErr)
 		}
-		if parsedURI.Scheme == "" || parsedURI.Host == "" {
-			return nil, fmt.Errorf("redirect_uri at index %d must have scheme and host: %q", i, uri)
+		if parsedURI.Scheme == "" {
+			return nil, fmt.Errorf("redirect_uri at index %d must have a scheme (e.g. https:// or myapp://): %q", i, uri)
 		}
 		redirectURIs[i] = parsedURI.String()
 	}
