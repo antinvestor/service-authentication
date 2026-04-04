@@ -262,7 +262,7 @@ func extractStringList(properties map[string]any, key string) []string {
 
 func prepareRedirectURIs(partition *models.Partition) ([]string, error) {
 	var uriList []string
-	if val, ok := partition.Properties["redirect_uris"]; ok {
+	if val, ok := partition.Properties["redirect_uris"]; ok && val != nil {
 		switch uris := val.(type) {
 		case string:
 			uriList = strings.Split(uris, ",")
@@ -272,6 +272,8 @@ func prepareRedirectURIs(partition *models.Partition) ([]string, error) {
 					uriList = append(uriList, str)
 				}
 			}
+		case nil:
+			// nil is valid — treated as empty list
 		default:
 			return nil, fmt.Errorf("invalid redirect_uris format: %v", val)
 		}
