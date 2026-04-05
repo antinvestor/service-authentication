@@ -110,6 +110,7 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 	}
 
 	// Role tuples for each assigned access role
+	hasPrivilegedRole := false
 	accessRoles, err := e.accessRoleRepo.GetByAccessID(ctx, accessID)
 	if err != nil {
 		logger.WithError(err).Warn("failed to list access roles, writing member tuple only")
@@ -126,9 +127,20 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 			} else {
 				for _, role := range roles {
 					tuples = append(tuples, authz.BuildRoleTuples(tenancyPath, profileID, role.Name)...)
+					if role.Name == authz.RoleOwner || role.Name == authz.RoleAdmin {
+						hasPrivilegedRole = true
+					}
 				}
 			}
 		}
+	}
+
+	// Root partition owner/admin users get the "internal" JWT role at login,
+	// and Frame's TenancyAccessChecker checks the "service" relation for
+	// internal callers. Only owner/admin need this — plain members never
+	// receive the "internal" JWT role.
+	if authz.IsRootPartition(access.PartitionID) && hasPrivilegedRole {
+		tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, profileID))
 	}
 
 	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {

@@ -27,18 +27,12 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
-)
-
-const (
-	// Root tenant and partition IDs — admin/owner users on these get the
-	// "internal" role so they can use cross-tenant impersonation.
-	rootTenantID    = "c2f4j7au6s7f91uqnojg"
-	rootPartitionID = "c2f4j7au6s7f91uqnokg"
 )
 
 // filterInternalScope removes the "internal" scope from a requested scope list.
@@ -57,7 +51,7 @@ func filterInternalScope(scopes []string) []string {
 // isRootAdminOrOwner checks if the given tenant/partition match the root and
 // the roles include "admin" or "owner".
 func isRootAdminOrOwner(tenantID, partitionID string, roles []string) bool {
-	if tenantID != rootTenantID || partitionID != rootPartitionID {
+	if tenantID != authz.RootTenantID || partitionID != authz.RootPartitionID {
 		return false
 	}
 	for _, r := range roles {

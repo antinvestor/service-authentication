@@ -436,17 +436,36 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		}
 	}
 
-	// Delete Keto tuples
+	// Delete all Keto tuples: data access, explicit permissions, and bridge tuples
 	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, sa.ProfileID),
 		authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID),
 	}
 
-	// Delete explicit permission tuples for each audience namespace
+	// Also clean up tuples for clientID if different from profileID
+	if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
+		tuples = append(tuples,
+			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
+			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
+		)
+	}
+
+	// Delete per-namespace tuples: explicit permission grants AND bridge tuples
 	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
+	var bridgeNamespaces []string
 	for ns, perms := range audiencePerms {
-		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ProfileID, ns, perms)...)
+		if authz.IsFullAccess(perms) {
+			bridgeNamespaces = append(bridgeNamespaces, ns)
+		} else {
+			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ProfileID, ns, perms)...)
+			if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
+				tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
+			}
+		}
+	}
+	if len(bridgeNamespaces) > 0 {
+		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
 	}
 
 	if delErr := sb.authorizer.DeleteTuples(ctx, tuples); delErr != nil {

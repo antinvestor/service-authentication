@@ -50,15 +50,6 @@ func main() {
 		cfg.ServiceName = "service_authentication"
 	}
 
-	commandHandled, commandErr := handleOneShotCommands(ctx, cfg)
-	if commandErr != nil {
-		util.Log(ctx).WithError(commandErr).Fatal("could not execute command")
-		return
-	}
-	if commandHandled {
-		return
-	}
-
 	rawCache, err := setupCache(ctx, cfg)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not setup cache")

@@ -177,10 +177,35 @@ func (ab *accessBusiness) ListAccess(
 func (ab *accessBusiness) RemoveAccess(
 	ctx context.Context,
 	request *tenancyv1.RemoveAccessRequest) error {
+	logger := ab.service.Log(ctx)
+
 	// Look up the access record before deleting to get tenant/partition info
 	access, err := ab.accessRepo.GetByID(ctx, request.GetId())
 	if err != nil {
 		return err
+	}
+
+	// Collect all role tuples before deleting so we can clean up Keto fully.
+	tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
+	var roleTuples []security.RelationTuple
+
+	accessRoles, roleErr := ab.accessRoleRepo.GetByAccessID(ctx, request.GetId())
+	if roleErr != nil {
+		logger.WithError(roleErr).Warn("failed to list access roles for cleanup")
+	} else if len(accessRoles) > 0 {
+		roleIDs := make([]string, 0, len(accessRoles))
+		for _, ar := range accessRoles {
+			roleIDs = append(roleIDs, ar.PartitionRoleID)
+		}
+
+		roles, resolveErr := ab.partitionRoleRepo.GetRolesByID(ctx, roleIDs...)
+		if resolveErr != nil {
+			logger.WithError(resolveErr).Warn("failed to resolve role names for cleanup")
+		} else {
+			for _, role := range roles {
+				roleTuples = append(roleTuples, authz.BuildRoleTuples(tenancyPath, access.ProfileID, role.Name)...)
+			}
+		}
 	}
 
 	err = ab.accessRepo.Delete(ctx, request.GetId())
@@ -188,13 +213,21 @@ func (ab *accessBusiness) RemoveAccess(
 		return err
 	}
 
-	// Emit event to delete the tenancy_access tuple asynchronously
+	// Delete all Keto tuples: member, service (if root), and all role tuples
 	if ab.eventsMan != nil {
-		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
-		accessTuple := authz.BuildAccessTuple(tenancyPath, access.ProfileID)
-		payload := events.TuplesToPayload([]security.RelationTuple{accessTuple})
+		tuples := []security.RelationTuple{
+			authz.BuildAccessTuple(tenancyPath, access.ProfileID),
+		}
+
+		if authz.IsRootPartition(access.PartitionID) {
+			tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, access.ProfileID))
+		}
+
+		tuples = append(tuples, roleTuples...)
+
+		payload := events.TuplesToPayload(tuples)
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); emitErr != nil {
-			util.Log(ctx).WithError(emitErr).Warn("failed to emit tenancy_access tuple delete event")
+			logger.WithError(emitErr).Warn("failed to emit authorization tuple delete event")
 		}
 	}
 
@@ -236,7 +269,7 @@ func (ab *accessBusiness) CreateAccess(
 		return nil, err
 	}
 
-	// Emit event to write tenancy_access tuple asynchronously
+	// Emit event to write tenancy_access#member tuple asynchronously
 	if ab.eventsMan != nil {
 		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 		accessTuple := authz.BuildAccessTuple(tenancyPath, request.GetProfileId())
@@ -342,6 +375,13 @@ func (ab *accessBusiness) RemoveAccessRole(
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
 		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
+
+		// Also remove the service tuple if removing owner/admin from root partition
+		if authz.IsRootPartition(access.PartitionID) &&
+			(roleName == authz.RoleOwner || roleName == authz.RoleAdmin) {
+			tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, access.ProfileID))
+		}
+
 		payload := events.TuplesToPayload(tuples)
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); emitErr != nil {
 			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple delete event")
@@ -383,6 +423,15 @@ func (ab *accessBusiness) CreateAccessRole(
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
 		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
+
+		// Root partition owner/admin users receive the "internal" JWT role
+		// at login. Frame's TenancyAccessChecker checks the "service"
+		// relation for internal callers, so they need this tuple.
+		if authz.IsRootPartition(access.PartitionID) &&
+			(roleName == authz.RoleOwner || roleName == authz.RoleAdmin) {
+			tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, access.ProfileID))
+		}
+
 		payload := events.TuplesToPayload(tuples)
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 			util.Log(ctx).WithError(emitErr).Warn("failed to emit authorization tuple write event")

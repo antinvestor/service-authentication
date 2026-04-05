@@ -68,3 +68,16 @@ const (
 	RoleMember  = "member"
 	RoleService = "service"
 )
+
+// Root tenant and partition IDs. Users with owner/admin roles on this
+// partition receive the "internal" JWT role at login, enabling cross-tenant
+// administration via EnrichTenancyClaims.
+const (
+	RootTenantID    = "c2f4j7au6s7f91uqnojg"
+	RootPartitionID = "c2f4j7au6s7f91uqnokg"
+)
+
+// IsRootPartition reports whether the given partition ID is the root partition.
+func IsRootPartition(partitionID string) bool {
+	return partitionID == RootPartitionID
+}
