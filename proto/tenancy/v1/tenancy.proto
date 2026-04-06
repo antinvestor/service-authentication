@@ -1039,6 +1039,69 @@ message RemoveClientResponse {
 }
 
 // -----------------------------------------------------
+// Permission Management Messages
+// -----------------------------------------------------
+
+// ServiceNamespaceObject represents a registered service's permission namespace.
+message ServiceNamespaceObject {
+  string namespace = 1; // Service namespace identifier (e.g. "service_profile")
+  repeated string permissions = 2; // All permissions available in this namespace
+  map<string, RolePermissionList> role_bindings = 3; // Role → permissions mappings
+  google.protobuf.Timestamp registered_at = 4; // When the manifest was last registered
+}
+
+// RolePermissionList holds the permissions granted to a role.
+message RolePermissionList {
+  repeated string permissions = 1;
+}
+
+message ListServiceNamespacesRequest {}
+
+message ListServiceNamespacesResponse {
+  repeated ServiceNamespaceObject data = 1;
+}
+
+message GrantPermissionRequest {
+  string namespace = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Service namespace (e.g. "service_profile")
+  string permission = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ]; // Permission to grant (e.g. "profile_view")
+  string profile_id = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ]; // Profile receiving the permission
+}
+
+message GrantPermissionResponse {
+  bool succeeded = 1;
+}
+
+message RevokePermissionRequest {
+  string namespace = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string permission = 2 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string profile_id = 3 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
+}
+
+message RevokePermissionResponse {
+  bool succeeded = 1;
+}
+
+// -----------------------------------------------------
 // Partition Service
 // -----------------------------------------------------
 
@@ -1643,6 +1706,46 @@ service TenancyService {
       summary: "Remove OAuth2 client"
       description: "Removes an OAuth2 client and its Hydra registration."
       tags: "Clients"
+    };
+  }
+
+  // ListServiceNamespaces returns all registered service permission namespaces.
+  rpc ListServiceNamespaces(ListServiceNamespacesRequest) returns (ListServiceNamespacesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listServiceNamespaces"
+      summary: "List service namespaces"
+      description: "Returns all registered service permission namespaces with their available permissions and role bindings."
+      tags: "Permissions"
+    };
+  }
+
+  // GrantPermission grants a specific permission to a profile in a service namespace.
+  rpc GrantPermission(GrantPermissionRequest) returns (GrantPermissionResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "grantPermission"
+      summary: "Grant permission"
+      description: "Creates a granted_* Keto tuple giving the specified profile a specific permission in the given service namespace."
+      tags: "Permissions"
+    };
+  }
+
+  // RevokePermission revokes a specific permission from a profile in a service namespace.
+  rpc RevokePermission(RevokePermissionRequest) returns (RevokePermissionResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "revokePermission"
+      summary: "Revoke permission"
+      description: "Deletes the granted_* Keto tuple removing a specific permission from a profile in the given service namespace."
+      tags: "Permissions"
     };
   }
 }

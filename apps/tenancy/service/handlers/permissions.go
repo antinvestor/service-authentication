@@ -22,12 +22,15 @@ import (
 	"slices"
 	"time"
 
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // permissionManifest matches the payload published by services at startup.
@@ -36,21 +39,6 @@ type permissionManifest struct {
 	Permissions  []string            `json:"permissions"`
 	RoleBindings map[string][]string `json:"role_bindings"`
 	RegisteredAt time.Time           `json:"registered_at"`
-}
-
-// serviceNamespaceResponse is the JSON response for listing service namespaces.
-type serviceNamespaceResponse struct {
-	Namespace    string              `json:"namespace"`
-	Permissions  []string            `json:"permissions"`
-	RoleBindings map[string][]string `json:"role_bindings"`
-	RegisteredAt *time.Time          `json:"registered_at,omitempty"`
-}
-
-// permissionGrantRequest is the JSON request for granting/revoking permissions.
-type permissionGrantRequest struct {
-	Namespace  string `json:"namespace"`
-	Permission string `json:"permission"`
-	ProfileID  string `json:"profile_id"`
 }
 
 // NewInternalPermissionsHandler returns an HTTP handler for the internal
@@ -84,6 +72,18 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 		return
 	}
 
+	if err := prtSrv.upsertServiceNamespace(ctx, manifest); err != nil {
+		logger.WithError(err).Error("failed to upsert service namespace")
+		http.Error(rw, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
+	rw.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})
+}
+
+func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifest permissionManifest) error {
 	permList := data.JSONMap{"values": manifest.Permissions}
 	roleBindings := make(data.JSONMap, len(manifest.RoleBindings))
 	for role, perms := range manifest.RoleBindings {
@@ -92,151 +92,120 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 
 	existing, err := prtSrv.ServiceNamespaceRepo.GetByNamespace(ctx, manifest.Namespace)
 	if err != nil {
-		// Create new
 		ns := &models.ServiceNamespace{
 			Namespace:    manifest.Namespace,
 			Permissions:  permList,
 			RoleBindings: roleBindings,
 			RegisteredAt: &manifest.RegisteredAt,
 		}
-		if createErr := prtSrv.ServiceNamespaceRepo.Create(ctx, ns); createErr != nil {
-			logger.WithError(createErr).Error("failed to create service namespace")
-			http.Error(rw, "internal error", http.StatusInternalServerError)
-			return
-		}
-	} else {
-		// Update existing
-		existing.Permissions = permList
-		existing.RoleBindings = roleBindings
-		existing.RegisteredAt = &manifest.RegisteredAt
-		if _, saveErr := prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "permissions", "role_bindings", "registered_at"); saveErr != nil {
-			logger.WithError(saveErr).Error("failed to update service namespace")
-			http.Error(rw, "internal error", http.StatusInternalServerError)
-			return
-		}
+		return prtSrv.ServiceNamespaceRepo.Create(ctx, ns)
 	}
 
-	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
-	rw.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})
+	existing.Permissions = permList
+	existing.RoleBindings = roleBindings
+	existing.RegisteredAt = &manifest.RegisteredAt
+	_, err = prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "permissions", "role_bindings", "registered_at")
+	return err
 }
 
-// ListServiceNamespaces handles GET /permissions — returns all registered service namespaces.
-func (prtSrv *TenancyServer) ListServiceNamespaces(rw http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-
+// ListServiceNamespaces implements the Connect RPC to list all registered service namespaces.
+func (prtSrv *TenancyServer) ListServiceNamespaces(
+	ctx context.Context,
+	_ *connect.Request[tenancyv1.ListServiceNamespacesRequest],
+) (*connect.Response[tenancyv1.ListServiceNamespacesResponse], error) {
 	namespaces, err := prtSrv.ServiceNamespaceRepo.ListAll(ctx)
 	if err != nil {
-		http.Error(rw, "failed to list namespaces", http.StatusInternalServerError)
-		return
+		return nil, prtSrv.toAPIError(err)
 	}
 
-	result := make([]serviceNamespaceResponse, 0, len(namespaces))
+	result := make([]*tenancyv1.ServiceNamespaceObject, 0, len(namespaces))
 	for _, ns := range namespaces {
-		result = append(result, toServiceNamespaceResponse(ns))
+		result = append(result, toServiceNamespaceProto(ns))
 	}
 
-	rw.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(rw).Encode(map[string]any{"data": result})
+	return connect.NewResponse(&tenancyv1.ListServiceNamespacesResponse{Data: result}), nil
 }
 
-// GrantPermission handles POST /permissions/grant — creates a granted_* Keto tuple.
-func (prtSrv *TenancyServer) GrantPermission(rw http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	logger := util.Log(ctx)
-
-	var grantReq permissionGrantRequest
-	if err := json.NewDecoder(req.Body).Decode(&grantReq); err != nil {
-		http.Error(rw, "invalid request body", http.StatusBadRequest)
-		return
+// GrantPermission implements the Connect RPC to grant a specific permission to a profile.
+func (prtSrv *TenancyServer) GrantPermission(
+	ctx context.Context,
+	req *connect.Request[tenancyv1.GrantPermissionRequest],
+) (*connect.Response[tenancyv1.GrantPermissionResponse], error) {
+	if err := prtSrv.validatePermission(ctx, req.Msg.GetNamespace(), req.Msg.GetPermission()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	if err := prtSrv.validatePermissionRequest(ctx, grantReq); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Build the granted_* Keto tuple
 	claims := security.ClaimsFromContext(ctx)
-	tenantID := claims.GetTenantID()
-	partitionID := claims.GetPartitionID()
-	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
+	tenancyPath := fmt.Sprintf("%s/%s", claims.GetTenantID(), claims.GetPartitionID())
 
-	tuple := authz.BuildPermissionTuple(grantReq.Namespace, tenancyPath, grantReq.Permission, grantReq.ProfileID)
-
+	tuple := authz.BuildPermissionTuple(req.Msg.GetNamespace(), tenancyPath, req.Msg.GetPermission(), req.Msg.GetProfileId())
 	payload := events.TuplesToPayload([]security.RelationTuple{tuple})
+
 	if err := prtSrv.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); err != nil {
-		logger.WithError(err).Error("failed to emit permission grant tuple")
-		http.Error(rw, "failed to grant permission", http.StatusInternalServerError)
-		return
+		util.Log(ctx).WithError(err).Error("failed to emit permission grant tuple")
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to grant permission"))
 	}
 
-	rw.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(rw).Encode(map[string]any{"granted": true})
+	return connect.NewResponse(&tenancyv1.GrantPermissionResponse{Succeeded: true}), nil
 }
 
-// RevokePermission handles POST /permissions/revoke — deletes a granted_* Keto tuple.
-func (prtSrv *TenancyServer) RevokePermission(rw http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	logger := util.Log(ctx)
-
-	var revokeReq permissionGrantRequest
-	if err := json.NewDecoder(req.Body).Decode(&revokeReq); err != nil {
-		http.Error(rw, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if err := prtSrv.validatePermissionRequest(ctx, revokeReq); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
+// RevokePermission implements the Connect RPC to revoke a specific permission from a profile.
+func (prtSrv *TenancyServer) RevokePermission(
+	ctx context.Context,
+	req *connect.Request[tenancyv1.RevokePermissionRequest],
+) (*connect.Response[tenancyv1.RevokePermissionResponse], error) {
+	if err := prtSrv.validatePermission(ctx, req.Msg.GetNamespace(), req.Msg.GetPermission()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	claims := security.ClaimsFromContext(ctx)
-	tenantID := claims.GetTenantID()
-	partitionID := claims.GetPartitionID()
-	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
+	tenancyPath := fmt.Sprintf("%s/%s", claims.GetTenantID(), claims.GetPartitionID())
 
-	tuple := authz.BuildPermissionTuple(revokeReq.Namespace, tenancyPath, revokeReq.Permission, revokeReq.ProfileID)
-
+	tuple := authz.BuildPermissionTuple(req.Msg.GetNamespace(), tenancyPath, req.Msg.GetPermission(), req.Msg.GetProfileId())
 	payload := events.TuplesToPayload([]security.RelationTuple{tuple})
+
 	if err := prtSrv.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); err != nil {
-		logger.WithError(err).Error("failed to emit permission revoke tuple")
-		http.Error(rw, "failed to revoke permission", http.StatusInternalServerError)
-		return
+		util.Log(ctx).WithError(err).Error("failed to emit permission revoke tuple")
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to revoke permission"))
 	}
 
-	rw.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(rw).Encode(map[string]any{"revoked": true})
+	return connect.NewResponse(&tenancyv1.RevokePermissionResponse{Succeeded: true}), nil
 }
 
-// validatePermissionRequest checks that the namespace and permission exist in
-// the service namespace registry.
-func (prtSrv *TenancyServer) validatePermissionRequest(ctx context.Context, req permissionGrantRequest) error {
-	if req.Namespace == "" || req.Permission == "" || req.ProfileID == "" {
-		return fmt.Errorf("namespace, permission, and profile_id are required")
-	}
-
-	ns, err := prtSrv.ServiceNamespaceRepo.GetByNamespace(ctx, req.Namespace)
+// validatePermission checks that the namespace and permission exist in the registry.
+func (prtSrv *TenancyServer) validatePermission(ctx context.Context, namespace, permission string) error {
+	ns, err := prtSrv.ServiceNamespaceRepo.GetByNamespace(ctx, namespace)
 	if err != nil {
-		return fmt.Errorf("namespace %q not registered", req.Namespace)
+		return fmt.Errorf("namespace %q not registered", namespace)
 	}
 
 	perms := extractPermissions(ns.Permissions)
-	if !slices.Contains(perms, req.Permission) {
-		return fmt.Errorf("permission %q not available in namespace %q", req.Permission, req.Namespace)
+	if !slices.Contains(perms, permission) {
+		return fmt.Errorf("permission %q not available in namespace %q", permission, namespace)
 	}
 
 	return nil
 }
 
-func toServiceNamespaceResponse(ns *models.ServiceNamespace) serviceNamespaceResponse {
-	resp := serviceNamespaceResponse{
-		Namespace:    ns.Namespace,
-		Permissions:  extractPermissions(ns.Permissions),
-		RoleBindings: extractRoleBindings(ns.RoleBindings),
-		RegisteredAt: ns.RegisteredAt,
+func toServiceNamespaceProto(ns *models.ServiceNamespace) *tenancyv1.ServiceNamespaceObject {
+	obj := &tenancyv1.ServiceNamespaceObject{
+		Namespace:   ns.Namespace,
+		Permissions: extractPermissions(ns.Permissions),
 	}
-	return resp
+
+	if ns.RegisteredAt != nil {
+		obj.RegisteredAt = timestamppb.New(*ns.RegisteredAt)
+	}
+
+	roleBindings := extractRoleBindings(ns.RoleBindings)
+	if len(roleBindings) > 0 {
+		obj.RoleBindings = make(map[string]*tenancyv1.RolePermissionList, len(roleBindings))
+		for role, perms := range roleBindings {
+			obj.RoleBindings[role] = &tenancyv1.RolePermissionList{Permissions: perms}
+		}
+	}
+
+	return obj
 }
 
 func extractPermissions(m data.JSONMap) []string {

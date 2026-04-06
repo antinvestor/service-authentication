@@ -180,17 +180,5 @@ func setupConnectServer(
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
 	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
 
-	// Authenticated permissions management endpoints — exposed through the
-	// API gateway for the admin UI to list, grant, and revoke permissions.
-	permissionsRouter := http.NewServeMux()
-	permissionsRouter.HandleFunc("GET /", implementation.ListServiceNamespaces)
-	permissionsRouter.HandleFunc("POST /grant", implementation.GrantPermission)
-	permissionsRouter.HandleFunc("POST /revoke", implementation.RevokePermission)
-
-	authenticatedPermissions := securityhttp.AuthenticationMiddleware(
-		securityhttp.TenancyAccessMiddleware(permissionsRouter, tenancyAccessChecker),
-		authenticator)
-	mux.Handle("/api/permissions/", http.StripPrefix("/api/permissions", authenticatedPermissions))
-
 	return mux
 }
