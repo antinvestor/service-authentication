@@ -21,7 +21,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/jackc/pgx/v5 v5.9.1
-	github.com/moby/moby/api v1.54.1-0.20260401134807-948d5691a093
+	github.com/moby/moby/api v1.54.1
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.93.7
 	github.com/pitabwire/util v0.8.0
