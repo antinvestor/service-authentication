@@ -675,4 +675,58 @@ extension type TenancyServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// ListServiceNamespaces returns all registered service permission namespaces.
+  Future<tenancyv1tenancy.ListServiceNamespacesResponse> listServiceNamespaces(
+    tenancyv1tenancy.ListServiceNamespacesRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.TenancyService.listServiceNamespaces,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// GrantPermission grants a specific permission to a profile in a service namespace.
+  Future<tenancyv1tenancy.GrantPermissionResponse> grantPermission(
+    tenancyv1tenancy.GrantPermissionRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.TenancyService.grantPermission,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// RevokePermission revokes a specific permission from a profile in a service namespace.
+  Future<tenancyv1tenancy.RevokePermissionResponse> revokePermission(
+    tenancyv1tenancy.RevokePermissionRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.TenancyService.revokePermission,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

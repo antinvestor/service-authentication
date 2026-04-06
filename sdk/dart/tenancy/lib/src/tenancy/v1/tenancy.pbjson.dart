@@ -1386,6 +1386,132 @@ const RemoveClientResponse$json = {
 final $typed_data.Uint8List removeClientResponseDescriptor = $convert.base64Decode(
     'ChRSZW1vdmVDbGllbnRSZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA==');
 
+@$core.Deprecated('Use serviceNamespaceObjectDescriptor instead')
+const ServiceNamespaceObject$json = {
+  '1': 'ServiceNamespaceObject',
+  '2': [
+    {'1': 'namespace', '3': 1, '4': 1, '5': 9, '10': 'namespace'},
+    {'1': 'permissions', '3': 2, '4': 3, '5': 9, '10': 'permissions'},
+    {'1': 'role_bindings', '3': 3, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry', '10': 'roleBindings'},
+    {'1': 'registered_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'registeredAt'},
+  ],
+  '3': [ServiceNamespaceObject_RoleBindingsEntry$json],
+};
+
+@$core.Deprecated('Use serviceNamespaceObjectDescriptor instead')
+const ServiceNamespaceObject_RoleBindingsEntry$json = {
+  '1': 'RoleBindingsEntry',
+  '2': [
+    {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    {'1': 'value', '3': 2, '4': 1, '5': 11, '6': '.tenancy.v1.RolePermissionList', '10': 'value'},
+  ],
+  '7': {'7': true},
+};
+
+/// Descriptor for `ServiceNamespaceObject`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List serviceNamespaceObjectDescriptor = $convert.base64Decode(
+    'ChZTZXJ2aWNlTmFtZXNwYWNlT2JqZWN0EhwKCW5hbWVzcGFjZRgBIAEoCVIJbmFtZXNwYWNlEi'
+    'AKC3Blcm1pc3Npb25zGAIgAygJUgtwZXJtaXNzaW9ucxJZCg1yb2xlX2JpbmRpbmdzGAMgAygL'
+    'MjQudGVuYW5jeS52MS5TZXJ2aWNlTmFtZXNwYWNlT2JqZWN0LlJvbGVCaW5kaW5nc0VudHJ5Ug'
+    'xyb2xlQmluZGluZ3MSPwoNcmVnaXN0ZXJlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5U'
+    'aW1lc3RhbXBSDHJlZ2lzdGVyZWRBdBpfChFSb2xlQmluZGluZ3NFbnRyeRIQCgNrZXkYASABKA'
+    'lSA2tleRI0CgV2YWx1ZRgCIAEoCzIeLnRlbmFuY3kudjEuUm9sZVBlcm1pc3Npb25MaXN0UgV2'
+    'YWx1ZToCOAE=');
+
+@$core.Deprecated('Use rolePermissionListDescriptor instead')
+const RolePermissionList$json = {
+  '1': 'RolePermissionList',
+  '2': [
+    {'1': 'permissions', '3': 1, '4': 3, '5': 9, '10': 'permissions'},
+  ],
+};
+
+/// Descriptor for `RolePermissionList`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List rolePermissionListDescriptor = $convert.base64Decode(
+    'ChJSb2xlUGVybWlzc2lvbkxpc3QSIAoLcGVybWlzc2lvbnMYASADKAlSC3Blcm1pc3Npb25z');
+
+@$core.Deprecated('Use listServiceNamespacesRequestDescriptor instead')
+const ListServiceNamespacesRequest$json = {
+  '1': 'ListServiceNamespacesRequest',
+};
+
+/// Descriptor for `ListServiceNamespacesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listServiceNamespacesRequestDescriptor = $convert.base64Decode(
+    'ChxMaXN0U2VydmljZU5hbWVzcGFjZXNSZXF1ZXN0');
+
+@$core.Deprecated('Use listServiceNamespacesResponseDescriptor instead')
+const ListServiceNamespacesResponse$json = {
+  '1': 'ListServiceNamespacesResponse',
+  '2': [
+    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceNamespaceObject', '10': 'data'},
+  ],
+};
+
+/// Descriptor for `ListServiceNamespacesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listServiceNamespacesResponseDescriptor = $convert.base64Decode(
+    'Ch1MaXN0U2VydmljZU5hbWVzcGFjZXNSZXNwb25zZRI2CgRkYXRhGAEgAygLMiIudGVuYW5jeS'
+    '52MS5TZXJ2aWNlTmFtZXNwYWNlT2JqZWN0UgRkYXRh');
+
+@$core.Deprecated('Use grantPermissionRequestDescriptor instead')
+const GrantPermissionRequest$json = {
+  '1': 'GrantPermissionRequest',
+  '2': [
+    {'1': 'namespace', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'namespace'},
+    {'1': 'permission', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'permission'},
+    {'1': 'profile_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
+  ],
+};
+
+/// Descriptor for `GrantPermissionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List grantPermissionRequestDescriptor = $convert.base64Decode(
+    'ChZHcmFudFBlcm1pc3Npb25SZXF1ZXN0EicKCW5hbWVzcGFjZRgBIAEoCUIJukgGcgQQAxhkUg'
+    'luYW1lc3BhY2USKQoKcGVybWlzc2lvbhgCIAEoCUIJukgGcgQQAxhkUgpwZXJtaXNzaW9uEjoK'
+    'CnByb2ZpbGVfaWQYAyABKAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfVIJcHJvZmlsZU'
+    'lk');
+
+@$core.Deprecated('Use grantPermissionResponseDescriptor instead')
+const GrantPermissionResponse$json = {
+  '1': 'GrantPermissionResponse',
+  '2': [
+    {'1': 'succeeded', '3': 1, '4': 1, '5': 8, '10': 'succeeded'},
+  ],
+};
+
+/// Descriptor for `GrantPermissionResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List grantPermissionResponseDescriptor = $convert.base64Decode(
+    'ChdHcmFudFBlcm1pc3Npb25SZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA'
+    '==');
+
+@$core.Deprecated('Use revokePermissionRequestDescriptor instead')
+const RevokePermissionRequest$json = {
+  '1': 'RevokePermissionRequest',
+  '2': [
+    {'1': 'namespace', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'namespace'},
+    {'1': 'permission', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'permission'},
+    {'1': 'profile_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
+  ],
+};
+
+/// Descriptor for `RevokePermissionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List revokePermissionRequestDescriptor = $convert.base64Decode(
+    'ChdSZXZva2VQZXJtaXNzaW9uUmVxdWVzdBInCgluYW1lc3BhY2UYASABKAlCCbpIBnIEEAMYZF'
+    'IJbmFtZXNwYWNlEikKCnBlcm1pc3Npb24YAiABKAlCCbpIBnIEEAMYZFIKcGVybWlzc2lvbhI6'
+    'Cgpwcm9maWxlX2lkGAMgASgJQhu6SBhyFhADGCgyEFswLTlhLXpfLV17Myw0MH1SCXByb2ZpbG'
+    'VJZA==');
+
+@$core.Deprecated('Use revokePermissionResponseDescriptor instead')
+const RevokePermissionResponse$json = {
+  '1': 'RevokePermissionResponse',
+  '2': [
+    {'1': 'succeeded', '3': 1, '4': 1, '5': 8, '10': 'succeeded'},
+  ],
+};
+
+/// Descriptor for `RevokePermissionResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List revokePermissionResponseDescriptor = $convert.base64Decode(
+    'ChhSZXZva2VQZXJtaXNzaW9uUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZW'
+    'Q=');
+
 const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
   '1': 'TenancyService',
   '2': [
@@ -1509,6 +1635,14 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
     },
     {'1': 'UpdateClient', '2': '.tenancy.v1.UpdateClientRequest', '3': '.tenancy.v1.UpdateClientResponse', '4': {}},
     {'1': 'RemoveClient', '2': '.tenancy.v1.RemoveClientRequest', '3': '.tenancy.v1.RemoveClientResponse', '4': {}},
+    {
+      '1': 'ListServiceNamespaces',
+      '2': '.tenancy.v1.ListServiceNamespacesRequest',
+      '3': '.tenancy.v1.ListServiceNamespacesResponse',
+      '4': {'34': 1},
+    },
+    {'1': 'GrantPermission', '2': '.tenancy.v1.GrantPermissionRequest', '3': '.tenancy.v1.GrantPermissionResponse', '4': {}},
+    {'1': 'RevokePermission', '2': '.tenancy.v1.RevokePermissionRequest', '3': '.tenancy.v1.RevokePermissionResponse', '4': {}},
   ],
   '3': {},
 };
@@ -1603,6 +1737,15 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> TenancySer
   '.tenancy.v1.UpdateClientResponse': UpdateClientResponse$json,
   '.tenancy.v1.RemoveClientRequest': RemoveClientRequest$json,
   '.tenancy.v1.RemoveClientResponse': RemoveClientResponse$json,
+  '.tenancy.v1.ListServiceNamespacesRequest': ListServiceNamespacesRequest$json,
+  '.tenancy.v1.ListServiceNamespacesResponse': ListServiceNamespacesResponse$json,
+  '.tenancy.v1.ServiceNamespaceObject': ServiceNamespaceObject$json,
+  '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry': ServiceNamespaceObject_RoleBindingsEntry$json,
+  '.tenancy.v1.RolePermissionList': RolePermissionList$json,
+  '.tenancy.v1.GrantPermissionRequest': GrantPermissionRequest$json,
+  '.tenancy.v1.GrantPermissionResponse': GrantPermissionResponse$json,
+  '.tenancy.v1.RevokePermissionRequest': RevokePermissionRequest$json,
+  '.tenancy.v1.RevokePermissionResponse': RevokePermissionResponse$json,
 };
 
 /// Descriptor for `TenancyService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -1777,25 +1920,40 @@ final $typed_data.Uint8List tenancyServiceDescriptor = $convert.base64Decode(
     'JlbW92ZUNsaWVudBIfLnRlbmFuY3kudjEuUmVtb3ZlQ2xpZW50UmVxdWVzdBogLnRlbmFuY3ku'
     'djEuUmVtb3ZlQ2xpZW50UmVzcG9uc2UiebpHYwoHQ2xpZW50cxIUUmVtb3ZlIE9BdXRoMiBjbG'
     'llbnQaNFJlbW92ZXMgYW4gT0F1dGgyIGNsaWVudCBhbmQgaXRzIEh5ZHJhIHJlZ2lzdHJhdGlv'
-    'bi4qDHJlbW92ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2UatgiCtRixCAoPc2VydmljZV90ZW'
-    '5hbmN5Egt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRp'
-    'dGlvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcG'
-    'FnZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50'
-    'X3ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYW'
-    'dlGt0BCAESC3RlbmFudF92aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFy'
-    'dGl0aW9uX21hbmFnZRILYWNjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEg'
-    'lwYWdlX3ZpZXcSC3BhZ2VfbWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291'
-    'bnRfdmlldxIWc2VydmljZV9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW'
-    '5hZ2UazgEIAhILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb25fbWFuYWdl'
-    'EgthY2Nlc3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2VfdmlldxILcG'
-    'FnZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aWV3EhZzZXJ2'
-    'aWNlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRpaCAMSC3Rlbm'
-    'FudF92aWV3Eg5wYXJ0aXRpb25fdmlldxILYWNjZXNzX3ZpZXcSCXBhZ2VfdmlldxIUc2Vydmlj'
-    'ZV9hY2NvdW50X3ZpZXcSC2NsaWVudF92aWV3GioIBBILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl'
-    '92aWV3EglwYWdlX3ZpZXcaKggFEgt0ZW5hbnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSCXBhZ2Vf'
-    'dmlldxrdAQgGEgt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEH'
-    'BhcnRpdGlvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFn'
-    'ZRIJcGFnZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2'
-    'NvdW50X3ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRf'
-    'bWFuYWdl');
+    'bi4qDHJlbW92ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USswIKFUxpc3RTZXJ2aWNlTmFtZX'
+    'NwYWNlcxIoLnRlbmFuY3kudjEuTGlzdFNlcnZpY2VOYW1lc3BhY2VzUmVxdWVzdBopLnRlbmFu'
+    'Y3kudjEuTGlzdFNlcnZpY2VOYW1lc3BhY2VzUmVzcG9uc2UixAGQAgG6R6cBCgtQZXJtaXNzaW'
+    '9ucxIXTGlzdCBzZXJ2aWNlIG5hbWVzcGFjZXMaaFJldHVybnMgYWxsIHJlZ2lzdGVyZWQgc2Vy'
+    'dmljZSBwZXJtaXNzaW9uIG5hbWVzcGFjZXMgd2l0aCB0aGVpciBhdmFpbGFibGUgcGVybWlzc2'
+    'lvbnMgYW5kIHJvbGUgYmluZGluZ3MuKhVsaXN0U2VydmljZU5hbWVzcGFjZXOCtRgSChBwZXJt'
+    'aXNzaW9uX2dyYW50EpoCCg9HcmFudFBlcm1pc3Npb24SIi50ZW5hbmN5LnYxLkdyYW50UGVybW'
+    'lzc2lvblJlcXVlc3QaIy50ZW5hbmN5LnYxLkdyYW50UGVybWlzc2lvblJlc3BvbnNlIr0Bukej'
+    'AQoLUGVybWlzc2lvbnMSEEdyYW50IHBlcm1pc3Npb24acUNyZWF0ZXMgYSBncmFudGVkXyogS2'
+    'V0byB0dXBsZSBnaXZpbmcgdGhlIHNwZWNpZmllZCBwcm9maWxlIGEgc3BlY2lmaWMgcGVybWlz'
+    'c2lvbiBpbiB0aGUgZ2l2ZW4gc2VydmljZSBuYW1lc3BhY2UuKg9ncmFudFBlcm1pc3Npb26CtR'
+    'gSChBwZXJtaXNzaW9uX2dyYW50EpwCChBSZXZva2VQZXJtaXNzaW9uEiMudGVuYW5jeS52MS5S'
+    'ZXZva2VQZXJtaXNzaW9uUmVxdWVzdBokLnRlbmFuY3kudjEuUmV2b2tlUGVybWlzc2lvblJlc3'
+    'BvbnNlIrwBukeiAQoLUGVybWlzc2lvbnMSEVJldm9rZSBwZXJtaXNzaW9uGm5EZWxldGVzIHRo'
+    'ZSBncmFudGVkXyogS2V0byB0dXBsZSByZW1vdmluZyBhIHNwZWNpZmljIHBlcm1pc3Npb24gZn'
+    'JvbSBhIHByb2ZpbGUgaW4gdGhlIGdpdmVuIHNlcnZpY2UgbmFtZXNwYWNlLioQcmV2b2tlUGVy'
+    'bWlzc2lvboK1GBIKEHBlcm1pc3Npb25fZ3JhbnQatgiCtRixCAoPc2VydmljZV90ZW5hbmN5Eg'
+    't0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdGlvbl9t'
+    'YW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcGFnZV92aW'
+    'V3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50X3ZpZXcS'
+    'FnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdlGt0BCA'
+    'ESC3RlbmFudF92aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFydGl0aW9u'
+    'X21hbmFnZRILYWNjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEglwYWdlX3'
+    'ZpZXcSC3BhZ2VfbWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291bnRfdmll'
+    'dxIWc2VydmljZV9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW5hZ2Uazg'
+    'EIAhILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb25fbWFuYWdlEgthY2Nl'
+    'c3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2VfdmlldxILcGFnZV9tYW'
+    '5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aWV3EhZzZXJ2aWNlX2Fj'
+    'Y291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRpaCAMSC3RlbmFudF92aW'
+    'V3Eg5wYXJ0aXRpb25fdmlldxILYWNjZXNzX3ZpZXcSCXBhZ2VfdmlldxIUc2VydmljZV9hY2Nv'
+    'dW50X3ZpZXcSC2NsaWVudF92aWV3GioIBBILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3Eg'
+    'lwYWdlX3ZpZXcaKggFEgt0ZW5hbnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSCXBhZ2Vfdmlldxrd'
+    'AQgGEgt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdG'
+    'lvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcGFn'
+    'ZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50X3'
+    'ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdl');
 

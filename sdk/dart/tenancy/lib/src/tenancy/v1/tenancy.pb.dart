@@ -6261,6 +6261,466 @@ class RemoveClientResponse extends $pb.GeneratedMessage {
   void clearSucceeded() => clearField(1);
 }
 
+/// ServiceNamespaceObject represents a registered service's permission namespace.
+class ServiceNamespaceObject extends $pb.GeneratedMessage {
+  factory ServiceNamespaceObject({
+    $core.String? namespace,
+    $core.Iterable<$core.String>? permissions,
+    $core.Map<$core.String, RolePermissionList>? roleBindings,
+    $2.Timestamp? registeredAt,
+  }) {
+    final $result = create();
+    if (namespace != null) {
+      $result.namespace = namespace;
+    }
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
+    if (roleBindings != null) {
+      $result.roleBindings.addAll(roleBindings);
+    }
+    if (registeredAt != null) {
+      $result.registeredAt = registeredAt;
+    }
+    return $result;
+  }
+  ServiceNamespaceObject._() : super();
+  factory ServiceNamespaceObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ServiceNamespaceObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServiceNamespaceObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespace')
+    ..pPS(2, _omitFieldNames ? '' : 'permissions')
+    ..m<$core.String, RolePermissionList>(3, _omitFieldNames ? '' : 'roleBindings', entryClassName: 'ServiceNamespaceObject.RoleBindingsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OM, valueCreator: RolePermissionList.create, valueDefaultOrMaker: RolePermissionList.getDefault, packageName: const $pb.PackageName('tenancy.v1'))
+    ..aOM<$2.Timestamp>(4, _omitFieldNames ? '' : 'registeredAt', subBuilder: $2.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ServiceNamespaceObject clone() => ServiceNamespaceObject()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ServiceNamespaceObject copyWith(void Function(ServiceNamespaceObject) updates) => super.copyWith((message) => updates(message as ServiceNamespaceObject)) as ServiceNamespaceObject;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ServiceNamespaceObject create() => ServiceNamespaceObject._();
+  ServiceNamespaceObject createEmptyInstance() => create();
+  static $pb.PbList<ServiceNamespaceObject> createRepeated() => $pb.PbList<ServiceNamespaceObject>();
+  @$core.pragma('dart2js:noInline')
+  static ServiceNamespaceObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServiceNamespaceObject>(create);
+  static ServiceNamespaceObject? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get namespace => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespace($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespace() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespace() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.List<$core.String> get permissions => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.Map<$core.String, RolePermissionList> get roleBindings => $_getMap(2);
+
+  @$pb.TagNumber(4)
+  $2.Timestamp get registeredAt => $_getN(3);
+  @$pb.TagNumber(4)
+  set registeredAt($2.Timestamp v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasRegisteredAt() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearRegisteredAt() => clearField(4);
+  @$pb.TagNumber(4)
+  $2.Timestamp ensureRegisteredAt() => $_ensure(3);
+}
+
+/// RolePermissionList holds the permissions granted to a role.
+class RolePermissionList extends $pb.GeneratedMessage {
+  factory RolePermissionList({
+    $core.Iterable<$core.String>? permissions,
+  }) {
+    final $result = create();
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
+    return $result;
+  }
+  RolePermissionList._() : super();
+  factory RolePermissionList.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RolePermissionList.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RolePermissionList', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..pPS(1, _omitFieldNames ? '' : 'permissions')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RolePermissionList clone() => RolePermissionList()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RolePermissionList copyWith(void Function(RolePermissionList) updates) => super.copyWith((message) => updates(message as RolePermissionList)) as RolePermissionList;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RolePermissionList create() => RolePermissionList._();
+  RolePermissionList createEmptyInstance() => create();
+  static $pb.PbList<RolePermissionList> createRepeated() => $pb.PbList<RolePermissionList>();
+  @$core.pragma('dart2js:noInline')
+  static RolePermissionList getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RolePermissionList>(create);
+  static RolePermissionList? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.String> get permissions => $_getList(0);
+}
+
+class ListServiceNamespacesRequest extends $pb.GeneratedMessage {
+  factory ListServiceNamespacesRequest() => create();
+  ListServiceNamespacesRequest._() : super();
+  factory ListServiceNamespacesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ListServiceNamespacesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceNamespacesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ListServiceNamespacesRequest clone() => ListServiceNamespacesRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ListServiceNamespacesRequest copyWith(void Function(ListServiceNamespacesRequest) updates) => super.copyWith((message) => updates(message as ListServiceNamespacesRequest)) as ListServiceNamespacesRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListServiceNamespacesRequest create() => ListServiceNamespacesRequest._();
+  ListServiceNamespacesRequest createEmptyInstance() => create();
+  static $pb.PbList<ListServiceNamespacesRequest> createRepeated() => $pb.PbList<ListServiceNamespacesRequest>();
+  @$core.pragma('dart2js:noInline')
+  static ListServiceNamespacesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesRequest>(create);
+  static ListServiceNamespacesRequest? _defaultInstance;
+}
+
+class ListServiceNamespacesResponse extends $pb.GeneratedMessage {
+  factory ListServiceNamespacesResponse({
+    $core.Iterable<ServiceNamespaceObject>? data,
+  }) {
+    final $result = create();
+    if (data != null) {
+      $result.data.addAll(data);
+    }
+    return $result;
+  }
+  ListServiceNamespacesResponse._() : super();
+  factory ListServiceNamespacesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ListServiceNamespacesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceNamespacesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..pc<ServiceNamespaceObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: ServiceNamespaceObject.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ListServiceNamespacesResponse clone() => ListServiceNamespacesResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ListServiceNamespacesResponse copyWith(void Function(ListServiceNamespacesResponse) updates) => super.copyWith((message) => updates(message as ListServiceNamespacesResponse)) as ListServiceNamespacesResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListServiceNamespacesResponse create() => ListServiceNamespacesResponse._();
+  ListServiceNamespacesResponse createEmptyInstance() => create();
+  static $pb.PbList<ListServiceNamespacesResponse> createRepeated() => $pb.PbList<ListServiceNamespacesResponse>();
+  @$core.pragma('dart2js:noInline')
+  static ListServiceNamespacesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesResponse>(create);
+  static ListServiceNamespacesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<ServiceNamespaceObject> get data => $_getList(0);
+}
+
+class GrantPermissionRequest extends $pb.GeneratedMessage {
+  factory GrantPermissionRequest({
+    $core.String? namespace,
+    $core.String? permission,
+    $core.String? profileId,
+  }) {
+    final $result = create();
+    if (namespace != null) {
+      $result.namespace = namespace;
+    }
+    if (permission != null) {
+      $result.permission = permission;
+    }
+    if (profileId != null) {
+      $result.profileId = profileId;
+    }
+    return $result;
+  }
+  GrantPermissionRequest._() : super();
+  factory GrantPermissionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GrantPermissionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantPermissionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespace')
+    ..aOS(2, _omitFieldNames ? '' : 'permission')
+    ..aOS(3, _omitFieldNames ? '' : 'profileId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GrantPermissionRequest clone() => GrantPermissionRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GrantPermissionRequest copyWith(void Function(GrantPermissionRequest) updates) => super.copyWith((message) => updates(message as GrantPermissionRequest)) as GrantPermissionRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GrantPermissionRequest create() => GrantPermissionRequest._();
+  GrantPermissionRequest createEmptyInstance() => create();
+  static $pb.PbList<GrantPermissionRequest> createRepeated() => $pb.PbList<GrantPermissionRequest>();
+  @$core.pragma('dart2js:noInline')
+  static GrantPermissionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GrantPermissionRequest>(create);
+  static GrantPermissionRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get namespace => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespace($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespace() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespace() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get permission => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set permission($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPermission() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPermission() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get profileId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set profileId($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasProfileId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProfileId() => clearField(3);
+}
+
+class GrantPermissionResponse extends $pb.GeneratedMessage {
+  factory GrantPermissionResponse({
+    $core.bool? succeeded,
+  }) {
+    final $result = create();
+    if (succeeded != null) {
+      $result.succeeded = succeeded;
+    }
+    return $result;
+  }
+  GrantPermissionResponse._() : super();
+  factory GrantPermissionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GrantPermissionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantPermissionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'succeeded')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GrantPermissionResponse clone() => GrantPermissionResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GrantPermissionResponse copyWith(void Function(GrantPermissionResponse) updates) => super.copyWith((message) => updates(message as GrantPermissionResponse)) as GrantPermissionResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GrantPermissionResponse create() => GrantPermissionResponse._();
+  GrantPermissionResponse createEmptyInstance() => create();
+  static $pb.PbList<GrantPermissionResponse> createRepeated() => $pb.PbList<GrantPermissionResponse>();
+  @$core.pragma('dart2js:noInline')
+  static GrantPermissionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GrantPermissionResponse>(create);
+  static GrantPermissionResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get succeeded => $_getBF(0);
+  @$pb.TagNumber(1)
+  set succeeded($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasSucceeded() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSucceeded() => clearField(1);
+}
+
+class RevokePermissionRequest extends $pb.GeneratedMessage {
+  factory RevokePermissionRequest({
+    $core.String? namespace,
+    $core.String? permission,
+    $core.String? profileId,
+  }) {
+    final $result = create();
+    if (namespace != null) {
+      $result.namespace = namespace;
+    }
+    if (permission != null) {
+      $result.permission = permission;
+    }
+    if (profileId != null) {
+      $result.profileId = profileId;
+    }
+    return $result;
+  }
+  RevokePermissionRequest._() : super();
+  factory RevokePermissionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RevokePermissionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokePermissionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespace')
+    ..aOS(2, _omitFieldNames ? '' : 'permission')
+    ..aOS(3, _omitFieldNames ? '' : 'profileId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RevokePermissionRequest clone() => RevokePermissionRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RevokePermissionRequest copyWith(void Function(RevokePermissionRequest) updates) => super.copyWith((message) => updates(message as RevokePermissionRequest)) as RevokePermissionRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RevokePermissionRequest create() => RevokePermissionRequest._();
+  RevokePermissionRequest createEmptyInstance() => create();
+  static $pb.PbList<RevokePermissionRequest> createRepeated() => $pb.PbList<RevokePermissionRequest>();
+  @$core.pragma('dart2js:noInline')
+  static RevokePermissionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RevokePermissionRequest>(create);
+  static RevokePermissionRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get namespace => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespace($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespace() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespace() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get permission => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set permission($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPermission() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPermission() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get profileId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set profileId($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasProfileId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProfileId() => clearField(3);
+}
+
+class RevokePermissionResponse extends $pb.GeneratedMessage {
+  factory RevokePermissionResponse({
+    $core.bool? succeeded,
+  }) {
+    final $result = create();
+    if (succeeded != null) {
+      $result.succeeded = succeeded;
+    }
+    return $result;
+  }
+  RevokePermissionResponse._() : super();
+  factory RevokePermissionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RevokePermissionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokePermissionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'succeeded')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RevokePermissionResponse clone() => RevokePermissionResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RevokePermissionResponse copyWith(void Function(RevokePermissionResponse) updates) => super.copyWith((message) => updates(message as RevokePermissionResponse)) as RevokePermissionResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RevokePermissionResponse create() => RevokePermissionResponse._();
+  RevokePermissionResponse createEmptyInstance() => create();
+  static $pb.PbList<RevokePermissionResponse> createRepeated() => $pb.PbList<RevokePermissionResponse>();
+  @$core.pragma('dart2js:noInline')
+  static RevokePermissionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RevokePermissionResponse>(create);
+  static RevokePermissionResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get succeeded => $_getBF(0);
+  @$pb.TagNumber(1)
+  set succeeded($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasSucceeded() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSucceeded() => clearField(1);
+}
+
 class TenancyServiceApi {
   $pb.RpcClient _client;
   TenancyServiceApi(this._client);
@@ -6375,6 +6835,15 @@ class TenancyServiceApi {
   ;
   $async.Future<RemoveClientResponse> removeClient($pb.ClientContext? ctx, RemoveClientRequest request) =>
     _client.invoke<RemoveClientResponse>(ctx, 'TenancyService', 'RemoveClient', request, RemoveClientResponse())
+  ;
+  $async.Future<ListServiceNamespacesResponse> listServiceNamespaces($pb.ClientContext? ctx, ListServiceNamespacesRequest request) =>
+    _client.invoke<ListServiceNamespacesResponse>(ctx, 'TenancyService', 'ListServiceNamespaces', request, ListServiceNamespacesResponse())
+  ;
+  $async.Future<GrantPermissionResponse> grantPermission($pb.ClientContext? ctx, GrantPermissionRequest request) =>
+    _client.invoke<GrantPermissionResponse>(ctx, 'TenancyService', 'GrantPermission', request, GrantPermissionResponse())
+  ;
+  $async.Future<RevokePermissionResponse> revokePermission($pb.ClientContext? ctx, RevokePermissionRequest request) =>
+    _client.invoke<RevokePermissionResponse>(ctx, 'TenancyService', 'RevokePermission', request, RevokePermissionResponse())
   ;
 }
 

@@ -322,4 +322,29 @@ abstract final class TenancyService {
     tenancyv1tenancy.RemoveClientRequest.new,
     tenancyv1tenancy.RemoveClientResponse.new,
   );
+
+  /// ListServiceNamespaces returns all registered service permission namespaces.
+  static const listServiceNamespaces = connect.Spec(
+    '/$name/ListServiceNamespaces',
+    connect.StreamType.unary,
+    tenancyv1tenancy.ListServiceNamespacesRequest.new,
+    tenancyv1tenancy.ListServiceNamespacesResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// GrantPermission grants a specific permission to a profile in a service namespace.
+  static const grantPermission = connect.Spec(
+    '/$name/GrantPermission',
+    connect.StreamType.unary,
+    tenancyv1tenancy.GrantPermissionRequest.new,
+    tenancyv1tenancy.GrantPermissionResponse.new,
+  );
+
+  /// RevokePermission revokes a specific permission from a profile in a service namespace.
+  static const revokePermission = connect.Spec(
+    '/$name/RevokePermission',
+    connect.StreamType.unary,
+    tenancyv1tenancy.RevokePermissionRequest.new,
+    tenancyv1tenancy.RevokePermissionResponse.new,
+  );
 }

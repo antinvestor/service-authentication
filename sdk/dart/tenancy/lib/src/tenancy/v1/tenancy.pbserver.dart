@@ -58,6 +58,9 @@ abstract class TenancyServiceBase extends $pb.GeneratedService {
   $async.Future<$8.ListClientResponse> listClient($pb.ServerContext ctx, $8.ListClientRequest request);
   $async.Future<$8.UpdateClientResponse> updateClient($pb.ServerContext ctx, $8.UpdateClientRequest request);
   $async.Future<$8.RemoveClientResponse> removeClient($pb.ServerContext ctx, $8.RemoveClientRequest request);
+  $async.Future<$8.ListServiceNamespacesResponse> listServiceNamespaces($pb.ServerContext ctx, $8.ListServiceNamespacesRequest request);
+  $async.Future<$8.GrantPermissionResponse> grantPermission($pb.ServerContext ctx, $8.GrantPermissionRequest request);
+  $async.Future<$8.RevokePermissionResponse> revokePermission($pb.ServerContext ctx, $8.RevokePermissionRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -98,6 +101,9 @@ abstract class TenancyServiceBase extends $pb.GeneratedService {
       case 'ListClient': return $8.ListClientRequest();
       case 'UpdateClient': return $8.UpdateClientRequest();
       case 'RemoveClient': return $8.RemoveClientRequest();
+      case 'ListServiceNamespaces': return $8.ListServiceNamespacesRequest();
+      case 'GrantPermission': return $8.GrantPermissionRequest();
+      case 'RevokePermission': return $8.RevokePermissionRequest();
       default: throw $core.ArgumentError('Unknown method: $methodName');
     }
   }
@@ -141,6 +147,9 @@ abstract class TenancyServiceBase extends $pb.GeneratedService {
       case 'ListClient': return this.listClient(ctx, request as $8.ListClientRequest);
       case 'UpdateClient': return this.updateClient(ctx, request as $8.UpdateClientRequest);
       case 'RemoveClient': return this.removeClient(ctx, request as $8.RemoveClientRequest);
+      case 'ListServiceNamespaces': return this.listServiceNamespaces(ctx, request as $8.ListServiceNamespacesRequest);
+      case 'GrantPermission': return this.grantPermission(ctx, request as $8.GrantPermissionRequest);
+      case 'RevokePermission': return this.revokePermission(ctx, request as $8.RevokePermissionRequest);
       default: throw $core.ArgumentError('Unknown method: $methodName');
     }
   }
