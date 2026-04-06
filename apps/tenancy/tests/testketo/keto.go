@@ -54,6 +54,36 @@ class tenancy_access implements Namespace {
   }
 }
 
+// Core service namespaces that receive direct role tuples alongside
+// service_tenancy when a user is assigned a partition role.
+
+class service_profile implements Namespace {
+  related: {
+    owner: profile_user[]
+    admin: profile_user[]
+    member: profile_user[]
+    service: (profile_user | tenancy_access)[]
+  }
+}
+
+class service_device implements Namespace {
+  related: {
+    owner: profile_user[]
+    admin: profile_user[]
+    member: profile_user[]
+    service: (profile_user | tenancy_access)[]
+  }
+}
+
+class service_setting implements Namespace {
+  related: {
+    owner: profile_user[]
+    admin: profile_user[]
+    member: profile_user[]
+    service: (profile_user | tenancy_access)[]
+  }
+}
+
 class service_tenancy implements Namespace {
   related: {
     owner: profile_user[]

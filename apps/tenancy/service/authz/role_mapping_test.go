@@ -30,27 +30,31 @@ func TestRoleMappingTestSuite(t *testing.T) {
 	suite.Run(t, new(RoleMappingTestSuite))
 }
 
-func (suite *RoleMappingTestSuite) TestBuildRoleTuples_TenancyAndAccessNamespaces() {
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyAccess() {
 	t := suite.T()
 	role := authz.RoleAdmin
 	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role)
 
-	// 2 tuples: service_tenancy + tenancy_access (for cross-service bridge propagation)
-	assert.Len(t, tuples, 2)
+	// One tuple per CoreServiceNamespace + one for tenancy_access
+	expectedCount := len(authz.CoreServiceNamespaces) + 1
+	assert.Len(t, tuples, expectedCount)
 
-	// Tuple 1: service_tenancy role
-	assert.Equal(t, authz.NamespaceTenancy, tuples[0].Object.Namespace)
-	assert.Equal(t, "tenant1/partition1", tuples[0].Object.ID)
-	assert.Equal(t, role, tuples[0].Relation)
-	assert.Equal(t, authz.NamespaceProfile, tuples[0].Subject.Namespace)
-	assert.Equal(t, "profile1", tuples[0].Subject.ID)
+	// All core service namespaces get direct profile_user role tuples
+	for i, ns := range authz.CoreServiceNamespaces {
+		assert.Equal(t, ns, tuples[i].Object.Namespace)
+		assert.Equal(t, "tenant1/partition1", tuples[i].Object.ID)
+		assert.Equal(t, role, tuples[i].Relation)
+		assert.Equal(t, authz.NamespaceProfile, tuples[i].Subject.Namespace)
+		assert.Equal(t, "profile1", tuples[i].Subject.ID)
+	}
 
-	// Tuple 2: tenancy_access role (bridges propagate this to all service namespaces)
-	assert.Equal(t, authz.NamespaceTenancyAccess, tuples[1].Object.Namespace)
-	assert.Equal(t, "tenant1/partition1", tuples[1].Object.ID)
-	assert.Equal(t, role, tuples[1].Relation)
-	assert.Equal(t, authz.NamespaceProfile, tuples[1].Subject.Namespace)
-	assert.Equal(t, "profile1", tuples[1].Subject.ID)
+	// Last tuple: tenancy_access role (data-access plane)
+	last := tuples[len(tuples)-1]
+	assert.Equal(t, authz.NamespaceTenancyAccess, last.Object.Namespace)
+	assert.Equal(t, "tenant1/partition1", last.Object.ID)
+	assert.Equal(t, role, last.Relation)
+	assert.Equal(t, authz.NamespaceProfile, last.Subject.Namespace)
+	assert.Equal(t, "profile1", last.Subject.ID)
 }
 
 func (suite *RoleMappingTestSuite) TestBuildPermissionTuple() {

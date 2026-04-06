@@ -81,26 +81,31 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 
 // BuildRoleTuples creates role relation tuples for a user on a partition.
 //
-// Writes to both service_tenancy (for tenancy-specific permission checks)
-// and tenancy_access (for cross-service propagation). OPL bridge tuples
-// written during partition sync propagate the tenancy_access role to every
-// service namespace — no per-namespace logic needed here.
+// Writes direct profile_user tuples to every CoreServiceNamespaces entry
+// plus tenancy_access. Each service namespace gets a direct grant so that
+// Keto can resolve functional permissions without bridge tuples.
 //
 // The tenancyPath should be "tenantID/partitionID" to match the object ID
 // format used by FunctionChecker.Check().
 func BuildRoleTuples(tenancyPath, profileID, role string) []security.RelationTuple {
-	return []security.RelationTuple{
-		{
-			Object:   security.ObjectRef{Namespace: NamespaceTenancy, ID: tenancyPath},
+	tuples := make([]security.RelationTuple, 0, len(CoreServiceNamespaces)+1)
+
+	for _, ns := range CoreServiceNamespaces {
+		tuples = append(tuples, security.RelationTuple{
+			Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
 			Relation: role,
 			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
-		},
-		{
-			Object:   security.ObjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath},
-			Relation: role,
-			Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
-		},
+		})
 	}
+
+	// tenancy_access is always written for data-access role propagation.
+	tuples = append(tuples, security.RelationTuple{
+		Object:   security.ObjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath},
+		Relation: role,
+		Subject:  security.SubjectRef{Namespace: NamespaceProfile, ID: profileID},
+	})
+
+	return tuples
 }
 
 // GrantedRelation returns the OPL relation name for a direct permission grant.

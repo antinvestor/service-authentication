@@ -15,10 +15,24 @@
 package authz
 
 const (
-	NamespaceTenancy       = "service_tenancy"
-	NamespaceTenancyAccess = "tenancy_access"
-	NamespaceProfile       = "profile_user"
+	NamespaceTenancy        = "service_tenancy"
+	NamespaceTenancyAccess  = "tenancy_access"
+	NamespaceProfile        = "profile_user"
+	NamespaceServiceProfile = "service_profile"
+	NamespaceServiceDevice  = "service_device"
+	NamespaceServiceSetting = "service_setting"
 )
+
+// CoreServiceNamespaces lists the service namespaces that receive direct role
+// tuples (profile_user → ns#role) whenever a user is assigned a partition role.
+// This ensures that functional permissions in these namespaces are resolved
+// directly by Keto without bridge tuples.
+var CoreServiceNamespaces = []string{ //nolint:gochecknoglobals // namespace registry
+	NamespaceTenancy,
+	NamespaceServiceProfile,
+	NamespaceServiceDevice,
+	NamespaceServiceSetting,
+}
 
 // Permission constants for tenancy operations.
 // These names match the OPL permits functions and are used with Keto's Check API.
