@@ -40,6 +40,7 @@ import (
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
 	securityhttp "github.com/pitabwire/frame/security/interceptors/httptor"
 	"github.com/pitabwire/util"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func main() {
@@ -85,10 +86,17 @@ func main() {
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)
 
+	// Register permission manifest for this service so the UI can discover
+	// available tenancy permissions for assignment.
+	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
+	manifestBuilder := func(desc protoreflect.ServiceDescriptor) any {
+		return permissions.BuildManifest(desc)
+	}
+
 	// Setup HTTP handlers
-	// Start with datastore option
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
+		frame.WithPermissionRegistration(sd, manifestBuilder),
 		frame.WithRegisterEvents(
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
 			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
