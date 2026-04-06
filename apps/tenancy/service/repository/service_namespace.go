@@ -20,6 +20,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/workerpool"
 )
 
@@ -43,6 +44,8 @@ func NewServiceNamespaceRepository(ctx context.Context, dbPool pool.Pool, workMa
 }
 
 func (r *serviceNamespaceRepository) GetByNamespace(ctx context.Context, namespace string) (*models.ServiceNamespace, error) {
+	// Service namespaces are global — skip tenant scoping.
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
 	ns := &models.ServiceNamespace{}
 	err := r.Pool().DB(ctx, true).First(ns, "namespace = ?", namespace).Error
 	if err != nil {
@@ -52,6 +55,8 @@ func (r *serviceNamespaceRepository) GetByNamespace(ctx context.Context, namespa
 }
 
 func (r *serviceNamespaceRepository) ListAll(ctx context.Context) ([]*models.ServiceNamespace, error) {
+	// Service namespaces are global — skip tenant scoping.
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
 	var namespaces []*models.ServiceNamespace
 	err := r.Pool().DB(ctx, true).Order("namespace").Find(&namespaces).Error
 	if err != nil {
