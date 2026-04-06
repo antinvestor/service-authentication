@@ -27,14 +27,14 @@
 --          ├─ Client (d6qbqdkpf2t52mcunf30)          ← Thesa production (authorization_code)
 --          ├─ Client (d6qbqdkpf2t52mcunf3g)          ← Thesa dev (authorization_code)
 --          ├─ PartitionRole (owner, admin, member)   ← standard role set
---          ├─ Access (d75qclkpf2t1uum8ij30)          ← Platform Admin (bwire517@gmail.com)
+--          ├─ Access (d75qclkpf2t1uum8ij30)          ← System administrator (bwire517@gmail.com)
 --          ├─ AccessRole (d75qclkpf2t1uum8ij23)     ← Admin → owner role
 --          └─ AccessRole (d75qclkpf2t1uum8ij24)     ← Admin → member role (base access)
 --
 -- Service account clients + service_accounts are seeded in:
 --   20260306_seed_service_accounts_production.sql
 --
--- The Platform Admin profile (d75qclkpf2t1uum8ij3g) is created by the
+-- The system administrator profile (d75qclkpf2t1uum8ij3g) is created by the
 -- profile service migration (20260331_bootstrap_profiles.sql). Its contact
 -- (bwire517@gmail.com) is encrypted and linked at app startup.
 -- ==========================================================================
@@ -139,10 +139,10 @@ ON CONFLICT (id) DO NOTHING;
 -- auto-access enabled (e.g. Stawi), landing them in the wrong context.
 --
 -- This seeds an explicit access record so the platform admin is bound to the
--- root partition on first login. The profile_id references the "Platform Admin"
+-- root partition on first login. The profile_id references the "System administrator"
 -- profile created by the profile service migration:
 --
---   Profile:   d75qclkpf2t1uum8ij3g  (person type, "Platform Admin")
+--   Profile:   d75qclkpf2t1uum8ij3g  (person type, "Peter Bwire")
 --   Contact:   bwire517@gmail.com     (seeded at app startup by SeedBootstrapContacts)
 --   Partition: c2f4j7au6s7f91uqnokg  (Thesa — origin root)
 --   Tenant:    c2f4j7au6s7f91uqnojg  (Thesa)
@@ -159,7 +159,7 @@ INSERT INTO accesses (
     'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
     'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
     '',                                            -- no parent access
-    'd75qclkpf2t1uum8ij3g',                       -- profile: Platform Admin (bwire517@gmail.com)
+    'd75qclkpf2t1uum8ij3g',                       -- profile: System administrator (bwire517@gmail.com)
     1                                              -- state: ACTIVE
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -187,12 +187,12 @@ VALUES
      NOW(), NOW(), 1,
      'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
      'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
-     'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
+     'd75qclkpf2t1uum8ij30',                       -- access: System administrator
      'd75qclkpf2t1uum8ij20'),                      -- role: owner
     ('d75qclkpf2t1uum8ij24',                       -- static xid for the admin member role
      NOW(), NOW(), 1,
      'c2f4j7au6s7f91uqnojg',                       -- tenant: Thesa
      'c2f4j7au6s7f91uqnokg',                       -- partition: Thesa (origin root)
-     'd75qclkpf2t1uum8ij30',                       -- access: Platform Admin
+     'd75qclkpf2t1uum8ij30',                       -- access: System administrator
      'd75qclkpf2t1uum8ij22')                       -- role: member
 ON CONFLICT (id) DO NOTHING;
