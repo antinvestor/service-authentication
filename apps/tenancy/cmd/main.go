@@ -171,11 +171,22 @@ func setupConnectServer(
 	mux.Handle("/", serverHandler)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
-	// Internal sync endpoint — no auth middleware. Safe because it's only
+	// Internal endpoints — no auth middleware. Safe because they're only
 	// reachable within the cluster (not exposed through the API gateway).
-	// Used for bootstrap: sync seeded clients to Hydra before any service
-	// can obtain tokens to call the authenticated sync endpoint.
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
+	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
+
+	// Authenticated permissions management endpoints — exposed through the
+	// API gateway for the admin UI to list, grant, and revoke permissions.
+	permissionsRouter := http.NewServeMux()
+	permissionsRouter.HandleFunc("GET /", implementation.ListServiceNamespaces)
+	permissionsRouter.HandleFunc("POST /grant", implementation.GrantPermission)
+	permissionsRouter.HandleFunc("POST /revoke", implementation.RevokePermission)
+
+	authenticatedPermissions := securityhttp.AuthenticationMiddleware(
+		securityhttp.TenancyAccessMiddleware(permissionsRouter, tenancyAccessChecker),
+		authenticator)
+	mux.Handle("/api/permissions/", http.StripPrefix("/api/permissions", authenticatedPermissions))
 
 	return mux
 }

@@ -32,5 +32,5 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	return dbManager.Migrate(ctx, pool, migrationPath,
 		models.Tenant{}, models.Partition{}, models.PartitionRole{},
 		models.Access{}, models.AccessRole{}, models.Page{},
-		models.Client{}, models.ServiceAccount{})
+		models.Client{}, models.ServiceAccount{}, models.ServiceNamespace{})
 }

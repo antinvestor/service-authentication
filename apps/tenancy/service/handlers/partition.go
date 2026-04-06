@@ -34,13 +34,14 @@ type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
 
-	ProfileCli         profilev1connect.ProfileServiceClient
-	PartitionRepo      repository.PartitionRepository
-	ClientRepo         repository.ClientRepository
-	ServiceAccountRepo repository.ServiceAccountRepository
-	AccessRepo         repository.AccessRepository
-	AccessRoleRepo     repository.AccessRoleRepository
-	PartitionRoleRepo  repository.PartitionRoleRepository
+	ProfileCli           profilev1connect.ProfileServiceClient
+	PartitionRepo        repository.PartitionRepository
+	ClientRepo           repository.ClientRepository
+	ServiceAccountRepo   repository.ServiceAccountRepository
+	AccessRepo           repository.AccessRepository
+	AccessRoleRepo       repository.AccessRoleRepository
+	PartitionRoleRepo    repository.PartitionRoleRepository
+	ServiceNamespaceRepo repository.ServiceNamespaceRepository
 
 	PartitionBusiness      business.PartitionBusiness
 	TenantBusiness         business.TenantBusiness
@@ -65,6 +66,7 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	cfg := service.Config().(*config.TenancyConfig)
 	eventsMan := service.EventsManager()
@@ -80,6 +82,7 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 		AccessRepo:             accessRepo,
 		AccessRoleRepo:         accessRoleRepo,
 		PartitionRoleRepo:      partitionRoleRepo,
+		ServiceNamespaceRepo:   serviceNamespaceRepo,
 		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
 		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
 		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo),
