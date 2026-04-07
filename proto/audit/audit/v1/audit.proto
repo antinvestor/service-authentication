@@ -312,21 +312,15 @@ service AuditService {
       },
       {
         role: ROLE_OPERATOR
-        permissions: [
-          "audit_view"
-        ]
+        permissions: ["audit_view"]
       },
       {
         role: ROLE_VIEWER
-        permissions: [
-          "audit_view"
-        ]
+        permissions: ["audit_view"]
       },
       {
         role: ROLE_MEMBER
-        permissions: [
-          "audit_view"
-        ]
+        permissions: ["audit_view"]
       },
       {
         role: ROLE_SERVICE

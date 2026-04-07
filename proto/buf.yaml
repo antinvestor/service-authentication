@@ -1,5 +1,9 @@
 version: v2
-name: buf.build/antinvestor/tenancy
+modules:
+  - path: .
+    name: buf.build/antinvestor/tenancy
+    excludes:
+      - audit
 deps:
   - buf.build/antinvestor/common
   - buf.build/bufbuild/protovalidate
