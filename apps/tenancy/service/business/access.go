@@ -53,26 +53,42 @@ func NewAccessBusiness(
 	partitionRepo repository.PartitionRepository,
 	partitionRoleRepo repository.PartitionRoleRepository,
 	clientRepo repository.ClientRepository,
+	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 ) AccessBusiness {
 	return &accessBusiness{
-		service:           service,
-		eventsMan:         eventsMan,
-		accessRepo:        accessRepo,
-		accessRoleRepo:    accessRoleRepo,
-		partitionRepo:     partitionRepo,
-		partitionRoleRepo: partitionRoleRepo,
-		clientRepo:        clientRepo,
+		service:              service,
+		eventsMan:            eventsMan,
+		accessRepo:           accessRepo,
+		accessRoleRepo:       accessRoleRepo,
+		partitionRepo:        partitionRepo,
+		partitionRoleRepo:    partitionRoleRepo,
+		clientRepo:           clientRepo,
+		serviceNamespaceRepo: serviceNamespaceRepo,
 	}
 }
 
 type accessBusiness struct {
-	service           *frame.Service
-	eventsMan         fevents.Manager
-	accessRepo        repository.AccessRepository
-	accessRoleRepo    repository.AccessRoleRepository
-	partitionRepo     repository.PartitionRepository
-	partitionRoleRepo repository.PartitionRoleRepository
-	clientRepo        repository.ClientRepository
+	service              *frame.Service
+	eventsMan            fevents.Manager
+	accessRepo           repository.AccessRepository
+	accessRoleRepo       repository.AccessRoleRepository
+	partitionRepo        repository.PartitionRepository
+	partitionRoleRepo    repository.PartitionRoleRepository
+	clientRepo           repository.ClientRepository
+	serviceNamespaceRepo repository.ServiceNamespaceRepository
+}
+
+// registeredNamespaces fetches all registered service namespaces and returns
+// their names. Falls back to CoreServiceNamespaces on error.
+func (ab *accessBusiness) registeredNamespaces(ctx context.Context) []string {
+	if ab.serviceNamespaceRepo == nil {
+		return authz.CoreServiceNamespaces
+	}
+	ns, err := ab.serviceNamespaceRepo.ListAll(ctx)
+	if err != nil {
+		return authz.CoreServiceNamespaces
+	}
+	return authz.RegisteredNamespaceNames(ns)
 }
 
 // resolvePartition finds a partition by partition ID or by looking up the Client's
@@ -203,7 +219,7 @@ func (ab *accessBusiness) RemoveAccess(
 			logger.WithError(resolveErr).Warn("failed to resolve role names for cleanup")
 		} else {
 			for _, role := range roles {
-				roleTuples = append(roleTuples, authz.BuildRoleTuples(tenancyPath, access.ProfileID, role.Name)...)
+				roleTuples = append(roleTuples, authz.BuildRoleTuples(tenancyPath, access.ProfileID, role.Name, ab.registeredNamespaces(ctx))...)
 			}
 		}
 	}
@@ -296,7 +312,7 @@ func (ab *accessBusiness) CreateAccess(
 				continue
 			}
 			if ab.eventsMan != nil {
-				tuples := authz.BuildRoleTuples(tenancyPath, request.GetProfileId(), role.Name)
+				tuples := authz.BuildRoleTuples(tenancyPath, request.GetProfileId(), role.Name, ab.registeredNamespaces(ctx))
 				payload := events.TuplesToPayload(tuples)
 				if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 					logger.WithError(emitErr).Warn("failed to emit default role tuple write")
@@ -374,7 +390,7 @@ func (ab *accessBusiness) RemoveAccessRole(
 	if ab.eventsMan != nil && len(partitionRoles) > 0 {
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
-		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
+		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName, ab.registeredNamespaces(ctx))
 
 		// Also remove the service tuple if removing owner/admin from root partition
 		if authz.IsRootPartition(access.PartitionID) &&
@@ -422,7 +438,7 @@ func (ab *accessBusiness) CreateAccessRole(
 	if ab.eventsMan != nil {
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)
-		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName)
+		tuples := authz.BuildRoleTuples(tenancyPath, access.ProfileID, roleName, ab.registeredNamespaces(ctx))
 
 		// Root partition owner/admin users receive the "internal" JWT role
 		// at login. Frame's TenancyAccessChecker checks the "service"

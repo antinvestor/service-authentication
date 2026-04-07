@@ -37,26 +37,29 @@ const EventKeyAuthzAccessSync = "authorization.access.sync"
 // For each access record and its roles it writes:
 //   - tenancy_access:tenancyPath#member ← profile_user:profileID  (base data access)
 //   - For each assigned role:
-//   - service_tenancy:tenancyPath#role ← profile_user:profileID
+//   - <registered_namespace>:tenancyPath#role ← profile_user:profileID
 //   - tenancy_access:tenancyPath#role ← profile_user:profileID
 type AuthzAccessSyncEvent struct {
-	accessRepo     repository.AccessRepository
-	accessRoleRepo repository.AccessRoleRepository
-	roleRepo       repository.PartitionRoleRepository
-	authorizer     security.Authorizer
+	accessRepo           repository.AccessRepository
+	accessRoleRepo       repository.AccessRoleRepository
+	roleRepo             repository.PartitionRoleRepository
+	serviceNamespaceRepo repository.ServiceNamespaceRepository
+	authorizer           security.Authorizer
 }
 
 func NewAuthzAccessSyncEventHandler(
 	accessRepo repository.AccessRepository,
 	accessRoleRepo repository.AccessRoleRepository,
 	roleRepo repository.PartitionRoleRepository,
+	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 	auth security.Authorizer,
 ) fevents.EventI {
 	return &AuthzAccessSyncEvent{
-		accessRepo:     accessRepo,
-		accessRoleRepo: accessRoleRepo,
-		roleRepo:       roleRepo,
-		authorizer:     auth,
+		accessRepo:           accessRepo,
+		accessRoleRepo:       accessRoleRepo,
+		roleRepo:             roleRepo,
+		serviceNamespaceRepo: serviceNamespaceRepo,
+		authorizer:           auth,
 	}
 }
 
@@ -125,8 +128,14 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 			if roleErr != nil {
 				logger.WithError(roleErr).Warn("failed to resolve role names")
 			} else {
+				registeredNS, nsErr := e.serviceNamespaceRepo.ListAll(ctx)
+				if nsErr != nil {
+					logger.WithError(nsErr).Warn("failed to list service namespaces, using core defaults")
+				}
+				namespaces := authz.RegisteredNamespaceNames(registeredNS)
+
 				for _, role := range roles {
-					tuples = append(tuples, authz.BuildRoleTuples(tenancyPath, profileID, role.Name)...)
+					tuples = append(tuples, authz.BuildRoleTuples(tenancyPath, profileID, role.Name, namespaces)...)
 					if role.Name == authz.RoleOwner || role.Name == authz.RoleAdmin {
 						hasPrivilegedRole = true
 					}

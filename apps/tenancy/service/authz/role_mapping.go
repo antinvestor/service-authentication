@@ -17,6 +17,7 @@ package authz
 import (
 	"slices"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/security"
 )
 
@@ -79,18 +80,36 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 	},
 }
 
+// RegisteredNamespaceNames extracts the namespace name strings from a list of
+// ServiceNamespace records. If the list is empty, it falls back to
+// CoreServiceNamespaces so that callers without DB access still get the
+// minimum set of namespaces.
+func RegisteredNamespaceNames(namespaces []*models.ServiceNamespace) []string {
+	if len(namespaces) == 0 {
+		return CoreServiceNamespaces
+	}
+	result := make([]string, 0, len(namespaces))
+	for _, ns := range namespaces {
+		result = append(result, ns.Namespace)
+	}
+	return result
+}
+
 // BuildRoleTuples creates role relation tuples for a user on a partition.
 //
-// Writes direct profile_user tuples to every CoreServiceNamespaces entry
+// Writes direct profile_user tuples to every namespace in the provided list
 // plus tenancy_access. Each service namespace gets a direct grant so that
 // Keto can resolve functional permissions without bridge tuples.
 //
 // The tenancyPath should be "tenantID/partitionID" to match the object ID
 // format used by FunctionChecker.Check().
-func BuildRoleTuples(tenancyPath, profileID, role string) []security.RelationTuple {
-	tuples := make([]security.RelationTuple, 0, len(CoreServiceNamespaces)+1)
+func BuildRoleTuples(tenancyPath, profileID, role string, namespaces []string) []security.RelationTuple {
+	if len(namespaces) == 0 {
+		namespaces = CoreServiceNamespaces
+	}
+	tuples := make([]security.RelationTuple, 0, len(namespaces)+1)
 
-	for _, ns := range CoreServiceNamespaces {
+	for _, ns := range namespaces {
 		tuples = append(tuples, security.RelationTuple{
 			Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
 			Relation: role,

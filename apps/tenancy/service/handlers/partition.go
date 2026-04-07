@@ -85,10 +85,10 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 		ServiceNamespaceRepo:   serviceNamespaceRepo,
 		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
 		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
-		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo),
+		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo, serviceNamespaceRepo),
 		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
 		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
-		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo),
+		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
 	}
 }
 

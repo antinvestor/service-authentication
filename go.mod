@@ -37,6 +37,8 @@ require (
 )
 
 require (
+	buf.build/gen/go/antinvestor/audit/connectrpc/go v1.19.1-20260407123435-b4f23adc19d7.2 // indirect
+	buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.11-20260407123435-b4f23adc19d7.1 // indirect
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260209202127-80ab13bee0bf.1 // indirect
 	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.11-20230414000709-087bc8072ce4.1 // indirect
 	buf.build/go/protovalidate v1.1.3 // indirect

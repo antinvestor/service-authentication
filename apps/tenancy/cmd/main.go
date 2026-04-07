@@ -99,7 +99,7 @@ func main() {
 			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
 			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, auth),
 			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
-			events.NewAuthzAccessSyncEventHandler(partSrv.AccessRepo, partSrv.AccessRoleRepo, partSrv.PartitionRoleRepo, auth),
+			events.NewAuthzAccessSyncEventHandler(partSrv.AccessRepo, partSrv.AccessRoleRepo, partSrv.PartitionRoleRepo, partSrv.ServiceNamespaceRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
 			events.NewTupleDeleteEventHandler(auth),
 		),

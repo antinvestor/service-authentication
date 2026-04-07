@@ -1,0 +1,24 @@
+version: v2
+managed:
+  enabled: true
+
+plugins:
+  # OpenAPI spec generation
+  - remote: buf.build/community/sudorandom-connect-openapi
+    out: ../../apps/audit
+    opt:
+      - features=connectrpc;gnostic;protovalidate
+      - content-types=json
+      - allow-get
+
+  # Dart protobuf generation
+  - remote: buf.build/protocolbuffers/dart:v21.1.2
+    out: ../../sdk/dart/audit/lib/src
+    include_imports: true
+    include_wkt: true
+
+  # Dart ConnectRPC generation
+  - remote: buf.build/connectrpc/dart
+    out: ../../sdk/dart/audit/lib/src
+    include_imports: true
+    include_wkt: true

@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,7 +34,7 @@ func TestRoleMappingTestSuite(t *testing.T) {
 func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyAccess() {
 	t := suite.T()
 	role := authz.RoleAdmin
-	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role)
+	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role, authz.CoreServiceNamespaces)
 
 	// One tuple per CoreServiceNamespace + one for tenancy_access
 	expectedCount := len(authz.CoreServiceNamespaces) + 1
@@ -55,6 +56,49 @@ func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyA
 	assert.Equal(t, role, last.Relation)
 	assert.Equal(t, authz.NamespaceProfile, last.Subject.Namespace)
 	assert.Equal(t, "profile1", last.Subject.ID)
+}
+
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_DynamicNamespaces() {
+	t := suite.T()
+	role := authz.RoleOwner
+	namespaces := []string{"service_commerce", "service_payment", "service_tenancy"}
+	tuples := authz.BuildRoleTuples("t1/p1", "profile1", role, namespaces)
+
+	// One tuple per namespace + one for tenancy_access
+	assert.Len(t, tuples, len(namespaces)+1)
+
+	for i, ns := range namespaces {
+		assert.Equal(t, ns, tuples[i].Object.Namespace)
+		assert.Equal(t, role, tuples[i].Relation)
+	}
+
+	last := tuples[len(tuples)-1]
+	assert.Equal(t, authz.NamespaceTenancyAccess, last.Object.Namespace)
+}
+
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_NilFallsBackToCore() {
+	t := suite.T()
+	tuples := authz.BuildRoleTuples("t1/p1", "profile1", authz.RoleMember, nil)
+
+	// Should fall back to CoreServiceNamespaces + tenancy_access
+	expectedCount := len(authz.CoreServiceNamespaces) + 1
+	assert.Len(t, tuples, expectedCount)
+}
+
+func (suite *RoleMappingTestSuite) TestRegisteredNamespaceNames() {
+	t := suite.T()
+
+	// Nil input falls back to CoreServiceNamespaces
+	result := authz.RegisteredNamespaceNames(nil)
+	assert.Equal(t, authz.CoreServiceNamespaces, result)
+
+	// Non-empty input extracts namespace strings
+	input := []*models.ServiceNamespace{
+		{Namespace: "service_commerce"},
+		{Namespace: "service_payment"},
+	}
+	result = authz.RegisteredNamespaceNames(input)
+	assert.Equal(t, []string{"service_commerce", "service_payment"}, result)
 }
 
 func (suite *RoleMappingTestSuite) TestBuildPermissionTuple() {

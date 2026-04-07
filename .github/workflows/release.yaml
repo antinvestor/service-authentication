@@ -5,8 +5,16 @@ on:
 jobs:
   docker:
     uses: antinvestor/common/.github/workflows/docker-release.yml@main
-  buf-push:
+  buf-push-tenancy:
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
+    with:
+      proto_dir: proto
+    secrets:
+      buf_token: ${{ secrets.BUF_TOKEN }}
+  buf-push-audit:
+    uses: antinvestor/common/.github/workflows/buf-push.yaml@main
+    with:
+      proto_dir: proto/audit
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
   opl-push:

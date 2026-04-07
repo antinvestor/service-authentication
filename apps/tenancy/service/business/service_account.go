@@ -59,28 +59,44 @@ func NewServiceAccountBusiness(
 	serviceAccountRepo repository.ServiceAccountRepository,
 	accessRepo repository.AccessRepository,
 	accessRoleRepo repository.AccessRoleRepository,
+	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 ) ServiceAccountBusiness {
 	return &serviceAccountBusiness{
-		eventsMan:          eventsMan,
-		authorizer:         authorizer,
-		partitionRepo:      partitionRepo,
-		partitionRoleRepo:  partitionRoleRepo,
-		clientRepo:         clientRepo,
-		serviceAccountRepo: serviceAccountRepo,
-		accessRepo:         accessRepo,
-		accessRoleRepo:     accessRoleRepo,
+		eventsMan:            eventsMan,
+		authorizer:           authorizer,
+		partitionRepo:        partitionRepo,
+		partitionRoleRepo:    partitionRoleRepo,
+		clientRepo:           clientRepo,
+		serviceAccountRepo:   serviceAccountRepo,
+		accessRepo:           accessRepo,
+		accessRoleRepo:       accessRoleRepo,
+		serviceNamespaceRepo: serviceNamespaceRepo,
 	}
 }
 
 type serviceAccountBusiness struct {
-	eventsMan          fevents.Manager
-	authorizer         security.Authorizer
-	partitionRepo      repository.PartitionRepository
-	partitionRoleRepo  repository.PartitionRoleRepository
-	clientRepo         repository.ClientRepository
-	serviceAccountRepo repository.ServiceAccountRepository
-	accessRepo         repository.AccessRepository
-	accessRoleRepo     repository.AccessRoleRepository
+	eventsMan            fevents.Manager
+	authorizer           security.Authorizer
+	partitionRepo        repository.PartitionRepository
+	partitionRoleRepo    repository.PartitionRoleRepository
+	clientRepo           repository.ClientRepository
+	serviceAccountRepo   repository.ServiceAccountRepository
+	accessRepo           repository.AccessRepository
+	accessRoleRepo       repository.AccessRoleRepository
+	serviceNamespaceRepo repository.ServiceNamespaceRepository
+}
+
+// registeredNamespaces fetches all registered service namespaces and returns
+// their names. Falls back to CoreServiceNamespaces on error.
+func (sb *serviceAccountBusiness) registeredNamespaces(ctx context.Context) []string {
+	if sb.serviceNamespaceRepo == nil {
+		return authz.CoreServiceNamespaces
+	}
+	ns, err := sb.serviceNamespaceRepo.ListAll(ctx)
+	if err != nil {
+		return authz.CoreServiceNamespaces
+	}
+	return authz.RegisteredNamespaceNames(ns)
 }
 
 func (sb *serviceAccountBusiness) CreateServiceAccount(
@@ -297,7 +313,7 @@ func (sb *serviceAccountBusiness) provisionAccessAndRoles(
 		}
 
 		// Emit Keto role tuple
-		tuples := authz.BuildRoleTuples(tenancyPath, profileID, role.Name)
+		tuples := authz.BuildRoleTuples(tenancyPath, profileID, role.Name, sb.registeredNamespaces(ctx))
 		payload := events.TuplesToPayload(tuples)
 		if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 			log.WithError(emitErr).WithField("role", role.Name).Warn("failed to emit role tuple write")

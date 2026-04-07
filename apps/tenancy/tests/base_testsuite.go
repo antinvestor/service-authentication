@@ -44,14 +44,15 @@ import (
 )
 
 type DepsBuilder struct {
-	TenantRepo         repository.TenantRepository
-	PartitionRepo      repository.PartitionRepository
-	PartitionRoleRepo  repository.PartitionRoleRepository
-	AccessRepo         repository.AccessRepository
-	AccessRoleRepo     repository.AccessRoleRepository
-	PageRepo           repository.PageRepository
-	ClientRepo         repository.ClientRepository
-	ServiceAccountRepo repository.ServiceAccountRepository
+	TenantRepo           repository.TenantRepository
+	PartitionRepo        repository.PartitionRepository
+	PartitionRoleRepo    repository.PartitionRoleRepository
+	AccessRepo           repository.AccessRepository
+	AccessRoleRepo       repository.AccessRoleRepository
+	PageRepo             repository.PageRepository
+	ClientRepo           repository.ClientRepository
+	ServiceAccountRepo   repository.ServiceAccountRepository
+	ServiceNamespaceRepo repository.ServiceNamespaceRepository
 
 	PartitionBusiness      business.PartitionBusiness
 	TenantBusiness         business.TenantBusiness
@@ -71,28 +72,31 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Tenancy
 
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	depBuilder := &DepsBuilder{
-		TenantRepo:         repository.NewTenantRepository(ctx, dbPool, workMan),
-		PartitionRepo:      repository.NewPartitionRepository(ctx, dbPool, workMan),
-		PartitionRoleRepo:  repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
-		AccessRepo:         repository.NewAccessRepository(ctx, dbPool, workMan),
-		AccessRoleRepo:     repository.NewAccessRoleRepository(ctx, dbPool, workMan),
-		PageRepo:           repository.NewPageRepository(ctx, dbPool, workMan),
-		ClientRepo:         clientRepo,
-		ServiceAccountRepo: serviceAccountRepo,
-		Server:             server,
+		TenantRepo:           repository.NewTenantRepository(ctx, dbPool, workMan),
+		PartitionRepo:        repository.NewPartitionRepository(ctx, dbPool, workMan),
+		PartitionRoleRepo:    repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
+		AccessRepo:           repository.NewAccessRepository(ctx, dbPool, workMan),
+		AccessRoleRepo:       repository.NewAccessRoleRepository(ctx, dbPool, workMan),
+		PageRepo:             repository.NewPageRepository(ctx, dbPool, workMan),
+		ClientRepo:           clientRepo,
+		ServiceAccountRepo:   serviceAccountRepo,
+		ServiceNamespaceRepo: serviceNamespaceRepo,
+		Server:               server,
 	}
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo, serviceNamespaceRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
 	depBuilder.ClientBusiness = business.NewClientBusiness(eventsMan, depBuilder.PartitionRepo, clientRepo)
 	depBuilder.ServiceAccountBusiness = business.NewServiceAccountBusiness(
 		eventsMan, auth, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo,
 		clientRepo, serviceAccountRepo, depBuilder.AccessRepo, depBuilder.AccessRoleRepo,
+		serviceNamespaceRepo,
 	)
 
 	return depBuilder
@@ -300,7 +304,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ServiceAccountRepo, implementation.PartitionRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
-		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, auth),
+		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, implementation.ServiceNamespaceRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),
 	)}
@@ -357,7 +361,7 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
 
-	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role)
+	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role, authz.CoreServiceNamespaces)
 	err := auth.WriteTuples(ctx, tuples)
 	bs.Require().NoError(err, "failed to seed tenant role")
 }

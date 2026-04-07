@@ -1,0 +1,423 @@
+// Copyright 2023-2026 Ant Investor Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package audit.v1;
+
+// -----------------------------------------------------
+// Core notes (normative):
+// - Audit Service provides tamper-proof, append-only audit trail
+// - Hash-chained entries with Ed25519 digital signatures
+// - No update or delete operations on audit entries
+// - All timestamps are RFC3339 / google.protobuf.Timestamp
+// -----------------------------------------------------
+
+import "buf/validate/validate.proto";
+import "common/v1/permissions.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/antinvestor/apis/go/audit/v1;auditv1";
+option java_multiple_files = true;
+option java_package = "auditv1";
+option (gnostic.openapi.v3.document) = {
+  info: {
+    title: "Audit Service"
+    version: "v1.0.0"
+    description: "The Audit Service provides a tamper-proof, append-only audit trail for tracking user actions across all services. Each entry is hash-chained and digitally signed to prevent tampering. Supports querying by actor, resource, action, time range, and service."
+    contact: {
+      name: "Ant Investor Ltd"
+      url: "https://github.com/antinvestor/service-authentication"
+      email: "info@antinvestor.com"
+    }
+    license: {
+      name: "Apache License"
+      url: "https://github.com/antinvestor/apis/blob/master/LICENSE"
+    }
+  }
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth"
+          value: {
+            security_scheme: {
+              type: "http"
+              scheme: "bearer"
+              bearer_format: "JWT"
+            }
+          }
+        }
+      ]
+    }
+  }
+};
+
+// -----------------------------------------------------
+// Core Data Types
+// -----------------------------------------------------
+
+// AuditEntryObject represents a single audit trail entry.
+// Entries are append-only and tamper-proof via hash chaining and digital signatures.
+message AuditEntryObject {
+  // Unique identifier for this audit entry.
+  string id = 1;
+
+  // Tenant context for multi-tenancy isolation.
+  string tenant_id = 2;
+
+  // Partition context within the tenant.
+  string partition_id = 3;
+
+  // Profile ID of the actor who performed the action.
+  string profile_id = 4;
+
+  // The action performed (e.g., "create", "update", "delete", "login", "grant_permission").
+  string action = 5;
+
+  // Type of the resource affected (e.g., "partition", "service_account", "setting").
+  string resource_type = 6;
+
+  // Identifier of the affected resource.
+  string resource_id = 7;
+
+  // Originating service name (e.g., "service_tenancy", "service_profile").
+  string service = 8;
+
+  // Arbitrary details about the action as structured data.
+  google.protobuf.Struct details = 9;
+
+  // IP address of the actor.
+  string ip_address = 10;
+
+  // User agent string of the actor's client.
+  string user_agent = 11;
+
+  // Device ID from which the action was performed.
+  string device_id = 12;
+
+  // Profile ID of the target user (if the action affects another user).
+  string target_profile_id = 13;
+
+  // OpenTelemetry trace ID for request correlation.
+  string trace_id = 14;
+
+  // Timestamp when the action occurred.
+  google.protobuf.Timestamp created_at = 15;
+
+  // SHA-256 hash of the previous entry in the chain (tamper-proof integrity).
+  string previous_hash = 16;
+
+  // SHA-256 hash of this entry's content including the previous hash.
+  string entry_hash = 17;
+
+  // Ed25519 digital signature of the entry hash.
+  string signature = 18;
+}
+
+// -----------------------------------------------------
+// Request/Response Messages
+// -----------------------------------------------------
+
+// CreateAuditEntryRequest creates a new audit entry.
+// The hash chain and signature are computed server-side.
+message CreateAuditEntryRequest {
+  // Profile ID of the actor. Required.
+  string profile_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // The action performed. Required.
+  string action = 2 [(buf.validate.field).string.min_len = 1];
+
+  // Type of the resource affected. Required.
+  string resource_type = 3 [(buf.validate.field).string.min_len = 1];
+
+  // Identifier of the affected resource.
+  string resource_id = 4;
+
+  // Originating service name. Required.
+  string service = 5 [(buf.validate.field).string.min_len = 1];
+
+  // Arbitrary details about the action.
+  google.protobuf.Struct details = 6;
+
+  // IP address of the actor.
+  string ip_address = 7;
+
+  // User agent string.
+  string user_agent = 8;
+
+  // Device ID from which the action was performed.
+  string device_id = 9;
+
+  // Profile ID of the target user (optional).
+  string target_profile_id = 10;
+
+  // OpenTelemetry trace ID for correlation (optional).
+  string trace_id = 11;
+}
+
+message CreateAuditEntryResponse {
+  AuditEntryObject data = 1;
+}
+
+// BatchCreateAuditEntriesRequest creates multiple audit entries atomically.
+message BatchCreateAuditEntriesRequest {
+  repeated CreateAuditEntryRequest entries = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+message BatchCreateAuditEntriesResponse {
+  repeated AuditEntryObject data = 1;
+}
+
+// GetAuditEntryRequest retrieves a single audit entry by ID.
+message GetAuditEntryRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetAuditEntryResponse {
+  AuditEntryObject data = 1;
+}
+
+// ListAuditEntriesRequest lists audit entries with filtering and pagination.
+message ListAuditEntriesRequest {
+  // Filter by profile ID of the actor.
+  string profile_id = 1;
+
+  // Filter by action type.
+  string action = 2;
+
+  // Filter by resource type.
+  string resource_type = 3;
+
+  // Filter by resource ID.
+  string resource_id = 4;
+
+  // Filter by originating service.
+  string service = 5;
+
+  // Filter by target profile ID.
+  string target_profile_id = 6;
+
+  // Filter by device ID.
+  string device_id = 7;
+
+  // Filter entries created after this timestamp.
+  google.protobuf.Timestamp start_date = 8;
+
+  // Filter entries created before this timestamp.
+  google.protobuf.Timestamp end_date = 9;
+
+  // Maximum number of entries to return per page. Default 50, max 500.
+  int32 count = 10;
+
+  // Pagination cursor (ID of the last entry from previous page).
+  string page = 11;
+}
+
+message ListAuditEntriesResponse {
+  repeated AuditEntryObject data = 1;
+}
+
+// SearchAuditEntriesRequest provides free-text search across audit entries.
+message SearchAuditEntriesRequest {
+  // Free-text search query matching action, resource_type, resource_id, or details.
+  string query = 1 [(buf.validate.field).string.min_len = 1];
+
+  // Filter entries created after this timestamp.
+  google.protobuf.Timestamp start_date = 2;
+
+  // Filter entries created before this timestamp.
+  google.protobuf.Timestamp end_date = 3;
+
+  // Maximum number of entries to return per page. Default 50, max 500.
+  int32 count = 4;
+
+  // Pagination cursor.
+  string page = 5;
+}
+
+message SearchAuditEntriesResponse {
+  repeated AuditEntryObject data = 1;
+}
+
+// VerifyIntegrityRequest verifies the hash chain integrity over a time range.
+message VerifyIntegrityRequest {
+  // Start of the time range to verify.
+  google.protobuf.Timestamp start_date = 1;
+
+  // End of the time range to verify.
+  google.protobuf.Timestamp end_date = 2;
+}
+
+// VerifyIntegrityResponse reports the result of integrity verification.
+message VerifyIntegrityResponse {
+  // Whether the hash chain is intact.
+  bool valid = 1;
+
+  // Total number of entries verified.
+  int64 entries_verified = 2;
+
+  // ID of the first entry that failed verification (empty if valid).
+  string first_invalid_entry_id = 3;
+
+  // Human-readable description of the verification result.
+  string message = 4;
+}
+
+// -----------------------------------------------------
+// Audit Service
+// -----------------------------------------------------
+
+// AuditService provides a tamper-proof, append-only audit trail.
+// All RPCs require authentication via Bearer token.
+service AuditService {
+  option (common.v1.service_permissions) = {
+    namespace: "service_audit"
+    permissions: [
+      "audit_view",
+      "audit_create",
+      "audit_verify"
+    ]
+    role_bindings: [
+      {
+        role: ROLE_OWNER
+        permissions: [
+          "audit_view",
+          "audit_create",
+          "audit_verify"
+        ]
+      },
+      {
+        role: ROLE_ADMIN
+        permissions: [
+          "audit_view",
+          "audit_verify"
+        ]
+      },
+      {
+        role: ROLE_OPERATOR
+        permissions: [
+          "audit_view"
+        ]
+      },
+      {
+        role: ROLE_VIEWER
+        permissions: [
+          "audit_view"
+        ]
+      },
+      {
+        role: ROLE_MEMBER
+        permissions: [
+          "audit_view"
+        ]
+      },
+      {
+        role: ROLE_SERVICE
+        permissions: [
+          "audit_view",
+          "audit_create",
+          "audit_verify"
+        ]
+      }
+    ]
+  };
+
+  // CreateAuditEntry appends a new entry to the audit trail.
+  rpc CreateAuditEntry(CreateAuditEntryRequest) returns (CreateAuditEntryResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_create"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "createAuditEntry"
+      summary: "Create audit entry"
+      description: "Appends a new tamper-proof entry to the audit trail. The hash chain and digital signature are computed server-side."
+      tags: "Audit"
+    };
+  }
+
+  // BatchCreateAuditEntries appends multiple entries atomically.
+  rpc BatchCreateAuditEntries(BatchCreateAuditEntriesRequest) returns (BatchCreateAuditEntriesResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_create"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "batchCreateAuditEntries"
+      summary: "Batch create audit entries"
+      description: "Appends multiple audit entries atomically. All entries share the same hash chain."
+      tags: "Audit"
+    };
+  }
+
+  // GetAuditEntry retrieves a single audit entry by ID.
+  rpc GetAuditEntry(GetAuditEntryRequest) returns (GetAuditEntryResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getAuditEntry"
+      summary: "Get audit entry"
+      description: "Retrieves a single audit entry by its unique identifier."
+      tags: "Audit"
+    };
+  }
+
+  // ListAuditEntries queries audit entries with filtering and pagination.
+  rpc ListAuditEntries(ListAuditEntriesRequest) returns (stream ListAuditEntriesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listAuditEntries"
+      summary: "List audit entries"
+      description: "Lists audit entries with filtering by actor, action, resource, service, time range, and pagination."
+      tags: "Audit"
+    };
+  }
+
+  // SearchAuditEntries performs free-text search across audit entries.
+  rpc SearchAuditEntries(SearchAuditEntriesRequest) returns (stream SearchAuditEntriesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "searchAuditEntries"
+      summary: "Search audit entries"
+      description: "Performs free-text search across audit entries matching action, resource, or details."
+      tags: "Audit"
+    };
+  }
+
+  // VerifyIntegrity verifies the hash chain integrity over a time range.
+  rpc VerifyIntegrity(VerifyIntegrityRequest) returns (VerifyIntegrityResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_verify"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "verifyIntegrity"
+      summary: "Verify audit integrity"
+      description: "Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected."
+      tags: "Audit"
+    };
+  }
+}
