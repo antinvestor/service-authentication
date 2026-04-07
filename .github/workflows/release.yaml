@@ -8,7 +8,7 @@ jobs:
   buf-push-tenancy:
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
     with:
-      proto_dir: proto
+      proto_dir: proto/tenancy
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
   buf-push-audit:
