@@ -309,28 +309,48 @@ func (h *AuthServer) resolveExistingSkippedLoginEvent(
 	clientID string,
 	subjectID string,
 ) (*models.LoginEvent, error) {
-	if oauth2SessionID == "" {
-		return nil, nil
-	}
+	var sessionSeed *models.LoginEvent
 
-	existing, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
-	if err != nil {
-		if data.ErrorIsNoRows(err) {
-			return nil, nil
+	if oauth2SessionID != "" {
+		existing, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID)
+		if err != nil {
+			if !data.ErrorIsNoRows(err) {
+				return nil, fmt.Errorf("failed to resolve login event by oauth2_session_id: %w", err)
+			}
+		} else if existing != nil {
+			if existing.ProfileID != "" && existing.ProfileID != subjectID {
+				return nil, fmt.Errorf("existing login event subject mismatch")
+			}
+
+			sessionSeed = existing
+			if existing.ClientID == "" || existing.ClientID == clientID {
+				return existing, nil
+			}
+
+			util.Log(ctx).WithFields(map[string]any{
+				"oauth2_session_id":  oauth2SessionID,
+				"existing_client_id": existing.ClientID,
+				"current_client_id":  clientID,
+				"profile_id":         subjectID,
+			}).Info("skipped-login session reused across OAuth client boundary")
 		}
-		return nil, fmt.Errorf("failed to resolve login event by oauth2_session_id: %w", err)
-	}
-	if existing == nil {
-		return nil, nil
-	}
-	if existing.ClientID != "" && existing.ClientID != clientID {
-		return nil, fmt.Errorf("existing login event client mismatch")
-	}
-	if existing.ProfileID != "" && existing.ProfileID != subjectID {
-		return nil, fmt.Errorf("existing login event subject mismatch")
 	}
 
-	return existing, nil
+	recent, err := h.loginEventRepo.GetMostRecentByProfileID(ctx, subjectID)
+	if err != nil {
+		if !data.ErrorIsNoRows(err) {
+			return nil, fmt.Errorf("failed to resolve login event by profile_id: %w", err)
+		}
+		return sessionSeed, nil
+	}
+	if recent == nil {
+		return sessionSeed, nil
+	}
+	if recent.ProfileID != "" && recent.ProfileID != subjectID {
+		return nil, fmt.Errorf("recent login event subject mismatch")
+	}
+
+	return recent, nil
 }
 
 func (h *AuthServer) resolveSkippedLoginRecord(
@@ -405,9 +425,11 @@ func newSkippedLoginEvent(
 	}
 	if existingLoginEvent != nil {
 		newLoginEvent.ContactID = existingLoginEvent.ContactID
-		newLoginEvent.AccessID = existingLoginEvent.AccessID
-		newLoginEvent.TenantID = existingLoginEvent.TenantID
-		newLoginEvent.PartitionID = existingLoginEvent.PartitionID
+		if existingLoginEvent.ClientID == "" || existingLoginEvent.ClientID == clientID {
+			newLoginEvent.AccessID = existingLoginEvent.AccessID
+			newLoginEvent.TenantID = existingLoginEvent.TenantID
+			newLoginEvent.PartitionID = existingLoginEvent.PartitionID
+		}
 	}
 	return newLoginEvent
 }

@@ -385,6 +385,44 @@ func claimAsString(claims map[string]any, key string) string {
 	return val
 }
 
+func normalizeHydraRedirectURL(rawURL, hydraPublicURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	hydraURL, err := url.Parse(hydraPublicURL)
+	if err != nil {
+		return rawURL
+	}
+	if parsed.Hostname() == "hydra" && parsed.Port() == "4444" {
+		parsed.Host = hydraURL.Host
+		return parsed.String()
+	}
+	return rawURL
+}
+
+func isHydraRedirectURL(location, hydraPublicURL string) bool {
+	redirectURL, err := url.Parse(location)
+	if err != nil {
+		return false
+	}
+	hydraURL, err := url.Parse(hydraPublicURL)
+	if err != nil {
+		return false
+	}
+	if redirectURL.Hostname() == "hydra" && redirectURL.Port() == "4444" {
+		return true
+	}
+	if redirectURL.Port() != hydraURL.Port() {
+		return false
+	}
+	if redirectURL.Hostname() == hydraURL.Hostname() {
+		return true
+	}
+	return (redirectURL.Hostname() == "127.0.0.1" && hydraURL.Hostname() == "localhost") ||
+		(redirectURL.Hostname() == "localhost" && hydraURL.Hostname() == "127.0.0.1")
+}
+
 func refreshTokenExchange(
 	ctx context.Context,
 	oauth2TestClient *tests.OAuth2TestClient,
@@ -464,6 +502,94 @@ func (suite *LoginVerificationTestSuite) TestAccessTokenClaimsAreBoundToLoginEve
 		require.Equal(t, loginEvent.AccessID, claimAsString(refreshClaims, "access_id"))
 		require.Equal(t, loginEvent.TenantID, claimAsString(refreshClaims, "tenant_id"))
 		require.Equal(t, loginEvent.PartitionID, claimAsString(refreshClaims, "partition_id"))
+	})
+}
+
+func (suite *LoginVerificationTestSuite) TestSkippedLoginFlow_AllowsDifferentOAuthClientInSameSession() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx := suite.SetupVerificationTest(t, dep)
+		defer suite.TeardownVerificationTest(testCtx)
+
+		opCtx, opCancel := context.WithTimeout(testCtx.Context, HandlerOperationTimeout)
+		defer opCancel()
+
+		contact := fmt.Sprintf("skip-%d@example.com", time.Now().UnixNano())
+		firstTokenResult, err := testCtx.OAuth2Client.AcquireAccessTokenForContact(opCtx, t, suite.Handler(), contact, "Skip Session User")
+		require.NoError(t, err)
+		require.NotNil(t, firstTokenResult)
+		require.NotEmpty(t, firstTokenResult.AccessToken)
+
+		secondClient, err := testCtx.OAuth2Client.CreateOAuth2Client(opCtx, "skip_session_second_client")
+		require.NoError(t, err)
+		require.NotNil(t, secondClient)
+
+		loginRedirect, err := testCtx.OAuth2Client.InitiateLoginFlow(opCtx, secondClient)
+		require.NoError(t, err)
+		require.NotEmpty(t, loginRedirect)
+
+		req, err := http.NewRequestWithContext(opCtx, http.MethodGet, loginRedirect, nil)
+		require.NoError(t, err)
+
+		resp, err := testCtx.OAuth2Client.Client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(opCtx, resp.Body)
+
+		require.True(t, resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusFound,
+			"skip-login should redirect instead of rendering an error page")
+
+		location := resp.Header.Get("Location")
+		require.NotEmpty(t, location)
+		require.NotContains(t, location, "/error")
+		require.True(t, isHydraRedirectURL(location, testCtx.OAuth2Client.HydraPublicURL),
+			"skip-login should return to Hydra after accepting the login request")
+
+		hydraReq, err := http.NewRequestWithContext(opCtx, http.MethodGet,
+			normalizeHydraRedirectURL(location, testCtx.OAuth2Client.HydraPublicURL), nil)
+		require.NoError(t, err)
+
+		hydraResp, err := testCtx.OAuth2Client.Client.Do(hydraReq)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(opCtx, hydraResp.Body)
+
+		require.True(t, hydraResp.StatusCode == http.StatusSeeOther || hydraResp.StatusCode == http.StatusFound,
+			"Hydra should continue the OAuth2 flow after skipped login")
+
+		finalLocation := hydraResp.Header.Get("Location")
+		require.NotEmpty(t, finalLocation)
+		require.NotContains(t, finalLocation, "/error")
+
+		var authorizationCode string
+		switch {
+		case strings.Contains(finalLocation, "consent_challenge"):
+			finalURL, parseErr := url.Parse(finalLocation)
+			require.NoError(t, parseErr)
+
+			consentResult, consentErr := testCtx.OAuth2Client.PerformConsent(opCtx, finalURL.Query().Get("consent_challenge"))
+			require.NoError(t, consentErr)
+			require.True(t, consentResult.Success)
+			require.NotEmpty(t, consentResult.AuthorizationCode)
+			authorizationCode = consentResult.AuthorizationCode
+		case strings.Contains(finalLocation, "code="):
+			finalURL, parseErr := url.Parse(finalLocation)
+			require.NoError(t, parseErr)
+			authorizationCode = finalURL.Query().Get("code")
+		case strings.Contains(finalLocation, "error="):
+			finalURL, parseErr := url.Parse(finalLocation)
+			require.NoError(t, parseErr)
+			t.Fatalf("unexpected OAuth2 error after skipped login: %s - %s",
+				finalURL.Query().Get("error"), finalURL.Query().Get("error_description"))
+		default:
+			body, _ := io.ReadAll(hydraResp.Body)
+			t.Fatalf("unexpected redirect after skipped login: status=%d location=%q body=%s",
+				hydraResp.StatusCode, finalLocation, string(body))
+		}
+
+		require.NotEmpty(t, authorizationCode)
+
+		secondTokenResult, err := testCtx.OAuth2Client.ExchangeCodeForToken(opCtx, secondClient, authorizationCode)
+		require.NoError(t, err)
+		require.NotNil(t, secondTokenResult)
+		require.NotEmpty(t, secondTokenResult.AccessToken)
 	})
 }
 

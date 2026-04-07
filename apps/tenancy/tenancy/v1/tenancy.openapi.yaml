@@ -10,22 +10,6 @@ info:
     name: Apache License
     url: https://github.com/antinvestor/apis/blob/master/LICENSE
   version: v1.0.0
-x-service-namespace: service_tenancy
-x-service-permissions:
-  - tenant_view
-  - tenant_manage
-  - partition_view
-  - partition_manage
-  - access_view
-  - access_manage
-  - role_manage
-  - page_view
-  - page_manage
-  - permission_grant
-  - service_account_view
-  - service_account_manage
-  - client_view
-  - client_manage
 paths:
   /tenancy.v1.TenancyService/CreateAccess:
     post:
@@ -64,8 +48,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateAccessResponse'
-      x-required-permissions:
-        - access_manage
   /tenancy.v1.TenancyService/CreateAccessRole:
     post:
       tags:
@@ -103,8 +85,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateAccessRoleResponse'
-      x-required-permissions:
-        - permission_grant
   /tenancy.v1.TenancyService/CreateClient:
     post:
       tags:
@@ -142,8 +122,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateClientResponse'
-      x-required-permissions:
-        - client_manage
   /tenancy.v1.TenancyService/CreatePage:
     post:
       tags:
@@ -181,8 +159,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePageResponse'
-      x-required-permissions:
-        - page_manage
   /tenancy.v1.TenancyService/CreatePartition:
     post:
       tags:
@@ -220,8 +196,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePartitionResponse'
-      x-required-permissions:
-        - partition_manage
   /tenancy.v1.TenancyService/CreatePartitionRole:
     post:
       tags:
@@ -259,8 +233,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePartitionRoleResponse'
-      x-required-permissions:
-        - role_manage
   /tenancy.v1.TenancyService/CreateServiceAccount:
     post:
       tags:
@@ -298,8 +270,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountResponse'
-      x-required-permissions:
-        - service_account_manage
   /tenancy.v1.TenancyService/CreateTenant:
     post:
       tags:
@@ -337,8 +307,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateTenantResponse'
-      x-required-permissions:
-        - tenant_manage
   /tenancy.v1.TenancyService/GetAccess:
     get:
       tags:
@@ -393,8 +361,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
-      x-required-permissions:
-        - access_view
     post:
       tags:
         - Access
@@ -431,8 +397,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
-      x-required-permissions:
-        - access_view
   /tenancy.v1.TenancyService/GetClient:
     get:
       tags:
@@ -487,8 +451,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
-      x-required-permissions:
-        - client_view
     post:
       tags:
         - Clients
@@ -525,8 +487,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
-      x-required-permissions:
-        - client_view
   /tenancy.v1.TenancyService/GetPage:
     get:
       tags:
@@ -581,8 +541,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
-      x-required-permissions:
-        - page_view
     post:
       tags:
         - Pages
@@ -619,8 +577,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPageResponse'
-      x-required-permissions:
-        - page_view
   /tenancy.v1.TenancyService/GetPartition:
     get:
       tags:
@@ -675,8 +631,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
-      x-required-permissions:
-        - partition_view
     post:
       tags:
         - Partitions
@@ -713,8 +667,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionResponse'
-      x-required-permissions:
-        - partition_view
   /tenancy.v1.TenancyService/GetPartitionParents:
     get:
       tags:
@@ -769,8 +721,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
-      x-required-permissions:
-        - partition_view
     post:
       tags:
         - Partitions
@@ -807,8 +757,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
-      x-required-permissions:
-        - partition_view
   /tenancy.v1.TenancyService/GetServiceAccount:
     get:
       tags:
@@ -863,8 +811,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
-      x-required-permissions:
-        - service_account_view
     post:
       tags:
         - ServiceAccounts
@@ -901,8 +847,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
-      x-required-permissions:
-        - service_account_view
   /tenancy.v1.TenancyService/GetTenant:
     get:
       tags:
@@ -957,8 +901,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
-      x-required-permissions:
-        - tenant_view
     post:
       tags:
         - Tenants
@@ -995,8 +937,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetTenantResponse'
-      x-required-permissions:
-        - tenant_view
+  /tenancy.v1.TenancyService/GrantPermission:
+    post:
+      tags:
+        - Permissions
+        - tenancy.v1.TenancyService
+      summary: Grant permission
+      description: Creates a granted_* Keto tuple giving the specified profile a specific permission in the given service namespace.
+      operationId: grantPermission
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v1.GrantPermissionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v1.GrantPermissionResponse'
   /tenancy.v1.TenancyService/ListAccess: {}
   /tenancy.v1.TenancyService/ListAccessRole: {}
   /tenancy.v1.TenancyService/ListClient: {}
@@ -1004,6 +981,96 @@ paths:
   /tenancy.v1.TenancyService/ListPartition: {}
   /tenancy.v1.TenancyService/ListPartitionRole: {}
   /tenancy.v1.TenancyService/ListServiceAccount: {}
+  /tenancy.v1.TenancyService/ListServiceNamespaces:
+    get:
+      tags:
+        - Permissions
+        - tenancy.v1.TenancyService
+      summary: List service namespaces
+      description: Returns all registered service permission namespaces with their available permissions and role bindings.
+      operationId: listServiceNamespaces
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v1.ListServiceNamespacesRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v1.ListServiceNamespacesResponse'
+    post:
+      tags:
+        - Permissions
+        - tenancy.v1.TenancyService
+      summary: List service namespaces
+      description: Returns all registered service permission namespaces with their available permissions and role bindings.
+      operationId: listServiceNamespaces
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v1.ListServiceNamespacesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v1.ListServiceNamespacesResponse'
   /tenancy.v1.TenancyService/ListTenant: {}
   /tenancy.v1.TenancyService/RemoveAccess:
     post:
@@ -1042,8 +1109,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveAccessResponse'
-      x-required-permissions:
-        - access_manage
   /tenancy.v1.TenancyService/RemoveAccessRole:
     post:
       tags:
@@ -1081,8 +1146,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveAccessRoleResponse'
-      x-required-permissions:
-        - permission_grant
   /tenancy.v1.TenancyService/RemoveClient:
     post:
       tags:
@@ -1120,8 +1183,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveClientResponse'
-      x-required-permissions:
-        - client_manage
   /tenancy.v1.TenancyService/RemovePage:
     post:
       tags:
@@ -1159,8 +1220,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePageResponse'
-      x-required-permissions:
-        - page_manage
   /tenancy.v1.TenancyService/RemovePartition:
     post:
       tags:
@@ -1198,8 +1257,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePartitionResponse'
-      x-required-permissions:
-        - partition_manage
   /tenancy.v1.TenancyService/RemovePartitionRole:
     post:
       tags:
@@ -1237,8 +1294,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePartitionRoleResponse'
-      x-required-permissions:
-        - role_manage
   /tenancy.v1.TenancyService/RemoveServiceAccount:
     post:
       tags:
@@ -1276,8 +1331,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountResponse'
-      x-required-permissions:
-        - service_account_manage
   /tenancy.v1.TenancyService/RemoveTenant:
     post:
       tags:
@@ -1315,8 +1368,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveTenantResponse'
-      x-required-permissions:
-        - tenant_manage
+  /tenancy.v1.TenancyService/RevokePermission:
+    post:
+      tags:
+        - Permissions
+        - tenancy.v1.TenancyService
+      summary: Revoke permission
+      description: Deletes the granted_* Keto tuple removing a specific permission from a profile in the given service namespace.
+      operationId: revokePermission
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v1.RevokePermissionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v1.RevokePermissionResponse'
   /tenancy.v1.TenancyService/UpdateClient:
     post:
       tags:
@@ -1354,8 +1442,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateClientResponse'
-      x-required-permissions:
-        - client_manage
   /tenancy.v1.TenancyService/UpdatePage:
     post:
       tags:
@@ -1393,8 +1479,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePageResponse'
-      x-required-permissions:
-        - page_manage
   /tenancy.v1.TenancyService/UpdatePartition:
     post:
       tags:
@@ -1432,8 +1516,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePartitionResponse'
-      x-required-permissions:
-        - partition_manage
   /tenancy.v1.TenancyService/UpdatePartitionRole:
     post:
       tags:
@@ -1471,8 +1553,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRoleResponse'
-      x-required-permissions:
-        - role_manage
   /tenancy.v1.TenancyService/UpdateServiceAccount:
     post:
       tags:
@@ -1510,8 +1590,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountResponse'
-      x-required-permissions:
-        - service_account_manage
   /tenancy.v1.TenancyService/UpdateTenant:
     post:
       tags:
@@ -1549,8 +1627,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdateTenantResponse'
-      x-required-permissions:
-        - tenant_manage
 components:
   schemas:
     base64:
@@ -2545,6 +2621,38 @@ components:
           $ref: '#/components/schemas/tenancy.v1.TenantObject'
       title: GetTenantResponse
       additionalProperties: false
+    tenancy.v1.GrantPermissionRequest:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          maxLength: 100
+          minLength: 3
+          description: Service namespace (e.g. "service_profile")
+        permission:
+          type: string
+          title: permission
+          maxLength: 100
+          minLength: 3
+          description: Permission to grant (e.g. "profile_view")
+        profileId:
+          type: string
+          title: profile_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
+          description: Profile receiving the permission
+      title: GrantPermissionRequest
+      additionalProperties: false
+    tenancy.v1.GrantPermissionResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+          title: succeeded
+      title: GrantPermissionResponse
+      additionalProperties: false
     tenancy.v1.ListAccessRequest:
       type: object
       allOf:
@@ -2761,6 +2869,20 @@ components:
             $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
           title: data
       title: ListServiceAccountResponse
+      additionalProperties: false
+    tenancy.v1.ListServiceNamespacesRequest:
+      type: object
+      title: ListServiceNamespacesRequest
+      additionalProperties: false
+    tenancy.v1.ListServiceNamespacesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/tenancy.v1.ServiceNamespaceObject'
+          title: data
+      title: ListServiceNamespacesResponse
       additionalProperties: false
     tenancy.v1.ListTenantRequest:
       type: object
@@ -3089,6 +3211,46 @@ components:
           title: succeeded
       title: RemoveTenantResponse
       additionalProperties: false
+    tenancy.v1.RevokePermissionRequest:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          maxLength: 100
+          minLength: 3
+        permission:
+          type: string
+          title: permission
+          maxLength: 100
+          minLength: 3
+        profileId:
+          type: string
+          title: profile_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
+      title: RevokePermissionRequest
+      additionalProperties: false
+    tenancy.v1.RevokePermissionResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+          title: succeeded
+      title: RevokePermissionResponse
+      additionalProperties: false
+    tenancy.v1.RolePermissionList:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+          title: permissions
+      title: RolePermissionList
+      additionalProperties: false
+      description: RolePermissionList holds the permissions granted to a role.
     tenancy.v1.ServiceAccountObject:
       type: object
       properties:
@@ -3157,6 +3319,44 @@ components:
       description: |-
         ServiceAccountObject represents a pre-registered service account (bot) for a partition.
          Service accounts get a dedicated child partition with client_credentials grant type.
+    tenancy.v1.ServiceNamespaceObject:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          description: Service namespace identifier (e.g. "service_profile")
+        permissions:
+          type: array
+          items:
+            type: string
+          title: permissions
+          description: All permissions available in this namespace
+        roleBindings:
+          type: object
+          title: role_bindings
+          additionalProperties:
+            title: value
+            $ref: '#/components/schemas/tenancy.v1.RolePermissionList'
+          description: Role → permissions mappings
+        registeredAt:
+          title: registered_at
+          description: When the manifest was last registered
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: ServiceNamespaceObject
+      additionalProperties: false
+      description: ServiceNamespaceObject represents a registered service's permission namespace.
+    tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/tenancy.v1.RolePermissionList'
+      title: RoleBindingsEntry
+      additionalProperties: false
     tenancy.v1.TenantEnvironment:
       type: string
       title: TenantEnvironment
