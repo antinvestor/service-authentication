@@ -80,6 +80,8 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
@@ -89,6 +91,10 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 
 	sa, err := e.serviceAccountRepo.GetByID(ctx, serviceAccountID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("service account not found — skipping sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get service account %s: %w", serviceAccountID, err)
 	}
 
@@ -139,25 +145,7 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
 	}
 
-	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
-		logger.WithError(writeErr).WithFields(map[string]any{
-			"tenancy_path":      tenancyPath,
-			"subject_id":        subjectID,
-			"client_id":         sa.ClientID,
-			"audiences":         sa.Audiences,
-			"bridge_namespaces": bridgeNamespaces,
-			"tuple_count":       len(tuples),
-			"tuples":            formatTuples(tuples),
-		}).Error("failed to write service account tuples")
-		return fmt.Errorf("failed to write service account tuples: %w", writeErr)
-	}
-
-	logger.WithFields(map[string]any{
-		"tenancy_path":    tenancyPath,
-		"subject_id":      subjectID,
-		"namespace_count": len(audiencePerms),
-		"tuple_count":     len(tuples),
-	}).Debug("wrote service account authorization tuples")
-
-	return nil
+	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
+		return e.authorizer.WriteTuples(ctx, tuples)
+	})
 }

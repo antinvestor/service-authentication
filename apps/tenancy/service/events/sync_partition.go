@@ -86,6 +86,8 @@ func (csq *PartitionSyncEvent) Execute(ictx context.Context, payload any) error 
 	jsonPayload = *d
 
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	partitionID := jsonPayload.GetString("id")
 
@@ -96,11 +98,19 @@ func (csq *PartitionSyncEvent) Execute(ictx context.Context, payload any) error 
 
 	partition, err := csq.partitionRepository.GetByID(ctx, partitionID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("partition not found — skipping Hydra sync")
+			return nil
+		}
 		return err
 	}
 
 	err = SyncPartitionOnHydra(ctx, csq.cfg, csq.cli, csq.partitionRepository, partition)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("permanent error syncing partition to Hydra — skipping")
+			return nil
+		}
 		return err
 	}
 

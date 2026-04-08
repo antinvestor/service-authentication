@@ -85,6 +85,8 @@ func (e *ServiceAccountSyncEvent) Execute(ictx context.Context, payload any) err
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
@@ -94,11 +96,19 @@ func (e *ServiceAccountSyncEvent) Execute(ictx context.Context, payload any) err
 
 	sa, err := e.serviceAccountRepo.GetByID(ctx, serviceAccountID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("service account not found — skipping Hydra sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get service account %s: %w", serviceAccountID, err)
 	}
 
 	err = SyncServiceAccountOnHydra(ctx, e.cfg, e.cli, e.serviceAccountRepo, sa)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("permanent error syncing SA to Hydra — skipping")
+			return nil
+		}
 		return err
 	}
 

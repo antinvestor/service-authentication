@@ -87,6 +87,8 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	clientDBID := jsonPayload.GetString("id")
 	profileID := jsonPayload.GetString("profile_id")
@@ -98,6 +100,10 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 
 	cl, err := e.clientRepository.GetByID(ctx, clientDBID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("client record not found — skipping sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get client %s: %w", clientDBID, err)
 	}
 
@@ -111,6 +117,10 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 
 	err = SyncClientOnHydra(ctx, e.cfg, e.cli, e.clientRepository, cl, profileID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("permanent error syncing client to Hydra — skipping")
+			return nil
+		}
 		return err
 	}
 

@@ -82,6 +82,8 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	partitionID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
@@ -91,6 +93,10 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	partition, err := e.partitionRepo.GetByID(ctx, partitionID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("partition not found — skipping sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get partition %s: %w", partitionID, err)
 	}
 
@@ -108,33 +114,27 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	parentPartition, err := e.partitionRepo.GetByID(ctx, partition.ParentID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("parent partition not found — skipping inheritance sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get parent partition %s: %w", partition.ParentID, err)
 	}
 
 	parentPath := fmt.Sprintf("%s/%s", parentPartition.TenantID, parentPartition.GetID())
-	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
-
-	if writeErr := e.authorizer.WriteTuple(ctx, memberTuple); writeErr != nil {
-		logger.WithError(writeErr).WithField("tuple", formatTuple(memberTuple)).
-			Error("failed to write partition inheritance tuple")
-		return fmt.Errorf("failed to write partition inheritance tuple: %w", writeErr)
-	}
-
-	// Write service inheritance tuple so service bots registered on the parent
-	// partition automatically get service access to the child partition.
-	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
-	if writeErr := e.authorizer.WriteTuple(ctx, serviceTuple); writeErr != nil {
-		logger.WithError(writeErr).WithField("tuple", formatTuple(serviceTuple)).
-			Error("failed to write service partition inheritance tuple")
-		return fmt.Errorf("failed to write service partition inheritance tuple: %w", writeErr)
-	}
 
 	// Collect namespaces from all SAs on the parent partition — SA audiences
 	// are the only source of truth for which namespaces need bridge tuples.
 	parentSAs, err := e.serviceAccountRepo.ListByPartition(ctx, partition.ParentID)
 	if err != nil {
-		return fmt.Errorf("failed to list parent partition SAs: %w", err)
+		logger.WithError(err).Warn("failed to list parent partition SAs, writing inheritance tuples only")
+		parentSAs = nil
 	}
+
+	// Build all tuples upfront, then write in a single retryable call.
+	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
+	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
+	allTuples := []security.RelationTuple{memberTuple, serviceTuple}
 
 	nsSet := make(map[string]bool)
 	for _, sa := range parentSAs {
@@ -149,37 +149,11 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 			namespaces = append(namespaces, ns)
 		}
 
-		// Service account bridge tuples: ns#service ← tenancy_access#service
-		bridgeTuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
-
-		// Human role bridge tuples: ns#role ← tenancy_access#role
-		// This propagates owner/admin/member from tenancy_access to every
-		// service namespace so that a single role assignment on a partition
-		// grants permissions across all services. OPL defines what each role
-		// can do per service.
-		roleBridgeTuples := authz.BuildRoleInheritanceTuples(tenancyPath, namespaces, authz.StandardRoles)
-		bridgeTuples = append(bridgeTuples, roleBridgeTuples...)
-
-		if writeErr := e.authorizer.WriteTuples(ctx, bridgeTuples); writeErr != nil {
-			logger.WithError(writeErr).WithFields(map[string]any{
-				"namespaces":  namespaces,
-				"tuple_count": len(bridgeTuples),
-				"tuples":      formatTuples(bridgeTuples),
-			}).Error("failed to write namespace bridge tuples")
-			return fmt.Errorf("failed to write namespace bridge tuples: %w", writeErr)
-		}
-
-		logger.WithFields(map[string]any{
-			"parent_path":     parentPath,
-			"child_path":      tenancyPath,
-			"bridge_ns_count": len(bridgeTuples),
-		}).Debug("wrote partition inheritance and namespace bridge tuples")
-	} else {
-		logger.WithFields(map[string]any{
-			"parent_path": parentPath,
-			"child_path":  tenancyPath,
-		}).Debug("wrote partition and service inheritance tuples")
+		allTuples = append(allTuples, authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)...)
+		allTuples = append(allTuples, authz.BuildRoleInheritanceTuples(tenancyPath, namespaces, authz.StandardRoles)...)
 	}
 
-	return nil
+	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
+		return e.authorizer.WriteTuples(ctx, allTuples)
+	})
 }

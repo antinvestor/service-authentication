@@ -92,6 +92,8 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	accessID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
@@ -101,6 +103,10 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 
 	access, err := e.accessRepo.GetByID(ctx, accessID)
 	if err != nil {
+		if isPermanentError(err) {
+			logger.WithError(err).Warn("access record not found — skipping sync")
+			return nil
+		}
 		return fmt.Errorf("failed to get access %s: %w", accessID, err)
 	}
 
@@ -152,21 +158,7 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 		tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, profileID))
 	}
 
-	if writeErr := e.authorizer.WriteTuples(ctx, tuples); writeErr != nil {
-		logger.WithError(writeErr).WithFields(map[string]any{
-			"tenancy_path": tenancyPath,
-			"profile_id":   profileID,
-			"tuple_count":  len(tuples),
-			"tuples":       formatTuples(tuples),
-		}).Error("failed to write access authorization tuples")
-		return fmt.Errorf("failed to write access authorization tuples: %w", writeErr)
-	}
-
-	logger.WithFields(map[string]any{
-		"tenancy_path": tenancyPath,
-		"profile_id":   profileID,
-		"tuple_count":  len(tuples),
-	}).Debug("wrote access authorization tuples")
-
-	return nil
+	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
+		return e.authorizer.WriteTuples(ctx, tuples)
+	})
 }
