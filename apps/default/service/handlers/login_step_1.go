@@ -422,9 +422,15 @@ func newSkippedLoginEvent(
 		DeviceID:         deviceID,
 		IP:               util.GetIP(req),
 		Client:           userAgent,
+		Properties: map[string]any{
+			loginEventPropertyLoginSource: string(models.LoginSourceSessionRefresh),
+		},
 	}
 	if existingLoginEvent != nil {
 		newLoginEvent.ContactID = existingLoginEvent.ContactID
+		if workspaceProps := copyWorkspaceProperties(existingLoginEvent.Properties); len(workspaceProps) > 0 {
+			newLoginEvent.Properties = mergeLoginEventProperties(newLoginEvent.Properties, workspaceProps)
+		}
 		if existingLoginEvent.ClientID == "" || existingLoginEvent.ClientID == clientID {
 			newLoginEvent.AccessID = existingLoginEvent.AccessID
 			newLoginEvent.TenantID = existingLoginEvent.TenantID
@@ -492,11 +498,17 @@ func (h *AuthServer) attemptRememberMeLogin(ctx context.Context, req *http.Reque
 		DeviceID:         oldLoginEvent.DeviceID,
 		IP:               util.GetIP(req),
 		Client:           req.UserAgent(),
+		Properties: map[string]any{
+			loginEventPropertyLoginSource: string(models.LoginSourceSessionRefresh),
+		},
 	}
 	newLoginEvent.ID = util.IDString()
 	newLoginEvent.TenantID = oldLoginEvent.TenantID
 	newLoginEvent.PartitionID = oldLoginEvent.PartitionID
 	newLoginEvent.AccessID = oldLoginEvent.AccessID
+	if workspaceProps := copyWorkspaceProperties(oldLoginEvent.Properties); len(workspaceProps) > 0 {
+		newLoginEvent.Properties = mergeLoginEventProperties(newLoginEvent.Properties, workspaceProps)
+	}
 
 	if err = h.loginEventRepo.Create(ctx, &newLoginEvent); err != nil {
 		return "", fmt.Errorf("failed to persist remember-me login event: %w", err)

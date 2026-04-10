@@ -29,6 +29,7 @@ var (
 	verifyContactTmpl      *template.Template
 	loginCompleteTmpl      *template.Template
 	accessInstructionsTmpl *template.Template
+	workspaceSelectorTmpl  *template.Template
 	templateDir            string
 )
 
@@ -121,4 +122,5 @@ func init() {
 	verifyContactTmpl = loadTemplate("contact_verification")
 	loginCompleteTmpl = loadTemplate("login_complete")
 	accessInstructionsTmpl = loadTemplate("access_instructions")
+	workspaceSelectorTmpl = loadTemplate("workspace_selector")
 }

@@ -1,0 +1,156 @@
+{{ define "title"}}Select Your Workspace{{ end }}
+
+{{ define "subtitle" }}
+<p>You have access to the following workspaces. Select one to continue.</p>
+{{ end }}
+
+{{define "content"}}
+{{if .Error}}
+<div class="alert alert-error" role="alert" aria-live="assertive">
+    <span>{{ .Error }}</span>
+</div>
+{{end}}
+<style>
+    .ws-shell {
+        min-height: 20rem;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.5rem 0 0.75rem;
+    }
+
+    .ws-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .ws-card {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        color: inherit;
+        text-align: left;
+    }
+
+    .ws-card:hover {
+        border-color: var(--auth-accent, #3b82f6);
+        background: rgba(59, 130, 246, 0.04);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .ws-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.625rem;
+        background: var(--auth-accent, #3b82f6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .ws-info {
+        flex: 1;
+        margin-left: 0.875rem;
+    }
+
+    .ws-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--auth-text-primary, #0f172a);
+    }
+
+    .ws-type {
+        font-size: 0.8rem;
+        color: var(--auth-text-secondary, #64748b);
+        margin-top: 0.125rem;
+    }
+
+    .ws-arrow {
+        color: var(--auth-text-secondary, #94a3b8);
+        font-size: 1.25rem;
+        margin-left: 0.5rem;
+    }
+
+    .ws-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--auth-text-secondary, #64748b);
+    }
+
+    .ws-empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.4;
+    }
+
+    .ws-footer {
+        text-align: center;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .ws-footer a {
+        color: var(--auth-text-secondary, #64748b);
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .ws-footer a:hover {
+        color: var(--auth-accent, #3b82f6);
+    }
+</style>
+
+<div class="ws-shell">
+    {{ if .HasWorkspaces }}
+    <form method="post" action="/s/access/workspace" class="ws-list">
+        <input type="hidden" name="login_event_id" value="{{ .LoginEventID }}">
+        <input type="hidden" name="login_challenge" value="{{ .LoginChallengeID }}">
+        <input type="hidden" name="consent_challenge" value="{{ .ConsentChallengeID }}">
+        {{ range .Workspaces }}
+        <button class="ws-card" type="submit" name="partition_id" value="{{ .PartitionID }}" title="Continue with {{ .Name }}">
+            <div class="ws-icon">{{ .Initial }}</div>
+            <div class="ws-info">
+                <div class="ws-name">{{ .Name }}</div>
+                <div class="ws-type">Workspace</div>
+            </div>
+            <div class="ws-arrow">&rarr;</div>
+        </button>
+        {{ end }}
+    </form>
+    {{ else }}
+    <div class="ws-empty">
+        <div class="ws-empty-icon">&#128274;</div>
+        <p><strong>No workspaces available</strong></p>
+        <p>Your account does not have access to any workspace under {{ if .PartitionName }}{{ .PartitionName }}{{ else }}this service{{ end }}.</p>
+        {{ if .SupportContacts }}
+        <p>Please contact the provider contacts on the access page for the next step.</p>
+        <p><a href="/s/access/help?partition_name={{ .PartitionName }}">View access help</a></p>
+        {{ else }}
+        <p>Please contact your administrator.</p>
+        {{ end }}
+    </div>
+    {{ end }}
+
+    <div class="ws-footer">
+        {{ if .LoginChallengeID }}
+        <a href="/s/login?login_challenge={{ .LoginChallengeID }}">&#8592; Back to login</a>
+        {{ else }}
+        <a href="/s/login">&#8592; Back to login</a>
+        {{ end }}
+    </div>
+</div>
+{{end}}

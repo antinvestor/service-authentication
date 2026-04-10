@@ -212,7 +212,11 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 	loginEvt.DeviceID = utils.DeviceIDFromContext(ctx)
 	loginEvt.VerificationID = verificationID
 	loginEvt.ContactID = contactID
-	loginEvt.Properties = extra
+	loginEvt.Properties = mergeLoginEventProperties(nil, extra)
+	if loginEvt.Properties == nil {
+		loginEvt.Properties = data.JSONMap{}
+	}
+	loginEvt.Properties[loginEventPropertyLoginSource] = string(source)
 
 	err = h.loginEventRepo.Create(ctx, loginEvt)
 	if err != nil {

@@ -98,3 +98,43 @@ func (s *TenancyAccessTestSuite) TestRedirectToErrorPage_DefaultAccessInstructio
 	assert.Equal(s.T(), "Members Only", parsedLocation.Query().Get("partition_name"))
 	assert.NotEmpty(s.T(), parsedLocation.Query().Get("support_contacts"))
 }
+
+func (s *TenancyAccessTestSuite) TestBuildAccessInstructionsPageURL_UsesWorkspaceSelector() {
+	req := httptest.NewRequest(http.MethodGet, "/s/login?ui_locales=en&login_challenge=challenge-1", nil)
+
+	redirectURL := buildAccessInstructionsPageURL(req, &accessInstructionsRedirectError{
+		LoginEventID: "login-event-1",
+		AccessiblePartitions: []*tenancyv1.AccessObject{
+			{
+				Partition: &tenancyv1.PartitionObject{Id: "child-1", Name: "Child 1"},
+			},
+		},
+	})
+
+	parsedLocation, err := neturl.Parse(redirectURL)
+	s.Require().NoError(err)
+
+	assert.Equal(s.T(), workspaceSelectorPath, parsedLocation.Path)
+	assert.Equal(s.T(), "login-event-1", parsedLocation.Query().Get("login_event_id"))
+	assert.Equal(s.T(), "challenge-1", parsedLocation.Query().Get("login_challenge"))
+	assert.Equal(s.T(), "en", parsedLocation.Query().Get("ui_locales"))
+}
+
+func (s *TenancyAccessTestSuite) TestBuildAccessInstructionsPageURL_FallsBackWithoutLoginEventID() {
+	req := httptest.NewRequest(http.MethodGet, "/s/login?ui_locales=en", nil)
+
+	redirectURL := buildAccessInstructionsPageURL(req, &accessInstructionsRedirectError{
+		PartitionName: "Members Only",
+		AccessiblePartitions: []*tenancyv1.AccessObject{
+			{
+				Partition: &tenancyv1.PartitionObject{Id: "child-1", Name: "Child 1"},
+			},
+		},
+	})
+
+	parsedLocation, err := neturl.Parse(redirectURL)
+	s.Require().NoError(err)
+
+	assert.Equal(s.T(), accessInstructionsPath, parsedLocation.Path)
+	assert.Equal(s.T(), "Members Only", parsedLocation.Query().Get("partition_name"))
+}

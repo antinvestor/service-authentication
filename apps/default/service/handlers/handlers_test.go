@@ -25,8 +25,14 @@ import (
 	"testing"
 	"time"
 
+	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
+	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	"connectrpc.com/connect"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
+	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	handlers2 "github.com/gorilla/handlers"
+	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
@@ -137,6 +143,87 @@ func (suite *HandlersTestSuite) TestAccessInstructionsEndpoint() {
 		assert.Contains(t, bodyStr, "info@stawi.im")
 		assert.Contains(t, bodyStr, "+256757546244")
 		assert.Contains(t, bodyStr, "href=\"tel:+256757546244\"")
+	})
+}
+
+func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
+	suite.WithTestDependancies(suite.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		testCtx, testCancel := context.WithTimeout(context.Background(), HandlerTestTimeout)
+		defer testCancel()
+
+		ctx, authServer, _ := suite.CreateService(t, dep)
+
+		handler := handlers2.RecoveryHandler(
+			handlers2.PrintRecoveryStack(true))(
+			authServer.SetupRouterV1(ctx))
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
+		defer opCancel()
+
+		parentPartition, err := tests.NewPartitionForOauthCli(opCtx, authServer.PartitionCli(), "Workspace Parent", "Parent partition", data.JSONMap{
+			partitionpolicy.PropertyAllowAutoAccess: false,
+		})
+		require.NoError(t, err)
+
+		childResp, err := authServer.PartitionCli().CreatePartition(opCtx, connect.NewRequest(&tenancyv1.CreatePartitionRequest{
+			TenantId:    parentPartition.GetTenantId(),
+			ParentId:    parentPartition.GetId(),
+			Name:        "Workspace Child",
+			Description: "Child partition",
+		}))
+		require.NoError(t, err)
+		childPartition := childResp.Msg.GetData()
+		require.NotNil(t, childPartition)
+
+		profileResp, err := authServer.ProfileCli().Create(opCtx, connect.NewRequest(&profilev1.CreateRequest{
+			Type:    profilev1.ProfileType_PERSON,
+			Contact: "workspace-selector@example.com",
+		}))
+		require.NoError(t, err)
+		profile := profileResp.Msg.GetData()
+		require.NotNil(t, profile)
+
+		createAccessReq := &tenancyv1.CreateAccessRequest{}
+		createAccessReq.SetPartitionId(childPartition.GetId())
+		createAccessReq.SetProfileId(profile.GetId())
+
+		_, err = authServer.PartitionCli().CreateAccess(opCtx, connect.NewRequest(createAccessReq))
+		require.NoError(t, err)
+
+		loginEvent := &models.LoginEvent{
+			ClientID:         parentPartition.GetId(),
+			ProfileID:        profile.GetId(),
+			LoginChallengeID: "workspace-challenge",
+		}
+		loginEvent.ID = util.IDString()
+		err = authServer.LoginEventRepo().Create(opCtx, loginEvent)
+		require.NoError(t, err)
+
+		client := &http.Client{Timeout: HandlerOperationTimeout}
+		req, err := http.NewRequestWithContext(
+			opCtx,
+			"GET",
+			server.URL+"/s/access/workspace?login_event_id="+loginEvent.GetID()+"&login_challenge="+loginEvent.LoginChallengeID,
+			nil,
+		)
+		require.NoError(t, err)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer util.CloseAndLogOnError(ctx, resp.Body)
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Type"), "text/html")
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		bodyStr := html.UnescapeString(string(body))
+		assert.Contains(t, bodyStr, "Select Your Workspace")
+		assert.Contains(t, bodyStr, "Workspace Child")
+		assert.Contains(t, bodyStr, "name=\"partition_id\"")
+		assert.Contains(t, bodyStr, "value=\""+childPartition.GetId()+"\"")
 	})
 }
 

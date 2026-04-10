@@ -250,9 +250,14 @@ func (h *AuthServer) redirectToErrorPage(w http.ResponseWriter, r *http.Request,
 
 	var redirectErr *accessInstructionsRedirectError
 	if errors.As(err, &redirectErr) {
-		redirectURI := redirectErr.RedirectURI()
-		if redirectURI == "" {
+		redirectURI := ""
+		if len(redirectErr.AccessiblePartitions) > 0 && strings.TrimSpace(redirectErr.LoginEventID) != "" {
 			redirectURI = buildAccessInstructionsPageURL(r, redirectErr)
+		} else {
+			redirectURI = redirectErr.RedirectURI()
+			if redirectURI == "" {
+				redirectURI = buildAccessInstructionsPageURL(r, redirectErr)
+			}
 		}
 		if redirectURI != "" {
 			log.WithField("redirect_uri", redirectURI).Debug("redirecting to access instructions")

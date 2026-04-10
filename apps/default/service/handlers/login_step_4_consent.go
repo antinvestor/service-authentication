@@ -351,7 +351,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		log.WithError(rmErr).Debug("failed to set remember-me cookie")
 	}
 
-	defaultRole := partitionDefaultRole(clientObj.GetPartition())
+	defaultRole := partitionDefaultRole(h.resolvePartitionForLoginEventClaims(ctx, loginEvent, clientObj))
 	roles := h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID(), defaultRole)
 
 	// Grant "internal" role to admin/owner users on the root tenant+partition.
