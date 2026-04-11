@@ -52,7 +52,7 @@ class AuditAnalyticsScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (allEntries) {
-        final todayEntries = todayAsync.valueOrNull ?? [];
+        final todayEntries = todayAsync.value ?? [];
         final uniqueActors =
             allEntries.map((e) => e.profileId).toSet().length;
         final uniqueServices =
