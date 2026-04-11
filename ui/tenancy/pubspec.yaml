@@ -2,8 +2,16 @@ name: antinvestor_ui_tenancy
 description: >
   Tenancy management UI library for Antinvestor. Tenants, partitions, roles,
   access control, service accounts, and permission management.
-publish_to: 'none'
 version: 0.1.0
+repository: https://github.com/antinvestor/service-authentication
+homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/tenancy
+issue_tracker: https://github.com/antinvestor/service-authentication/issues
+topics:
+  - flutter
+  - ui
+  - tenancy
+  - antinvestor
+  - multi-tenant
 
 environment:
   sdk: ^3.11.0
@@ -11,10 +19,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  antinvestor_ui_core:
-    path: ../../../common/ui_core
-  antinvestor_ui_profile:
-    path: ../../../service-profile/ui/profile
+  antinvestor_ui_core: ^0.1.0
+  antinvestor_ui_profile: ^0.1.0
   antinvestor_api_tenancy: ^1.54.0
   antinvestor_api_common: ^1.52.0
   antinvestor_api_profile: ^1.52.0
