@@ -1,4 +1,5 @@
 import 'package:antinvestor_ui_core/navigation/nav_items.dart';
+import 'package:antinvestor_ui_core/permissions/permission_manifest.dart';
 import 'package:antinvestor_ui_core/routing/route_module.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -65,6 +66,7 @@ class TenancyRouteModule extends RouteModule {
           icon: Icons.hub_outlined,
           activeIcon: Icons.hub,
           route: '/services/tenancy',
+          requiredPermissions: {'tenancy_view'},
           children: [
             NavItem(
               id: 'tenants',
@@ -72,6 +74,7 @@ class TenancyRouteModule extends RouteModule {
               icon: Icons.domain_outlined,
               activeIcon: Icons.domain,
               route: '/services/tenancy/tenants',
+              requiredPermissions: {'tenancy_view'},
             ),
             NavItem(
               id: 'partitions',
@@ -79,6 +82,7 @@ class TenancyRouteModule extends RouteModule {
               icon: Icons.account_tree_outlined,
               activeIcon: Icons.account_tree,
               route: '/services/tenancy/partitions',
+              requiredPermissions: {'partition_view'},
             ),
           ],
         ),
@@ -86,6 +90,40 @@ class TenancyRouteModule extends RouteModule {
 
   @override
   Map<String, Set<String>> get routePermissions => {
-        '/services/tenancy': {'admin', 'owner', 'internal'},
+        '/services/tenancy': {'tenancy_view'},
+        '/services/tenancy/tenants': {'tenancy_view'},
+        '/services/tenancy/partitions': {'partition_view'},
       };
+
+  @override
+  PermissionManifest get permissionManifest => const PermissionManifest(
+        namespace: 'service_tenancy',
+        permissions: [
+          PermissionEntry(
+            key: 'tenancy_view',
+            label: 'View Tenants',
+            scope: PermissionScope.service,
+          ),
+          PermissionEntry(
+            key: 'tenancy_create',
+            label: 'Create Tenants',
+            scope: PermissionScope.action,
+          ),
+          PermissionEntry(
+            key: 'tenancy_update',
+            label: 'Update Tenants',
+            scope: PermissionScope.action,
+          ),
+          PermissionEntry(
+            key: 'partition_view',
+            label: 'View Partitions',
+            scope: PermissionScope.feature,
+          ),
+          PermissionEntry(
+            key: 'partition_create',
+            label: 'Create Partitions',
+            scope: PermissionScope.action,
+          ),
+        ],
+      );
 }

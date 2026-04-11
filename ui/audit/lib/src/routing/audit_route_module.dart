@@ -1,4 +1,5 @@
 import 'package:antinvestor_ui_core/navigation/nav_items.dart';
+import 'package:antinvestor_ui_core/permissions/permission_manifest.dart';
 import 'package:antinvestor_ui_core/routing/route_module.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -55,6 +56,7 @@ class AuditRouteModule extends RouteModule {
           icon: Icons.history_outlined,
           activeIcon: Icons.history,
           route: '/services/audit',
+          requiredPermissions: {'audit_view'},
           children: [
             NavItem(
               id: 'audit_log',
@@ -62,6 +64,7 @@ class AuditRouteModule extends RouteModule {
               icon: Icons.list_alt_outlined,
               activeIcon: Icons.list_alt,
               route: '/services/audit/log',
+              requiredPermissions: {'audit_view'},
             ),
             NavItem(
               id: 'audit_integrity',
@@ -69,6 +72,7 @@ class AuditRouteModule extends RouteModule {
               icon: Icons.verified_outlined,
               activeIcon: Icons.verified,
               route: '/services/audit/integrity',
+              requiredPermissions: {'audit_verify'},
             ),
           ],
         ),
@@ -76,12 +80,35 @@ class AuditRouteModule extends RouteModule {
 
   @override
   Map<String, Set<String>> get routePermissions => {
-        '/services/audit': {'admin', 'owner', 'internal', 'audit_view'},
-        '/services/audit/integrity': {
-          'admin',
-          'owner',
-          'internal',
-          'audit_verify'
-        },
+        '/services/audit': {'audit_view'},
+        '/services/audit/log': {'audit_view'},
+        '/services/audit/integrity': {'audit_verify'},
       };
+
+  @override
+  PermissionManifest get permissionManifest => const PermissionManifest(
+        namespace: 'service_audit',
+        permissions: [
+          PermissionEntry(
+            key: 'audit_view',
+            label: 'View Audit Log',
+            scope: PermissionScope.service,
+          ),
+          PermissionEntry(
+            key: 'audit_search',
+            label: 'Search Audit Entries',
+            scope: PermissionScope.feature,
+          ),
+          PermissionEntry(
+            key: 'audit_export',
+            label: 'Export Audit Data',
+            scope: PermissionScope.action,
+          ),
+          PermissionEntry(
+            key: 'audit_verify',
+            label: 'Verify Integrity',
+            scope: PermissionScope.action,
+          ),
+        ],
+      );
 }

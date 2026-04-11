@@ -1,0 +1,857 @@
+openapi: 3.1.0
+info:
+  title: Audit Service
+  description: The Audit Service provides a tamper-proof, append-only audit trail for tracking user actions across all services. Each entry is hash-chained and digitally signed to prevent tampering. Supports querying by actor, resource, action, time range, and service.
+  contact:
+    name: Ant Investor Ltd
+    url: https://github.com/antinvestor/service-authentication
+    email: info@antinvestor.com
+  license:
+    name: Apache License
+    url: https://github.com/antinvestor/apis/blob/master/LICENSE
+  version: v1.0.0
+paths:
+  /audit.v1.AuditService/BatchCreateAuditEntries:
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Batch create audit entries
+      description: Appends multiple audit entries atomically. All entries share the same hash chain.
+      operationId: batchCreateAuditEntries
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.BatchCreateAuditEntriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.BatchCreateAuditEntriesResponse'
+  /audit.v1.AuditService/CreateAuditEntry:
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Create audit entry
+      description: Appends a new tamper-proof entry to the audit trail. The hash chain and digital signature are computed server-side.
+      operationId: createAuditEntry
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.CreateAuditEntryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.CreateAuditEntryResponse'
+  /audit.v1.AuditService/GetAuditEntry:
+    get:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get audit entry
+      description: Retrieves a single audit entry by its unique identifier.
+      operationId: getAuditEntry
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditEntryRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditEntryResponse'
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get audit entry
+      description: Retrieves a single audit entry by its unique identifier.
+      operationId: getAuditEntry
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.GetAuditEntryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditEntryResponse'
+  /audit.v1.AuditService/ListAuditEntries: {}
+  /audit.v1.AuditService/SearchAuditEntries: {}
+  /audit.v1.AuditService/VerifyIntegrity:
+    get:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Verify audit integrity
+      description: Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected.
+      operationId: verifyIntegrity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.VerifyIntegrityRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.VerifyIntegrityResponse'
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Verify audit integrity
+      description: Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected.
+      operationId: verifyIntegrity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.VerifyIntegrityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.VerifyIntegrityResponse'
+components:
+  schemas:
+    audit.v1.AuditEntryObject:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          description: Unique identifier for this audit entry.
+        tenantId:
+          type: string
+          title: tenant_id
+          description: Tenant context for multi-tenancy isolation.
+        partitionId:
+          type: string
+          title: partition_id
+          description: Partition context within the tenant.
+        profileId:
+          type: string
+          title: profile_id
+          description: Profile ID of the actor who performed the action.
+        action:
+          type: string
+          title: action
+          description: The action performed (e.g., "create", "update", "delete", "login", "grant_permission").
+        resourceType:
+          type: string
+          title: resource_type
+          description: Type of the resource affected (e.g., "partition", "service_account", "setting").
+        resourceId:
+          type: string
+          title: resource_id
+          description: Identifier of the affected resource.
+        service:
+          type: string
+          title: service
+          description: Originating service name (e.g., "service_tenancy", "service_profile").
+        details:
+          title: details
+          description: Arbitrary details about the action as structured data.
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        ipAddress:
+          type: string
+          title: ip_address
+          description: IP address of the actor.
+        userAgent:
+          type: string
+          title: user_agent
+          description: User agent string of the actor's client.
+        deviceId:
+          type: string
+          title: device_id
+          description: Device ID from which the action was performed.
+        targetProfileId:
+          type: string
+          title: target_profile_id
+          description: Profile ID of the target user (if the action affects another user).
+        traceId:
+          type: string
+          title: trace_id
+          description: OpenTelemetry trace ID for request correlation.
+        createdAt:
+          title: created_at
+          description: Timestamp when the action occurred.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        previousHash:
+          type: string
+          title: previous_hash
+          description: SHA-256 hash of the previous entry in the chain (tamper-proof integrity).
+        entryHash:
+          type: string
+          title: entry_hash
+          description: SHA-256 hash of this entry's content including the previous hash.
+        signature:
+          type: string
+          title: signature
+          description: Ed25519 digital signature of the entry hash.
+      title: AuditEntryObject
+      additionalProperties: false
+      description: |-
+        AuditEntryObject represents a single audit trail entry.
+         Entries are append-only and tamper-proof via hash chaining and digital signatures.
+    audit.v1.BatchCreateAuditEntriesRequest:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.CreateAuditEntryRequest'
+          title: entries
+          maxItems: 100
+          minItems: 1
+      title: BatchCreateAuditEntriesRequest
+      additionalProperties: false
+      description: BatchCreateAuditEntriesRequest creates multiple audit entries atomically.
+    audit.v1.BatchCreateAuditEntriesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+          title: data
+      title: BatchCreateAuditEntriesResponse
+      additionalProperties: false
+    audit.v1.CreateAuditEntryRequest:
+      type: object
+      properties:
+        profileId:
+          type: string
+          title: profile_id
+          minLength: 1
+          description: Profile ID of the actor. Required.
+        action:
+          type: string
+          title: action
+          minLength: 1
+          description: The action performed. Required.
+        resourceType:
+          type: string
+          title: resource_type
+          minLength: 1
+          description: Type of the resource affected. Required.
+        resourceId:
+          type: string
+          title: resource_id
+          description: Identifier of the affected resource.
+        service:
+          type: string
+          title: service
+          minLength: 1
+          description: Originating service name. Required.
+        details:
+          title: details
+          description: Arbitrary details about the action.
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        ipAddress:
+          type: string
+          title: ip_address
+          description: IP address of the actor.
+        userAgent:
+          type: string
+          title: user_agent
+          description: User agent string.
+        deviceId:
+          type: string
+          title: device_id
+          description: Device ID from which the action was performed.
+        targetProfileId:
+          type: string
+          title: target_profile_id
+          description: Profile ID of the target user (optional).
+        traceId:
+          type: string
+          title: trace_id
+          description: OpenTelemetry trace ID for correlation (optional).
+      title: CreateAuditEntryRequest
+      additionalProperties: false
+      description: |-
+        CreateAuditEntryRequest creates a new audit entry.
+         The hash chain and signature are computed server-side.
+    audit.v1.CreateAuditEntryResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+      title: CreateAuditEntryResponse
+      additionalProperties: false
+    audit.v1.GetAuditEntryRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          minLength: 1
+      title: GetAuditEntryRequest
+      additionalProperties: false
+      description: GetAuditEntryRequest retrieves a single audit entry by ID.
+    audit.v1.GetAuditEntryResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+      title: GetAuditEntryResponse
+      additionalProperties: false
+    audit.v1.ListAuditEntriesRequest:
+      type: object
+      properties:
+        profileId:
+          type: string
+          title: profile_id
+          description: Filter by profile ID of the actor.
+        action:
+          type: string
+          title: action
+          description: Filter by action type.
+        resourceType:
+          type: string
+          title: resource_type
+          description: Filter by resource type.
+        resourceId:
+          type: string
+          title: resource_id
+          description: Filter by resource ID.
+        service:
+          type: string
+          title: service
+          description: Filter by originating service.
+        targetProfileId:
+          type: string
+          title: target_profile_id
+          description: Filter by target profile ID.
+        deviceId:
+          type: string
+          title: device_id
+          description: Filter by device ID.
+        startDate:
+          title: start_date
+          description: Filter entries created after this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endDate:
+          title: end_date
+          description: Filter entries created before this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        count:
+          type: integer
+          title: count
+          format: int32
+          description: Maximum number of entries to return per page. Default 50, max 500.
+        page:
+          type: string
+          title: page
+          description: Pagination cursor (ID of the last entry from previous page).
+      title: ListAuditEntriesRequest
+      additionalProperties: false
+      description: ListAuditEntriesRequest lists audit entries with filtering and pagination.
+    audit.v1.ListAuditEntriesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+          title: data
+      title: ListAuditEntriesResponse
+      additionalProperties: false
+    audit.v1.SearchAuditEntriesRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          title: query
+          minLength: 1
+          description: Free-text search query matching action, resource_type, resource_id, or details.
+        startDate:
+          title: start_date
+          description: Filter entries created after this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endDate:
+          title: end_date
+          description: Filter entries created before this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        count:
+          type: integer
+          title: count
+          format: int32
+          description: Maximum number of entries to return per page. Default 50, max 500.
+        page:
+          type: string
+          title: page
+          description: Pagination cursor.
+      title: SearchAuditEntriesRequest
+      additionalProperties: false
+      description: SearchAuditEntriesRequest provides free-text search across audit entries.
+    audit.v1.SearchAuditEntriesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+          title: data
+      title: SearchAuditEntriesResponse
+      additionalProperties: false
+    audit.v1.VerifyIntegrityRequest:
+      type: object
+      properties:
+        startDate:
+          title: start_date
+          description: Start of the time range to verify.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endDate:
+          title: end_date
+          description: End of the time range to verify.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: VerifyIntegrityRequest
+      additionalProperties: false
+      description: VerifyIntegrityRequest verifies the hash chain integrity over a time range.
+    audit.v1.VerifyIntegrityResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          title: valid
+          description: Whether the hash chain is intact.
+        entriesVerified:
+          type:
+            - integer
+            - string
+          title: entries_verified
+          format: int64
+          description: Total number of entries verified.
+        firstInvalidEntryId:
+          type: string
+          title: first_invalid_entry_id
+          description: ID of the first entry that failed verification (empty if valid).
+        message:
+          type: string
+          title: message
+          description: Human-readable description of the verification result.
+      title: VerifyIntegrityResponse
+      additionalProperties: false
+      description: VerifyIntegrityResponse reports the result of integrity verification.
+    base64:
+      type: boolean
+      title: base64
+      description: Specifies if the message query param is base64 encoded, which may be required for binary data
+    compression:
+      title: compression
+      enum:
+        - identity
+        - gzip
+        - br
+      description: Which compression algorithm to use for this request
+    connect:
+      title: connect
+      enum:
+        - v1
+      description: Define the version of the Connect protocol
+    connect-protocol-version:
+      type: number
+      title: Connect-Protocol-Version
+      enum:
+        - 1
+      description: Define the version of the Connect protocol
+      const: 1
+    connect-timeout-header:
+      type: number
+      title: Connect-Timeout-Ms
+      description: Define the timeout, in ms
+    connect.error:
+      type: object
+      properties:
+        code:
+          type: string
+          examples:
+            - not_found
+          enum:
+            - canceled
+            - unknown
+            - invalid_argument
+            - deadline_exceeded
+            - not_found
+            - already_exists
+            - permission_denied
+            - resource_exhausted
+            - failed_precondition
+            - aborted
+            - out_of_range
+            - unimplemented
+            - internal
+            - unavailable
+            - data_loss
+            - unauthenticated
+          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+        message:
+          type: string
+          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/connect.error_details.Any'
+          description: A list of messages that carry the error details. There is no limit on the number of messages.
+      title: Connect Error
+      additionalProperties: true
+      description: 'Error type returned by Connect: https://connectrpc.com/docs/go/errors/#http-representation'
+    connect.error_details.Any:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.'
+        value:
+          type: string
+          format: binary
+          description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
+        debug:
+          oneOf:
+            - type: object
+              title: Any
+              additionalProperties: true
+              description: Detailed error information.
+          discriminator:
+            propertyName: type
+          title: Debug
+          description: Deserialized error detail payload. The 'type' field indicates the schema. This field is for easier debugging and should not be relied upon for application logic.
+      additionalProperties: true
+      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.
+    encoding:
+      title: encoding
+      enum:
+        - proto
+        - json
+      description: Define which encoding or 'Message-Codec' to use
+    google.protobuf.ListValue:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/google.protobuf.Value'
+          title: values
+          description: Repeated field of dynamically typed values.
+      title: ListValue
+      additionalProperties: false
+      description: |-
+        `ListValue` is a wrapper around a repeated field of values.
+
+         The JSON representation for `ListValue` is JSON array.
+    google.protobuf.NullValue:
+      type: string
+      title: NullValue
+      enum:
+        - NULL_VALUE
+      description: |-
+        `NullValue` is a singleton enumeration to represent the null value for the
+         `Value` type union.
+
+         The JSON representation for `NullValue` is JSON `null`.
+    google.protobuf.Struct:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/google.protobuf.Value'
+      description: |-
+        `Struct` represents a structured data value, consisting of fields
+         which map to dynamically typed values. In some languages, `Struct`
+         might be supported by a native representation. For example, in
+         scripting languages like JS a struct is represented as an
+         object. The details of that representation are described together
+         with the proto support for the language.
+
+         The JSON representation for `Struct` is JSON object.
+    google.protobuf.Struct.FieldsEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/google.protobuf.Value'
+      title: FieldsEntry
+      additionalProperties: false
+    google.protobuf.Timestamp:
+      type: string
+      examples:
+        - "2023-01-15T01:30:15.01Z"
+        - "2024-12-25T12:00:00Z"
+      format: date-time
+      description: |-
+        A Timestamp represents a point in time independent of any time zone or local
+         calendar, encoded as a count of seconds and fractions of seconds at
+         nanosecond resolution. The count is relative to an epoch at UTC midnight on
+         January 1, 1970, in the proleptic Gregorian calendar which extends the
+         Gregorian calendar backwards to year one.
+
+         All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+         second table is needed for interpretation, using a [24-hour linear
+         smear](https://developers.google.com/time/smear).
+
+         The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+         restricting to that range, we ensure that we can convert to and from [RFC
+         3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+
+         # Examples
+
+         Example 1: Compute Timestamp from POSIX `time()`.
+
+             Timestamp timestamp;
+             timestamp.set_seconds(time(NULL));
+             timestamp.set_nanos(0);
+
+         Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+
+             struct timeval tv;
+             gettimeofday(&tv, NULL);
+
+             Timestamp timestamp;
+             timestamp.set_seconds(tv.tv_sec);
+             timestamp.set_nanos(tv.tv_usec * 1000);
+
+         Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+
+             FILETIME ft;
+             GetSystemTimeAsFileTime(&ft);
+             UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+
+             // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+             // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+             Timestamp timestamp;
+             timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+             timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+
+         Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+
+             long millis = System.currentTimeMillis();
+
+             Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+                 .setNanos((int) ((millis % 1000) * 1000000)).build();
+
+         Example 5: Compute Timestamp from Java `Instant.now()`.
+
+             Instant now = Instant.now();
+
+             Timestamp timestamp =
+                 Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+                     .setNanos(now.getNano()).build();
+
+         Example 6: Compute Timestamp from current time in Python.
+
+             timestamp = Timestamp()
+             timestamp.GetCurrentTime()
+
+         # JSON Mapping
+
+         In JSON format, the Timestamp type is encoded as a string in the
+         [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+         format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+         where {year} is always expressed using four digits while {month}, {day},
+         {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+         seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+         are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+         is required. A proto3 JSON serializer should always use UTC (as indicated by
+         "Z") when printing the Timestamp type and a proto3 JSON parser should be
+         able to accept both UTC and other timezones (as indicated by an offset).
+
+         For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+         01:30 UTC on January 15, 2017.
+
+         In JavaScript, one can convert a Date object to this format using the
+         standard
+         [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+         method. In Python, a standard `datetime.datetime` object can be converted
+         to this format using
+         [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+         the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+         the Joda Time's [`ISODateTimeFormat.dateTime()`](
+         http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+         ) to obtain a formatter capable of generating timestamps in this format.
+    google.protobuf.Value:
+      oneOf:
+        - type: "null"
+        - type: number
+        - type: string
+        - type: boolean
+        - type: array
+        - type: object
+          additionalProperties: true
+      description: |-
+        `Value` represents a dynamically typed value which can be either
+         null, a number, a string, a boolean, a recursive struct value, or a
+         list of values. A producer of value is expected to set one of these
+         variants. Absence of any variant indicates an error.
+
+         The JSON representation for `Value` is JSON value.
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security: []
+tags:
+  - name: audit.v1.AuditService
+    description: |-
+      AuditService provides a tamper-proof, append-only audit trail.
+       All RPCs require authentication via Bearer token.
