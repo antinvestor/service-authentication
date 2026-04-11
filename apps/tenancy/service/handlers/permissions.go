@@ -25,6 +25,7 @@ import (
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/data"
@@ -72,10 +73,29 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 		return
 	}
 
-	if err := prtSrv.upsertServiceNamespace(ctx, manifest); err != nil {
+	created, err := prtSrv.upsertServiceNamespace(ctx, manifest)
+	if err != nil {
 		logger.WithError(err).Error("failed to upsert service namespace")
 		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
+	}
+
+	// When a brand-new service joins the platform, backfill root super-user
+	// tuples for it synchronously so platform owners can grant permissions in
+	// the namespace immediately. Re-registrations skip this step — the set
+	// is stable.
+	if created {
+		if backfillErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
+			AccessRepo:           prtSrv.AccessRepo,
+			AccessRoleRepo:       prtSrv.AccessRoleRepo,
+			PartitionRoleRepo:    prtSrv.PartitionRoleRepo,
+			ServiceNamespaceRepo: prtSrv.ServiceNamespaceRepo,
+			Authorizer:           prtSrv.svc.SecurityManager().GetAuthorizer(ctx),
+		}); backfillErr != nil {
+			logger.WithError(backfillErr).Error("root authz backfill for new namespace failed")
+			http.Error(rw, "internal error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
@@ -83,7 +103,10 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})
 }
 
-func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifest permissionManifest) error {
+// upsertServiceNamespace persists a manifest and reports whether the namespace
+// record was newly created (true) or updated in place (false). Callers use the
+// flag to decide whether to backfill root-user tuples for the new namespace.
+func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifest permissionManifest) (bool, error) {
 	permList := data.JSONMap{"values": manifest.Permissions}
 	roleBindings := make(data.JSONMap, len(manifest.RoleBindings))
 	for role, perms := range manifest.RoleBindings {
@@ -98,14 +121,17 @@ func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifes
 			RoleBindings: roleBindings,
 			RegisteredAt: &manifest.RegisteredAt,
 		}
-		return prtSrv.ServiceNamespaceRepo.Create(ctx, ns)
+		if createErr := prtSrv.ServiceNamespaceRepo.Create(ctx, ns); createErr != nil {
+			return false, createErr
+		}
+		return true, nil
 	}
 
 	existing.Permissions = permList
 	existing.RoleBindings = roleBindings
 	existing.RegisteredAt = &manifest.RegisteredAt
 	_, err = prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "permissions", "role_bindings", "registered_at")
-	return err
+	return false, err
 }
 
 // ListServiceNamespaces implements the Connect RPC to list all registered service namespaces.

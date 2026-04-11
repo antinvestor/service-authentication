@@ -28,6 +28,7 @@ import (
 	"github.com/antinvestor/common/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -106,6 +107,20 @@ func main() {
 	}
 
 	svc.Init(ctx, serviceOptions...)
+
+	// Provision Keto tuples for the root super-user(s) before the service
+	// starts accepting traffic. This runs synchronously and aborts startup
+	// on failure — no self-healing, no retries, no silent drift. See
+	// business.EnsureRootAuthorization for the exact tuple set.
+	if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
+		AccessRepo:           partSrv.AccessRepo,
+		AccessRoleRepo:       partSrv.AccessRoleRepo,
+		PartitionRoleRepo:    partSrv.PartitionRoleRepo,
+		ServiceNamespaceRepo: partSrv.ServiceNamespaceRepo,
+		Authorizer:           auth,
+	}); bootstrapErr != nil {
+		util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
+	}
 
 	err = svc.Run(ctx, "")
 	if err != nil {

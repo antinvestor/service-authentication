@@ -21,14 +21,20 @@ const (
 	NamespaceServiceProfile = "service_profile"
 	NamespaceServiceDevice  = "service_device"
 	NamespaceServiceSetting = "service_setting"
+	NamespaceServiceAudit   = "service_audit"
 )
 
 // CoreServiceNamespaces lists the service namespaces that receive direct role
 // tuples (profile_user → ns#role) whenever a user is assigned a partition role.
 // This ensures that functional permissions in these namespaces are resolved
 // directly by Keto without bridge tuples.
+//
+// Root partition owners/admins get owner/member tuples written to every entry
+// here at bootstrap, which guarantees they can always manage tenancy, audit,
+// profile, device, and setting services without any manual provisioning.
 var CoreServiceNamespaces = []string{ //nolint:gochecknoglobals // namespace registry
 	NamespaceTenancy,
+	NamespaceServiceAudit,
 	NamespaceServiceProfile,
 	NamespaceServiceDevice,
 	NamespaceServiceSetting,
