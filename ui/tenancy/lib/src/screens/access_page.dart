@@ -1,0 +1,186 @@
+import 'package:antinvestor_api_tenancy/antinvestor_api_tenancy.dart';
+import 'package:antinvestor_ui_core/antinvestor_ui_core.dart';
+import 'package:antinvestor_ui_core/widgets/edit_dialog.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../providers/partition_providers.dart';
+import '../providers/partition_repository.dart';
+import '../widgets/async_entity_list.dart';
+import '../widgets/state_badge.dart';
+
+class AccessPage extends ConsumerWidget {
+  const AccessPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return AsyncEntityList<AccessObject>(
+      dataProvider: accessListProvider,
+      title: 'Access',
+      breadcrumbs: const ['Services', 'Tenancy Service', 'Access'],
+      searchHint: 'Search access grants...',
+      addLabel: 'New Access',
+      exportRow: (access) => [
+        access.id,
+        access.profileId,
+        access.hasPartition() ? access.partition.name : '',
+        access.state.name,
+      ],
+      columns: const [
+        DataColumn(label: Text('ID')),
+        DataColumn(label: Text('PROFILE ID')),
+        DataColumn(label: Text('PARTITION')),
+        DataColumn(label: Text('STATE')),
+      ],
+      rowBuilder: (access, selected, onSelect) {
+        final partitionName = access.hasPartition()
+            ? access.partition.name
+            : '';
+
+        return DataRow(
+          selected: selected,
+          onSelectChanged: (_) => onSelect(),
+          color: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return theme.colorScheme.tertiary.withValues(alpha: 0.05);
+            }
+            return null;
+          }),
+          cells: [
+            DataCell(Text(access.id,
+                style:
+                    const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+            DataCell(ProfileBadge(profileId: access.profileId, compact: true)),
+            DataCell(Text(partitionName)),
+            DataCell(TenancyStateBadge(access.state)),
+          ],
+        );
+      },
+      detailBuilder: (access) => _AccessDetail(access: access),
+      editFields: const [
+        EditField(label: 'Partition ID', key: 'partitionId'),
+        EditField(label: 'Profile ID', key: 'profileId'),
+      ],
+      editTitle: (access) => 'Edit Access ${access.id}',
+      editValuesExtractor: (access) => {
+        'partitionId': access.hasPartition() ? access.partition.id : '',
+        'profileId': access.profileId,
+      },
+      onSave: (access, values) async {
+        try {
+          final repo = ref.read(partitionRepositoryProvider);
+          if (access == null) {
+            final partitionId = values['partitionId'] ?? '';
+            final profileId = values['profileId'] ?? '';
+            if (partitionId.isEmpty || profileId.isEmpty) {
+              debugPrint('Partition ID and Profile ID are required');
+              return;
+            }
+            await repo.createAccess(
+              partitionId: partitionId,
+              profileId: profileId,
+            );
+          }
+          ref.invalidate(accessListProvider);
+        } catch (e) {
+          debugPrint('Error saving access: $e');
+        }
+      },
+      onRefresh: () => ref.invalidate(accessListProvider),
+    );
+  }
+}
+
+// --- Detail Panel ---
+
+class _AccessDetail extends StatelessWidget {
+  const _AccessDetail({required this.access});
+
+  final AccessObject access;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final createdAt = access.hasCreatedAt()
+        ? DateFormat.yMd().format(access.createdAt.toDateTime())
+        : 'N/A';
+
+    final partitionName = access.hasPartition()
+        ? access.partition.name
+        : 'N/A';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.vpn_key_outlined,
+                  size: 24, color: theme.colorScheme.tertiary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Access Grant',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(access.id,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontFamily: 'monospace')),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        const SizedBox(height: 4),
+        ProfileBadge(profileId: access.profileId),
+        const SizedBox(height: 8),
+        _DetailRow(label: 'Partition', value: partitionName),
+        _DetailRow(label: 'State', value: access.state.name),
+        _DetailRow(label: 'Created', value: createdAt),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+}
