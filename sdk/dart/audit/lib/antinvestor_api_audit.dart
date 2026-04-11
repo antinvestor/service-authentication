@@ -12,7 +12,5 @@ export 'src/audit/v1/audit.connect.client.dart';
 export 'src/audit/v1/audit.connect.spec.dart';
 
 // Export common types used in audit API
-export 'src/common/v1/common.pb.dart' hide SearchRequest;
-export 'src/common/v1/common.pbenum.dart';
 export 'src/google/protobuf/struct.pb.dart';
 export 'src/google/protobuf/timestamp.pb.dart';
