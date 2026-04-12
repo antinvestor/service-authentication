@@ -1,0 +1,8 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  errors:
+    # Generated protobuf code has patterns that trigger these rules
+    unnecessary_import: ignore
+    depend_on_referenced_packages: ignore
+    implementation_imports: ignore

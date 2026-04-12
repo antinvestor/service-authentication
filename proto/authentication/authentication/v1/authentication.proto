@@ -1,0 +1,245 @@
+// Copyright 2023-2026 Ant Investor Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package authentication.v1;
+
+// -----------------------------------------------------
+// Core notes (normative):
+// - Authentication Service exposes read-only login history
+// - LoginEvents track each authentication flow completion
+// - All timestamps are RFC3339 / google.protobuf.Timestamp
+// -----------------------------------------------------
+
+import "buf/validate/validate.proto";
+import "common/v1/permissions.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/antinvestor/apis/go/authentication/v1;authenticationv1";
+option java_multiple_files = true;
+option java_package = "authenticationv1";
+option (gnostic.openapi.v3.document) = {
+  info: {
+    title: "Authentication Service"
+    version: "v1.0.0"
+    description: "The Authentication Service provides read-only access to login history and session information. It exposes login events created during OAuth2 authentication flows, enabling users and administrators to review sign-in activity, device usage, and session details."
+    contact: {
+      name: "Ant Investor Ltd"
+      url: "https://github.com/antinvestor/service-authentication"
+      email: "info@antinvestor.com"
+    }
+    license: {
+      name: "Apache License"
+      url: "https://github.com/antinvestor/apis/blob/master/LICENSE"
+    }
+  }
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth"
+          value: {
+            security_scheme: {
+              type: "http"
+              scheme: "bearer"
+              bearer_format: "JWT"
+            }
+          }
+        }
+      ]
+    }
+  }
+};
+
+// -----------------------------------------------------
+// Core Data Types
+// -----------------------------------------------------
+
+// LoginSource identifies how a user authenticated.
+enum LoginSource {
+  LOGIN_SOURCE_UNSPECIFIED = 0;
+  LOGIN_SOURCE_DIRECT = 1;
+  LOGIN_SOURCE_GOOGLE = 2;
+  LOGIN_SOURCE_FACEBOOK = 3;
+  LOGIN_SOURCE_SERVICE_ACCOUNT = 4;
+  LOGIN_SOURCE_SESSION_REFRESH = 5;
+}
+
+// LoginEventObject represents a single completed authentication event.
+message LoginEventObject {
+  // Unique identifier for this login event.
+  string id = 1;
+
+  // Tenant context for multi-tenancy isolation.
+  string tenant_id = 2;
+
+  // Partition context within the tenant.
+  string partition_id = 3;
+
+  // Profile ID of the user who authenticated.
+  string profile_id = 4;
+
+  // OAuth2 client ID used for authentication.
+  string client_id = 5;
+
+  // How the user authenticated.
+  string source = 6;
+
+  // Contact (email or phone) used for authentication.
+  string contact_id = 7;
+
+  // Device ID from which the authentication occurred.
+  string device_id = 8;
+
+  // IP address of the authenticating client.
+  string ip_address = 9;
+
+  // User agent string of the authenticating client.
+  string user_agent = 10;
+
+  // Login status code (0 = success).
+  int32 status = 11;
+
+  // Additional properties as structured data.
+  google.protobuf.Struct properties = 12;
+
+  // Timestamp when the login event was created.
+  google.protobuf.Timestamp created_at = 13;
+}
+
+// -----------------------------------------------------
+// Request/Response Messages
+// -----------------------------------------------------
+
+// GetLoginEventRequest retrieves a single login event by ID.
+message GetLoginEventRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetLoginEventResponse {
+  LoginEventObject data = 1;
+}
+
+// ListLoginEventsRequest lists login events with filtering and pagination.
+message ListLoginEventsRequest {
+  // Filter by profile ID. Required for non-admin users.
+  string profile_id = 1;
+
+  // Filter by OAuth2 client ID.
+  string client_id = 2;
+
+  // Filter by login source (e.g., "direct", "google").
+  string source = 3;
+
+  // Filter by device ID.
+  string device_id = 4;
+
+  // Filter events created after this timestamp.
+  google.protobuf.Timestamp start_date = 5;
+
+  // Filter events created before this timestamp.
+  google.protobuf.Timestamp end_date = 6;
+
+  // Maximum number of events per page. Default 50, max 500.
+  int32 count = 7;
+
+  // Pagination cursor (ID of the last event from previous page).
+  string page = 8;
+}
+
+message ListLoginEventsResponse {
+  repeated LoginEventObject data = 1;
+}
+
+// -----------------------------------------------------
+// Authentication Service
+// -----------------------------------------------------
+
+// AuthenticationService provides read-only access to login history.
+// All RPCs require authentication via Bearer token.
+service AuthenticationService {
+  option (common.v1.service_permissions) = {
+    namespace: "service_authentication"
+    permissions: [
+      "auth_view_own",
+      "auth_view_all"
+    ]
+    role_bindings: [
+      {
+        role: ROLE_OWNER
+        permissions: [
+          "auth_view_own",
+          "auth_view_all"
+        ]
+      },
+      {
+        role: ROLE_ADMIN
+        permissions: [
+          "auth_view_own",
+          "auth_view_all"
+        ]
+      },
+      {
+        role: ROLE_OPERATOR
+        permissions: ["auth_view_own"]
+      },
+      {
+        role: ROLE_VIEWER
+        permissions: ["auth_view_own"]
+      },
+      {
+        role: ROLE_MEMBER
+        permissions: ["auth_view_own"]
+      },
+      {
+        role: ROLE_SERVICE
+        permissions: [
+          "auth_view_own",
+          "auth_view_all"
+        ]
+      }
+    ]
+  };
+
+  // GetLoginEvent retrieves a single login event by ID.
+  rpc GetLoginEvent(GetLoginEventRequest) returns (GetLoginEventResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["auth_view_own"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getLoginEvent"
+      summary: "Get login event"
+      description: "Retrieves a single login event by its unique identifier. Users can only view their own login events unless they have admin permissions."
+      tags: "Authentication"
+    };
+  }
+
+  // ListLoginEvents queries login events with filtering and pagination.
+  rpc ListLoginEvents(ListLoginEventsRequest) returns (stream ListLoginEventsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["auth_view_own"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listLoginEvents"
+      summary: "List login events"
+      description: "Lists login events with filtering by profile, client, source, device, and time range. Users can only list their own events unless they have admin permissions."
+      tags: "Authentication"
+    };
+  }
+}

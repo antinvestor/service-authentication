@@ -34,21 +34,22 @@ final client = AuditServiceClient(transport);
 
 // Create an audit entry
 final entry = CreateAuditEntryRequest()
-  ..actorId = 'user-123'
-  ..objectId = 'profile-456'
-  ..objectType = 'profile'
-  ..action = 'update';
+  ..profileId = 'user-123'
+  ..action = 'update'
+  ..resourceType = 'profile'
+  ..resourceId = 'profile-456'
+  ..service = 'service_profile';
 final response = await client.createAuditEntry(entry);
 
 // Search audit entries
 final searchRequest = SearchAuditEntriesRequest()
-  ..objectId = 'profile-456';
-final results = await client.searchAuditEntries(searchRequest);
+  ..query = 'profile-456';
+final results = client.searchAuditEntries(searchRequest);
 
 // Verify hash chain integrity
 final verifyRequest = VerifyIntegrityRequest()
-  ..startTime = startTimestamp
-  ..endTime = endTimestamp;
+  ..startDate = startTimestamp
+  ..endDate = endTimestamp;
 final integrity = await client.verifyIntegrity(verifyRequest);
 ```
 
@@ -56,9 +57,10 @@ final integrity = await client.verifyIntegrity(verifyRequest);
 
 This package exports protobuf-generated types from the `audit.v1` namespace:
 
-- `AuditEntry`, `AuditAction` - Core audit data types
+- `AuditEntryObject` - Core audit entry data type
 - `CreateAuditEntryRequest/Response` - Entry creation
-- `SearchAuditEntriesRequest/Response` - Querying entries
+- `ListAuditEntriesRequest/Response` - Filtered listing with pagination
+- `SearchAuditEntriesRequest/Response` - Free-text search
 - `VerifyIntegrityRequest/Response` - Hash chain verification
 - `AuditServiceClient` - Connect RPC client
 

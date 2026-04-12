@@ -24,13 +24,13 @@ dependencies:
 import 'package:antinvestor_ui_audit/antinvestor_ui_audit.dart';
 
 // Drop audit trail into any detail screen
-ObjectAuditTrail(objectId: 'profile-123', objectType: 'profile')
+ObjectAuditTrail(resourceType: 'profile', resourceId: 'profile-123')
 
 // Real-time activity feed for dashboards
-LiveActivityFeed(limit: 20)
+LiveActivityFeed(maxItems: 20)
 
 // Show recent activity by a specific user
-ActorActivityWidget(actorId: 'user-456')
+ActorActivityWidget(profileId: 'user-456')
 
 // Register routes in your host app
 final module = AuditRouteModule();
@@ -52,11 +52,14 @@ ShellRoute(
 
 ```dart
 // Hash chain integrity indicator
-IntegrityBadge(status: IntegrityStatus.valid)
+IntegrityBadge(
+  startDate: DateTime.now().subtract(Duration(days: 7)),
+  endDate: DateTime.now(),
+)
 
 // Compact audit entry row
 AuditEntryTile(entry: auditEntry)
 
-// Export audit data
-AuditExportHelper.exportCsv(entries: entries)
+// Log a data export as an audit entry
+logExport(ref, resourceType: 'audit_log', rowCount: 50, format: 'csv')
 ```

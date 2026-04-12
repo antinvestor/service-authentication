@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+  title: Authentication Service
+  description: The Authentication Service provides read-only access to login history and session information. It exposes login events created during OAuth2 authentication flows, enabling users and administrators to review sign-in activity, device usage, and session details.
+  contact:
+    name: Ant Investor Ltd
+    url: https://github.com/antinvestor/service-authentication
+    email: info@antinvestor.com
+  license:
+    name: Apache License
+    url: https://github.com/antinvestor/apis/blob/master/LICENSE
+  version: v1.0.0
+paths:
+  /authentication.v1.AuthenticationService/GetLoginEvent:
+    get:
+      tags:
+        - Authentication
+        - authentication.v1.AuthenticationService
+      summary: Get login event
+      description: Retrieves a single login event by its unique identifier. Users can only view their own login events unless they have admin permissions.
+      operationId: getLoginEvent
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authentication.v1.GetLoginEventRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authentication.v1.GetLoginEventResponse'
+    post:
+      tags:
+        - Authentication
+        - authentication.v1.AuthenticationService
+      summary: Get login event
+      description: Retrieves a single login event by its unique identifier. Users can only view their own login events unless they have admin permissions.
+      operationId: getLoginEvent
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/authentication.v1.GetLoginEventRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authentication.v1.GetLoginEventResponse'
+  /authentication.v1.AuthenticationService/ListLoginEvents: {}
+components:
+  schemas:
+    authentication.v1.GetLoginEventRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          minLength: 1
+      title: GetLoginEventRequest
+      additionalProperties: false
+      description: GetLoginEventRequest retrieves a single login event by ID.
+    authentication.v1.GetLoginEventResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/authentication.v1.LoginEventObject'
+      title: GetLoginEventResponse
+      additionalProperties: false
+    authentication.v1.ListLoginEventsRequest:
+      type: object
+      properties:
+        profileId:
+          type: string
+          title: profile_id
+          description: Filter by profile ID. Required for non-admin users.
+        clientId:
+          type: string
+          title: client_id
+          description: Filter by OAuth2 client ID.
+        source:
+          type: string
+          title: source
+          description: Filter by login source (e.g., "direct", "google").
+        deviceId:
+          type: string
+          title: device_id
+          description: Filter by device ID.
+        startDate:
+          title: start_date
+          description: Filter events created after this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endDate:
+          title: end_date
+          description: Filter events created before this timestamp.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        count:
+          type: integer
+          title: count
+          format: int32
+          description: Maximum number of events per page. Default 50, max 500.
+        page:
+          type: string
+          title: page
+          description: Pagination cursor (ID of the last event from previous page).
+      title: ListLoginEventsRequest
+      additionalProperties: false
+      description: ListLoginEventsRequest lists login events with filtering and pagination.
+    authentication.v1.ListLoginEventsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/authentication.v1.LoginEventObject'
+          title: data
+      title: ListLoginEventsResponse
+      additionalProperties: false
+    authentication.v1.LoginEventObject:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          description: Unique identifier for this login event.
+        tenantId:
+          type: string
+          title: tenant_id
+          description: Tenant context for multi-tenancy isolation.
+        partitionId:
+          type: string
+          title: partition_id
+          description: Partition context within the tenant.
+        profileId:
+          type: string
+          title: profile_id
+          description: Profile ID of the user who authenticated.
+        clientId:
+          type: string
+          title: client_id
+          description: OAuth2 client ID used for authentication.
+        source:
+          type: string
+          title: source
+          description: How the user authenticated.
+        contactId:
+          type: string
+          title: contact_id
+          description: Contact (email or phone) used for authentication.
+        deviceId:
+          type: string
+          title: device_id
+          description: Device ID from which the authentication occurred.
+        ipAddress:
+          type: string
+          title: ip_address
+          description: IP address of the authenticating client.
+        userAgent:
+          type: string
+          title: user_agent
+          description: User agent string of the authenticating client.
+        status:
+          type: integer
+          title: status
+          format: int32
+          description: Login status code (0 = success).
+        properties:
+          title: properties
+          description: Additional properties as structured data.
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        createdAt:
+          title: created_at
+          description: Timestamp when the login event was created.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: LoginEventObject
+      additionalProperties: false
+      description: LoginEventObject represents a single completed authentication event.
+    authentication.v1.LoginSource:
+      type: string
+      title: LoginSource
+      enum:
+        - LOGIN_SOURCE_UNSPECIFIED
+        - LOGIN_SOURCE_DIRECT
+        - LOGIN_SOURCE_GOOGLE
+        - LOGIN_SOURCE_FACEBOOK
+        - LOGIN_SOURCE_SERVICE_ACCOUNT
+        - LOGIN_SOURCE_SESSION_REFRESH
+      description: LoginSource identifies how a user authenticated.
+    base64:
+      type: boolean
+      title: base64
+      description: Specifies if the message query param is base64 encoded, which may be required for binary data
+    compression:
+      title: compression
+      enum:
+        - identity
+        - gzip
+        - br
+      description: Which compression algorithm to use for this request
+    connect:
+      title: connect
+      enum:
+        - v1
+      description: Define the version of the Connect protocol
+    connect-protocol-version:
+      type: number
+      title: Connect-Protocol-Version
+      enum:
+        - 1
+      description: Define the version of the Connect protocol
+      const: 1
+    connect-timeout-header:
+      type: number
+      title: Connect-Timeout-Ms
+      description: Define the timeout, in ms
+    connect.error:
+      type: object
+      properties:
+        code:
+          type: string
+          examples:
+            - not_found
+          enum:
+            - canceled
+            - unknown
+            - invalid_argument
+            - deadline_exceeded
+            - not_found
+            - already_exists
+            - permission_denied
+            - resource_exhausted
+            - failed_precondition
+            - aborted
+            - out_of_range
+            - unimplemented
+            - internal
+            - unavailable
+            - data_loss
+            - unauthenticated
+          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+        message:
+          type: string
+          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/connect.error_details.Any'
+          description: A list of messages that carry the error details. There is no limit on the number of messages.
+      title: Connect Error
+      additionalProperties: true
+      description: 'Error type returned by Connect: https://connectrpc.com/docs/go/errors/#http-representation'
+    connect.error_details.Any:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.'
+        value:
+          type: string
+          format: binary
+          description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
+        debug:
+          oneOf:
+            - type: object
+              title: Any
+              additionalProperties: true
+              description: Detailed error information.
+          discriminator:
+            propertyName: type
+          title: Debug
+          description: Deserialized error detail payload. The 'type' field indicates the schema. This field is for easier debugging and should not be relied upon for application logic.
+      additionalProperties: true
+      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.
+    encoding:
+      title: encoding
+      enum:
+        - proto
+        - json
+      description: Define which encoding or 'Message-Codec' to use
+    google.protobuf.ListValue:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/google.protobuf.Value'
+          title: values
+          description: Repeated field of dynamically typed values.
+      title: ListValue
+      additionalProperties: false
+      description: |-
+        `ListValue` is a wrapper around a repeated field of values.
+
+         The JSON representation for `ListValue` is JSON array.
+    google.protobuf.NullValue:
+      type: string
+      title: NullValue
+      enum:
+        - NULL_VALUE
+      description: |-
+        `NullValue` is a singleton enumeration to represent the null value for the
+         `Value` type union.
+
+         The JSON representation for `NullValue` is JSON `null`.
+    google.protobuf.Struct:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/google.protobuf.Value'
+      description: |-
+        `Struct` represents a structured data value, consisting of fields
+         which map to dynamically typed values. In some languages, `Struct`
+         might be supported by a native representation. For example, in
+         scripting languages like JS a struct is represented as an
+         object. The details of that representation are described together
+         with the proto support for the language.
+
+         The JSON representation for `Struct` is JSON object.
+    google.protobuf.Struct.FieldsEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/google.protobuf.Value'
+      title: FieldsEntry
+      additionalProperties: false
+    google.protobuf.Timestamp:
+      type: string
+      examples:
+        - "2023-01-15T01:30:15.01Z"
+        - "2024-12-25T12:00:00Z"
+      format: date-time
+      description: |-
+        A Timestamp represents a point in time independent of any time zone or local
+         calendar, encoded as a count of seconds and fractions of seconds at
+         nanosecond resolution. The count is relative to an epoch at UTC midnight on
+         January 1, 1970, in the proleptic Gregorian calendar which extends the
+         Gregorian calendar backwards to year one.
+
+         All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+         second table is needed for interpretation, using a [24-hour linear
+         smear](https://developers.google.com/time/smear).
+
+         The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+         restricting to that range, we ensure that we can convert to and from [RFC
+         3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+
+         # Examples
+
+         Example 1: Compute Timestamp from POSIX `time()`.
+
+             Timestamp timestamp;
+             timestamp.set_seconds(time(NULL));
+             timestamp.set_nanos(0);
+
+         Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+
+             struct timeval tv;
+             gettimeofday(&tv, NULL);
+
+             Timestamp timestamp;
+             timestamp.set_seconds(tv.tv_sec);
+             timestamp.set_nanos(tv.tv_usec * 1000);
+
+         Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+
+             FILETIME ft;
+             GetSystemTimeAsFileTime(&ft);
+             UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+
+             // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+             // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+             Timestamp timestamp;
+             timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+             timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+
+         Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+
+             long millis = System.currentTimeMillis();
+
+             Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+                 .setNanos((int) ((millis % 1000) * 1000000)).build();
+
+         Example 5: Compute Timestamp from Java `Instant.now()`.
+
+             Instant now = Instant.now();
+
+             Timestamp timestamp =
+                 Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+                     .setNanos(now.getNano()).build();
+
+         Example 6: Compute Timestamp from current time in Python.
+
+             timestamp = Timestamp()
+             timestamp.GetCurrentTime()
+
+         # JSON Mapping
+
+         In JSON format, the Timestamp type is encoded as a string in the
+         [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+         format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+         where {year} is always expressed using four digits while {month}, {day},
+         {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+         seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+         are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+         is required. A proto3 JSON serializer should always use UTC (as indicated by
+         "Z") when printing the Timestamp type and a proto3 JSON parser should be
+         able to accept both UTC and other timezones (as indicated by an offset).
+
+         For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+         01:30 UTC on January 15, 2017.
+
+         In JavaScript, one can convert a Date object to this format using the
+         standard
+         [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+         method. In Python, a standard `datetime.datetime` object can be converted
+         to this format using
+         [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+         the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+         the Joda Time's [`ISODateTimeFormat.dateTime()`](
+         http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+         ) to obtain a formatter capable of generating timestamps in this format.
+    google.protobuf.Value:
+      oneOf:
+        - type: "null"
+        - type: number
+        - type: string
+        - type: boolean
+        - type: array
+        - type: object
+          additionalProperties: true
+      description: |-
+        `Value` represents a dynamically typed value which can be either
+         null, a number, a string, a boolean, a recursive struct value, or a
+         list of values. A producer of value is expected to set one of these
+         variants. Absence of any variant indicates an error.
+
+         The JSON representation for `Value` is JSON value.
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security: []
+tags:
+  - name: authentication.v1.AuthenticationService
+    description: |-
+      AuthenticationService provides read-only access to login history.
+       All RPCs require authentication via Bearer token.

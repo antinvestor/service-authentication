@@ -35,7 +35,6 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -58,9 +57,13 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 
+	isMigration := cfg.DoDatabaseMigrate()
+
 	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {
-		return
+	if isMigration {
+		if migErr := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath()); migErr != nil {
+			util.Log(ctx).WithError(migErr).Fatal("database migration failed")
+		}
 	}
 
 	sm := svc.SecurityManager()
@@ -82,6 +85,24 @@ func main() {
 
 	auth := sm.GetAuthorizer(ctx)
 	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli)
+
+	// Bootstrap root super-user authorization after migration only.
+	// This writes Keto tuples for migration-seeded root owners/admins.
+	// Regular pods skip this — tuples persist in Keto and don't need
+	// re-provisioning on every restart.
+	if isMigration {
+		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
+			AccessRepo:           partSrv.AccessRepo,
+			AccessRoleRepo:       partSrv.AccessRoleRepo,
+			PartitionRoleRepo:    partSrv.PartitionRoleRepo,
+			ServiceNamespaceRepo: partSrv.ServiceNamespaceRepo,
+			Authorizer:           auth,
+		}); bootstrapErr != nil {
+			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
+		}
+		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
+		return
+	}
 
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv)
@@ -108,20 +129,6 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
-	// Provision Keto tuples for the root super-user(s) before the service
-	// starts accepting traffic. This runs synchronously and aborts startup
-	// on failure — no self-healing, no retries, no silent drift. See
-	// business.EnsureRootAuthorization for the exact tuple set.
-	if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
-		AccessRepo:           partSrv.AccessRepo,
-		AccessRoleRepo:       partSrv.AccessRoleRepo,
-		PartitionRoleRepo:    partSrv.PartitionRoleRepo,
-		ServiceNamespaceRepo: partSrv.ServiceNamespaceRepo,
-		Authorizer:           auth,
-	}); bootstrapErr != nil {
-		util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
-	}
-
 	err = svc.Run(ctx, "")
 	if err != nil {
 		log := util.Log(ctx).WithError(err)
@@ -132,24 +139,6 @@ func main() {
 			log.Fatal("server stopping with error")
 		}
 	}
-}
-
-// handleDatabaseMigration performs database migration if configured to do so.
-func handleDatabaseMigration(
-	ctx context.Context,
-	cfg config.ConfigurationDatabase,
-	dbManager datastore.Manager,
-) bool {
-
-	if cfg.DoDatabaseMigrate() {
-
-		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
-		if err != nil {
-			util.Log(ctx).WithError(err).Fatal("database migration failed")
-		}
-		return true
-	}
-	return false
 }
 
 // setupConnectServer initialises and configures the connect server.

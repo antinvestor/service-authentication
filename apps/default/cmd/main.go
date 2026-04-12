@@ -16,15 +16,21 @@ package main
 
 import (
 	"context"
+	"net/http"
 
+	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/authentication/v1/authenticationv1connect"
+	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"connectrpc.com/connect"
 	"github.com/antinvestor/common"
 	"github.com/antinvestor/common/connection"
+	"github.com/antinvestor/common/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"
@@ -33,6 +39,9 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
 	"github.com/pitabwire/util"
 )
 
@@ -107,6 +116,16 @@ func main() {
 
 	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
 	serviceOptions = append(serviceOptions, defaultServer)
+
+	// Setup Connect RPC handler for login history API
+	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
+	connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
+	connectServer := frame.WithHTTPHandler(connectHandler)
+	serviceOptions = append(serviceOptions, connectServer)
+
+	// Register permission manifest for the authentication service
+	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
+	serviceOptions = append(serviceOptions, frame.WithPermissionRegistration(sd))
 
 	svc.Init(ctx, serviceOptions...)
 
@@ -197,4 +216,41 @@ func setupProfileClient(
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_profile"},
 	}, profilev1connect.NewProfileServiceClient)
+}
+
+const namespaceTenancyAccess = "tenancy_access"
+
+// setupConnectServer creates the Connect RPC handler for login history
+// with the full interceptor chain: Auth -> TenancyAccess -> FunctionAccess.
+func setupConnectServer(
+	ctx context.Context,
+	sm security.Manager,
+	implementation *loginhistory.LoginHistoryServer,
+) http.Handler {
+	authenticator := sm.GetAuthenticator(ctx)
+	auth := sm.GetAuthorizer(ctx)
+
+	// Layer 1: TenancyAccess
+	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(auth, namespaceTenancyAccess)
+	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
+
+	// Layer 2: FunctionAccess
+	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
+	procMap := permissions.BuildProcedureMap(sd)
+	svcPerms := permissions.ForService(sd)
+	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
+	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors for login history")
+	}
+
+	_, serverHandler := authenticationv1connect.NewAuthenticationServiceHandler(
+		implementation, connect.WithInterceptors(defaultInterceptorList...))
+
+	mux := http.NewServeMux()
+	mux.Handle("/", serverHandler)
+
+	return mux
 }
