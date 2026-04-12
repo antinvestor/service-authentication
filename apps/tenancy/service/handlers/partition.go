@@ -23,6 +23,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/opl"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/datastore"
@@ -33,6 +34,7 @@ import (
 type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
+	oplSyncer *opl.Syncer
 
 	ProfileCli           profilev1connect.ProfileServiceClient
 	PartitionRepo        repository.PartitionRepository
@@ -52,8 +54,9 @@ type TenancyServer struct {
 	tenancyv1connect.UnimplementedTenancyServiceHandler
 }
 
-// NewTenancyServer creates a new TenancyServer with injected dependencies
-func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *TenancyServer {
+// NewTenancyServer creates a new TenancyServer with injected dependencies.
+// Pass a nil oplSyncer to disable OPL ConfigMap sync.
+func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient, oplSyncer *opl.Syncer) *TenancyServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -75,6 +78,7 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 	return &TenancyServer{
 		svc:                    service,
 		eventsMan:              eventsMan,
+		oplSyncer:              oplSyncer,
 		ProfileCli:             profileCli,
 		PartitionRepo:          partitionRepo,
 		ClientRepo:             clientRepo,

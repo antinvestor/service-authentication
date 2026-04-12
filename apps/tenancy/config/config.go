@@ -24,4 +24,12 @@ type TenancyConfig struct {
 
 	ProfileServiceURI                   string `envDefault:"127.0.0.1:7010" env:"PROFILE_SERVICE_URI"`
 	ProfileServiceWorkloadAPITargetPath string `envDefault:"/ns/profile/sa/service-profile" env:"PROFILE_SERVICE_WORKLOAD_API_TARGET_PATH"`
+
+	// OPL ConfigMap sync — set KetoOPLConfigMapName to enable.
+	// When enabled, the tenancy service regenerates the combined Keto OPL
+	// from all registered permission manifests and writes it to a
+	// Kubernetes ConfigMap. Stakater Reloader handles Keto pod restarts.
+	KetoOPLConfigMapName      string `env:"KETO_OPL_CONFIGMAP_NAME"      envDefault:""`
+	KetoOPLConfigMapNamespace string `env:"KETO_OPL_CONFIGMAP_NAMESPACE" envDefault:"auth"`
+	KetoOPLConfigMapKey       string `env:"KETO_OPL_CONFIGMAP_KEY"       envDefault:"namespaces.ts"`
 }

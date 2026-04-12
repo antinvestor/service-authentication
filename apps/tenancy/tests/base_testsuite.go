@@ -291,7 +291,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
-	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
+	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil, nil)
 
 	// Use a plain HTTP client for Hydra admin API calls (no OAuth2 transport).
 	// This matches production (cmd/main.go) where hydraClient is unauthenticated

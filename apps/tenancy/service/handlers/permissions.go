@@ -37,6 +37,7 @@ import (
 // permissionManifest matches the payload published by services at startup.
 type permissionManifest struct {
 	Namespace    string              `json:"namespace"`
+	Domain       string              `json:"domain,omitempty"`
 	Permissions  []string            `json:"permissions"`
 	RoleBindings map[string][]string `json:"role_bindings"`
 	RegisteredAt time.Time           `json:"registered_at"`
@@ -98,6 +99,12 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 		}
 	}
 
+	// Regenerate Keto OPL ConfigMap so the namespace is available in Keto
+	// before the registering service starts writing tuples.
+	if prtSrv.oplSyncer != nil {
+		prtSrv.oplSyncer.SyncAsync(ctx)
+	}
+
 	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
 	rw.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})
@@ -113,10 +120,16 @@ func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifes
 		roleBindings[role] = perms
 	}
 
+	domain := manifest.Domain
+	if domain == "" {
+		domain = models.DomainDefault
+	}
+
 	existing, err := prtSrv.ServiceNamespaceRepo.GetByNamespace(ctx, manifest.Namespace)
 	if err != nil {
 		ns := &models.ServiceNamespace{
 			Namespace:    manifest.Namespace,
+			Domain:       domain,
 			Permissions:  permList,
 			RoleBindings: roleBindings,
 			RegisteredAt: &manifest.RegisteredAt,
@@ -127,10 +140,11 @@ func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifes
 		return true, nil
 	}
 
+	existing.Domain = domain
 	existing.Permissions = permList
 	existing.RoleBindings = roleBindings
 	existing.RegisteredAt = &manifest.RegisteredAt
-	_, err = prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "permissions", "role_bindings", "registered_at")
+	_, err = prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "domain", "permissions", "role_bindings", "registered_at")
 	return false, err
 }
 

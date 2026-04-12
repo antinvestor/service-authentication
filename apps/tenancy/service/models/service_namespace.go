@@ -27,7 +27,13 @@ import (
 type ServiceNamespace struct {
 	data.BaseModel
 	Namespace    string       `gorm:"type:varchar(100);uniqueIndex;not null"`
+	Domain       string       `gorm:"type:varchar(50);not null;default:'platform'"`
 	Permissions  data.JSONMap `gorm:"type:jsonb"`
 	RoleBindings data.JSONMap `gorm:"type:jsonb"`
 	RegisteredAt *time.Time
 }
+
+// DomainDefault is the default domain for all namespaces. As the platform
+// grows, services can declare their own domain to enable per-domain Keto
+// instances — the OPL generator already groups by domain.
+const DomainDefault = "platform"
