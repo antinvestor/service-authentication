@@ -99,12 +99,6 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 		}
 	}
 
-	// Regenerate Keto OPL ConfigMap so the namespace is available in Keto
-	// before the registering service starts writing tuples.
-	if prtSrv.oplSyncer != nil {
-		prtSrv.oplSyncer.SyncAsync(ctx)
-	}
-
 	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
 	rw.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})

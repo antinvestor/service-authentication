@@ -17,6 +17,8 @@ package handlers
 import (
 	"context"
 
+	"net/http"
+
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
@@ -34,7 +36,6 @@ import (
 type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
-	oplSyncer *opl.Syncer
 
 	ProfileCli           profilev1connect.ProfileServiceClient
 	PartitionRepo        repository.PartitionRepository
@@ -55,8 +56,7 @@ type TenancyServer struct {
 }
 
 // NewTenancyServer creates a new TenancyServer with injected dependencies.
-// Pass a nil oplSyncer to disable OPL ConfigMap sync.
-func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient, oplSyncer *opl.Syncer) *TenancyServer {
+func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *TenancyServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -78,7 +78,6 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 	return &TenancyServer{
 		svc:                    service,
 		eventsMan:              eventsMan,
-		oplSyncer:              oplSyncer,
 		ProfileCli:             profileCli,
 		PartitionRepo:          partitionRepo,
 		ClientRepo:             clientRepo,
@@ -94,6 +93,13 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
 		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
 	}
+}
+
+// NewInternalOPLHandler returns an HTTP handler that serves the combined Keto
+// OPL generated from all registered permission manifests. Supports ?domain=
+// query parameter for per-domain Keto instances.
+func (prtSrv *TenancyServer) NewInternalOPLHandler() http.Handler {
+	return opl.NewHandler(prtSrv.ServiceNamespaceRepo)
 }
 
 func (prtSrv *TenancyServer) ListPartition(

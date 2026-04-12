@@ -31,12 +31,10 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/opl"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/datastore"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -86,34 +84,7 @@ func main() {
 	}
 
 	auth := sm.GetAuthorizer(ctx)
-
-	// OPL ConfigMap sync — enabled when KETO_OPL_CONFIGMAP_NAME is set.
-	var oplSyncer *opl.Syncer
-	if cfg.KetoOPLConfigMapName != "" {
-		updater, oplErr := opl.NewConfigMapUpdater(
-			cfg.KetoOPLConfigMapName,
-			cfg.KetoOPLConfigMapNamespace,
-			cfg.KetoOPLConfigMapKey,
-		)
-		if oplErr != nil {
-			util.Log(ctx).WithError(oplErr).Warn("OPL ConfigMap updater disabled — Kubernetes API unavailable")
-		} else {
-			// Repo is created inside NewTenancyServer, but the syncer needs it
-			// independently. Create a lightweight one here for the syncer.
-			dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
-			workMan := svc.WorkManager()
-			nsRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
-			oplSyncer = opl.NewSyncer(nsRepo, updater)
-
-			// Initial sync on startup to reconcile any manifests registered
-			// while the ConfigMap was out of date.
-			if syncErr := oplSyncer.Sync(ctx); syncErr != nil {
-				util.Log(ctx).WithError(syncErr).Warn("initial OPL ConfigMap sync failed — will retry on next registration")
-			}
-		}
-	}
-
-	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli, oplSyncer)
+	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli)
 
 	// Bootstrap root super-user authorization after migration only.
 	// This writes Keto tuples for migration-seeded root owners/admins.
@@ -212,6 +183,7 @@ func setupConnectServer(
 	// reachable within the cluster (not exposed through the API gateway).
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
 	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
+	mux.Handle("/_internal/opl", implementation.NewInternalOPLHandler())
 
 	return mux
 }
