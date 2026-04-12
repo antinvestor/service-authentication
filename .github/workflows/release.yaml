@@ -11,6 +11,12 @@ jobs:
       proto_dir: proto/tenancy
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
+  buf-push-authentication:
+    uses: antinvestor/common/.github/workflows/buf-push.yaml@main
+    with:
+      proto_dir: proto/authentication
+    secrets:
+      buf_token: ${{ secrets.BUF_TOKEN }}
   buf-push-audit:
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
     with:
