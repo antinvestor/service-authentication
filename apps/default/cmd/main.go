@@ -114,14 +114,18 @@ func main() {
 
 	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
 
-	defaultServer := frame.WithHTTPHandler(srv.SetupRouterV1(ctx))
-	serviceOptions = append(serviceOptions, defaultServer)
-
 	// Setup Connect RPC handler for login history API
 	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
-	connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
-	connectServer := frame.WithHTTPHandler(connectHandler)
-	serviceOptions = append(serviceOptions, connectServer)
+	connectPath, connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
+
+	// Combine auth routes and Connect RPC into a single handler.
+	// Frame's WithHTTPHandler uses plain assignment (not append), so only
+	// the last call wins — both must share one mux.
+	authMux := srv.SetupRouterV1(ctx)
+	authMux.Handle(connectPath, connectHandler)
+
+	defaultServer := frame.WithHTTPHandler(authMux)
+	serviceOptions = append(serviceOptions, defaultServer)
 
 	// Register permission manifest for the authentication service
 	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
@@ -222,11 +226,13 @@ const namespaceTenancyAccess = "tenancy_access"
 
 // setupConnectServer creates the Connect RPC handler for login history
 // with the full interceptor chain: Auth -> TenancyAccess -> FunctionAccess.
+// Returns the path prefix and handler so they can be registered on the
+// shared auth routes mux.
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
 	implementation *loginhistory.LoginHistoryServer,
-) http.Handler {
+) (string, http.Handler) {
 	authenticator := sm.GetAuthenticator(ctx)
 	auth := sm.GetAuthorizer(ctx)
 
@@ -246,11 +252,6 @@ func setupConnectServer(
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors for login history")
 	}
 
-	_, serverHandler := authenticationv1connect.NewAuthenticationServiceHandler(
+	return authenticationv1connect.NewAuthenticationServiceHandler(
 		implementation, connect.WithInterceptors(defaultInterceptorList...))
-
-	mux := http.NewServeMux()
-	mux.Handle("/", serverHandler)
-
-	return mux
 }
