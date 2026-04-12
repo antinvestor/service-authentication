@@ -22,7 +22,7 @@
 /// ## Routing
 ///
 /// * [AuditRouteModule] - GoRouter routes and navigation items.
-library antinvestor_ui_audit;
+library;
 
 // -- Embeddable Widgets (most important for reuse) --
 export 'src/widgets/object_audit_trail.dart';

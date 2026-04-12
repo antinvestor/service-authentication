@@ -62,7 +62,7 @@ class IntegrityBadge extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => Container(
+      error: (_, _) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: Colors.orange.shade50,

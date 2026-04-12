@@ -3,24 +3,12 @@ import 'package:antinvestor_ui_core/widgets/service_analytics_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-
 import '../providers/audit_providers.dart';
 
 /// Analytics dashboard for the audit service showing KPI cards,
 /// action distribution, and recent entries.
 class AuditAnalyticsScreen extends ConsumerWidget {
   const AuditAnalyticsScreen({super.key});
-
-  static final _dateFormat = DateFormat('MMM d, HH:mm');
-
-  String _formatTimestamp(Timestamp ts) {
-    if (!ts.hasSeconds()) return '-';
-    final dt = DateTime.fromMillisecondsSinceEpoch(
-      ts.seconds.toInt() * 1000 + ts.nanos ~/ 1000000,
-    );
-    return _dateFormat.format(dt);
-  }
 
   String _relativeTime(Timestamp ts) {
     if (!ts.hasSeconds()) return '-';
