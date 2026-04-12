@@ -33,10 +33,21 @@ import (
 // roleOrder defines the canonical order roles appear in OPL output.
 var roleOrder = []string{"owner", "admin", "operator", "viewer", "member", "service"}
 
+// reservedNamespaces are emitted by writeSharedClasses and must not be
+// duplicated from service registrations.
+var reservedNamespaces = map[string]bool{
+	"profile_user":   true,
+	"tenancy_access": true,
+}
+
 // GenerateCombined produces a single OPL TypeScript string from all registered
 // namespaces. Namespaces are grouped by Domain with section markers so the
 // output is easy to split into per-domain files later.
+//
+// Reserved namespaces (profile_user, tenancy_access) and duplicates are
+// automatically filtered out.
 func GenerateCombined(namespaces []*models.ServiceNamespace) string {
+	namespaces = dedup(namespaces)
 	grouped := groupByDomain(namespaces)
 
 	var b strings.Builder
@@ -68,6 +79,7 @@ func GenerateCombined(namespaces []*models.ServiceNamespace) string {
 // shared header and base classes. Use this when splitting into per-domain
 // files for separate Keto instances.
 func GenerateForDomain(namespaces []*models.ServiceNamespace, domain string) string {
+	namespaces = dedup(namespaces)
 	var filtered []*models.ServiceNamespace
 	for _, ns := range namespaces {
 		if effectiveDomain(ns) == domain {
@@ -162,6 +174,24 @@ func writePermit(b *strings.Builder, perm string, rolePerms map[string][]string)
 }
 
 // --- Helpers ---
+
+// dedup removes reserved namespace names (already emitted as shared classes)
+// and duplicate namespace entries, keeping the first occurrence.
+func dedup(namespaces []*models.ServiceNamespace) []*models.ServiceNamespace {
+	seen := make(map[string]bool, len(namespaces))
+	for ns := range reservedNamespaces {
+		seen[ns] = true
+	}
+	result := make([]*models.ServiceNamespace, 0, len(namespaces))
+	for _, ns := range namespaces {
+		if seen[ns.Namespace] {
+			continue
+		}
+		seen[ns.Namespace] = true
+		result = append(result, ns)
+	}
+	return result
+}
 
 func effectiveDomain(ns *models.ServiceNamespace) string {
 	if ns.Domain != "" {

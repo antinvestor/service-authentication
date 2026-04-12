@@ -49,8 +49,10 @@ class profile_user implements Namespace {}
 
 class tenancy_access implements Namespace {
   related: {
-    member: (profile_user | tenancy_access)[]
-    service: profile_user[]
+    owner: (profile_user | SubjectSet<tenancy_access, "owner">)[]
+    admin: (profile_user | SubjectSet<tenancy_access, "admin">)[]
+    member: (profile_user | SubjectSet<tenancy_access, "member">)[]
+    service: (profile_user | SubjectSet<tenancy_access, "service">)[]
   }
 }
 
@@ -76,6 +78,15 @@ class service_device implements Namespace {
 }
 
 class service_setting implements Namespace {
+  related: {
+    owner: profile_user[]
+    admin: profile_user[]
+    member: profile_user[]
+    service: (profile_user | tenancy_access)[]
+  }
+}
+
+class service_audit implements Namespace {
   related: {
     owner: profile_user[]
     admin: profile_user[]
