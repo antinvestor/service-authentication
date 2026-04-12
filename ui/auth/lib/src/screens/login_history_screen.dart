@@ -131,7 +131,7 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
           SizedBox(
             width: 160,
             child: DropdownButtonFormField<String>(
-              value: _filterSource,
+              initialValue: _filterSource,
               isDense: true,
               decoration: const InputDecoration(
                 labelText: 'Source',

@@ -1,4 +1,4 @@
-library antinvestor_ui_tenancy;
+library;
 
 // Routing
 export 'src/routing/tenancy_route_module.dart';

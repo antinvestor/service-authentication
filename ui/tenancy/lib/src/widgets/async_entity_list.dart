@@ -2,7 +2,7 @@ import 'package:antinvestor_ui_core/antinvestor_ui_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Wraps [EntityListPage] with async data loading via a FutureProvider.
+/// Wraps [AdminEntityListPage] with async data loading via a FutureProvider.
 /// Shows loading spinner and error state automatically.
 class AsyncEntityList<T> extends ConsumerWidget {
   const AsyncEntityList({
@@ -79,7 +79,7 @@ class AsyncEntityList<T> extends ConsumerWidget {
           ],
         ),
       ),
-      data: (items) => EntityListPage<T>(
+      data: (items) => AdminEntityListPage<T>(
         title: title,
         breadcrumbs: breadcrumbs,
         columns: columns,

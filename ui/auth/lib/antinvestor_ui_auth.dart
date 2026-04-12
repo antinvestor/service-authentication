@@ -19,7 +19,7 @@
 /// ## Routing
 ///
 /// * [AuthRouteModule] - GoRouter routes and navigation items.
-library antinvestor_ui_auth;
+library;
 
 // -- Embeddable Widgets (most important for reuse) --
 export 'src/widgets/login_history_widget.dart';

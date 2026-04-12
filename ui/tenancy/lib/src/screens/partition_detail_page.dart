@@ -459,7 +459,7 @@ class _OverviewTab extends ConsumerWidget {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))),
               ),
-              error: (_, __) => _DetailRow(
+              error: (_, _) => _DetailRow(
                   label: 'Tenant ID', value: partition.tenantId),
               data: (tenant) => ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -494,7 +494,7 @@ class _OverviewTab extends ConsumerWidget {
                           child:
                               CircularProgressIndicator(strokeWidth: 2))),
                 ),
-                error: (_, __) => _DetailRow(
+                error: (_, _) => _DetailRow(
                     label: 'Parent ID', value: partition.parentId),
                 data: (partitions) {
                   final parent = partitions
@@ -526,7 +526,7 @@ class _OverviewTab extends ConsumerWidget {
           const SizedBox(height: 16),
           asyncPartitions.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (allPartitions) {
               final children = allPartitions
                   .where((p) => p.parentId == partition.id)
@@ -904,7 +904,7 @@ class _EditPartitionDialogState extends State<_EditPartitionDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _state,
+                initialValue: _state,
                 decoration: const InputDecoration(labelText: 'State'),
                 items: ['CREATED', 'ACTIVE', 'INACTIVE', 'DELETED']
                     .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -1253,7 +1253,7 @@ class _AccessTab extends ConsumerWidget {
                     final a = access[index];
                     return ExpansionTile(
                       leading: null,
-                      title: ProfileBadge(profileId: a.profileId),
+                      title: ProfileBadge(profileId: a.profileId, name: a.profileId),
                       subtitle: Text('Access: ${a.id}',
                           style: TextStyle(
                               fontSize: 11,
@@ -1558,7 +1558,7 @@ class _ServiceAccountsTab extends ConsumerWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: accounts.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final sa = accounts[index];
                   return ExpansionTile(
@@ -1566,7 +1566,7 @@ class _ServiceAccountsTab extends ConsumerWidget {
                         size: 20, color: Theme.of(context).colorScheme.tertiary),
                     title: sa.profileId.isNotEmpty
                         ? ProfileBadge(
-                            profileId: sa.profileId, compact: true)
+                            profileId: sa.profileId, name: sa.profileId)
                         : Text(sa.id,
                             style: const TextStyle(
                                 fontWeight: FontWeight.w500)),
@@ -1720,7 +1720,7 @@ class _ClientsTab extends ConsumerWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: clients.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final client = clients[index];
                   return ExpansionTile(
@@ -2011,7 +2011,7 @@ class _CreateClientDialogState extends State<_CreateClientDialog> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _type,
+                  initialValue: _type,
                   decoration: const InputDecoration(labelText: 'Type'),
                   items: ['public', 'confidential', 'internal']
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))

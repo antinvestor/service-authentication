@@ -1,6 +1,5 @@
 import 'package:antinvestor_api_tenancy/antinvestor_api_tenancy.dart';
 import 'package:antinvestor_ui_core/antinvestor_ui_core.dart';
-import 'package:antinvestor_ui_core/widgets/edit_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -52,7 +51,7 @@ class AccessPage extends ConsumerWidget {
             DataCell(Text(access.id,
                 style:
                     const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-            DataCell(ProfileBadge(profileId: access.profileId, compact: true)),
+            DataCell(ProfileBadge(profileId: access.profileId, name: access.profileId)),
             DataCell(Text(partitionName)),
             DataCell(TenancyStateBadge(access.state)),
           ],
@@ -144,7 +143,7 @@ class _AccessDetail extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const SizedBox(height: 4),
-        ProfileBadge(profileId: access.profileId),
+        ProfileBadge(profileId: access.profileId, name: access.profileId),
         const SizedBox(height: 8),
         _DetailRow(label: 'Partition', value: partitionName),
         _DetailRow(label: 'State', value: access.state.name),
