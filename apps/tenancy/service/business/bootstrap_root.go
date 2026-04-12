@@ -108,12 +108,30 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 		return nil
 	}
 
-	if err := deps.Authorizer.WriteTuples(ctx, allTuples); err != nil {
-		return fmt.Errorf("bootstrap: write %d root tuples: %w", len(allTuples), err)
+	// Group tuples by namespace so that a namespace missing from Keto's OPL
+	// doesn't fail the entire batch. This is expected during initial cluster
+	// setup where OPL configs deploy asynchronously.
+	grouped := groupTuplesByNamespace(allTuples)
+	var written, skipped int
+	for ns, tuples := range grouped {
+		if writeErr := deps.Authorizer.WriteTuples(ctx, tuples); writeErr != nil {
+			skipped += len(tuples)
+			logger.WithFields(map[string]any{
+				"namespace": ns,
+				"tuples":    len(tuples),
+			}).WithError(writeErr).Warn("skipping namespace — not yet configured in Keto")
+			continue
+		}
+		written += len(tuples)
+	}
+
+	if written == 0 {
+		return fmt.Errorf("bootstrap: wrote 0 of %d root tuples — no namespaces available in Keto", len(allTuples))
 	}
 
 	logger.WithFields(map[string]any{
-		"tuples":     len(allTuples),
+		"written":    written,
+		"skipped":    skipped,
 		"accesses":   provisioned,
 		"namespaces": len(nsRecords),
 	}).Info("root authorization bootstrap complete")
@@ -245,6 +263,17 @@ func extractRoleBindingKeys(roleBindings map[string]any) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// groupTuplesByNamespace partitions tuples by their Object.Namespace so each
+// namespace can be written independently.
+func groupTuplesByNamespace(tuples []security.RelationTuple) map[string][]security.RelationTuple {
+	grouped := make(map[string][]security.RelationTuple)
+	for _, t := range tuples {
+		ns := t.Object.Namespace
+		grouped[ns] = append(grouped[ns], t)
+	}
+	return grouped
 }
 
 func hasRole(roles []string, target string) bool {
