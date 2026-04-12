@@ -138,10 +138,9 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 				if nsErr != nil {
 					logger.WithError(nsErr).Warn("failed to list service namespaces, using core defaults")
 				}
-				namespaces := authz.RegisteredNamespaceNames(registeredNS)
 
 				for _, role := range roles {
-					tuples = append(tuples, authz.BuildRoleTuples(tenancyPath, profileID, role.Name, namespaces)...)
+					tuples = append(tuples, authz.BuildRoleTuples(tenancyPath, profileID, role.Name, registeredNS)...)
 					if role.Name == authz.RoleOwner || role.Name == authz.RoleAdmin {
 						hasPrivilegedRole = true
 					}

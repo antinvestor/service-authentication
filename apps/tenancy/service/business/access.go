@@ -78,17 +78,17 @@ type accessBusiness struct {
 	serviceNamespaceRepo repository.ServiceNamespaceRepository
 }
 
-// registeredNamespaces fetches all registered service namespaces and returns
-// their names. Falls back to CoreServiceNamespaces on error.
-func (ab *accessBusiness) registeredNamespaces(ctx context.Context) []string {
+// registeredNamespaces fetches all registered service namespace records.
+// Returns nil on error so callers fall back gracefully.
+func (ab *accessBusiness) registeredNamespaces(ctx context.Context) []*models.ServiceNamespace {
 	if ab.serviceNamespaceRepo == nil {
-		return authz.CoreServiceNamespaces
+		return nil
 	}
 	ns, err := ab.serviceNamespaceRepo.ListAll(ctx)
 	if err != nil {
-		return authz.CoreServiceNamespaces
+		return nil
 	}
-	return authz.RegisteredNamespaceNames(ns)
+	return ns
 }
 
 // resolvePartition finds a partition by partition ID or by looking up the Client's

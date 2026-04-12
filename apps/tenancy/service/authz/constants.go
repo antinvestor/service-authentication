@@ -14,6 +14,11 @@
 
 package authz
 
+import (
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/pitabwire/frame/data"
+)
+
 const (
 	NamespaceTenancy        = "service_tenancy"
 	NamespaceTenancyAccess  = "tenancy_access"
@@ -38,6 +43,27 @@ var CoreServiceNamespaces = []string{ //nolint:gochecknoglobals // namespace reg
 	NamespaceServiceProfile,
 	NamespaceServiceDevice,
 	NamespaceServiceSetting,
+}
+
+// CoreServiceNamespaceRecords returns ServiceNamespace records for the core
+// namespaces with RoleBindings set for all standard roles. Use this when you
+// need []*models.ServiceNamespace but only have the hardcoded core list
+// (e.g., in tests where the OPL is known to have all standard roles).
+func CoreServiceNamespaceRecords() []*models.ServiceNamespace {
+	bindings := data.JSONMap{
+		RoleOwner:   []string{},
+		RoleAdmin:   []string{},
+		RoleMember:  []string{},
+		RoleService: []string{},
+	}
+	records := make([]*models.ServiceNamespace, 0, len(CoreServiceNamespaces))
+	for _, ns := range CoreServiceNamespaces {
+		records = append(records, &models.ServiceNamespace{
+			Namespace:    ns,
+			RoleBindings: bindings,
+		})
+	}
+	return records
 }
 
 // Permission constants for tenancy operations.

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -72,7 +73,7 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 		return nil
 	}
 
-	namespaces, err := resolveBootstrapNamespaces(ctx, deps.ServiceNamespaceRepo)
+	nsRecords, err := resolveBootstrapNamespaces(ctx, deps.ServiceNamespaceRepo)
 	if err != nil {
 		return fmt.Errorf("bootstrap: resolve namespaces: %w", err)
 	}
@@ -92,7 +93,7 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 			continue
 		}
 
-		allTuples = append(allTuples, buildRootTuples(rootPath, access.ProfileID, privileged, namespaces)...)
+		allTuples = append(allTuples, buildRootTuples(rootPath, access.ProfileID, privileged, nsRecords)...)
 		provisioned++
 
 		logger.WithFields(map[string]any{
@@ -114,43 +115,25 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 	logger.WithFields(map[string]any{
 		"tuples":     len(allTuples),
 		"accesses":   provisioned,
-		"namespaces": len(namespaces),
+		"namespaces": len(nsRecords),
 	}).Info("root authorization bootstrap complete")
 	return nil
 }
 
-// resolveBootstrapNamespaces returns the full set of namespaces that should
-// receive root tuples. It unions CoreServiceNamespaces with every namespace
-// already registered via the permissions manifest so the super-user keeps
-// up with services that join the platform over time.
-func resolveBootstrapNamespaces(ctx context.Context, repo repository.ServiceNamespaceRepository) ([]string, error) {
-	seen := make(map[string]bool, len(authz.CoreServiceNamespaces))
-	result := make([]string, 0, len(authz.CoreServiceNamespaces))
-
-	add := func(ns string) {
-		if ns == "" || seen[ns] {
-			return
-		}
-		seen[ns] = true
-		result = append(result, ns)
-	}
-
-	for _, ns := range authz.CoreServiceNamespaces {
-		add(ns)
-	}
-
+// resolveBootstrapNamespaces returns the full set of namespace records that
+// should receive root tuples. It loads all registered namespaces from the DB
+// so that each record's RoleBindings can be used to determine which relations
+// the namespace actually supports.
+func resolveBootstrapNamespaces(ctx context.Context, repo repository.ServiceNamespaceRepository) ([]*models.ServiceNamespace, error) {
 	if repo == nil {
-		return result, nil
+		return nil, nil
 	}
 
 	registered, err := repo.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for _, ns := range registered {
-		add(ns.Namespace)
-	}
-	return result, nil
+	return registered, nil
 }
 
 // resolveAccessRoleNames returns the distinct role names attached to an
@@ -202,11 +185,13 @@ func filterPrivilegedRoles(roles []string) []string {
 //
 // It always writes the base tenancy_access#member + tenancy_access#service
 // tuples (service is what satisfies Frame's internal-system check), plus an
-// explicit tenancy_access#<role> tuple per privileged role, plus matching
-// #member + #<role> tuples in every bootstrap namespace so the user can
-// directly manage them without going through any SubjectSet bridge.
-func buildRootTuples(rootPath, profileID string, privilegedRoles, namespaces []string) []security.RelationTuple {
-	tuples := make([]security.RelationTuple, 0, 3+len(privilegedRoles)+(1+len(privilegedRoles))*len(namespaces))
+// explicit tenancy_access#<role> tuple per privileged role.
+//
+// For each registered namespace, it only writes tuples for relations that
+// the namespace's RoleBindings declares. This avoids writing tuples for
+// relations that don't exist in the OPL (which Keto rejects with NotFound).
+func buildRootTuples(rootPath, profileID string, privilegedRoles []string, nsRecords []*models.ServiceNamespace) []security.RelationTuple {
+	tuples := make([]security.RelationTuple, 0, 3+len(privilegedRoles)+2*len(nsRecords))
 
 	subject := security.SubjectRef{Namespace: authz.NamespaceProfile, ID: profileID}
 	tenancyAccess := security.ObjectRef{Namespace: authz.NamespaceTenancyAccess, ID: rootPath}
@@ -223,21 +208,50 @@ func buildRootTuples(rootPath, profileID string, privilegedRoles, namespaces []s
 		})
 	}
 
-	for _, ns := range namespaces {
-		obj := security.ObjectRef{Namespace: ns, ID: rootPath}
-		tuples = append(tuples, security.RelationTuple{
-			Object:   obj,
-			Relation: authz.RoleMember,
-			Subject:  subject,
-		})
-		for _, role := range privilegedRoles {
+	for _, nsRec := range nsRecords {
+		obj := security.ObjectRef{Namespace: nsRec.Namespace, ID: rootPath}
+		supportedRoles := extractRoleBindingKeys(nsRec.RoleBindings)
+
+		if hasRole(supportedRoles, authz.RoleMember) {
 			tuples = append(tuples, security.RelationTuple{
 				Object:   obj,
-				Relation: role,
+				Relation: authz.RoleMember,
 				Subject:  subject,
 			})
+		}
+		for _, role := range privilegedRoles {
+			if hasRole(supportedRoles, role) {
+				tuples = append(tuples, security.RelationTuple{
+					Object:   obj,
+					Relation: role,
+					Subject:  subject,
+				})
+			}
 		}
 	}
 
 	return tuples
+}
+
+// extractRoleBindingKeys returns the role names declared in a namespace's
+// RoleBindings JSONMap. These correspond to the relations that actually
+// exist in the namespace's OPL class definition.
+func extractRoleBindingKeys(roleBindings map[string]any) []string {
+	if len(roleBindings) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(roleBindings))
+	for k := range roleBindings {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func hasRole(roles []string, target string) bool {
+	for _, r := range roles {
+		if r == target {
+			return true
+		}
+	}
+	return false
 }

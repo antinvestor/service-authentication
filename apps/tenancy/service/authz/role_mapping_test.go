@@ -34,7 +34,8 @@ func TestRoleMappingTestSuite(t *testing.T) {
 func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyAccess() {
 	t := suite.T()
 	role := authz.RoleAdmin
-	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role, authz.CoreServiceNamespaces)
+	nsRecords := authz.CoreServiceNamespaceRecords()
+	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role, nsRecords)
 
 	// One tuple per CoreServiceNamespace + one for tenancy_access
 	expectedCount := len(authz.CoreServiceNamespaces) + 1
@@ -61,14 +62,18 @@ func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyA
 func (suite *RoleMappingTestSuite) TestBuildRoleTuples_DynamicNamespaces() {
 	t := suite.T()
 	role := authz.RoleOwner
-	namespaces := []string{"service_commerce", "service_payment", "service_tenancy"}
-	tuples := authz.BuildRoleTuples("t1/p1", "profile1", role, namespaces)
+	nsRecords := []*models.ServiceNamespace{
+		{Namespace: "service_commerce", RoleBindings: map[string]any{authz.RoleOwner: []string{}, authz.RoleMember: []string{}}},
+		{Namespace: "service_payment", RoleBindings: map[string]any{authz.RoleOwner: []string{}, authz.RoleMember: []string{}}},
+		{Namespace: "service_tenancy", RoleBindings: map[string]any{authz.RoleOwner: []string{}, authz.RoleMember: []string{}}},
+	}
+	tuples := authz.BuildRoleTuples("t1/p1", "profile1", role, nsRecords)
 
 	// One tuple per namespace + one for tenancy_access
-	assert.Len(t, tuples, len(namespaces)+1)
+	assert.Len(t, tuples, len(nsRecords)+1)
 
-	for i, ns := range namespaces {
-		assert.Equal(t, ns, tuples[i].Object.Namespace)
+	for i, ns := range nsRecords {
+		assert.Equal(t, ns.Namespace, tuples[i].Object.Namespace)
 		assert.Equal(t, role, tuples[i].Relation)
 	}
 
@@ -76,13 +81,29 @@ func (suite *RoleMappingTestSuite) TestBuildRoleTuples_DynamicNamespaces() {
 	assert.Equal(t, authz.NamespaceTenancyAccess, last.Object.Namespace)
 }
 
-func (suite *RoleMappingTestSuite) TestBuildRoleTuples_NilFallsBackToCore() {
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_NilWritesTenancyAccessOnly() {
 	t := suite.T()
 	tuples := authz.BuildRoleTuples("t1/p1", "profile1", authz.RoleMember, nil)
 
-	// Should fall back to CoreServiceNamespaces + tenancy_access
-	expectedCount := len(authz.CoreServiceNamespaces) + 1
-	assert.Len(t, tuples, expectedCount)
+	// Nil namespaces means no service namespace tuples — only tenancy_access
+	assert.Len(t, tuples, 1)
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuples[0].Object.Namespace)
+}
+
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_SkipsNamespacesWithoutRole() {
+	t := suite.T()
+	nsRecords := []*models.ServiceNamespace{
+		{Namespace: "service_tenancy", RoleBindings: map[string]any{authz.RoleOwner: []string{}, authz.RoleMember: []string{}}},
+		{Namespace: "service_authentication", RoleBindings: map[string]any{}}, // no roles declared
+		{Namespace: "service_profile", RoleBindings: map[string]any{authz.RoleOwner: []string{}, authz.RoleMember: []string{}}},
+	}
+	tuples := authz.BuildRoleTuples("t1/p1", "profile1", authz.RoleOwner, nsRecords)
+
+	// Only service_tenancy and service_profile support owner, + tenancy_access
+	assert.Len(t, tuples, 3)
+	assert.Equal(t, "service_tenancy", tuples[0].Object.Namespace)
+	assert.Equal(t, "service_profile", tuples[1].Object.Namespace)
+	assert.Equal(t, authz.NamespaceTenancyAccess, tuples[2].Object.Namespace)
 }
 
 func (suite *RoleMappingTestSuite) TestRegisteredNamespaceNames() {

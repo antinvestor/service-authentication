@@ -86,17 +86,17 @@ type serviceAccountBusiness struct {
 	serviceNamespaceRepo repository.ServiceNamespaceRepository
 }
 
-// registeredNamespaces fetches all registered service namespaces and returns
-// their names. Falls back to CoreServiceNamespaces on error.
-func (sb *serviceAccountBusiness) registeredNamespaces(ctx context.Context) []string {
+// registeredNamespaces fetches all registered service namespace records.
+// Returns nil on error so callers fall back gracefully.
+func (sb *serviceAccountBusiness) registeredNamespaces(ctx context.Context) []*models.ServiceNamespace {
 	if sb.serviceNamespaceRepo == nil {
-		return authz.CoreServiceNamespaces
+		return nil
 	}
 	ns, err := sb.serviceNamespaceRepo.ListAll(ctx)
 	if err != nil {
-		return authz.CoreServiceNamespaces
+		return nil
 	}
-	return authz.RegisteredNamespaceNames(ns)
+	return ns
 }
 
 func (sb *serviceAccountBusiness) CreateServiceAccount(

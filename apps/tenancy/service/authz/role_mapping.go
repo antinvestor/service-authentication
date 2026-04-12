@@ -95,21 +95,44 @@ func RegisteredNamespaceNames(namespaces []*models.ServiceNamespace) []string {
 	return result
 }
 
+// NamespaceSupportsRole reports whether a ServiceNamespace's RoleBindings
+// declares the given role. Namespaces whose OPL class lacks a relation
+// for the role must be skipped to avoid Keto NotFound errors.
+func NamespaceSupportsRole(ns *models.ServiceNamespace, role string) bool {
+	if len(ns.RoleBindings) == 0 {
+		return false
+	}
+	_, ok := ns.RoleBindings[role]
+	return ok
+}
+
+// FilterNamespacesForRole returns only the namespace names that support the
+// given role according to their RoleBindings. This prevents writing tuples
+// for relations that don't exist in the namespace's OPL class.
+func FilterNamespacesForRole(namespaces []*models.ServiceNamespace, role string) []string {
+	result := make([]string, 0, len(namespaces))
+	for _, ns := range namespaces {
+		if NamespaceSupportsRole(ns, role) {
+			result = append(result, ns.Namespace)
+		}
+	}
+	return result
+}
+
 // BuildRoleTuples creates role relation tuples for a user on a partition.
 //
-// Writes direct profile_user tuples to every namespace in the provided list
-// plus tenancy_access. Each service namespace gets a direct grant so that
-// Keto can resolve functional permissions without bridge tuples.
+// Only writes tuples to namespaces whose RoleBindings include the given role,
+// preventing Keto NotFound errors for namespaces that lack that relation in
+// their OPL class. The tenancy_access tuple is always written since it
+// supports all standard roles.
 //
 // The tenancyPath should be "tenantID/partitionID" to match the object ID
 // format used by FunctionChecker.Check().
-func BuildRoleTuples(tenancyPath, profileID, role string, namespaces []string) []security.RelationTuple {
-	if len(namespaces) == 0 {
-		namespaces = CoreServiceNamespaces
-	}
-	tuples := make([]security.RelationTuple, 0, len(namespaces)+1)
+func BuildRoleTuples(tenancyPath, profileID, role string, namespaces []*models.ServiceNamespace) []security.RelationTuple {
+	supported := FilterNamespacesForRole(namespaces, role)
+	tuples := make([]security.RelationTuple, 0, len(supported)+1)
 
-	for _, ns := range namespaces {
+	for _, ns := range supported {
 		tuples = append(tuples, security.RelationTuple{
 			Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
 			Relation: role,

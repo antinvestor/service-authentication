@@ -361,7 +361,7 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
 
-	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role, authz.CoreServiceNamespaces)
+	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role, authz.CoreServiceNamespaceRecords())
 	err := auth.WriteTuples(ctx, tuples)
 	bs.Require().NoError(err, "failed to seed tenant role")
 }
