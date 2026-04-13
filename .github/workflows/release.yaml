@@ -23,7 +23,3 @@ jobs:
       proto_dir: proto/audit
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
-  opl-push:
-    uses: antinvestor/common/.github/workflows/opl-push.yml@main
-    secrets:
-      deploy_token: ${{ secrets.DEPLOY_REPO_TOKEN }}
