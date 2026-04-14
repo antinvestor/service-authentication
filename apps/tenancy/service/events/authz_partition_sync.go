@@ -131,11 +131,27 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		parentSAs = nil
 	}
 
-	// Build all tuples upfront, then write in a single retryable call.
+	// Stage 1: Write the critical inheritance tuples (member + service).
+	// These MUST succeed — they allow parent partition service accounts
+	// and members to access this child partition via Keto graph traversal.
 	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
 	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
-	allTuples := []security.RelationTuple{memberTuple, serviceTuple}
+	inheritanceTuples := []security.RelationTuple{memberTuple, serviceTuple}
 
+	if writeErr := writeTuplesWithRetry(ctx, e.Name()+".inheritance", func(ctx context.Context) error {
+		return e.authorizer.WriteTuples(ctx, inheritanceTuples)
+	}); writeErr != nil {
+		logger.WithError(writeErr).Error("failed to write partition inheritance tuples")
+		return writeErr
+	}
+
+	logger.WithField("parent_path", parentPath).
+		Debug("partition inheritance tuples written")
+
+	// Stage 2: Write per-namespace bridge and role tuples.
+	// These are derived from parent SA audiences. Each namespace is written
+	// individually so a missing OPL (NotFound from Keto) doesn't block
+	// tuples for other valid namespaces.
 	nsSet := make(map[string]bool)
 	for _, sa := range parentSAs {
 		for _, ns := range authz.AudienceNamespaces(sa.Audiences) {
@@ -143,17 +159,17 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		}
 	}
 
-	if len(nsSet) > 0 {
-		namespaces := make([]string, 0, len(nsSet))
-		for ns := range nsSet {
-			namespaces = append(namespaces, ns)
-		}
+	for ns := range nsSet {
+		nsTuples := authz.BuildServiceInheritanceTuples(tenancyPath, []string{ns})
+		nsTuples = append(nsTuples, authz.BuildRoleInheritanceTuples(tenancyPath, []string{ns}, authz.StandardRoles)...)
 
-		allTuples = append(allTuples, authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)...)
-		allTuples = append(allTuples, authz.BuildRoleInheritanceTuples(tenancyPath, namespaces, authz.StandardRoles)...)
+		if writeErr := writeTuplesWithRetry(ctx, e.Name()+".ns."+ns, func(ctx context.Context) error {
+			return e.authorizer.WriteTuples(ctx, nsTuples)
+		}); writeErr != nil {
+			logger.WithError(writeErr).WithField("namespace", ns).
+				Warn("failed to write bridge tuples for namespace — OPL may not be loaded")
+		}
 	}
 
-	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
-		return e.authorizer.WriteTuples(ctx, allTuples)
-	})
+	return nil
 }

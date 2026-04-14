@@ -94,7 +94,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_audit": ["audit_create"],"service_funding": ["*"],"service_notification": ["notification_send"],"service_operations": ["*"]}',
+    '{"service_audit": ["audit_create"],"service_field": ["*"],"service_funding": ["*"],"service_identity": ["*"],"service_notification": ["notification_send"],"service_operations": ["*"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnq0g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -111,7 +111,7 @@ INSERT INTO service_accounts (
     'service-loans',
     'c2f4j7au6s7f91uqnpvg',
     'internal',
-    '{"service_audit": ["audit_create"],"service_funding": ["*"],"service_notification": ["notification_send"],"service_operations": ["*"]}',
+    '{"service_audit": ["audit_create"],"service_field": ["*"],"service_funding": ["*"],"service_identity": ["*"],"service_notification": ["notification_send"],"service_operations": ["*"],"service_profile": ["profile_view"],"service_tenancy": ["partition_view","tenant_view"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -177,7 +177,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_audit": ["audit_create"],"service_operations": ["*"]}',
+    '{"service_audit": ["audit_create"],"service_identity": ["*"],"service_operations": ["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnq6g',
     '{"jwks_uri": "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"}'
@@ -194,7 +194,7 @@ INSERT INTO service_accounts (
     'service-savings',
     'c2f4j7au6s7f91uqnq5g',
     'internal',
-    '{"service_audit": ["audit_create"],"service_operations": ["*"]}',
+    '{"service_audit": ["audit_create"],"service_identity": ["*"],"service_operations": ["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
 

@@ -223,7 +223,7 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	err = pb.eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
+	err = pb.eventsMan.Emit(ctx, events.EventKeyPartitionHydraSync, data.JSONMap{"id": partition.GetID()})
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +439,7 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, partitionRepo reposito
 		}
 
 		for _, partition := range result.Item() {
-			err = eventsMan.Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
+			err = eventsMan.Emit(ctx, events.EventKeyPartitionHydraSync, data.JSONMap{"id": partition.GetID()})
 			if err != nil {
 				return err
 			}
