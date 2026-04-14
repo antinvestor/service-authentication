@@ -115,6 +115,25 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("login session not found: %w", err)
 	}
 
+	// Enrich login event with partition/tenant info if not already set.
+	// The normal contact login flow does this in LoginEndpointShow, but
+	// the social login redirect skips that step.
+	if loginEvt.TenantID == "" || loginEvt.PartitionID == "" {
+		h.updateTenancyForLoginEvent(ctx, authState.LoginEventID)
+
+		loginEvt, err = h.getLoginEventFromCache(ctx, authState.LoginEventID)
+		if err != nil {
+			log.WithError(err).Error("failed to reload login event after tenancy enrichment")
+			return fmt.Errorf("login session not found: %w", err)
+		}
+
+		if loginEvt.TenantID == "" || loginEvt.PartitionID == "" {
+			log.WithField("client_id", loginEvt.ClientID).
+				Error("login event still missing tenancy info after enrichment")
+			return fmt.Errorf("unable to resolve tenancy for login session")
+		}
+	}
+
 	ctx = util.SetTenancy(ctx, loginEvt)
 	log.WithFields(map[string]any{
 		"client_id":   loginEvt.ClientID,
