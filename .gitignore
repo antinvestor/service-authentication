@@ -30,3 +30,8 @@ WORK_STATE.md
 
 # Shared Makefile cache
 .tmp/
+
+# Dart/Flutter build artifacts
+**/.dart_tool/
+**/build/
+pubspec.lock
