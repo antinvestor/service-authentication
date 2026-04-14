@@ -35,12 +35,7 @@ import (
 )
 
 // EventKeyPartitionHydraSync syncs a partition as an OAuth2 client on Hydra.
-// Deprecated name: EventKeyPartitionSynchronization (kept for backward compatibility).
 const EventKeyPartitionHydraSync = "partition.synchronization.event"
-
-// EventKeyPartitionSynchronization is the legacy name for EventKeyPartitionHydraSync.
-// Deprecated: use EventKeyPartitionHydraSync for clarity.
-const EventKeyPartitionSynchronization = EventKeyPartitionHydraSync
 
 type PartitionSyncEvent struct {
 	cfg                 config.ConfigurationOAUTH2
@@ -65,7 +60,7 @@ func NewPartitionSynchronizationEventHandler(_ context.Context, cfg config.Confi
 }
 
 func (csq *PartitionSyncEvent) Name() string {
-	return EventKeyPartitionSynchronization
+	return EventKeyPartitionHydraSync
 }
 
 func (csq *PartitionSyncEvent) PayloadType() any {

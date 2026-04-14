@@ -242,7 +242,7 @@ func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_WrongType() {
 func (suite *EventsTestSuite) TestPartitionSyncEvent_Name() {
 	t := suite.T()
 	e := NewPartitionSynchronizationEventHandler(context.Background(), nil, nil, nil)
-	assert.Equal(t, EventKeyPartitionSynchronization, e.Name())
+	assert.Equal(t, EventKeyPartitionHydraSync, e.Name())
 }
 
 func (suite *EventsTestSuite) TestPartitionSyncEvent_PayloadType() {
@@ -675,7 +675,7 @@ func (suite *EventsTestSuite) TestEventKeyConstants() {
 	assert.Equal(t, "authorization.tuple.write", EventKeyAuthzTupleWrite)
 	assert.Equal(t, "authorization.tuple.delete", EventKeyAuthzTupleDelete)
 	assert.Equal(t, "authorization.partition.sync", EventKeyAuthzPartitionSync)
-	assert.Equal(t, "partition.synchronization.event", EventKeyPartitionSynchronization)
+	assert.Equal(t, "partition.synchronization.event", EventKeyPartitionHydraSync)
 	assert.Equal(t, "service_account.synchronization.event", EventKeyServiceAccountSynchronization)
 	assert.Equal(t, "authorization.service_account.sync", EventKeyAuthzServiceAccountSync)
 }

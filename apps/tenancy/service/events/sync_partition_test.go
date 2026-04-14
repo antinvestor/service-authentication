@@ -396,7 +396,7 @@ func (suite *SyncPartitionTestSuite) TestSyncPartitionOnHydra_ViaQueue() {
 		err := partitionRepo.Create(ctx, partition)
 		require.NoError(t, err)
 
-		err = svc.EventsManager().Emit(ctx, events.EventKeyPartitionSynchronization, data.JSONMap{"id": partition.GetID()})
+		err = svc.EventsManager().Emit(ctx, events.EventKeyPartitionHydraSync, data.JSONMap{"id": partition.GetID()})
 		require.NoError(t, err)
 
 		// wait for finalPart to be synced
