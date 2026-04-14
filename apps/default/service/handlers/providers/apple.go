@@ -94,17 +94,6 @@ func (a *AppleProvider) CompleteLogin(
 		return nil, fmt.Errorf("apple: missing id_token in token response")
 	}
 
-	return a.verifyAndExtract(ctx, rawIDToken, nonce)
-}
-
-// VerifyNativeToken verifies an Apple identity token obtained by the iOS SDK.
-// Apple only includes the user's name in the token on the first authorization;
-// subsequent logins return an empty name.
-func (a *AppleProvider) VerifyNativeToken(ctx context.Context, rawToken string) (*AuthenticatedUser, error) {
-	return a.verifyAndExtract(ctx, rawToken, "")
-}
-
-func (a *AppleProvider) verifyAndExtract(ctx context.Context, rawIDToken, nonce string) (*AuthenticatedUser, error) {
 	verifierOIDC := a.provider.Verifier(&oidc.Config{
 		ClientID: a.oauth2.ClientID,
 	})

@@ -140,24 +140,6 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "POST")
 
-	// Native mobile token exchange — JSON API, no CSRF (mobile apps cannot
-	// carry browser CSRF cookies; the loginEventId binding provides equivalent
-	// anti-replay protection via the one-time Hydra login challenge).
-	jsonApiHandler := func(f func(w http.ResponseWriter, r *http.Request) error, path, name, method string) {
-		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if handlerErr := f(w, r); handlerErr != nil {
-					h.writeAPIError(r.Context(), w, handlerErr, http.StatusBadRequest, name)
-				}
-			})
-			// Apply device ID middleware (mobile apps can track devices via cookies)
-			deviceHandler := h.deviceIDMiddleware(handler)
-			deviceHandler.ServeHTTP(w, r)
-		})
-	}
-
-	jsonApiHandler(h.NativeTokenLoginEndpoint, "/s/social/native/{loginEventId}", "NativeTokenLoginEndpoint", "POST")
-
 	// Webhook routes has internal PSK for its authentication with hydra.
 	// When HYDRA_WEBHOOK_API_PSK is empty (default), no auth check is performed
 	// and the endpoint relies on network isolation. When set, the Bearer token
