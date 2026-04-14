@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -152,6 +151,25 @@ func (h *AuthServer) postUserLogin(
 	loggedInUser *providers.AuthenticatedUser,
 	provider string,
 ) error {
+	redirectURL, err := h.completeProviderLogin(ctx, loginEvt, loggedInUser, provider)
+	if err != nil {
+		return err
+	}
+
+	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
+	return nil
+}
+
+// completeProviderLogin handles the core provider login logic shared by both
+// the web callback flow and the native mobile token flow:
+// profile lookup/creation, login attempt storage, tenancy access, and Hydra
+// login acceptance. Returns the Hydra redirect URL on success.
+func (h *AuthServer) completeProviderLogin(
+	ctx context.Context,
+	loginEvt *models.LoginEvent,
+	loggedInUser *providers.AuthenticatedUser,
+	provider string,
+) (string, error) {
 	start := time.Now()
 	log := util.Log(ctx).WithFields(map[string]any{
 		"provider":       provider,
@@ -161,10 +179,8 @@ func (h *AuthServer) postUserLogin(
 	contactDetail := loggedInUser.Contact
 	if contactDetail == "" {
 		log.Error("external provider did not return a contact (email/phone) for the user")
-		return fmt.Errorf("no contact detail provided by provider %s", provider)
+		return "", fmt.Errorf("no contact detail provided by provider %s", provider)
 	}
-
-	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
 	// Step 1: Look up existing profile by contact
 	log.Debug("looking up user profile by contact")
@@ -173,7 +189,7 @@ func (h *AuthServer) postUserLogin(
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
 			log.WithError(err).Error("profile service lookup failed")
-			return fmt.Errorf("profile lookup failed: %w", err)
+			return "", fmt.Errorf("profile lookup failed: %w", err)
 		}
 		log.Debug("no existing profile found for contact - will create new profile")
 	}
@@ -185,7 +201,7 @@ func (h *AuthServer) postUserLogin(
 
 	if existingProfile != nil && existingProfile.GetType() == profilev1.ProfileType_BOT {
 		log.WithField("profile_id", existingProfile.GetId()).Warn("bot profile attempted UI login via provider")
-		return fmt.Errorf("bot accounts cannot log in through the web interface")
+		return "", fmt.Errorf("bot accounts cannot log in through the web interface")
 	}
 
 	// Step 2: Create profile if not found or if returned profile has empty ID
@@ -212,16 +228,16 @@ func (h *AuthServer) postUserLogin(
 		}))
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create new profile via profile service")
-			return fmt.Errorf("profile creation failed: %w", createErr)
+			return "", fmt.Errorf("profile creation failed: %w", createErr)
 		}
 		existingProfile = createResult.Msg.GetData()
 		if existingProfile == nil {
 			log.Error("profile service returned nil profile after creation")
-			return fmt.Errorf("profile creation returned invalid response")
+			return "", fmt.Errorf("profile creation returned invalid response")
 		}
 		if existingProfile.GetId() == "" {
 			log.Error("profile service returned profile with empty ID")
-			return fmt.Errorf("created profile has empty ID")
+			return "", fmt.Errorf("created profile has empty ID")
 		}
 		log.WithField("profile_id", existingProfile.GetId()).Info("new profile created for provider login")
 	} else {
@@ -242,8 +258,7 @@ func (h *AuthServer) postUserLogin(
 	if contactID == "" {
 		log.WithField("profile_id", existingProfile.GetId()).
 			Error("contact not found within profile - contact/profile linkage is broken")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return nil
+		return "", fmt.Errorf("contact not found within profile for %s", existingProfile.GetId())
 	}
 
 	// Step 4: Store login attempt
@@ -260,21 +275,20 @@ func (h *AuthServer) postUserLogin(
 	)
 	if err != nil {
 		log.WithError(err).Error("failed to store login attempt in database")
-		return fmt.Errorf("login attempt storage failed: %w", err)
+		return "", fmt.Errorf("login attempt storage failed: %w", err)
 	}
 
 	// Step 5: Validate profile ID before accepting login
 	profileID := existingProfile.GetId()
 	if profileID == "" {
 		log.Error("profile ID is empty - cannot complete provider login")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error=profile_error", http.StatusSeeOther)
-		return nil
+		return "", fmt.Errorf("profile ID is empty after verification")
 	}
 
 	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvt.ClientID, profileID)
 	if err != nil {
 		log.WithError(err).Error("failed to ensure tenancy access for provider login")
-		return fmt.Errorf("provider login tenancy access failed: %w", err)
+		return "", fmt.Errorf("provider login tenancy access failed: %w", err)
 	}
 
 	// Step 6: Accept the Hydra login request to complete the OAuth2 flow
@@ -296,7 +310,7 @@ func (h *AuthServer) postUserLogin(
 	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, provider, contactID)
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed after provider authentication")
-		return fmt.Errorf("failed to complete OAuth2 login: %w", err)
+		return "", fmt.Errorf("failed to complete OAuth2 login: %w", err)
 	}
 
 	log.WithFields(map[string]any{
@@ -304,6 +318,5 @@ func (h *AuthServer) postUserLogin(
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("provider login completed successfully")
 
-	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
-	return nil
+	return redirectURL, nil
 }

@@ -26,6 +26,8 @@ const (
 	LoginSourceDirect         LoginSource = "direct"
 	LoginSourceGoogle         LoginSource = "google"
 	LoginSourceMeta           LoginSource = "facebook"
+	LoginSourceApple          LoginSource = "apple"
+	LoginSourceMicrosoft      LoginSource = "microsoft"
 	LoginSourceServiceAccount LoginSource = "service_account"
 	LoginSourceSessionRefresh LoginSource = "session_refresh"
 )

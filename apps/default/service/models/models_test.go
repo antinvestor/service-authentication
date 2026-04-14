@@ -30,6 +30,8 @@ func (s *ModelsTestSuite) TestLoginSourceConstants() {
 	s.Equal(LoginSource("direct"), LoginSourceDirect)
 	s.Equal(LoginSource("google"), LoginSourceGoogle)
 	s.Equal(LoginSource("facebook"), LoginSourceMeta)
+	s.Equal(LoginSource("apple"), LoginSourceApple)
+	s.Equal(LoginSource("microsoft"), LoginSourceMicrosoft)
 }
 
 func (s *ModelsTestSuite) TestLoginEvent_Getters() {

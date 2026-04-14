@@ -91,6 +91,15 @@ func (g *GoogleOIDCProvider) CompleteLogin(
 		return nil, fmt.Errorf("google: missing id_token in token response")
 	}
 
+	return g.verifyAndExtract(ctx, rawIDToken, nonce)
+}
+
+// VerifyNativeToken verifies a Google ID token obtained by the mobile SDK.
+func (g *GoogleOIDCProvider) VerifyNativeToken(ctx context.Context, rawToken string) (*AuthenticatedUser, error) {
+	return g.verifyAndExtract(ctx, rawToken, "")
+}
+
+func (g *GoogleOIDCProvider) verifyAndExtract(ctx context.Context, rawIDToken, nonce string) (*AuthenticatedUser, error) {
 	verifierOIDC := g.provider.Verifier(&oidc.Config{
 		ClientID: g.oauth2.ClientID,
 	})

@@ -36,6 +36,16 @@ type AuthProvider interface {
 	) (*AuthenticatedUser, error)
 }
 
+// NativeTokenVerifier is an optional capability for providers that support
+// verifying externally-obtained tokens from native mobile SDKs.
+// Not all providers implement this — check with a type assertion.
+type NativeTokenVerifier interface {
+	// VerifyNativeToken verifies a raw token obtained by a mobile SDK.
+	// For OIDC providers (Google, Apple, Microsoft) this is a JWT ID token.
+	// For Facebook this is a user access token validated via the Graph API.
+	VerifyNativeToken(ctx context.Context, rawToken string) (*AuthenticatedUser, error)
+}
+
 type AuthenticatedUser struct {
 	Contact   string
 	Name      string

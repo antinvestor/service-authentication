@@ -96,6 +96,15 @@ func (m *MicrosoftProvider) CompleteLogin(
 		return nil, fmt.Errorf("microsoft: missing id_token in token response")
 	}
 
+	return m.verifyAndExtract(ctx, rawIDToken, nonce)
+}
+
+// VerifyNativeToken verifies a Microsoft ID token obtained by the MSAL mobile SDK.
+func (m *MicrosoftProvider) VerifyNativeToken(ctx context.Context, rawToken string) (*AuthenticatedUser, error) {
+	return m.verifyAndExtract(ctx, rawToken, "")
+}
+
+func (m *MicrosoftProvider) verifyAndExtract(ctx context.Context, rawIDToken, nonce string) (*AuthenticatedUser, error) {
 	verifierOIDC := m.provider.Verifier(&oidc.Config{
 		ClientID: m.oauth2.ClientID,
 	})
