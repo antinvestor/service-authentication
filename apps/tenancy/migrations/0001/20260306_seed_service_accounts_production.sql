@@ -58,6 +58,16 @@
 --   d75qclkpf2t1uum8ijbg  trustage                    trustage.bot@stawi.org
 --   d75qclkpf2t1uum8ijc0  notification-africastalking notification-africastalking.bot@stawi.org
 --   d75qclkpf2t1uum8ijcg  notification-emailsmtp     notification-emailsmtp.bot@stawi.org
+--
+-- Fintech service profiles (see 20260413_seed_fintech_service_accounts.sql):
+--   d75qclkpf2t1uum8ijdg  service-identity           identity.bot@stawi.org
+--   d75qclkpf2t1uum8ije0  service-loans              loans.bot@stawi.org
+--   d75qclkpf2t1uum8ijeg  service-origination        origination.bot@stawi.org
+--   d75qclkpf2t1uum8ijf0  service-funding             funding.bot@stawi.org
+--   d75qclkpf2t1uum8ijfg  service-savings             savings.bot@stawi.org
+--   d75qclkpf2t1uum8ijg0  service-operations          operations.bot@stawi.org
+--   d75qclkpf2t1uum8ijgg  service-seed                seed.bot@stawi.org
+--   d75qclkpf2t1uum8ijh0  service-stawi               stawi.bot@stawi.org
 -- ==========================================================================
 
 -- ──────────────────────────────────────────────────────────────
