@@ -71,7 +71,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"service_identity": [],"service_field": [],"service_loans": [],"service_savings": [],"service_funding": [],"service_operations": [],"service_device": [],"service_profile": [],"service_file": []}',
+    '{"service_audit": ["audit_view"],"service_device": ["*"],"service_field": ["*"],"service_file": ["*"],"service_funding": ["*"],"service_geolocation": ["area_view","area_manage","location_ingest"],"service_identity": ["*"],"service_loans": ["*"],"service_operations": ["*"],"service_profile": ["profile_view","profile_update"],"service_savings": ["*"]}',
     '{"uris": ["https://app-dev.antinvestor.com/auth/callback","com.antinvestor.app://auth/callback","http://localhost:5174/auth/callback"]}',
     'https://static.antinvestor.com/logo.png',
     '{"uris": ["https://app-dev.antinvestor.com/","http://localhost:5174/"]}',
