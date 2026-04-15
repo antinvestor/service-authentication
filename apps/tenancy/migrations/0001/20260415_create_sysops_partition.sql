@@ -71,7 +71,7 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access',
     '{}',
-    '{"uris": ["https://observe.stawi.org/oauth2/callback"]}',
+    '{"uris": ["https://observe.stawi.org/web/cb"]}',
     '',
     '{"uris": ["https://observe.stawi.org/"]}',
     'none'
