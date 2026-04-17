@@ -1,5 +1,5 @@
-buf.build/gen/go/antinvestor/audit/connectrpc/go v1.19.1-20260407152515-18e28354ce96.2 h1:/iYWaQesq4nfPvC5091S6Zf2dn6RT6XhuqMfJuWMwYc=
-buf.build/gen/go/antinvestor/audit/connectrpc/go v1.19.1-20260407152515-18e28354ce96.2/go.mod h1:ahcT8GFF6O6ZkYq7gj6JKWaAArtypsvAWV5QCUeg1Fw=
+buf.build/gen/go/antinvestor/audit/connectrpc/go v1.19.1-20260416193617-35b420206906.2 h1:yiCwxqyQdc3SM0zj5bmF/g0PkmCgr995woJ+p4z6CiU=
+buf.build/gen/go/antinvestor/audit/connectrpc/go v1.19.1-20260416193617-35b420206906.2/go.mod h1:FEGJ833xKT/p2b+fI2GNXcMNmXA45JbsKgBmFWYTNiM=
 buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.11-20260416193617-35b420206906.1 h1:q6v7ZXQXnJ5FVFXWJ4nE9pQ73+N6zGVtBu/WUgBv5iM=
 buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.11-20260416193617-35b420206906.1/go.mod h1:2JV6oeD4/mCaBJM+EQUM4xEQuaVuHFATnC6TbSzZTkY=
 buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.19.1-20260416193614-10665d0df6d1.2 h1:1ftarUntH01gaDoDDQoXK8gsxD62KTuYeRhRgRa/LEI=
