@@ -72,7 +72,7 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_profile": ["*"]}',
-    '{"uris": ["https://jobs-dev.stawi.org/auth/callback/", "http://localhost:1313/auth/callback/"]}',
-    '{"uris": ["https://jobs-dev.stawi.org/", "http://localhost:1313/"]}',
+    '{"uris": ["https://jobs-dev.stawi.org/auth/callback/", "http://localhost:5170/auth/callback/"]}',
+    '{"uris": ["https://jobs-dev.stawi.org/", "http://localhost:5170/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
