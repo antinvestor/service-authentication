@@ -379,6 +379,16 @@ func (h *AuthServer) buildUserTokenClaims(
 		log.WithError(err).Debug("failed to persist roles in login event properties")
 	}
 
+	return BuildUserTokenClaims(loginEvent, subjectID, deviceObj.GetId(), roles), nil
+}
+
+// BuildUserTokenClaims returns the map of claims inserted into user-facing
+// access and ID tokens at consent time. It is exported so the FedCM headless
+// driver can reuse the exact same shape.
+//
+// The returned map must contain only string keys and JSON-serialisable values
+// because Hydra places it verbatim into AccessTokenExtras / IdTokenExtras.
+func BuildUserTokenClaims(loginEvent *models.LoginEvent, subjectID, deviceID string, roles []string) map[string]any {
 	return map[string]any{
 		"tenant_id":         loginEvent.GetTenantID(),
 		"partition_id":      loginEvent.GetPartitionID(),
@@ -388,9 +398,9 @@ func (h *AuthServer) buildUserTokenClaims(
 		"login_event_id":    loginEvent.GetID(),
 		"oauth2_session_id": loginEvent.Oauth2SessionID,
 		"roles":             roles,
-		"device_id":         deviceObj.GetId(),
+		"device_id":         deviceID,
 		"profile_id":        subjectID,
-	}, nil
+	}
 }
 
 // extractLoginEventID extracts the login event ID from the consent context.
