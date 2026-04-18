@@ -398,7 +398,8 @@ func (h *AuthServer) buildTranslationMap(ctx context.Context, req *http.Request)
 
 // writeAPIError writes a JSON error response for API endpoints.
 // Always logs the full error but only exposes details if ExposeErrors is enabled.
-func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, err error, code int, msg string) {
+func (h *AuthServer) writeAPIError(ctx context.Context, w http.ResponseWriter, err error, msg string) {
+	const code = http.StatusInternalServerError
 	w.Header().Set("Content-Type", "application/json")
 
 	log := util.Log(ctx).WithError(err).WithFields(map[string]any{
@@ -535,7 +536,7 @@ func (h *AuthServer) addHandler(router *http.ServeMux,
 	router.HandleFunc(fmt.Sprintf("GET %s", path), func(w http.ResponseWriter, r *http.Request) {
 		err := f(w, r)
 		if err != nil {
-			h.writeAPIError(r.Context(), w, err, http.StatusInternalServerError, name)
+			h.writeAPIError(r.Context(), w, err, name)
 		}
 	})
 }

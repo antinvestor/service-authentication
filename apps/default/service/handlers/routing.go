@@ -140,6 +140,47 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "GET")
 	unAuthenticatedHandler(h.ProviderCallbackEndpointV2, "/s/social/callback", "SocialLoginCallbackEndpoint", "POST")
 
+	// FedCM — IdP discovery (public, no auth)
+	router.HandleFunc("GET /.well-known/web-identity", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.fedcmWellKnown.WellKnownWebIdentity(w, r); err != nil {
+			h.redirectToErrorPage(w, r, err, "FedCMWellKnown")
+		}
+	})
+	router.HandleFunc("GET /fedcm/config.json", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.fedcmWellKnown.FedCMConfig(w, r); err != nil {
+			h.redirectToErrorPage(w, r, err, "FedCMConfig")
+		}
+	})
+
+	// FedCM — session-backed JSON endpoints. No CSRF (Sec-Fetch-Dest + cookie
+	// validation gate them). Errors are returned as JSON by the handler; this
+	// wrapper only handles unexpected Go errors.
+	fedcmHandler := func(f func(w http.ResponseWriter, r *http.Request) error, method, path, name string) {
+		router.HandleFunc(fmt.Sprintf("%s %s", method, path), func(w http.ResponseWriter, r *http.Request) {
+			if err := f(w, r); err != nil {
+				h.writeAPIError(r.Context(), w, err, name)
+			}
+		})
+	}
+	fedcmHandler(h.FedCMAccountsEndpoint, "GET", "/fedcm/accounts", "FedCMAccounts")
+	fedcmHandler(h.FedCMClientMetadataEndpoint, "GET", "/fedcm/client_metadata", "FedCMClientMetadata")
+	fedcmHandler(h.FedCMIdAssertionEndpoint, "POST", "/fedcm/id-assertion", "FedCMIdAssertion")
+	fedcmHandler(h.FedCMDisconnectEndpoint, "POST", "/fedcm/disconnect", "FedCMDisconnect")
+	fedcmHandler(h.FedCMTokenExchangeEndpoint, "POST", "/fedcm/token-exchange", "FedCMTokenExchange")
+
+	// FedCM cold-start login (HTML; CSRF-protected)
+	unAuthenticatedHandler(h.FedCMLoginShow, "/s/fedcm/login", "FedCMLoginShow", "GET")
+	unAuthenticatedHandler(h.FedCMLoginSubmit, "/s/fedcm/login", "FedCMLoginSubmit", "POST")
+	unAuthenticatedHandler(h.FedCMVerifyShow, "/s/fedcm/verify/{loginEventId}", "FedCMVerifyShow", "GET")
+	unAuthenticatedHandler(h.FedCMVerifySubmit, "/s/fedcm/verify/{loginEventId}", "FedCMVerifySubmit", "POST")
+
+	// FedCM probe completion on /s/login (JSON fetch from the login page)
+	router.HandleFunc("POST /s/login/{loginEventId}/fedcm-complete", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.FedCMCompleteLogin(w, r); err != nil {
+			h.writeAPIError(r.Context(), w, err, "FedCMCompleteLogin")
+		}
+	})
+
 	// Webhook routes has internal PSK for its authentication with hydra.
 	// When HYDRA_WEBHOOK_API_PSK is empty (default), no auth check is performed
 	// and the endpoint relies on network isolation. When set, the Bearer token
@@ -174,7 +215,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			}
 
 			if err := f(w, r); err != nil {
-				h.writeAPIError(r.Context(), w, err, http.StatusInternalServerError, name)
+				h.writeAPIError(r.Context(), w, err, name)
 			}
 		})
 	}
