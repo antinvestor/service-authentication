@@ -34,6 +34,7 @@ import (
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -90,6 +91,12 @@ type AuthServer struct {
 
 	// Localization manager for i18n support
 	localizationManager localization.Manager
+
+	// FedCM Identity Provider components
+	fedcmSession    *fedcm.SessionCodec
+	fedcmRevocation *fedcm.RevocationStore
+	fedcmDriver     *fedcm.HeadlessDriver
+	fedcmWellKnown  *FedCMWellKnownHandler
 }
 
 func NewAuthServer(ctx context.Context,
@@ -146,6 +153,19 @@ func NewAuthServer(ctx context.Context,
 	err := h.setupSecureCookies(ctx, authConfig)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to setup secure cookies")
+	}
+
+	h.fedcmSession = fedcm.NewSessionCodec(h.cookiesCodec, authConfig.FedCMIdPSessionCookieKey)
+	if kv := newFedCMRevocationKV(h.cacheMan); kv != nil {
+		h.fedcmRevocation = fedcm.NewRevocationStore(kv)
+	}
+	publicOrigin := strings.TrimRight(authConfig.FedCMPublicOrigin, "/")
+	h.fedcmWellKnown = NewFedCMWellKnownHandler(publicOrigin)
+	h.fedcmDriver = &fedcm.HeadlessDriver{
+		HydraAdmin:          h.defaultHydraCli,
+		HydraPublicURL:      hydraPublicURL(authConfig),
+		InternalCallbackURL: publicOrigin + "/_internal/fedcm-callback",
+		Now:                 time.Now,
 	}
 
 	h.setupLoginOptions(authConfig)
