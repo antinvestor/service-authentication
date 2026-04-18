@@ -105,11 +105,26 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 		return writeFedCMError(w, http.StatusInternalServerError, "server_error")
 	}
 
-	// Build an ephemeral LoginEvent-compatible claims map. The FedCM flow
-	// doesn't run through the regular login_event cache, but the claim shape
-	// must match BuildUserTokenClaims so tokens are indistinguishable from
-	// the consent-time path.
-	roles := []string{"user"}
+	// Resolve (or create) the tenancy access record for this profile+partition.
+	// The webhook requires a non-empty access_id; without it the token enrichment
+	// will be rejected. We use the same method the consent handler uses so the
+	// access record is consistent across both flows.
+	accessObj, aerr := h.getOrCreateTenancyAccessByClientID(ctx, body.ClientID, entry.ProfileID)
+	accessID := ""
+	if aerr != nil {
+		log.WithError(aerr).Warn("fedcm: access record lookup failed; access_id will be empty")
+	} else if accessObj != nil {
+		accessID = accessObj.GetId()
+	}
+
+	// Fetch roles from the access record using partition default role,
+	// matching the behaviour of the normal consent handler.
+	defaultRole := partitionDefaultRole(partition)
+	roles := h.fetchAccessRoleNames(ctx, accessID, defaultRole)
+	if len(roles) == 0 {
+		roles = []string{"user"}
+	}
+
 	claims := map[string]any{
 		"tenant_id":         partition.GetTenantId(),
 		"partition_id":      partition.GetId(),
@@ -118,7 +133,7 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 		"login_event_id":    entry.LoginEventID,
 		"session_id":        entry.LoginEventID,
 		"oauth2_session_id": "",
-		"access_id":         "",
+		"access_id":         accessID,
 		"contact_id":        "",
 		"roles":             roles,
 	}

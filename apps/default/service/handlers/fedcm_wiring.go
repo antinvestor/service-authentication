@@ -24,14 +24,22 @@ import (
 )
 
 // hydraPublicURL returns the Hydra public endpoint URL used by the FedCM
-// headless driver for server-to-server authorization calls. The authentication
-// config does not currently expose a dedicated public URI field separate from
-// the admin URI. In most deployments these point at the same Hydra host on
-// different ports; a future task may introduce a dedicated FEDCM_HYDRA_PUBLIC_URI
-// config field if the admin and public ports differ.
+// headless driver for server-to-server authorization calls.
+//
+// Resolution order:
+//  1. FedCMHydraPublicURL config field (explicit override, useful for test
+//     containers where admin and public ports differ).
+//  2. Oauth2ServiceURI (standard public OAuth2 URI, port 4444 in most setups).
+//  3. Oauth2ServiceAdminURI as last-resort fallback (same host different port).
 func hydraPublicURL(cfg *aconfig.AuthenticationConfig) string {
 	if cfg == nil {
 		return ""
+	}
+	if cfg.FedCMHydraPublicURL != "" {
+		return cfg.FedCMHydraPublicURL
+	}
+	if uri := cfg.GetOauth2ServiceURI(); uri != "" {
+		return uri
 	}
 	return cfg.GetOauth2ServiceAdminURI()
 }

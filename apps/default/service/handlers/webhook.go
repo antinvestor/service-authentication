@@ -308,7 +308,7 @@ func extractNestedClaims(idTokenWrapper map[string]any) (map[string]any, map[str
 }
 
 // selectFinalClaims selects the best available claims from multiple sources.
-// Priority: access_token > ext.id_token_claims > ext (with contact_id) > session.extra
+// Priority: access_token > ext.id_token_claims > ext (with tenant_id) > session.extra
 func selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims map[string]any) map[string]any {
 	if len(accessTokenClaims) > 0 {
 		return accessTokenClaims
@@ -317,7 +317,10 @@ func selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClai
 		return deepNestedClaims
 	}
 	if len(extClaims) > 0 {
-		if _, hasContactID := extClaims["contact_id"]; hasContactID {
+		// Use ext claims if they contain our tenant_id claim, which is always
+		// present in consent-set extras (unlike contact_id which may be empty
+		// and omitted by Hydra's JSON serialisation for some flows).
+		if tenantID, _ := extClaims["tenant_id"].(string); tenantID != "" {
 			return extClaims
 		}
 	}

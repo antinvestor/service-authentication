@@ -75,6 +75,11 @@ type AuthenticationConfig struct {
 
 	// FedCM provider configuration. All FedCM endpoints are served from the
 	// authentication service's own origin. These URLs should be absolute.
+	//
+	// FedCMHydraPublicURL is the Hydra public endpoint (port 4444) used by the
+	// headless driver for server-to-server /oauth2/auth and /oauth2/token calls.
+	// When empty, the driver falls back to Oauth2ServiceURI.
+	FedCMHydraPublicURL    string `envDefault:"" env:"FEDCM_HYDRA_PUBLIC_URL"`
 	FedCMProviderURL       string `envDefault:"" env:"FEDCM_PROVIDER_URL"`
 	FedCMPublicOrigin      string `envDefault:"" env:"FEDCM_PUBLIC_ORIGIN"`
 	FedCMDefaultPrivacyURL string `envDefault:"" env:"FEDCM_DEFAULT_PRIVACY_URL"`

@@ -253,7 +253,7 @@ func (s *WebhookHelpersTestSuite) TestExtractNestedClaims_Nil() {
 func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_Priority() {
 	at := map[string]any{"from": "access_token"}
 	deep := map[string]any{"from": "deep"}
-	ext := map[string]any{"contact_id": "c-1", "from": "ext"}
+	ext := map[string]any{"tenant_id": "t-1", "from": "ext"}
 	extra := map[string]any{"from": "extra"}
 
 	s.Equal(at, selectFinalClaims(at, deep, ext, extra))
@@ -263,11 +263,11 @@ func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_Priority() {
 	s.Nil(selectFinalClaims(nil, nil, nil, nil))
 }
 
-func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_ExtWithoutContactID() {
-	ext := map[string]any{"other": "val"} // no contact_id
+func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_ExtWithoutTenantID() {
+	ext := map[string]any{"other": "val"} // no tenant_id
 	extra := map[string]any{"from": "extra"}
 
-	// ext without contact_id should be skipped
+	// ext without tenant_id should be skipped (tenant_id is always set by consent)
 	s.Equal(extra, selectFinalClaims(nil, nil, ext, extra))
 }
 

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
@@ -181,7 +182,15 @@ func (d *HeadlessDriver) Run(ctx context.Context, in HeadlessRequest) (*Headless
 		return nil, err
 	}
 
+	// Use a cookie jar so Hydra's CSRF cookie is preserved across redirects.
+	// Without it Hydra rejects the login_verifier with "No CSRF value available
+	// in the session cookie."
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("create cookie jar: %w", err)
+	}
 	httpCli := &http.Client{
+		Jar: jar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -253,6 +262,8 @@ func (d *HeadlessDriver) driveHydra(ctx context.Context, httpCli *http.Client, a
 		}
 		_ = resp.Body.Close()
 
+		util.Log(ctx).WithField("iteration", i).WithField("status", resp.StatusCode).Debug("fedcm driveHydra step")
+
 		if resp.StatusCode < 300 || resp.StatusCode >= 400 {
 			return "", fmt.Errorf("hydra returned non-redirect status %d", resp.StatusCode)
 		}
@@ -267,12 +278,18 @@ func (d *HeadlessDriver) driveHydra(ctx context.Context, httpCli *http.Client, a
 			if err != nil {
 				return "", err
 			}
-			if err := d.acceptLogin(ctx, chal, in); err != nil {
+			redirectTo, err := d.acceptLogin(ctx, chal, in)
+			if err != nil {
 				return "", err
 			}
-			// Follow Hydra's verify URL so Hydra marks the login as complete
-			// and moves the flow to the consent challenge.
-			current = loc
+			// AcceptLoginRequest returns a Hydra-generated redirect URL (containing a
+			// login_verifier token). Following THAT URL drives Hydra to the consent step.
+			// The original /s/login URL would only re-render the login HTML page.
+			if redirectTo != "" {
+				current = redirectTo
+			} else {
+				current = loc
+			}
 		case strings.Contains(loc, "/s/consent") && strings.Contains(loc, "consent_challenge="):
 			chal, err := ExtractConsentChallenge(loc)
 			if err != nil {
@@ -282,11 +299,18 @@ func (d *HeadlessDriver) driveHydra(ctx context.Context, httpCli *http.Client, a
 			if err != nil {
 				return "", err
 			}
-			code, _, err := ExtractCallbackCode(redirectURL)
-			if err != nil {
-				return "", err
+			// AcceptConsentRequest returns a Hydra-internal consent_verifier URL.
+			// We must follow it so Hydra can complete the flow and issue the final
+			// redirect to the callback URI with the authorization code.
+			if strings.HasPrefix(redirectURL, d.InternalCallbackURL) {
+				// Hydra already resolved to the callback — extract code directly.
+				code, _, err := ExtractCallbackCode(redirectURL)
+				if err != nil {
+					return "", err
+				}
+				return code, nil
 			}
-			return code, nil
+			current = redirectURL
 		case strings.HasPrefix(loc, d.InternalCallbackURL):
 			code, _, err := ExtractCallbackCode(loc)
 			if err != nil {
@@ -300,17 +324,44 @@ func (d *HeadlessDriver) driveHydra(ctx context.Context, httpCli *http.Client, a
 	return "", fmt.Errorf("headless flow exceeded redirect budget")
 }
 
-func (d *HeadlessDriver) acceptLogin(ctx context.Context, challenge string, in HeadlessRequest) error {
+func (d *HeadlessDriver) acceptLogin(ctx context.Context, challenge string, in HeadlessRequest) (string, error) {
 	params := &hydra.AcceptLoginRequestParams{
 		LoginChallenge: challenge,
 		SubjectID:      in.SubjectID,
 		Remember:       false,
 	}
-	_, err := d.HydraAdmin.AcceptLoginRequest(ctx, params, nil, in.ACR, in.AMR...)
+	redirectTo, err := d.HydraAdmin.AcceptLoginRequest(ctx, params, nil, in.ACR, in.AMR...)
 	if err != nil {
-		return fmt.Errorf("accept login: %w", err)
+		return "", fmt.Errorf("accept login: %w", err)
 	}
-	return nil
+	// Rewrite the redirect URL to use the host-accessible Hydra public URL.
+	// In Docker/testcontainer setups the admin API returns its internal hostname;
+	// the headless driver must follow the URL from the host network.
+	return d.normalizeHydraURL(redirectTo), nil
+}
+
+// normalizeHydraURL rewrites a Hydra-internal URL (e.g. http://hydra:4444/…)
+// to the host-accessible HydraPublicURL, preserving path and query. If the
+// incoming URL already uses the correct host, it is returned unchanged.
+func (d *HeadlessDriver) normalizeHydraURL(rawURL string) string {
+	if rawURL == "" || d.HydraPublicURL == "" {
+		return rawURL
+	}
+	src, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	dst, err := url.Parse(d.HydraPublicURL)
+	if err != nil {
+		return rawURL
+	}
+	// Only rewrite if the hosts differ (same host means already accessible).
+	if src.Host == dst.Host {
+		return rawURL
+	}
+	src.Scheme = dst.Scheme
+	src.Host = dst.Host
+	return src.String()
 }
 
 func (d *HeadlessDriver) acceptConsent(ctx context.Context, challenge string, in HeadlessRequest) (string, error) {
@@ -329,15 +380,20 @@ func (d *HeadlessDriver) acceptConsent(ctx context.Context, challenge string, in
 	if err != nil {
 		return "", fmt.Errorf("accept consent: %w", err)
 	}
-	return redirectURL, nil
+	// Rewrite to host-accessible URL in case Hydra returned its internal hostname.
+	return d.normalizeHydraURL(redirectURL), nil
 }
 
 func audienceOrEmpty(c *hydraclientgo.OAuth2ConsentRequest) []string {
 	if c == nil {
 		return nil
 	}
-	if cli, ok := c.GetClientOk(); ok && cli != nil {
-		return cli.GetAudience()
+	// Use the audience that was actually requested in the authorize call, not the
+	// client's full registered audience. Hydra requires GrantAudience ⊆ RequestedAudience;
+	// granting the full client audience when no audience was requested in the
+	// authorize URL results in request_forbidden.
+	if aud := c.GetRequestedAccessTokenAudience(); len(aud) > 0 {
+		return aud
 	}
 	return nil
 }

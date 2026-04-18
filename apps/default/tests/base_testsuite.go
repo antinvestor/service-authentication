@@ -166,13 +166,18 @@ func (bs *BaseTestSuite) TearDownSuite() {
 
 func (bs *BaseTestSuite) SetupSuite() {
 
-	bs.InitResourceFunc = func(ctx context.Context) []definition.TestResource {
+	// Only set the default InitResourceFunc if the subclass hasn't already
+	// provided a custom one (e.g. FedCMFlowSuite which needs to inject env vars
+	// and use a custom Hydra configuration before resources start).
+	if bs.InitResourceFunc == nil {
+		bs.InitResourceFunc = func(ctx context.Context) []definition.TestResource {
 
-		freePort, _ := frametests.GetFreePort(ctx)
-		bs.FreeAuthPort = strconv.Itoa(freePort)
+			freePort, _ := frametests.GetFreePort(ctx)
+			bs.FreeAuthPort = strconv.Itoa(freePort)
 
-		loginUrl := fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
-		return initResources(ctx, loginUrl, freePort)
+			loginUrl := fmt.Sprintf("http://127.0.0.1:%s", bs.FreeAuthPort)
+			return initResources(ctx, loginUrl, freePort)
+		}
 	}
 	bs.BaseTestSuite.SetupSuite()
 
