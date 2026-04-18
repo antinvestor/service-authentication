@@ -1,0 +1,58 @@
+{{ define "title"}}{{ if .t.page_title_verification }}{{ .t.page_title_verification }}{{ else }}Enter Verification Code{{ end }}{{ end }}
+
+{{ define "subtitle" }}
+<p>
+{{ if .t.help_code_sent }}{{ .t.help_code_sent }}{{ else }}Check your email or phone for the code we sent{{ end }}
+</p>
+{{ end }}
+
+{{define "content"}}
+<div class="verification-container">
+
+<noscript>
+    <div class="noscript-notice" role="alert">
+        {{ if .t.noscript_notice }}{{ .t.noscript_notice }}{{ else }}Enable JavaScript for the best experience.{{ end }}
+    </div>
+</noscript>
+
+{{if .error}}
+<div class="alert alert-error" role="alert" aria-live="assertive">
+    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+    </svg>
+    <span>{{ .error }}</span>
+</div>
+{{end}}
+
+<form method="POST" action="/s/fedcm/verify/{{.login_event_id}}" class="verification-form" id="fedcmVerifyForm">
+    <input type="hidden" name="login_event_id" value="{{.login_event_id}}">
+    <input type="hidden" name="contact_type" value="{{.contact_type}}">
+    <input type="hidden" name="profile_name" value="{{.profile_name}}">
+
+    <div class="form-group">
+        <label for="verification_code">
+            {{ if .t.label_verification_code }}{{ .t.label_verification_code }}{{ else }}Verification Code{{ end }}
+            <span class="required-indicator" aria-hidden="true">*</span>
+        </label>
+        <input
+            type="text"
+            id="verification_code"
+            name="verification_code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="{{ if .t.placeholder_code }}{{ .t.placeholder_code }}{{ else }}Enter code{{ end }}"
+            required
+            autofocus
+            aria-required="true"
+        >
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn-primary" id="verifyBtn">
+            <span>{{ if .t.btn_verify }}{{ .t.btn_verify }}{{ else }}Verify{{ end }}</span>
+        </button>
+    </div>
+</form>
+
+</div>
+{{end}}

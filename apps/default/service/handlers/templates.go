@@ -30,6 +30,9 @@ var (
 	loginCompleteTmpl      *template.Template
 	accessInstructionsTmpl *template.Template
 	workspaceSelectorTmpl  *template.Template
+	fedcmLoginTmpl         *template.Template
+	fedcmVerifyTmpl        *template.Template
+	fedcmCloseTmpl         *template.Template
 	templateDir            string
 )
 
@@ -114,6 +117,30 @@ func loadTemplate(name string) *template.Template {
 	return tmpl
 }
 
+// loadStandaloneTemplate loads a template without the auth_base.html base layout.
+// Use this for self-contained pages that must not inherit the base chrome
+// (e.g. popup-close stubs that need to run a script immediately).
+func loadStandaloneTemplate(name string) *template.Template {
+	if templateDir == "" {
+		templateDir = findTemplateDirectory()
+		if templateDir == "" {
+			log.Fatalf("No template directory found for template %s", name)
+		}
+	}
+
+	templatePath := filepath.Join(templateDir, name+".html")
+
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Fatalf("Template file not found: %s", templatePath)
+	}
+
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		log.Fatalf("Failed to load standalone template %s: %v", name, err)
+	}
+	return tmpl
+}
+
 func init() {
 	// Load templates from found directory
 	errorTmpl = loadTemplate("error")
@@ -123,4 +150,8 @@ func init() {
 	loginCompleteTmpl = loadTemplate("login_complete")
 	accessInstructionsTmpl = loadTemplate("access_instructions")
 	workspaceSelectorTmpl = loadTemplate("workspace_selector")
+	fedcmLoginTmpl = loadTemplate("fedcm_login")
+	fedcmVerifyTmpl = loadTemplate("fedcm_verify")
+	// fedcm_close.html is a standalone page (popup-close stub) — no base layout.
+	fedcmCloseTmpl = loadStandaloneTemplate("fedcm_close")
 }

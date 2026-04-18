@@ -1,0 +1,55 @@
+{{ define "title"}}Sign in{{ end }}
+
+{{ define "subtitle" }}{{ end }}
+
+{{define "content"}}
+<div class="login-container">
+
+<noscript>
+    <div class="noscript-notice" role="alert">
+        Enable JavaScript for the best experience.
+    </div>
+</noscript>
+
+{{if .error}}
+<div class="alert alert-error" role="alert" aria-live="assertive">
+    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+    </svg>
+    <span>{{.error}}</span>
+</div>
+{{end}}
+
+<div class="contact-login-section">
+    <form method="POST" action="/s/fedcm/login" class="contact-login-form" id="fedcmLoginForm" novalidate>
+        <div class="form-group">
+            <label for="contact">
+                {{ if .t.label_email_or_phone }}{{ .t.label_email_or_phone }}{{ else }}Email or Phone{{ end }}
+                <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <input
+                type="text"
+                id="contact"
+                name="contact"
+                placeholder="{{ if .t.placeholder_email_phone }}{{ .t.placeholder_email_phone }}{{ else }}email@example.com or +1234567890{{ end }}"
+                required
+                autocomplete="username"
+                aria-describedby="contact-help"
+                aria-required="true"
+                autofocus
+            >
+            <small id="contact-help" class="form-help">
+                {{ if .t.help_send_verification }}{{ .t.help_send_verification }}{{ else }}We'll send a verification code to sign you in{{ end }}
+            </small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary" id="submitBtn">
+                <span>{{ if .t.btn_continue }}{{ .t.btn_continue }}{{ else }}Continue{{ end }}</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+</div>
+{{end}}
