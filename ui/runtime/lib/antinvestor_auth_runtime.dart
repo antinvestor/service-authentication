@@ -21,3 +21,12 @@ export 'src/models/security_event.dart'
         StorageCorruption;
 export 'src/models/token_set.dart' show TokenSet, TokenType;
 export 'src/models/user_claims.dart' show UserClaims;
+export 'src/providers/auth_providers.dart'
+    show
+        authRuntimeProvider,
+        authStateProvider,
+        isAuthenticatedProvider,
+        rolesProvider,
+        securityEventsProvider,
+        userClaimsProvider;
+export 'src/providers/auth_runtime_scope.dart' show AuthRuntimeScope;
