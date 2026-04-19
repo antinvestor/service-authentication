@@ -320,7 +320,13 @@ class AuthRuntimeImpl implements AuthRuntime {
       }
       _emitCredentialEvent(CredentialEvent.signOut(p.kind));
     }
-    await worker.logout();
+    try {
+      await worker.logout();
+    } catch (_) {
+      // worker.logout() already wipes local state on failure internally;
+      // swallow so the documented "logout always clears local state"
+      // contract is honoured from the caller's perspective.
+    }
   }
 
   @override
