@@ -243,7 +243,7 @@ func setupFilesClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.FilesServiceURI,
 		WorkloadAPITargetPath: cfg.FilesServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_files"},
+		Audiences:             []string{"service_file"},
 	}, filesv1connect.NewFilesServiceClient)
 }
 
