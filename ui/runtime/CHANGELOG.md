@@ -3,6 +3,26 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.0 — 2026-04-20
+
+### Added
+- Native sign-in providers: `AppleCredentialProvider` (Sign in with Apple via `sign_in_with_apple`) and `GoogleCredentialProvider` (via `google_sign_in` v7; Android backed by CredentialManager).
+- `NativeCredentialProvider` abstraction — consumers can ship custom providers for enterprise IdPs.
+- OIDC token-exchange grant support (RFC 8693) in `TokenExchange` and `TokenWorker.completeNativeCredential`.
+- Native → OAuth2 sign-in waterfall: proactive silent attempt on mount; interactive attempt on sign-in click; OAuth2 fallback when all native providers decline.
+- `AuthRuntime.availableNativeProviders()` helper + `credentialEventStream` telemetry.
+- `authNativeProvidersProvider` Riverpod override hook.
+- Four new `AuthErrorCode` values: `nativeCredentialCancelled`, `nativeCredentialUnavailable`, `nativeCredentialIssuerMismatch`, `nativeCredentialExchangeFailed`.
+- IdP operator guide: `docs/auth-runtime-native-credentials.md`.
+
+### Changed
+- `createAuthRuntime` now accepts an optional `nativeProviders` parameter. Existing callers are unaffected.
+- `logout()` calls `signOut()` on each configured native provider before the server revocation/end-session path.
+
+### Security
+- Provider-issued ID tokens are validated for issuer match before exchange (trust boundary not delegated to the provider).
+- Per-attempt nonce binding with Apple's SHA-256 hashing accommodated.
+
 ## 0.1.0 — 2026-04-19
 
 Initial public release.
