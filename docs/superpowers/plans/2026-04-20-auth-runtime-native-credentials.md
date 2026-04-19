@@ -139,7 +139,7 @@ Sign-in-with-Apple has a Web flavor. `google_sign_in` also supports Web. We do N
 - Flow:
   1. Decode ID token locally (`decodeJwtPayload`).
   2. Assert `iss` is one of: `https://appleid.apple.com`, `https://accounts.google.com` — match by `credential.provider`.
-  3. Assert `claims['nonce'] == expectedNonce` if the provider produced one; otherwise skip (Apple requires the nonce hash match, which the platform verifies; Google's nonce support varies).
+  3. Assert `claims['nonce'] == expectedNonce` (or `sha256(expectedNonce)` for Apple). The check is unconditional when `expectedNonce` is passed — the runtime always passes one.
   4. Assert `aud == cfg.clientId` (for Google; Apple's `aud` is the app's services ID which may differ — document and accept).
   5. POST to `/token` with:
      ```

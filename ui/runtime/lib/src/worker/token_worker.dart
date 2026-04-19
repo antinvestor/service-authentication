@@ -305,9 +305,11 @@ class TokenWorker implements TokenProvider {
   ///
   /// 1. `iss` claim must match the expected issuer for
   ///    [NativeCredentialResult.provider].
-  /// 2. When the provider surfaced a nonce, the ID token's `nonce` claim
-  ///    must match either [expectedNonce] directly (Google) or
-  ///    `sha256Hex(expectedNonce)` (Apple hashes the nonce before minting).
+  /// 2. The ID token's `nonce` claim must match either [expectedNonce]
+  ///    directly (Google) or `sha256Hex(expectedNonce)` (Apple hashes the
+  ///    nonce before minting). This check is unconditional — callers
+  ///    always pass an [expectedNonce] and the runtime relies on the bind
+  ///    for replay protection.
   ///
   /// Guard failures never touch the state machine except to mark a
   /// failed sign-in; the worker stays `unauthenticated`.
@@ -342,16 +344,16 @@ class TokenWorker implements TokenProvider {
 
       // Nonce binding check. Apple hashes the nonce platform-side so the
       // token's `nonce` claim is the sha256-hex of the raw value; Google
-      // echoes the raw nonce. Accept either.
-      if (credential.nonce != null) {
-        final actualNonce = claims['nonce'];
-        if (actualNonce is! String ||
-            !_nonceMatches(actualNonce, expectedNonce)) {
-          throw AuthError(
-            AuthErrorCode.nativeCredentialExchangeFailed,
-            'native credential nonce mismatch',
-          );
-        }
+      // echoes the raw nonce. Accept either. The check runs
+      // unconditionally — the runtime always supplies an [expectedNonce]
+      // and replay protection depends on it.
+      final actualNonce = claims['nonce'];
+      if (actualNonce is! String ||
+          !_nonceMatches(actualNonce, expectedNonce)) {
+        throw AuthError(
+          AuthErrorCode.nativeCredentialExchangeFailed,
+          'native credential nonce mismatch',
+        );
       }
 
       final ctx = await _ensureDpop();

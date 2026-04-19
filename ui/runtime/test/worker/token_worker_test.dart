@@ -761,6 +761,42 @@ void main() {
       await w.destroy();
     });
 
+    test(
+        'missing nonce claim → nativeCredentialExchangeFailed even when '
+        'credential.nonce is null', () async {
+      final d = _Deps();
+      final w = d.build();
+      const expected = 'nonce-expected';
+      // Token has NO `nonce` claim; credential reports nonce=null. Nonce
+      // binding must still be enforced because the runtime passes an
+      // expectedNonce on every call.
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://accounts.google.com',
+        'aud': 'c',
+        'sub': 'g-user-1',
+      });
+      await w.init();
+      await expectLater(
+        w.completeNativeCredential(
+          credential: NativeCredentialResult(
+            provider: NativeCredentialProviderKind.google,
+            idToken: idToken,
+            autoSelected: false,
+            nonce: null,
+          ),
+          expectedNonce: expected,
+        ),
+        throwsA(isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.nativeCredentialExchangeFailed,
+        )),
+      );
+      expect(d.tokenExchange.idTokenExchangeCalls, 0);
+      expect(w.state, AuthState.unauthenticated);
+      await w.destroy();
+    });
+
     test('exchange failure transitions to unauthenticated and rethrows',
         () async {
       final d = _Deps();
