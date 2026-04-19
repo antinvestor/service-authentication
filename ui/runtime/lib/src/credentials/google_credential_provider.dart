@@ -126,13 +126,7 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
       }
       return _buildOk(account, nonce: nonce, autoSelected: true);
     } on GoogleSignInException catch (e) {
-      return NativeCredentialOutcome.error(
-        AuthError(
-          AuthErrorCode.nativeCredentialExchangeFailed,
-          'Google silent sign-in failed: ${e.code.name} (${e.description})',
-          cause: e,
-        ),
-      );
+      return _mapGoogleException(e, interactive: false);
     } catch (e) {
       return NativeCredentialOutcome.error(
         AuthError(
@@ -157,16 +151,7 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
           await _adapter.authenticate(scopeHint: const <String>['openid']);
       return _buildOk(account, nonce: nonce, autoSelected: false);
     } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        return const NativeCredentialOutcome.cancelled();
-      }
-      return NativeCredentialOutcome.error(
-        AuthError(
-          AuthErrorCode.nativeCredentialExchangeFailed,
-          'Google sign-in failed: ${e.code.name} (${e.description})',
-          cause: e,
-        ),
-      );
+      return _mapGoogleException(e, interactive: true);
     } catch (e) {
       return NativeCredentialOutcome.error(
         AuthError(
@@ -175,6 +160,51 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
           cause: e,
         ),
       );
+    }
+  }
+
+  /// Maps [GoogleSignInException] codes onto the runtime's outcome
+  /// taxonomy. [interactive] distinguishes a user-driven attempt from a
+  /// silent one so that `canceled` can be reported correctly (interactive:
+  /// user cancelled; silent: just means "no session").
+  ///
+  /// Dispatch:
+  ///   canceled (silent)                                      → NoSession
+  ///   canceled (interactive)                                 → Cancelled
+  ///   uiUnavailable                                          → NoSession
+  ///   clientConfigurationError | providerConfigurationError  → Unavailable
+  ///   interrupted | unknownError | other                     → ExchangeFailed
+  NativeCredentialOutcome _mapGoogleException(
+    GoogleSignInException e, {
+    required bool interactive,
+  }) {
+    switch (e.code) {
+      case GoogleSignInExceptionCode.canceled:
+        return interactive
+            ? const NativeCredentialOutcome.cancelled()
+            : const NativeCredentialOutcome.noSession();
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return const NativeCredentialOutcome.noSession();
+      case GoogleSignInExceptionCode.clientConfigurationError:
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return NativeCredentialOutcome.error(
+          AuthError(
+            AuthErrorCode.nativeCredentialUnavailable,
+            'Google sign-in unavailable: ${e.code.name} (${e.description})',
+            cause: e,
+          ),
+        );
+      case GoogleSignInExceptionCode.interrupted:
+      case GoogleSignInExceptionCode.unknownError:
+      // ignore: no_default_cases
+      default:
+        return NativeCredentialOutcome.error(
+          AuthError(
+            AuthErrorCode.nativeCredentialExchangeFailed,
+            'Google sign-in failed: ${e.code.name} (${e.description})',
+            cause: e,
+          ),
+        );
     }
   }
 

@@ -185,7 +185,8 @@ void main() {
       expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
     });
 
-    test('attemptInteractive with GoogleSignInException (non-cancel) → error',
+    test(
+        'attemptInteractive maps clientConfigurationError → unavailable',
         () async {
       final adapter = _MockAdapter();
       when(
@@ -210,8 +211,167 @@ void main() {
       final outcome = await provider.attemptInteractive(nonce: 'n');
       expect(outcome, isA<ErrorOutcome>());
       final e = outcome as ErrorOutcome;
-      expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
+      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
       expect(e.error.message, contains('clientConfigurationError'));
+    });
+
+    test(
+        'attemptInteractive maps providerConfigurationError → unavailable',
+        () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+      ).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.providerConfigurationError,
+          description: 'sdk misconfigured',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
+    });
+
+    test('attemptInteractive maps uiUnavailable → noSession', () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+      ).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.uiUnavailable,
+          description: 'no activity',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<NoSession>());
+    });
+
+    test('attemptInteractive maps interrupted → exchangeFailed', () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+      ).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.interrupted,
+          description: 'network blip',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
+    });
+
+    test('attemptInteractive maps unknownError → exchangeFailed', () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+      ).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.unknownError,
+          description: 'mystery',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
+    });
+
+    test('attemptSilent maps canceled → noSession (not cancelled)',
+        () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(adapter.attemptLightweightAuthentication).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.canceled,
+          description: 'no user',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptSilent(nonce: 'n');
+      expect(outcome, isA<NoSession>());
+    });
+
+    test(
+        'attemptSilent maps clientConfigurationError → unavailable',
+        () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.initialize(
+          serverClientId: any(named: 'serverClientId'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenAnswer((_) async {});
+      when(adapter.attemptLightweightAuthentication).thenThrow(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.clientConfigurationError,
+          description: 'bad client id',
+        ),
+      );
+
+      final provider = GoogleCredentialProvider(
+        serverClientId: 'sc',
+        adapter: adapter,
+      );
+      final outcome = await provider.attemptSilent(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
     });
 
     test('signOut delegates to adapter', () async {
