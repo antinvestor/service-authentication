@@ -234,6 +234,8 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	// Step 6: Prepare and render login template
 	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()
+	payload["ClientID"] = loginEvent.ClientID
+	payload["FedCMNonce"] = util.IDString()
 	payload["error"] = ""
 
 	maps.Copy(payload, h.loginOptions)

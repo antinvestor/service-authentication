@@ -72,4 +72,23 @@ type AuthenticationConfig struct {
 	AuthProviderMicrosoftClientID    string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_CLIENT_ID"`
 	AuthProviderMicrosoftSecret      string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_SECRET"`
 	AuthProviderMicrosoftCallbackURL string `envDefault:"" env:"AUTH_PROVIDER_MICROSOFT_CALLBACK_URL"`
+
+	// FedCM provider configuration. All FedCM endpoints are served from the
+	// authentication service's own origin. These URLs should be absolute.
+	//
+	// FedCMHydraPublicURL is the Hydra public endpoint (port 4444) used by the
+	// headless driver for server-to-server /oauth2/auth and /oauth2/token calls.
+	// When empty, the driver falls back to Oauth2ServiceURI.
+	FedCMHydraPublicURL    string `envDefault:"" env:"FEDCM_HYDRA_PUBLIC_URL"`
+	FedCMProviderURL       string `envDefault:"" env:"FEDCM_PROVIDER_URL"`
+	FedCMPublicOrigin      string `envDefault:"" env:"FEDCM_PUBLIC_ORIGIN"`
+	FedCMDefaultPrivacyURL string `envDefault:"" env:"FEDCM_DEFAULT_PRIVACY_URL"`
+	FedCMDefaultToSURL     string `envDefault:"" env:"FEDCM_DEFAULT_TOS_URL"`
+	FedCMDefaultIconURL    string `envDefault:"" env:"FEDCM_DEFAULT_ICON_URL"`
+	FedCMDefaultBgColor    string `envDefault:"#ffffff" env:"FEDCM_DEFAULT_BACKGROUND_COLOUR"`
+	// FedCMIdPSessionCookieKey is the codec key label used by the StateCodec
+	// when encrypting/decrypting the idp_session cookie. Rotating this value
+	// invalidates all outstanding idp_session cookies without changing the
+	// underlying AES key.
+	FedCMIdPSessionCookieKey string `envDefault:"fedcm_idp_session_v1" env:"FEDCM_IDP_SESSION_COOKIE_KEY"`
 }

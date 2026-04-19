@@ -22,31 +22,47 @@ import (
 )
 
 func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
-
 	ctx := req.Context()
-
+	log := util.Log(ctx)
 	hydraCli := h.defaultHydraCli
 
 	logoutChallenge, err := hydra.GetLogoutChallengeID(req)
 	if err != nil {
-		util.Log(ctx).WithError(err).Warn("missing or invalid logout_challenge parameter")
+		log.WithError(err).Warn("missing or invalid logout_challenge parameter")
 		return err
 	}
 
-	_, err = hydraCli.GetLogoutRequest(req.Context(), logoutChallenge)
+	logoutReq, err := hydraCli.GetLogoutRequest(ctx, logoutChallenge)
 	if err != nil {
 		return err
 	}
 
-	redirectUrl, err := hydraCli.AcceptLogoutRequest(req.Context(), &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
+	// FedCM cleanup: remove this subject's idp_session entry and record
+	// revocations so any live session on other browsers sees the user as
+	// signed out on its next id_assertion.
+	if subject := logoutReq.GetSubject(); subject != "" {
+		if perr := h.purgeIdPSessionEntry(ctx, rw, req, subject); perr != nil {
+			log.WithError(perr).Error("failed to purge idp_session entry on logout")
+		}
+		for _, clientID := range h.knownClientsForSubject(ctx, subject) {
+			if h.fedcmRevocation == nil {
+				break
+			}
+			if rerr := h.fedcmRevocation.Revoke(ctx, subject, clientID); rerr != nil {
+				log.WithError(rerr).WithFields(map[string]any{
+					"profile_id": subject,
+					"client_id":  clientID,
+				}).Warn("fedcm revocation write failed")
+			}
+		}
+	}
 
+	redirectUrl, err := hydraCli.AcceptLogoutRequest(ctx, &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
 	if err != nil {
 		return err
 	}
 
 	h.clearRememberMeCookie(rw)
-
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
-
 	return nil
 }

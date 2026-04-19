@@ -272,6 +272,66 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	return client, nil
 }
 
+// CreateFedCMOAuth2Client creates an OAuth2 client suitable for FedCM tests.
+// It registers multiple redirect URIs including the standard callback and the
+// FedCM headless-driver internal callback (/_internal/fedcm-callback).
+// extraRedirectURIs are appended to the standard redirect_uris.
+func (c *OAuth2TestClient) CreateFedCMOAuth2Client(ctx context.Context, testName, standardURI, fedcmCallbackURI string) (*OAuth2Client, error) {
+	partitionCli, err := c.authenticatedPartitionClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Hydra accepts a comma-separated list in the redirect_uris property.
+	redirectURIs := standardURI + "," + fedcmCallbackURI
+
+	props := data.JSONMap{
+		"redirect_uris":              redirectURIs,
+		"scope":                      "openid offline offline_access profile contact email",
+		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
+		"token_endpoint_auth_method": "none",
+	}
+
+	partition, err := NewPartitionForOauthCli(ctx, partitionCli, testName, "FedCM Test OAuth2 client", props)
+	if err != nil {
+		if c.t != nil {
+			c.t.Logf("DEBUG: Failed to create FedCM partition: %v", err)
+		}
+		return nil, fmt.Errorf("failed to create FedCM partition: %w", err)
+	}
+
+	clientID := partition.GetId()
+	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
+		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
+			Id: clientID,
+		}))
+		if err0 != nil {
+			return nil, nil
+		}
+		partObj := resp.Msg.GetData()
+		if partObj.GetProperties() != nil {
+			propsMap := partObj.GetProperties().AsMap()
+			if _, ok := propsMap["client_id"]; ok {
+				return partObj, nil
+			}
+		}
+		return nil, nil
+	}, 10*time.Second, 200*time.Millisecond)
+	if err != nil {
+		return nil, fmt.Errorf("FedCM partition sync to Hydra timed out: %w", err)
+	}
+
+	c.clientIdList = append(c.clientIdList, clientID)
+
+	return &OAuth2Client{
+		ClientID:     clientID,
+		ClientSecret: "", // public client
+		RedirectURIs: []string{standardURI, fedcmCallbackURI},
+		Scope:        "openid offline_access profile email",
+		Audience:     []string{"authentication_tests"},
+	}, nil
+}
+
 // generateCodeVerifier generates a random code verifier for PKCE
 func generateCodeVerifier() string {
 	b := make([]byte, 32)

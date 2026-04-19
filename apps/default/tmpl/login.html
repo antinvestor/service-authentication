@@ -124,4 +124,18 @@
 {{end}}
 
 </div>
+
+<script src="/static/js/fedcm.js" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!window.stawiFedCM || !"{{ .ClientID }}" || !"{{ .loginEventId }}") return;
+    window.stawiFedCM.probeAndComplete({
+      configURL: "/fedcm/config.json",
+      clientId: "{{ .ClientID }}",
+      nonce: "{{ .FedCMNonce }}",
+      loginEventId: "{{ .loginEventId }}",
+      mediation: "optional",
+    });
+  });
+</script>
 {{end}}
