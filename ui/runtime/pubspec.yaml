@@ -25,6 +25,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   flutter_appauth: ^8.0.0+1
   cryptography: ^2.7.0
+  pointycastle: ^3.9.1
   http: ^1.2.2
   crypto: ^3.0.6
   async: ^2.11.0
