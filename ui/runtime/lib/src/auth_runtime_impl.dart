@@ -95,6 +95,9 @@ class AuthRuntimeImpl implements AuthRuntime {
     if (next != AuthState.unauthenticated) return;
     if (_proactiveSilentAttempted) return;
     if (_proactiveSilentScheduled) return;
+    // An explicit ensureAuthenticated() is already running — let it drive
+    // the waterfall rather than racing a silent attempt onto the worker.
+    if (_inflightEnsureAuthenticated != null) return;
     _proactiveSilentScheduled = true;
     scheduleMicrotask(_proactiveSilentAttempt);
   }

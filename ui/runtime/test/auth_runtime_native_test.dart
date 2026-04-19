@@ -393,6 +393,36 @@ void main() {
       await h.runtime.dispose();
     });
 
+    test(
+        'ensureAuthenticated called immediately after construction runs '
+        'OAuth exactly once (no proactive-silent race)', () async {
+      // Provider reports unavailable so the waterfall falls straight
+      // through to OAuth. If the proactive-silent microtask were
+      // permitted to race an explicit ensureAuthenticated(), we would
+      // see the OAuth flow invoked more than once or the worker state
+      // thrash; neither should happen.
+      final provider = _StubProvider(
+        kind: NativeCredentialProviderKind.google,
+        availability: false,
+      );
+      final h = _build(providers: [provider]);
+      h.exchange.codeQueue.add(_tokenSet(access: 'oauth-at'));
+
+      // Do NOT await init(); call ensureAuthenticated() straight away.
+      final ensuring = h.runtime.ensureAuthenticated();
+      // Let microtasks settle so any would-be proactive-silent attempt
+      // has a chance to run alongside the in-flight waterfall.
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      await ensuring;
+
+      expect(h.worker.state, AuthState.authenticated);
+      expect(h.oauth.calls, 1);
+      expect(h.exchange.codeCalls, 1);
+      await h.runtime.dispose();
+    });
+
     test('provider throwing in isAvailable does not crash the waterfall',
         () async {
       final bad = _StubProvider(
