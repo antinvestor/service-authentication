@@ -4,6 +4,8 @@ import 'package:antinvestor_auth_runtime/src/auth_runtime.dart';
 import 'package:antinvestor_auth_runtime/src/auth_runtime_impl.dart';
 import 'package:antinvestor_auth_runtime/src/config/auth_config.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/credential_event.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/default_key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/root_key_store.dart';
@@ -36,6 +38,7 @@ import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
 AuthRuntime createAuthRuntime(
   AuthConfig config, {
   bool useIsolate = false,
+  List<NativeCredentialProvider> nativeProviders = const [],
   KeyManager? keyManager,
   RootKeyStore? rootKeyStore,
   TokenStore? tokenStore,
@@ -91,6 +94,7 @@ AuthRuntime createAuthRuntime(
     config: resolved,
     worker: worker,
     oauthFlow: flow,
+    nativeProviders: nativeProviders,
   );
   // Kick off session reload immediately so apps subscribing to
   // `authStateStream` don't miss the first transition while they're
@@ -190,6 +194,16 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
 
   @override
   AuthState get state => AuthState.initializing;
+
+  @override
+  Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async =>
+      (await _ready).availableNativeProviders();
+
+  @override
+  Stream<CredentialEvent> get credentialEventStream async* {
+    final rt = await _ready;
+    yield* rt.credentialEventStream;
+  }
 
   @override
   Future<void> prefetchDiscovery() async =>

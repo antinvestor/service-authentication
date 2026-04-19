@@ -22,6 +22,11 @@ class FakeAuthRuntime implements AuthRuntime {
       StreamController<AuthState>.broadcast();
   final StreamController<SecurityEvent> _secCtl =
       StreamController<SecurityEvent>.broadcast();
+  final StreamController<CredentialEvent> _credCtl =
+      StreamController<CredentialEvent>.broadcast();
+
+  Set<NativeCredentialProviderKind> availableProviders =
+      const <NativeCredentialProviderKind>{};
 
   AuthState _state;
   Map<String, dynamic> _claims;
@@ -45,6 +50,13 @@ class FakeAuthRuntime implements AuthRuntime {
 
   @override
   Stream<SecurityEvent> get securityEventStream => _secCtl.stream;
+
+  @override
+  Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async =>
+      availableProviders;
+
+  @override
+  Stream<CredentialEvent> get credentialEventStream => _credCtl.stream;
 
   @override
   String get version => authRuntimeVersion;
@@ -124,5 +136,6 @@ class FakeAuthRuntime implements AuthRuntime {
     _disposed = true;
     await _stateCtl.close();
     await _secCtl.close();
+    await _credCtl.close();
   }
 }

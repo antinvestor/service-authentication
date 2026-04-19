@@ -8,6 +8,29 @@ library;
 
 export 'src/auth_runtime.dart' show AuthRuntime, authRuntimeVersion;
 export 'src/config/auth_config.dart' show AuthConfig;
+export 'src/credentials/apple_credential_provider.dart'
+    show AppleCredentialProvider, SignInWithAppleAdapter;
+export 'src/credentials/credential_event.dart'
+    show
+        CredentialEvent,
+        CredentialInteractiveAttemptEvent,
+        CredentialOutcomeEvent,
+        CredentialProbeEvent,
+        CredentialSignOutEvent,
+        CredentialSilentAttemptEvent;
+export 'src/credentials/google_credential_provider.dart'
+    show GoogleCredentialProvider, GoogleSignInAdapter;
+export 'src/credentials/native_credential.dart'
+    show
+        Cancelled,
+        ErrorOutcome,
+        NativeCredentialOutcome,
+        NativeCredentialProvider,
+        NativeCredentialProviderKind,
+        NativeCredentialResult,
+        NoSession,
+        Ok,
+        Unavailable;
 export 'src/errors/auth_error.dart' show AuthError, AuthErrorCode;
 export 'src/factory.dart' show createAuthRuntime;
 export 'src/models/api_response.dart' show ApiResponse;

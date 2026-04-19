@@ -1,3 +1,5 @@
+import 'package:antinvestor_auth_runtime/src/credentials/credential_event.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
@@ -68,6 +70,18 @@ abstract class AuthRuntime {
 
   /// Synchronous snapshot of [authStateStream]'s latest value.
   AuthState get state;
+
+  /// Set of native credential providers advertised as currently available
+  /// on this platform. Callers use this to decide whether to render a
+  /// "Continue with Apple/Google" button; the runtime additionally
+  /// attempts a proactive silent sign-in on each available provider when
+  /// [AuthState] settles in `unauthenticated`.
+  Future<Set<NativeCredentialProviderKind>> availableNativeProviders();
+
+  /// Fine-grained stream of native-credential lifecycle events (probe,
+  /// silent attempt, interactive attempt, outcome, sign-out). Independent
+  /// of [authStateStream] — useful for telemetry and debug UIs.
+  Stream<CredentialEvent> get credentialEventStream;
 
   /// Warms the OIDC discovery cache. Optional — but reduces perceived
   /// latency on the first sign-in when called from app startup.
