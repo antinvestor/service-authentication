@@ -42,6 +42,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/client"
+	fevents "github.com/pitabwire/frame/events"
 	"github.com/pitabwire/frame/localization"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
@@ -97,6 +98,19 @@ type AuthServer struct {
 	fedcmRevocation *fedcm.RevocationStore
 	fedcmDriver     *fedcm.HeadlessDriver
 	fedcmWellKnown  *FedCMWellKnownHandler
+
+	// eventsMan is used by handlers to publish async events (e.g. avatar
+	// sync after social login). Set via SetEventsManager after the frame
+	// service has been initialised. Emitters must nil-guard this field —
+	// local-dev and some test setups may run without a queue backend.
+	eventsMan fevents.Manager
+}
+
+// SetEventsManager attaches the frame events manager so that HTTP handlers
+// can publish asynchronous events. Safe to call once; subsequent calls
+// replace the reference.
+func (h *AuthServer) SetEventsManager(m fevents.Manager) {
+	h.eventsMan = m
 }
 
 func NewAuthServer(ctx context.Context,

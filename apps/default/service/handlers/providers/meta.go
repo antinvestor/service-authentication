@@ -86,7 +86,7 @@ func (f *FacebookProvider) CompleteLogin(
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		"https://graph.facebook.com/me?fields=id,name,email",
+		"https://graph.facebook.com/me?fields=id,name,email,picture.type(large)",
 		nil,
 	)
 	if err != nil {
@@ -112,9 +112,19 @@ func (f *FacebookProvider) CompleteLogin(
 	email, _ := data["email"].(string)
 	name, _ := data["name"].(string)
 
+	// Facebook returns picture as {"picture": {"data": {"url": "..."}}}.
+	// Missing or unexpected shape falls through to an empty avatar URL.
+	var avatar string
+	if pic, ok := data["picture"].(map[string]any); ok {
+		if inner, ok := pic["data"].(map[string]any); ok {
+			avatar, _ = inner["url"].(string)
+		}
+	}
+
 	return &AuthenticatedUser{
-		Contact: email,
-		Name:    name,
-		Raw:     data,
+		Contact:   email,
+		Name:      name,
+		AvatarURL: avatar,
+		Raw:       data,
 	}, nil
 }

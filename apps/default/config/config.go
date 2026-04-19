@@ -41,10 +41,12 @@ type AuthenticationConfig struct {
 	ProfileServiceURI                        string `envDefault:"127.0.0.1:7020" env:"PROFILE_SERVICE_URI"`
 	DeviceServiceURI                         string `envDefault:"127.0.0.1:7020" env:"DEVICE_SERVICE_URI"`
 	NotificationServiceURI                   string `envDefault:"127.0.0.1:7020" env:"NOTIFICATION_SERVICE_URI"`
+	FilesServiceURI                          string `envDefault:"127.0.0.1:7040" env:"FILES_SERVICE_URI"`
 	TenancyServiceWorkloadAPITargetPath      string `envDefault:"/ns/auth/sa/service-tenancy" env:"TENANCY_SERVICE_WORKLOAD_API_TARGET_PATH"`
 	ProfileServiceWorkloadAPITargetPath      string `envDefault:"/ns/profile/sa/service-profile" env:"PROFILE_SERVICE_WORKLOAD_API_TARGET_PATH"`
 	DeviceServiceWorkloadAPITargetPath       string `envDefault:"/ns/profile/sa/service-devices" env:"DEVICE_SERVICE_WORKLOAD_API_TARGET_PATH"`
 	NotificationServiceWorkloadAPITargetPath string `envDefault:"/ns/notifications/sa/service-notification" env:"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH"`
+	FilesServiceWorkloadAPITargetPath        string `envDefault:"/ns/files/sa/service-files" env:"FILES_SERVICE_WORKLOAD_API_TARGET_PATH"`
 
 	HydraWebhookAPIToken string `envDefault:"" env:"HYDRA_WEBHOOK_API_PSK"`
 

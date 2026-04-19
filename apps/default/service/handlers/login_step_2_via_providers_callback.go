@@ -228,6 +228,11 @@ func (h *AuthServer) postUserLogin(
 		log.WithField("profile_id", existingProfile.GetId()).Debug("existing profile found for contact")
 	}
 
+	// Step 2.5: Asynchronously import the provider-supplied avatar if any.
+	// The consumer skips profiles that already carry an avatar_file_id, so
+	// this is safe to emit on every provider login.
+	h.maybeEmitAvatarSync(ctx, existingProfile.GetId(), provider, loggedInUser.AvatarURL)
+
 	// Step 3: Find contact ID within the profile
 	contactID := ""
 	profileContacts := existingProfile.GetContacts()
