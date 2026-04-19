@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:antinvestor_auth_runtime/src/config/auth_config.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/default_key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/root_key_store.dart';
@@ -20,6 +21,7 @@ import 'package:antinvestor_auth_runtime/src/runtime/refresh_lock.dart';
 import 'package:antinvestor_auth_runtime/src/storage/secure_token_store.dart';
 import 'package:antinvestor_auth_runtime/src/storage/token_store.dart';
 import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter_test/flutter_test.dart';
 
 // ---------------------------------------------------------------------------
@@ -60,8 +62,13 @@ class _FakeTokenExchange extends TokenExchange {
 
   List<TokenSet> rotateQueue = [];
   List<RefreshOutcome> refreshQueue = [];
+  List<TokenSet> idTokenExchangeQueue = [];
+  AuthError? idTokenExchangeError;
   int exchangeCalls = 0;
   int refreshCalls = 0;
+  int idTokenExchangeCalls = 0;
+  String? lastSubjectToken;
+  String? lastSubjectIssuer;
 
   @override
   Future<TokenSet> exchangeCode(
@@ -78,6 +85,26 @@ class _FakeTokenExchange extends TokenExchange {
       );
     }
     return rotateQueue.removeAt(0);
+  }
+
+  @override
+  Future<TokenSet> exchangeIdToken(
+    ResolvedConfig cfg,
+    DpopContext ctx, {
+    required String subjectToken,
+    required String subjectIssuer,
+  }) async {
+    idTokenExchangeCalls++;
+    lastSubjectToken = subjectToken;
+    lastSubjectIssuer = subjectIssuer;
+    if (idTokenExchangeError != null) throw idTokenExchangeError!;
+    if (idTokenExchangeQueue.isEmpty) {
+      throw AuthError(
+        AuthErrorCode.tokenExchangeFailed,
+        'fake: no id-token exchange queued',
+      );
+    }
+    return idTokenExchangeQueue.removeAt(0);
   }
 
   @override
@@ -593,6 +620,183 @@ void main() {
     await w.destroy();
     expect(() => w.init(), throwsStateError);
     expect(() => w.prepareAuth(), throwsStateError);
+  });
+
+  group('completeNativeCredential', () {
+    test('google: happy path exchanges id-token and authenticates', () async {
+      final d = _Deps();
+      final w = d.build();
+      const nonce = 'nonce-google-1';
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://accounts.google.com',
+        'aud': 'c',
+        'sub': 'g-user-1',
+        'nonce': nonce,
+      });
+      d.tokenExchange.idTokenExchangeQueue
+          .add(_tokens(access: 'at-native', refresh: 'rt-native'));
+
+      final states = <AuthState>[];
+      w.authStateStream.listen(states.add);
+
+      await w.init();
+      await w.completeNativeCredential(
+        credential: NativeCredentialResult(
+          provider: NativeCredentialProviderKind.google,
+          idToken: idToken,
+          autoSelected: true,
+          nonce: nonce,
+        ),
+        expectedNonce: nonce,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(d.tokenExchange.idTokenExchangeCalls, 1);
+      expect(d.tokenExchange.lastSubjectToken, idToken);
+      expect(d.tokenExchange.lastSubjectIssuer, 'https://accounts.google.com');
+      expect(w.state, AuthState.authenticated);
+      expect(states.last, AuthState.authenticated);
+      expect(await d.tokenStore.load(d.config.namespace), isNotNull);
+      await w.destroy();
+    });
+
+    test('apple: accepts sha256-hex of nonce as the nonce claim', () async {
+      final d = _Deps();
+      final w = d.build();
+      const rawNonce = 'nonce-apple-1';
+      final hashed =
+          crypto.sha256.convert(utf8.encode(rawNonce)).toString();
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://appleid.apple.com',
+        'aud': 'c',
+        'sub': 'a-user-1',
+        'nonce': hashed,
+      });
+      d.tokenExchange.idTokenExchangeQueue
+          .add(_tokens(access: 'at-apple', refresh: 'rt-apple'));
+
+      await w.init();
+      await w.completeNativeCredential(
+        credential: NativeCredentialResult(
+          provider: NativeCredentialProviderKind.apple,
+          idToken: idToken,
+          autoSelected: false,
+          nonce: rawNonce,
+        ),
+        expectedNonce: rawNonce,
+      );
+      expect(d.tokenExchange.idTokenExchangeCalls, 1);
+      expect(d.tokenExchange.lastSubjectIssuer, 'https://appleid.apple.com');
+      expect(w.state, AuthState.authenticated);
+      await w.destroy();
+    });
+
+    test('iss mismatch → nativeCredentialIssuerMismatch; no exchange',
+        () async {
+      final d = _Deps();
+      final w = d.build();
+      const nonce = 'nonce-bad-iss';
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://evil.example.com',
+        'aud': 'c',
+        'sub': 'g-user-1',
+        'nonce': nonce,
+      });
+      final states = <AuthState>[];
+      w.authStateStream.listen(states.add);
+
+      await w.init();
+      await expectLater(
+        w.completeNativeCredential(
+          credential: NativeCredentialResult(
+            provider: NativeCredentialProviderKind.google,
+            idToken: idToken,
+            autoSelected: false,
+            nonce: nonce,
+          ),
+          expectedNonce: nonce,
+        ),
+        throwsA(isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.nativeCredentialIssuerMismatch,
+        )),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(d.tokenExchange.idTokenExchangeCalls, 0);
+      expect(w.state, AuthState.unauthenticated);
+      await w.destroy();
+    });
+
+    test('nonce mismatch → nativeCredentialExchangeFailed; no exchange',
+        () async {
+      final d = _Deps();
+      final w = d.build();
+      const expected = 'nonce-expected';
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://accounts.google.com',
+        'aud': 'c',
+        'sub': 'g-user-1',
+        'nonce': 'nonce-wrong',
+      });
+      await w.init();
+      await expectLater(
+        w.completeNativeCredential(
+          credential: NativeCredentialResult(
+            provider: NativeCredentialProviderKind.google,
+            idToken: idToken,
+            autoSelected: false,
+            nonce: 'nonce-wrong',
+          ),
+          expectedNonce: expected,
+        ),
+        throwsA(isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.nativeCredentialExchangeFailed,
+        )),
+      );
+      expect(d.tokenExchange.idTokenExchangeCalls, 0);
+      expect(w.state, AuthState.unauthenticated);
+      await w.destroy();
+    });
+
+    test('exchange failure transitions to unauthenticated and rethrows',
+        () async {
+      final d = _Deps();
+      final w = d.build();
+      const nonce = 'nonce-fail';
+      final idToken = _makeJwt(<String, dynamic>{
+        'iss': 'https://accounts.google.com',
+        'aud': 'c',
+        'sub': 'g-user-1',
+        'nonce': nonce,
+      });
+      d.tokenExchange.idTokenExchangeError = AuthError(
+        AuthErrorCode.tokenExchangeFailed,
+        'boom',
+      );
+
+      await w.init();
+      await expectLater(
+        w.completeNativeCredential(
+          credential: NativeCredentialResult(
+            provider: NativeCredentialProviderKind.google,
+            idToken: idToken,
+            autoSelected: false,
+            nonce: nonce,
+          ),
+          expectedNonce: nonce,
+        ),
+        throwsA(isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.tokenExchangeFailed,
+        )),
+      );
+      expect(w.state, AuthState.unauthenticated);
+      await w.destroy();
+    });
   });
 }
 

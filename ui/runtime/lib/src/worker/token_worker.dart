@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/root_key_store.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
@@ -20,6 +21,7 @@ import 'package:antinvestor_auth_runtime/src/protocol/token_exchange.dart';
 import 'package:antinvestor_auth_runtime/src/runtime/refresh_lock.dart';
 import 'package:antinvestor_auth_runtime/src/runtime/state_machine.dart';
 import 'package:antinvestor_auth_runtime/src/storage/token_store.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:http/http.dart' as http;
 
 /// Signature for the injected clock. Default is [DateTime.now].
@@ -292,6 +294,86 @@ class TokenWorker implements TokenProvider {
               cause: err);
       _transition(StateInput.signInFail(ae));
       rethrow;
+    }
+  }
+
+  /// Completes sign-in from a native credential (Apple / Google) by
+  /// exchanging the provider ID token for a Hydra session via RFC 8693
+  /// token-exchange grant.
+  ///
+  /// Pre-exchange guards (see spec §14):
+  ///
+  /// 1. `iss` claim must match the expected issuer for
+  ///    [NativeCredentialResult.provider].
+  /// 2. When the provider surfaced a nonce, the ID token's `nonce` claim
+  ///    must match either [expectedNonce] directly (Google) or
+  ///    `sha256Hex(expectedNonce)` (Apple hashes the nonce before minting).
+  ///
+  /// Guard failures never touch the state machine except to mark a
+  /// failed sign-in; the worker stays `unauthenticated`.
+  Future<void> completeNativeCredential({
+    required NativeCredentialResult credential,
+    required String expectedNonce,
+  }) async {
+    _ensureAlive();
+    _transition(const StateInput.signInStart());
+
+    try {
+      final Map<String, dynamic> claims;
+      try {
+        claims = decodeJwtPayload(credential.idToken);
+      } on FormatException catch (e) {
+        throw AuthError(
+          AuthErrorCode.nativeCredentialExchangeFailed,
+          'native credential id-token is malformed',
+          cause: e,
+        );
+      }
+
+      final expectedIssuer = _expectedIssuer(credential.provider);
+      final actualIssuer = claims['iss'];
+      if (actualIssuer is! String || actualIssuer != expectedIssuer) {
+        throw AuthError(
+          AuthErrorCode.nativeCredentialIssuerMismatch,
+          'iss $actualIssuer does not match expected for '
+          '${credential.provider.name}',
+        );
+      }
+
+      // Nonce binding check. Apple hashes the nonce platform-side so the
+      // token's `nonce` claim is the sha256-hex of the raw value; Google
+      // echoes the raw nonce. Accept either.
+      if (credential.nonce != null) {
+        final actualNonce = claims['nonce'];
+        if (actualNonce is! String ||
+            !_nonceMatches(actualNonce, expectedNonce)) {
+          throw AuthError(
+            AuthErrorCode.nativeCredentialExchangeFailed,
+            'native credential nonce mismatch',
+          );
+        }
+      }
+
+      final ctx = await _ensureDpop();
+      final tokens = await tokenExchange.exchangeIdToken(
+        config,
+        ctx,
+        subjectToken: credential.idToken,
+        subjectIssuer: actualIssuer,
+      );
+      _tokens = tokens;
+      await _persistSession(tokens);
+      _transition(const StateInput.signInDone());
+    } catch (err) {
+      final ae = err is AuthError
+          ? err
+          : AuthError(
+              AuthErrorCode.nativeCredentialExchangeFailed,
+              'native credential exchange failed',
+              cause: err,
+            );
+      _transition(StateInput.signInFail(ae));
+      throw ae;
     }
   }
 
@@ -628,3 +710,18 @@ String _encodeForm(Map<String, String> form) => form.entries
     .map((e) =>
         '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
     .join('&');
+
+String _expectedIssuer(NativeCredentialProviderKind kind) {
+  switch (kind) {
+    case NativeCredentialProviderKind.apple:
+      return 'https://appleid.apple.com';
+    case NativeCredentialProviderKind.google:
+      return 'https://accounts.google.com';
+  }
+}
+
+bool _nonceMatches(String actual, String expected) {
+  if (actual == expected) return true;
+  final hashed = crypto.sha256.convert(utf8.encode(expected)).toString();
+  return actual == hashed;
+}

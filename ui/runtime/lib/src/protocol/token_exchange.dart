@@ -72,6 +72,37 @@ class TokenExchange {
     return _parseTokenBody(res.body);
   }
 
+  /// `urn:ietf:params:oauth:grant-type:token-exchange` grant for native
+  /// credentials (RFC 8693).
+  ///
+  /// The runtime presents a provider-issued ID token (Apple / Google)
+  /// with `subject_token_type: id_token`; the IdP verifies the upstream
+  /// signature + audience and mints a Hydra session in exchange. DPoP is
+  /// attached on the same terms as [exchangeCode] so the bound session is
+  /// consistent with every other grant path.
+  Future<TokenSet> exchangeIdToken(
+    ResolvedConfig cfg,
+    DpopContext ctx, {
+    required String subjectToken,
+    required String subjectIssuer,
+  }) async {
+    final form = <String, String>{
+      'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+      'client_id': cfg.clientId,
+      'subject_token': subjectToken,
+      'subject_token_type': 'urn:ietf:params:oauth:token-type:id_token',
+      'subject_issuer': subjectIssuer,
+    };
+    final res = await _postForm(cfg, ctx, form);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw AuthError(
+        AuthErrorCode.tokenExchangeFailed,
+        'id-token exchange failed ${res.statusCode} ${_truncate(res.body)}',
+      );
+    }
+    return _parseTokenBody(res.body);
+  }
+
   /// `refresh_token` grant with rotation + reuse-detection semantics.
   Future<RefreshOutcome> refresh(
     ResolvedConfig cfg,

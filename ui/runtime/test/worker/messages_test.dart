@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
@@ -74,6 +75,28 @@ void main() {
       expect(r.bytes, bytes);
       expect(r.filename, 'a.bin');
       expect(r.contentType, 'application/octet-stream');
+    });
+
+    test('completeNativeCredential round-trips all fields', () {
+      final orig = const CompleteNativeCredentialRequest(
+        correlationId: 'c-nc',
+        provider: NativeCredentialProviderKind.google,
+        idToken: 'id-token-xyz',
+        autoSelected: true,
+        expectedNonce: 'expected-nonce',
+        nonce: 'nonce',
+        authorizationCode: 'auth-code',
+      );
+      final r = _roundTripRequest(orig);
+      expect(r.provider, NativeCredentialProviderKind.google);
+      expect(r.idToken, 'id-token-xyz');
+      expect(r.autoSelected, true);
+      expect(r.expectedNonce, 'expected-nonce');
+      expect(r.nonce, 'nonce');
+      expect(r.authorizationCode, 'auth-code');
+      final result = r.toResult();
+      expect(result.provider, NativeCredentialProviderKind.google);
+      expect(result.idToken, 'id-token-xyz');
     });
 
     test('getRoles, getClaims, logout, destroy round-trip', () {
@@ -153,6 +176,15 @@ void main() {
       final err = r.toAuthError();
       expect(err.code, AuthErrorCode.apiUnauthorized);
       expect(err.traceId, 'trace-xyz');
+    });
+
+    test('completeNativeCredentialOk round-trips provider', () {
+      final r = _roundTripEvent(const CompleteNativeCredentialOkEvent(
+        correlationId: 'c-nc-ok',
+        provider: NativeCredentialProviderKind.apple,
+      ));
+      expect(r.provider, NativeCredentialProviderKind.apple);
+      expect(r.correlationId, 'c-nc-ok');
     });
 
     test('roles + claims round-trip', () {
