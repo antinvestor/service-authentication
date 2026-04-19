@@ -123,10 +123,15 @@ func (m *MicrosoftProvider) CompleteLogin(
 	}
 
 	name, _ := claims["name"].(string)
+	// Some Azure AD tenants include a "picture" claim when the user has a
+	// Microsoft Graph photo attached. Most do not — leaving it empty in
+	// that case is fine; the avatar-sync consumer is a no-op for empty URLs.
+	picture, _ := claims["picture"].(string)
 
 	return &AuthenticatedUser{
-		Contact: email,
-		Name:    name,
-		Raw:     claims,
+		Contact:   email,
+		Name:      name,
+		AvatarURL: picture,
+		Raw:       claims,
 	}, nil
 }
