@@ -322,11 +322,14 @@ void main() {
     await rt.dispose();
   });
 
-  test('useIsolate: true is rejected in v0.1 baseline', () {
-    expect(
-      () => createAuthRuntime(_config, useIsolate: true),
-      throwsA(isA<UnsupportedError>()),
-    );
+  test('useIsolate: true returns an IsolatedAuthRuntime-backed shell',
+      () async {
+    // The shell spawns the scaffolding isolate entry point and only
+    // implements lifecycle in v0.1; data-plane calls throw
+    // UnimplementedError (covered by test/worker/token_isolate_test.dart).
+    final rt = createAuthRuntime(_config, useIsolate: true);
+    expect(rt.version, authRuntimeVersion);
+    await rt.dispose();
   });
 
   test('concrete type is AuthRuntimeImpl (in-thread baseline)', () async {
