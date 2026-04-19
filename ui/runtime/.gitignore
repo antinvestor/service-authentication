@@ -1,0 +1,6 @@
+# Flutter/Dart build artifacts (mirrors repo-root ignores for locality).
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+pubspec.lock
