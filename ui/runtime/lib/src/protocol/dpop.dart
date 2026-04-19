@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show HttpDate;
 import 'dart:typed_data';
 
+import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/protocol/pkce.dart'
     show randomBytes;
 import 'package:crypto/crypto.dart' as crypto;
@@ -52,10 +53,16 @@ DpopKeyPair generateDpopKeyPair() {
 /// Contains the private key used to sign proofs, the matching public JWK
 /// (embedded in every proof header), the accumulated `clockOffsetMs` from
 /// IdP-served `Date` headers, and the per-origin nonce cache.
+///
+/// An optional [keyManager] may be supplied to delegate signing to an
+/// injected backend. When absent, [buildProof] falls back to the built-in
+/// PointyCastle signer — preserving the original F-B.4 call path so
+/// pre-KeyManager callers keep working.
 class DpopContext {
   DpopContext({
     required this.keyPair,
     required this.publicJwk,
+    this.keyManager,
   });
 
   /// ECDSA P-256 key pair. Kept in memory only — never serialised by
@@ -63,7 +70,11 @@ class DpopContext {
   final DpopKeyPair keyPair;
 
   /// Public JWK `{kty, crv, x, y}` inserted into the proof header.
-  final Map<String, String> publicJwk;
+  final Map<String, dynamic> publicJwk;
+
+  /// Optional injected signer. When non-null, [buildProof] delegates
+  /// ECDSA signing to `keyManager.signDpopJws`.
+  final KeyManager? keyManager;
 
   /// Server-clock minus local-clock, in milliseconds. Applied to `iat`.
   int clockOffsetMs = 0;
@@ -73,19 +84,42 @@ class DpopContext {
 }
 
 /// Derives a [DpopContext] from an existing P-256 key pair.
+///
+/// If [keyManager] is supplied it is stored on the context and used
+/// for subsequent signing operations. The JWK export also goes through
+/// the key manager so tests can swap in synthetic backends.
+Future<DpopContext> makeDpopContextAsync(
+  DpopKeyPair kp, {
+  KeyManager? keyManager,
+}) async {
+  final Map<String, dynamic> jwk;
+  if (keyManager != null) {
+    jwk = await keyManager.exportDpopPublicJwk(kp);
+  } else {
+    jwk = _localExportJwk(kp);
+  }
+  return DpopContext(keyPair: kp, publicJwk: jwk, keyManager: keyManager);
+}
+
+/// Synchronous convenience factory preserved for callers that predate
+/// F-C.1's [KeyManager] injection. Uses the built-in PointyCastle path
+/// for JWK export.
 DpopContext makeDpopContext(DpopKeyPair kp) {
+  return DpopContext(keyPair: kp, publicJwk: _localExportJwk(kp));
+}
+
+Map<String, String> _localExportJwk(DpopKeyPair kp) {
   final q = kp.publicKey.Q!;
   // P-256 component size: 32 bytes. Left-pad BigInts to fixed width so
   // JWK encoding matches RFC 7518 §6.2.1.
   final xBytes = _bigIntToFixedBytes(q.x!.toBigInteger()!, 32);
   final yBytes = _bigIntToFixedBytes(q.y!.toBigInteger()!, 32);
-  final jwk = <String, String>{
+  return <String, String>{
     'kty': 'EC',
     'crv': 'P-256',
     'x': _b64urlNoPad(xBytes),
     'y': _b64urlNoPad(yBytes),
   };
-  return DpopContext(keyPair: kp, publicJwk: jwk);
 }
 
 /// Remembers a server-issued DPoP nonce for later proofs aimed at the
@@ -151,10 +185,16 @@ Future<String> buildProof(
   final payloadB64 = _b64urlNoPad(utf8.encode(json.encode(payload)));
   final signingInput = '$headerB64.$payloadB64';
 
-  final signature = _signEcdsa(
-    ctx.keyPair.privateKey,
-    Uint8List.fromList(utf8.encode(signingInput)),
-  );
+  final Uint8List signature;
+  final km = ctx.keyManager;
+  if (km != null) {
+    signature = await km.signDpopJws(ctx.keyPair, signingInput);
+  } else {
+    signature = _signEcdsa(
+      ctx.keyPair.privateKey,
+      Uint8List.fromList(utf8.encode(signingInput)),
+    );
+  }
   return '$signingInput.${_b64urlNoPad(signature)}';
 }
 
