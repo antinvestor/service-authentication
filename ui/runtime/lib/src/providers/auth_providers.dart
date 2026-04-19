@@ -1,4 +1,5 @@
 import 'package:antinvestor_auth_runtime/src/auth_runtime.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,3 +78,34 @@ final rolesProvider = FutureProvider<List<String>>(
 final securityEventsProvider = StreamProvider<SecurityEvent>(
   (ref) => ref.watch(authRuntimeProvider).securityEventStream,
 );
+
+/// Native credential providers the runtime should consult before falling
+/// back to OAuth2. Defaults to an empty list — the runtime behaves exactly
+/// as in v0.1 when no override is supplied.
+///
+/// Consumers override this provider at the app root alongside
+/// [authRuntimeProvider] with their platform-appropriate mix, e.g.:
+///
+/// ```dart
+/// final providers = <NativeCredentialProvider>[
+///   if (Platform.isIOS || Platform.isMacOS) AppleCredentialProvider(),
+///   GoogleCredentialProvider(serverClientId: googleServerClientId),
+/// ];
+///
+/// ProviderScope(
+///   overrides: [
+///     authNativeProvidersProvider.overrideWithValue(providers),
+///     authRuntimeProvider.overrideWithValue(
+///       createAuthRuntime(cfg, nativeProviders: providers),
+///     ),
+///   ],
+///   child: const MyApp(),
+/// );
+/// ```
+///
+/// Hand the same list to [createAuthRuntime] so the runtime actually
+/// wires them: this provider is a declarative hook (widgets can `watch`
+/// it to render platform-aware sign-in buttons) rather than a back
+/// channel into the runtime.
+final authNativeProvidersProvider =
+    Provider<List<NativeCredentialProvider>>((ref) => const []);
