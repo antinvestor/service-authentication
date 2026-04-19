@@ -21,6 +21,7 @@ import (
 	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/authentication/v1/authenticationv1connect"
 	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
+	"buf.build/gen/go/antinvestor/files/connectrpc/go/files/v1/filesv1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
@@ -29,6 +30,7 @@ import (
 	"github.com/antinvestor/common/connection"
 	"github.com/antinvestor/common/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
@@ -97,6 +99,11 @@ func main() {
 		log.WithError(err).Fatal("could not setup profile service")
 	}
 
+	filesCli, err := setupFilesClient(ctx, cfg)
+	if err != nil {
+		log.WithError(err).Fatal("could not setup files service")
+	}
+
 	deviceCli, err := setupDeviceClient(ctx, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("could not setup device service")
@@ -113,6 +120,7 @@ func main() {
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 
 	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
+	srv.SetEventsManager(svc.EventsManager())
 
 	// Setup Connect RPC handler for login history API
 	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
@@ -130,6 +138,11 @@ func main() {
 	// Register permission manifest for the authentication service
 	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
 	serviceOptions = append(serviceOptions, frame.WithPermissionRegistration(sd))
+
+	// Register async event consumers.
+	serviceOptions = append(serviceOptions, frame.WithRegisterEvents(
+		events.NewProfileAvatarSyncEventHandler(profileCli, filesCli),
+	))
 
 	svc.Init(ctx, serviceOptions...)
 
@@ -220,6 +233,18 @@ func setupProfileClient(
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
 		Audiences:             []string{"service_profile"},
 	}, profilev1connect.NewProfileServiceClient)
+}
+
+// setupFilesClient creates and configures the files client used by async
+// consumers (e.g. avatar sync) to persist uploads.
+func setupFilesClient(
+	ctx context.Context,
+	cfg aconfig.AuthenticationConfig) (filesv1connect.FilesServiceClient, error) {
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.FilesServiceURI,
+		WorkloadAPITargetPath: cfg.FilesServiceWorkloadAPITargetPath,
+		Audiences:             []string{"service_files"},
+	}, filesv1connect.NewFilesServiceClient)
 }
 
 const namespaceTenancyAccess = "tenancy_access"

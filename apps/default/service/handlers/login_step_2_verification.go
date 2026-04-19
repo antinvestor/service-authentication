@@ -34,8 +34,10 @@ var (
 )
 
 const (
-	KeyProfileName        = "au_name"
-	pathValueLoginEventID = "loginEventId"
+	KeyProfileName         = "au_name"
+	KeyProfileAvatarFileID = "au_avatar_file_id"
+	KeyProfileAvatarURL    = "au_avatar_url"
+	pathValueLoginEventID  = "loginEventId"
 )
 
 func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.Request) error {

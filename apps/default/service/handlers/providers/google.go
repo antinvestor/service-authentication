@@ -114,10 +114,12 @@ func (g *GoogleOIDCProvider) CompleteLogin(
 
 	email, _ := claims["email"].(string)
 	name, _ := claims["name"].(string)
+	picture, _ := claims["picture"].(string)
 
 	return &AuthenticatedUser{
-		Contact: email,
-		Name:    name,
-		Raw:     claims,
+		Contact:   email,
+		Name:      name,
+		AvatarURL: picture,
+		Raw:       claims,
 	}, nil
 }

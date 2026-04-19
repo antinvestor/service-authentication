@@ -41,6 +41,10 @@ type AuthenticatedUser struct {
 	Name      string
 	FirstName string
 	LastName  string
+	// AvatarURL is the external IdP's profile picture URL, when the provider
+	// exposes one. Left empty otherwise. Consumers are expected to fetch and
+	// copy the bytes into trusted storage rather than persisting the URL.
+	AvatarURL string
 	Raw       map[string]any
 }
 
