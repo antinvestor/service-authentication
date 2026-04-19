@@ -157,8 +157,7 @@ void main() {
       expect(outcome, isA<Cancelled>());
     });
 
-    test('attemptInteractive maps other auth error codes → unavailable',
-        () async {
+    test('attemptInteractive maps notHandled → unavailable', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.getAppleIDCredential(
@@ -178,6 +177,71 @@ void main() {
       final e = outcome as ErrorOutcome;
       expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
       expect(e.error.message, contains('notHandled'));
+    });
+
+    test('attemptInteractive maps unknown → unavailable', () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.getAppleIDCredential(
+          scopes: any(named: 'scopes'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenThrow(
+        const SignInWithAppleAuthorizationException(
+          code: AuthorizationErrorCode.unknown,
+          message: 'unknown',
+        ),
+      );
+
+      final provider = AppleCredentialProvider(adapter: adapter);
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
+    });
+
+    test('attemptInteractive maps failed → exchangeFailed', () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.getAppleIDCredential(
+          scopes: any(named: 'scopes'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenThrow(
+        const SignInWithAppleAuthorizationException(
+          code: AuthorizationErrorCode.failed,
+          message: 'fail',
+        ),
+      );
+
+      final provider = AppleCredentialProvider(adapter: adapter);
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
+      expect(e.error.message, contains('failed'));
+    });
+
+    test('attemptInteractive maps invalidResponse → exchangeFailed',
+        () async {
+      final adapter = _MockAdapter();
+      when(
+        () => adapter.getAppleIDCredential(
+          scopes: any(named: 'scopes'),
+          nonce: any(named: 'nonce'),
+        ),
+      ).thenThrow(
+        const SignInWithAppleAuthorizationException(
+          code: AuthorizationErrorCode.invalidResponse,
+          message: 'bad response',
+        ),
+      );
+
+      final provider = AppleCredentialProvider(adapter: adapter);
+      final outcome = await provider.attemptInteractive(nonce: 'n');
+      expect(outcome, isA<ErrorOutcome>());
+      final e = outcome as ErrorOutcome;
+      expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
     });
 
     test('attemptInteractive maps other exceptions → exchangeFailed',

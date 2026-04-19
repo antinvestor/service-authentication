@@ -100,16 +100,36 @@ class AppleCredentialProvider implements NativeCredentialProvider {
         ),
       );
     } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) {
-        return const NativeCredentialOutcome.cancelled();
+      // Split taxonomy so callers can distinguish "user bailed" from
+      // "this device / install can't do Sign in with Apple right now"
+      // from "it broke and we don't know why":
+      //   canceled                          → Cancelled()
+      //   notHandled | unknown              → Unavailable error
+      //   failed | invalidResponse | other  → ExchangeFailed error
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          return const NativeCredentialOutcome.cancelled();
+        case AuthorizationErrorCode.notHandled:
+        case AuthorizationErrorCode.unknown:
+          return NativeCredentialOutcome.error(
+            AuthError(
+              AuthErrorCode.nativeCredentialUnavailable,
+              'Sign in with Apple unavailable: ${e.code.name} (${e.message})',
+              cause: e,
+            ),
+          );
+        case AuthorizationErrorCode.failed:
+        case AuthorizationErrorCode.invalidResponse:
+        // ignore: no_default_cases
+        default:
+          return NativeCredentialOutcome.error(
+            AuthError(
+              AuthErrorCode.nativeCredentialExchangeFailed,
+              'Sign in with Apple failed: ${e.code.name} (${e.message})',
+              cause: e,
+            ),
+          );
       }
-      return NativeCredentialOutcome.error(
-        AuthError(
-          AuthErrorCode.nativeCredentialUnavailable,
-          'Sign in with Apple failed: ${e.code.name} (${e.message})',
-          cause: e,
-        ),
-      );
     } catch (e) {
       return NativeCredentialOutcome.error(
         AuthError(
