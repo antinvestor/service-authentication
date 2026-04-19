@@ -56,6 +56,14 @@ class MockIdp {
   /// reason about which tokens came from which rotation.
   int _rotationCounter = 0;
 
+  /// Allowlist of issuers accepted by the `token-exchange` grant path.
+  /// Defaults to Apple + Google; tests can widen or tighten via
+  /// [setAllowedIssuers].
+  List<String> _allowedExchangeIssuers = const <String>[
+    'https://appleid.apple.com',
+    'https://accounts.google.com',
+  ];
+
   /// The issuer URL advertised in discovery + ID tokens. Populated at
   /// `start` time.
   String get baseUrl => _baseUrl!;
@@ -99,6 +107,12 @@ class MockIdp {
     clockSkewChallengeArmed = true;
   }
 
+  /// Replace the allowlist of issuers accepted by the `token-exchange`
+  /// grant path. Useful for tests that want to verify enforcement.
+  void setAllowedIssuers(List<String> issuers) {
+    _allowedExchangeIssuers = List<String>.unmodifiable(issuers);
+  }
+
   /// Resets the counters / recorded requests so a single MockIdp can be
   /// reused across scenarios.
   void reset() {
@@ -110,6 +124,10 @@ class MockIdp {
     _consumedRefreshTokens.clear();
     _liveRefreshTokens.clear();
     _rotationCounter = 0;
+    _allowedExchangeIssuers = const <String>[
+      'https://appleid.apple.com',
+      'https://accounts.google.com',
+    ];
   }
 
   // Handlers ----------------------------------------------------------------
@@ -186,6 +204,8 @@ class MockIdp {
     switch (grant) {
       case 'authorization_code':
         return _issueTokens(newFamily: true);
+      case 'urn:ietf:params:oauth:grant-type:token-exchange':
+        return _handleTokenExchange(form);
       case 'refresh_token':
         final rt = form['refresh_token'];
         if (rt == null || rt.isEmpty) {
@@ -227,13 +247,17 @@ class MockIdp {
     }
   }
 
-  Response _issueTokens({required bool newFamily}) {
+  Response _issueTokens({
+    required bool newFamily,
+    String sub = 'user-1',
+    String aud = 'antinvestor-mobile',
+  }) {
     _rotationCounter += 1;
     final n = _rotationCounter;
     final accessToken = _makeUnsignedJwt(<String, dynamic>{
       'iss': baseUrl,
-      'sub': 'user-1',
-      'aud': 'antinvestor-mobile',
+      'sub': sub,
+      'aud': aud,
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'exp': DateTime.now()
               .add(tokenLifetime)
@@ -244,8 +268,8 @@ class MockIdp {
     });
     final idToken = _makeUnsignedJwt(<String, dynamic>{
       'iss': baseUrl,
-      'sub': 'user-1',
-      'aud': 'antinvestor-mobile',
+      'sub': sub,
+      'aud': aud,
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'exp': DateTime.now()
               .add(tokenLifetime)
@@ -269,6 +293,94 @@ class MockIdp {
       json.encode(body),
       headers: <String, String>{'Content-Type': 'application/json'},
     );
+  }
+
+  /// Handles RFC 8693 `urn:ietf:params:oauth:grant-type:token-exchange`.
+  ///
+  /// Validates `subject_token_type`, `subject_issuer`, parses the subject
+  /// token without signature verification (this is a mock), asserts that
+  /// `iss` matches the declared `subject_issuer`, then mints a fresh
+  /// session tied to the subject's `sub` claim. `aud` is synthesised from
+  /// the request `client_id` so callers can verify audience mapping.
+  Response _handleTokenExchange(Map<String, String> form) {
+    const expectedTokenType = 'urn:ietf:params:oauth:token-type:id_token';
+    final subjectTokenType = form['subject_token_type'];
+    if (subjectTokenType != expectedTokenType) {
+      return Response(
+        400,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
+          'error': 'invalid_request',
+          'error_description':
+              'subject_token_type must be $expectedTokenType',
+        }),
+      );
+    }
+
+    final subjectIssuer = form['subject_issuer'];
+    if (subjectIssuer == null ||
+        !_allowedExchangeIssuers.contains(subjectIssuer)) {
+      return Response(
+        400,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
+          'error': 'invalid_grant',
+          'error_description': 'subject_issuer not in allowlist',
+        }),
+      );
+    }
+
+    final subjectToken = form['subject_token'];
+    if (subjectToken == null || subjectToken.isEmpty) {
+      return Response(
+        400,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
+          'error': 'invalid_request',
+          'error_description': 'missing subject_token',
+        }),
+      );
+    }
+
+    Map<String, dynamic>? claims;
+    final parts = subjectToken.split('.');
+    if (parts.length >= 2) {
+      try {
+        final decoded = json.decode(
+          utf8.decode(_b64urlDecode(parts[1])),
+        );
+        if (decoded is Map<String, dynamic>) claims = decoded;
+      } catch (_) {
+        claims = null;
+      }
+    }
+    if (claims == null) {
+      return Response(
+        400,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
+          'error': 'invalid_grant',
+          'error_description': 'subject_token is not a parseable JWT',
+        }),
+      );
+    }
+    if (claims['iss'] != subjectIssuer) {
+      return Response(
+        400,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
+          'error': 'invalid_grant',
+          'error_description':
+              'subject_token iss does not match subject_issuer',
+        }),
+      );
+    }
+
+    final sub = claims['sub'] is String
+        ? claims['sub'] as String
+        : 'exchange-user';
+    final aud = form['client_id'] ?? 'antinvestor-mobile';
+    return _issueTokens(newFamily: true, sub: sub, aud: aud);
   }
 
   Future<Response> _revocation(Request req) async {
