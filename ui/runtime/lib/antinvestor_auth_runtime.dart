@@ -30,6 +30,7 @@ export 'src/providers/auth_providers.dart'
         securityEventsProvider,
         userClaimsProvider;
 export 'src/providers/auth_runtime_scope.dart' show AuthRuntimeScope;
+export 'src/widgets/auth_event_listener.dart' show AuthEventListener;
 export 'src/widgets/auth_gate.dart' show AuthGate;
 export 'src/widgets/auth_state_builder.dart' show AuthStateBuilder;
 export 'src/widgets/profile_avatar.dart' show ProfileAvatar;
