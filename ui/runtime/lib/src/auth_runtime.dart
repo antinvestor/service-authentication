@@ -98,4 +98,4 @@ abstract class AuthRuntime {
 /// Version of the runtime. Callers include this in telemetry / bug
 /// reports. Kept as a bare constant for now; wired through
 /// `--dart-define=AUTH_RUNTIME_VERSION=...` in a follow-up task.
-const String authRuntimeVersion = '0.1.0';
+const String authRuntimeVersion = '0.2.0';
