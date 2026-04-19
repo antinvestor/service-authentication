@@ -47,8 +47,26 @@ abstract class KeyManager {
   /// embedding in the proof header.
   Future<Map<String, dynamic>> exportDpopPublicJwk(DpopKeyPair key);
 
+  /// Exports the DPoP private key's `d` scalar as a fixed 32-byte
+  /// big-endian buffer so the runtime can persist it (encrypted) and
+  /// reconstruct the key pair on cold start.
+  Future<Uint8List> exportDpopPrivateKey(DpopKeyPair key);
+
+  /// Rehydrates a [DpopKeyPair] from a 32-byte `d` scalar previously
+  /// produced by [exportDpopPrivateKey]. The matching public point is
+  /// recomputed as `Q = d * G` over P-256.
+  Future<DpopKeyPair> importDpopPrivateKey(Uint8List dScalar);
+
   /// Generates a fresh 256-bit AES-GCM wrap key.
   Future<WrapKey> generateWrapKey();
+
+  /// Wraps an arbitrary 32-byte AES-GCM key material buffer (e.g. the
+  /// root key persisted by `RootKeyStore`) into a [WrapKey] handle.
+  Future<WrapKey> importWrapKey(Uint8List rawKey);
+
+  /// Exports the raw 32-byte key material backing [key]. Intended for
+  /// persisting the wrap key encrypted under the root key.
+  Future<Uint8List> exportWrapKey(WrapKey key);
 
   /// Encrypts [plaintext] under [key] with a fresh random IV.
   Future<WrappedBlob> wrap(WrapKey key, List<int> plaintext);

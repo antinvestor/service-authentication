@@ -6,6 +6,7 @@ import 'package:antinvestor_auth_runtime/src/config/auth_config.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/default_key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
+import 'package:antinvestor_auth_runtime/src/crypto/root_key_store.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
@@ -175,6 +176,8 @@ class _Deps {
   _Deps({
     KeyManager? km,
     TokenStore? store,
+    RootKeyStore? rootKeyStore,
+    KeyValueStore? rootKv,
     _FakeDiscoveryClient? disco,
     _FakeTokenExchange? exchange,
     _FakeApiProxy? proxy,
@@ -182,6 +185,8 @@ class _Deps {
   })  : config = _cfg(),
         keyManager = km ?? DefaultKeyManager(),
         tokenStore = store ?? SecureTokenStore(kv: InMemoryKeyValueStore()),
+        rootKeyStore = rootKeyStore ??
+            DefaultRootKeyStore(kv: rootKv ?? InMemoryKeyValueStore()),
         discoveryClient = disco ?? _FakeDiscoveryClient(),
         tokenExchange = exchange ?? _FakeTokenExchange(),
         apiProxy = proxy ?? _FakeApiProxy(),
@@ -191,6 +196,7 @@ class _Deps {
   final ResolvedConfig config;
   final KeyManager keyManager;
   final TokenStore tokenStore;
+  final RootKeyStore rootKeyStore;
   final _FakeDiscoveryClient discoveryClient;
   final _FakeTokenExchange tokenExchange;
   final _FakeApiProxy apiProxy;
@@ -200,6 +206,7 @@ class _Deps {
   TokenWorker build() => TokenWorker(
         config: config,
         keyManager: keyManager,
+        rootKeyStore: rootKeyStore,
         tokenStore: tokenStore,
         discoveryClient: discoveryClient,
         tokenExchange: tokenExchange,
@@ -487,6 +494,96 @@ void main() {
     expect(w.state, AuthState.unauthenticated);
     expect(await d.tokenStore.load(d.config.namespace), isNull);
     await w.destroy();
+  });
+
+  test(
+      'second worker instance decrypts stored session and starts authenticated',
+      () async {
+    // Share the storage backends between both worker instances to
+    // simulate a cold app restart: the KV blob survives, and the root
+    // key store (also backed by flutter_secure_storage in prod) survives.
+    final sessionKv = InMemoryKeyValueStore();
+    final rootKv = InMemoryKeyValueStore();
+
+    _Deps makeDeps(_FakeTokenExchange? exchange) => _Deps(
+          store: SecureTokenStore(kv: sessionKv),
+          rootKeyStore: DefaultRootKeyStore(kv: rootKv),
+          exchange: exchange,
+        );
+
+    final d1 = makeDeps(_FakeTokenExchange());
+    final w1 = d1.build();
+    d1.tokenExchange.rotateQueue
+        .add(_tokens(access: 'at-restored', refresh: 'rt-restored'));
+    await w1.init();
+    await w1.completeAuth(
+      code: 'c',
+      verifier: 'v',
+      state: 's',
+      nonce: 'n',
+      expectedState: 's',
+    );
+    expect(w1.state, AuthState.authenticated);
+    await w1.destroy();
+
+    // Second worker with its own instance of everything except the
+    // storage backends — models a fresh process coming up.
+    final d2 = makeDeps(_FakeTokenExchange());
+    final w2 = d2.build();
+    final states = <AuthState>[];
+    w2.authStateStream.listen(states.add);
+    await w2.init();
+    await Future<void>.delayed(Duration.zero);
+    expect(w2.state, AuthState.authenticated);
+    expect(states, [AuthState.authenticated]);
+    // Restored tokens match the persisted values without making an
+    // exchange call.
+    expect(d2.tokenExchange.exchangeCalls, 0);
+    // fetch uses the restored access token straight away.
+    await w2.fetch(path: '/ping', method: 'GET');
+    expect(d2.apiProxy.seenAuthHeader, 'Bearer at-restored');
+    await w2.destroy();
+  });
+
+  test(
+      'corrupt wrap-key ciphertext wipes session and emits storageCorruption',
+      () async {
+    final sessionKv = InMemoryKeyValueStore();
+    final rootKv = InMemoryKeyValueStore();
+    _Deps makeDeps() => _Deps(
+          store: SecureTokenStore(kv: sessionKv),
+          rootKeyStore: DefaultRootKeyStore(kv: rootKv),
+        );
+
+    final d1 = makeDeps();
+    final w1 = d1.build();
+    d1.tokenExchange.rotateQueue.add(_tokens());
+    await w1.init();
+    await w1.completeAuth(
+      code: 'c',
+      verifier: 'v',
+      state: 's',
+      nonce: 'n',
+      expectedState: 's',
+    );
+    await w1.destroy();
+
+    // Simulate the root key going missing / being rotated externally
+    // (e.g. user wiped the keychain): the second worker generates a
+    // fresh root key, wrap-key decryption fails, and the session is
+    // wiped with a storageCorruption signal.
+    rootKv.delete('${d1.config.namespace}::root-key');
+
+    final d2 = makeDeps();
+    final w2 = d2.build();
+    final events = <SecurityEvent>[];
+    w2.securityEventStream.listen(events.add);
+    await w2.init();
+    await Future<void>.delayed(Duration.zero);
+    expect(w2.state, AuthState.unauthenticated);
+    expect(events.any((e) => e is StorageCorruption), isTrue);
+    expect(await d2.tokenStore.load(d2.config.namespace), isNull);
+    await w2.destroy();
   });
 
   test('operations after destroy() throw StateError', () async {

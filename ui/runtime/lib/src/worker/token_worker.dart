@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
+import 'package:antinvestor_auth_runtime/src/crypto/root_key_store.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
@@ -73,6 +74,7 @@ class TokenWorker implements TokenProvider {
   TokenWorker({
     required this.config,
     required this.keyManager,
+    required this.rootKeyStore,
     required this.tokenStore,
     required this.discoveryClient,
     required this.tokenExchange,
@@ -86,6 +88,7 @@ class TokenWorker implements TokenProvider {
 
   final ResolvedConfig config;
   final KeyManager keyManager;
+  final RootKeyStore rootKeyStore;
   final TokenStore tokenStore;
   final DiscoveryClient discoveryClient;
   final TokenExchange tokenExchange;
@@ -113,6 +116,20 @@ class TokenWorker implements TokenProvider {
   /// Initializes the worker: loads and decrypts any stored session, then
   /// settles into `authenticated` or `unauthenticated`. Safe to call
   /// once per instance.
+  ///
+  /// Decryption chain on cold start:
+  ///
+  /// 1. Pull the root key from [rootKeyStore] — lives in the OS keychain.
+  /// 2. Decrypt [StoredSession.wrapKeyCiphertext] under the root key to
+  ///    recover the AES-GCM wrap key.
+  /// 3. Decrypt [StoredSession.dpopPrivateKeyCiphertext] and
+  ///    [StoredSession.refreshTokenCiphertext] under the wrap key.
+  /// 4. Rehydrate the [DpopContext] from the `d` scalar.
+  ///
+  /// Any failure along the way is treated as storage corruption: the
+  /// session is wiped, a [SecurityEvent.storageCorruption] is emitted,
+  /// and the runtime settles in `unauthenticated` so the caller can
+  /// prompt a fresh sign-in.
   Future<void> init() async {
     _ensureAlive();
     try {
@@ -121,20 +138,76 @@ class TokenWorker implements TokenProvider {
         _transition(const StateInput.initDone(hasTokens: false));
         return;
       }
-      // Storage is present but the DPoP/wrap layer is stubbed for a
-      // later task. Without the ability to decrypt the wrap key, treat
-      // this as an empty session rather than failing hard.
-      // TODO(F-E.3 hardening): decrypt wrapKeyEncrypted + dpopKeyEncrypted
-      //   via hardware-backed keystore and unwrap the refresh token.
-      //   Until that lands, initializing from persisted storage lands in
-      //   `unauthenticated` so the worker falls back to a fresh sign-in.
-      _transition(const StateInput.initDone(hasTokens: false));
-    } catch (err) {
-      // Corrupt storage: wipe + fall through to unauthenticated.
-      await tokenStore.clear(config.namespace);
-      _emitSecurity(SecurityEvent.storageCorruption(clock()));
-      _transition(const StateInput.initDone(hasTokens: false));
+      final restored = await _rehydrate(stored);
+      if (restored == null) {
+        await _wipeCorruptSession();
+        return;
+      }
+      _tokens = restored.tokens;
+      _wrapKey = restored.wrapKey;
+      final kp = restored.dpopKeyPair;
+      _dpop = await makeDpopContextAsync(kp, keyManager: keyManager);
+      _transition(const StateInput.initDone(hasTokens: true));
+    } catch (_) {
+      await _wipeCorruptSession();
     }
+  }
+
+  Future<_RehydratedSession?> _rehydrate(StoredSession stored) async {
+    final rootKey = await rootKeyStore.getOrCreate(config.namespace);
+    final rootKeyAsWrap = await keyManager.importWrapKey(rootKey);
+    Uint8List wrapKeyBytes;
+    try {
+      wrapKeyBytes =
+          await keyManager.unwrap(rootKeyAsWrap, stored.wrapKeyCiphertext);
+    } catch (_) {
+      return null;
+    }
+    if (wrapKeyBytes.length != 32) return null;
+    final wrapKey = await keyManager.importWrapKey(wrapKeyBytes);
+
+    final Uint8List dScalar;
+    final Uint8List refreshBytes;
+    try {
+      dScalar =
+          await keyManager.unwrap(wrapKey, stored.dpopPrivateKeyCiphertext);
+      refreshBytes =
+          await keyManager.unwrap(wrapKey, stored.refreshTokenCiphertext);
+    } catch (_) {
+      return null;
+    }
+    if (dScalar.length != 32) return null;
+
+    final DpopKeyPair kp;
+    try {
+      kp = await keyManager.importDpopPrivateKey(dScalar);
+    } catch (_) {
+      return null;
+    }
+    final refreshToken = utf8.decode(refreshBytes, allowMalformed: false);
+    final tokens = TokenSet(
+      accessToken: stored.accessToken,
+      refreshToken: refreshToken,
+      expiresAt: stored.accessTokenExpiresAt,
+      tokenType: TokenType.fromString(stored.tokenType),
+      idToken: stored.idToken,
+    );
+    return _RehydratedSession(
+      tokens: tokens,
+      wrapKey: wrapKey,
+      dpopKeyPair: kp,
+    );
+  }
+
+  Future<void> _wipeCorruptSession() async {
+    try {
+      await tokenStore.clear(config.namespace);
+    } catch (_) {/* best-effort */}
+    _tokens = null;
+    _dpop = null;
+    _wrapKey = null;
+    _emitSecurity(SecurityEvent.storageCorruption(clock()));
+    _transition(const StateInput.initDone(hasTokens: false));
   }
 
   /// Builds a PKCE/state/nonce triple and the authorization URL the UI
@@ -434,27 +507,37 @@ class TokenWorker implements TokenProvider {
   Future<void> _persistSession(TokenSet tokens) async {
     final wrapKey = _wrapKey ??= await keyManager.generateWrapKey();
     final dpop = await _ensureDpop();
-    final wrappedRt = await keyManager.wrap(
+
+    // Wrap key: encrypt its raw bytes under the root key (persistent,
+    // keychain-backed).
+    final rootKeyBytes = await rootKeyStore.getOrCreate(config.namespace);
+    final rootKey = await keyManager.importWrapKey(rootKeyBytes);
+    final wrapKeyBytes = await keyManager.exportWrapKey(wrapKey);
+    final wrapKeyBlob = await keyManager.wrap(rootKey, wrapKeyBytes);
+
+    // DPoP private key: encrypt the 32-byte `d` scalar under the wrap key.
+    final dScalar = await keyManager.exportDpopPrivateKey(dpop.keyPair);
+    final dpopBlob = await keyManager.wrap(wrapKey, dScalar);
+
+    // Refresh token: encrypt UTF-8 bytes under the wrap key.
+    final refreshBlob = await keyManager.wrap(
       wrapKey,
       utf8.encode(tokens.refreshToken),
     );
-    // NOTE: proper wrapKey / DPoP private-key encryption is wired in a
-    // later task (requires a keychain-backed KEK). For now we persist
-    // empty placeholders so the schema is forward-compatible without
-    // leaking plaintext key material.
+
     await tokenStore.save(
       config.namespace,
       StoredSession(
-        wrappedRefreshToken: wrappedRt,
-        dpopKeyEncrypted: Uint8List(0),
-        wrapKeyEncrypted: Uint8List(0),
-        lastIdToken: tokens.idToken,
+        wrapKeyCiphertext: wrapKeyBlob,
+        dpopPrivateKeyCiphertext: dpopBlob,
+        refreshTokenCiphertext: refreshBlob,
+        accessToken: tokens.accessToken,
+        accessTokenExpiresAt: tokens.expiresAt,
+        tokenType: tokens.tokenType.headerValue,
+        idToken: tokens.idToken,
         updatedAt: clock(),
       ),
     );
-    // Touch `dpop` so the analyzer doesn't flag it — the real
-    // serialisation of the DPoP key lives in the next task.
-    assert(dpop.keyPair.privateKey.d != null);
   }
 
   Future<DpopContext> _ensureDpop() async {
@@ -468,6 +551,14 @@ class TokenWorker implements TokenProvider {
 
   Future<void> _securityWipe(String reason) async {
     await tokenStore.clear(config.namespace);
+    // Rotate the persistent root key so any leaked on-disk ciphertext is
+    // now undecryptable — even if the caller somehow bypasses
+    // [tokenStore.clear].
+    try {
+      await rootKeyStore.rotate(config.namespace);
+    } catch (_) {
+      // Best-effort: a failure here shouldn't block the wipe.
+    }
     _tokens = null;
     _dpop = null;
     _wrapKey = null;
@@ -515,6 +606,18 @@ class AuthorizeRequest {
 
 /// Used while a UserClaims-returning API stays in flux.
 UserClaims userClaimsFrom(Map<String, dynamic> raw) => UserClaims(raw);
+
+class _RehydratedSession {
+  const _RehydratedSession({
+    required this.tokens,
+    required this.wrapKey,
+    required this.dpopKeyPair,
+  });
+
+  final TokenSet tokens;
+  final WrapKey wrapKey;
+  final DpopKeyPair dpopKeyPair;
+}
 
 DateTime _defaultClock() => DateTime.now();
 

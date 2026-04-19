@@ -1,10 +1,23 @@
 /// Auth runtime for Antinvestor Flutter apps.
 ///
 /// Implements the Stawi auth protocol (OAuth2 + PKCE, adaptive DPoP,
-/// rotating refresh tokens with reuse detection) with Isolate-isolated
+/// rotating refresh tokens with reuse detection) with isolate-isolated
 /// tokens, hardware-backed storage, Riverpod providers and Material
 /// widgets.
-///
-/// Public surface is assembled in later task groups; this file is the
-/// package barrel.
 library;
+
+export 'src/auth_runtime.dart' show AuthRuntime, authRuntimeVersion;
+export 'src/config/auth_config.dart' show AuthConfig;
+export 'src/errors/auth_error.dart' show AuthError, AuthErrorCode;
+export 'src/factory.dart' show createAuthRuntime;
+export 'src/models/api_response.dart' show ApiResponse;
+export 'src/models/auth_state.dart' show AuthState;
+export 'src/models/security_event.dart'
+    show
+        BindingInvalidated,
+        LoggedOutElsewhere,
+        RefreshReuseDetected,
+        SecurityEvent,
+        StorageCorruption;
+export 'src/models/token_set.dart' show TokenSet, TokenType;
+export 'src/models/user_claims.dart' show UserClaims;

@@ -5,7 +5,7 @@ import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/protocol/dpop.dart' as dpop;
 import 'package:cryptography/cryptography.dart'
-    show AesGcm, Mac, SecretBox;
+    show AesGcm, Mac, SecretBox, SecretKey;
 import 'package:pointycastle/export.dart' as pc;
 
 /// Default [KeyManager] implementation.
@@ -73,9 +73,63 @@ class DefaultKeyManager implements KeyManager {
   }
 
   @override
+  Future<Uint8List> exportDpopPrivateKey(dpop.DpopKeyPair key) async {
+    final d = key.privateKey.d;
+    if (d == null) {
+      throw AuthError(
+        AuthErrorCode.cryptoUnsupported,
+        'DPoP private key missing scalar',
+      );
+    }
+    return _bigIntToFixedBytes(d, 32);
+  }
+
+  @override
+  Future<dpop.DpopKeyPair> importDpopPrivateKey(Uint8List dScalar) async {
+    if (dScalar.length != 32) {
+      throw AuthError(
+        AuthErrorCode.storageCorruption,
+        'DPoP private scalar must be 32 bytes (got ${dScalar.length})',
+      );
+    }
+    final params = pc.ECCurve_secp256r1();
+    final d = _bytesToBigInt(dScalar);
+    // Q = d * G: required because the on-disk schema only stores the
+    // scalar. `multiplier` defaults to `WTNAFMultiplier` which is fine for
+    // P-256.
+    final q = params.G * d;
+    if (q == null) {
+      throw AuthError(
+        AuthErrorCode.storageCorruption,
+        'failed to derive DPoP public point from scalar',
+      );
+    }
+    final priv = pc.ECPrivateKey(d, params);
+    final pub = pc.ECPublicKey(q, params);
+    return dpop.DpopKeyPair(privateKey: priv, publicKey: pub);
+  }
+
+  @override
   Future<WrapKey> generateWrapKey() async {
     final key = await _aesGcm.newSecretKey();
     return WrapKey(key);
+  }
+
+  @override
+  Future<WrapKey> importWrapKey(Uint8List rawKey) async {
+    if (rawKey.length != 32) {
+      throw AuthError(
+        AuthErrorCode.storageCorruption,
+        'wrap key must be 32 bytes (got ${rawKey.length})',
+      );
+    }
+    return WrapKey(SecretKey(List<int>.from(rawKey)));
+  }
+
+  @override
+  Future<Uint8List> exportWrapKey(WrapKey key) async {
+    final bytes = await key.secretKey.extractBytes();
+    return Uint8List.fromList(bytes);
   }
 
   @override
@@ -134,6 +188,14 @@ Uint8List _bigIntToFixedBytes(BigInt value, int size) {
     v = v >> 8;
   }
   return bytes;
+}
+
+BigInt _bytesToBigInt(Uint8List bytes) {
+  var result = BigInt.zero;
+  for (final b in bytes) {
+    result = (result << 8) | BigInt.from(b);
+  }
+  return result;
 }
 
 String _b64urlNoPad(List<int> bytes) =>
