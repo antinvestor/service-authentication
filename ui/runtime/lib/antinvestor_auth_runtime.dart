@@ -32,3 +32,6 @@ export 'src/providers/auth_providers.dart'
 export 'src/providers/auth_runtime_scope.dart' show AuthRuntimeScope;
 export 'src/widgets/auth_gate.dart' show AuthGate;
 export 'src/widgets/auth_state_builder.dart' show AuthStateBuilder;
+export 'src/widgets/profile_avatar.dart' show ProfileAvatar;
+export 'src/widgets/sign_in_button.dart' show SignInButton;
+export 'src/widgets/sign_out_button.dart' show SignOutButton;

@@ -1,6 +1,7 @@
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/providers/auth_providers.dart';
+import 'package:antinvestor_auth_runtime/src/widgets/sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -71,7 +72,7 @@ Widget _defaultLoading(BuildContext context) =>
     const Center(child: CircularProgressIndicator());
 
 Widget _defaultUnauthenticated(BuildContext context) =>
-    const Center(child: _InlineSignInFallback());
+    const Center(child: SignInButton());
 
 Widget _defaultError(BuildContext context, AuthError err) {
   return Center(
@@ -85,40 +86,6 @@ Widget _defaultError(BuildContext context, AuthError err) {
       ],
     ),
   );
-}
-
-/// Minimal "Sign in" button used until F-I.2 ships `SignInButton`. Kept
-/// private so the richer widget takes over cleanly in the next commit.
-class _InlineSignInFallback extends ConsumerStatefulWidget {
-  const _InlineSignInFallback();
-
-  @override
-  ConsumerState<_InlineSignInFallback> createState() =>
-      _InlineSignInFallbackState();
-}
-
-class _InlineSignInFallbackState
-    extends ConsumerState<_InlineSignInFallback> {
-  bool _pending = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _pending
-          ? null
-          : () async {
-              setState(() => _pending = true);
-              try {
-                await ref
-                    .read(authRuntimeProvider)
-                    .ensureAuthenticated();
-              } finally {
-                if (mounted) setState(() => _pending = false);
-              }
-            },
-      child: const Text('Sign in'),
-    );
-  }
 }
 
 class _RetryButton extends ConsumerWidget {
