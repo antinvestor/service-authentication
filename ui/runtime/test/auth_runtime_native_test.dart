@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:antinvestor_auth_runtime/antinvestor_auth_runtime.dart';
@@ -423,6 +424,40 @@ void main() {
       await h.runtime.dispose();
     });
 
+    test(
+        'dispose() while proactive silent is mid-flight does not raise '
+        'unhandled errors', () async {
+      final provider = _BlockingSilentProvider();
+      final h = _build(providers: [provider]);
+
+      await h.runtime.init();
+      // Let the proactive silent microtask spin up and park on the
+      // pending Future inside attemptSilent().
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(provider.silentCalls, 1);
+
+      // Capture any unhandled zone errors.
+      final unhandled = <Object>[];
+      await runZonedGuarded<Future<void>>(
+        () async {
+          await h.runtime.dispose();
+          // Release the provider's pending Future so the microtask
+          // resumes post-dispose. It must exit cleanly.
+          provider.releaseSilent(
+            const NativeCredentialOutcome.noSession(),
+          );
+          for (var i = 0; i < 20; i++) {
+            await Future<void>.delayed(Duration.zero);
+          }
+        },
+        (err, _) => unhandled.add(err),
+      );
+
+      expect(unhandled, isEmpty, reason: 'dispose should be clean');
+    });
+
     test('provider throwing in isAvailable does not crash the waterfall',
         () async {
       final bad = _StubProvider(
@@ -547,3 +582,40 @@ class _NonceEchoingProvider implements NativeCredentialProvider {
   }
 }
 
+/// Provider whose [attemptSilent] blocks on a manually-released Completer,
+/// so tests can inject a dispose() call while the runtime is parked
+/// inside the proactive-silent microtask.
+class _BlockingSilentProvider implements NativeCredentialProvider {
+  final Completer<NativeCredentialOutcome> _gate =
+      Completer<NativeCredentialOutcome>();
+
+  int silentCalls = 0;
+
+  @override
+  NativeCredentialProviderKind get kind =>
+      NativeCredentialProviderKind.google;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<NativeCredentialOutcome> attemptSilent({
+    required String nonce,
+  }) {
+    silentCalls++;
+    return _gate.future;
+  }
+
+  @override
+  Future<NativeCredentialOutcome> attemptInteractive({
+    required String nonce,
+  }) async =>
+      const NativeCredentialOutcome.cancelled();
+
+  @override
+  Future<void> signOut() async {}
+
+  void releaseSilent(NativeCredentialOutcome outcome) {
+    if (!_gate.isCompleted) _gate.complete(outcome);
+  }
+}

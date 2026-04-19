@@ -116,9 +116,11 @@ class AuthRuntimeImpl implements AuthRuntime {
         } catch (_) {
           available = false;
         }
+        if (_disposed) return;
         if (!available) continue;
 
         final nonce = generateNonce();
+        if (_disposed) return;
         _emitCredentialEvent(CredentialEvent.silentAttempt(p.kind));
         NativeCredentialOutcome outcome;
         try {
@@ -126,14 +128,20 @@ class AuthRuntimeImpl implements AuthRuntime {
         } catch (_) {
           outcome = const NativeCredentialOutcome.noSession();
         }
+        if (_disposed) return;
         _emitCredentialEvent(CredentialEvent.outcome(p.kind, outcome));
 
         if (outcome is Ok) {
+          if (_disposed) return;
           try {
             await worker.completeNativeCredential(
               credential: outcome.result,
               expectedNonce: nonce,
             );
+            return;
+          } on StateError {
+            // Worker was destroyed mid-flight (dispose() ran). Treat as
+            // a clean shutdown, not an unhandled error.
             return;
           } catch (_) {
             // Fall through to next provider.
