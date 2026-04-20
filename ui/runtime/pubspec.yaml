@@ -3,7 +3,7 @@ description: >
   Auth runtime for Antinvestor Flutter apps. OAuth2 + PKCE, adaptive DPoP,
   rotating refresh tokens with reuse detection, Isolate-isolated tokens,
   hardware-backed storage, Riverpod providers, Material widgets.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/runtime
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
@@ -35,6 +35,8 @@ dependencies:
   uuid: ^4.5.1
   meta: ^1.15.0
   collection: ^1.18.0
+  sign_in_with_apple: ^6.1.2
+  google_sign_in: ^7.1.1
 
 dev_dependencies:
   flutter_test:

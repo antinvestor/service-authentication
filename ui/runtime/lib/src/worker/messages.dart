@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
@@ -30,6 +31,8 @@ sealed class WorkerRequest {
       'init' => InitRequest._fromMap(map),
       'prepareAuth' => PrepareAuthRequest._fromMap(map),
       'completeAuth' => CompleteAuthRequest._fromMap(map),
+      'completeNativeCredential' =>
+        CompleteNativeCredentialRequest._fromMap(map),
       'fetch' => FetchRequest._fromMap(map),
       'upload' => UploadRequest._fromMap(map),
       'getRoles' => GetRolesRequest._fromMap(map),
@@ -94,6 +97,61 @@ final class CompleteAuthRequest extends WorkerRequest {
         state: map['state'] as String,
         nonce: map['nonce'] as String,
       );
+}
+
+final class CompleteNativeCredentialRequest extends WorkerRequest {
+  const CompleteNativeCredentialRequest({
+    required super.correlationId,
+    required this.provider,
+    required this.idToken,
+    required this.autoSelected,
+    required this.expectedNonce,
+    this.authorizationCode,
+    this.nonce,
+  });
+
+  final NativeCredentialProviderKind provider;
+  final String idToken;
+  final String? authorizationCode;
+  final String? nonce;
+  final bool autoSelected;
+  final String expectedNonce;
+
+  NativeCredentialResult toResult() => NativeCredentialResult(
+        provider: provider,
+        idToken: idToken,
+        autoSelected: autoSelected,
+        authorizationCode: authorizationCode,
+        nonce: nonce,
+      );
+
+  @override
+  Map<String, Object?> toMap() => {
+        _kind: 'completeNativeCredential',
+        _corrId: correlationId,
+        'provider': provider.name,
+        'idToken': idToken,
+        'autoSelected': autoSelected,
+        'expectedNonce': expectedNonce,
+        if (authorizationCode != null) 'authorizationCode': authorizationCode,
+        if (nonce != null) 'nonce': nonce,
+      };
+
+  factory CompleteNativeCredentialRequest._fromMap(Map<String, Object?> map) {
+    final name = map['provider'] as String;
+    final provider = NativeCredentialProviderKind.values.firstWhere(
+      (v) => v.name == name,
+    );
+    return CompleteNativeCredentialRequest(
+      correlationId: map[_corrId] as String,
+      provider: provider,
+      idToken: map['idToken'] as String,
+      autoSelected: map['autoSelected'] as bool,
+      expectedNonce: map['expectedNonce'] as String,
+      authorizationCode: map['authorizationCode'] as String?,
+      nonce: map['nonce'] as String?,
+    );
+  }
 }
 
 final class FetchRequest extends WorkerRequest {
@@ -246,6 +304,8 @@ sealed class WorkerEvent {
       'response' => ResponseEvent._fromMap(map),
       'error' => ErrorEvent._fromMap(map),
       'ok' => OkEvent._fromMap(map),
+      'completeNativeCredentialOk' =>
+        CompleteNativeCredentialOkEvent._fromMap(map),
       'roles' => RolesEvent._fromMap(map),
       'claims' => ClaimsEvent._fromMap(map),
       'securityEvent' => SecurityEventWire._fromMap(map),
@@ -381,6 +441,37 @@ final class OkEvent extends WorkerEvent {
 
   factory OkEvent._fromMap(Map<String, Object?> map) =>
       OkEvent(correlationId: map[_corrId] as String?);
+}
+
+/// Success ack for [CompleteNativeCredentialRequest]. Carries the
+/// [NativeCredentialProviderKind] so the main-isolate side can emit
+/// matching telemetry / credential events after the worker has
+/// transitioned to `authenticated`.
+final class CompleteNativeCredentialOkEvent extends WorkerEvent {
+  const CompleteNativeCredentialOkEvent({
+    required this.provider,
+    super.correlationId,
+  });
+
+  final NativeCredentialProviderKind provider;
+
+  @override
+  Map<String, Object?> toMap() => {
+        _kind: 'completeNativeCredentialOk',
+        _corrId: correlationId,
+        'provider': provider.name,
+      };
+
+  factory CompleteNativeCredentialOkEvent._fromMap(Map<String, Object?> map) {
+    final name = map['provider'] as String;
+    final provider = NativeCredentialProviderKind.values.firstWhere(
+      (v) => v.name == name,
+    );
+    return CompleteNativeCredentialOkEvent(
+      correlationId: map[_corrId] as String?,
+      provider: provider,
+    );
+  }
 }
 
 final class RolesEvent extends WorkerEvent {

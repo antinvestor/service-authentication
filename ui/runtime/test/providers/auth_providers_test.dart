@@ -168,4 +168,64 @@ void main() {
     );
     expect(seen, isNull);
   });
+
+  group('authNativeProvidersProvider', () {
+    test('defaults to empty list', () {
+      final bare = ProviderContainer();
+      addTearDown(bare.dispose);
+      expect(bare.read(authNativeProvidersProvider), isEmpty);
+    });
+
+    test('can be overridden at the root', () {
+      final stub = _StubNativeProvider(NativeCredentialProviderKind.google);
+      final scoped = ProviderContainer(
+        overrides: [
+          authNativeProvidersProvider
+              .overrideWithValue(<NativeCredentialProvider>[stub]),
+        ],
+      );
+      addTearDown(scoped.dispose);
+      final list = scoped.read(authNativeProvidersProvider);
+      expect(list, hasLength(1));
+      expect(list.single, same(stub));
+      expect(list.single.kind, NativeCredentialProviderKind.google);
+    });
+
+    test('default list does not accept mutations (const empty)', () {
+      final bare = ProviderContainer();
+      addTearDown(bare.dispose);
+      final list = bare.read(authNativeProvidersProvider);
+      expect(
+        () => list.add(_StubNativeProvider(
+          NativeCredentialProviderKind.apple,
+        )),
+        throwsUnsupportedError,
+      );
+    });
+  });
+}
+
+class _StubNativeProvider implements NativeCredentialProvider {
+  _StubNativeProvider(this.kind);
+
+  @override
+  final NativeCredentialProviderKind kind;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<NativeCredentialOutcome> attemptSilent({
+    required String nonce,
+  }) async =>
+      const NativeCredentialOutcome.noSession();
+
+  @override
+  Future<NativeCredentialOutcome> attemptInteractive({
+    required String nonce,
+  }) async =>
+      const NativeCredentialOutcome.cancelled();
+
+  @override
+  Future<void> signOut() async {}
 }

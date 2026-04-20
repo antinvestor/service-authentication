@@ -49,6 +49,12 @@ enum AuthErrorCode {
   deepLinkMismatch,
   biometricRequired,
   biometricUnavailable,
+
+  // Native credential providers (Apple / Google / CredentialManager)
+  nativeCredentialCancelled,
+  nativeCredentialUnavailable,
+  nativeCredentialIssuerMismatch,
+  nativeCredentialExchangeFailed,
 }
 
 const Set<AuthErrorCode> _nonRetryable = {
@@ -57,6 +63,7 @@ const Set<AuthErrorCode> _nonRetryable = {
   AuthErrorCode.cryptoUnsupported,
   AuthErrorCode.deepLinkMismatch,
   AuthErrorCode.securityWipe,
+  AuthErrorCode.nativeCredentialIssuerMismatch,
 };
 
 /// Non-fatal, structured error raised throughout the runtime.

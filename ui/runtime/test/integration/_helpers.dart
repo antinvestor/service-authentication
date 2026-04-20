@@ -121,6 +121,7 @@ Future<IntegrationHarness> buildHarness({
   FakeOAuthFlow? fakeOAuth,
   KeyValueStore? sessionKv,
   KeyValueStore? rootKv,
+  List<NativeCredentialProvider> nativeProviders = const [],
 }) async {
   final m = mock ?? MockIdp();
   // Idempotent start: if the mock hasn't listened yet, start it. Tests
@@ -167,6 +168,7 @@ Future<IntegrationHarness> buildHarness({
     config: cfg,
     worker: worker,
     oauthFlow: fake,
+    nativeProviders: nativeProviders,
   );
   await runtime.init();
 

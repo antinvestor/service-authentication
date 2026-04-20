@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
 import 'package:antinvestor_auth_runtime/src/auth_runtime.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/credential_event.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
@@ -31,19 +35,137 @@ class AuthRuntimeImpl implements AuthRuntime {
     required this.config,
     required this.worker,
     required this.oauthFlow,
-  });
+    List<NativeCredentialProvider> nativeProviders = const [],
+    Random? random,
+  })  : _nativeProviders = List<NativeCredentialProvider>.unmodifiable(
+          nativeProviders,
+        ),
+        _random = random ?? Random.secure(),
+        _credentialController =
+            StreamController<CredentialEvent>.broadcast() {
+    if (_nativeProviders.isNotEmpty) {
+      _authStateSub = worker.authStateStream.listen(_onAuthStateChanged);
+    }
+  }
 
   final ResolvedConfig config;
   final TokenWorker worker;
   final OAuthFlow oauthFlow;
+  final List<NativeCredentialProvider> _nativeProviders;
+  final Random _random;
+  final StreamController<CredentialEvent> _credentialController;
 
   bool _disposed = false;
+  bool _proactiveSilentScheduled = false;
+  bool _proactiveSilentAttempted = false;
   Future<void>? _initFuture;
   Future<void>? _inflightEnsureAuthenticated;
+  StreamSubscription<AuthState>? _authStateSub;
 
   /// Kicks off the worker's initial reload. Idempotent: every caller
   /// awaits the same future so first-use races settle correctly.
-  Future<void> init() => _initFuture ??= worker.init();
+  Future<void> init() => _initFuture ??= _runInit();
+
+  Future<void> _runInit() async {
+    // Probe providers in parallel before the worker settles so callers
+    // subscribing to [credentialEventStream] receive availability hints
+    // without blocking the main init path.
+    unawaited(_probeProviders());
+    await worker.init();
+  }
+
+  Future<void> _probeProviders() async {
+    for (final p in _nativeProviders) {
+      try {
+        final avail = await p.isAvailable();
+        _emitCredentialEvent(CredentialEvent.probe(
+          kind: p.kind,
+          available: avail,
+        ));
+      } catch (_) {
+        _emitCredentialEvent(CredentialEvent.probe(
+          kind: p.kind,
+          available: false,
+        ));
+      }
+    }
+  }
+
+  void _onAuthStateChanged(AuthState next) {
+    if (next != AuthState.unauthenticated) return;
+    if (_proactiveSilentAttempted) return;
+    if (_proactiveSilentScheduled) return;
+    // An explicit ensureAuthenticated() is already running — let it drive
+    // the waterfall rather than racing a silent attempt onto the worker.
+    if (_inflightEnsureAuthenticated != null) return;
+    _proactiveSilentScheduled = true;
+    scheduleMicrotask(_proactiveSilentAttempt);
+  }
+
+  Future<void> _proactiveSilentAttempt() async {
+    // Mark as attempted before running so a synchronous failure that
+    // bounces state back to unauthenticated doesn't re-enter.
+    _proactiveSilentAttempted = true;
+    try {
+      for (final p in _nativeProviders) {
+        if (_disposed) return;
+        if (worker.state == AuthState.authenticated) return;
+        bool available;
+        try {
+          available = await p.isAvailable();
+        } catch (_) {
+          available = false;
+        }
+        if (_disposed) return;
+        if (!available) continue;
+
+        final nonce = generateNonce();
+        if (_disposed) return;
+        _emitCredentialEvent(CredentialEvent.silentAttempt(p.kind));
+        NativeCredentialOutcome outcome;
+        try {
+          outcome = await p.attemptSilent(nonce: nonce);
+        } catch (_) {
+          outcome = const NativeCredentialOutcome.noSession();
+        }
+        if (_disposed) return;
+        _emitCredentialEvent(CredentialEvent.outcome(p.kind, outcome));
+
+        if (outcome is Ok) {
+          if (_disposed) return;
+          try {
+            await worker.completeNativeCredential(
+              credential: outcome.result,
+              expectedNonce: nonce,
+            );
+            return;
+          } on StateError {
+            // Worker was destroyed mid-flight (dispose() ran). Treat as
+            // a clean shutdown, not an unhandled error.
+            return;
+          } catch (_) {
+            // Fall through to next provider.
+          }
+        }
+      }
+    } finally {
+      _proactiveSilentScheduled = false;
+    }
+  }
+
+  void _emitCredentialEvent(CredentialEvent event) {
+    if (!_credentialController.isClosed) {
+      _credentialController.add(event);
+    }
+  }
+
+  /// Generates a 16-byte cryptographically random nonce, base64url-encoded
+  /// without padding. Seeded from [Random.secure] unless overridden at
+  /// construction — tests inject a deterministic [Random].
+  String generateNonce() {
+    final bytes = List<int>.generate(16, (_) => _random.nextInt(256));
+    return base64Url.encode(bytes).replaceAll('=', '');
+  }
 
   @override
   Future<void> ensureAuthenticated() async {
@@ -56,13 +178,62 @@ class AuthRuntimeImpl implements AuthRuntime {
     final inflight = _inflightEnsureAuthenticated;
     if (inflight != null) return inflight;
 
-    final future = _startOAuthFlow();
+    final future = _runWaterfall();
     _inflightEnsureAuthenticated = future;
     try {
       await future;
     } finally {
       _inflightEnsureAuthenticated = null;
     }
+  }
+
+  /// Native → OAuth2 waterfall.
+  ///
+  /// For each configured [NativeCredentialProvider], attempts an
+  /// interactive sign-in; on `ok` exchanges the ID token via
+  /// [TokenWorker.completeNativeCredential]. All other outcomes (cancel,
+  /// noSession, unavailable, error) move on to the next provider. When
+  /// every native provider has been exhausted, falls through to the
+  /// existing OAuth2 popup path.
+  Future<void> _runWaterfall() async {
+    for (final p in _nativeProviders) {
+      if (worker.state == AuthState.authenticated) return;
+      bool available;
+      try {
+        available = await p.isAvailable();
+      } catch (_) {
+        available = false;
+      }
+      if (!available) continue;
+
+      final nonce = generateNonce();
+      _emitCredentialEvent(CredentialEvent.interactiveAttempt(p.kind));
+      NativeCredentialOutcome outcome;
+      try {
+        outcome = await p.attemptInteractive(nonce: nonce);
+      } catch (_) {
+        // Provider threw unexpectedly — treat as unavailable and move on.
+        outcome = const NativeCredentialOutcome.unavailable(
+          'provider threw unexpectedly',
+        );
+      }
+      _emitCredentialEvent(CredentialEvent.outcome(p.kind, outcome));
+
+      if (outcome is Ok) {
+        try {
+          await worker.completeNativeCredential(
+            credential: outcome.result,
+            expectedNonce: nonce,
+          );
+          return;
+        } catch (_) {
+          // Exchange failed — fall through to the next provider / OAuth2.
+        }
+      }
+      // Cancelled / NoSession / Unavailable / ErrorOutcome → fall through.
+    }
+
+    await _startOAuthFlow();
   }
 
   Future<void> _startOAuthFlow() async {
@@ -138,8 +309,43 @@ class AuthRuntimeImpl implements AuthRuntime {
   @override
   Future<void> logout() async {
     _ensureAlive();
-    await worker.logout();
+    // Best-effort native sign-out first so the provider's session is
+    // cleared even if the subsequent local wipe fails. Errors from any
+    // single provider never block the remainder.
+    for (final p in _nativeProviders) {
+      try {
+        await p.signOut();
+      } catch (_) {
+        // Best-effort only.
+      }
+      _emitCredentialEvent(CredentialEvent.signOut(p.kind));
+    }
+    try {
+      await worker.logout();
+    } catch (_) {
+      // worker.logout() already wipes local state on failure internally;
+      // swallow so the documented "logout always clears local state"
+      // contract is honoured from the caller's perspective.
+    }
   }
+
+  @override
+  Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async {
+    _ensureAlive();
+    final out = <NativeCredentialProviderKind>{};
+    for (final p in _nativeProviders) {
+      try {
+        if (await p.isAvailable()) out.add(p.kind);
+      } catch (_) {
+        // Skip providers that error out during probe.
+      }
+    }
+    return out;
+  }
+
+  @override
+  Stream<CredentialEvent> get credentialEventStream =>
+      _credentialController.stream;
 
   @override
   Stream<AuthState> get authStateStream => worker.authStateStream;
@@ -169,6 +375,9 @@ class AuthRuntimeImpl implements AuthRuntime {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    await _authStateSub?.cancel();
+    _authStateSub = null;
+    await _credentialController.close();
     await worker.destroy();
   }
 

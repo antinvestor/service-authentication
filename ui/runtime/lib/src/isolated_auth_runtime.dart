@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:antinvestor_auth_runtime/src/auth_runtime.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/credential_event.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
@@ -133,6 +135,18 @@ class IsolatedAuthRuntime implements AuthRuntime {
 
   @override
   AuthState get state => _state;
+
+  @override
+  Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async {
+    _ensureAlive();
+    // Native credential providers run main-isolate-only in v0.2; isolate
+    // shell reports an empty set.
+    return const <NativeCredentialProviderKind>{};
+  }
+
+  @override
+  Stream<CredentialEvent> get credentialEventStream =>
+      const Stream<CredentialEvent>.empty();
 
   @override
   Future<void> prefetchDiscovery() async {

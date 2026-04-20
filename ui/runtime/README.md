@@ -66,6 +66,125 @@ No per-platform manifest entries are required: `flutter_appauth` uses the
 system browser directly and receives the callback over an embedded
 listener. The scheme only has to match `AuthConfig.redirectScheme`.
 
+## Native sign-in (Apple + Google)
+
+The runtime ships built-in support for Sign in with Apple and Google
+Sign-In so iOS / macOS / Android users can skip the browser hop and get
+signed in through the platform's native credential sheet. This is
+entirely opt-in; callers that pass no providers to `createAuthRuntime`
+get the v0.1 OAuth2-only behaviour.
+
+### Why use it
+
+- Fastest UX on platforms where the user is already signed into Apple
+  or Google — no browser context switch, no password typing.
+- Fewer sign-in abandonments on mobile where the redirect dance is most
+  fragile.
+- Graceful degradation: when native providers decline (no session, user
+  cancels, platform unavailable) the runtime falls back to the existing
+  OAuth2 + PKCE flow automatically.
+
+### How the waterfall works
+
+On every `ensureAuthenticated()`:
+
+1. **Proactive silent** (on mount): each configured native provider is
+   asked for an auto-select credential. No UI. If one succeeds the
+   runtime exchanges the ID token via RFC 8693 token-exchange and
+   transitions to `authenticated`.
+2. **Interactive** (on sign-in click): for each provider in order, the
+   runtime calls `attemptInteractive`. The first `Ok` outcome is
+   exchanged via token-exchange.
+3. **OAuth2 fallback**: if every native provider returns `Cancelled`,
+   `NoSession`, `Unavailable`, or `ErrorOutcome`, the runtime opens
+   the system browser via `flutter_appauth` exactly as in v0.1.
+
+### Consumer setup
+
+```dart
+import 'dart:io';
+import 'package:antinvestor_auth_runtime/antinvestor_auth_runtime.dart';
+
+final providers = <NativeCredentialProvider>[
+  if (Platform.isIOS || Platform.isMacOS) AppleCredentialProvider(),
+  GoogleCredentialProvider(serverClientId: googleServerClientId),
+];
+
+final runtime = createAuthRuntime(cfg, nativeProviders: providers);
+```
+
+With Riverpod, also override `authNativeProvidersProvider` so widgets
+can render platform-aware sign-in buttons:
+
+```dart
+ProviderScope(
+  overrides: [
+    authNativeProvidersProvider.overrideWithValue(providers),
+    authRuntimeProvider.overrideWithValue(runtime),
+  ],
+  child: const MyApp(),
+);
+```
+
+### Platform requirements
+
+**iOS**
+
+- Enable the "Sign In with Apple" capability for your target in Xcode
+  (`Signing & Capabilities` → `+ Capability`).
+- The Bundle ID must match the one registered at
+  [developer.apple.com](https://developer.apple.com) under your
+  services ID.
+- Minimum deployment target iOS 13.
+
+**Android**
+
+- Create a Google OAuth client in Google Cloud Console of type
+  "Android" and record the **server client ID** (type "Web
+  application") — the latter is what you pass to
+  `GoogleCredentialProvider(serverClientId: …)`.
+- Register the app's SHA-256 fingerprint on the Android OAuth client.
+- `android/app/build.gradle` must have `minSdkVersion >= 23`
+  (Credential Manager requirement).
+- No `google-services.json` is required: the Credential-Manager-backed
+  `google_sign_in` v7 flow does not use Firebase.
+
+**macOS**
+
+- Same Apple developer configuration as iOS.
+- Add the Sign in with Apple entitlement in both
+  `macos/Runner/DebugProfile.entitlements` and
+  `macos/Runner/Release.entitlements`:
+
+  ```xml
+  <key>com.apple.developer.applesignin</key>
+  <array>
+    <string>Default</string>
+  </array>
+  ```
+
+### Failure-mode table
+
+| `NativeCredentialOutcome`        | Effect                                                                    |
+|----------------------------------|---------------------------------------------------------------------------|
+| `Ok(result)`                     | ID token exchanged via RFC 8693; runtime transitions to `authenticated`.  |
+| `Cancelled()`                    | User dismissed the native sheet. Runtime falls through to the next provider, then OAuth2. |
+| `NoSession()`                    | Silent attempt found no credential. Waterfall moves on.                   |
+| `Unavailable(reason)`            | Provider cannot run on this platform / OS version. Waterfall moves on.    |
+| `ErrorOutcome(AuthError)`        | Recorded as a `CredentialOutcomeEvent`; waterfall moves on.               |
+
+The `credentialEventStream` emits probe / silent / interactive / outcome
+/ sign-out events for telemetry; subscribe in debug builds to observe
+the waterfall in action.
+
+### Backend requirements
+
+The authentication service (Ory Hydra or equivalent) must accept the
+RFC 8693 `urn:ietf:params:oauth:grant-type:token-exchange` grant and
+treat Apple / Google as trusted subject issuers. See
+[docs/auth-runtime-native-credentials.md](../../docs/auth-runtime-native-credentials.md)
+for the operator-side configuration guide.
+
 ## Quick start (Riverpod — preferred)
 
 ```dart
@@ -158,6 +277,7 @@ All widgets honour the Material `ThemeData` of the surrounding app.
 | `userClaimsProvider` | `FutureProvider<UserClaims>` | ID token claims, wrapped for convenient access. |
 | `rolesProvider` | `FutureProvider<List<String>>` | Roles extracted from the access token. |
 | `securityEventsProvider` | `StreamProvider<SecurityEvent>` | Security signals (`refreshReuseDetected`, `storageCorruption`, …). |
+| `authNativeProvidersProvider` | `Provider<List<NativeCredentialProvider>>` | Configured native credential providers. Defaults to `[]`; override at app root alongside `authRuntimeProvider`. |
 
 ## Security posture
 
