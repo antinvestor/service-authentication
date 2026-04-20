@@ -120,4 +120,89 @@ void main() {
     expect(a, equals(b));
     expect(a.hashCode, b.hashCode);
   });
+
+  group('redirectUri', () {
+    test(
+        'defaults to {scheme}://callback when only redirectScheme is provided',
+        () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'com.example.app',
+      ));
+      expect(cfg.redirectUri, 'com.example.app://callback');
+    });
+
+    test('explicit redirectUri takes precedence over redirectScheme', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'com.example.app',
+        redirectUri: 'http://localhost:5173/auth',
+      ));
+      expect(cfg.redirectUri, 'http://localhost:5173/auth');
+    });
+
+    test('explicit redirectUri works when redirectScheme is empty', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: '',
+        redirectUri: 'http://localhost:5173/auth',
+      ));
+      expect(cfg.redirectUri, 'http://localhost:5173/auth');
+    });
+
+    test(
+        'throws invalidConfig when neither redirectUri nor redirectScheme '
+        'is supplied', () {
+      expect(
+        () => resolveConfig(const AuthConfig(
+          clientId: 'c',
+          idpBaseUrl: 'https://i',
+          apiBaseUrl: 'https://a',
+          redirectScheme: '',
+        )),
+        throwsA(isA<AuthError>()
+            .having((e) => e.code, 'code', AuthErrorCode.invalidConfig)),
+      );
+    });
+  });
+
+  group('audiences', () {
+    test('defaults to empty list when omitted', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+      ));
+      expect(cfg.audiences, isEmpty);
+    });
+
+    test('carries through when caller supplies them', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+        audiences: ['svc-a', 'svc-b', 'svc-c'],
+      ));
+      expect(cfg.audiences, ['svc-a', 'svc-b', 'svc-c']);
+    });
+
+    test('resolved audiences list is immutable', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+        audiences: ['svc-a'],
+      ));
+      expect(() => cfg.audiences.add('mutated'), throwsUnsupportedError);
+    });
+  });
 }

@@ -13,11 +13,13 @@ import 'package:http/testing.dart';
 
 const _timeout = Duration(seconds: 5);
 
-ResolvedConfig _cfg() => resolveConfig(const AuthConfig(
+ResolvedConfig _cfg({List<String>? audiences}) =>
+    resolveConfig(AuthConfig(
       clientId: 'c',
       idpBaseUrl: 'https://idp.example.com',
       apiBaseUrl: 'https://api.example.com',
       redirectScheme: 'com.example.app',
+      audiences: audiences,
     ));
 
 Map<String, dynamic> _discoveryDoc({bool dpop = false}) => <String, dynamic>{
@@ -153,6 +155,38 @@ void main() {
       expect(tokens.accessToken, 'at-1');
       expect(tokenCalls, 2);
       expect(ctx.clockOffsetMs, greaterThan(0));
+    });
+
+    test('includes audience=a,b,c when audiences configured', () async {
+      final cfg = _cfg(audiences: const ['svc-a', 'svc-b', 'svc-c']);
+      final client = MockClient((req) async {
+        if (req.url.path.endsWith('/.well-known/openid-configuration')) {
+          return http.Response(jsonEncode(_discoveryDoc()), 200);
+        }
+        final form = Uri.splitQueryString(req.body);
+        expect(form['audience'], 'svc-a,svc-b,svc-c');
+        return http.Response(jsonEncode(_tokenResp()), 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final exchange = TokenExchange(client: client, timeout: _timeout);
+      await exchange.exchangeCode(cfg, ctx, code: 'c', verifier: 'v');
+    });
+
+    test('omits audience when audiences is empty', () async {
+      final cfg = _cfg();
+      final client = MockClient((req) async {
+        if (req.url.path.endsWith('/.well-known/openid-configuration')) {
+          return http.Response(jsonEncode(_discoveryDoc()), 200);
+        }
+        final form = Uri.splitQueryString(req.body);
+        expect(form.containsKey('audience'), isFalse);
+        return http.Response(jsonEncode(_tokenResp()), 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final exchange = TokenExchange(client: client, timeout: _timeout);
+      await exchange.exchangeCode(cfg, ctx, code: 'c', verifier: 'v');
     });
 
     test('non-2xx final response raises tokenExchangeFailed', () async {
@@ -354,6 +388,27 @@ void main() {
         ),
         throwsA(isA<AuthError>()
             .having((e) => e.code, 'code', AuthErrorCode.tokenExchangeFailed)),
+      );
+    });
+
+    test('includes audience=a,b,c when audiences configured', () async {
+      final cfg = _cfg(audiences: const ['svc-a', 'svc-b']);
+      final client = MockClient((req) async {
+        if (req.url.path.endsWith('/.well-known/openid-configuration')) {
+          return http.Response(jsonEncode(_discoveryDoc()), 200);
+        }
+        final form = Uri.splitQueryString(req.body);
+        expect(form['audience'], 'svc-a,svc-b');
+        return http.Response(jsonEncode(_tokenResp()), 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final exchange = TokenExchange(client: client, timeout: _timeout);
+      await exchange.exchangeIdToken(
+        cfg,
+        ctx,
+        subjectToken: 'tok',
+        subjectIssuer: 'https://accounts.google.com',
       );
     });
   });

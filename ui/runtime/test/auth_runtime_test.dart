@@ -293,6 +293,38 @@ void main() {
     await rt.dispose();
   });
 
+  test('getUserClaims wraps getClaims in a typed UserClaims', () async {
+    final id = _makeJwt({
+      'sub': 'u-42',
+      'email': 'alice@example.com',
+      'contact_id': 'contact-abc',
+      'tenant_id': 'tenant-xyz',
+      'partition_id': 'partition-42',
+    });
+    final h = _Harness(initialTokens: _tokens(id: id));
+    final rt = h.build();
+    await rt.ensureAuthenticated();
+
+    final claims = await rt.getUserClaims();
+    expect(claims.sub, 'u-42');
+    expect(claims.email, 'alice@example.com');
+    expect(claims.contactId, 'contact-abc');
+    expect(claims.tenantId, 'tenant-xyz');
+    expect(claims.partitionId, 'partition-42');
+    await rt.dispose();
+  });
+
+  test('getUserClaims returns empty UserClaims when unauthenticated',
+      () async {
+    final h = _Harness();
+    final rt = h.build();
+    await Future<void>.delayed(Duration.zero);
+    final claims = await rt.getUserClaims();
+    expect(claims.sub, isNull);
+    expect(claims.contactId, isNull);
+    await rt.dispose();
+  });
+
   test('logout clears local state and transitions to unauthenticated',
       () async {
     final h = _Harness(initialTokens: _tokens());
@@ -315,10 +347,36 @@ void main() {
     expect(() => rt.ensureAuthenticated(), throwsStateError);
   });
 
+  group('isAuthenticated (synchronous)', () {
+    test('returns false initially and true once authenticated', () async {
+      final h = _Harness(initialTokens: _tokens());
+      final rt = h.build();
+      // Construction kicks off init(); before that completes state is
+      // initializing or unauthenticated — never authenticated.
+      expect(rt.isAuthenticated, isFalse);
+
+      await rt.ensureAuthenticated();
+      expect(rt.state, AuthState.authenticated);
+      expect(rt.isAuthenticated, isTrue);
+      await rt.dispose();
+    });
+
+    test('returns false after logout', () async {
+      final h = _Harness(initialTokens: _tokens());
+      final rt = h.build();
+      await rt.ensureAuthenticated();
+      expect(rt.isAuthenticated, isTrue);
+
+      await rt.logout();
+      expect(rt.isAuthenticated, isFalse);
+      await rt.dispose();
+    });
+  });
+
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);
-    expect(rt.version, '0.2.0');
+    expect(rt.version, '0.3.0');
     await rt.dispose();
   });
 

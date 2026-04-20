@@ -13,6 +13,7 @@ import 'package:antinvestor_auth_runtime/src/isolated_auth_runtime.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 import 'package:antinvestor_auth_runtime/src/oauth/oauth_flow.dart';
 import 'package:antinvestor_auth_runtime/src/protocol/api_proxy.dart';
 import 'package:antinvestor_auth_runtime/src/protocol/token_exchange.dart';
@@ -175,6 +176,10 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
       (await _ready).getClaims();
 
   @override
+  Future<UserClaims> getUserClaims() async =>
+      (await _ready).getUserClaims();
+
+  @override
   Future<List<String>> getRoles() async => (await _ready).getRoles();
 
   @override
@@ -194,6 +199,9 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
 
   @override
   AuthState get state => AuthState.initializing;
+
+  @override
+  bool get isAuthenticated => state == AuthState.authenticated;
 
   @override
   Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async =>

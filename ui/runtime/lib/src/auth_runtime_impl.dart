@@ -9,6 +9,7 @@ import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart'
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 import 'package:antinvestor_auth_runtime/src/oauth/oauth_flow.dart';
 import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
 
@@ -300,6 +301,13 @@ class AuthRuntimeImpl implements AuthRuntime {
   }
 
   @override
+  Future<UserClaims> getUserClaims() async {
+    _ensureAlive();
+    final raw = await getClaims();
+    return UserClaims(raw);
+  }
+
+  @override
   Future<List<String>> getRoles() async {
     _ensureAlive();
     if (worker.state != AuthState.authenticated) return const <String>[];
@@ -356,6 +364,9 @@ class AuthRuntimeImpl implements AuthRuntime {
 
   @override
   AuthState get state => worker.state;
+
+  @override
+  bool get isAuthenticated => worker.state == AuthState.authenticated;
 
   @override
   Future<void> prefetchDiscovery() async {

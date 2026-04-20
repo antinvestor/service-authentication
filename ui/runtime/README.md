@@ -254,6 +254,82 @@ Supported methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`.
 use `runtime.upload(path, fieldName:, filename:, contentType:, bytes:,
 length:)` — multipart form-data with automatic retry on 401.
 
+## Audiences (thesa pattern)
+
+Apps that front several downstream services need their access tokens to
+carry a specific `aud` claim per service. `AuthConfig.audiences`
+forwards a comma-joined `audience` parameter to both the authorize
+endpoint and the token-exchange grant; Ory Hydra mints a token whose
+`aud` claim contains every requested value.
+
+```dart
+createAuthRuntime(const AuthConfig(
+  clientId: 'antinvestor-thesa-web',
+  idpBaseUrl: 'https://auth.antinvestor.com',
+  apiBaseUrl: 'https://api.antinvestor.com',
+  redirectScheme: 'com.antinvestor.thesa',
+  audiences: [
+    'service-notification',
+    'service-profile',
+    'service-partition',
+    'service-payment',
+    'service-ledger',
+    'service-contact',
+    'service-property',
+    'service-device',
+    'service-files',
+  ],
+));
+```
+
+Omit the field (the default) when your client talks to a single
+service.
+
+## Typed claim getters
+
+`AuthRuntime.getUserClaims()` wraps the raw claims map in a `UserClaims`
+with typed accessors — including the Antinvestor-wide non-standard
+claims (`contact_id`, `tenant_id`, `partition_id`).
+
+```dart
+final claims = await runtime.getUserClaims();
+debugPrint('contact=${claims.contactId} tenant=${claims.tenantId}');
+
+// Reach into bespoke per-app claims via the escape hatch:
+final extra = claims.customClaims;
+```
+
+`customClaims` returns every claim that is **not** part of the OIDC
+core / JWT registered set, so apps can surface their own fields without
+colliding with the typed getters.
+
+## Background tasks (WorkManager)
+
+Android WorkManager (and similar Isolate-spawning background frameworks)
+can instantiate the runtime inside a short-lived isolate and bail out
+early when the user is signed out. Use `AuthRuntime.isAuthenticated`
+for the synchronous pre-check so you don't pay for async warmup on a
+terminal device.
+
+```dart
+class BackgroundAuth {
+  static Future<T?> withRuntime<T>(Future<T> Function(AuthRuntime) fn) async {
+    final runtime = createAuthRuntime(kConfig);
+    try {
+      if (!runtime.isAuthenticated) return null;
+      return await fn(runtime);
+    } finally {
+      await runtime.dispose();
+    }
+  }
+}
+```
+
+> **Warning:** Do NOT share runtime instances across Isolates. Construct
+> and `dispose()` a fresh runtime per task — the token worker's streams,
+> storage handles, and DPoP key material are not safe to move across
+> isolate boundaries.
+
 ## Widget reference
 
 | Widget | Purpose |

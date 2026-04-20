@@ -234,6 +234,7 @@ class TokenWorker implements TokenProvider {
       'code_challenge_method': 'S256',
       'state': state,
       'nonce': nonce,
+      if (config.audiences.isNotEmpty) 'audience': config.audiences.join(','),
     };
     final sep = discovery.authorizationEndpoint.contains('?') ? '&' : '?';
     final qs = params.entries

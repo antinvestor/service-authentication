@@ -11,11 +11,12 @@ class _MockAppAuth extends Mock implements FlutterAppAuth {}
 
 class _FakeAuthorizationRequest extends Fake implements AuthorizationRequest {}
 
-ResolvedConfig _cfg() => resolveConfig(const AuthConfig(
+ResolvedConfig _cfg({String? redirectUri}) => resolveConfig(AuthConfig(
       clientId: 'c',
       idpBaseUrl: 'https://idp.example.com',
       apiBaseUrl: 'https://api.example.com',
       redirectScheme: 'com.example.app',
+      redirectUri: redirectUri,
     ));
 
 Future<OidcDiscovery> _fakeDiscovery(ResolvedConfig cfg) async =>
@@ -109,6 +110,28 @@ void main() {
         AuthErrorCode.oauthFailed,
       )),
     );
+  });
+
+  test(
+      'explicit redirectUri override is forwarded verbatim to flutter_appauth',
+      () async {
+    final appAuth = _MockAppAuth();
+    AuthorizationRequest? seen;
+    when(() => appAuth.authorize(any())).thenAnswer((inv) async {
+      seen = inv.positionalArguments.first as AuthorizationRequest;
+      return const AuthorizationResponse(
+        authorizationCode: 'c',
+        codeVerifier: 'v',
+      );
+    });
+
+    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
+    await flow.authorize(_cfg(redirectUri: 'http://localhost:5173/auth'));
+
+    expect(seen, isNotNull);
+    // Explicit redirect URI wins over the convention-driven
+    // `{scheme}://callback` fallback.
+    expect(seen!.redirectUrl, 'http://localhost:5173/auth');
   });
 
   test('missing code/verifier raises oauthFailed', () async {

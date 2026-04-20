@@ -28,7 +28,9 @@ class ResolvedConfig {
     required this.idpBaseUrl,
     required this.apiBaseUrl,
     required this.redirectScheme,
+    required this.redirectUri,
     required this.scopes,
+    required this.audiences,
     required this.installationId,
     required this.discoveryTimeout,
     required this.tokenTimeout,
@@ -40,7 +42,19 @@ class ResolvedConfig {
   final String idpBaseUrl;
   final String apiBaseUrl;
   final String redirectScheme;
+
+  /// Fully-resolved OAuth redirect URI. Uses [AuthConfig.redirectUri] when
+  /// provided, otherwise derived from [redirectScheme] as
+  /// `{scheme}://callback` (the v0.2 convention).
+  final String redirectUri;
+
   final List<String> scopes;
+
+  /// Resource audience hints forwarded to the IdP's authorize and
+  /// token-exchange endpoints as a comma-joined `audience` parameter.
+  /// Defaults to an empty list when the caller omits [AuthConfig.audiences].
+  final List<String> audiences;
+
   final String? installationId;
   final Duration discoveryTimeout;
   final Duration tokenTimeout;
@@ -49,14 +63,19 @@ class ResolvedConfig {
 
   /// `"{clientId}::{idpBaseUrl}"` — cache and storage key suffix.
   String get namespace => '$clientId::$idpBaseUrl';
-
-  /// Convention-driven redirect URI: `{scheme}://callback`.
-  String get redirectUri => '$redirectScheme://callback';
 }
 
 /// Normalizes an [AuthConfig] into a fully-populated [ResolvedConfig].
 ///
 /// Throws `AuthError(invalidConfig)` if any required string is blank.
+///
+/// Redirect resolution order:
+/// 1. [AuthConfig.redirectUri] (explicit override, used verbatim).
+/// 2. Derived from [AuthConfig.redirectScheme] as `{scheme}://callback`.
+///
+/// At least one of the two must be non-empty; otherwise `invalidConfig`
+/// is thrown. The resolved [ResolvedConfig.redirectUri] is always
+/// non-null.
 ResolvedConfig resolveConfig(AuthConfig cfg) {
   if (cfg.clientId.isEmpty) {
     throw AuthError(AuthErrorCode.invalidConfig, 'clientId is required');
@@ -67,16 +86,27 @@ ResolvedConfig resolveConfig(AuthConfig cfg) {
   if (cfg.apiBaseUrl.isEmpty) {
     throw AuthError(AuthErrorCode.invalidConfig, 'apiBaseUrl is required');
   }
-  if (cfg.redirectScheme.isEmpty) {
-    throw AuthError(AuthErrorCode.invalidConfig, 'redirectScheme is required');
+  final explicitRedirect = cfg.redirectUri;
+  final hasExplicitRedirect =
+      explicitRedirect != null && explicitRedirect.isNotEmpty;
+  if (!hasExplicitRedirect && cfg.redirectScheme.isEmpty) {
+    throw AuthError(
+      AuthErrorCode.invalidConfig,
+      'redirectScheme or redirectUri is required',
+    );
   }
+  final redirectUri = hasExplicitRedirect
+      ? explicitRedirect
+      : '${cfg.redirectScheme}://callback';
 
   return ResolvedConfig(
     clientId: cfg.clientId,
     idpBaseUrl: _stripTrailingSlash(cfg.idpBaseUrl),
     apiBaseUrl: _stripTrailingSlash(cfg.apiBaseUrl),
     redirectScheme: cfg.redirectScheme,
+    redirectUri: redirectUri,
     scopes: List<String>.unmodifiable(cfg.scopes ?? defaultScopes),
+    audiences: List<String>.unmodifiable(cfg.audiences ?? const <String>[]),
     installationId: cfg.installationId,
     discoveryTimeout: cfg.discoveryTimeout ?? _defaultDiscoveryTimeout,
     tokenTimeout: cfg.tokenTimeout ?? _defaultTokenTimeout,

@@ -8,6 +8,7 @@ import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 import 'package:antinvestor_auth_runtime/src/worker/messages.dart';
 import 'package:antinvestor_auth_runtime/src/worker/token_isolate.dart';
 
@@ -113,6 +114,12 @@ class IsolatedAuthRuntime implements AuthRuntime {
   }
 
   @override
+  Future<UserClaims> getUserClaims() async {
+    _ensureAlive();
+    return const UserClaims(<String, dynamic>{});
+  }
+
+  @override
   Future<List<String>> getRoles() async {
     _ensureAlive();
     return const <String>[];
@@ -135,6 +142,9 @@ class IsolatedAuthRuntime implements AuthRuntime {
 
   @override
   AuthState get state => _state;
+
+  @override
+  bool get isAuthenticated => _state == AuthState.authenticated;
 
   @override
   Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async {

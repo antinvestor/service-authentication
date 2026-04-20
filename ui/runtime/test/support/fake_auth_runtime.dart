@@ -46,6 +46,9 @@ class FakeAuthRuntime implements AuthRuntime {
   AuthState get state => _state;
 
   @override
+  bool get isAuthenticated => _state == AuthState.authenticated;
+
+  @override
   Stream<AuthState> get authStateStream => _stateCtl.stream;
 
   @override
@@ -115,6 +118,9 @@ class FakeAuthRuntime implements AuthRuntime {
 
   @override
   Future<Map<String, dynamic>> getClaims() async => _claims;
+
+  @override
+  Future<UserClaims> getUserClaims() async => UserClaims(_claims);
 
   @override
   Future<List<String>> getRoles() async => _roles;

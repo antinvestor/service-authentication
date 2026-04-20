@@ -3,6 +3,7 @@ import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart'
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 
 /// Public, isolate-agnostic contract consumed by Flutter apps.
 ///
@@ -50,6 +51,10 @@ abstract class AuthRuntime {
   /// session is active or no ID token was issued.
   Future<Map<String, dynamic>> getClaims();
 
+  /// Typed-getter wrapper around [getClaims]. Returns an empty
+  /// [UserClaims] when no session is active.
+  Future<UserClaims> getUserClaims();
+
   /// Roles extracted from the current access token. Returns `[]` when
   /// unauthenticated. Supports both top-level `roles` and
   /// `realm_access.roles` (Hydra / Keycloak compatibility).
@@ -70,6 +75,13 @@ abstract class AuthRuntime {
 
   /// Synchronous snapshot of [authStateStream]'s latest value.
   AuthState get state;
+
+  /// Synchronous convenience for `state == AuthState.authenticated`.
+  ///
+  /// Useful in background-task contexts (e.g. Android WorkManager callbacks)
+  /// where the caller wants to bail out early without spinning up the
+  /// runtime's async surface.
+  bool get isAuthenticated;
 
   /// Set of native credential providers advertised as currently available
   /// on this platform. Callers use this to decide whether to render a
@@ -98,4 +110,4 @@ abstract class AuthRuntime {
 /// Version of the runtime. Callers include this in telemetry / bug
 /// reports. Kept as a bare constant for now; wired through
 /// `--dart-define=AUTH_RUNTIME_VERSION=...` in a follow-up task.
-const String authRuntimeVersion = '0.2.0';
+const String authRuntimeVersion = '0.3.0';
