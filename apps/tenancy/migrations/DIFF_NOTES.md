@@ -65,10 +65,11 @@ This file exists only to convert a legacy `{"namespaces": [...]}` audience shape
 ## Operator checklist before cluster wipe
 
 1. **Stawi Jobs frontend**: redeploy with new client_ids (`d7is2kspf2t7cl19qlp0` prod, `d7is2kspf2t7cl19qlpg` dev). This MUST happen before cutover or jobs users can't sign in.
-2. **`/etc/keto-namespaces/namespaces.ts` ConfigMap**: regenerate by either (a) letting Flux's http resource re-fetch from `/_internal/opl`, or (b) `kubectl apply` from a fresh fetch. Namespaces `service_profile`, `service_tenancy`, `service_device`, `service_notification`, `service_file` must be registered BEFORE the authz sync runs.
-3. **`SYNCHRONISE_PRIMARY_PARTITIONS=True`** on the tenancy service — confirms Hydra clients are re-synced from the new seed after migration.
-4. **`synchronize-partitions` cron** — hourly, but trigger manually on cutover to write the Keto tuples for service-authentication + every other SA straight away.
-5. Smoke-test: one social login (avatar sync should fire), one FedCM flow, one service-to-service RPC (e.g. auth → profile).
+2. **Every platform service's migration job runs on cluster bring-up** — each service (profile, tenancy, device, notification, files, audit, chat, etc.) has `frame.WithPermissionRegistration` wired into its migration entrypoint, which POSTs its permission manifest to `http://service-tenancy.auth.svc/_internal/register/permissions`. The resulting rows in tenancy's `service_namespaces` table are the ONLY source of truth for the Keto OPL. Make sure `PERMISSIONS_REGISTRATION_URL` + `DO_MIGRATION=true` are set on every service's migration Job. If one service doesn't run its migration, its namespace won't exist, and that service's authz sync will fail downstream.
+3. **`keto-namespace-combined` ConfigMap is cluster-derived, not hand-authored.** The Flux kustomization at `manifests/namespaces/auth/authorization/` has `http://service-tenancy.auth.svc/_internal/opl?domain=platform&name=keto-namespace-combined&namespace=auth` as a `resources:` entry. Flux re-fetches on each reconciliation. Do NOT `kubectl apply` the ConfigMap manually — Flux will revert it on its next pass. To force a refresh after registrations land, run `flux reconcile kustomization auth-authorization --with-source` so kustomize pulls the freshly-generated OPL.
+4. **`SYNCHRONISE_PRIMARY_PARTITIONS=True`** on the tenancy service — confirms Hydra clients are re-synced from the new seed after migration.
+5. **`synchronize-partitions` cron** — hourly, but trigger manually on cutover to write the Keto tuples for service-authentication + every other SA straight away.
+6. Smoke-test: one social login (avatar sync should fire), one FedCM flow, one service-to-service RPC (e.g. auth → profile).
 
 ## Things that did NOT change
 
