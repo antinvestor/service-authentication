@@ -1,0 +1,38 @@
+-- Copyright 2023-2026 Ant Investor Ltd
+-- Service account: __SA_NAME__
+-- __DESCRIPTION__
+
+INSERT INTO clients (
+    id, tenant_id, partition_id, name, client_id, client_secret,
+    type, grant_types, scopes, audiences,
+    token_endpoint_auth_method, service_account_id, properties
+) VALUES (
+    '__CLIENT_XID__',
+    '__TENANT_XID__',
+    '__PARTITION_XID__',
+    'sa-__SA_NAME__',
+    '__CLIENT_ID_XID__',
+    '',
+    'internal',
+    '{"types": ["client_credentials"]}',
+    'system_int openid',
+    '__AUDIENCES_JSON__',
+    'private_key_jwt',
+    '__SERVICE_ACCOUNT_XID__',
+    '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO service_accounts (
+    id, tenant_id, partition_id, profile_id,
+    client_id, client_ref, type, audiences, properties
+) VALUES (
+    '__SERVICE_ACCOUNT_XID__',
+    '__TENANT_XID__',
+    '__PARTITION_XID__',
+    '__PROFILE_XID__',
+    '__CLIENT_ID_XID__',
+    '__CLIENT_XID__',
+    'internal',
+    '__AUDIENCES_JSON__',
+    '{}'
+) ON CONFLICT (id) DO NOTHING;
