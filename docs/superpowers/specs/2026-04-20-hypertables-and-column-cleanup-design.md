@@ -143,7 +143,7 @@ metadata:
   name: datastore
   namespace: datastore
 spec:
-  imageName: ghcr.io/cloudnative-pg/postgresql:16-bookworm
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-trixie   # latest stable major + latest base OS
   instances: 3
   postgresql:
     shared_preload_libraries:
@@ -153,7 +153,7 @@ spec:
     extensions:
       - name: timescaledb
         image:
-          reference: ghcr.io/cloudnative-pg/postgres-containerextensions/timescaledb:2.17-pg16
+          reference: ghcr.io/cloudnative-pg/timescaledb:latest-pg18   # latest-pg18 tag tracks the newest TimescaleDB on PG18
   bootstrap:
     initdb:
       postInitApplicationSQL:
@@ -174,6 +174,12 @@ spec:
         extensions: [{name: timescaledb, ensure: present}]
       # tenancy, files, notification, payment, fintech, commerce — no hypertables, extension not required
 ```
+
+### Version policy
+
+- `imageName` tracks CNPG's latest stable major OS/PG pair (`18-trixie` at design time). Renovate / image-automation bumps the tag when CNPG publishes a newer `-trixie` image for PG 18.
+- Extension image uses the `latest-pg18` tag so TimescaleDB itself is always on the newest stable release for the current PG major. On PG major upgrades, both tags bump together (`18-trixie` → `19-trixie`, `latest-pg18` → `latest-pg19`).
+- For reproducibility per-cluster, the live HelmRelease / Cluster resource can pin to a specific digest after resolution — but the manifest always names the latest tag so a fresh cluster boots on the newest supported versions.
 
 The per-database `managed.databases` entries trigger CNPG to run `CREATE EXTENSION timescaledb` on each database at creation. Databases without hypertables (tenancy, files, etc.) are not listed — they stay minimal.
 
