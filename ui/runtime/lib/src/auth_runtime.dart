@@ -3,6 +3,7 @@ import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart'
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 
 /// Public, isolate-agnostic contract consumed by Flutter apps.
 ///
@@ -49,6 +50,10 @@ abstract class AuthRuntime {
   /// Claims decoded from the current ID token. Returns `{}` when no
   /// session is active or no ID token was issued.
   Future<Map<String, dynamic>> getClaims();
+
+  /// Typed-getter wrapper around [getClaims]. Returns an empty
+  /// [UserClaims] when no session is active.
+  Future<UserClaims> getUserClaims();
 
   /// Roles extracted from the current access token. Returns `[]` when
   /// unauthenticated. Supports both top-level `roles` and

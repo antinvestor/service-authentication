@@ -293,6 +293,38 @@ void main() {
     await rt.dispose();
   });
 
+  test('getUserClaims wraps getClaims in a typed UserClaims', () async {
+    final id = _makeJwt({
+      'sub': 'u-42',
+      'email': 'alice@example.com',
+      'contact_id': 'contact-abc',
+      'tenant_id': 'tenant-xyz',
+      'partition_id': 'partition-42',
+    });
+    final h = _Harness(initialTokens: _tokens(id: id));
+    final rt = h.build();
+    await rt.ensureAuthenticated();
+
+    final claims = await rt.getUserClaims();
+    expect(claims.sub, 'u-42');
+    expect(claims.email, 'alice@example.com');
+    expect(claims.contactId, 'contact-abc');
+    expect(claims.tenantId, 'tenant-xyz');
+    expect(claims.partitionId, 'partition-42');
+    await rt.dispose();
+  });
+
+  test('getUserClaims returns empty UserClaims when unauthenticated',
+      () async {
+    final h = _Harness();
+    final rt = h.build();
+    await Future<void>.delayed(Duration.zero);
+    final claims = await rt.getUserClaims();
+    expect(claims.sub, isNull);
+    expect(claims.contactId, isNull);
+    await rt.dispose();
+  });
+
   test('logout clears local state and transitions to unauthenticated',
       () async {
     final h = _Harness(initialTokens: _tokens());

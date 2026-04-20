@@ -117,6 +117,9 @@ class FakeAuthRuntime implements AuthRuntime {
   Future<Map<String, dynamic>> getClaims() async => _claims;
 
   @override
+  Future<UserClaims> getUserClaims() async => UserClaims(_claims);
+
+  @override
   Future<List<String>> getRoles() async => _roles;
 
   @override

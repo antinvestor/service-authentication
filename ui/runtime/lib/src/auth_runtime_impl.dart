@@ -9,6 +9,7 @@ import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart'
 import 'package:antinvestor_auth_runtime/src/models/api_response.dart';
 import 'package:antinvestor_auth_runtime/src/models/auth_state.dart';
 import 'package:antinvestor_auth_runtime/src/models/security_event.dart';
+import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 import 'package:antinvestor_auth_runtime/src/oauth/oauth_flow.dart';
 import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
 
@@ -297,6 +298,13 @@ class AuthRuntimeImpl implements AuthRuntime {
       return const <String, dynamic>{};
     }
     return worker.getClaims();
+  }
+
+  @override
+  Future<UserClaims> getUserClaims() async {
+    _ensureAlive();
+    final raw = await getClaims();
+    return UserClaims(raw);
   }
 
   @override
