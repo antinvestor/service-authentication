@@ -286,7 +286,7 @@ Future<Uint8List> _drain(Stream<List<int>> stream, int length) async {
 
 List<int>? _normalizeBody(Object? body) {
   if (body == null) return null;
-  if (body is String) return body.codeUnits;
+  if (body is String) return utf8.encode(body);
   if (body is List<int>) return body;
   if (body is Uint8List) return body;
   throw AuthError(
