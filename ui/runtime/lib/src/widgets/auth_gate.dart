@@ -13,9 +13,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Defaults:
 /// - [loadingBuilder] → centered [CircularProgressIndicator]
-/// - [unauthenticatedBuilder] → centered [ElevatedButton] labelled "Sign
-///   in" that calls `authRuntimeProvider.read().ensureAuthenticated()`
-///   on tap. F-I.2 replaces this with the richer `SignInButton` widget.
+/// - [unauthenticatedBuilder] → centered [SignInButton], which handles
+///   the sign-in call and loading/error affordances. Apps can supply
+///   their own [unauthenticatedBuilder] (optionally wrapping
+///   [SignInButton]) for richer UX.
 /// - [errorBuilder] → centered error message + "Retry" button that
 ///   invalidates the state provider so the next frame re-subscribes.
 class AuthGate extends ConsumerWidget {
