@@ -9,15 +9,15 @@ VALUES ('9bsv0s0hijjg02z5lr4g','c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg',
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
-VALUES ('9bsv0s0hid5g02qkl7gjg','9bsv0s0hijjg02z5lr4g','9bsv0s0hid5g02qkl7gjg','c2f4j7au6s7f91uqnokg',
+VALUES ('d7j42dspf2tfev9jfh40','9bsv0s0hijjg02z5lr4g','d7j42dspf2tfev9jfh40','c2f4j7au6s7f91uqnokg',
         'Stawi AI Builder','Default stawi ai builder partition to serve the masses',true,
         '{"default_role":"user","allow_auto_access":true,"support_contacts":{"msisdn":"+256757546244","email":"info@stawi.im"}}')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
-  ('9bsv0s0hid5g02qkl7h0', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','9bsv0s0hid5g02qkl7gjg','owner',  false, '{"description":"Full control across all services"}'),
-  ('9bsv0s0hid5g02qkl7h1', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','9bsv0s0hid5g02qkl7gjg','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('9bsv0s0hid5g02qkl7h2', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','9bsv0s0hid5g02qkl7gjg','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('9bsv0s0hid5g02qkl7h0', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','d7j42dspf2tfev9jfh40','owner',  false, '{"description":"Full control across all services"}'),
+  ('d7j42dspf2tfev9jfh4g', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','d7j42dspf2tfev9jfh40','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfh50', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lr4g','d7j42dspf2tfev9jfh40','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Production public client
@@ -27,7 +27,7 @@ INSERT INTO clients (
     logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
 ) VALUES (
     'd6l82t4pf2t82gudn7ug',
-    '9bsv0s0hijjg02z5lr4g','9bsv0s0hid5g02qkl7gjg',
+    '9bsv0s0hijjg02z5lr4g','d7j42dspf2tfev9jfh40',
     'Stawi AI Builder',
     'd6qbqdkpf2t52mcunf50',
     'public',
@@ -55,8 +55,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
   ('9bsv0s0hijjb83qksr30', NOW(), NOW(), 1, '9bsv0s0hijjghdbz96dg','9bsv0s0hijjb83qksr20','owner',  false, '{"description":"Full control across all services"}'),
-  ('9bsv0s0hijjb83qksr31', NOW(), NOW(), 1, '9bsv0s0hijjghdbz96dg','9bsv0s0hijjb83qksr20','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('9bsv0s0hijjb83qksr32', NOW(), NOW(), 1, '9bsv0s0hijjghdbz96dg','9bsv0s0hijjb83qksr20','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('d7j42dspf2tfev9jfh5g', NOW(), NOW(), 1, '9bsv0s0hijjghdbz96dg','9bsv0s0hijjb83qksr20','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfh60', NOW(), NOW(), 1, '9bsv0s0hijjghdbz96dg','9bsv0s0hijjb83qksr20','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Development public client

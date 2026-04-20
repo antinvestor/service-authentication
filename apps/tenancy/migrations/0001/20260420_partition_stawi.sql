@@ -16,8 +16,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
   ('9bsv0s0hijjg02qk7l20', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','owner',  false, '{"description":"Full control across all services"}'),
-  ('9bsv0s0hijjg02qk7l21', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('9bsv0s0hijjg02qk7l22', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('d7j42dspf2tfev9jfh20', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfh2g', NOW(), NOW(), 1, '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Production public client
@@ -55,8 +55,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
   ('9bsv0s0hijjg02qks6j0', NOW(), NOW(), 1, '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','owner',  false, '{"description":"Full control across all services"}'),
-  ('9bsv0s0hijjg02qks6j1', NOW(), NOW(), 1, '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('9bsv0s0hijjg02qks6j2', NOW(), NOW(), 1, '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('d7j42dspf2tfev9jfh30', NOW(), NOW(), 1, '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfh3g', NOW(), NOW(), 1, '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Development public client
