@@ -57,7 +57,7 @@ class ApiProxy {
     Object? body,
     Duration? timeout,
   }) async {
-    final url = '${cfg.apiBaseUrl}$path';
+    final url = _resolveUrl(cfg.apiBaseUrl, path);
     final uri = Uri.parse(url);
     final effectiveTimeout = timeout ?? cfg.apiTimeout;
     final methodUpper = method.toUpperCase();
@@ -139,7 +139,7 @@ class ApiProxy {
     Map<String, String>? headers,
     Duration? timeout,
   }) async {
-    final url = '${cfg.apiBaseUrl}$path';
+    final url = _resolveUrl(cfg.apiBaseUrl, path);
     final uri = Uri.parse(url);
     final effectiveTimeout = timeout ?? cfg.uploadTimeout;
 
@@ -319,4 +319,17 @@ MediaType? _parseMediaType(String raw) {
   } catch (_) {
     return null;
   }
+}
+
+/// Resolves the target URL for an authenticated call.
+///
+/// When [path] is a fully-qualified `http://` or `https://` URL, it is
+/// used as-is. Otherwise [path] is concatenated onto [apiBaseUrl] as a
+/// relative suffix. This lets a single runtime (and its OAuth client /
+/// token audience) talk to multiple service domains.
+String _resolveUrl(String apiBaseUrl, String path) {
+  if (path.startsWith('https://') || path.startsWith('http://')) {
+    return path;
+  }
+  return '$apiBaseUrl$path';
 }
