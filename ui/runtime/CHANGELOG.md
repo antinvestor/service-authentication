@@ -3,6 +3,18 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.0 — 2026-04-20
+
+### Added
+- `AuthConfig.audiences` — optional resource audience hints passed to authorize + token-exchange. Addresses service-thesa's 9-element audiences array use case.
+- `AuthConfig.redirectUri` — explicit override of the OAuth redirect URI; takes precedence over `redirectScheme`. Supports desktop loopback flows (`http://localhost:5173/auth`).
+- `UserClaims.contactId`, `tenantId`, `partitionId` typed getters for Antinvestor-specific claims; plus `customClaims` escape hatch for bespoke per-app claims.
+- `AuthRuntime.getUserClaims()` — typed wrapper around `getClaims()`.
+- `AuthRuntime.isAuthenticated` — synchronous getter for background-task pre-check.
+
+### Changed
+- None. Purely additive; existing v0.2 callers are unaffected.
+
 ## 0.2.0 — 2026-04-20
 
 ### Added

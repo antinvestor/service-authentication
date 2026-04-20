@@ -376,7 +376,7 @@ void main() {
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);
-    expect(rt.version, '0.2.0');
+    expect(rt.version, '0.3.0');
     await rt.dispose();
   });
 
