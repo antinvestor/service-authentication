@@ -284,4 +284,132 @@ void main() {
       expect(captured is http.MultipartRequest, isTrue);
     });
   });
+
+  group('absolute URLs', () {
+    test('fetch with https:// URL hits it exactly and skips apiBaseUrl',
+        () async {
+      final cfg = _cfg();
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response('{"ok":true}', 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final proxy = ApiProxy(client: client);
+      await proxy.fetch(
+        cfg,
+        ctx,
+        _TestTokenProvider(),
+        path: 'https://other.example.com/api/foo',
+        method: 'GET',
+      );
+      expect(captured.url.toString(), 'https://other.example.com/api/foo');
+      // apiBaseUrl must not be prepended.
+      expect(captured.url.toString(), isNot(contains('api.example.com')));
+    });
+
+    test('fetch with http:// URL is used directly', () async {
+      final cfg = _cfg();
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response('{}', 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final proxy = ApiProxy(client: client);
+      await proxy.fetch(
+        cfg,
+        ctx,
+        _TestTokenProvider(),
+        path: 'http://localhost:8080/v1/x',
+        method: 'GET',
+      );
+      expect(captured.url.toString(), 'http://localhost:8080/v1/x');
+    });
+
+    test('fetch with relative path still hits apiBaseUrl + path', () async {
+      final cfg = _cfg();
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response('{}', 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final proxy = ApiProxy(client: client);
+      await proxy.fetch(
+        cfg,
+        ctx,
+        _TestTokenProvider(),
+        path: '/relative/path',
+        method: 'GET',
+      );
+      expect(captured.url.toString(), 'https://api.example.com/relative/path');
+    });
+
+    test('upload with https:// URL hits the absolute URL', () async {
+      final cfg = _cfg();
+      late http.BaseRequest captured;
+      final client = MockClient.streaming((req, body) async {
+        captured = req;
+        return http.StreamedResponse(
+          Stream.value(utf8.encode('{}')),
+          200,
+        );
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final proxy = ApiProxy(client: client);
+      await proxy.upload(
+        cfg,
+        ctx,
+        _TestTokenProvider(),
+        path: 'https://upload.example.com/files',
+        fieldName: 'file',
+        filename: 'a.bin',
+        contentType: 'application/octet-stream',
+        bytes: Stream.value(const [0x01, 0x02, 0x03]),
+        length: 3,
+      );
+      expect(captured.url.toString(), 'https://upload.example.com/files');
+      expect(captured.url.toString(), isNot(contains('api.example.com')));
+    });
+
+    test('DPoP proof htu matches the absolute URL actually used', () async {
+      final cfg = _cfg();
+      late http.Request captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response('{}', 200);
+      });
+      final kp = generateDpopKeyPair();
+      final ctx = makeDpopContext(kp);
+      final proxy = ApiProxy(client: client);
+      await proxy.fetch(
+        cfg,
+        ctx,
+        _TestTokenProvider(type: TokenType.dpop),
+        path: 'https://other.example.com/api/foo',
+        method: 'POST',
+        body: '{}',
+      );
+      final proof = captured.headers['dpop'];
+      expect(proof, isNotNull);
+      final parts = proof!.split('.');
+      expect(parts.length, 3);
+      final payloadJson = utf8.decode(
+        base64Url.decode(_padBase64Url(parts[1])),
+      );
+      final payload = jsonDecode(payloadJson) as Map<String, dynamic>;
+      expect(payload['htu'], 'https://other.example.com/api/foo');
+      expect(payload['htm'], 'POST');
+    });
+  });
+}
+
+String _padBase64Url(String s) {
+  final pad = (4 - s.length % 4) % 4;
+  return s + ('=' * pad);
 }

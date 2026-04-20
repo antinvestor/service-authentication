@@ -3,6 +3,11 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.1 — 2026-04-20
+
+### Added
+- `runtime.fetch` / `runtime.upload` accept fully-qualified `https://...` URLs; when the path starts with `http://` or `https://`, the runtime uses it directly and skips `apiBaseUrl` prepending. Unblocks consumers that talk to multiple service domains with a single OAuth client.
+
 ## 0.3.0 — 2026-04-20
 
 ### Added

@@ -254,6 +254,16 @@ Supported methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`.
 use `runtime.upload(path, fieldName:, filename:, contentType:, bytes:,
 length:)` — multipart form-data with automatic retry on 401.
 
+### Multi-domain usage
+
+`runtime.fetch(path)` concatenates `AuthConfig.apiBaseUrl + path` by default. Pass an absolute URL to bypass:
+
+```dart
+await runtime.fetch('https://files.example.com/v1/upload', method: 'POST', body: bytes);
+```
+
+Useful when an app talks to multiple service domains but shares a single OAuth client / token audience.
+
 ## Audiences (thesa pattern)
 
 Apps that front several downstream services need their access tokens to
