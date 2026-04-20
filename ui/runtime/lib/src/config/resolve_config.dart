@@ -29,6 +29,7 @@ class ResolvedConfig {
     required this.apiBaseUrl,
     required this.redirectScheme,
     required this.scopes,
+    required this.audiences,
     required this.installationId,
     required this.discoveryTimeout,
     required this.tokenTimeout,
@@ -41,6 +42,12 @@ class ResolvedConfig {
   final String apiBaseUrl;
   final String redirectScheme;
   final List<String> scopes;
+
+  /// Resource audience hints forwarded to the IdP's authorize and
+  /// token-exchange endpoints as a comma-joined `audience` parameter.
+  /// Defaults to an empty list when the caller omits [AuthConfig.audiences].
+  final List<String> audiences;
+
   final String? installationId;
   final Duration discoveryTimeout;
   final Duration tokenTimeout;
@@ -77,6 +84,7 @@ ResolvedConfig resolveConfig(AuthConfig cfg) {
     apiBaseUrl: _stripTrailingSlash(cfg.apiBaseUrl),
     redirectScheme: cfg.redirectScheme,
     scopes: List<String>.unmodifiable(cfg.scopes ?? defaultScopes),
+    audiences: List<String>.unmodifiable(cfg.audiences ?? const <String>[]),
     installationId: cfg.installationId,
     discoveryTimeout: cfg.discoveryTimeout ?? _defaultDiscoveryTimeout,
     tokenTimeout: cfg.tokenTimeout ?? _defaultTokenTimeout,

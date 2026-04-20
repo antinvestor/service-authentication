@@ -319,6 +319,36 @@ void main() {
     expect(uri.queryParameters['nonce'], req.nonce);
     expect(uri.queryParameters['client_id'], 'c');
     expect(uri.queryParameters['redirect_uri'], 'com.example.app://callback');
+    // No audiences configured → no audience param is appended.
+    expect(uri.queryParameters.containsKey('audience'), isFalse);
+    await w.destroy();
+  });
+
+  test(
+      'prepareAuth appends audience=a,b,c when audiences configured', () async {
+    final config = resolveConfig(const AuthConfig(
+      clientId: 'c',
+      idpBaseUrl: 'https://idp.example.com',
+      apiBaseUrl: 'https://api.example.com',
+      redirectScheme: 'com.example.app',
+      audiences: ['svc-a', 'svc-b', 'svc-c'],
+    ));
+    final w = TokenWorker(
+      config: config,
+      keyManager: DefaultKeyManager(),
+      rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
+      tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
+      discoveryClient: _FakeDiscoveryClient(),
+      tokenExchange: _FakeTokenExchange(),
+      apiProxy: _FakeApiProxy(),
+      refreshLock: RefreshLock(),
+      clock: _fixedNow,
+    );
+    await w.init();
+    final req = await w.prepareAuth();
+    expect(req.url, contains('audience=svc-a%2Csvc-b%2Csvc-c'));
+    final uri = Uri.parse(req.url);
+    expect(uri.queryParameters['audience'], 'svc-a,svc-b,svc-c');
     await w.destroy();
   });
 

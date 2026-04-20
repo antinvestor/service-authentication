@@ -61,6 +61,7 @@ class TokenExchange {
       'code': code,
       'redirect_uri': cfg.redirectUri,
       'code_verifier': verifier,
+      if (cfg.audiences.isNotEmpty) 'audience': cfg.audiences.join(','),
     };
     final res = await _postForm(cfg, ctx, form);
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -92,6 +93,7 @@ class TokenExchange {
       'subject_token': subjectToken,
       'subject_token_type': 'urn:ietf:params:oauth:token-type:id_token',
       'subject_issuer': subjectIssuer,
+      if (cfg.audiences.isNotEmpty) 'audience': cfg.audiences.join(','),
     };
     final res = await _postForm(cfg, ctx, form);
     if (res.statusCode < 200 || res.statusCode >= 300) {

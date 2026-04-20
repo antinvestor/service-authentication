@@ -120,4 +120,38 @@ void main() {
     expect(a, equals(b));
     expect(a.hashCode, b.hashCode);
   });
+
+  group('audiences', () {
+    test('defaults to empty list when omitted', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+      ));
+      expect(cfg.audiences, isEmpty);
+    });
+
+    test('carries through when caller supplies them', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+        audiences: ['svc-a', 'svc-b', 'svc-c'],
+      ));
+      expect(cfg.audiences, ['svc-a', 'svc-b', 'svc-c']);
+    });
+
+    test('resolved audiences list is immutable', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'x',
+        audiences: ['svc-a'],
+      ));
+      expect(() => cfg.audiences.add('mutated'), throwsUnsupportedError);
+    });
+  });
 }
