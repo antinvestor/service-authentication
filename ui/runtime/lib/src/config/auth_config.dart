@@ -13,6 +13,7 @@ class AuthConfig extends Equatable {
     required this.redirectScheme,
     this.scopes,
     this.audiences,
+    this.redirectUri,
     this.installationId,
     this.discoveryTimeout,
     this.tokenTimeout,
@@ -31,6 +32,11 @@ class AuthConfig extends Equatable {
   /// its docs. Omit when null (default).
   final List<String>? audiences;
 
+  /// Explicit redirect URI; takes precedence over [redirectScheme] when
+  /// set. Use for desktop loopback (`http://localhost:5173/auth`) or when
+  /// a specific URI is required by the IdP.
+  final String? redirectUri;
+
   final String? installationId;
   final Duration? discoveryTimeout;
   final Duration? tokenTimeout;
@@ -45,6 +51,7 @@ class AuthConfig extends Equatable {
         redirectScheme,
         scopes,
         audiences,
+        redirectUri,
         installationId,
         discoveryTimeout,
         tokenTimeout,

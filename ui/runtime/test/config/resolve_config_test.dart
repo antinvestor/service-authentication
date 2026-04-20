@@ -121,6 +121,57 @@ void main() {
     expect(a.hashCode, b.hashCode);
   });
 
+  group('redirectUri', () {
+    test(
+        'defaults to {scheme}://callback when only redirectScheme is provided',
+        () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'com.example.app',
+      ));
+      expect(cfg.redirectUri, 'com.example.app://callback');
+    });
+
+    test('explicit redirectUri takes precedence over redirectScheme', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: 'com.example.app',
+        redirectUri: 'http://localhost:5173/auth',
+      ));
+      expect(cfg.redirectUri, 'http://localhost:5173/auth');
+    });
+
+    test('explicit redirectUri works when redirectScheme is empty', () {
+      final cfg = resolveConfig(const AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://i',
+        apiBaseUrl: 'https://a',
+        redirectScheme: '',
+        redirectUri: 'http://localhost:5173/auth',
+      ));
+      expect(cfg.redirectUri, 'http://localhost:5173/auth');
+    });
+
+    test(
+        'throws invalidConfig when neither redirectUri nor redirectScheme '
+        'is supplied', () {
+      expect(
+        () => resolveConfig(const AuthConfig(
+          clientId: 'c',
+          idpBaseUrl: 'https://i',
+          apiBaseUrl: 'https://a',
+          redirectScheme: '',
+        )),
+        throwsA(isA<AuthError>()
+            .having((e) => e.code, 'code', AuthErrorCode.invalidConfig)),
+      );
+    });
+  });
+
   group('audiences', () {
     test('defaults to empty list when omitted', () {
       final cfg = resolveConfig(const AuthConfig(
