@@ -86,6 +86,10 @@ configuration.
 | c2f4j7au6s7f91uqnq7g | service-operations | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_service_operations.sql |
 | c2f4j7au6s7f91uqnq9g | service-seed | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_service_seed.sql |
 | c2f4j7au6s7f91uqnqbg | service-stawi | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_service_stawi.sql |
+| c2f4j7au6s7f91uqnqhg | stawi-jobs-api | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_api.sql |
+| c2f4j7au6s7f91uqnqfg | stawi-jobs-crawler | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_crawler.sql |
+| c2f4j7au6s7f91uqnqjg | stawi-jobs-scheduler | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_scheduler.sql |
+| c2f4j7au6s7f91uqnqdg | stawi-jobs-candidates | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_candidates.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -116,6 +120,10 @@ configuration.
 | c2f4j7au6s7f91uqnq8g | d75qclkpf2t1uum8ijg0 | c2f4j7au6s7f91uqnq7g | apps/tenancy/migrations/0001/20260420_service_service_operations.sql |
 | c2f4j7au6s7f91uqnqag | d75qclkpf2t1uum8ijgg | c2f4j7au6s7f91uqnq9g | apps/tenancy/migrations/0001/20260420_service_service_seed.sql |
 | c2f4j7au6s7f91uqnqcg | d75qclkpf2t1uum8ijh0 | c2f4j7au6s7f91uqnqbg | apps/tenancy/migrations/0001/20260420_service_service_stawi.sql |
+| c2f4j7au6s7f91uqnqig | d75qclkpf2t1uum8ijig | c2f4j7au6s7f91uqnqhg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_api.sql |
+| c2f4j7au6s7f91uqnqgg | d75qclkpf2t1uum8iji0 | c2f4j7au6s7f91uqnqfg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_crawler.sql |
+| c2f4j7au6s7f91uqnqkg | d75qclkpf2t1uum8ijj0 | c2f4j7au6s7f91uqnqjg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_scheduler.sql |
+| c2f4j7au6s7f91uqnqeg | d75qclkpf2t1uum8ijhg | c2f4j7au6s7f91uqnqdg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_candidates.sql |
 
 ## Partition roles
 | xid | role | partition | file |
