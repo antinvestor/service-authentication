@@ -23,9 +23,11 @@ import (
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common/permissions"
+	"github.com/antinvestor/common/timescale"
 	aconfig "github.com/antinvestor/service-authentication/apps/audit/config"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
@@ -57,6 +59,12 @@ func main() {
 	// Handle database migration if requested
 	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {
 		return
+	}
+
+	// Register hypertables (no-op WARN if timescaledb extension is absent).
+	auditDBPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	if tsErr := timescale.Ensure(ctx, auditDBPool.DB(ctx, false), models.Hypertables); tsErr != nil {
+		util.Log(ctx).WithError(tsErr).Warn("timescale hypertable setup skipped — will retry after cluster migration")
 	}
 
 	// Load or generate the Ed25519 signing key

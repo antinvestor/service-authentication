@@ -21,7 +21,7 @@ require (
 	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.19.1-20260416193615-c7ebb768c716.2
 	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260416193615-c7ebb768c716.1
 	connectrpc.com/connect v1.19.1
-	github.com/antinvestor/common v1.4.4
+	github.com/antinvestor/common v1.4.5-0.20260420095807-503acb7eca75
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1

@@ -29,10 +29,12 @@ import (
 	"github.com/antinvestor/common"
 	"github.com/antinvestor/common/connection"
 	"github.com/antinvestor/common/permissions"
+	"github.com/antinvestor/common/timescale"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
+	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"
@@ -82,6 +84,11 @@ func main() {
 	// Handle database migration if requested
 	if handleDatabaseMigration(ctx, dbManager, cfg) {
 		return
+	}
+
+	// Register hypertables (no-op WARN if timescaledb extension is absent).
+	if tsErr := timescale.Ensure(ctx, dbPool.DB(ctx, false), models.Hypertables); tsErr != nil {
+		log.WithError(tsErr).Warn("timescale hypertable setup skipped — will retry after cluster migration")
 	}
 
 	partitionCli, err := setupPartitionClient(ctx, cfg)
