@@ -15,8 +15,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
   ('c2f4j7au6s7f91uqnol0', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg','owner',  false, '{"description":"Full control across all services"}'),
-  ('c2f4j7au6s7f91uqnol1', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('c2f4j7au6s7f91uqnol2', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('d7j42dspf2tfev9jfgt0', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfgtg', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Thesa Studio — the root-partition public client (internal admin/ops UI).
@@ -49,8 +49,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
   ('d7b4qekpf2tshigkrv70', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','d7b4qekpf2tshigkrv60','owner',  false, '{"description":"Full control across all services"}'),
-  ('d7b4qekpf2tshigkrv71', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','d7b4qekpf2tshigkrv60','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
-  ('d7b4qekpf2tshigkrv72', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','d7b4qekpf2tshigkrv60','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
+  ('d7j42dspf2tfev9jfgu0', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','d7b4qekpf2tshigkrv60','admin',  false, '{"description":"Manage partitions, access, roles, and pages"}'),
+  ('d7j42dspf2tfev9jfgug', NOW(), NOW(), 1, 'c2f4j7au6s7f91uqnojg','d7b4qekpf2tshigkrv60','member', true,  '{"description":"Read-only access, auto-assigned on access creation"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- OpenObserve — Sysops public client.
