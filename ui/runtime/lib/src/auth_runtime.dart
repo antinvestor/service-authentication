@@ -76,6 +76,13 @@ abstract class AuthRuntime {
   /// Synchronous snapshot of [authStateStream]'s latest value.
   AuthState get state;
 
+  /// Synchronous convenience for `state == AuthState.authenticated`.
+  ///
+  /// Useful in background-task contexts (e.g. Android WorkManager callbacks)
+  /// where the caller wants to bail out early without spinning up the
+  /// runtime's async surface.
+  bool get isAuthenticated;
+
   /// Set of native credential providers advertised as currently available
   /// on this platform. Callers use this to decide whether to render a
   /// "Continue with Apple/Google" button; the runtime additionally

@@ -201,6 +201,9 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
   AuthState get state => AuthState.initializing;
 
   @override
+  bool get isAuthenticated => state == AuthState.authenticated;
+
+  @override
   Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async =>
       (await _ready).availableNativeProviders();
 

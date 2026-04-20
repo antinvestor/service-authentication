@@ -347,6 +347,32 @@ void main() {
     expect(() => rt.ensureAuthenticated(), throwsStateError);
   });
 
+  group('isAuthenticated (synchronous)', () {
+    test('returns false initially and true once authenticated', () async {
+      final h = _Harness(initialTokens: _tokens());
+      final rt = h.build();
+      // Construction kicks off init(); before that completes state is
+      // initializing or unauthenticated — never authenticated.
+      expect(rt.isAuthenticated, isFalse);
+
+      await rt.ensureAuthenticated();
+      expect(rt.state, AuthState.authenticated);
+      expect(rt.isAuthenticated, isTrue);
+      await rt.dispose();
+    });
+
+    test('returns false after logout', () async {
+      final h = _Harness(initialTokens: _tokens());
+      final rt = h.build();
+      await rt.ensureAuthenticated();
+      expect(rt.isAuthenticated, isTrue);
+
+      await rt.logout();
+      expect(rt.isAuthenticated, isFalse);
+      await rt.dispose();
+    });
+  });
+
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);

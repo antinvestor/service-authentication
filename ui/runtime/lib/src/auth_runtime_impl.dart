@@ -366,6 +366,9 @@ class AuthRuntimeImpl implements AuthRuntime {
   AuthState get state => worker.state;
 
   @override
+  bool get isAuthenticated => worker.state == AuthState.authenticated;
+
+  @override
   Future<void> prefetchDiscovery() async {
     _ensureAlive();
     // Piggyback on the worker's discovery client — result is cached at

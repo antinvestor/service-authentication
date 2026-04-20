@@ -144,6 +144,9 @@ class IsolatedAuthRuntime implements AuthRuntime {
   AuthState get state => _state;
 
   @override
+  bool get isAuthenticated => _state == AuthState.authenticated;
+
+  @override
   Future<Set<NativeCredentialProviderKind>> availableNativeProviders() async {
     _ensureAlive();
     // Native credential providers run main-isolate-only in v0.2; isolate

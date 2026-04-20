@@ -46,6 +46,9 @@ class FakeAuthRuntime implements AuthRuntime {
   AuthState get state => _state;
 
   @override
+  bool get isAuthenticated => _state == AuthState.authenticated;
+
+  @override
   Stream<AuthState> get authStateStream => _stateCtl.stream;
 
   @override
