@@ -36,3 +36,4 @@ WORK_STATE.md
 **/.dart_tool/
 **/build/
 pubspec.lock
+.claude/
