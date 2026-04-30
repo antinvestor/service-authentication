@@ -21,7 +21,7 @@ require (
 	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.19.2-20260416193615-c7ebb768c716.1
 	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260416193615-c7ebb768c716.1
 	connectrpc.com/connect v1.19.2
-	github.com/antinvestor/common v1.4.5-0.20260420095807-503acb7eca75
+	github.com/antinvestor/common v1.4.5
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -158,7 +158,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/api v0.276.0 // indirect
+	google.golang.org/api v0.277.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260427160629-7cedc36a6bc4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
