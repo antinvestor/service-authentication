@@ -14,7 +14,7 @@ import 'package:antinvestor_auth_runtime/src/worker/messages.dart';
 ///
 /// v0.1 ships the isolate path disabled by default (`useIsolate: false`
 /// on `createAuthRuntime`). Passing real dependencies — HTTP clients,
-/// [FlutterAppAuth], a [KeyManager] — through an isolate boundary is
+/// the OAuth browser leg, a [KeyManager] — through an isolate boundary is
 /// intentionally non-trivial: most are non-transferable (closures, plugin
 /// channels). The v0.1 scaffolding exercises only the message plumbing
 /// and lifecycle; end-to-end OAuth + refresh through the isolate is

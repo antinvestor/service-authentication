@@ -19,9 +19,11 @@ flutter pub add antinvestor_auth_runtime
 
 ## Platform setup
 
-The runtime drives the system browser for OAuth (via `flutter_appauth`)
-and then receives the callback on a custom scheme. Each platform needs a
+The runtime drives the system browser for OAuth (via `flutter_web_auth_2`)
+and receives the callback on a custom scheme. Each platform needs a
 one-time declaration of that scheme.
+
+Supported platforms: **iOS, Android, macOS, Web, Windows, Linux**.
 
 Assume your app's redirect scheme is `com.antinvestor.myapp`; the runtime
 will derive `com.antinvestor.myapp://callback` as the full redirect URI.
@@ -48,10 +50,9 @@ Inside `<application>`:
 
 ```xml
 <activity
-    android:name="net.openid.appauth.RedirectUriReceiverActivity"
-    android:exported="true"
-    tools:node="replace">
-  <intent-filter>
+    android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
+    android:exported="true">
+  <intent-filter android:label="flutter_web_auth_2">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
@@ -60,11 +61,26 @@ Inside `<application>`:
 </activity>
 ```
 
-### macOS / Windows / Linux
+### macOS
 
-No per-platform manifest entries are required: `flutter_appauth` uses the
-system browser directly and receives the callback over an embedded
-listener. The scheme only has to match `AuthConfig.redirectScheme`.
+Same as iOS — declare `CFBundleURLSchemes` in `macos/Runner/Info.plist`.
+
+### Web
+
+Set `redirectUri: 'https://yourapp.com/auth.html'` in `AuthConfig` and
+host an `auth.html` page at that path. See the
+[`flutter_web_auth_2` web setup](https://pub.dev/packages/flutter_web_auth_2#web)
+for the page contents (it forwards the callback URL via `postMessage`).
+
+The IdP login page handles federated identity (Google, Apple, etc.) and
+may use the browser's FedCM API where supported — the runtime is
+FedCM-transparent, no client-side wiring required.
+
+### Windows / Linux
+
+`flutter_web_auth_2` uses an embedded `desktop_webview_window` by
+default. For the loopback variant, pass `redirectUri:
+'http://localhost:{port}/auth'` in `AuthConfig`.
 
 ## Native sign-in (Apple + Google)
 
@@ -97,7 +113,7 @@ On every `ensureAuthenticated()`:
    exchanged via token-exchange.
 3. **OAuth2 fallback**: if every native provider returns `Cancelled`,
    `NoSession`, `Unavailable`, or `ErrorOutcome`, the runtime opens
-   the system browser via `flutter_appauth` exactly as in v0.1.
+   the system browser via `flutter_web_auth_2` exactly as in v0.1.
 
 ### Consumer setup
 

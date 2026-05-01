@@ -84,14 +84,12 @@ class _FakeOAuthFlow implements OAuthFlow {
   int calls = 0;
 
   @override
-  Future<OAuthResult> authorize(ResolvedConfig cfg) async {
+  Future<OAuthResult> authorize(
+    ResolvedConfig cfg,
+    AuthorizeRequest prepared,
+  ) async {
     calls++;
-    return const OAuthResult(
-      code: 'fake-code',
-      verifier: 'fake-verifier',
-      state: null,
-      nonce: null,
-    );
+    return OAuthResult(code: 'fake-code', state: prepared.state);
   }
 }
 

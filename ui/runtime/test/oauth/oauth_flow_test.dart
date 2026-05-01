@@ -2,14 +2,10 @@ import 'package:antinvestor_auth_runtime/src/config/auth_config.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
 import 'package:antinvestor_auth_runtime/src/errors/auth_error.dart';
 import 'package:antinvestor_auth_runtime/src/oauth/oauth_flow.dart';
-import 'package:antinvestor_auth_runtime/src/protocol/discovery.dart';
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-
-class _MockAppAuth extends Mock implements FlutterAppAuth {}
-
-class _FakeAuthorizationRequest extends Fake implements AuthorizationRequest {}
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 ResolvedConfig _cfg({String? redirectUri}) => resolveConfig(AuthConfig(
       clientId: 'c',
@@ -19,74 +15,74 @@ ResolvedConfig _cfg({String? redirectUri}) => resolveConfig(AuthConfig(
       redirectUri: redirectUri,
     ));
 
-Future<OidcDiscovery> _fakeDiscovery(ResolvedConfig cfg) async =>
-    const OidcDiscovery(
-      issuer: 'https://idp.example.com',
-      authorizationEndpoint: 'https://idp.example.com/oauth2/auth',
-      tokenEndpoint: 'https://idp.example.com/oauth2/token',
-      endSessionEndpoint: 'https://idp.example.com/oauth2/sessions/logout',
-    );
+AuthorizeRequest _prepared({
+  String url = 'https://idp.example.com/oauth2/auth?response_type=code',
+  String verifier = 'V',
+  String state = 'STATE-123',
+  String nonce = 'NONCE-123',
+}) =>
+    AuthorizeRequest(url: url, verifier: verifier, state: state, nonce: nonce);
+
+class _Recorder {
+  String? seenUrl;
+  String? seenScheme;
+  FlutterWebAuth2Options? seenOptions;
+  String? returnCallback;
+  Object? throwError;
+
+  Future<String> call({
+    required String url,
+    required String callbackUrlScheme,
+    FlutterWebAuth2Options options = const FlutterWebAuth2Options(),
+  }) async {
+    seenUrl = url;
+    seenScheme = callbackUrlScheme;
+    seenOptions = options;
+    final err = throwError;
+    if (err != null) throw err;
+    return returnCallback!;
+  }
+}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_FakeAuthorizationRequest());
-  });
+  test('opens prepared.url and parses code + state from callback', () async {
+    final rec = _Recorder()
+      ..returnCallback =
+          'com.example.app://callback?code=CODE-1&state=STATE-123';
+    final flow = OAuthFlow(webAuth: rec.call);
 
-  test('successful authorize returns code + verifier', () async {
-    final appAuth = _MockAppAuth();
-    when(() => appAuth.authorize(any())).thenAnswer((_) async =>
-        const AuthorizationResponse(
-          authorizationCode: 'CODE-1',
-          codeVerifier: 'VERIF-1',
-          nonce: 'N-1',
-        ));
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
+    final result = await flow.authorize(_cfg(), _prepared());
 
-    final result = await flow.authorize(_cfg());
     expect(result.code, 'CODE-1');
-    expect(result.verifier, 'VERIF-1');
-    expect(result.nonce, 'N-1');
+    expect(result.state, 'STATE-123');
+    expect(rec.seenUrl,
+        'https://idp.example.com/oauth2/auth?response_type=code');
+    expect(rec.seenScheme, 'com.example.app');
   });
 
-  test('AuthorizationRequest is built from ResolvedConfig + discovery',
-      () async {
-    final appAuth = _MockAppAuth();
-    AuthorizationRequest? seen;
-    when(() => appAuth.authorize(any())).thenAnswer((inv) async {
-      seen = inv.positionalArguments.first as AuthorizationRequest;
-      return const AuthorizationResponse(
-        authorizationCode: 'c',
-        codeVerifier: 'v',
-      );
-    });
+  test('https redirectUri sets httpsHost + httpsPath', () async {
+    final rec = _Recorder()
+      ..returnCallback =
+          'https://app.example.com/auth?code=C&state=STATE-123';
+    final flow = OAuthFlow(webAuth: rec.call);
 
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
-    await flow.authorize(_cfg());
-
-    expect(seen, isNotNull);
-    expect(seen!.clientId, 'c');
-    expect(seen!.redirectUrl, 'com.example.app://callback');
-    expect(seen!.scopes, contains('openid'));
-    expect(seen!.serviceConfiguration?.authorizationEndpoint,
-        'https://idp.example.com/oauth2/auth');
-    expect(seen!.serviceConfiguration?.tokenEndpoint,
-        'https://idp.example.com/oauth2/token');
-  });
-
-  test('FlutterAppAuthUserCancelledException maps to oauthUserCanceled',
-      () async {
-    final appAuth = _MockAppAuth();
-    when(() => appAuth.authorize(any())).thenThrow(
-      FlutterAppAuthUserCancelledException(
-        code: 'cancelled',
-        platformErrorDetails:
-            FlutterAppAuthPlatformErrorDetails(error: 'user_cancelled'),
-      ),
+    await flow.authorize(
+      _cfg(redirectUri: 'https://app.example.com/auth'),
+      _prepared(),
     );
 
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
+    expect(rec.seenScheme, 'https');
+    expect(rec.seenOptions?.httpsHost, 'app.example.com');
+    expect(rec.seenOptions?.httpsPath, '/auth');
+  });
+
+  test('PlatformException CANCELED maps to oauthUserCanceled', () async {
+    final rec = _Recorder()
+      ..throwError = PlatformException(code: 'CANCELED');
+    final flow = OAuthFlow(webAuth: rec.call);
+
     await expectLater(
-      flow.authorize(_cfg()),
+      flow.authorize(_cfg(), _prepared()),
       throwsA(isA<AuthError>().having(
         (e) => e.code,
         'code',
@@ -95,15 +91,13 @@ void main() {
     );
   });
 
-  test('other exceptions map to oauthFailed', () async {
-    final appAuth = _MockAppAuth();
-    when(() => appAuth.authorize(any())).thenThrow(
-      Exception('boom'),
-    );
+  test('PlatformException with non-cancel code maps to oauthFailed', () async {
+    final rec = _Recorder()
+      ..throwError = PlatformException(code: 'IO_ERROR');
+    final flow = OAuthFlow(webAuth: rec.call);
 
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
     await expectLater(
-      flow.authorize(_cfg()),
+      flow.authorize(_cfg(), _prepared()),
       throwsA(isA<AuthError>().having(
         (e) => e.code,
         'code',
@@ -112,40 +106,108 @@ void main() {
     );
   });
 
-  test(
-      'explicit redirectUri override is forwarded verbatim to flutter_appauth',
-      () async {
-    final appAuth = _MockAppAuth();
-    AuthorizationRequest? seen;
-    when(() => appAuth.authorize(any())).thenAnswer((inv) async {
-      seen = inv.positionalArguments.first as AuthorizationRequest;
-      return const AuthorizationResponse(
-        authorizationCode: 'c',
-        codeVerifier: 'v',
-      );
-    });
+  test('non-platform exception maps to oauthFailed', () async {
+    final rec = _Recorder()..throwError = Exception('boom');
+    final flow = OAuthFlow(webAuth: rec.call);
 
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
-    await flow.authorize(_cfg(redirectUri: 'http://localhost:5173/auth'));
-
-    expect(seen, isNotNull);
-    // Explicit redirect URI wins over the convention-driven
-    // `{scheme}://callback` fallback.
-    expect(seen!.redirectUrl, 'http://localhost:5173/auth');
-  });
-
-  test('missing code/verifier raises oauthFailed', () async {
-    final appAuth = _MockAppAuth();
-    when(() => appAuth.authorize(any())).thenAnswer((_) async =>
-        const AuthorizationResponse(authorizationCode: null, codeVerifier: 'v'));
-
-    final flow = OAuthFlow(appAuth: appAuth, discoveryFn: _fakeDiscovery);
     await expectLater(
-      flow.authorize(_cfg()),
+      flow.authorize(_cfg(), _prepared()),
       throwsA(isA<AuthError>().having(
         (e) => e.code,
         'code',
         AuthErrorCode.oauthFailed,
+      )),
+    );
+  });
+
+  test('callback with error=access_denied → oauthUserCanceled', () async {
+    final rec = _Recorder()
+      ..returnCallback = 'com.example.app://callback?error=access_denied'
+          '&error_description=user%20said%20no';
+    final flow = OAuthFlow(webAuth: rec.call);
+
+    await expectLater(
+      flow.authorize(_cfg(), _prepared()),
+      throwsA(isA<AuthError>().having(
+        (e) => e.code,
+        'code',
+        AuthErrorCode.oauthUserCanceled,
+      )),
+    );
+  });
+
+  test('callback with generic error → oauthFailed', () async {
+    final rec = _Recorder()
+      ..returnCallback =
+          'com.example.app://callback?error=server_error&error_description=boom';
+    final flow = OAuthFlow(webAuth: rec.call);
+
+    await expectLater(
+      flow.authorize(_cfg(), _prepared()),
+      throwsA(isA<AuthError>().having(
+        (e) => e.code,
+        'code',
+        AuthErrorCode.oauthFailed,
+      )),
+    );
+  });
+
+  test('callback missing code → oauthFailed', () async {
+    final rec = _Recorder()
+      ..returnCallback = 'com.example.app://callback?state=STATE-123';
+    final flow = OAuthFlow(webAuth: rec.call);
+
+    await expectLater(
+      flow.authorize(_cfg(), _prepared()),
+      throwsA(isA<AuthError>().having(
+        (e) => e.code,
+        'code',
+        AuthErrorCode.oauthFailed,
+      )),
+    );
+  });
+
+  test('callback missing state → oauthFailed', () async {
+    final rec = _Recorder()
+      ..returnCallback = 'com.example.app://callback?code=C';
+    final flow = OAuthFlow(webAuth: rec.call);
+
+    await expectLater(
+      flow.authorize(_cfg(), _prepared()),
+      throwsA(isA<AuthError>().having(
+        (e) => e.code,
+        'code',
+        AuthErrorCode.oauthFailed,
+      )),
+    );
+  });
+
+  test('redirectUri without a scheme raises invalidConfig', () async {
+    // Bypass resolveConfig validation (which requires a scheme) by
+    // constructing ResolvedConfig directly with a malformed redirect.
+    const cfg = ResolvedConfig(
+      clientId: 'c',
+      idpBaseUrl: 'https://idp.example.com',
+      apiBaseUrl: 'https://api.example.com',
+      redirectScheme: '',
+      redirectUri: '/no-scheme',
+      scopes: ['openid'],
+      audiences: [],
+      installationId: null,
+      discoveryTimeout: Duration(seconds: 10),
+      tokenTimeout: Duration(seconds: 10),
+      apiTimeout: Duration(seconds: 30),
+      uploadTimeout: Duration(seconds: 60),
+    );
+    final rec = _Recorder()..returnCallback = '';
+    final flow = OAuthFlow(webAuth: rec.call);
+
+    await expectLater(
+      flow.authorize(cfg, _prepared()),
+      throwsA(isA<AuthError>().having(
+        (e) => e.code,
+        'code',
+        AuthErrorCode.invalidConfig,
       )),
     );
   });

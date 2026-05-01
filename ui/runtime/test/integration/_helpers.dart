@@ -37,40 +37,37 @@ class TestClock {
 }
 
 /// Short-circuits the browser leg of OAuth: returns a pre-built
-/// code/verifier/state triple without ever opening a browser. The
-/// MockIdp's `/token` handler accepts any code, so we don't even need to
-/// hit a real `/authorize` endpoint.
-///
-/// The fake preserves the [OAuthFlow] public shape by extending it and
-/// overriding `authorize`.
+/// `code` and echoes the worker-issued `state` without ever opening a
+/// browser. The MockIdp's `/token` handler accepts any code, so we don't
+/// even need to hit a real `/authorize` endpoint.
 class FakeOAuthFlow implements OAuthFlow {
-  FakeOAuthFlow({this.code = 'fake-code', this.verifier = 'fake-verifier'});
+  FakeOAuthFlow({this.code = 'fake-code'});
 
   final String code;
-  final String verifier;
   int calls = 0;
 
-  String? lastState;
-  String? lastNonce;
+  /// The last [AuthorizeRequest] passed to [authorize]. Tests can read
+  /// `lastPrepared.verifier` to assert the worker's PKCE verifier flowed
+  /// through end-to-end.
+  AuthorizeRequest? lastPrepared;
 
   /// Driven from outside: if set, [authorize] throws this instead of
   /// returning a result. Lets tests exercise the cancellation path.
   Object? pendingError;
 
   @override
-  Future<OAuthResult> authorize(ResolvedConfig cfg) async {
+  Future<OAuthResult> authorize(
+    ResolvedConfig cfg,
+    AuthorizeRequest prepared,
+  ) async {
     calls++;
+    lastPrepared = prepared;
     final err = pendingError;
     if (err != null) {
       pendingError = null;
       throw err;
     }
-    return OAuthResult(
-      code: code,
-      verifier: verifier,
-      state: lastState,
-      nonce: lastNonce,
-    );
+    return OAuthResult(code: code, state: prepared.state);
   }
 }
 

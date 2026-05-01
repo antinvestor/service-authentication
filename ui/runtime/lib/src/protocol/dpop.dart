@@ -43,8 +43,8 @@ DpopKeyPair generateDpopKeyPair() {
   ));
   final pair = keyGen.generateKeyPair();
   return DpopKeyPair(
-    privateKey: pair.privateKey as pc.ECPrivateKey,
-    publicKey: pair.publicKey as pc.ECPublicKey,
+    privateKey: pair.privateKey,
+    publicKey: pair.publicKey,
   );
 }
 

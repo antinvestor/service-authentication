@@ -13,9 +13,10 @@ import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 abstract class AuthRuntime {
   /// Begins or resumes an authenticated session.
   ///
-  /// On fresh installs this opens the OAuth flow via `flutter_appauth`;
-  /// on subsequent launches a stored refresh token short-circuits straight
-  /// to the authenticated state without any browser round-trip.
+  /// On fresh installs this opens the OAuth flow in the system browser
+  /// via `flutter_web_auth_2`; on subsequent launches a stored refresh
+  /// token short-circuits straight to the authenticated state without
+  /// any browser round-trip.
   ///
   /// Completes when the runtime transitions to [AuthState.authenticated].
   /// Throws [AuthError] on any fatal failure.
@@ -110,4 +111,4 @@ abstract class AuthRuntime {
 /// Version of the runtime. Callers include this in telemetry / bug
 /// reports. Kept as a bare constant for now; wired through
 /// `--dart-define=AUTH_RUNTIME_VERSION=...` in a follow-up task.
-const String authRuntimeVersion = '0.3.1';
+const String authRuntimeVersion = '0.4.0';

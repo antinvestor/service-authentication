@@ -85,21 +85,18 @@ class _FakeApiProxy extends ApiProxy {
 }
 
 class _FakeOAuthFlow extends OAuthFlow {
-  _FakeOAuthFlow({required this.code, required this.verifier});
+  _FakeOAuthFlow({required this.code});
 
   final String code;
-  final String verifier;
   int authorizeCalls = 0;
 
   @override
-  Future<OAuthResult> authorize(ResolvedConfig cfg) async {
+  Future<OAuthResult> authorize(
+    ResolvedConfig cfg,
+    AuthorizeRequest prepared,
+  ) async {
     authorizeCalls++;
-    return OAuthResult(
-      code: code,
-      verifier: verifier,
-      state: null,
-      nonce: null,
-    );
+    return OAuthResult(code: code, state: prepared.state);
   }
 }
 
@@ -145,7 +142,7 @@ class _Harness {
   })  : sessionKv = sessionKv ?? InMemoryKeyValueStore(),
         rootKv = rootKv ?? InMemoryKeyValueStore(),
         oauthFlow = flow ??
-            _FakeOAuthFlow(code: 'code-1', verifier: 'verif-1') {
+            _FakeOAuthFlow(code: 'code-1') {
     exchange = _FakeTokenExchange();
     if (initialTokens != null) exchange.queue.add(initialTokens);
   }
@@ -376,7 +373,7 @@ void main() {
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);
-    expect(rt.version, '0.3.1');
+    expect(rt.version, '0.4.0');
     await rt.dispose();
   });
 

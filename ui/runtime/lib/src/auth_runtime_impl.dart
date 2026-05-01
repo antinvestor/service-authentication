@@ -16,7 +16,7 @@ import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
 /// Main-thread [AuthRuntime] — the default `createAuthRuntime` shape.
 ///
 /// Holds a single [TokenWorker] in-process and an [OAuthFlow] that
-/// drives the browser leg via `flutter_appauth`. A later task wraps the
+/// drives the browser leg via `flutter_web_auth_2`. A later task wraps the
 /// same public API around an Isolate-backed worker for defense-in-depth
 /// token isolation; both implementations share the same public
 /// [AuthRuntime] contract so consumers can switch via
@@ -239,13 +239,13 @@ class AuthRuntimeImpl implements AuthRuntime {
 
   Future<void> _startOAuthFlow() async {
     final prepared = await worker.prepareAuth();
-    final result = await oauthFlow.authorize(config);
+    final result = await oauthFlow.authorize(config, prepared);
     await worker.completeAuth(
       code: result.code,
-      verifier: result.verifier,
-      state: result.state ?? prepared.state,
-      nonce: result.nonce ?? prepared.nonce,
-      expectedState: result.state ?? prepared.state,
+      verifier: prepared.verifier,
+      state: result.state,
+      nonce: prepared.nonce,
+      expectedState: prepared.state,
     );
   }
 
