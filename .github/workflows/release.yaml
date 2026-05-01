@@ -4,20 +4,29 @@ on:
     tags: ["v*.*.*"]
 jobs:
   docker:
+    permissions:
+      contents: read
+      packages: write
     uses: antinvestor/common/.github/workflows/docker-release.yml@main
   buf-push-tenancy:
+    permissions:
+      contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
     with:
       proto_dir: proto/tenancy
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
   buf-push-authentication:
+    permissions:
+      contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
     with:
       proto_dir: proto/authentication
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
   buf-push-audit:
+    permissions:
+      contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
     with:
       proto_dir: proto/audit
