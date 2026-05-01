@@ -1,0 +1,71 @@
+name: Publish UI Flutter package to pub.dev
+
+# Mirrors `dart-publish.yaml` but for `ui/*` Flutter libraries: those
+# packages depend on the Flutter SDK (`flutter_test`, etc.) so the
+# pure-Dart reusable workflow doesn't work. We install Flutter, then let
+# `dart-lang/setup-dart` set up the OIDC publishing token, then run
+# `flutter pub publish`.
+#
+# Security note: GITHUB_REF is passed via `env:` (REF) before being
+# parsed in shell — defence in depth even though tag refs are not
+# attacker-controllable on a protected branch.
+
+on:
+  push:
+    tags:
+      - 'ui/*/v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.extract.outputs.package }}
+      working_dir: ${{ steps.extract.outputs.working_dir }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: extract
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          TAG="${REF#refs/tags/}"
+          # Tag format: ui/{package}/v{version}
+          PACKAGE=$(echo "$TAG" | cut -d'/' -f2)
+          DIR="ui/$PACKAGE"
+          if [ ! -f "$DIR/pubspec.yaml" ]; then
+            echo "::error::No pubspec.yaml found at $DIR for tag $TAG"
+            exit 1
+          fi
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "working_dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "Publishing $PACKAGE from $DIR (tag: $TAG)"
+
+  publish:
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      # setup-dart with OIDC populates ~/.config/dart/pub-credentials.json
+      # using the GitHub Actions OIDC token; flutter pub publish reads
+      # that file automatically.
+      - uses: dart-lang/setup-dart@v1
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        working-directory: ${{ needs.resolve.outputs.working_dir }}
+        run: flutter pub get
+
+      - name: Publish — dry run
+        working-directory: ${{ needs.resolve.outputs.working_dir }}
+        run: flutter pub publish --dry-run
+
+      - name: Publish to pub.dev
+        working-directory: ${{ needs.resolve.outputs.working_dir }}
+        run: flutter pub publish --force

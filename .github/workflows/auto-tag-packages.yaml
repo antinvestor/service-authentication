@@ -1,0 +1,146 @@
+name: Auto-tag package versions
+
+# When a commit on main bumps a package's `version:` in its pubspec.yaml,
+# create and push the matching git tag. The tag pattern (`dart/{pkg}/v{ver}`
+# for SDKs in `sdk/dart/`, `ui/{pkg}/v{ver}` for libraries in `ui/`) is
+# what the publish workflows fire on, so once a tag lands the package
+# auto-publishes to pub.dev.
+#
+# The workflow is idempotent (existing tags are skipped) and quiet for
+# dependency-only edits (no `version:` change → no tag). It also queries
+# pub.dev before tagging: a package that isn't on pub.dev yet still needs
+# a manual first publish, so we skip with a notice rather than queueing
+# a CI run that would fail with "Only users are allowed to upload new
+# packages."
+#
+# Security note: SHA inputs are passed via `env:` (BEFORE/AFTER) rather
+# than interpolated directly into the shell script — defence in depth
+# even though `github.sha` and `github.event.before` are guaranteed to be
+# 40-char hex strings and not attacker-controllable.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-tag-packages
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Detect bumped packages and create tags
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # First push to a branch sets BEFORE to all-zeros; fall back to
+          # the parent of HEAD so the diff is well-defined.
+          if [[ -z "$BEFORE" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+            RANGE="HEAD~..HEAD"
+          else
+            RANGE="$BEFORE..$AFTER"
+          fi
+
+          # Pubspecs in the two managed package roots.
+          mapfile -t CHANGED < <(
+            git diff --name-only "$RANGE" -- \
+              'sdk/dart/*/pubspec.yaml' \
+              'ui/*/pubspec.yaml' \
+              || true
+          )
+
+          if [[ ${#CHANGED[@]} -eq 0 ]]; then
+            echo "::notice::No package pubspecs changed in $RANGE"
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          tagged=0
+          skipped=0
+
+          for pubspec in "${CHANGED[@]}"; do
+            # Deletions show up in the diff list but the file isn't on disk.
+            if [[ ! -f "$pubspec" ]]; then
+              echo "::notice::Skipping deleted $pubspec"
+              continue
+            fi
+
+            # Did the `version:` line actually change in this range? An
+            # edit limited to dependencies/description/etc. shouldn't tag.
+            if ! git diff "$RANGE" -- "$pubspec" | grep -qE '^\+version: '; then
+              echo "::notice::No version bump in $pubspec — skipping"
+              continue
+            fi
+
+            # Extract current version (and package name for pub.dev probe).
+            version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$pubspec")
+            name=$(awk '/^name:[[:space:]]/ {print $2; exit}' "$pubspec")
+            if [[ -z "$version" || -z "$name" ]]; then
+              echo "::warning::$pubspec missing name or version — skipping"
+              continue
+            fi
+
+            case "$pubspec" in
+              sdk/dart/*/pubspec.yaml)
+                kind=dart
+                pkg=$(basename "$(dirname "$pubspec")")
+                ;;
+              ui/*/pubspec.yaml)
+                kind=ui
+                pkg=$(basename "$(dirname "$pubspec")")
+                ;;
+              *)
+                echo "::warning::Unhandled pubspec path $pubspec"
+                continue
+                ;;
+            esac
+
+            tag="${kind}/${pkg}/v${version}"
+
+            # Idempotence: if either a local or remote tag already exists,
+            # this version has already been processed.
+            if git rev-parse --verify --quiet "refs/tags/$tag" >/dev/null \
+               || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+              echo "::notice::Tag $tag already exists — skipping"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            # First-publish guardrail. pub.dev rejects automated uploads of
+            # brand-new packages, so we leave those for a manual publish
+            # rather than spamming the publish workflow with a guaranteed
+            # failure.
+            http=$(curl -sS -o /dev/null -w '%{http_code}' \
+              "https://pub.dev/api/packages/$name" || echo 000)
+            if [[ "$http" == "404" ]]; then
+              echo "::notice::$name is not on pub.dev yet — auto-tag skipped. Run dart pub publish (or flutter pub publish) from the package directory once to bootstrap; future versions will auto-tag."
+              skipped=$((skipped + 1))
+              continue
+            fi
+            if [[ "$http" != "200" ]]; then
+              echo "::warning::pub.dev probe for $name returned HTTP $http — skipping to avoid bad tags"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "Tagging $tag at $AFTER"
+            git tag -a "$tag" -m "Release $kind/$pkg $version" "$AFTER"
+            git push origin "refs/tags/$tag"
+            tagged=$((tagged + 1))
+          done
+
+          echo "::notice::Auto-tag complete: $tagged created, $skipped skipped"
