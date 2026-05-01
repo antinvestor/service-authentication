@@ -36,4 +36,5 @@ WORK_STATE.md
 **/.dart_tool/
 **/build/
 pubspec.lock
+**/.flutter-plugins-dependencies
 .claude/
