@@ -45,7 +45,7 @@ type PartitionSyncEvent struct {
 
 func typeName(v any) string {
 	t := reflect.TypeOf(v)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		return "*" + t.Elem().String()
 	}
 	return t.String()
