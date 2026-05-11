@@ -35,6 +35,8 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -105,7 +107,8 @@ func main() {
 	}
 
 	// Setup Connect server
-	connectHandler := setupConnectServer(ctx, sm, partSrv)
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	connectHandler := setupConnectServer(ctx, sm, dbPool, partSrv)
 
 	// Register permission manifest for the tenancy service so the UI can
 	// discover available permissions for assignment.
@@ -145,6 +148,7 @@ func main() {
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
+	dbPool pool.Pool,
 	implementation *handlers.TenancyServer,
 ) http.Handler {
 
@@ -162,7 +166,16 @@ func setupConnectServer(
 	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
 	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
+	// Layer 3: TenancyTxInterceptor opens a request-scoped transaction
+	// after auth has populated the claims, publishes app.tenant_id +
+	// app.partition_id from the claims via set_config, and binds the
+	// transaction to the request context. Repository code then calls
+	// pool.DB(ctx, _) and gets the bound tx transparently; tenancy is
+	// enforced by Row-Level Security at the database layer.
+	tenancyTxInterceptor := connectInterceptors.NewTenancyTxInterceptor(dbPool)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator,
+		tenancyAccessInterceptor, functionAccessInterceptor, tenancyTxInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors")
 	}

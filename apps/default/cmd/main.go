@@ -43,6 +43,7 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -131,7 +132,7 @@ func main() {
 
 	// Setup Connect RPC handler for login history API
 	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
-	connectPath, connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
+	connectPath, connectHandler := setupConnectServer(ctx, sm, dbPool, loginHistorySrv)
 
 	// Combine auth routes and Connect RPC into a single handler.
 	// Frame's WithHTTPHandler uses plain assignment (not append), so only
@@ -257,12 +258,13 @@ func setupFilesClient(
 const namespaceTenancyAccess = "tenancy_access"
 
 // setupConnectServer creates the Connect RPC handler for login history
-// with the full interceptor chain: Auth -> TenancyAccess -> FunctionAccess.
+// with the full interceptor chain: Auth -> TenancyAccess -> FunctionAccess -> TenancyTx.
 // Returns the path prefix and handler so they can be registered on the
 // shared auth routes mux.
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
+	dbPool pool.Pool,
 	implementation *loginhistory.LoginHistoryServer,
 ) (string, http.Handler) {
 	authenticator := sm.GetAuthenticator(ctx)
@@ -279,7 +281,16 @@ func setupConnectServer(
 	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
 	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
+	// Layer 3: TenancyTxInterceptor opens a request-scoped transaction
+	// after auth has populated the claims, publishes app.tenant_id +
+	// app.partition_id from the claims via set_config, and binds the
+	// transaction to the request context. Repository code then calls
+	// pool.DB(ctx, _) and gets the bound tx transparently; tenancy is
+	// enforced by Row-Level Security at the database layer.
+	tenancyTxInterceptor := connectInterceptors.NewTenancyTxInterceptor(dbPool)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator,
+		tenancyAccessInterceptor, functionAccessInterceptor, tenancyTxInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors for login history")
 	}

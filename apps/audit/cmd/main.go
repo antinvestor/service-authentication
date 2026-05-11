@@ -32,6 +32,7 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -77,7 +78,7 @@ func main() {
 	auditSrv := handlers.NewAuditServer(ctx, svc, signer)
 
 	// Setup Connect RPC server with full interceptor chain
-	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditSrv)
+	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditDBPool, auditSrv)
 
 	// Register permission manifest for the audit service
 	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
@@ -128,10 +129,11 @@ func loadOrGenerateSigner(ctx context.Context, hexKey string) (*business.ChainSi
 }
 
 // setupConnectServer creates the Connect RPC handler with the full interceptor chain:
-// Auth → TenancyAccess → FunctionAccess.
+// Auth → TenancyAccess → FunctionAccess → TenancyTx.
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
+	dbPool pool.Pool,
 	implementation *handlers.AuditServer,
 ) http.Handler {
 	authenticator := sm.GetAuthenticator(ctx)
@@ -148,7 +150,16 @@ func setupConnectServer(
 	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
 	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
+	// Layer 3: TenancyTxInterceptor opens a request-scoped transaction
+	// after auth has populated the claims, publishes app.tenant_id +
+	// app.partition_id from the claims via set_config, and binds the
+	// transaction to the request context. Repository code then calls
+	// pool.DB(ctx, _) and gets the bound tx transparently; tenancy is
+	// enforced by Row-Level Security at the database layer.
+	tenancyTxInterceptor := connectInterceptors.NewTenancyTxInterceptor(dbPool)
+
+	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator,
+		tenancyAccessInterceptor, functionAccessInterceptor, tenancyTxInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors")
 	}
