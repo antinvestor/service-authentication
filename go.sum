@@ -8,10 +8,10 @@ buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.11-20260510
 buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.11-20260510082436-ec3515043e42.1/go.mod h1:2wnEkFhrNQgkwNdMInZ4fFrtiPEZF9o5alsvXgOMxqg=
 buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260509050709-3f270876dbf3.1 h1:B8kYvDw/nWj5TLW9vrl95Q5jpD3sSsM/MZa9nViUc/I=
 buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260509050709-3f270876dbf3.1/go.mod h1:jRgXqWVsMsSV2ZDzo9s21a1fiAyyO68FibJVAGQzJoY=
-buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.2-20260415203305-cca911026890.1 h1:C7pzr2epjGpeM4Uwxv8vW/i4y1/q0o1s+4uxNvPrhIY=
-buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.2-20260415203305-cca911026890.1/go.mod h1:evuF72MwLbWC6r5P8/U7vBLP8zz2u4vCh0puS7ObGXc=
-buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260415203305-cca911026890.1 h1:7ok864wS24vSPpPEiVWyKdNRaaB9SKz9ledIyjOMm2A=
-buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260415203305-cca911026890.1/go.mod h1:e9hdu32L4r2skmY1+0x7dVFmBjqGi9ApBo+m5f6Jl5U=
+buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.2-20260511135702-7f6c3cf72171.1 h1:WPhZyATxTVfRlcc7ph2CxtJIWsaEt3b21hHJRG8d7EQ=
+buf.build/gen/go/antinvestor/device/connectrpc/go v1.19.2-20260511135702-7f6c3cf72171.1/go.mod h1:rIVFcPc0lwJKQeT1v7EQpN/9rFr1rIJNR8hIHPKj3gk=
+buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260511135702-7f6c3cf72171.1 h1:0RBrl+4F6prI6s0v+vkUMCDK/s7lbIJOjrjn/dLM5kQ=
+buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260511135702-7f6c3cf72171.1/go.mod h1:VePA43rcicCRVOYea7PRbLKQIVfWr26TmTApoVcnKl0=
 buf.build/gen/go/antinvestor/files/connectrpc/go v1.19.2-20260418163144-8859a39db5b5.1 h1:Of3zH6FEC/cZ5T/gBVnSXkpVBAZrVpD1SL5PEvLqXIY=
 buf.build/gen/go/antinvestor/files/connectrpc/go v1.19.2-20260418163144-8859a39db5b5.1/go.mod h1:6fDiRqJQIyx0E+NF2b+45A5mN7ORdVmO1aVJxROjjpY=
 buf.build/gen/go/antinvestor/files/protocolbuffers/go v1.36.11-20260418163144-8859a39db5b5.1 h1:UV93VbXf3eaTrLtwzt14g/tr4sM7hT1QRQkiWTYnlnQ=
