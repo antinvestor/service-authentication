@@ -21,7 +21,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '["*"]',
+    '{"service_billing":["*"],"service_file":["*"],"service_notification":["*"],"service_payment":["*"],"service_profile":["*"],"service_redirect":["*"],"service_tenancy":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnqeg',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -38,6 +38,6 @@ INSERT INTO service_accounts (
     'stawi-jobs-candidates',
     'c2f4j7au6s7f91uqnqdg',
     'internal',
-    '["*"]',
+    '{"service_billing":["*"],"service_file":["*"],"service_notification":["*"],"service_payment":["*"],"service_profile":["*"],"service_redirect":["*"],"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;

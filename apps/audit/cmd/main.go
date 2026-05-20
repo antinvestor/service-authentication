@@ -32,7 +32,6 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -78,7 +77,7 @@ func main() {
 	auditSrv := handlers.NewAuditServer(ctx, svc, signer)
 
 	// Setup Connect RPC server with full interceptor chain
-	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditDBPool, auditSrv)
+	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditSrv)
 
 	// Register permission manifest for the audit service
 	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
@@ -133,7 +132,6 @@ func loadOrGenerateSigner(ctx context.Context, hexKey string) (*business.ChainSi
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
-	dbPool pool.Pool,
 	implementation *handlers.AuditServer,
 ) http.Handler {
 	authenticator := sm.GetAuthenticator(ctx)

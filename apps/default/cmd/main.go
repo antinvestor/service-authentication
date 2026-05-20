@@ -43,7 +43,6 @@ import (
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/data"
 	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -132,7 +131,7 @@ func main() {
 
 	// Setup Connect RPC handler for login history API
 	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
-	connectPath, connectHandler := setupConnectServer(ctx, sm, dbPool, loginHistorySrv)
+	connectPath, connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
 
 	// Combine auth routes and Connect RPC into a single handler.
 	// Frame's WithHTTPHandler uses plain assignment (not append), so only
@@ -264,7 +263,6 @@ const namespaceTenancyAccess = "tenancy_access"
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
-	dbPool pool.Pool,
 	implementation *loginhistory.LoginHistoryServer,
 ) (string, http.Handler) {
 	authenticator := sm.GetAuthenticator(ctx)

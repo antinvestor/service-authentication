@@ -19,7 +19,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '["*"]',
+    '{}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnqig',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -36,6 +36,6 @@ INSERT INTO service_accounts (
     'stawi-jobs-api',
     'c2f4j7au6s7f91uqnqhg',
     'internal',
-    '["*"]',
+    '{}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
