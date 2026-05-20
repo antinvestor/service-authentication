@@ -1,26 +1,26 @@
 -- Copyright 2023-2026 Ant Investor Ltd
--- Service account: service-device
--- Device registry and management. Tracks user devices for push
--- notifications and MFA. Needs profile for owner lookup,
--- notification for device alerts, and tenancy for scoping.
+-- Service account: opportunities-writer
+-- Opportunities writer. Persists normalised opportunity records
+-- to the storage layer for the API and matcher to read. Operates
+-- behind the queue; needs tenancy for partition scoping.
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
     type, grant_types, scopes, audiences,
     token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
-    'c2f4j7au6s7f91uqnovg',
+    'd86tt34pf2tddudk9q70',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-service_device',
-    'service-devices',
+    'sa-opportunities_writer',
+    'opportunities-writer',
     '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_tenancy":["*"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp0g',
+    'd86tt34pf2tddudk9q7g',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -28,13 +28,13 @@ INSERT INTO service_accounts (
     id, tenant_id, partition_id, profile_id,
     client_id, client_ref, type, audiences, properties
 ) VALUES (
-    'c2f4j7au6s7f91uqnp0g',
+    'd86tt34pf2tddudk9q7g',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'd75qclkpf2t1uum8ij60',
-    'service-devices',
-    'c2f4j7au6s7f91uqnovg',
+    'd86tt34pf2tddudk9q80',
+    'opportunities-writer',
+    'd86tt34pf2tddudk9q70',
     'internal',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;

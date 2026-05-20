@@ -1,26 +1,26 @@
 -- Copyright 2023-2026 Ant Investor Ltd
--- Service account: service-device
--- Device registry and management. Tracks user devices for push
--- notifications and MFA. Needs profile for owner lookup,
--- notification for device alerts, and tenancy for scoping.
+-- Service account: service-payment-polar
+-- Polar payment provider integration. Bridges the payment service
+-- to Polar's checkout/billing API for digital-product flows. Needs
+-- payment service for status callbacks.
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
     type, grant_types, scopes, audiences,
     token_endpoint_auth_method, service_account_id, properties
 ) VALUES (
-    'c2f4j7au6s7f91uqnovg',
+    'd86tt34pf2tddudk9ppg',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-service_device',
-    'service-devices',
+    'sa-service_payment_polar',
+    'service-payment-polar',
     '',
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_notification":["*"],"service_payment":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     'private_key_jwt',
-    'c2f4j7au6s7f91uqnp0g',
+    'd86tt34pf2tddudk9pq0',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -28,13 +28,13 @@ INSERT INTO service_accounts (
     id, tenant_id, partition_id, profile_id,
     client_id, client_ref, type, audiences, properties
 ) VALUES (
-    'c2f4j7au6s7f91uqnp0g',
+    'd86tt34pf2tddudk9pq0',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'd75qclkpf2t1uum8ij60',
-    'service-devices',
-    'c2f4j7au6s7f91uqnovg',
+    'd86tt34pf2tddudk9pqg',
+    'service-payment-polar',
+    'd86tt34pf2tddudk9ppg',
     'internal',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_notification":["*"],"service_payment":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
