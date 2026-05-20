@@ -35,8 +35,6 @@ import (
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/datastore/pool"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/frame/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
@@ -107,8 +105,7 @@ func main() {
 	}
 
 	// Setup Connect server
-	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
-	connectHandler := setupConnectServer(ctx, sm, dbPool, partSrv)
+	connectHandler := setupConnectServer(ctx, sm, partSrv)
 
 	// Register permission manifest for the tenancy service so the UI can
 	// discover available permissions for assignment.
@@ -148,7 +145,6 @@ func main() {
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
-	dbPool pool.Pool,
 	implementation *handlers.TenancyServer,
 ) http.Handler {
 

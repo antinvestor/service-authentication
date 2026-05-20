@@ -41,6 +41,7 @@ configuration.
 | 9bsv0s0hijjg02qk7l1g | 9bsv0s0hijjg02z5lbjg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
 | 9bsv0s0hijjg02qks6i0 | 9bsv0s0hijjg09bzz6dg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
 | 9bsv0s0hid5g02qkl7gjg | 9bsv0s0hijjg02z5lr4g | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
+| d7j42dspf2tfev9jfh40 | 9bsv0s0hijjg02z5lr4g | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
 | 9bsv0s0hijjb83qksr20 | 9bsv0s0hijjghdbz96dg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
 | d6q1aekpf2taeg5iovpg | d6q1aekpf2taeg5iovp0 | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
 | d6q1aekpf2taeg5iovr0 | d6q1aekpf2taeg5iovqg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
@@ -124,6 +125,26 @@ configuration.
 | c2f4j7au6s7f91uqnqgg | d75qclkpf2t1uum8iji0 | c2f4j7au6s7f91uqnqfg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_crawler.sql |
 | c2f4j7au6s7f91uqnqkg | d75qclkpf2t1uum8ijj0 | c2f4j7au6s7f91uqnqjg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_scheduler.sql |
 | c2f4j7au6s7f91uqnqeg | d75qclkpf2t1uum8ijhg | c2f4j7au6s7f91uqnqdg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_candidates.sql |
+| d86tt34pf2tddudk9pb0 | d86tt34pf2tddudk9pbg | d86tt34pf2tddudk9pag | apps/tenancy/migrations/0001/20260420_service_audit.sql |
+| d86tt34pf2tddudk9pcg | d86tt34pf2tddudk9pd0 | d86tt34pf2tddudk9pc0 | apps/tenancy/migrations/0001/20260420_service_thesa.sql |
+| d86tt34pf2tddudk9pe0 | d86tt34pf2tddudk9peg | d86tt34pf2tddudk9pdg | apps/tenancy/migrations/0001/20260420_service_redirect.sql |
+| d86tt34pf2tddudk9pfg | d86tt34pf2tddudk9pg0 | d86tt34pf2tddudk9pf0 | apps/tenancy/migrations/0001/20260420_service_geolocation.sql |
+| d86tt34pf2tddudk9ph0 | d86tt34pf2tddudk9phg | d86tt34pf2tddudk9pgg | apps/tenancy/migrations/0001/20260420_service_fintech_identity.sql |
+| d86tt34pf2tddudk9pig | d86tt34pf2tddudk9pj0 | d86tt34pf2tddudk9pi0 | apps/tenancy/migrations/0001/20260420_service_fintech_loans.sql |
+| d86tt34pf2tddudk9pk0 | d86tt34pf2tddudk9pkg | d86tt34pf2tddudk9pjg | apps/tenancy/migrations/0001/20260420_service_profile_dek.sql |
+| d86tt34pf2tddudk9plg | d86tt34pf2tddudk9pm0 | d86tt34pf2tddudk9pl0 | apps/tenancy/migrations/0001/20260420_service_payment_airtel.sql |
+| d86tt34pf2tddudk9pn0 | d86tt34pf2tddudk9png | d86tt34pf2tddudk9pmg | apps/tenancy/migrations/0001/20260420_service_payment_mpesa.sql |
+| d86tt34pf2tddudk9pog | d86tt34pf2tddudk9pp0 | d86tt34pf2tddudk9po0 | apps/tenancy/migrations/0001/20260420_service_payment_mtn.sql |
+| d86tt34pf2tddudk9pq0 | d86tt34pf2tddudk9pqg | d86tt34pf2tddudk9ppg | apps/tenancy/migrations/0001/20260420_service_payment_polar.sql |
+| d86tt34pf2tddudk9prg | d86tt34pf2tddudk9ps0 | d86tt34pf2tddudk9pr0 | apps/tenancy/migrations/0001/20260420_service_payment_stripe.sql |
+| d86tt34pf2tddudk9pt0 | d86tt34pf2tddudk9ptg | d86tt34pf2tddudk9psg | apps/tenancy/migrations/0001/20260420_service_trustage_formstore.sql |
+| d86tt34pf2tddudk9pug | d86tt34pf2tddudk9pv0 | d86tt34pf2tddudk9pu0 | apps/tenancy/migrations/0001/20260420_service_trustage_queuestore.sql |
+| d86tt34pf2tddudk9q00 | d86tt34pf2tddudk9q0g | d86tt34pf2tddudk9pvg | apps/tenancy/migrations/0001/20260420_service_opportunities_api.sql |
+| d86tt34pf2tddudk9q1g | d86tt34pf2tddudk9q20 | d86tt34pf2tddudk9q10 | apps/tenancy/migrations/0001/20260420_service_opportunities_crawler.sql |
+| d86tt34pf2tddudk9q30 | d86tt34pf2tddudk9q3g | d86tt34pf2tddudk9q2g | apps/tenancy/migrations/0001/20260420_service_opportunities_matching.sql |
+| d86tt34pf2tddudk9q4g | d86tt34pf2tddudk9q50 | d86tt34pf2tddudk9q40 | apps/tenancy/migrations/0001/20260420_service_opportunities_materializer.sql |
+| d86tt34pf2tddudk9q60 | d86tt34pf2tddudk9q6g | d86tt34pf2tddudk9q5g | apps/tenancy/migrations/0001/20260420_service_opportunities_worker.sql |
+| d86tt34pf2tddudk9q7g | d86tt34pf2tddudk9q80 | d86tt34pf2tddudk9q70 | apps/tenancy/migrations/0001/20260420_service_opportunities_writer.sql |
 
 ## Partition roles
 | xid | role | partition | file |
@@ -158,3 +179,21 @@ configuration.
 | d7gi6lkpf2t67dlsqri0 | owner  | d7gi6lkpf2t67dlsqrhg | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
 | d7gi6lkpf2t67dlsqrig | admin  | d7gi6lkpf2t67dlsqrhg | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
 | d7gi6ncpf2t7oh5akfqg | member | d7gi6lkpf2t67dlsqrhg | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
+| d7j42dspf2tfev9jfgt0 | admin  | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
+| d7j42dspf2tfev9jfgtg | member | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
+| d7j42dspf2tfev9jfgu0 | admin  | d7b4qekpf2tshigkrv60 | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
+| d7j42dspf2tfev9jfgug | member | d7b4qekpf2tshigkrv60 | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
+| d7j42dspf2tfev9jfgv0 | owner  | d6q1aekpf2taeg5iovpg | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfgvg | admin  | d6q1aekpf2taeg5iovpg | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfh00 | member | d6q1aekpf2taeg5iovpg | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfh0g | owner  | d6q1aekpf2taeg5iovr0 | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfh10 | admin  | d6q1aekpf2taeg5iovr0 | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfh1g | member | d6q1aekpf2taeg5iovr0 | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
+| d7j42dspf2tfev9jfh20 | admin  | 9bsv0s0hijjg02qk7l1g | apps/tenancy/migrations/0001/20260420_partition_stawi_chat.sql |
+| d7j42dspf2tfev9jfh2g | member | 9bsv0s0hijjg02qk7l1g | apps/tenancy/migrations/0001/20260420_partition_stawi_chat.sql |
+| d7j42dspf2tfev9jfh30 | admin  | 9bsv0s0hijjg02qks6i0 | apps/tenancy/migrations/0001/20260420_partition_stawi_chat.sql |
+| d7j42dspf2tfev9jfh3g | member | 9bsv0s0hijjg02qks6i0 | apps/tenancy/migrations/0001/20260420_partition_stawi_chat.sql |
+| d7j42dspf2tfev9jfh4g | admin  | d7j42dspf2tfev9jfh40 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
+| d7j42dspf2tfev9jfh50 | member | d7j42dspf2tfev9jfh40 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
+| d7j42dspf2tfev9jfh5g | admin  | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
+| d7j42dspf2tfev9jfh60 | member | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
