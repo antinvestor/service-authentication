@@ -208,9 +208,17 @@ func (s *BusinessTestSuite) TestListTenantByEnvironment() {
 		Environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING,
 	})
 	s.Require().NoError(err)
-	s.Len(tenants, 1)
-	s.Equal(stagingTenant.GetID(), tenants[0].GetId())
-	s.Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING, tenants[0].GetEnvironment())
+	// Seed migrations include staging tenants (Stawi Development, etc.), so
+	// assert the just-created tenant is in the result and every returned
+	// tenant has the requested environment, not an exact count.
+	var found *tenancyv1.TenantObject
+	for _, t := range tenants {
+		s.Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_STAGING, t.GetEnvironment())
+		if t.GetId() == stagingTenant.GetID() {
+			found = t
+		}
+	}
+	s.Require().NotNil(found, "created staging tenant should be in the listing")
 }
 
 // ========================
@@ -375,8 +383,18 @@ func (s *BusinessTestSuite) TestListPartition() {
 
 	partitions, err := deps.PartitionBusiness.ListPartition(ctx, &tenancyv1.ListPartitionRequest{})
 	s.Require().NoError(err)
-	s.GreaterOrEqual(len(partitions), 1)
-	s.Equal(partition.GetID(), partitions[0].GetId())
+	s.Require().NotEmpty(partitions)
+	// Seed migrations create partitions for Thesa/Stawi/Ant Investor that
+	// share the listing with the test-created partition, so assert
+	// presence rather than position.
+	var found bool
+	for _, p := range partitions {
+		if p.GetId() == partition.GetID() {
+			found = true
+			break
+		}
+	}
+	s.True(found, "created partition should appear in the listing")
 }
 
 func (s *BusinessTestSuite) TestGetPartitionParents() {
