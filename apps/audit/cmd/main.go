@@ -29,7 +29,6 @@ import (
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/antinvestor/service-authentication/pkg/permissionsync"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/config"
 	"github.com/pitabwire/frame/datastore"
@@ -57,14 +56,8 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 
-	// Handle database migration if requested. Inline permission registration
-	// here because the migration job exits before svc.Run, so Frame's
-	// PreStartMethod-based registration never fires.
+	// Handle database migration if requested
 	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {
-		sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
-		if regErr := permissionsync.Register(ctx, sd); regErr != nil {
-			util.Log(ctx).WithError(regErr).Fatal("permission manifest registration failed")
-		}
 		return
 	}
 
