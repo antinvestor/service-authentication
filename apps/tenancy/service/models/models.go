@@ -232,6 +232,19 @@ func (c *Client) ToAPI() *tenancyv1.ClientObject {
 		obj.Properties = props.ToProtoStruct()
 	}
 
+	// Populate the partition owner directly from the Client's own tenancy
+	// fields. The Client row is the authoritative source of its tenant/
+	// partition linkage, so callers can resolve tenant/partition context
+	// from a Hydra client_id without a follow-up partition fetch — and
+	// without depending on the caller's tenancy scope being able to read
+	// the target partition row.
+	if c.PartitionID != "" {
+		obj.SetPartition(&tenancyv1.PartitionObject{
+			Id:       c.PartitionID,
+			TenantId: c.TenantID,
+		})
+	}
+
 	return obj
 }
 

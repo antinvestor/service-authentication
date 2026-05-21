@@ -259,6 +259,11 @@ func (suite *ModelsTestSuite) TestClient_ToAPI() {
 	assert.Equal(t, []string{"service_profile"}, api.Audiences)
 	assert.Equal(t, []string{"admin", "member"}, api.Roles)
 	assert.NotNil(t, api.Properties)
+
+	partition := api.GetPartition()
+	require.NotNil(t, partition, "partition owner must be populated from BaseModel fields")
+	assert.Equal(t, "part-1", partition.GetId())
+	assert.Equal(t, "tenant-1", partition.GetTenantId())
 }
 
 func (suite *ModelsTestSuite) TestClient_ToAPI_Deleted() {
@@ -290,6 +295,7 @@ func (suite *ModelsTestSuite) TestClient_ToAPI_NilOptionalFields() {
 	require.NotNil(t, api)
 	assert.Empty(t, api.Audiences)
 	assert.Nil(t, api.Properties)
+	assert.Nil(t, api.GetPartition(), "partition owner stays unset when no PartitionID")
 }
 
 func (suite *ModelsTestSuite) TestClient_GetRoleNames() {

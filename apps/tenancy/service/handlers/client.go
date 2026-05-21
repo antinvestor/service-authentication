@@ -98,13 +98,16 @@ func (prtSrv *TenancyServer) GetClient(
 		}
 	}
 
-	// Always populate the partition owner so callers can resolve
-	// tenant/partition context from a Hydra client_id without extra RPCs.
-	if client.GetPartition() == nil && cl.PartitionID != "" {
+	// Client.ToAPI already populates the partition owner with the
+	// authoritative Id/TenantId from the Client row. Try to enrich it with
+	// the full partition record (Name, Properties, …) when the caller's
+	// scope permits — failure is non-fatal because the minimal partition
+	// already satisfies tenant/partition resolution.
+	if cl.PartitionID != "" {
 		part, partErr := prtSrv.PartitionBusiness.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: cl.PartitionID})
 		if partErr != nil {
 			util.Log(ctx).WithField("partition_id", cl.PartitionID).
-				WithError(partErr).Debug("could not populate partition owner on client")
+				WithError(partErr).Debug("could not enrich partition owner on client; minimal data returned")
 		} else {
 			client.SetPartition(part)
 		}
