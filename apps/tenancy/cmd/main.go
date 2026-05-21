@@ -32,6 +32,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/antinvestor/service-authentication/pkg/permissionsync"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/client"
 	"github.com/pitabwire/frame/config"
@@ -100,6 +101,14 @@ func main() {
 		}); bootstrapErr != nil {
 			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
 		}
+		// Register the tenancy service's own permission manifest so it appears
+		// in the OPL ConfigMap aggregation. Frame's PreStartMethod-based
+		// registration never fires here because we exit before svc.Run.
+		sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
+		if regErr := permissionsync.Register(ctx, sd); regErr != nil {
+			util.Log(ctx).WithError(regErr).Fatal("permission manifest registration failed")
+		}
+
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}

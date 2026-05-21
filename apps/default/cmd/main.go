@@ -36,6 +36,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
+	"github.com/antinvestor/service-authentication/pkg/permissionsync"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/cache/jetstreamkv"
@@ -81,8 +82,15 @@ func main() {
 	workManager := svc.WorkManager()
 	dbPool := dbManager.GetPool(ctx, datastore.DefaultPoolName)
 
-	// Handle database migration if requested
+	// Handle database migration if requested. The migration job's binary
+	// short-circuits the rest of startup, so register the permission manifest
+	// inline here — Frame's WithPermissionRegistration only fires from a
+	// PreStartMethod (which requires svc.Run, never reached in this path).
 	if handleDatabaseMigration(ctx, dbManager, cfg) {
+		sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
+		if regErr := permissionsync.Register(ctx, sd); regErr != nil {
+			log.WithError(regErr).Fatal("permission manifest registration failed")
+		}
 		return
 	}
 
