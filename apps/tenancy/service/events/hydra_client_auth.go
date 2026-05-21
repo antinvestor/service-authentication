@@ -25,7 +25,7 @@ import (
 // Internal service accounts use this for private_key_jwt authentication —
 // they sign assertions with a shared key from Hydra's JWK set and Hydra
 // verifies against its own published JWKS.
-const DefaultHydraPublicJWKSURI = "http://service-authentication-oauth2-hydra-public.auth.svc.cluster.local:4444/.well-known/jwks.json"
+const DefaultHydraPublicJWKSURI = "http://service-authentication-oauth2-hydra-public.identity.svc.cluster.local:4444/.well-known/jwks.json"
 
 func applyHydraClientAuthPayload(
 	payload map[string]any,
