@@ -74,8 +74,6 @@ configuration.
 | c2f4j7au6s7f91uqnpbg | service-files | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_files.sql |
 | c2f4j7au6s7f91uqnpdg | service-chat-drone | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_chat_drone.sql |
 | c2f4j7au6s7f91uqnpfg | service-chat-gateway | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_chat_gateway.sql |
-| c2f4j7au6s7f91uqnphg | foundry | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_foundry.sql |
-| c2f4j7au6s7f91uqnpjg | gitvault | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_gitvault.sql |
 | c2f4j7au6s7f91uqnplg | trustage | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_trustage.sql |
 | c2f4j7au6s7f91uqnpng | service-notification-integration-africastalking | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_notification_africastalking.sql |
 | c2f4j7au6s7f91uqnppg | service-notification-integration-emailsmtp | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_notification_emailsmtp.sql |
@@ -87,10 +85,9 @@ configuration.
 | c2f4j7au6s7f91uqnq7g | service-operations | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations.sql |
 | c2f4j7au6s7f91uqnq9g | service-seed | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_seed.sql |
 | c2f4j7au6s7f91uqnqbg | service-stawi | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_stawi.sql |
-| c2f4j7au6s7f91uqnqhg | stawi-jobs-api | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_api.sql |
-| c2f4j7au6s7f91uqnqfg | stawi-jobs-crawler | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_crawler.sql |
-| c2f4j7au6s7f91uqnqjg | stawi-jobs-scheduler | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_scheduler.sql |
-| c2f4j7au6s7f91uqnqdg | stawi-jobs-candidates | d7gi6lkpf2t67dlsqreg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_candidates.sql |
+| d87bdkcpf2t58bn6vaeg | service-limits | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_limits.sql |
+| d87bdkcpf2t58bn6vag0 | operations-formstore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_formstore.sql |
+| d87bdkcpf2t58bn6vahg | operations-queuestore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_queuestore.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -108,8 +105,6 @@ configuration.
 | c2f4j7au6s7f91uqnpcg | d75qclkpf2t1uum8ij90 | c2f4j7au6s7f91uqnpbg | apps/tenancy/migrations/0001/20260420_service_files.sql |
 | c2f4j7au6s7f91uqnpeg | d75qclkpf2t1uum8ij9g | c2f4j7au6s7f91uqnpdg | apps/tenancy/migrations/0001/20260420_service_chat_drone.sql |
 | c2f4j7au6s7f91uqnpgg | d75qclkpf2t1uum8ija0 | c2f4j7au6s7f91uqnpfg | apps/tenancy/migrations/0001/20260420_service_chat_gateway.sql |
-| c2f4j7au6s7f91uqnpig | d75qclkpf2t1uum8ijag | c2f4j7au6s7f91uqnphg | apps/tenancy/migrations/0001/20260420_service_foundry.sql |
-| c2f4j7au6s7f91uqnpkg | d75qclkpf2t1uum8ijb0 | c2f4j7au6s7f91uqnpjg | apps/tenancy/migrations/0001/20260420_service_gitvault.sql |
 | c2f4j7au6s7f91uqnpmg | d75qclkpf2t1uum8ijbg | c2f4j7au6s7f91uqnplg | apps/tenancy/migrations/0001/20260420_service_trustage.sql |
 | c2f4j7au6s7f91uqnpog | d75qclkpf2t1uum8ijc0 | c2f4j7au6s7f91uqnpng | apps/tenancy/migrations/0001/20260420_service_notification_africastalking.sql |
 | c2f4j7au6s7f91uqnpqg | d75qclkpf2t1uum8ijcg | c2f4j7au6s7f91uqnppg | apps/tenancy/migrations/0001/20260420_service_notification_emailsmtp.sql |
@@ -121,24 +116,18 @@ configuration.
 | c2f4j7au6s7f91uqnq8g | d75qclkpf2t1uum8ijg0 | c2f4j7au6s7f91uqnq7g | apps/tenancy/migrations/0001/20260420_service_operations.sql |
 | c2f4j7au6s7f91uqnqag | d75qclkpf2t1uum8ijgg | c2f4j7au6s7f91uqnq9g | apps/tenancy/migrations/0001/20260420_service_seed.sql |
 | c2f4j7au6s7f91uqnqcg | d75qclkpf2t1uum8ijh0 | c2f4j7au6s7f91uqnqbg | apps/tenancy/migrations/0001/20260420_service_stawi.sql |
-| c2f4j7au6s7f91uqnqig | d75qclkpf2t1uum8ijig | c2f4j7au6s7f91uqnqhg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_api.sql |
-| c2f4j7au6s7f91uqnqgg | d75qclkpf2t1uum8iji0 | c2f4j7au6s7f91uqnqfg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_crawler.sql |
-| c2f4j7au6s7f91uqnqkg | d75qclkpf2t1uum8ijj0 | c2f4j7au6s7f91uqnqjg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_scheduler.sql |
-| c2f4j7au6s7f91uqnqeg | d75qclkpf2t1uum8ijhg | c2f4j7au6s7f91uqnqdg | apps/tenancy/migrations/0001/20260420_service_stawi_jobs_candidates.sql |
+| d87bdkcpf2t58bn6vaf0 | d87bdkcpf2t58bn6vafg | d87bdkcpf2t58bn6vaeg | apps/tenancy/migrations/0001/20260420_service_limits.sql |
+| d87bdkcpf2t58bn6vagg | d87bdkcpf2t58bn6vah0 | d87bdkcpf2t58bn6vag0 | apps/tenancy/migrations/0001/20260420_service_operations_formstore.sql |
+| d87bdkcpf2t58bn6vai0 | d87bdqcpf2t5b0c3bgbg | d87bdkcpf2t58bn6vahg | apps/tenancy/migrations/0001/20260420_service_operations_queuestore.sql |
 | d86tt34pf2tddudk9pb0 | d86tt34pf2tddudk9pbg | d86tt34pf2tddudk9pag | apps/tenancy/migrations/0001/20260420_service_audit.sql |
 | d86tt34pf2tddudk9pcg | d86tt34pf2tddudk9pd0 | d86tt34pf2tddudk9pc0 | apps/tenancy/migrations/0001/20260420_service_thesa.sql |
 | d86tt34pf2tddudk9pe0 | d86tt34pf2tddudk9peg | d86tt34pf2tddudk9pdg | apps/tenancy/migrations/0001/20260420_service_redirect.sql |
 | d86tt34pf2tddudk9pfg | d86tt34pf2tddudk9pg0 | d86tt34pf2tddudk9pf0 | apps/tenancy/migrations/0001/20260420_service_geolocation.sql |
-| d86tt34pf2tddudk9ph0 | d86tt34pf2tddudk9phg | d86tt34pf2tddudk9pgg | apps/tenancy/migrations/0001/20260420_service_fintech_identity.sql |
-| d86tt34pf2tddudk9pig | d86tt34pf2tddudk9pj0 | d86tt34pf2tddudk9pi0 | apps/tenancy/migrations/0001/20260420_service_fintech_loans.sql |
-| d86tt34pf2tddudk9pk0 | d86tt34pf2tddudk9pkg | d86tt34pf2tddudk9pjg | apps/tenancy/migrations/0001/20260420_service_profile_dek.sql |
 | d86tt34pf2tddudk9plg | d86tt34pf2tddudk9pm0 | d86tt34pf2tddudk9pl0 | apps/tenancy/migrations/0001/20260420_service_payment_airtel.sql |
 | d86tt34pf2tddudk9pn0 | d86tt34pf2tddudk9png | d86tt34pf2tddudk9pmg | apps/tenancy/migrations/0001/20260420_service_payment_mpesa.sql |
 | d86tt34pf2tddudk9pog | d86tt34pf2tddudk9pp0 | d86tt34pf2tddudk9po0 | apps/tenancy/migrations/0001/20260420_service_payment_mtn.sql |
 | d86tt34pf2tddudk9pq0 | d86tt34pf2tddudk9pqg | d86tt34pf2tddudk9ppg | apps/tenancy/migrations/0001/20260420_service_payment_polar.sql |
 | d86tt34pf2tddudk9prg | d86tt34pf2tddudk9ps0 | d86tt34pf2tddudk9pr0 | apps/tenancy/migrations/0001/20260420_service_payment_stripe.sql |
-| d86tt34pf2tddudk9pt0 | d86tt34pf2tddudk9ptg | d86tt34pf2tddudk9psg | apps/tenancy/migrations/0001/20260420_service_trustage_formstore.sql |
-| d86tt34pf2tddudk9pug | d86tt34pf2tddudk9pv0 | d86tt34pf2tddudk9pu0 | apps/tenancy/migrations/0001/20260420_service_trustage_queuestore.sql |
 | d86tt34pf2tddudk9q00 | d86tt34pf2tddudk9q0g | d86tt34pf2tddudk9pvg | apps/tenancy/migrations/0001/20260420_service_opportunities_api.sql |
 | d86tt34pf2tddudk9q1g | d86tt34pf2tddudk9q20 | d86tt34pf2tddudk9q10 | apps/tenancy/migrations/0001/20260420_service_opportunities_crawler.sql |
 | d86tt34pf2tddudk9q30 | d86tt34pf2tddudk9q3g | d86tt34pf2tddudk9q2g | apps/tenancy/migrations/0001/20260420_service_opportunities_matching.sql |
@@ -197,3 +186,35 @@ configuration.
 | d7j42dspf2tfev9jfh50 | member | d7j42dspf2tfev9jfh40 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
 | d7j42dspf2tfev9jfh5g | admin  | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
 | d7j42dspf2tfev9jfh60 | member | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
+
+## Retired
+Rows that existed in an earlier release but are removed by
+`20260521_cleanup_orphan_and_mismatched_seeds.sql`. Kept here so
+`check-ids.sh` reconciles the DELETE statements with the registry.
+After all clusters have applied the cleanup migration, this section
+and the cleanup migration itself can be removed together.
+
+| xid | what | retired in |
+|-----|------|------------|
+| c2f4j7au6s7f91uqnphg | foundry client                  | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnpig | foundry service account         | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnpjg | gitvault client                 | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnpkg | gitvault service account        | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqdg | stawi-jobs-candidates client    | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqeg | stawi-jobs-candidates SA        | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqfg | stawi-jobs-crawler client       | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqgg | stawi-jobs-crawler SA           | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqhg | stawi-jobs-api client           | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqig | stawi-jobs-api SA               | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqjg | stawi-jobs-scheduler client     | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| c2f4j7au6s7f91uqnqkg | stawi-jobs-scheduler SA         | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pgg | service-fintech-identity client | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9ph0 | service-fintech-identity SA     | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pi0 | service-fintech-loans client    | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pig | service-fintech-loans SA        | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pjg | service-profile-dek client      | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pk0 | service-profile-dek SA          | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9psg | trustage-formstore client       | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pt0 | trustage-formstore SA           | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pu0 | trustage-queuestore client      | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
+| d86tt34pf2tddudk9pug | trustage-queuestore SA          | 20260521_cleanup_orphan_and_mismatched_seeds.sql |
