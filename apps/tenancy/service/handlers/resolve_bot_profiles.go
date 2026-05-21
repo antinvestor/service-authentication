@@ -42,8 +42,6 @@ var staticServiceProfiles = map[string]string{
 	"service-files":          "d75qclkpf2t1uum8ij90",
 	"service-chat-drone":     "d75qclkpf2t1uum8ij9g",
 	"service-chat-gateway":   "d75qclkpf2t1uum8ija0",
-	"foundry":                "d75qclkpf2t1uum8ijag",
-	"gitvault":               "d75qclkpf2t1uum8ijb0",
 	"trustage":               "d75qclkpf2t1uum8ijbg",
 	"service-notification-integration-africastalking": "d75qclkpf2t1uum8ijc0",
 	"service-notification-integration-emailsmtp":      "d75qclkpf2t1uum8ijcg",
@@ -124,8 +122,7 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 // isPlaceholderProfileID returns true if the profile_id looks like a
 // human-readable placeholder rather than a real xid. Placeholder values
 // from migrations contain underscores (e.g. "service_authentication") or
-// are short names (e.g. "foundry"). Real xid IDs are exactly 20 characters
-// with no underscores.
+// are short names. Real xid IDs are exactly 20 characters with no underscores.
 func isPlaceholderProfileID(profileID string) bool {
 	if profileID == "" {
 		return true
