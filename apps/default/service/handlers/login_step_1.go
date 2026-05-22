@@ -42,6 +42,16 @@ var (
 // Note: NATS JetStream KV only allows alphanumeric, dash, underscore, slash, equals, and period in keys
 const loginEventCachePrefix = "login_event_"
 
+// loginEventPropertyFedCMNonce holds the per-login nonce we pass into
+// navigator.credentials.get({identity: …}) on /s/login. The id_token returned
+// by FedCM (from either our own IdP or a federated provider like Google) MUST
+// carry this exact value in its "nonce" claim, otherwise the completion
+// endpoints reject it as a replay or substitution attempt. Persisting the
+// nonce here — rather than re-deriving it from a cookie or signed token —
+// gives us a single server-controlled binding that's destroyed alongside the
+// LoginEvent when the login completes.
+const loginEventPropertyFedCMNonce = "fedcm_nonce"
+
 const SessionKeyLoginStorageName = "login-storage"
 const SessionKeyLoginEventID = "login-event-id"
 
@@ -202,6 +212,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			"duration_ms":    time.Since(start).Milliseconds(),
 		}).Info("login skipped - redirecting to OAuth2 flow")
 
+		setLoginStatusLoggedIn(rw)
 		http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 		return nil
 	}
@@ -213,6 +224,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		if rememberErr == nil {
 			log.WithField("old_login_event_id", rememberMeLoginEventID).
 				Info("remember-me auto-login successful")
+			setLoginStatusLoggedIn(rw)
 			http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 			return nil
 		}
@@ -231,11 +243,24 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	// proper tenancy context for verification creation
 	h.updateTenancyForLoginEvent(ctx, loginEvent.GetID())
 
-	// Step 6: Prepare and render login template
+	// Step 6: Generate and persist the FedCM nonce. The same value is rendered
+	// into the page and stored on the LoginEvent — the completion endpoints
+	// then verify the id_token's nonce claim against the cached copy.
+	fedcmNonce := util.IDString()
+	if loginEvent.Properties == nil {
+		loginEvent.Properties = map[string]any{}
+	}
+	loginEvent.Properties[loginEventPropertyFedCMNonce] = fedcmNonce
+	if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
+		log.WithError(cacheErr).Debug("failed to re-cache login event with FedCM nonce")
+	}
+
+	// Step 7: Prepare and render login template
 	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()
 	payload["ClientID"] = loginEvent.ClientID
-	payload["FedCMNonce"] = util.IDString()
+	payload["FedCMNonce"] = fedcmNonce
+	payload["GoogleClientID"] = h.config.AuthProviderGoogleClientID
 	payload["error"] = ""
 
 	maps.Copy(payload, h.loginOptions)

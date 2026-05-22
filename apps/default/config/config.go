@@ -82,8 +82,7 @@ type AuthenticationConfig struct {
 	// headless driver for server-to-server /oauth2/auth and /oauth2/token calls.
 	// When empty, the driver falls back to Oauth2ServiceURI.
 	FedCMHydraPublicURL    string `envDefault:"" env:"FEDCM_HYDRA_PUBLIC_URL"`
-	FedCMProviderURL       string `envDefault:"" env:"FEDCM_PROVIDER_URL"`
-	FedCMPublicOrigin      string `envDefault:"" env:"FEDCM_PUBLIC_ORIGIN"`
+	FedCMPublicOrigin      string `envDefault:"https://accounts.stawi.org" env:"FEDCM_PUBLIC_ORIGIN"`
 	FedCMDefaultPrivacyURL string `envDefault:"" env:"FEDCM_DEFAULT_PRIVACY_URL"`
 	FedCMDefaultToSURL     string `envDefault:"" env:"FEDCM_DEFAULT_TOS_URL"`
 	FedCMDefaultIconURL    string `envDefault:"" env:"FEDCM_DEFAULT_ICON_URL"`

@@ -35,8 +35,14 @@ func TestClientMetadataResponse_ShapeAndContent(t *testing.T) {
 
 	require.Equal(t, "https://app/priv", body["privacy_policy_url"])
 	require.Equal(t, "https://app/tos", body["terms_of_service_url"])
-	require.Equal(t, "https://app/icon.png", body["icon_url"])
-	require.Equal(t, "#112233", body["background_colour"])
+	// FedCM spec: client_metadata only carries privacy/ToS URLs — icon/colour
+	// belong in the config.json branding object and are ignored here.
+	_, hasIcon := body["icon_url"]
+	require.False(t, hasIcon, "client_metadata must not include icon_url")
+	_, hasBg := body["background_colour"]
+	require.False(t, hasBg, "client_metadata must not include background colour")
+	_, hasBgUS := body["background_colour"]
+	require.False(t, hasBgUS, "client_metadata must not include background colour")
 }
 
 func TestFedCMClientMetadataEndpoint_RejectsMissingSecFetchDest(t *testing.T) {

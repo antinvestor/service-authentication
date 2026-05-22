@@ -45,6 +45,8 @@ type fedcmAssertionRequest struct {
 // and stashes access/refresh tokens in a one-shot cache entry for the
 // follow-up /fedcm/token-exchange call.
 func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Request) error {
+	setFedCMCORSHeaders(w, r)
+
 	if r.Header.Get("Sec-Fetch-Dest") != "webidentity" {
 		w.WriteHeader(http.StatusBadRequest)
 		return nil
@@ -170,7 +172,7 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	entry.LastUsedAt = time.Now()
 	session.Upsert(entry)
 	session.LastActive = time.Now()
-	if werr := h.fedcmSession.Write(w, session); werr != nil {
+	if werr := h.fedcmSession.Write(w, r, session); werr != nil {
 		log.WithError(werr).Warn("rewrite idp_session after id-assertion")
 	}
 

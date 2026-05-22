@@ -63,6 +63,7 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 	}
 
 	h.clearRememberMeCookie(rw)
+	setLoginStatusLoggedOut(rw)
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func TestWellKnownWebIdentity_ReturnsProviderURL(t *testing.T) {
-	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com")
+	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com", "", "")
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/.well-known/web-identity", nil)
@@ -26,7 +26,7 @@ func TestWellKnownWebIdentity_ReturnsProviderURL(t *testing.T) {
 }
 
 func TestFedCMConfig_ReturnsAllRequiredEndpoints(t *testing.T) {
-	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com")
+	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com", "#ffffff", "https://auth.example.com/icon.png")
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/fedcm/config.json", nil)
@@ -40,4 +40,11 @@ func TestFedCMConfig_ReturnsAllRequiredEndpoints(t *testing.T) {
 	require.Equal(t, "https://auth.example.com/fedcm/id-assertion", cfg["id_assertion_endpoint"])
 	require.Equal(t, "https://auth.example.com/fedcm/disconnect", cfg["disconnect_endpoint"])
 	require.Equal(t, "https://auth.example.com/s/fedcm/login", cfg["login_url"])
+
+	branding, ok := cfg["branding"].(map[string]any)
+	require.True(t, ok, "branding object must be present")
+	require.Equal(t, "#ffffff", branding["background_colour"], "FedCM spec uses US spelling")
+	icons, ok := branding["icons"].([]any)
+	require.True(t, ok, "branding.icons must be an array")
+	require.Len(t, icons, 1)
 }

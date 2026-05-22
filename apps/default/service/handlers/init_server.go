@@ -174,7 +174,7 @@ func NewAuthServer(ctx context.Context,
 		h.fedcmRevocation = fedcm.NewRevocationStore(kv)
 	}
 	publicOrigin := strings.TrimRight(authConfig.FedCMPublicOrigin, "/")
-	h.fedcmWellKnown = NewFedCMWellKnownHandler(publicOrigin)
+	h.fedcmWellKnown = NewFedCMWellKnownHandler(publicOrigin, authConfig.FedCMDefaultBgColor, authConfig.FedCMDefaultIconURL)
 	h.fedcmDriver = &fedcm.HeadlessDriver{
 		HydraAdmin:          h.defaultHydraCli,
 		HydraPublicURL:      hydraPublicURL(authConfig),

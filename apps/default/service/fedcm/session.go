@@ -92,36 +92,69 @@ func (c *SessionCodec) Read(r *http.Request) (*models.IdPSession, error) {
 	return s, nil
 }
 
-// Write sets the encrypted idp_session cookie on the response with hardened
-// attributes appropriate for FedCM (SameSite=None so the browser can attach
-// the cookie on cross-site FedCM calls).
-func (c *SessionCodec) Write(w http.ResponseWriter, s *models.IdPSession) error {
+// Write sets the encrypted idp_session cookie on the response. For FedCM the
+// cookie needs SameSite=None so the browser will attach it on cross-site
+// FedCM fetches; in turn that requires Secure=true on HTTPS. The request is
+// inspected so plain-HTTP dev environments (where Chrome refuses to store
+// Secure cookies) can still iterate locally.
+func (c *SessionCodec) Write(w http.ResponseWriter, r *http.Request, s *models.IdPSession) error {
 	encoded, err := c.Encode(s)
 	if err != nil {
 		return err
+	}
+	secure := requestIsTLS(r)
+	sameSite := http.SameSiteNoneMode
+	if !secure {
+		// SameSite=None without Secure is rejected by browsers; fall back to
+		// Lax for HTTP dev. FedCM still won't work over plain HTTP because the
+		// API itself requires a secure context, but the cookie at least sticks
+		// for tests and same-origin probes.
+		sameSite = http.SameSiteLaxMode
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     CookieNameIdPSession,
 		Value:    encoded,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		Expires:  s.CreatedAt.Add(models.IdPSessionHardCap),
 	})
 	return nil
 }
 
-// Clear removes the idp_session cookie from the browser.
-func (c *SessionCodec) Clear(w http.ResponseWriter) {
+// Clear removes the idp_session cookie from the browser. The attributes must
+// match those used in Write or some browsers refuse to evict the cookie.
+func (c *SessionCodec) Clear(w http.ResponseWriter, r *http.Request) {
+	secure := requestIsTLS(r)
+	sameSite := http.SameSiteNoneMode
+	if !secure {
+		sameSite = http.SameSiteLaxMode
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     CookieNameIdPSession,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
 	})
+}
+
+// requestIsTLS reports whether the original client request was over HTTPS.
+// It checks the request's TLS field plus the X-Forwarded-Proto header set by
+// the load balancer / ingress in front of the service.
+func requestIsTLS(r *http.Request) bool {
+	if r == nil {
+		return true
+	}
+	if r.TLS != nil {
+		return true
+	}
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		return proto == "https"
+	}
+	return false
 }

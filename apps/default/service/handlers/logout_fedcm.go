@@ -33,10 +33,10 @@ func (h *AuthServer) purgeIdPSessionEntry(_ context.Context, w http.ResponseWrit
 		return nil
 	}
 	if len(session.Entries) == 0 {
-		h.fedcmSession.Clear(w)
+		h.fedcmSession.Clear(w, r)
 		return nil
 	}
-	return h.fedcmSession.Write(w, session)
+	return h.fedcmSession.Write(w, r, session)
 }
 
 // knownClientsForSubject returns the OAuth2 client IDs that this subject has

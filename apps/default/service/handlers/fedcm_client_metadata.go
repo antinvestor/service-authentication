@@ -23,18 +23,20 @@ import (
 )
 
 // BuildClientMetadataResponse renders the JSON object returned by
-// GET /fedcm/client_metadata for a resolved Branding.
+// GET /fedcm/client_metadata for a resolved Branding. The FedCM spec only
+// recognises privacy_policy_url and terms_of_service_url here; client-level
+// branding (colour, icons) belongs in the config.json branding object instead.
 func BuildClientMetadataResponse(b fedcm.Branding) map[string]any {
 	return map[string]any{
 		"privacy_policy_url":   b.PrivacyPolicyURL,
 		"terms_of_service_url": b.TermsOfServiceURL,
-		"icon_url":             b.IconURL,
-		"background_colour":    b.BackgroundColor,
 	}
 }
 
 // FedCMClientMetadataEndpoint serves GET /fedcm/client_metadata?client_id=...
 func (h *AuthServer) FedCMClientMetadataEndpoint(w http.ResponseWriter, r *http.Request) error {
+	setFedCMCORSHeaders(w, r)
+
 	if r.Header.Get("Sec-Fetch-Dest") != "webidentity" {
 		w.WriteHeader(http.StatusBadRequest)
 		return nil
@@ -57,8 +59,6 @@ func (h *AuthServer) FedCMClientMetadataEndpoint(w http.ResponseWriter, r *http.
 		BackgroundColor:   h.config.FedCMDefaultBgColor,
 	})
 
-	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	return json.NewEncoder(w).Encode(BuildClientMetadataResponse(b))
@@ -95,4 +95,15 @@ func writeFedCMError(w http.ResponseWriter, status int, code string) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(map[string]string{"error": code})
+}
+
+// setFedCMCORSHeaders writes the CORS headers required by the FedCM spec on
+// RP-facing endpoints (id_assertion, disconnect, client_metadata). The browser
+// sends the RP's Origin header on these requests; the IdP must echo it back
+// and allow credentials so the response is accepted.
+func setFedCMCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
 }

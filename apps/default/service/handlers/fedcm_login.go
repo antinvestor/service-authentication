@@ -222,6 +222,7 @@ func (h *AuthServer) FedCMVerifySubmit(rw http.ResponseWriter, req *http.Request
 		"login_event_id": loginEventID,
 	}).Info("fedcm cold-start: login complete, rendering close page")
 
+	setLoginStatusLoggedIn(rw)
 	return fedcmCloseTmpl.Execute(rw, nil)
 }
 
@@ -241,6 +242,7 @@ func (h *AuthServer) FedCMLoginComplete(
 ) error {
 	ctx := req.Context()
 	h.fedcmWriteIdPSession(ctx, rw, req, profileID, contact, contactType, name, loginEventID, authMethod)
+	setLoginStatusLoggedIn(rw)
 	return fedcmCloseTmpl.Execute(rw, nil)
 }
 
@@ -428,7 +430,7 @@ func (h *AuthServer) fedcmWriteIdPSession(
 		LoginEventID: loginEventID,
 		AuthMethod:   authMethod,
 	})
-	if writeErr := h.fedcmSession.Write(rw, idpSession); writeErr != nil {
+	if writeErr := h.fedcmSession.Write(rw, req, idpSession); writeErr != nil {
 		log.WithError(writeErr).Error("fedcm: failed to write idp_session cookie")
 	}
 }

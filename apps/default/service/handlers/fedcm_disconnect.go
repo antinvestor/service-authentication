@@ -31,6 +31,8 @@ type fedcmDisconnectRequest struct {
 // (profile_id, client_id) so that any live session on other browsers is
 // rejected on its next id_assertion.
 func (h *AuthServer) FedCMDisconnectEndpoint(w http.ResponseWriter, r *http.Request) error {
+	setFedCMCORSHeaders(w, r)
+
 	if r.Header.Get("Sec-Fetch-Dest") != "webidentity" {
 		w.WriteHeader(http.StatusBadRequest)
 		return nil
@@ -56,8 +58,8 @@ func (h *AuthServer) FedCMDisconnectEndpoint(w http.ResponseWriter, r *http.Requ
 
 	session.Remove(body.AccountID)
 	if len(session.Entries) == 0 {
-		h.fedcmSession.Clear(w)
-	} else if werr := h.fedcmSession.Write(w, session); werr != nil {
+		h.fedcmSession.Clear(w, r)
+	} else if werr := h.fedcmSession.Write(w, r, session); werr != nil {
 		log.WithError(werr).Error("rewrite idp_session after disconnect")
 		return writeFedCMError(w, http.StatusInternalServerError, "server_error")
 	}

@@ -126,8 +126,10 @@ func TestSessionCodec_Write_SetsHardenedAttributes(t *testing.T) {
 	sc := fedcm.NewSessionCodec(codec, "fedcm_idp_session_v1")
 
 	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/fedcm/accounts", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
 	sess := &models.IdPSession{Version: models.IdPSessionCurrentVersion, CreatedAt: time.Now(), LastActive: time.Now()}
-	require.NoError(t, sc.Write(rec, sess))
+	require.NoError(t, sc.Write(rec, req, sess))
 
 	result := rec.Result()
 	defer result.Body.Close()
@@ -141,10 +143,26 @@ func TestSessionCodec_Write_SetsHardenedAttributes(t *testing.T) {
 	require.Equal(t, "/", c.Path)
 }
 
+func TestSessionCodec_Write_PlainHTTP_DowngradesAttributes(t *testing.T) {
+	codec := newTestCodec(t)
+	sc := fedcm.NewSessionCodec(codec, "fedcm_idp_session_v1")
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "http://localhost/fedcm/accounts", nil)
+	sess := &models.IdPSession{Version: models.IdPSessionCurrentVersion, CreatedAt: time.Now(), LastActive: time.Now()}
+	require.NoError(t, sc.Write(rec, req, sess))
+
+	c := rec.Result().Cookies()[0]
+	require.False(t, c.Secure, "plain HTTP must not emit Secure")
+	require.Equal(t, http.SameSiteLaxMode, c.SameSite, "plain HTTP must downgrade to Lax")
+}
+
 func TestSessionCodec_Clear_ZeroesCookie(t *testing.T) {
 	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/fedcm/disconnect", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
 	sc := fedcm.NewSessionCodec(newTestCodec(t), "fedcm_idp_session_v1")
-	sc.Clear(rec)
+	sc.Clear(rec, req)
 
 	cookies := rec.Result().Cookies()
 	require.Len(t, cookies, 1)
