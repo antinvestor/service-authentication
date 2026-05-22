@@ -119,6 +119,24 @@ func (g *GoogleOIDCProvider) VerifyIDToken(
 		return nil, fmt.Errorf("google: failed to parse id_token claims: %w", err)
 	}
 
+	return ValidateGoogleClaims(claims, expectedNonce)
+}
+
+// ValidateGoogleClaims applies the nonce + email_verified + claim-extraction
+// checks that the OAuth and FedCM flows share. It is exported so the same
+// logic can be exercised in unit tests with a hand-built claims map without
+// round-tripping a real JWT through Google's live JWKS.
+//
+// Callers are responsible for first performing signature, iss, aud and exp
+// validation through oidc.Verifier; this function trusts that the supplied
+// claims already came out of a verified id_token. Returning an error from
+// here is what causes both the OAuth callback and the FedCM completion
+// handler to refuse the login.
+func ValidateGoogleClaims(claims map[string]any, expectedNonce string) (*AuthenticatedUser, error) {
+	if claims == nil {
+		return nil, fmt.Errorf("google: id_token claims are empty")
+	}
+
 	if expectedNonce != "" {
 		tokenNonce, _ := claims["nonce"].(string)
 		if tokenNonce == "" || subtleStringCompare(tokenNonce, expectedNonce) != 1 {
