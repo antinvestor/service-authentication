@@ -151,6 +151,14 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	h.clearDeviceSessionID(rw)
 	h.logConsentSuccess(log, tokenMap, start)
 
+	// Consent always runs after a successful login (either fresh or remembered),
+	// so this is the universally-correct point to inform Chrome's FedCM Login
+	// Status API that the IdP is logged-in. The login handlers also emit this
+	// header at their own redirect points; emitting it here too is idempotent
+	// and covers flows where the login path is bypassed (e.g. token refresh
+	// after a long idle).
+	setLoginStatusLoggedIn(rw)
+
 	// For regular user flows from a browser, render an interstitial page
 	if h.shouldRenderBrowserInterstitial(req, clientObj) {
 		payload := h.initTemplatePayloadWithI18n(ctx, req)

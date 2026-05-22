@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -144,6 +143,11 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	return h.postUserLogin(ctx, rw, req, loginEvt, user, provider.Name())
 }
 
+// postUserLogin completes a provider-based login by driving the shared
+// profile-resolution + Hydra-acceptance flow, then performs a top-level
+// redirect to the URL Hydra returned. The Set-Login: logged-in header is
+// emitted before the redirect so Chrome's Login Status API knows this IdP is
+// in the logged-in state.
 func (h *AuthServer) postUserLogin(
 	ctx context.Context,
 	rw http.ResponseWriter,
@@ -152,6 +156,30 @@ func (h *AuthServer) postUserLogin(
 	loggedInUser *providers.AuthenticatedUser,
 	provider string,
 ) error {
+	redirectURL, err := h.completeProviderLogin(ctx, loginEvt, loggedInUser, provider)
+	if err != nil {
+		return err
+	}
+	setLoginStatusLoggedIn(rw)
+	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
+	return nil
+}
+
+// completeProviderLogin runs the shared "authenticated provider user →
+// Hydra-accepted login session" flow. It is reused by both the OAuth2 code
+// callback and the Google FedCM completion endpoint so the security and
+// data-integrity properties stay identical across paths.
+//
+// On success it returns the URL the browser should navigate to (the value
+// Hydra hands back from AcceptLoginRequest) without writing to any response
+// — leaving the caller free to do an http.Redirect (server-driven) or to
+// encode it into a JSON body for a fetch-driven client.
+func (h *AuthServer) completeProviderLogin(
+	ctx context.Context,
+	loginEvt *models.LoginEvent,
+	loggedInUser *providers.AuthenticatedUser,
+	provider string,
+) (string, error) {
 	start := time.Now()
 	log := util.Log(ctx).WithFields(map[string]any{
 		"provider":       provider,
@@ -161,10 +189,8 @@ func (h *AuthServer) postUserLogin(
 	contactDetail := loggedInUser.Contact
 	if contactDetail == "" {
 		log.Error("external provider did not return a contact (email/phone) for the user")
-		return fmt.Errorf("no contact detail provided by provider %s", provider)
+		return "", fmt.Errorf("no contact detail provided by provider %s", provider)
 	}
-
-	internalRedirectLinkToSignIn := "/s/login?login_challenge=" + url.QueryEscape(loginEvt.LoginChallengeID)
 
 	// Step 1: Look up existing profile by contact
 	log.Debug("looking up user profile by contact")
@@ -173,7 +199,7 @@ func (h *AuthServer) postUserLogin(
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
 			log.WithError(err).Error("profile service lookup failed")
-			return fmt.Errorf("profile lookup failed: %w", err)
+			return "", fmt.Errorf("profile lookup failed: %w", err)
 		}
 		log.Debug("no existing profile found for contact - will create new profile")
 	}
@@ -185,7 +211,7 @@ func (h *AuthServer) postUserLogin(
 
 	if existingProfile != nil && existingProfile.GetType() == profilev1.ProfileType_BOT {
 		log.WithField("profile_id", existingProfile.GetId()).Warn("bot profile attempted UI login via provider")
-		return fmt.Errorf("bot accounts cannot log in through the web interface")
+		return "", fmt.Errorf("bot accounts cannot log in through the web interface")
 	}
 
 	// Step 2: Create profile if not found or if returned profile has empty ID
@@ -212,16 +238,16 @@ func (h *AuthServer) postUserLogin(
 		}))
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create new profile via profile service")
-			return fmt.Errorf("profile creation failed: %w", createErr)
+			return "", fmt.Errorf("profile creation failed: %w", createErr)
 		}
 		existingProfile = createResult.Msg.GetData()
 		if existingProfile == nil {
 			log.Error("profile service returned nil profile after creation")
-			return fmt.Errorf("profile creation returned invalid response")
+			return "", fmt.Errorf("profile creation returned invalid response")
 		}
 		if existingProfile.GetId() == "" {
 			log.Error("profile service returned profile with empty ID")
-			return fmt.Errorf("created profile has empty ID")
+			return "", fmt.Errorf("created profile has empty ID")
 		}
 		log.WithField("profile_id", existingProfile.GetId()).Info("new profile created for provider login")
 	} else {
@@ -247,8 +273,7 @@ func (h *AuthServer) postUserLogin(
 	if contactID == "" {
 		log.WithField("profile_id", existingProfile.GetId()).
 			Error("contact not found within profile - contact/profile linkage is broken")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return nil
+		return "", fmt.Errorf("contact %q not linked to profile %s", contactDetail, existingProfile.GetId())
 	}
 
 	// Step 4: Store login attempt
@@ -265,21 +290,20 @@ func (h *AuthServer) postUserLogin(
 	)
 	if err != nil {
 		log.WithError(err).Error("failed to store login attempt in database")
-		return fmt.Errorf("login attempt storage failed: %w", err)
+		return "", fmt.Errorf("login attempt storage failed: %w", err)
 	}
 
 	// Step 5: Validate profile ID before accepting login
 	profileID := existingProfile.GetId()
 	if profileID == "" {
 		log.Error("profile ID is empty - cannot complete provider login")
-		http.Redirect(rw, req, internalRedirectLinkToSignIn+"&error=profile_error", http.StatusSeeOther)
-		return nil
+		return "", fmt.Errorf("resolved profile has empty ID")
 	}
 
 	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvt.ClientID, profileID)
 	if err != nil {
 		log.WithError(err).Error("failed to ensure tenancy access for provider login")
-		return fmt.Errorf("provider login tenancy access failed: %w", err)
+		return "", fmt.Errorf("provider login tenancy access failed: %w", err)
 	}
 
 	// Step 6: Accept the Hydra login request to complete the OAuth2 flow
@@ -301,7 +325,7 @@ func (h *AuthServer) postUserLogin(
 	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, provider, contactID)
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed after provider authentication")
-		return fmt.Errorf("failed to complete OAuth2 login: %w", err)
+		return "", fmt.Errorf("failed to complete OAuth2 login: %w", err)
 	}
 
 	log.WithFields(map[string]any{
@@ -309,6 +333,5 @@ func (h *AuthServer) postUserLogin(
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("provider login completed successfully")
 
-	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
-	return nil
+	return redirectURL, nil
 }

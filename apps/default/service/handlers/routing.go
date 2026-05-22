@@ -181,6 +181,15 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		}
 	})
 
+	// Google FedCM completion. Same-origin JSON fetch from the /s/login page;
+	// the handler enforces Sec-Fetch-Site, server-bound nonce, and Hydra's
+	// single-use login_challenge so we don't need the HTML CSRF middleware.
+	router.HandleFunc("POST /s/social/google/fedcm-complete", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.FedCMGoogleCompleteEndpoint(w, r); err != nil {
+			h.writeAPIError(r.Context(), w, err, "FedCMGoogleComplete")
+		}
+	})
+
 	// Webhook routes has internal PSK for its authentication with hydra.
 	// When HYDRA_WEBHOOK_API_PSK is empty (default), no auth check is performed
 	// and the endpoint relies on network isolation. When set, the Bearer token

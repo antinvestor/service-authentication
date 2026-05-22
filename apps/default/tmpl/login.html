@@ -65,7 +65,7 @@
 
     <div class="social-buttons">
         {{if .enableGoogleLogin}}
-        <form method="post" action="/s/social/login/{{.loginEventId}}?provider=google" class="social-login-form">
+        <form method="post" action="/s/social/login/{{.loginEventId}}?provider=google" class="social-login-form" data-fedcm-google="1">
             <button type="submit" class="btn-social btn-google" aria-label="{{ if .t.aria_continue_with_provider }}{{ .t.aria_continue_with_provider }}{{ else }}Continue with Google{{ end }}">
                 <svg width="18" height="18" viewBox="0 0 24 24" class="social-icon" aria-hidden="true">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -126,16 +126,32 @@
 </div>
 
 <script src="/static/js/fedcm.js" defer></script>
+<script src="/static/js/fedcm_google.js" defer></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    if (!window.stawiFedCM || !"{{ .ClientID }}" || !"{{ .loginEventId }}") return;
-    window.stawiFedCM.probeAndComplete({
-      configURL: "/fedcm/config.json",
-      clientId: "{{ .ClientID }}",
-      nonce: "{{ .FedCMNonce }}",
-      loginEventId: "{{ .loginEventId }}",
-      mediation: "optional",
-    });
+    // Same-origin FedCM probe against our own IdP. Only does anything for
+    // returning users with an existing idp_session cookie — first-time
+    // visitors fall through silently.
+    if (window.stawiFedCM && "{{ .ClientID }}" && "{{ .loginEventId }}") {
+      window.stawiFedCM.probeAndComplete({
+        configURL: "/fedcm/config.json",
+        clientId: "{{ .ClientID }}",
+        nonce: "{{ .FedCMNonce }}",
+        loginEventId: "{{ .loginEventId }}",
+        mediation: "optional",
+      });
+    }
+
+    // Google FedCM interception. When the user clicks the Google form we try
+    // navigator.credentials.get against Google's configURL first; on any
+    // failure we let the form submit normally (OAuth redirect fallback).
+    if (window.stawiGoogleFedCM && "{{ .GoogleClientID }}" && "{{ .loginEventId }}") {
+      window.stawiGoogleFedCM.install({
+        clientId: "{{ .GoogleClientID }}",
+        nonce: "{{ .FedCMNonce }}",
+        loginEventId: "{{ .loginEventId }}",
+      });
+    }
   });
 </script>
 {{end}}
