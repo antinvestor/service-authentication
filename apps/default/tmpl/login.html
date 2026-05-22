@@ -125,6 +125,18 @@
 
 </div>
 
+<!-- PostHog config emitted before its script so the bootstrap can read it. -->
+<script>
+  window.stawiAnalytics = {
+    apiKey: "{{ .PostHogAPIKey }}",
+    host:   "{{ .PostHogHost }}",
+  };
+  // stawiTrack is a no-op until /static/js/posthog.js replaces it; defining
+  // it here means inline event-emit calls in other scripts never throw if
+  // the SDK fails to load.
+  window.stawiTrack = function () {};
+</script>
+<script src="/static/js/posthog.js" defer></script>
 <script src="/static/js/fedcm.js" defer></script>
 <script src="/static/js/fedcm_google.js" defer></script>
 <script>
@@ -142,16 +154,39 @@
       });
     }
 
-    // Google FedCM interception. When the user clicks the Google form we try
-    // navigator.credentials.get against Google's configURL first; on any
-    // failure we let the form submit normally (OAuth redirect fallback).
+    // Google FedCM. install() binds the explicit click handler AND fires a
+    // passive auto-chip (mediation:"optional") so returning users see
+    // Chrome's One Tap-style account chip without clicking anything. The
+    // chip only appears when Google can produce a candidate without UI
+    // prompts — first-time visitors see nothing.
     if (window.stawiGoogleFedCM && "{{ .GoogleClientID }}" && "{{ .loginEventId }}") {
       window.stawiGoogleFedCM.install({
         clientId: "{{ .GoogleClientID }}",
         nonce: "{{ .FedCMNonce }}",
         loginEventId: "{{ .loginEventId }}",
+        autoChip: true,
       });
     }
+
+    // Lightweight per-method click tracking for the contact + non-Google
+    // social buttons. The Google form is handled inside fedcm_google.js so
+    // we don't double-count.
+    var trackClick = function (form, method) {
+      if (!form) return;
+      form.addEventListener("submit", function () {
+        if (typeof window.stawiTrack === "function") {
+          window.stawiTrack("sign_in_method_clicked", { method: method });
+        }
+      });
+    };
+    trackClick(document.getElementById("contactLoginForm"), "contact");
+    document.querySelectorAll("form.social-login-form").forEach(function (f) {
+      if (f.hasAttribute("data-fedcm-google")) return;
+      var action = f.getAttribute("action") || "";
+      var match = action.match(/provider=([a-z]+)/);
+      var prov = (match && match[1]) || "unknown";
+      trackClick(f, prov);
+    });
   });
 </script>
 {{end}}

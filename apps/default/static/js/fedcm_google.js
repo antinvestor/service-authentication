@@ -1,23 +1,32 @@
 // apps/default/static/js/fedcm_google.js
 //
-// Intercepts the "Continue with Google" form on /s/login. When the browser
-// supports FedCM and Google is configured, the click triggers
-// navigator.credentials.get against Google's IdP configURL and posts the
-// resulting id_token to /s/social/google/fedcm-complete. Any failure (no
-// FedCM, no Google account, user dismisses, network, server-side rejection)
-// transparently falls through to the form's default action — the legacy
-// OAuth2 redirect — so users on browsers without FedCM never notice the
-// difference.
+// Google FedCM on /s/login: two complementary flows on the same page.
+//
+//   1. Auto-chip (passive): on DOM-ready, attempts FedCM with
+//      mediation:"optional" so the browser shows Chrome's One Tap-style
+//      account chip without any user action — but only when Google can
+//      produce a candidate without prompting. If the chip is dismissed or
+//      no account is eligible the browser silently returns null and we
+//      stay on the page.
+//
+//   2. Explicit click (active): the existing "Continue with Google" form
+//      retains its click handler with mediation:"required" so users who
+//      ignore the chip and click the button get an explicit account chooser.
+//      Any failure transparently falls back to the legacy OAuth2 redirect
+//      (form.submit()).
 //
 // Hardened against:
-//   - Double-submit:    a single in-flight flag short-circuits repeat clicks.
+//   - Double-submit:    a single in-flight flag short-circuits repeat clicks
+//                       AND prevents the auto-chip from racing the click.
 //   - Open-redirect:    the JSON response's redirect_url is only followed
-//                       when it parses as a URL and matches a same-origin
-//                       relative path OR is on a Hydra/auth host expected
-//                       by the existing OAuth callback flow.
+//                       when it is a same-origin path or an HTTPS URL.
 //   - Stale handlers:   install() is idempotent — re-running it on the same
-//                       form replaces the previous handler instead of
-//                       stacking them.
+//                       form is a no-op.
+//   - Silent IdP swap:  Google's configURL is hard-coded; not template-driven.
+//
+// Telemetry: every state transition emits a window.stawiTrack(...) event so
+// PostHog dashboards see the funnel from chip-shown → chip-dismissed → form
+// click → token verified → server-side login complete.
 (function () {
   "use strict";
 
@@ -29,6 +38,21 @@
   // Same-origin (relative) endpoint that consumes the id_token. Keep this
   // a path, not a full URL, so the request inherits the page's origin.
   var COMPLETE_ENDPOINT = "/s/social/google/fedcm-complete";
+
+  // Module-level guard so the auto-chip and click handler can't both run
+  // their network completion at the same time. Modifying this is the only
+  // way one flow tells the other "back off".
+  var inFlight = false;
+
+  function track(event, props) {
+    try {
+      if (typeof window.stawiTrack === "function") {
+        window.stawiTrack(event, props || {});
+      }
+    } catch (_e) {
+      // Analytics must never break login.
+    }
+  }
 
   function fedcmSupported() {
     return (
@@ -58,21 +82,22 @@
 
   // attemptGoogleFedCM runs navigator.credentials.get with Google's configURL.
   // Resolves to the id_token string on success, null otherwise. Never throws.
-  async function attemptGoogleFedCM(opts) {
+  // mediation: "required" forces the account chooser; "optional" lets the
+  // browser auto-select without UI when a returning user is eligible (One
+  // Tap chip behaviour); "silent" never shows UI at all.
+  async function attemptGoogleFedCM(opts, mediation) {
     try {
       var cred = await navigator.credentials.get({
         identity: {
-          providers: [{
-            configURL: GOOGLE_FEDCM_CONFIG,
-            clientId: opts.clientId,
-            nonce: opts.nonce,
-          }],
+          providers: [
+            {
+              configURL: GOOGLE_FEDCM_CONFIG,
+              clientId: opts.clientId,
+              nonce: opts.nonce,
+            },
+          ],
         },
-        // 'required' means: the user explicitly clicked the button, the
-        // browser MUST show the account chooser. 'optional' would let the
-        // browser silently fail when no auto-select is possible, which is
-        // wrong UX for an explicit click.
-        mediation: "required",
+        mediation: mediation || "required",
       });
       if (cred && typeof cred.token === "string" && cred.token.length > 0) {
         return cred.token;
@@ -109,47 +134,110 @@
     }
   }
 
-  function install(opts) {
-    if (!opts || !opts.clientId || !opts.loginEventId) return;
-    if (!fedcmSupported()) return;
+  // runFlow is the shared body for both the auto-chip and click handler:
+  //   1. Ask FedCM for a Google id_token (mediation differs)
+  //   2. If we got one, post it to /s/social/google/fedcm-complete
+  //   3. If the server returns a safe redirect URL, navigate to it
+  // Returns true if the navigation kicks off; false otherwise (caller may
+  // fall back to a different path — e.g. submitting the OAuth form).
+  async function runFlow(opts, mediation, source) {
+    if (inFlight) return false;
+    inFlight = true;
+    try {
+      track("fedcm_google_attempt", {
+        mediation: mediation,
+        source: source,
+        login_event_id: opts.loginEventId,
+      });
 
+      var idToken = await attemptGoogleFedCM(opts, mediation);
+      if (!idToken) {
+        track("fedcm_google_no_token", {
+          mediation: mediation,
+          source: source,
+        });
+        return false;
+      }
+
+      track("fedcm_google_token_received", {
+        mediation: mediation,
+        source: source,
+      });
+
+      var redirect = await sendCompletion(opts, idToken);
+      if (!redirect) {
+        track("fedcm_google_server_rejected", { source: source });
+        return false;
+      }
+
+      track("fedcm_google_redirect", { source: source });
+      window.location.assign(redirect);
+      return true;
+    } finally {
+      inFlight = false;
+    }
+  }
+
+  // bindClick wires the explicit-click flow on every form tagged
+  // data-fedcm-google. On click we attempt FedCM with mediation:"required";
+  // on failure we let the form submit normally so the OAuth fallback runs.
+  function bindClick(opts) {
     var forms = document.querySelectorAll("form[data-fedcm-google]");
     forms.forEach(function (form) {
-      // Idempotency: avoid stacking handlers if install() runs more than
-      // once (e.g. tests, hot-reload, multiple DOMContentLoaded firings).
       if (form.__stawiGoogleFedCMBound) return;
       form.__stawiGoogleFedCMBound = true;
-
-      var inFlight = false;
 
       form.addEventListener("submit", function (event) {
         if (inFlight) {
           event.preventDefault();
           return;
         }
-        // Tell the browser to wait — we'll decide whether to fall through
-        // to the form's default action or to navigate ourselves.
         event.preventDefault();
-        inFlight = true;
-
+        track("sign_in_method_clicked", {
+          method: "google",
+          fedcm_supported: true,
+        });
         (async function () {
-          try {
-            var idToken = await attemptGoogleFedCM(opts);
-            if (idToken) {
-              var redirect = await sendCompletion(opts, idToken);
-              if (redirect) {
-                window.location.assign(redirect);
-                return;
-              }
-            }
-            // Fall through: submit the form normally (OAuth redirect).
+          var navigated = await runFlow(opts, "required", "click");
+          if (!navigated) {
+            // OAuth fallback — preserves the user's progress when FedCM
+            // is unavailable, the chooser was dismissed, or the server
+            // refused the token.
+            track("fedcm_google_fallback_to_oauth");
             form.submit();
-          } finally {
-            inFlight = false;
           }
         })();
       });
     });
+  }
+
+  // autoChip kicks off a passive FedCM attempt at DOM-ready. mediation
+  // "optional" tells the browser to show its auto-prompt UI (One Tap chip)
+  // when it has a candidate but to silently no-op otherwise. We never call
+  // this with "silent" — silent mediation would auto-sign-in users without
+  // any UI confirmation, which is the wrong default for a sign-in page.
+  function autoChip(opts) {
+    if (!opts.autoChip) return;
+    // Defer to the next tick so the page paints first; the chip appearing
+    // mid-paint causes visible jank.
+    setTimeout(function () {
+      // Don't trigger the chip if a click is already in flight (user was
+      // faster than the auto-chip).
+      if (inFlight) return;
+      void runFlow(opts, "optional", "auto_chip");
+    }, 0);
+  }
+
+  function install(opts) {
+    if (!opts || !opts.clientId || !opts.loginEventId) return;
+    if (!fedcmSupported()) {
+      // Still emit a telemetry signal so we know how many users land
+      // without FedCM and rely on the OAuth fallback.
+      track("fedcm_unsupported", { provider: "google" });
+      return;
+    }
+    bindClick(opts);
+    autoChip(opts);
   }
 
   window.stawiGoogleFedCM = { install: install };

@@ -87,8 +87,19 @@ func (h *AuthServer) FedCMCompleteLogin(w http.ResponseWriter, r *http.Request) 
 	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, nil, "fedcm", "fedcm")
 	if err != nil {
 		log.WithError(err).Error("fedcm-complete: AcceptLoginRequest failed")
+		h.emitAnalyticsEvent(ctx, r, subject, evtFedCMSelfFailed, map[string]any{
+			"login_event_id": loginEventID,
+			"client_id":      ev.ClientID,
+			"reason":         "accept_login_failed",
+		})
 		return writeFedCMError(w, http.StatusInternalServerError, "server_error")
 	}
+
+	h.emitLoginCompleted(ctx, r, subject, "self_fedcm", ev.ClientID)
+	h.emitAnalyticsEvent(ctx, r, subject, evtFedCMSelfSuccess, map[string]any{
+		"login_event_id": loginEventID,
+		"client_id":      ev.ClientID,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

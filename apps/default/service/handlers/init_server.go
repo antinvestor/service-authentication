@@ -39,6 +39,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
+	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/pitabwire/frame/cache"
 	"github.com/pitabwire/frame/client"
@@ -98,6 +99,11 @@ type AuthServer struct {
 	fedcmRevocation *fedcm.RevocationStore
 	fedcmDriver     *fedcm.HeadlessDriver
 	fedcmWellKnown  *FedCMWellKnownHandler
+
+	// Product analytics. Always non-nil — telemetry.New returns a noop
+	// client when POSTHOG_API_KEY is empty — so handlers can call
+	// analytics.Capture(...) unconditionally.
+	analytics telemetry.Client
 
 	// eventsMan is used by handlers to publish async events (e.g. avatar
 	// sync after social login). Set via SetEventsManager after the frame
@@ -181,6 +187,8 @@ func NewAuthServer(ctx context.Context,
 		InternalCallbackURL: publicOrigin + "/_internal/fedcm-callback",
 		Now:                 time.Now,
 	}
+
+	h.analytics = telemetry.New(ctx, authConfig.PostHogAPIKey, authConfig.PostHogHost)
 
 	h.setupLoginOptions(authConfig)
 

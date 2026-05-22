@@ -151,6 +151,14 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	h.clearDeviceSessionID(rw)
 	h.logConsentSuccess(log, tokenMap, start)
 
+	subjectAtConsent := ""
+	if subj, ok := tokenMap["sub"].(string); ok {
+		subjectAtConsent = subj
+	}
+	h.emitAnalyticsEvent(ctx, req, subjectAtConsent, evtConsentGranted, map[string]any{
+		"client_id": clientID,
+	})
+
 	// Consent always runs after a successful login (either fresh or remembered),
 	// so this is the universally-correct point to inform Chrome's FedCM Login
 	// Status API that the IdP is logged-in. The login handlers also emit this

@@ -137,6 +137,11 @@ func (h *AuthServer) FedCMGoogleCompleteEndpoint(w http.ResponseWriter, r *http.
 	user, verifyErr := googleProvider.VerifyIDToken(ctx, body.IDToken, expectedNonce)
 	if verifyErr != nil {
 		log.WithError(verifyErr).Warn("Google FedCM id_token verification failed")
+		h.emitAnalyticsEvent(ctx, r, "", evtFedCMGoogleFailed, map[string]any{
+			"login_event_id": body.LoginEventID,
+			"client_id":      loginEvt.ClientID,
+			"reason":         "id_token_verification",
+		})
 		return writeFedCMError(w, http.StatusUnauthorized, "invalid_token")
 	}
 
@@ -162,11 +167,21 @@ func (h *AuthServer) FedCMGoogleCompleteEndpoint(w http.ResponseWriter, r *http.
 	ctx = util.SetTenancy(ctx, loginEvt)
 
 	// Step 8: Run the shared profile-resolution + Hydra-acceptance path.
-	redirectURL, runErr := h.completeProviderLogin(ctx, loginEvt, user, googleProvider.Name())
+	redirectURL, runErr := h.completeProviderLogin(ctx, r, loginEvt, user, googleProvider.Name())
 	if runErr != nil {
 		log.WithError(runErr).Error("Google FedCM provider login completion failed")
+		h.emitAnalyticsEvent(ctx, r, "", evtFedCMGoogleFailed, map[string]any{
+			"login_event_id": body.LoginEventID,
+			"client_id":      loginEvt.ClientID,
+			"reason":         "post_auth_failure",
+		})
 		return writeFedCMError(w, http.StatusInternalServerError, "completion_failed")
 	}
+
+	h.emitAnalyticsEvent(ctx, r, "", evtFedCMGoogleSuccess, map[string]any{
+		"login_event_id": body.LoginEventID,
+		"client_id":      loginEvt.ClientID,
+	})
 
 	log.WithFields(map[string]any{
 		"profile_present": user.Contact != "",

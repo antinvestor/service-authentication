@@ -175,6 +175,8 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("login submission completed successfully")
 
+	h.emitLoginCompleted(ctx, req, profileID, "contact", loginEvent.ClientID)
+
 	setLoginStatusLoggedIn(rw)
 	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil

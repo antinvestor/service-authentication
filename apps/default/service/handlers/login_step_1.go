@@ -137,6 +137,11 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 		"duration_ms":    time.Since(start).Milliseconds(),
 	}).Debug("login event created and cached")
 
+	h.emitAnalyticsEvent(ctx, req, "", evtLoginEventCreated, map[string]any{
+		"login_event_id": loginEvt.GetID(),
+		"client_id":      clientID,
+	})
+
 	return &loginEvt, nil
 }
 
@@ -261,6 +266,8 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	payload["ClientID"] = loginEvent.ClientID
 	payload["FedCMNonce"] = fedcmNonce
 	payload["GoogleClientID"] = h.config.AuthProviderGoogleClientID
+	payload["PostHogAPIKey"] = h.config.PostHogAPIKey
+	payload["PostHogHost"] = h.config.PostHogHost
 	payload["error"] = ""
 
 	maps.Copy(payload, h.loginOptions)

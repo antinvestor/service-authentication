@@ -92,4 +92,12 @@ type AuthenticationConfig struct {
 	// invalidates all outstanding idp_session cookies without changing the
 	// underlying AES key.
 	FedCMIdPSessionCookieKey string `envDefault:"fedcm_idp_session_v1" env:"FEDCM_IDP_SESSION_COOKIE_KEY"`
+
+	// PostHog product analytics. The same phc_* project key is used by both
+	// the Go server SDK and the browser SDK — that is by design in PostHog,
+	// the project key is public. Set PostHogAPIKey to the empty string in
+	// any environment where analytics should be disabled (the wrapper falls
+	// back to a noop client).
+	PostHogHost   string `envDefault:"https://eu.posthog.com" env:"POSTHOG_HOST"`
+	PostHogAPIKey string `envDefault:"phc_zoC2QdgTQcNfo7RPqCYYMyjGmJxEynav54w2mjbHcTmm" env:"POSTHOG_API_KEY"`
 }

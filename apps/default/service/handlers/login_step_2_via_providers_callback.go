@@ -156,7 +156,7 @@ func (h *AuthServer) postUserLogin(
 	loggedInUser *providers.AuthenticatedUser,
 	provider string,
 ) error {
-	redirectURL, err := h.completeProviderLogin(ctx, loginEvt, loggedInUser, provider)
+	redirectURL, err := h.completeProviderLogin(ctx, req, loginEvt, loggedInUser, provider)
 	if err != nil {
 		return err
 	}
@@ -176,6 +176,7 @@ func (h *AuthServer) postUserLogin(
 // encode it into a JSON body for a fetch-driven client.
 func (h *AuthServer) completeProviderLogin(
 	ctx context.Context,
+	req *http.Request,
 	loginEvt *models.LoginEvent,
 	loggedInUser *providers.AuthenticatedUser,
 	provider string,
@@ -332,6 +333,8 @@ func (h *AuthServer) completeProviderLogin(
 		"profile_id":  profileID,
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("provider login completed successfully")
+
+	h.emitLoginCompleted(ctx, req, profileID, provider, loginEvt.ClientID)
 
 	return redirectURL, nil
 }
