@@ -170,34 +170,37 @@ a:focus-visible,
 
 .btn-google-hero {
     width: 100%;
-    min-height: 52px;
-    padding: 0.875rem 1.25rem;
-    border: 1px solid var(--auth-border);
-    border-radius: var(--auth-radius);
-    background: var(--auth-card-bg);
-    color: var(--auth-text);
-    font-size: 1rem;
-    font-weight: 600;
+    min-height: 48px;
+    padding: 0 1rem;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    background: #fff;
+    color: #3c4043;
+    font-family: 'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.25px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .btn-google-hero:hover:not(:disabled) {
-    border-color: var(--auth-input-border-hover);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    background: #f7f8f8;
+    border-color: #c6c6c6;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
 }
 
 .btn-google-hero:active:not(:disabled) {
-    background: var(--auth-page-bg);
+    background: #eee;
 }
 
 .btn-google-hero:focus-visible {
     outline: none;
-    box-shadow: var(--auth-focus-ring);
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.3);
 }
 
 /* ==========================================================================
@@ -845,13 +848,27 @@ a:focus-visible,
    ========================================================================== */
 
 @media (prefers-color-scheme: dark) {
-    .btn-google-hero,
+    .btn-google-hero {
+        background: #131314;
+        border-color: #8e918f;
+        color: #e3e3e3;
+    }
+
+    .btn-google-hero:hover:not(:disabled) {
+        background: #1f1f1f;
+        border-color: #a0a4a2;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-google-hero:active:not(:disabled) {
+        background: #2a2a2a;
+    }
+
     .btn-google {
         background: var(--auth-input-bg);
         border-color: var(--auth-border);
     }
 
-    .btn-google-hero:hover:not(:disabled),
     .btn-google:hover:not(:disabled) {
         background: var(--auth-card-bg);
         border-color: var(--auth-input-border-hover);
