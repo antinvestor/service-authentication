@@ -2,8 +2,8 @@
 -- Service account: service-savings
 -- Savings account management. Handles savings products, accounts,
 -- deposits, withdrawals, and interest calculations. Calls
--- operations for transfer execution and profile for account
--- holder identity.
+-- operations for transfer execution, profile for account holder
+-- identity, and tenancy for multi-tenant scoping.
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -19,7 +19,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_audit":["*"],"service_identity":["*"],"service_operations":["*"],"service_profile":["*"]}',
+    '{"service_audit":["*"],"service_identity":["*"],"service_operations":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnq6g',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -36,6 +36,6 @@ INSERT INTO service_accounts (
     'service-savings',
     'c2f4j7au6s7f91uqnq5g',
     'internal',
-    '{"service_audit":["*"],"service_identity":["*"],"service_operations":["*"],"service_profile":["*"]}',
+    '{"service_audit":["*"],"service_identity":["*"],"service_operations":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
