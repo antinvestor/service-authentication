@@ -1,8 +1,9 @@
 -- Copyright 2023-2026 Ant Investor Ltd
 -- Service account: trustage
 -- Trust and escrow management. Handles held funds and conditional
--- releases. Needs notification for status updates and profile/
--- tenancy for participant identity.
+-- releases. Needs notification for status updates, profile/tenancy
+-- for participant identity, and opportunities_crawler for trust-
+-- linked opportunity data.
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -18,7 +19,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"opportunities_crawler":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnpmg',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -35,6 +36,6 @@ INSERT INTO service_accounts (
     'trustage',
     'c2f4j7au6s7f91uqnplg',
     'internal',
-    '{"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"opportunities_crawler":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
