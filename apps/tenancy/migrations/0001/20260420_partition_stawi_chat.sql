@@ -35,9 +35,9 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_chat":["*"],"service_device":["*"],"service_file":["*"],"service_geolocation":["*"],"service_profile":["*"]}',
-    '{"uris":["https://chat.stawi.org/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
+    '{"uris":["https://chat.stawi.org/sso/redirect","https://stawi-chat.web.app/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://static.stawi.org/logo.png',
-    '{"uris":["https://chat.stawi.org/sso/logout"]}',
+    '{"uris":["https://chat.stawi.org/sso/logout","https://stawi-chat.web.app/sso/logout"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -74,8 +74,8 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_chat":["*"],"service_device":["*"],"service_file":["*"],"service_geolocation":["*"],"service_profile":["*"]}',
-    '{"uris":["https://chat-dev.stawi.org/sso/redirect","org.stawi.chat://sso/redirect","https://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
+    '{"uris":["https://chat-dev.stawi.org/sso/redirect","https://stawi-chat.web.app/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://static.stawi.org/logo.png',
-    '{"uris":["https://chat-dev.stawi.org/sso/logout","org.stawi.chat://sso/logout","https://localhost:5170/sso/logout"]}',
+    '{"uris":["https://chat-dev.stawi.org/sso/logout","https://stawi-chat.web.app/sso/logout","org.stawi.chat://sso/logout","http://localhost:5170/sso/logout"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
