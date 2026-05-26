@@ -93,7 +93,7 @@
             {
               configURL: GOOGLE_FEDCM_CONFIG,
               clientId: opts.clientId,
-              nonce: opts.nonce,
+              params: {nonce: opts.nonce},
             },
           ],
         },

@@ -14,7 +14,7 @@
           providers: [{
             configURL: opts.configURL,
             clientId: opts.clientId,
-            nonce: opts.nonce,
+            params: {nonce: opts.nonce},
           }],
         },
         mediation: opts.mediation || "optional",
