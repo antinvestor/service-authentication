@@ -79,10 +79,13 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable") // 1 year, immutable for versioned assets
 
 		// Set proper content types
-		if filepath.Ext(r.URL.Path) == ".css" {
+		switch filepath.Ext(r.URL.Path) {
+		case ".css":
 			w.Header().Set("Content-Type", "text/css")
-		} else if filepath.Ext(r.URL.Path) == ".js" {
+		case ".js":
 			w.Header().Set("Content-Type", "application/javascript")
+		case ".svg":
+			w.Header().Set("Content-Type", "image/svg+xml")
 		}
 
 		fileServer.ServeHTTP(w, r)
@@ -94,6 +97,10 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	// Custom root handler that handles both static files and index
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/favicon.ico" {
+			http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
+			return
+		}
 		if strings.HasPrefix(r.URL.Path, "/static/") {
 			// Handle static files
 			staticHandler.ServeHTTP(w, r)

@@ -88,6 +88,7 @@ configuration.
 | d87bdkcpf2t58bn6vaeg | service-limits | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_limits.sql |
 | d87bdkcpf2t58bn6vag0 | operations-formstore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_formstore.sql |
 | d87bdkcpf2t58bn6vahg | operations-queuestore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_queuestore.sql |
+| d8as62bvfo145u8bon3g | service-fort | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260526_seed_service_fort.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -134,6 +135,7 @@ configuration.
 | d86tt34pf2tddudk9q4g | d86tt34pf2tddudk9q50 | d86tt34pf2tddudk9q40 | apps/tenancy/migrations/0001/20260420_service_opportunities_materializer.sql |
 | d86tt34pf2tddudk9q60 | d86tt34pf2tddudk9q6g | d86tt34pf2tddudk9q5g | apps/tenancy/migrations/0001/20260420_service_opportunities_worker.sql |
 | d86tt34pf2tddudk9q7g | d86tt34pf2tddudk9q80 | d86tt34pf2tddudk9q70 | apps/tenancy/migrations/0001/20260420_service_opportunities_writer.sql |
+| d8as62fieol45uar4okg | d8as6297jdi45ufqlh70 | d8as62bvfo145u8bon3g | apps/tenancy/migrations/0001/20260526_seed_service_fort.sql |
 
 ## Partition roles
 | xid | role | partition | file |
