@@ -11,7 +11,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('9bsv0s0hijjg02qk7l1g','9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g','c2f4j7au6s7f91uqnokg',
         'Stawi','Default stawi partition to serve the masses',true,
-        '{"default_role":"user","allow_auto_access":true,"support_contacts":{"msisdn":"+256757546244","email":"chat@stawi.org"},"logo_uri":"https://static.stawi.org/logo.png","redirect_uris":["https://chat.stawi.org/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"],"post_logout_redirect_uris":["https://chat.stawi.org/sso/logout"]}')
+        '{"default_role":"user","allow_auto_access":true,"support_contacts":{"msisdn":"+256757546244","email":"chat@stawi.org"}}')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
@@ -29,7 +29,7 @@ INSERT INTO clients (
     'd6l82t4pf2t82gudn7tg',
     '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g',
     'Stawi',
-    'd6qbqdkpf2t52mcunf40',
+    '9bsv0s0hijjg02qk7l1g',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
@@ -50,7 +50,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('9bsv0s0hijjg02qks6i0','9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0','c2f4j7au6s7f91uqnokg',
         'Stawi Development','Default Stawi development partition',true,
-        '{"default_role":"user","allow_auto_access":true,"support_contacts":{"msisdn":"+256757546244","email":"info@stawi.org"},"logo_uri":"https://static.stawi.org/logo.png","redirect_uris":["https://chat-dev.stawi.org/sso/redirect","https://stawi-chat.web.app/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"],"post_logout_redirect_uris":["https://chat-dev.stawi.org/sso/logout","https://stawi-chat.web.app/sso/logout","org.stawi.chat://sso/logout","http://localhost:5170/sso/logout"]}')
+        '{"default_role":"user","allow_auto_access":true,"support_contacts":{"msisdn":"+256757546244","email":"info@stawi.org"}}')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partition_roles (id, created_at, modified_at, version, tenant_id, partition_id, name, is_default, properties) VALUES
@@ -68,7 +68,7 @@ INSERT INTO clients (
     'd6l82t4pf2t82gudn7u0',
     '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0',
     'Stawi Development',
-    'd6qbqdkpf2t52mcunf4g',
+    '9bsv0s0hijjg02qks6i0',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
