@@ -2,7 +2,8 @@
 -- Service account: service-authentication
 -- Core identity provider. Manages OAuth2 flows, login/consent,
 -- and token issuance. Needs profile CRUD for user provisioning,
--- device access for MFA, and notification for verification emails.
+-- device access for MFA, notification for verification emails, and
+-- files for async avatar import from external IdPs (added in 59728b4).
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id, client_secret,
@@ -18,7 +19,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_device":["*"],"service_file":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnolg',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -35,6 +36,6 @@ INSERT INTO service_accounts (
     'service-authentication',
     'c2f4j7au6s7f91uqnoog',
     'internal',
-    '{"service_device":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_device":["*"],"service_file":["*"],"service_notification":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
