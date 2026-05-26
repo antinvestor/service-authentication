@@ -161,19 +161,51 @@ a:focus-visible,
 }
 
 /* ==========================================================================
-   Contact Login (Primary)
+   Google Hero (Primary Sign-In)
+   ========================================================================== */
+
+.google-hero-section {
+    margin-bottom: 1rem;
+}
+
+.btn-google-hero {
+    width: 100%;
+    min-height: 52px;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid var(--auth-border);
+    border-radius: var(--auth-radius);
+    background: var(--auth-card-bg);
+    color: var(--auth-text);
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-google-hero:hover:not(:disabled) {
+    border-color: var(--auth-input-border-hover);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.btn-google-hero:active:not(:disabled) {
+    background: var(--auth-page-bg);
+}
+
+.btn-google-hero:focus-visible {
+    outline: none;
+    box-shadow: var(--auth-focus-ring);
+}
+
+/* ==========================================================================
+   Contact Login
    ========================================================================== */
 
 .contact-login-section {
     margin-bottom: 1.5rem;
-}
-
-/* ==========================================================================
-   Social Login (Secondary)
-   ========================================================================== */
-
-.social-login-section {
-    margin-top: 1.5rem;
 }
 
 .social-buttons {
@@ -773,7 +805,8 @@ a:focus-visible,
     .form-group input,
     .btn-primary,
     .btn-secondary,
-    .btn-social {
+    .btn-social,
+    .btn-google-hero {
         min-height: 48px;
     }
 
@@ -812,11 +845,13 @@ a:focus-visible,
    ========================================================================== */
 
 @media (prefers-color-scheme: dark) {
+    .btn-google-hero,
     .btn-google {
         background: var(--auth-input-bg);
         border-color: var(--auth-border);
     }
 
+    .btn-google-hero:hover:not(:disabled),
     .btn-google:hover:not(:disabled) {
         background: var(--auth-card-bg);
         border-color: var(--auth-input-border-hover);
