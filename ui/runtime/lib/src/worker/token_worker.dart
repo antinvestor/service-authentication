@@ -234,14 +234,16 @@ class TokenWorker implements TokenProvider {
       'code_challenge_method': 'S256',
       'state': state,
       'nonce': nonce,
-      if (config.audiences.isNotEmpty) 'audience': config.audiences.join(','),
     };
     final sep = discovery.authorizationEndpoint.contains('?') ? '&' : '?';
-    final qs = params.entries
+    final parts = params.entries
         .map((e) =>
             '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
-        .join('&');
-    final url = '${discovery.authorizationEndpoint}$sep$qs';
+        .toList();
+    for (final aud in config.audiences) {
+      parts.add('audience=${Uri.encodeQueryComponent(aud)}');
+    }
+    final url = '${discovery.authorizationEndpoint}$sep${parts.join('&')}';
 
     return AuthorizeRequest(
       url: url,
