@@ -36,7 +36,7 @@ INSERT INTO clients (
     'openid offline_access profile',
     '{"service_profile":["*"]}',
     '{"uris":["https://jobs.stawi.org/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
-    'https://static.stawi.im/logo.png',
+    'https://stawi.org/images/logo.png',
     '{"uris":["https://jobs.stawi.org/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
@@ -75,7 +75,7 @@ INSERT INTO clients (
     'openid offline_access profile',
     '{"service_profile":["*"]}',
     '{"uris":["https://jobs-dev.stawi.org/auth/callback/","http://localhost:5170/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
-    'https://static.stawi.im/logo.png',
+    'https://stawi.org/images/logo.png',
     '{"uris":["https://jobs-dev.stawi.org/","http://localhost:5170/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
