@@ -1,7 +1,7 @@
 {{ define "title"}}Select Your Workspace{{ end }}
 
 {{ define "subtitle" }}
-<p>You have access to the following workspaces. Select one to continue.</p>
+<p>Choose a workspace to continue.</p>
 {{ end }}
 
 {{define "content"}}
@@ -19,11 +19,43 @@
         padding: 0.5rem 0 0.75rem;
     }
 
+    .ws-search {
+        position: relative;
+        margin-bottom: 0.75rem;
+    }
+
+    .ws-search input {
+        width: 100%;
+        padding: 0.625rem 0.875rem 0.625rem 2.25rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 0.625rem;
+        background: rgba(255, 255, 255, 0.85);
+        font-size: 0.9rem;
+        color: var(--auth-text-primary, #0f172a);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ws-search input:focus {
+        outline: none;
+        border-color: var(--auth-accent, #3b82f6);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .ws-search .ws-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--auth-text-secondary, #94a3b8);
+        font-size: 1rem;
+        pointer-events: none;
+    }
+
     .ws-list {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
     }
 
     .ws-card {
@@ -47,6 +79,11 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
 
+    .ws-card[data-current="true"] {
+        border-color: var(--auth-accent, #3b82f6);
+        background: rgba(59, 130, 246, 0.06);
+    }
+
     .ws-icon {
         width: 2.5rem;
         height: 2.5rem;
@@ -64,12 +101,16 @@
     .ws-info {
         flex: 1;
         margin-left: 0.875rem;
+        min-width: 0;
     }
 
     .ws-name {
         font-weight: 600;
         font-size: 0.95rem;
         color: var(--auth-text-primary, #0f172a);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .ws-type {
@@ -78,10 +119,60 @@
         margin-top: 0.125rem;
     }
 
+    .ws-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--auth-accent, #3b82f6);
+        background: rgba(59, 130, 246, 0.1);
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.375rem;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+    }
+
     .ws-arrow {
         color: var(--auth-text-secondary, #94a3b8);
         font-size: 1.25rem;
         margin-left: 0.5rem;
+    }
+
+    .ws-no-results {
+        text-align: center;
+        padding: 1.5rem 1rem;
+        color: var(--auth-text-secondary, #64748b);
+        font-size: 0.9rem;
+        display: none;
+    }
+
+    .ws-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        font-size: 0.85rem;
+        color: var(--auth-text-secondary, #64748b);
+    }
+
+    .ws-pagination button {
+        background: transparent;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        cursor: pointer;
+        color: var(--auth-text-primary, #0f172a);
+        font-size: 0.85rem;
+        transition: all 0.15s ease;
+    }
+
+    .ws-pagination button:hover:not(:disabled) {
+        border-color: var(--auth-accent, #3b82f6);
+        background: rgba(59, 130, 246, 0.04);
+    }
+
+    .ws-pagination button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 
     .ws-empty {
@@ -116,21 +207,42 @@
 
 <div class="ws-shell">
     {{ if .HasWorkspaces }}
-    <form method="post" action="/s/access/workspace" class="ws-list">
+    {{ if gt (len .Workspaces) 5 }}
+    <div class="ws-search">
+        <span class="ws-search-icon" aria-hidden="true">&#128269;</span>
+        <input id="ws-search-input" type="search" placeholder="Search workspaces" autocomplete="off" aria-label="Search workspaces">
+    </div>
+    {{ end }}
+
+    <form id="ws-form" method="post" action="/s/access/workspace" class="ws-list">
         <input type="hidden" name="login_event_id" value="{{ .LoginEventID }}">
         <input type="hidden" name="login_challenge" value="{{ .LoginChallengeID }}">
         <input type="hidden" name="consent_challenge" value="{{ .ConsentChallengeID }}">
         {{ range .Workspaces }}
-        <button class="ws-card" type="submit" name="partition_id" value="{{ .PartitionID }}" title="Continue with {{ .Name }}">
+        <button class="ws-card" type="submit" name="partition_id" value="{{ .PartitionID }}"
+                title="Continue with {{ .Name }}"
+                data-name="{{ .Name }}"
+                data-current="{{ if .IsCurrent }}true{{ else }}false{{ end }}">
             <div class="ws-icon">{{ .Initial }}</div>
             <div class="ws-info">
                 <div class="ws-name">{{ .Name }}</div>
                 <div class="ws-type">Workspace</div>
             </div>
+            {{ if .IsCurrent }}<span class="ws-badge">Current</span>{{ end }}
             <div class="ws-arrow">&rarr;</div>
         </button>
         {{ end }}
     </form>
+
+    <div id="ws-no-results" class="ws-no-results">No workspaces match your search.</div>
+
+    {{ if gt (len .Workspaces) 8 }}
+    <nav id="ws-pagination" class="ws-pagination" aria-label="Workspace pagination">
+        <button type="button" id="ws-prev" aria-label="Previous page">&larr; Prev</button>
+        <span id="ws-page-info">Page 1</span>
+        <button type="button" id="ws-next" aria-label="Next page">Next &rarr;</button>
+    </nav>
+    {{ end }}
     {{ else }}
     <div class="ws-empty">
         <div class="ws-empty-icon">&#128274;</div>
@@ -153,4 +265,60 @@
         {{ end }}
     </div>
 </div>
+
+<script>
+    (function () {
+        const form = document.getElementById('ws-form');
+        if (!form) return;
+        const cards = Array.from(form.querySelectorAll('.ws-card'));
+        const searchInput = document.getElementById('ws-search-input');
+        const noResults = document.getElementById('ws-no-results');
+        const pagination = document.getElementById('ws-pagination');
+        const prevBtn = document.getElementById('ws-prev');
+        const nextBtn = document.getElementById('ws-next');
+        const pageInfo = document.getElementById('ws-page-info');
+
+        const pageSize = 8;
+        let page = 0;
+        let filtered = cards.slice();
+
+        function applyFilter() {
+            const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+            filtered = q
+                ? cards.filter(c => (c.dataset.name || '').toLowerCase().includes(q))
+                : cards.slice();
+            page = 0;
+            render();
+        }
+
+        function render() {
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (page >= totalPages) page = totalPages - 1;
+
+            const start = page * pageSize;
+            const end = start + pageSize;
+            const visible = new Set(filtered.slice(start, end));
+
+            cards.forEach(c => {
+                c.style.display = visible.has(c) ? '' : 'none';
+            });
+
+            if (noResults) noResults.style.display = total === 0 ? 'block' : 'none';
+
+            if (pagination) {
+                pagination.style.display = total > pageSize ? 'flex' : 'none';
+                if (prevBtn) prevBtn.disabled = page === 0;
+                if (nextBtn) nextBtn.disabled = page >= totalPages - 1;
+                if (pageInfo) pageInfo.textContent = 'Page ' + (page + 1) + ' of ' + totalPages;
+            }
+        }
+
+        if (searchInput) searchInput.addEventListener('input', applyFilter);
+        if (prevBtn) prevBtn.addEventListener('click', () => { if (page > 0) { page--; render(); } });
+        if (nextBtn) nextBtn.addEventListener('click', () => { page++; render(); });
+
+        render();
+    })();
+</script>
 {{end}}

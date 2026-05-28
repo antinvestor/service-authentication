@@ -253,7 +253,7 @@ func (h *AuthServer) filterAccessibleChildPartitions(
 		}
 
 		partitionID := strings.TrimSpace(access.GetPartition().GetId())
-		if partitionID == "" || partitionID == requestedPartitionID {
+		if partitionID == "" {
 			continue
 		}
 

@@ -21,6 +21,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 
@@ -77,6 +78,7 @@ type workspaceEntry struct {
 	Name        string
 	Initial     string
 	PartitionID string
+	IsCurrent   bool
 }
 
 func buildWorkspaceSelectorURL(req *http.Request, redirectErr *accessInstructionsRedirectError) string {
@@ -103,7 +105,7 @@ func buildWorkspaceSelectorURL(req *http.Request, redirectErr *accessInstruction
 	return workspaceSelectorPath
 }
 
-func workspaceEntryFromAccess(access *tenancyv1.AccessObject) workspaceEntry {
+func workspaceEntryFromAccess(access *tenancyv1.AccessObject, requestedPartitionID string) workspaceEntry {
 	partition := access.GetPartition()
 	name := strings.TrimSpace(partition.GetName())
 	if name == "" {
@@ -119,6 +121,7 @@ func workspaceEntryFromAccess(access *tenancyv1.AccessObject) workspaceEntry {
 		Name:        name,
 		Initial:     initial,
 		PartitionID: partition.GetId(),
+		IsCurrent:   partition.GetId() == requestedPartitionID,
 	}
 }
 
@@ -156,8 +159,19 @@ func (h *AuthServer) workspaceSelectionOptions(
 		if access == nil || access.GetPartition() == nil {
 			continue
 		}
-		workspaces = append(workspaces, workspaceEntryFromAccess(access))
+		workspaces = append(workspaces, workspaceEntryFromAccess(access, requestedPartition.GetId()))
 	}
+
+	// Surface the current workspace first so users can pick it directly.
+	slices.SortStableFunc(workspaces, func(a, b workspaceEntry) int {
+		if a.IsCurrent && !b.IsCurrent {
+			return -1
+		}
+		if !a.IsCurrent && b.IsCurrent {
+			return 1
+		}
+		return 0
+	})
 
 	return workspaces, requestedPartition, nil
 }
