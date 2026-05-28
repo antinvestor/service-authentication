@@ -19,7 +19,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_field":["*"],"service_identity":["*"],"service_loans":["*"],"service_operations":["*"],"service_tenancy":["*"]}',
+    '{"service_field":["*"],"service_identity":["*"],"service_loans":["*"],"service_operations":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnqag',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -36,6 +36,6 @@ INSERT INTO service_accounts (
     'service-seed',
     'c2f4j7au6s7f91uqnq9g',
     'internal',
-    '{"service_field":["*"],"service_identity":["*"],"service_loans":["*"],"service_operations":["*"],"service_tenancy":["*"]}',
+    '{"service_field":["*"],"service_identity":["*"],"service_loans":["*"],"service_operations":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;

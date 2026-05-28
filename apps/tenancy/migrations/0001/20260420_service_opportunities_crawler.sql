@@ -18,7 +18,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_file":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_file":["*"],"service_profile":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     'private_key_jwt',
     'd86tt34pf2tddudk9q1g',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -35,6 +35,6 @@ INSERT INTO service_accounts (
     'opportunities-crawler',
     'd86tt34pf2tddudk9q10',
     'internal',
-    '{"service_file":["*"],"service_profile":["*"],"service_tenancy":["*"]}',
+    '{"service_file":["*"],"service_profile":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;

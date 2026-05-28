@@ -21,7 +21,7 @@ INSERT INTO clients (
     'internal',
     '{"types": ["client_credentials"]}',
     'system_int openid',
-    '{"service_field":["*"],"service_file":["*"],"service_identity":["*"],"service_ledger":["*"],"service_loans":["*"],"service_notification":["*"],"service_operations":["*"],"service_payment":["*"],"service_profile":["*"],"service_savings":["*"],"service_tenancy":["*"]}',
+    '{"service_field":["*"],"service_file":["*"],"service_identity":["*"],"service_ledger":["*"],"service_loans":["*"],"service_notification":["*"],"service_operations":["*"],"service_payment":["*"],"service_profile":["*"],"service_savings":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     'private_key_jwt',
     'c2f4j7au6s7f91uqnqcg',
     '{"jwks_uri": "https://oauth2.stawi.org/.well-known/jwks.json"}'
@@ -38,6 +38,6 @@ INSERT INTO service_accounts (
     'service-stawi',
     'c2f4j7au6s7f91uqnqbg',
     'internal',
-    '{"service_field":["*"],"service_file":["*"],"service_identity":["*"],"service_ledger":["*"],"service_loans":["*"],"service_notification":["*"],"service_operations":["*"],"service_payment":["*"],"service_profile":["*"],"service_savings":["*"],"service_tenancy":["*"]}',
+    '{"service_field":["*"],"service_file":["*"],"service_identity":["*"],"service_ledger":["*"],"service_loans":["*"],"service_notification":["*"],"service_operations":["*"],"service_payment":["*"],"service_profile":["*"],"service_savings":["*"],"service_tenancy":["*"],"service_trustage":["*"]}',
     '{}'
 ) ON CONFLICT (id) DO NOTHING;
