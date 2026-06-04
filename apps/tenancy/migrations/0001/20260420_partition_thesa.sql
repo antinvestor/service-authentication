@@ -34,9 +34,9 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_tenancy":["*"],"service_device":["*"],"service_profile":["*"],"service_notification":["*"],"service_payment":["*"],"service_ledger":["*"],"service_setting":["*"],"service_file":["*"],"service_trustage":["*"]}',
-    '{"uris":["https://thesa.pages.dev/auth/callback","https://thesa0.web.app/auth/callback","org.stawi.thesa://auth/callback","http://localhost:5173/auth/callback","https://accounts.stawi.org/_internal/fedcm-callback"]}',
+    '{"uris":["https://thesa.stawi.org/auth/callback","https://thesa.pages.dev/auth/callback","https://thesa0.web.app/auth/callback","org.stawi.thesa://auth/callback","http://localhost:5173/auth/callback","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://stawi.org/images/logo.png',
-    '{"uris":["https://thesa.pages.dev/","https://thesa0.web.app/","http://localhost:5173/"]}',
+    '{"uris":["https://thesa.stawi.org/","https://thesa.pages.dev/","https://thesa0.web.app/","http://localhost:5173/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
 
