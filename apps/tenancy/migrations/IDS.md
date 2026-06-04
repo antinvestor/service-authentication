@@ -23,6 +23,7 @@ configuration.
 ## Tenants
 | xid | name | file |
 |-----|------|------|
+| d8gueekpf2tfslum7lmg | Thesa Development | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
 | c2f4j7au6s7f91uqnojg | Thesa | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | 9bsv0s0hijjg02z5lbjg | Stawi | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
 | 9bsv0s0hijjg09bzz6dg | Stawi Development | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
@@ -36,6 +37,7 @@ configuration.
 ## Partitions
 | xid | tenant | parent | file |
 |-----|--------|--------|------|
+| d8gueekpf2tfslum7ln0 | d8gueekpf2tfslum7lmg | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
 | c2f4j7au6s7f91uqnokg | c2f4j7au6s7f91uqnojg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | d7b4qekpf2tshigkrv60 | c2f4j7au6s7f91uqnojg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | 9bsv0s0hijjg02qk7l1g | 9bsv0s0hijjg02z5lbjg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
@@ -51,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| d8gueekpf2tfslum7lp0 | d8gueekpf2tfslum7lpg | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
 | c2f4j7au6s7f91uqnom0 | c2f4j7au6s7f91uqnomg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | d7b4qekpf2tshigkrv80 | d7b4qekpf2tshigkrv8g | d7b4qekpf2tshigkrv60 | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | d6l82t4pf2t82gudn7tg | d6qbqdkpf2t52mcunf40 | 9bsv0s0hijjg02qk7l1g | apps/tenancy/migrations/0001/20260420_partition_stawi.sql |
@@ -140,6 +143,9 @@ configuration.
 ## Partition roles
 | xid | role | partition | file |
 |-----|------|-----------|------|
+| d8gueekpf2tfslum7log | member | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
+| d8gueekpf2tfslum7lo0 | admin  | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
+| d8gueekpf2tfslum7lng | owner  | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260604_partition_thesa_staging.sql |
 | c2f4j7au6s7f91uqnol0 | owner  | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | c2f4j7au6s7f91uqnol1 | admin  | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
 | c2f4j7au6s7f91uqnol2 | member | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_partition_thesa.sql |
