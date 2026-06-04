@@ -474,7 +474,12 @@ func (suite *EventsTestSuite) TestPreparePayload_WithRedirectURIs() {
 
 	uris, ok := payload["redirect_uris"].([]string)
 	require.True(t, ok)
-	assert.Len(t, uris, 2)
+	// authorization_code clients also get the first-party FedCM callback URI
+	// appended by ensureFedCMCallbackRedirectURI.
+	assert.Len(t, uris, 3)
+	assert.Contains(t, uris, "https://example.com/cb")
+	assert.Contains(t, uris, "https://other.com/cb")
+	assert.Contains(t, uris[len(uris)-1], "/_internal/fedcm-callback")
 }
 
 // --- ServiceAccountSyncEvent ---
