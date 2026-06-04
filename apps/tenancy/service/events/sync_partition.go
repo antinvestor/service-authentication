@@ -211,6 +211,7 @@ func preparePayload(clientID string, partition *models.Partition) (map[string]an
 	if gt := extractStringList(partition.Properties, "grant_types"); len(gt) > 0 {
 		grantTypes = gt
 	}
+	uriList = ensureFedCMCallbackRedirectURI(uriList, grantTypes)
 
 	responseTypes := []string{"token", "id_token", "code", "token id_token", "token code id_token"}
 	if rt := extractStringList(partition.Properties, "response_types"); len(rt) > 0 {

@@ -13,21 +13,24 @@ import 'package:http/testing.dart';
 
 const _timeout = Duration(seconds: 5);
 
-ResolvedConfig _cfg({List<String>? audiences}) =>
-    resolveConfig(AuthConfig(
-      clientId: 'c',
-      idpBaseUrl: 'https://idp.example.com',
-      apiBaseUrl: 'https://api.example.com',
-      redirectScheme: 'com.example.app',
-      audiences: audiences,
-    ));
+ResolvedConfig _cfg({List<String>? audiences, String? installationId}) =>
+    resolveConfig(
+      AuthConfig(
+        clientId: 'c',
+        idpBaseUrl: 'https://idp.example.com',
+        apiBaseUrl: 'https://api.example.com',
+        redirectScheme: 'com.example.app',
+        audiences: audiences,
+        installationId: installationId,
+      ),
+    );
 
 Map<String, dynamic> _discoveryDoc({bool dpop = false}) => <String, dynamic>{
-      'issuer': 'https://idp.example.com',
-      'authorization_endpoint': 'https://idp.example.com/oauth2/auth',
-      'token_endpoint': 'https://idp.example.com/oauth2/token',
-      if (dpop) 'dpop_signing_alg_values_supported': ['ES256'],
-    };
+  'issuer': 'https://idp.example.com',
+  'authorization_endpoint': 'https://idp.example.com/oauth2/auth',
+  'token_endpoint': 'https://idp.example.com/oauth2/token',
+  if (dpop) 'dpop_signing_alg_values_supported': ['ES256'],
+};
 
 Map<String, dynamic> _tokenResp({
   String accessToken = 'at-1',
@@ -35,14 +38,13 @@ Map<String, dynamic> _tokenResp({
   int expiresIn = 300,
   String tokenType = 'Bearer',
   String? idToken,
-}) =>
-    <String, dynamic>{
-      'access_token': accessToken,
-      'refresh_token': refreshToken,
-      'expires_in': expiresIn,
-      'token_type': tokenType,
-      'id_token': ?idToken,
-    };
+}) => <String, dynamic>{
+  'access_token': accessToken,
+  'refresh_token': refreshToken,
+  'expires_in': expiresIn,
+  'token_type': tokenType,
+  'id_token': ?idToken,
+};
 
 void main() {
   setUp(clearDiscoveryCache);
@@ -57,8 +59,10 @@ void main() {
           return http.Response(jsonEncode(_discoveryDoc()), 200);
         }
         expect(req.url.toString(), 'https://idp.example.com/oauth2/token');
-        expect(req.headers['content-type'],
-            startsWith('application/x-www-form-urlencoded'));
+        expect(
+          req.headers['content-type'],
+          startsWith('application/x-www-form-urlencoded'),
+        );
         expect(req.headers.containsKey('dpop'), isFalse);
         final form = Uri.splitQueryString(req.body);
         expect(form['grant_type'], 'authorization_code');
@@ -66,8 +70,11 @@ void main() {
         expect(form['code'], 'code-xyz');
         expect(form['code_verifier'], 'verifier-xyz');
         expect(form['redirect_uri'], 'com.example.app://callback');
-        return http.Response(jsonEncode(_tokenResp()), 200,
-            headers: {'content-type': 'application/json'});
+        return http.Response(
+          jsonEncode(_tokenResp()),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       });
 
       final kp = generateDpopKeyPair();
@@ -84,8 +91,7 @@ void main() {
       expect(tokens.tokenType, TokenType.bearer);
     });
 
-    test('DPoP-mode adds DPoP header and retries on nonce challenge',
-        () async {
+    test('DPoP-mode adds DPoP header and retries on nonce challenge', () async {
       final cfg = _cfg();
       var tokenCalls = 0;
       final client = MockClient((req) async {
@@ -105,7 +111,9 @@ void main() {
         final proof = req.headers['dpop']!;
         final payloadB64 = proof.split('.')[1];
         final padded = payloadB64.padRight(
-            payloadB64.length + (4 - payloadB64.length % 4) % 4, '=');
+          payloadB64.length + (4 - payloadB64.length % 4) % 4,
+          '=',
+        );
         final payload =
             jsonDecode(utf8.decode(base64Url.decode(padded))) as Map;
         expect(payload['nonce'], 'n-fresh');
@@ -202,8 +210,13 @@ void main() {
       final exchange = TokenExchange(client: client, timeout: _timeout);
       await expectLater(
         exchange.exchangeCode(cfg, ctx, code: 'c', verifier: 'v'),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.tokenExchangeFailed)),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.tokenExchangeFailed,
+          ),
+        ),
       );
     });
   });
@@ -219,8 +232,9 @@ void main() {
         expect(form['grant_type'], 'refresh_token');
         expect(form['refresh_token'], 'rt-1');
         return http.Response(
-            jsonEncode(_tokenResp(accessToken: 'at-2', refreshToken: 'rt-2')),
-            200);
+          jsonEncode(_tokenResp(accessToken: 'at-2', refreshToken: 'rt-2')),
+          200,
+        );
       });
       final kp = generateDpopKeyPair();
       final ctx = makeDpopContext(kp);
@@ -292,81 +306,101 @@ void main() {
   });
 
   group('exchangeIdToken', () {
-    test('posts RFC 8693 token-exchange grant with id_token subject_token_type',
-        () async {
-      final cfg = _cfg();
-      final client = MockClient((req) async {
-        if (req.url.path.endsWith('/.well-known/openid-configuration')) {
-          return http.Response(jsonEncode(_discoveryDoc()), 200);
-        }
-        expect(req.url.toString(), 'https://idp.example.com/oauth2/token');
-        expect(req.headers['content-type'],
-            startsWith('application/x-www-form-urlencoded'));
-        final form = Uri.splitQueryString(req.body);
-        expect(form['grant_type'],
-            'urn:ietf:params:oauth:grant-type:token-exchange');
-        expect(form['client_id'], 'c');
-        expect(form['subject_token'], 'apple-id-token');
-        expect(form['subject_token_type'],
-            'urn:ietf:params:oauth:token-type:id_token');
-        expect(form['subject_issuer'], 'https://appleid.apple.com');
-        return http.Response(jsonEncode(_tokenResp()), 200,
-            headers: {'content-type': 'application/json'});
-      });
-
-      final kp = generateDpopKeyPair();
-      final ctx = makeDpopContext(kp);
-      final exchange = TokenExchange(client: client, timeout: _timeout);
-      final tokens = await exchange.exchangeIdToken(
-        cfg,
-        ctx,
-        subjectToken: 'apple-id-token',
-        subjectIssuer: 'https://appleid.apple.com',
-      );
-      expect(tokens.accessToken, 'at-1');
-      expect(tokens.refreshToken, 'rt-1');
-      expect(tokens.tokenType, TokenType.bearer);
-    });
-
-    test('DPoP mode attaches a DPoP proof and handles the nonce challenge',
-        () async {
-      final cfg = _cfg();
-      var tokenCalls = 0;
-      final client = MockClient((req) async {
-        if (req.url.path.endsWith('/.well-known/openid-configuration')) {
-          return http.Response(jsonEncode(_discoveryDoc(dpop: true)), 200);
-        }
-        tokenCalls++;
-        expect(req.headers.containsKey('dpop'), isTrue);
-        if (tokenCalls == 1) {
-          return http.Response(
-            jsonEncode({'error': 'use_dpop_nonce'}),
-            401,
-            headers: {'dpop-nonce': 'n-fresh'},
+    test(
+      'posts RFC 8693 token-exchange grant with id_token subject_token_type',
+      () async {
+        final cfg = _cfg(installationId: 'install-123');
+        final client = MockClient((req) async {
+          if (req.url.path.endsWith('/.well-known/openid-configuration')) {
+            return http.Response(jsonEncode(_discoveryDoc()), 200);
+          }
+          expect(req.url.toString(), 'https://idp.example.com/oauth2/token');
+          expect(
+            req.headers['content-type'],
+            startsWith('application/x-www-form-urlencoded'),
           );
-        }
-        final proof = req.headers['dpop']!;
-        final payloadB64 = proof.split('.')[1];
-        final padded = payloadB64.padRight(
-            payloadB64.length + (4 - payloadB64.length % 4) % 4, '=');
-        final payload =
-            jsonDecode(utf8.decode(base64Url.decode(padded))) as Map;
-        expect(payload['nonce'], 'n-fresh');
-        return http.Response(jsonEncode(_tokenResp(tokenType: 'DPoP')), 200);
-      });
+          final form = Uri.splitQueryString(req.body);
+          expect(
+            form['grant_type'],
+            'urn:ietf:params:oauth:grant-type:token-exchange',
+          );
+          expect(form['client_id'], 'c');
+          expect(form['subject_token'], 'apple-id-token');
+          expect(
+            form['subject_token_type'],
+            'urn:ietf:params:oauth:token-type:id_token',
+          );
+          expect(form['subject_issuer'], 'https://appleid.apple.com');
+          expect(form['installation_id'], 'install-123');
+          expect(form['platform'], 'ios');
+          expect(form['device_name'], 'Alice iPhone');
+          return http.Response(
+            jsonEncode(_tokenResp()),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
 
-      final kp = generateDpopKeyPair();
-      final ctx = makeDpopContext(kp);
-      final exchange = TokenExchange(client: client, timeout: _timeout);
-      final tokens = await exchange.exchangeIdToken(
-        cfg,
-        ctx,
-        subjectToken: 'google-id-token',
-        subjectIssuer: 'https://accounts.google.com',
-      );
-      expect(tokens.tokenType, TokenType.dpop);
-      expect(tokenCalls, 2);
-    });
+        final kp = generateDpopKeyPair();
+        final ctx = makeDpopContext(kp);
+        final exchange = TokenExchange(client: client, timeout: _timeout);
+        final tokens = await exchange.exchangeIdToken(
+          cfg,
+          ctx,
+          subjectToken: 'apple-id-token',
+          subjectIssuer: 'https://appleid.apple.com',
+          platform: 'ios',
+          deviceName: 'Alice iPhone',
+        );
+        expect(tokens.accessToken, 'at-1');
+        expect(tokens.refreshToken, 'rt-1');
+        expect(tokens.tokenType, TokenType.bearer);
+      },
+    );
+
+    test(
+      'DPoP mode attaches a DPoP proof and handles the nonce challenge',
+      () async {
+        final cfg = _cfg();
+        var tokenCalls = 0;
+        final client = MockClient((req) async {
+          if (req.url.path.endsWith('/.well-known/openid-configuration')) {
+            return http.Response(jsonEncode(_discoveryDoc(dpop: true)), 200);
+          }
+          tokenCalls++;
+          expect(req.headers.containsKey('dpop'), isTrue);
+          if (tokenCalls == 1) {
+            return http.Response(
+              jsonEncode({'error': 'use_dpop_nonce'}),
+              401,
+              headers: {'dpop-nonce': 'n-fresh'},
+            );
+          }
+          final proof = req.headers['dpop']!;
+          final payloadB64 = proof.split('.')[1];
+          final padded = payloadB64.padRight(
+            payloadB64.length + (4 - payloadB64.length % 4) % 4,
+            '=',
+          );
+          final payload =
+              jsonDecode(utf8.decode(base64Url.decode(padded))) as Map;
+          expect(payload['nonce'], 'n-fresh');
+          return http.Response(jsonEncode(_tokenResp(tokenType: 'DPoP')), 200);
+        });
+
+        final kp = generateDpopKeyPair();
+        final ctx = makeDpopContext(kp);
+        final exchange = TokenExchange(client: client, timeout: _timeout);
+        final tokens = await exchange.exchangeIdToken(
+          cfg,
+          ctx,
+          subjectToken: 'google-id-token',
+          subjectIssuer: 'https://accounts.google.com',
+        );
+        expect(tokens.tokenType, TokenType.dpop);
+        expect(tokenCalls, 2);
+      },
+    );
 
     test('non-2xx raises tokenExchangeFailed', () async {
       final cfg = _cfg();
@@ -386,8 +420,13 @@ void main() {
           subjectToken: 'bad',
           subjectIssuer: 'https://accounts.google.com',
         ),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.tokenExchangeFailed)),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.tokenExchangeFailed,
+          ),
+        ),
       );
     });
 

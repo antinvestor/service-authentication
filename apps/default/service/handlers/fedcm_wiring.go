@@ -35,6 +35,9 @@ func hydraPublicURL(cfg *aconfig.AuthenticationConfig) string {
 	if cfg == nil {
 		return ""
 	}
+	if cfg.Oauth2HydraPublicInternalURL != "" {
+		return cfg.Oauth2HydraPublicInternalURL
+	}
 	if cfg.FedCMHydraPublicURL != "" {
 		return cfg.FedCMHydraPublicURL
 	}

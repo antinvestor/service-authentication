@@ -125,8 +125,9 @@ func main() {
 
 	loginRepo := repository.NewLoginRepository(ctx, dbPool, workManager)
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
+	externalIdentityRepo := repository.NewExternalIdentityRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
+	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, externalIdentityRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
 	srv.SetEventsManager(svc.EventsManager())
 
 	// Setup Connect RPC handler for login history API

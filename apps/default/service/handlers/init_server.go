@@ -38,6 +38,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
+	"github.com/antinvestor/service-authentication/apps/default/service/nativecredentials"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
@@ -77,8 +78,9 @@ type AuthServer struct {
 	iCache cache.Cache[string, models.LoginEvent]
 
 	// Repository dependencies
-	loginRepo      repository.LoginRepository
-	loginEventRepo repository.LoginEventRepository
+	loginRepo            repository.LoginRepository
+	loginEventRepo       repository.LoginEventRepository
+	externalIdentityRepo repository.ExternalIdentityRepository
 
 	// Login options enabled
 	loginOptions map[string]any
@@ -99,6 +101,14 @@ type AuthServer struct {
 	fedcmRevocation *fedcm.RevocationStore
 	fedcmDriver     *fedcm.HeadlessDriver
 	fedcmWellKnown  *FedCMWellKnownHandler
+
+	nativeVerifier *nativecredentials.Verifier
+
+	// tokenFacadeClient reaches Hydra for the public /oauth2/token and
+	// discovery facades. It carries a bounded timeout and is built with a
+	// background context so it does NOT attach the service OAuth2 token
+	// source — proxied requests are forwarded with the caller's own auth.
+	tokenFacadeClient *http.Client
 
 	// Product analytics. Always non-nil — telemetry.New returns a noop
 	// client when POSTHOG_API_KEY is empty — so handlers can call
@@ -123,7 +133,7 @@ func NewAuthServer(ctx context.Context,
 	securityMan security.Manager,
 	authConfig *aconfig.AuthenticationConfig,
 	cacheMan cache.Manager,
-	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository,
+	loginRepository repository.LoginRepository, loginEventRepository repository.LoginEventRepository, externalIdentityRepository repository.ExternalIdentityRepository,
 	profileCli profilev1connect.ProfileServiceClient,
 	deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli tenancyv1connect.TenancyServiceClient,
@@ -158,8 +168,9 @@ func NewAuthServer(ctx context.Context,
 		notificationCli: notificationCli,
 
 		// Initialise repositories
-		loginRepo:      loginRepository,
-		loginEventRepo: loginEventRepository,
+		loginRepo:            loginRepository,
+		loginEventRepo:       loginEventRepository,
+		externalIdentityRepo: externalIdentityRepository,
 
 		defaultHydraCli: hydraCli,
 
@@ -187,6 +198,13 @@ func NewAuthServer(ctx context.Context,
 		InternalCallbackURL: publicOrigin + "/_internal/fedcm-callback",
 		Now:                 time.Now,
 	}
+	h.nativeVerifier = nativecredentials.NewVerifier()
+
+	// Bounded-timeout client for the token/discovery facades. Background
+	// context (like hydraHTTPCli above) keeps the service OAuth2 token source
+	// off proxied requests.
+	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(facadeUpstreamTimeout)}, httpOpts...)
+	h.tokenFacadeClient = client.NewHTTPClient(context.Background(), facadeHTTPOpts...)
 
 	h.analytics = telemetry.New(ctx, authConfig.PostHogAPIKey, authConfig.PostHogHost)
 

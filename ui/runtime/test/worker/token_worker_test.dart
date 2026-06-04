@@ -57,8 +57,7 @@ class _FakeDiscoveryClient implements DiscoveryClient {
 
 /// Stub [TokenExchange] that records calls and returns canned outcomes.
 class _FakeTokenExchange extends TokenExchange {
-  _FakeTokenExchange()
-      : super(timeout: const Duration(seconds: 5));
+  _FakeTokenExchange() : super(timeout: const Duration(seconds: 5));
 
   List<TokenSet> rotateQueue = [];
   List<RefreshOutcome> refreshQueue = [];
@@ -93,6 +92,8 @@ class _FakeTokenExchange extends TokenExchange {
     DpopContext ctx, {
     required String subjectToken,
     required String subjectIssuer,
+    String? platform,
+    String? deviceName,
   }) async {
     idTokenExchangeCalls++;
     lastSubjectToken = subjectToken;
@@ -143,8 +144,7 @@ class _FakeApiProxy extends ApiProxy {
   }) async {
     fetchCalls++;
     final snap = await tp.ensureFresh();
-    seenAuthHeader =
-        '${snap.tokenType.headerValue} ${snap.accessToken}';
+    seenAuthHeader = '${snap.tokenType.headerValue} ${snap.accessToken}';
     if (cannedError != null) throw cannedError!;
     return cannedResponse ??
         ApiResponse(status: 200, headers: const {}, body: Uint8List(0));
@@ -166,8 +166,7 @@ class _FakeApiProxy extends ApiProxy {
   }) async {
     uploadCalls++;
     final snap = await tp.ensureFresh();
-    seenAuthHeader =
-        '${snap.tokenType.headerValue} ${snap.accessToken}';
+    seenAuthHeader = '${snap.tokenType.headerValue} ${snap.accessToken}';
     return cannedResponse ??
         ApiResponse(status: 200, headers: const {}, body: Uint8List(0));
   }
@@ -177,12 +176,14 @@ class _FakeApiProxy extends ApiProxy {
 // Helpers
 // ---------------------------------------------------------------------------
 
-ResolvedConfig _cfg() => resolveConfig(const AuthConfig(
-      clientId: 'c',
-      idpBaseUrl: 'https://idp.example.com',
-      apiBaseUrl: 'https://api.example.com',
-      redirectScheme: 'com.example.app',
-    ));
+ResolvedConfig _cfg() => resolveConfig(
+  const AuthConfig(
+    clientId: 'c',
+    idpBaseUrl: 'https://idp.example.com',
+    apiBaseUrl: 'https://api.example.com',
+    redirectScheme: 'com.example.app',
+  ),
+);
 
 TokenSet _tokens({
   String access = 'at-1',
@@ -190,14 +191,13 @@ TokenSet _tokens({
   DateTime? expiresAt,
   String? idToken,
   TokenType type = TokenType.bearer,
-}) =>
-    TokenSet(
-      accessToken: access,
-      refreshToken: refresh,
-      expiresAt: expiresAt ?? DateTime.utc(2030, 1, 1),
-      tokenType: type,
-      idToken: idToken,
-    );
+}) => TokenSet(
+  accessToken: access,
+  refreshToken: refresh,
+  expiresAt: expiresAt ?? DateTime.utc(2030, 1, 1),
+  tokenType: type,
+  idToken: idToken,
+);
 
 class _Deps {
   _Deps({
@@ -209,16 +209,17 @@ class _Deps {
     _FakeTokenExchange? exchange,
     _FakeApiProxy? proxy,
     Clock? clock,
-  })  : config = _cfg(),
-        keyManager = km ?? DefaultKeyManager(),
-        tokenStore = store ?? SecureTokenStore(kv: InMemoryKeyValueStore()),
-        rootKeyStore = rootKeyStore ??
-            DefaultRootKeyStore(kv: rootKv ?? InMemoryKeyValueStore()),
-        discoveryClient = disco ?? _FakeDiscoveryClient(),
-        tokenExchange = exchange ?? _FakeTokenExchange(),
-        apiProxy = proxy ?? _FakeApiProxy(),
-        refreshLock = RefreshLock(),
-        clock = clock ?? _fixedNow;
+  }) : config = _cfg(),
+       keyManager = km ?? DefaultKeyManager(),
+       tokenStore = store ?? SecureTokenStore(kv: InMemoryKeyValueStore()),
+       rootKeyStore =
+           rootKeyStore ??
+           DefaultRootKeyStore(kv: rootKv ?? InMemoryKeyValueStore()),
+       discoveryClient = disco ?? _FakeDiscoveryClient(),
+       tokenExchange = exchange ?? _FakeTokenExchange(),
+       apiProxy = proxy ?? _FakeApiProxy(),
+       refreshLock = RefreshLock(),
+       clock = clock ?? _fixedNow;
 
   final ResolvedConfig config;
   final KeyManager keyManager;
@@ -231,16 +232,16 @@ class _Deps {
   final Clock clock;
 
   TokenWorker build() => TokenWorker(
-        config: config,
-        keyManager: keyManager,
-        rootKeyStore: rootKeyStore,
-        tokenStore: tokenStore,
-        discoveryClient: discoveryClient,
-        tokenExchange: tokenExchange,
-        apiProxy: apiProxy,
-        refreshLock: refreshLock,
-        clock: clock,
-      );
+    config: config,
+    keyManager: keyManager,
+    rootKeyStore: rootKeyStore,
+    tokenStore: tokenStore,
+    discoveryClient: discoveryClient,
+    tokenExchange: tokenExchange,
+    apiProxy: apiProxy,
+    refreshLock: refreshLock,
+    clock: clock,
+  );
 }
 
 DateTime _fixedNow() => DateTime.utc(2026, 4, 19, 12, 0, 0);
@@ -260,31 +261,34 @@ void main() {
     await w.destroy();
   });
 
-  test('completeAuth persists session and transitions to authenticated',
-      () async {
-    final d = _Deps();
-    final w = d.build();
-    d.tokenExchange.rotateQueue
-        .add(_tokens(access: 'access-1', refresh: 'refresh-1'));
-    final states = <AuthState>[];
-    w.authStateStream.listen(states.add);
+  test(
+    'completeAuth persists session and transitions to authenticated',
+    () async {
+      final d = _Deps();
+      final w = d.build();
+      d.tokenExchange.rotateQueue.add(
+        _tokens(access: 'access-1', refresh: 'refresh-1'),
+      );
+      final states = <AuthState>[];
+      w.authStateStream.listen(states.add);
 
-    await w.init();
-    await w.completeAuth(
-      code: 'code-1',
-      verifier: 'verif-1',
-      state: 's',
-      nonce: 'n',
-      expectedState: 's',
-    );
-    // Flush microtasks so the broadcast stream delivers.
-    await Future<void>.delayed(Duration.zero);
-    expect(d.tokenExchange.exchangeCalls, 1);
-    expect(w.state, AuthState.authenticated);
-    expect(states.last, AuthState.authenticated);
-    expect(await d.tokenStore.load(d.config.namespace), isNotNull);
-    await w.destroy();
-  });
+      await w.init();
+      await w.completeAuth(
+        code: 'code-1',
+        verifier: 'verif-1',
+        state: 's',
+        nonce: 'n',
+        expectedState: 's',
+      );
+      // Flush microtasks so the broadcast stream delivers.
+      await Future<void>.delayed(Duration.zero);
+      expect(d.tokenExchange.exchangeCalls, 1);
+      expect(w.state, AuthState.authenticated);
+      expect(states.last, AuthState.authenticated);
+      expect(await d.tokenStore.load(d.config.namespace), isNotNull);
+      await w.destroy();
+    },
+  );
 
   test('completeAuth rejects state mismatch', () async {
     final d = _Deps();
@@ -298,11 +302,13 @@ void main() {
         nonce: 'n',
         expectedState: 'B',
       ),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
     await w.destroy();
   });
@@ -325,47 +331,60 @@ void main() {
   });
 
   test(
-      'prepareAuth appends audience=a,b,c when audiences configured', () async {
-    final config = resolveConfig(const AuthConfig(
-      clientId: 'c',
-      idpBaseUrl: 'https://idp.example.com',
-      apiBaseUrl: 'https://api.example.com',
-      redirectScheme: 'com.example.app',
-      audiences: ['svc-a', 'svc-b', 'svc-c'],
-    ));
-    final w = TokenWorker(
-      config: config,
-      keyManager: DefaultKeyManager(),
-      rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
-      tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
-      discoveryClient: _FakeDiscoveryClient(),
-      tokenExchange: _FakeTokenExchange(),
-      apiProxy: _FakeApiProxy(),
-      refreshLock: RefreshLock(),
-      clock: _fixedNow,
-    );
-    await w.init();
-    final req = await w.prepareAuth();
-    expect(req.url, contains('audience=svc-a%2Csvc-b%2Csvc-c'));
-    final uri = Uri.parse(req.url);
-    expect(uri.queryParameters['audience'], 'svc-a,svc-b,svc-c');
-    await w.destroy();
-  });
+    'prepareAuth appends repeated audience params when audiences configured',
+    () async {
+      final config = resolveConfig(
+        const AuthConfig(
+          clientId: 'c',
+          idpBaseUrl: 'https://idp.example.com',
+          apiBaseUrl: 'https://api.example.com',
+          redirectScheme: 'com.example.app',
+          audiences: ['svc-a', 'svc-b', 'svc-c'],
+        ),
+      );
+      final w = TokenWorker(
+        config: config,
+        keyManager: DefaultKeyManager(),
+        rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
+        tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
+        discoveryClient: _FakeDiscoveryClient(),
+        tokenExchange: _FakeTokenExchange(),
+        apiProxy: _FakeApiProxy(),
+        refreshLock: RefreshLock(),
+        clock: _fixedNow,
+      );
+      await w.init();
+      final req = await w.prepareAuth();
+      expect(
+        req.url,
+        contains('audience=svc-a&audience=svc-b&audience=svc-c'),
+      );
+      final uri = Uri.parse(req.url);
+      expect(uri.queryParametersAll['audience'], ['svc-a', 'svc-b', 'svc-c']);
+      await w.destroy();
+    },
+  );
 
   test('refresh rotates and persists the new refresh token', () async {
     final d = _Deps();
     final w = d.build();
-    d.tokenExchange.rotateQueue.add(_tokens(
-      access: 'at-1',
-      refresh: 'rt-1',
-      // Near-expiry so ensureFresh triggers a refresh.
-      expiresAt: _fixedNow().add(const Duration(seconds: 5)),
-    ));
-    d.tokenExchange.refreshQueue.add(RefreshOutcome.rotated(_tokens(
-      access: 'at-2',
-      refresh: 'rt-2',
-      expiresAt: _fixedNow().add(const Duration(minutes: 10)),
-    )));
+    d.tokenExchange.rotateQueue.add(
+      _tokens(
+        access: 'at-1',
+        refresh: 'rt-1',
+        // Near-expiry so ensureFresh triggers a refresh.
+        expiresAt: _fixedNow().add(const Duration(seconds: 5)),
+      ),
+    );
+    d.tokenExchange.refreshQueue.add(
+      RefreshOutcome.rotated(
+        _tokens(
+          access: 'at-2',
+          refresh: 'rt-2',
+          expiresAt: _fixedNow().add(const Duration(minutes: 10)),
+        ),
+      ),
+    );
 
     await w.init();
     await w.completeAuth(
@@ -388,11 +407,10 @@ void main() {
   test('reuse-detected refresh wipes and emits SecurityEvent', () async {
     final d = _Deps();
     final w = d.build();
-    d.tokenExchange.rotateQueue.add(_tokens(
-      expiresAt: _fixedNow().add(const Duration(seconds: 5)),
-    ));
-    d.tokenExchange.refreshQueue
-        .add(const RefreshOutcome.reuseDetected());
+    d.tokenExchange.rotateQueue.add(
+      _tokens(expiresAt: _fixedNow().add(const Duration(seconds: 5))),
+    );
+    d.tokenExchange.refreshQueue.add(const RefreshOutcome.reuseDetected());
 
     final events = <SecurityEvent>[];
     w.securityEventStream.listen(events.add);
@@ -410,11 +428,13 @@ void main() {
 
     await expectLater(
       w.ensureFresh(),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.refreshReuseDetected,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.refreshReuseDetected,
+        ),
+      ),
     );
     // Allow microtask-scheduled stream events to flush.
     await Future<void>.delayed(Duration.zero);
@@ -428,10 +448,12 @@ void main() {
   test('ensureFresh returns cached token when not near expiry', () async {
     final d = _Deps();
     final w = d.build();
-    d.tokenExchange.rotateQueue.add(_tokens(
-      access: 'at-cached',
-      expiresAt: _fixedNow().add(const Duration(minutes: 10)),
-    ));
+    d.tokenExchange.rotateQueue.add(
+      _tokens(
+        access: 'at-cached',
+        expiresAt: _fixedNow().add(const Duration(minutes: 10)),
+      ),
+    );
 
     await w.init();
     await w.completeAuth(
@@ -489,7 +511,7 @@ void main() {
       filename: 'x.bin',
       contentType: 'application/octet-stream',
       bytes: Stream<List<int>>.fromIterable([
-        [1, 2, 3]
+        [1, 2, 3],
       ]),
       length: 3,
     );
@@ -499,37 +521,36 @@ void main() {
     await w.destroy();
   });
 
-  test('getClaims decodes ID token payload; getRoles decodes access token',
-      () async {
-    final d = _Deps();
-    final w = d.build();
-    final id = _makeJwt({'sub': 'u-1', 'email': 'a@b.c'});
-    final access = _makeJwt({
-      'sub': 'u-1',
-      'roles': ['admin', 'user'],
-    });
-    d.tokenExchange.rotateQueue.add(_tokens(
-      access: access,
-      idToken: id,
-    ));
+  test(
+    'getClaims decodes ID token payload; getRoles decodes access token',
+    () async {
+      final d = _Deps();
+      final w = d.build();
+      final id = _makeJwt({'sub': 'u-1', 'email': 'a@b.c'});
+      final access = _makeJwt({
+        'sub': 'u-1',
+        'roles': ['admin', 'user'],
+      });
+      d.tokenExchange.rotateQueue.add(_tokens(access: access, idToken: id));
 
-    await w.init();
-    await w.completeAuth(
-      code: 'c',
-      verifier: 'v',
-      state: 's',
-      nonce: 'n',
-      expectedState: 's',
-    );
+      await w.init();
+      await w.completeAuth(
+        code: 'c',
+        verifier: 'v',
+        state: 's',
+        nonce: 'n',
+        expectedState: 's',
+      );
 
-    final claims = await w.getClaims();
-    expect(claims['sub'], 'u-1');
-    expect(claims['email'], 'a@b.c');
+      final claims = await w.getClaims();
+      expect(claims['sub'], 'u-1');
+      expect(claims['email'], 'a@b.c');
 
-    final roles = await w.getRoles();
-    expect(roles, ['admin', 'user']);
-    await w.destroy();
-  });
+      final roles = await w.getRoles();
+      expect(roles, ['admin', 'user']);
+      await w.destroy();
+    },
+  );
 
   test('logout clears session + transitions to unauthenticated', () async {
     final d = _Deps();
@@ -554,94 +575,97 @@ void main() {
   });
 
   test(
-      'second worker instance decrypts stored session and starts authenticated',
-      () async {
-    // Share the storage backends between both worker instances to
-    // simulate a cold app restart: the KV blob survives, and the root
-    // key store (also backed by flutter_secure_storage in prod) survives.
-    final sessionKv = InMemoryKeyValueStore();
-    final rootKv = InMemoryKeyValueStore();
+    'second worker instance decrypts stored session and starts authenticated',
+    () async {
+      // Share the storage backends between both worker instances to
+      // simulate a cold app restart: the KV blob survives, and the root
+      // key store (also backed by flutter_secure_storage in prod) survives.
+      final sessionKv = InMemoryKeyValueStore();
+      final rootKv = InMemoryKeyValueStore();
 
-    _Deps makeDeps(_FakeTokenExchange? exchange) => _Deps(
-          store: SecureTokenStore(kv: sessionKv),
-          rootKeyStore: DefaultRootKeyStore(kv: rootKv),
-          exchange: exchange,
-        );
+      _Deps makeDeps(_FakeTokenExchange? exchange) => _Deps(
+        store: SecureTokenStore(kv: sessionKv),
+        rootKeyStore: DefaultRootKeyStore(kv: rootKv),
+        exchange: exchange,
+      );
 
-    final d1 = makeDeps(_FakeTokenExchange());
-    final w1 = d1.build();
-    d1.tokenExchange.rotateQueue
-        .add(_tokens(access: 'at-restored', refresh: 'rt-restored'));
-    await w1.init();
-    await w1.completeAuth(
-      code: 'c',
-      verifier: 'v',
-      state: 's',
-      nonce: 'n',
-      expectedState: 's',
-    );
-    expect(w1.state, AuthState.authenticated);
-    await w1.destroy();
+      final d1 = makeDeps(_FakeTokenExchange());
+      final w1 = d1.build();
+      d1.tokenExchange.rotateQueue.add(
+        _tokens(access: 'at-restored', refresh: 'rt-restored'),
+      );
+      await w1.init();
+      await w1.completeAuth(
+        code: 'c',
+        verifier: 'v',
+        state: 's',
+        nonce: 'n',
+        expectedState: 's',
+      );
+      expect(w1.state, AuthState.authenticated);
+      await w1.destroy();
 
-    // Second worker with its own instance of everything except the
-    // storage backends — models a fresh process coming up.
-    final d2 = makeDeps(_FakeTokenExchange());
-    final w2 = d2.build();
-    final states = <AuthState>[];
-    w2.authStateStream.listen(states.add);
-    await w2.init();
-    await Future<void>.delayed(Duration.zero);
-    expect(w2.state, AuthState.authenticated);
-    expect(states, [AuthState.authenticated]);
-    // Restored tokens match the persisted values without making an
-    // exchange call.
-    expect(d2.tokenExchange.exchangeCalls, 0);
-    // fetch uses the restored access token straight away.
-    await w2.fetch(path: '/ping', method: 'GET');
-    expect(d2.apiProxy.seenAuthHeader, 'Bearer at-restored');
-    await w2.destroy();
-  });
+      // Second worker with its own instance of everything except the
+      // storage backends — models a fresh process coming up.
+      final d2 = makeDeps(_FakeTokenExchange());
+      final w2 = d2.build();
+      final states = <AuthState>[];
+      w2.authStateStream.listen(states.add);
+      await w2.init();
+      await Future<void>.delayed(Duration.zero);
+      expect(w2.state, AuthState.authenticated);
+      expect(states, [AuthState.authenticated]);
+      // Restored tokens match the persisted values without making an
+      // exchange call.
+      expect(d2.tokenExchange.exchangeCalls, 0);
+      // fetch uses the restored access token straight away.
+      await w2.fetch(path: '/ping', method: 'GET');
+      expect(d2.apiProxy.seenAuthHeader, 'Bearer at-restored');
+      await w2.destroy();
+    },
+  );
 
   test(
-      'corrupt wrap-key ciphertext wipes session and emits storageCorruption',
-      () async {
-    final sessionKv = InMemoryKeyValueStore();
-    final rootKv = InMemoryKeyValueStore();
-    _Deps makeDeps() => _Deps(
-          store: SecureTokenStore(kv: sessionKv),
-          rootKeyStore: DefaultRootKeyStore(kv: rootKv),
-        );
+    'corrupt wrap-key ciphertext wipes session and emits storageCorruption',
+    () async {
+      final sessionKv = InMemoryKeyValueStore();
+      final rootKv = InMemoryKeyValueStore();
+      _Deps makeDeps() => _Deps(
+        store: SecureTokenStore(kv: sessionKv),
+        rootKeyStore: DefaultRootKeyStore(kv: rootKv),
+      );
 
-    final d1 = makeDeps();
-    final w1 = d1.build();
-    d1.tokenExchange.rotateQueue.add(_tokens());
-    await w1.init();
-    await w1.completeAuth(
-      code: 'c',
-      verifier: 'v',
-      state: 's',
-      nonce: 'n',
-      expectedState: 's',
-    );
-    await w1.destroy();
+      final d1 = makeDeps();
+      final w1 = d1.build();
+      d1.tokenExchange.rotateQueue.add(_tokens());
+      await w1.init();
+      await w1.completeAuth(
+        code: 'c',
+        verifier: 'v',
+        state: 's',
+        nonce: 'n',
+        expectedState: 's',
+      );
+      await w1.destroy();
 
-    // Simulate the root key going missing / being rotated externally
-    // (e.g. user wiped the keychain): the second worker generates a
-    // fresh root key, wrap-key decryption fails, and the session is
-    // wiped with a storageCorruption signal.
-    rootKv.delete('${d1.config.namespace}::root-key');
+      // Simulate the root key going missing / being rotated externally
+      // (e.g. user wiped the keychain): the second worker generates a
+      // fresh root key, wrap-key decryption fails, and the session is
+      // wiped with a storageCorruption signal.
+      rootKv.delete('${d1.config.namespace}::root-key');
 
-    final d2 = makeDeps();
-    final w2 = d2.build();
-    final events = <SecurityEvent>[];
-    w2.securityEventStream.listen(events.add);
-    await w2.init();
-    await Future<void>.delayed(Duration.zero);
-    expect(w2.state, AuthState.unauthenticated);
-    expect(events.any((e) => e is StorageCorruption), isTrue);
-    expect(await d2.tokenStore.load(d2.config.namespace), isNull);
-    await w2.destroy();
-  });
+      final d2 = makeDeps();
+      final w2 = d2.build();
+      final events = <SecurityEvent>[];
+      w2.securityEventStream.listen(events.add);
+      await w2.init();
+      await Future<void>.delayed(Duration.zero);
+      expect(w2.state, AuthState.unauthenticated);
+      expect(events.any((e) => e is StorageCorruption), isTrue);
+      expect(await d2.tokenStore.load(d2.config.namespace), isNull);
+      await w2.destroy();
+    },
+  );
 
   test('operations after destroy() throw StateError', () async {
     final d = _Deps();
@@ -663,8 +687,9 @@ void main() {
         'sub': 'g-user-1',
         'nonce': nonce,
       });
-      d.tokenExchange.idTokenExchangeQueue
-          .add(_tokens(access: 'at-native', refresh: 'rt-native'));
+      d.tokenExchange.idTokenExchangeQueue.add(
+        _tokens(access: 'at-native', refresh: 'rt-native'),
+      );
 
       final states = <AuthState>[];
       w.authStateStream.listen(states.add);
@@ -694,16 +719,16 @@ void main() {
       final d = _Deps();
       final w = d.build();
       const rawNonce = 'nonce-apple-1';
-      final hashed =
-          crypto.sha256.convert(utf8.encode(rawNonce)).toString();
+      final hashed = crypto.sha256.convert(utf8.encode(rawNonce)).toString();
       final idToken = _makeJwt(<String, dynamic>{
         'iss': 'https://appleid.apple.com',
         'aud': 'c',
         'sub': 'a-user-1',
         'nonce': hashed,
       });
-      d.tokenExchange.idTokenExchangeQueue
-          .add(_tokens(access: 'at-apple', refresh: 'rt-apple'));
+      d.tokenExchange.idTokenExchangeQueue.add(
+        _tokens(access: 'at-apple', refresh: 'rt-apple'),
+      );
 
       await w.init();
       await w.completeNativeCredential(
@@ -721,78 +746,85 @@ void main() {
       await w.destroy();
     });
 
-    test('iss mismatch → nativeCredentialIssuerMismatch; no exchange',
-        () async {
-      final d = _Deps();
-      final w = d.build();
-      const nonce = 'nonce-bad-iss';
-      final idToken = _makeJwt(<String, dynamic>{
-        'iss': 'https://evil.example.com',
-        'aud': 'c',
-        'sub': 'g-user-1',
-        'nonce': nonce,
-      });
-      final states = <AuthState>[];
-      w.authStateStream.listen(states.add);
+    test(
+      'iss mismatch → nativeCredentialIssuerMismatch; no exchange',
+      () async {
+        final d = _Deps();
+        final w = d.build();
+        const nonce = 'nonce-bad-iss';
+        final idToken = _makeJwt(<String, dynamic>{
+          'iss': 'https://evil.example.com',
+          'aud': 'c',
+          'sub': 'g-user-1',
+          'nonce': nonce,
+        });
+        final states = <AuthState>[];
+        w.authStateStream.listen(states.add);
 
-      await w.init();
-      await expectLater(
-        w.completeNativeCredential(
-          credential: NativeCredentialResult(
-            provider: NativeCredentialProviderKind.google,
-            idToken: idToken,
-            autoSelected: false,
-            nonce: nonce,
+        await w.init();
+        await expectLater(
+          w.completeNativeCredential(
+            credential: NativeCredentialResult(
+              provider: NativeCredentialProviderKind.google,
+              idToken: idToken,
+              autoSelected: false,
+              nonce: nonce,
+            ),
+            expectedNonce: nonce,
           ),
-          expectedNonce: nonce,
-        ),
-        throwsA(isA<AuthError>().having(
-          (e) => e.code,
-          'code',
-          AuthErrorCode.nativeCredentialIssuerMismatch,
-        )),
-      );
-      await Future<void>.delayed(Duration.zero);
-      expect(d.tokenExchange.idTokenExchangeCalls, 0);
-      expect(w.state, AuthState.unauthenticated);
-      await w.destroy();
-    });
-
-    test('nonce mismatch → nativeCredentialExchangeFailed; no exchange',
-        () async {
-      final d = _Deps();
-      final w = d.build();
-      const expected = 'nonce-expected';
-      final idToken = _makeJwt(<String, dynamic>{
-        'iss': 'https://accounts.google.com',
-        'aud': 'c',
-        'sub': 'g-user-1',
-        'nonce': 'nonce-wrong',
-      });
-      await w.init();
-      await expectLater(
-        w.completeNativeCredential(
-          credential: NativeCredentialResult(
-            provider: NativeCredentialProviderKind.google,
-            idToken: idToken,
-            autoSelected: false,
-            nonce: 'nonce-wrong',
+          throwsA(
+            isA<AuthError>().having(
+              (e) => e.code,
+              'code',
+              AuthErrorCode.nativeCredentialIssuerMismatch,
+            ),
           ),
-          expectedNonce: expected,
-        ),
-        throwsA(isA<AuthError>().having(
-          (e) => e.code,
-          'code',
-          AuthErrorCode.nativeCredentialExchangeFailed,
-        )),
-      );
-      expect(d.tokenExchange.idTokenExchangeCalls, 0);
-      expect(w.state, AuthState.unauthenticated);
-      await w.destroy();
-    });
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(d.tokenExchange.idTokenExchangeCalls, 0);
+        expect(w.state, AuthState.unauthenticated);
+        await w.destroy();
+      },
+    );
 
     test(
-        'missing nonce claim → nativeCredentialExchangeFailed even when '
+      'nonce mismatch → nativeCredentialExchangeFailed; no exchange',
+      () async {
+        final d = _Deps();
+        final w = d.build();
+        const expected = 'nonce-expected';
+        final idToken = _makeJwt(<String, dynamic>{
+          'iss': 'https://accounts.google.com',
+          'aud': 'c',
+          'sub': 'g-user-1',
+          'nonce': 'nonce-wrong',
+        });
+        await w.init();
+        await expectLater(
+          w.completeNativeCredential(
+            credential: NativeCredentialResult(
+              provider: NativeCredentialProviderKind.google,
+              idToken: idToken,
+              autoSelected: false,
+              nonce: 'nonce-wrong',
+            ),
+            expectedNonce: expected,
+          ),
+          throwsA(
+            isA<AuthError>().having(
+              (e) => e.code,
+              'code',
+              AuthErrorCode.nativeCredentialExchangeFailed,
+            ),
+          ),
+        );
+        expect(d.tokenExchange.idTokenExchangeCalls, 0);
+        expect(w.state, AuthState.unauthenticated);
+        await w.destroy();
+      },
+    );
+
+    test('missing nonce claim → nativeCredentialExchangeFailed even when '
         'credential.nonce is null', () async {
       final d = _Deps();
       final w = d.build();
@@ -816,53 +848,59 @@ void main() {
           ),
           expectedNonce: expected,
         ),
-        throwsA(isA<AuthError>().having(
-          (e) => e.code,
-          'code',
-          AuthErrorCode.nativeCredentialExchangeFailed,
-        )),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.nativeCredentialExchangeFailed,
+          ),
+        ),
       );
       expect(d.tokenExchange.idTokenExchangeCalls, 0);
       expect(w.state, AuthState.unauthenticated);
       await w.destroy();
     });
 
-    test('exchange failure transitions to unauthenticated and rethrows',
-        () async {
-      final d = _Deps();
-      final w = d.build();
-      const nonce = 'nonce-fail';
-      final idToken = _makeJwt(<String, dynamic>{
-        'iss': 'https://accounts.google.com',
-        'aud': 'c',
-        'sub': 'g-user-1',
-        'nonce': nonce,
-      });
-      d.tokenExchange.idTokenExchangeError = AuthError(
-        AuthErrorCode.tokenExchangeFailed,
-        'boom',
-      );
-
-      await w.init();
-      await expectLater(
-        w.completeNativeCredential(
-          credential: NativeCredentialResult(
-            provider: NativeCredentialProviderKind.google,
-            idToken: idToken,
-            autoSelected: false,
-            nonce: nonce,
-          ),
-          expectedNonce: nonce,
-        ),
-        throwsA(isA<AuthError>().having(
-          (e) => e.code,
-          'code',
+    test(
+      'exchange failure transitions to unauthenticated and rethrows',
+      () async {
+        final d = _Deps();
+        final w = d.build();
+        const nonce = 'nonce-fail';
+        final idToken = _makeJwt(<String, dynamic>{
+          'iss': 'https://accounts.google.com',
+          'aud': 'c',
+          'sub': 'g-user-1',
+          'nonce': nonce,
+        });
+        d.tokenExchange.idTokenExchangeError = AuthError(
           AuthErrorCode.tokenExchangeFailed,
-        )),
-      );
-      expect(w.state, AuthState.unauthenticated);
-      await w.destroy();
-    });
+          'boom',
+        );
+
+        await w.init();
+        await expectLater(
+          w.completeNativeCredential(
+            credential: NativeCredentialResult(
+              provider: NativeCredentialProviderKind.google,
+              idToken: idToken,
+              autoSelected: false,
+              nonce: nonce,
+            ),
+            expectedNonce: nonce,
+          ),
+          throwsA(
+            isA<AuthError>().having(
+              (e) => e.code,
+              'code',
+              AuthErrorCode.tokenExchangeFailed,
+            ),
+          ),
+        );
+        expect(w.state, AuthState.unauthenticated);
+        await w.destroy();
+      },
+    );
   });
 }
 

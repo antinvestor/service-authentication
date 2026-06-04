@@ -94,6 +94,16 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Public routes (no auth, no CSRF)
 	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint")
 	h.addHandler(router, h.SwaggerEndpoint, "/swagger.json", "SwaggerEndpoint")
+	router.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.OpenIDConfigurationFacadeEndpoint(w, r); err != nil {
+			h.writeAPIError(r.Context(), w, err, "OpenIDConfigurationFacade")
+		}
+	})
+	router.HandleFunc("POST /oauth2/token", func(w http.ResponseWriter, r *http.Request) {
+		if err := h.OAuthTokenFacadeEndpoint(w, r); err != nil {
+			h.writeAPIError(r.Context(), w, err, "OAuthTokenFacade")
+		}
+	})
 
 	// Custom root handler that handles both static files and index
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

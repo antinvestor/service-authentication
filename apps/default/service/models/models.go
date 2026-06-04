@@ -56,6 +56,17 @@ type LoginEvent struct {
 	Status           int `gorm:"index"`
 }
 
+type ExternalIdentity struct {
+	data.BaseModel
+	ProfileID       string       `gorm:"type:varchar(50);not null;index"`
+	Provider        string       `gorm:"type:varchar(32);not null;uniqueIndex:idx_external_identity_provider_subject"`
+	ProviderSubject string       `gorm:"type:varchar(255);not null;uniqueIndex:idx_external_identity_provider_subject"`
+	EmailAtLink     string       `gorm:"type:varchar(255);index"`
+	EmailVerified   bool         `gorm:"index"`
+	LastSeenAt      time.Time    `gorm:"index"`
+	Properties      data.JSONMap `gorm:"type:jsonb"`
+}
+
 func (l LoginEvent) GetTenantID() string {
 	return l.TenantID
 }
