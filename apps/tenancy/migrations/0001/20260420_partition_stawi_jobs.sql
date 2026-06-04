@@ -35,9 +35,9 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_profile":["*"]}',
-    '{"uris":["https://jobs.stawi.org/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
+    '{"uris":["https://opportunities.stawi.org/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://stawi.org/images/logo.png',
-    '{"uris":["https://jobs.stawi.org/"]}',
+    '{"uris":["https://opportunities.stawi.org/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -74,8 +74,8 @@ INSERT INTO clients (
     '{"types": ["code"]}',
     'openid offline_access profile',
     '{"service_profile":["*"]}',
-    '{"uris":["https://jobs-dev.stawi.org/auth/callback/","http://localhost:5170/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
+    '{"uris":["https://opportunities-dev.stawi.org/auth/callback/","http://localhost:5170/auth/callback/","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://stawi.org/images/logo.png',
-    '{"uris":["https://jobs-dev.stawi.org/","http://localhost:5170/"]}',
+    '{"uris":["https://opportunities-dev.stawi.org/","http://localhost:5170/"]}',
     'none'
 ) ON CONFLICT (id) DO NOTHING;
