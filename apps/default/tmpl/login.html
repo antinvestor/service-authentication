@@ -24,7 +24,7 @@
 <!-- Primary: Sign in with Google -->
 {{if .enableGoogleLogin}}
 <div class="google-hero-section">
-    <form method="post" action="/s/social/login/{{.loginEventId}}?provider=google" class="social-login-form">
+    <form method="post" action="/s/social/login/{{.loginEventId}}?provider=google" class="social-login-form" data-fedcm-google>
         <button type="submit" class="btn-google-hero" aria-label="{{ if .t.aria_continue_with_provider }}{{ .t.aria_continue_with_provider }}{{ else }}Sign in with Google{{ end }}">
             <svg width="20" height="20" viewBox="0 0 48 48" class="social-icon" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -135,18 +135,39 @@
 </script>
 <script src="/static/js/posthog.js" defer></script>
 <script src="/static/js/fedcm.js" defer></script>
+{{if .enableGoogleLogin}}<script src="/static/js/fedcm_google.js" defer></script>{{end}}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Same-origin FedCM probe (returning users with idp_session cookie).
-    if (window.stawiFedCM && "{{ .ClientID }}" && "{{ .loginEventId }}") {
-      window.stawiFedCM.probeAndComplete({
-        configURL: "/fedcm/config.json",
-        clientId: "{{ .ClientID }}",
-        nonce: "{{ .FedCMNonce }}",
-        loginEventId: "{{ .loginEventId }}",
-        mediation: "optional",
-      });
-    }
+    // FedCM sign-in waterfall. The first-party probe (returning users with an
+    // idp_session cookie) runs first; if it does not sign the user in, Google
+    // One Tap/FedCM is offered. They run sequentially so the browser never
+    // sees two concurrent navigator.credentials.get() calls.
+    (async function () {
+      var navigated = null;
+      if (window.stawiFedCM && "{{ .ClientID }}" && "{{ .loginEventId }}") {
+        navigated = await window.stawiFedCM.probeAndComplete({
+          configURL: "/fedcm/config.json",
+          clientId: "{{ .ClientID }}",
+          nonce: "{{ .FedCMNonce }}",
+          loginEventId: "{{ .loginEventId }}",
+          mediation: "optional",
+        });
+      }
+      if (navigated) return;
+      {{if .enableGoogleLogin}}
+      // Google One Tap/FedCM. install() binds the Google button for manual
+      // clicks (FedCM-first, native OAuth fallback) and auto-prompts the
+      // account chooser. clientId is the Google web client ID; nonce binds the
+      // returned id_token to this server-issued login event.
+      if (window.stawiGoogleFedCM && "{{ .GoogleClientID }}" && "{{ .loginEventId }}") {
+        window.stawiGoogleFedCM.install({
+          clientId: "{{ .GoogleClientID }}",
+          nonce: "{{ .FedCMNonce }}",
+          loginEventId: "{{ .loginEventId }}",
+        });
+      }
+      {{end}}
+    })();
 
     // Per-method click tracking.
     var trackClick = function (form, method) {
@@ -159,6 +180,9 @@
     };
     trackClick(document.getElementById("contactLoginForm"), "contact");
     document.querySelectorAll("form.social-login-form").forEach(function (f) {
+      // fedcm_google.js owns click tracking for the FedCM-managed Google form;
+      // skip it here so the click is not counted twice.
+      if (f.hasAttribute("data-fedcm-google")) return;
       var action = f.getAttribute("action") || "";
       var match = action.match(/provider=([a-z]+)/);
       var prov = (match && match[1]) || "unknown";
