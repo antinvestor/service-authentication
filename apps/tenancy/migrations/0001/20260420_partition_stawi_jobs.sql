@@ -1,16 +1,16 @@
 -- Copyright 2023-2026 Ant Investor Ltd
--- Stawi Jobs — remote job board platform for Africa and beyond.
+-- Stawi Opportunities — remote opportunities platform for Africa and beyond.
 -- Includes both production and development/test environments.
 
 -- Production tenant
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('d7gi6lkpf2t67dlsqre0','c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg',
-        'Stawi Jobs','Remote job board platform for Africa and beyond','production')
+        'Stawi Opportunities','Remote opportunities platform for Africa and beyond','production')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d7gi6lkpf2t67dlsqreg','d7gi6lkpf2t67dlsqre0','d7gi6lkpf2t67dlsqreg','c2f4j7au6s7f91uqnokg',
-        'Stawi Jobs','Remote job board platform',true,
+        'Stawi Opportunities','Remote opportunities platform',true,
         '{"default_role":"user","allow_auto_access":true,"support_contacts":{"email":"hello@stawi.jobs"}}')
 ON CONFLICT (id) DO NOTHING;
 
@@ -28,7 +28,7 @@ INSERT INTO clients (
 ) VALUES (
     'd7gi6lkpf2t67dlsqrgg',
     'd7gi6lkpf2t67dlsqre0','d7gi6lkpf2t67dlsqreg',
-    'Stawi Jobs Web',
+    'Stawi Opportunities Web',
     'd7is2kspf2t7cl19qlp0',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',
@@ -44,12 +44,12 @@ INSERT INTO clients (
 -- Development/test tenant
 INSERT INTO tenants (id, tenant_id, partition_id, name, description, environment)
 VALUES ('d7gi6lkpf2t67dlsqrh0','c2f4j7au6s7f91uqnojg','c2f4j7au6s7f91uqnokg',
-        'Stawi Jobs Development','Remote job board platform for Africa and beyond','staging')
+        'Stawi Opportunities Development','Remote opportunities platform for Africa and beyond','staging')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO partitions (id, tenant_id, partition_id, parent_id, name, description, allow_auto_access, properties)
 VALUES ('d7gi6lkpf2t67dlsqrhg','d7gi6lkpf2t67dlsqrh0','d7gi6lkpf2t67dlsqrhg','c2f4j7au6s7f91uqnokg',
-        'Stawi Jobs Development','Remote job board platform',true,
+        'Stawi Opportunities Development','Remote opportunities platform',true,
         '{"default_role":"user","allow_auto_access":true,"support_contacts":{"email":"hello@stawi.jobs"}}')
 ON CONFLICT (id) DO NOTHING;
 
@@ -67,7 +67,7 @@ INSERT INTO clients (
 ) VALUES (
     'd7gi6ncpf2t7oh5akfr0',
     'd7gi6lkpf2t67dlsqrh0','d7gi6lkpf2t67dlsqrhg',
-    'Stawi Jobs Development',
+    'Stawi Opportunities Development',
     'd7is2kspf2t7cl19qlpg',
     'public',
     '{"types": ["authorization_code","refresh_token"]}',

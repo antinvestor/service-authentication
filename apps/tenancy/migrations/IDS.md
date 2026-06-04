@@ -30,8 +30,8 @@ configuration.
 | 9bsv0s0hijjghdbz96dg | Stawi AI Builder Development | apps/tenancy/migrations/0001/20260420_partition_stawi_dev.sql |
 | d6q1aekpf2taeg5iovp0 | Ant Investor | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
 | d6q1aekpf2taeg5iovqg | Ant Investor Development | apps/tenancy/migrations/0001/20260420_partition_ant_investor.sql |
-| d7gi6lkpf2t67dlsqre0 | Stawi Jobs | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
-| d7gi6lkpf2t67dlsqrh0 | Stawi Jobs Development | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
+| d7gi6lkpf2t67dlsqre0 | Stawi Opportunities | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
+| d7gi6lkpf2t67dlsqrh0 | Stawi Opportunities Development | apps/tenancy/migrations/0001/20260420_partition_stawi_jobs.sql |
 
 ## Partitions
 | xid | tenant | parent | file |
