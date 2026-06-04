@@ -40,10 +40,8 @@ final class RefreshNetworkError extends RefreshOutcome {
 /// from `package:http/testing.dart` handles both discovery and token
 /// roundtrips. [timeout] is applied to every underlying request.
 class TokenExchange {
-  TokenExchange({
-    http.Client? client,
-    required this.timeout,
-  }) : _client = client ?? http.Client();
+  TokenExchange({http.Client? client, required this.timeout})
+    : _client = client ?? http.Client();
 
   final http.Client _client;
   final Duration timeout;
@@ -86,6 +84,8 @@ class TokenExchange {
     DpopContext ctx, {
     required String subjectToken,
     required String subjectIssuer,
+    String? platform,
+    String? deviceName,
   }) async {
     final form = <String, String>{
       'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -94,6 +94,11 @@ class TokenExchange {
       'subject_token_type': 'urn:ietf:params:oauth:token-type:id_token',
       'subject_issuer': subjectIssuer,
       if (cfg.audiences.isNotEmpty) 'audience': cfg.audiences.join(','),
+      if (cfg.installationId != null && cfg.installationId!.isNotEmpty)
+        'installation_id': cfg.installationId!,
+      if (platform != null && platform.isNotEmpty) 'platform': platform,
+      if (deviceName != null && deviceName.isNotEmpty)
+        'device_name': deviceName,
     };
     final res = await _postForm(cfg, ctx, form);
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -124,18 +129,18 @@ class TokenExchange {
       if (res.statusCode == 400 && _mentionsReuse(res.body)) {
         return const RefreshOutcome.reuseDetected();
       }
-      return RefreshOutcome.networkError(AuthError(
-        AuthErrorCode.tokenRefreshFailed,
-        'refresh failed ${res.statusCode} ${_truncate(res.body)}',
-      ));
+      return RefreshOutcome.networkError(
+        AuthError(
+          AuthErrorCode.tokenRefreshFailed,
+          'refresh failed ${res.statusCode} ${_truncate(res.body)}',
+        ),
+      );
     } on AuthError catch (e) {
       return RefreshOutcome.networkError(e);
     } catch (e) {
-      return RefreshOutcome.networkError(AuthError(
-        AuthErrorCode.tokenRefreshFailed,
-        'refresh failed',
-        cause: e,
-      ));
+      return RefreshOutcome.networkError(
+        AuthError(AuthErrorCode.tokenRefreshFailed, 'refresh failed', cause: e),
+      );
     }
   }
 
@@ -157,16 +162,14 @@ class TokenExchange {
 
     final body = _encodeForm(form);
     Map<String, String> headers() => {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        };
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    };
 
     Future<http.Response> send({String? dpopProof}) async {
       final h = headers();
       if (dpopProof != null) h['DPoP'] = dpopProof;
-      return _client
-          .post(tokenUri, headers: h, body: body)
-          .timeout(timeout);
+      return _client.post(tokenUri, headers: h, body: body).timeout(timeout);
     }
 
     http.Response res;
@@ -176,7 +179,8 @@ class TokenExchange {
           : null;
       res = await send(dpopProof: initialProof);
 
-      if (useDpop && res.statusCode == 401 &&
+      if (useDpop &&
+          res.statusCode == 401 &&
           _headerIgnoreCase(res.headers, 'dpop-nonce') != null) {
         rememberNonce(ctx, discovery.tokenEndpoint, res.headers);
         final retryProof = await buildProof(
@@ -187,7 +191,8 @@ class TokenExchange {
         res = await send(dpopProof: retryProof);
       }
 
-      if (useDpop && res.statusCode == 400 &&
+      if (useDpop &&
+          res.statusCode == 400 &&
           _mentionsInvalidDpopProof(res.body)) {
         rememberClockOffset(ctx, res.headers);
         final retryProof = await buildProof(
@@ -244,10 +249,11 @@ TokenSet _parseTokenBody(String body) {
       'missing access_token or refresh_token',
     );
   }
-  final expiresIn =
-      data['expires_in'] is int ? data['expires_in'] as int : 300;
+  final expiresIn = data['expires_in'] is int ? data['expires_in'] as int : 300;
   final tokenType = TokenType.fromString(data['token_type'] as String?);
-  final idToken = data['id_token'] is String ? data['id_token'] as String : null;
+  final idToken = data['id_token'] is String
+      ? data['id_token'] as String
+      : null;
   return TokenSet(
     accessToken: accessToken,
     refreshToken: refreshToken,
@@ -266,8 +272,10 @@ bool _mentionsInvalidDpopProof(String body) {
 }
 
 String _encodeForm(Map<String, String> form) => form.entries
-    .map((e) =>
-        '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+    .map(
+      (e) =>
+          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+    )
     .join('&');
 
 String _truncate(String s) => s.length > 200 ? s.substring(0, 200) : s;

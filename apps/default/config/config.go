@@ -93,6 +93,17 @@ type AuthenticationConfig struct {
 	// underlying AES key.
 	FedCMIdPSessionCookieKey string `envDefault:"fedcm_idp_session_v1" env:"FEDCM_IDP_SESSION_COOKIE_KEY"`
 
+	// NativeCredentialExchangeEnabled gates the mobile Google/Apple ID-token
+	// exchange facade. Individual OAuth clients must still opt in through their
+	// tenancy properties.
+	NativeCredentialExchangeEnabled bool `envDefault:"false" env:"NATIVE_CREDENTIAL_EXCHANGE_ENABLED"`
+
+	// Oauth2HydraPublicInternalURL is the Hydra public URL used by the token
+	// facade when the externally advertised issuer routes /oauth2/token to the
+	// authentication service. When empty, FedCMHydraPublicURL/Oauth2ServiceURI is
+	// used.
+	Oauth2HydraPublicInternalURL string `envDefault:"" env:"OAUTH2_HYDRA_PUBLIC_INTERNAL_URL"`
+
 	// PostHog product analytics. The same phc_* project key is used by both
 	// the Go server SDK and the browser SDK — that is by design in PostHog,
 	// the project key is public. Set PostHogAPIKey to the empty string in

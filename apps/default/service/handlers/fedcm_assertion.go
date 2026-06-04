@@ -177,14 +177,14 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// Stash access/refresh tokens for the follow-up /fedcm/token-exchange call.
-	h.stashFedCMExchange(ctx, result.IDToken, body.ClientID, result)
+	h.stashFedCMExchange(ctx, result.IDToken, body.ClientID, origin, result)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	return json.NewEncoder(w).Encode(map[string]string{"token": result.IDToken})
 }
 
-func (h *AuthServer) stashFedCMExchange(ctx context.Context, idToken, clientID string, r *fedcm.HeadlessResult) {
+func (h *AuthServer) stashFedCMExchange(ctx context.Context, idToken, clientID, origin string, r *fedcm.HeadlessResult) {
 	if h.cacheMan == nil || idToken == "" {
 		return
 	}
@@ -198,6 +198,7 @@ func (h *AuthServer) stashFedCMExchange(ctx context.Context, idToken, clientID s
 		"refresh_token": r.RefreshToken,
 		"expires_in":    r.ExpiresIn,
 		"client_id":     clientID,
+		"origin":        origin,
 	})
 	if merr != nil {
 		log.WithError(merr).Warn("fedcm exchange marshal failed")
@@ -218,7 +219,11 @@ func (h *AuthServer) stashFedCMExchange(ctx context.Context, idToken, clientID s
 // id-assertion token payloads. Mirrors the pattern used by the revocation KV
 // in fedcm_wiring.go (GetRawCache + NewGenericCache).
 func (h *AuthServer) fedcmExchangeCache() (cache.Cache[string, string], error) {
-	rCache, ok := h.cacheMan.GetRawCache("defaultCache")
+	cacheName := "defaultCache"
+	if h.config != nil && strings.TrimSpace(h.config.CacheName) != "" {
+		cacheName = h.config.CacheName
+	}
+	rCache, ok := h.cacheMan.GetRawCache(cacheName)
 	if !ok {
 		return nil, errFedCMCacheUnavailable
 	}

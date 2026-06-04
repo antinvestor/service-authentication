@@ -39,6 +39,13 @@ type LoginEventRepository interface {
 	GetByOauth2SessionID(ctx context.Context, oauth2SessionID string) (*models.LoginEvent, error)
 }
 
+// ExternalIdentityRepository handles database operations for provider-scoped
+// external identities such as Google and Apple subject identifiers.
+type ExternalIdentityRepository interface {
+	datastore.BaseRepository[*models.ExternalIdentity]
+	GetByProviderSubject(ctx context.Context, provider, providerSubject string) (*models.ExternalIdentity, error)
+}
+
 // SessionRepository handles database operations for Session entities
 type SessionRepository interface {
 	datastore.BaseRepository[*models.Session]

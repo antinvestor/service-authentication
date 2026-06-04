@@ -22,7 +22,8 @@ import (
 )
 
 type fedcmTokenExchangeRequest struct {
-	IDToken string `json:"id_token"`
+	IDToken  string `json:"id_token"`
+	ClientID string `json:"client_id,omitempty"`
 }
 
 type fedcmTokenExchangeResponse struct {
@@ -68,9 +69,22 @@ func (h *AuthServer) FedCMTokenExchangeEndpoint(w http.ResponseWriter, r *http.R
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 		ExpiresIn    int    `json:"expires_in"`
+		ClientID     string `json:"client_id"`
+		Origin       string `json:"origin"`
 	}
 	if err := json.Unmarshal([]byte(raw), &stash); err != nil {
 		return writeFedCMError(w, http.StatusInternalServerError, "server_error")
+	}
+	if body.ClientID != "" && stash.ClientID != "" && body.ClientID != stash.ClientID {
+		return writeFedCMError(w, http.StatusUnauthorized, "invalid_token")
+	}
+	// The id-assertion endpoint always records the RP origin (it rejects
+	// requests without an Origin header), so a stashed origin must match the
+	// caller's. A missing/blank request Origin no longer bypasses the check —
+	// only legacy entries written before origin capture (stash.Origin == "")
+	// fall through, which eases rollout.
+	if stash.Origin != "" && r.Header.Get("Origin") != stash.Origin {
+		return writeFedCMError(w, http.StatusUnauthorized, "invalid_token")
 	}
 
 	w.Header().Set("Content-Type", "application/json")

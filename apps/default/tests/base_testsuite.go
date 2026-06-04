@@ -51,8 +51,9 @@ import (
 )
 
 type DepsBuilder struct {
-	LoginRepo      repository.LoginRepository
-	LoginEventRepo repository.LoginEventRepository
+	LoginRepo            repository.LoginRepository
+	LoginEventRepo       repository.LoginEventRepository
+	ExternalIdentityRepo repository.ExternalIdentityRepository
 
 	ProfileCli      profilev1connect.ProfileServiceClient
 	DeviceCli       devicev1connect.DeviceServiceClient
@@ -66,8 +67,9 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	cfg, _ := svc.Config().(*aconfig.AuthenticationConfig)
 
 	depBuilder := &DepsBuilder{
-		LoginRepo:      repository.NewLoginRepository(ctx, dbPool, workMan),
-		LoginEventRepo: repository.NewLoginEventRepository(ctx, dbPool, workMan),
+		LoginRepo:            repository.NewLoginRepository(ctx, dbPool, workMan),
+		LoginEventRepo:       repository.NewLoginEventRepository(ctx, dbPool, workMan),
+		ExternalIdentityRepo: repository.NewExternalIdentityRepository(ctx, dbPool, workMan),
 	}
 
 	var err error
@@ -283,7 +285,7 @@ func (bs *BaseTestSuite) CreateService(
 
 	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager(), &cfg,
 		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo,
-		depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli, nil)
+		depsBuilder.ExternalIdentityRepo, depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli, nil)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 

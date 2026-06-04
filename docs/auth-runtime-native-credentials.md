@@ -4,60 +4,92 @@
 who need to make the Flutter `antinvestor_auth_runtime` v0.2+ native
 sign-in path work end-to-end.
 
-**Scope:** what the Ory Hydra (or equivalent) IdP must accept for the
-Flutter runtime to exchange Apple / Google ID tokens into Antinvestor
-sessions via RFC 8693.
+**Scope:** what the Ory Hydra-backed authentication deployment must accept for
+the Flutter runtime to exchange Apple / Google ID tokens into Antinvestor
+sessions.
 
 **Status:** this is a **future enablement**. The Flutter runtime already
-ships the client side in v0.2. The Go service may need additional
-changes before it can honour the token-exchange grant end-to-end —
-track progress under `TODO track in Jira/issue` (replace with the
-actual issue ID once filed).
+ships the client side in v0.2. The Go service needs a token endpoint facade
+before it can honour the native exchange end-to-end.
 
 ---
 
 ## 1. Prerequisites
 
-- Ory Hydra ≥ **v2.2** (first release with token-exchange grant
-  support), or an equivalent OAuth 2.0 authorization server.
+- Ory Hydra remains the issuer of Antinvestor access, refresh, and ID tokens.
+- A public auth-service facade fronts `/oauth2/token` for the issuer origin.
+  The facade handles the native provider-token exchange and proxies ordinary
+  OAuth grants to Hydra.
 - OAuth clients are already provisioned for the mobile apps
   (`antinvestor-mobile`, `antinvestor-chat-mobile`,
   `antinvestor-fintech-mobile`, …) with the `authorization_code` and
   `refresh_token` grants enabled.
 - Ability to update client registrations via Hydra's admin API or
   equivalent tenancy config.
-- A trusted-issuer registry the auth service consults during
-  token-exchange: either a first-class Hydra feature or a thin shim in
-  front of `/oauth2/token`.
+- A trusted-issuer registry the auth service consults during native exchange.
 
-## 2. Enable the token-exchange grant
+## 2. Token endpoint facade
 
-The mobile OAuth client's `grant_types` must include:
+The Flutter runtime posts this form grant to the discovered `token_endpoint`:
 
 ```
 urn:ietf:params:oauth:grant-type:token-exchange
 ```
 
-Example (Hydra admin API):
+In the current architecture, the discovered endpoint must be the auth-service
+facade, not Hydra directly. The facade must:
 
-```http
-PATCH /admin/clients/{client_id}
-Content-Type: application/json
+- accept `application/x-www-form-urlencoded` token requests,
+- proxy `authorization_code`, `refresh_token`, and `client_credentials`
+  requests to Hydra without changing request semantics,
+- handle only
+  `urn:ietf:params:oauth:grant-type:token-exchange` inside the auth service,
+- verify the Google or Apple ID token,
+- resolve/link the Antinvestor profile,
+- create the normal login event/device/access context,
+- run any required MFA gate,
+- drive Hydra through a headless `authorization_code` flow, and
+- return Hydra's token response unchanged.
 
-[
-  {
-    "op": "add",
-    "path": "/grant_types/-",
-    "value": "urn:ietf:params:oauth:grant-type:token-exchange"
-  }
-]
-```
+Do not add the RFC 8693 grant to Hydra client `grant_types` as a hard
+requirement in facade mode. Hydra receives a normal authorization-code exchange
+after the auth service validates the provider identity proof. If a future
+deployed Hydra version is explicitly verified to support RFC 8693 directly,
+that can be revisited as a separate architecture decision.
 
 The client also needs `offline_access` in its allowed scopes so the
 exchanged session can be rotated via refresh tokens (already required
 for the v0.1 authorization-code path).
 
-## 3. Register Apple as a trusted subject issuer
+The facade needs a separate internal Hydra public URL for its upstream token
+and authorization calls. Do not point it at the public issuer origin when that
+origin routes `/oauth2/token` back to the facade.
+
+## 3. Performance expectations
+
+The native exchange is a session bootstrap path, not a per-request path. It
+should run only when the runtime cannot use an existing Antinvestor session and
+has a fresh Google or Apple ID token.
+
+Per successful native login, expect provider-token verification, profile/device
+resolution, and a headless Hydra authorization-code flow. This is mostly
+internal HTTP and database work, not heavy CPU work. Keep it fast by:
+
+- caching provider JWKS,
+- using pooled HTTP clients,
+- using the internal Hydra public URL,
+- setting short timeouts,
+- rate limiting before expensive verification and Hydra work,
+- reusing refresh tokens for normal session renewal, and
+- tracing each leg so slow provider verification and slow Hydra calls can be
+  distinguished.
+
+Target server-side latency after the provider ID token is available:
+
+- P50 under 300 ms.
+- P95 under 1.5 s in staging under normal load.
+
+## 4. Register Apple as a trusted subject issuer
 
 | Field            | Value                                                       |
 |------------------|-------------------------------------------------------------|
@@ -84,7 +116,7 @@ trusted_issuers:
 At exchange time, validate `subject_token.aud` matches the expected
 Services ID for the requesting `client_id`.
 
-## 4. Register Google as a trusted subject issuer
+## 5. Register Google as a trusted subject issuer
 
 | Field            | Value                                                       |
 |------------------|-------------------------------------------------------------|
@@ -105,7 +137,7 @@ trusted_issuers:
       antinvestor-chat-mobile: 456.apps.googleusercontent.com
 ```
 
-## 5. Claim-mapping rules
+## 6. Claim-mapping rules
 
 When the exchange succeeds, the IdP mints a fresh Antinvestor session
 backed by the subject token's claims:
@@ -126,7 +158,7 @@ on the very first sign-in, and only if the app requested the `name`
 scope. Subsequent sign-ins return `sub` and `email` only. Persist the
 name on first sight; do not overwrite with nulls on repeat exchanges.
 
-## 6. Security hardening
+## 7. Security hardening
 
 - **Freshness:** reject `subject_token` whose `iat` is older than
   **5 minutes** (plus a small clock-skew tolerance, e.g. ±30 s). Apple
@@ -154,7 +186,7 @@ name on first sight; do not overwrite with nulls on repeat exchanges.
   Apple tokens) in a short-lived cache (≥ token freshness window) and
   reject duplicates.
 
-## 7. Rate limiting
+## 8. Rate limiting
 
 Add a per-client, per-IP rate limit on the token-exchange endpoint.
 Suggested budget: **30 requests per minute per client** — more than
@@ -164,12 +196,15 @@ credential-stuffing attempts that bypass `/oauth2/auth`.
 Log 429s and feed them into the existing auth-service dashboards
 alongside `/oauth2/token` errors.
 
-## 8. Testing checklist
+## 9. Testing checklist
 
 Before cutting over a production tenancy:
 
-- [ ] Client listed in `grant_types` includes
-      `urn:ietf:params:oauth:grant-type:token-exchange`.
+- [ ] Public discovery advertises the auth-service facade as `token_endpoint`.
+- [ ] Facade proxies `authorization_code`, `refresh_token`, and
+      `client_credentials` grants to Hydra unchanged.
+- [ ] Facade uses a non-recursive internal Hydra public URL.
+- [ ] Mobile client has `authorization_code` and `refresh_token` grants.
 - [ ] Apple trusted issuer registered with correct Services ID per
       consuming app.
 - [ ] Google trusted issuer registered with correct server client ID
@@ -196,4 +231,7 @@ Before cutting over a production tenancy:
 - RFC 8693 — OAuth 2.0 Token Exchange: <https://www.rfc-editor.org/rfc/rfc8693>
 - Apple — Sign in with Apple REST API: <https://developer.apple.com/documentation/sign_in_with_apple>
 - Google — Authenticating with a backend server: <https://developers.google.com/identity/sign-in/android/backend-auth>
-- Ory Hydra — Token Exchange (when released): <https://www.ory.sh/docs/hydra>
+- Ory Hydra production deployment and public/admin endpoint split:
+  <https://www.ory.com/docs/hydra/self-hosted/production>
+- Ory Hydra custom login and consent flow:
+  <https://www.ory.com/docs/hydra/guides/custom-ui-oauth2>

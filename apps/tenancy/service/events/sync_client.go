@@ -200,6 +200,7 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 	}
 
 	redirectURIs := getStringSlice(cl.RedirectURIs, "uris")
+	redirectURIs = ensureFedCMCallbackRedirectURI(redirectURIs, grantTypes)
 	audienceList := authz.AudienceNamespaces(cl.Audiences)
 
 	scopes := cl.Scopes
