@@ -1,18 +1,46 @@
-import 'package:fl_chart/fl_chart.dart';
+import 'package:antinvestor_api_tenancy/antinvestor_api_tenancy.dart';
+import 'package:antinvestor_ui_core/antinvestor_ui_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../analytics/tenancy_analytics.dart';
 import '../providers/partition_providers.dart';
 
-class PartitionAnalyticsPage extends ConsumerWidget {
+/// Analytics overview for the tenancy service.
+///
+/// KPI cards stay entity-derived (tenant / partition / role inventory
+/// counts). The growth trend is a real timeseries from the thesa analytics
+/// gate ([analyticsDataSourceProvider]) over
+/// [organizationsCreatedMetric], and the tenant table is derived from the
+/// live tenant/partition entity snapshot. Tenant scoping is injected
+/// server-side; this page never sends tenant or partition filters.
+class PartitionAnalyticsPage extends ConsumerStatefulWidget {
   const PartitionAnalyticsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PartitionAnalyticsPage> createState() =>
+      _PartitionAnalyticsPageState();
+}
+
+class _PartitionAnalyticsPageState
+    extends ConsumerState<PartitionAnalyticsPage> {
+  AnalyticsTimeRange _timeRange = AnalyticsTimeRange.lastYear();
+
+  ServiceTimeSeriesParams get _growthParams => ServiceTimeSeriesParams(
+    tenancyAnalyticsSpec.service,
+    organizationsCreatedMetric,
+    timeRange: _timeRange,
+  );
+
+  void _refresh() => ref.invalidate(serviceTimeSeriesProvider(_growthParams));
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tenantsAsync = ref.watch(tenantsProvider);
     final partitionsAsync = ref.watch(partitionsProvider);
     final rolesAsync = ref.watch(partitionRolesProvider);
+    final growthAsync = ref.watch(serviceTimeSeriesProvider(_growthParams));
 
     final tenantsCount = tenantsAsync.whenOrNull(data: (d) => d.length) ?? 0;
     final partitionsCount =
@@ -24,12 +52,15 @@ class PartitionAnalyticsPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Tenancy Service',
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Tenancy Service',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 24),
 
-          // KPI cards
+          // KPI cards (entity inventory counts)
           Row(
             children: [
               _KpiCard(
@@ -53,7 +84,7 @@ class PartitionAnalyticsPage extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Chart
+          // Growth trend (thesa analytics gate)
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -64,31 +95,96 @@ class PartitionAnalyticsPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Partition Growth',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-                Text('12-month network-wide scaling metrics',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Organization Growth',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Organizations created over time',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      reverse: true,
+                      child: TimeRangeSelector(
+                        value: _timeRange,
+                        initialPreset: TimeRangePreset.lastYear,
+                        onChanged: (range) =>
+                            setState(() => _timeRange = range),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: _PartitionGrowthChart(),
+                growthAsync.when(
+                  data: (series) => TimeSeriesChart(
+                    series: series,
+                    mode: ChartMode.bar,
+                    granularity:
+                        _timeRange.granularity ?? TimeGranularity.month,
+                  ),
+                  loading: () => const SizedBox(
+                    height: 240,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => _GateErrorCard(
+                    message: analyticsGateMessage(e),
+                    onRetry: _refresh,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // Top tenants
-          _buildTopTenants(context),
+          // Tenants by partition count (entity inventory)
+          _TenantsTable(
+            tenants: tenantsAsync.value ?? const [],
+            partitions: partitionsAsync.value ?? const [],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildTopTenants(BuildContext context) {
+/// Real tenant table derived from the entity snapshot, ranked by the number
+/// of partitions each tenant owns.
+class _TenantsTable extends StatelessWidget {
+  const _TenantsTable({required this.tenants, required this.partitions});
+
+  final List<TenantObject> tenants;
+  final List<PartitionObject> partitions;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final partitionCounts = <String, int>{};
+    for (final p in partitions) {
+      partitionCounts.update(p.tenantId, (v) => v + 1, ifAbsent: () => 1);
+    }
+    final ranked = tenants.toList()
+      ..sort(
+        (a, b) =>
+            (partitionCounts[b.id] ?? 0).compareTo(partitionCounts[a.id] ?? 0),
+      );
+    final top = ranked.take(5).toList();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -99,46 +195,53 @@ class PartitionAnalyticsPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Top Performing Tenants',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 16),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              showCheckboxColumn: false,
-              columns: const [
-                DataColumn(label: Text('ORGANIZATION')),
-                DataColumn(label: Text('PARTITIONS'), numeric: true),
-                DataColumn(label: Text('IOPS AVG')),
-                DataColumn(label: Text('SECURITY SCORE')),
-                DataColumn(label: Text('STATUS')),
-              ],
-              rows: [
-                DataRow(cells: [
-                  const DataCell(Text('Vortex Dynamics')),
-                  const DataCell(Text('2,490')),
-                  const DataCell(Text('14.2k/s')),
-                  const DataCell(Text('98%')),
-                  DataCell(_StatusBadge('OPTIMIZED', Colors.green)),
-                ]),
-                DataRow(cells: [
-                  const DataCell(Text('Nexus Logistics')),
-                  const DataCell(Text('1,823')),
-                  const DataCell(Text('11.8k/s')),
-                  const DataCell(Text('95%')),
-                  DataCell(_StatusBadge('OPTIMIZED', Colors.green)),
-                ]),
-                DataRow(cells: [
-                  const DataCell(Text('Atlas Industries')),
-                  const DataCell(Text('1,204')),
-                  const DataCell(Text('9.4k/s')),
-                  const DataCell(Text('87%')),
-                  DataCell(_StatusBadge('ACTIVE', Colors.blue)),
-                ]),
-              ],
+          Text(
+            'Largest Tenants',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 16),
+          if (top.isEmpty)
+            Text(
+              'No tenants in the current scope',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                showCheckboxColumn: false,
+                columns: const [
+                  DataColumn(label: Text('TENANT')),
+                  DataColumn(label: Text('PARTITIONS'), numeric: true),
+                  DataColumn(label: Text('STATUS')),
+                ],
+                rows: [
+                  for (final tenant in top)
+                    DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            tenant.name.isNotEmpty ? tenant.name : tenant.id,
+                          ),
+                        ),
+                        DataCell(Text('${partitionCounts[tenant.id] ?? 0}')),
+                        DataCell(
+                          _StatusBadge(
+                            tenant.state.name,
+                            tenant.state == STATE.ACTIVE
+                                ? Colors.green
+                                : Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -172,13 +275,19 @@ class _KpiCard extends StatelessWidget {
           children: [
             Icon(icon, size: 24, color: theme.colorScheme.tertiary),
             const SizedBox(height: 12),
-            Text(value,
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              value,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
@@ -203,93 +312,45 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 }
 
-class _PartitionGrowthChart extends StatelessWidget {
+/// Friendly inline error card for analytics gate failures.
+class _GateErrorCard extends StatelessWidget {
+  const _GateErrorCard({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: 2000,
-        barTouchData: BarTouchData(enabled: false),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                const months = [
-                  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-                ];
-                if (value.toInt() >= 0 && value.toInt() < months.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(months[value.toInt()],
-                        style: TextStyle(
-                            fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.errorContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.insights_outlined, color: cs.error, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: cs.error, fontSize: 13),
             ),
           ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant));
-              },
-            ),
-          ),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 500,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: theme.colorScheme.outlineVariant,
-            strokeWidth: 1,
-          ),
-        ),
-        barGroups: List.generate(12, (i) {
-          final values = [
-            800, 950, 1100, 1050, 1200, 1400,
-            1350, 1500, 1600, 1550, 1700, 1850,
-          ];
-          return BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: values[i].toDouble(),
-                color: theme.colorScheme.tertiary,
-                width: 16,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  topRight: Radius.circular(4),
-                ),
-              ),
-            ],
-          );
-        }),
+          if (onRetry != null) ...[
+            const SizedBox(width: 8),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ],
       ),
     );
   }

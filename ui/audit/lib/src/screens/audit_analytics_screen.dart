@@ -1,12 +1,20 @@
 import 'package:antinvestor_api_audit/antinvestor_api_audit.dart';
-import 'package:antinvestor_ui_core/widgets/service_analytics_page.dart';
+import 'package:antinvestor_ui_core/antinvestor_ui_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../analytics/audit_analytics.dart';
 import '../providers/audit_providers.dart';
 
 /// Analytics dashboard for the audit service showing KPI cards,
-/// action distribution, and recent entries.
+/// action distribution, recent entries, and the gate-backed request
+/// activity trend.
+///
+/// KPI tiles stay derived from audit entries (entity API). The request
+/// activity trend comes from the thesa analytics gate
+/// ([analyticsDataSourceProvider]) via frame's built-in
+/// `{pkg}/completed_calls` metric. Tenant scoping is injected server-side;
+/// this screen never sends tenant or partition filters.
 class AuditAnalyticsScreen extends ConsumerWidget {
   const AuditAnalyticsScreen({super.key});
 
@@ -41,16 +49,13 @@ class AuditAnalyticsScreen extends ConsumerWidget {
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (allEntries) {
         final todayEntries = todayAsync.value ?? [];
-        final uniqueActors =
-            allEntries.map((e) => e.profileId).toSet().length;
-        final uniqueServices =
-            allEntries.map((e) => e.service).toSet().length;
+        final uniqueActors = allEntries.map((e) => e.profileId).toSet().length;
+        final uniqueServices = allEntries.map((e) => e.service).toSet().length;
 
         // Build action distribution for chart placeholder.
         final actionCounts = <String, int>{};
         for (final entry in allEntries) {
-          actionCounts[entry.action] =
-              (actionCounts[entry.action] ?? 0) + 1;
+          actionCounts[entry.action] = (actionCounts[entry.action] ?? 0) + 1;
         }
 
         // Recent events for the sidebar.
@@ -59,15 +64,13 @@ class AuditAnalyticsScreen extends ConsumerWidget {
             'delete' => (EventSeverity.warning, Icons.delete_outline),
             'login' => (EventSeverity.info, Icons.login),
             'create' => (EventSeverity.success, Icons.add_circle_outline),
-            'grant_permission' => (
-                EventSeverity.info,
-                Icons.security_outlined
-              ),
+            'grant_permission' => (EventSeverity.info, Icons.security_outlined),
             'export' => (EventSeverity.info, Icons.download_outlined),
             _ => (EventSeverity.info, Icons.edit_outlined),
           };
           return ServiceEvent(
-            title: '${e.action} ${e.resourceType}'
+            title:
+                '${e.action} ${e.resourceType}'
                 '${e.resourceId.isNotEmpty ? ' (${e.resourceId.substring(0, e.resourceId.length.clamp(0, 8))})' : ''}',
             timeAgo: _relativeTime(e.createdAt),
             icon: icon,
@@ -104,6 +107,7 @@ class AuditAnalyticsScreen extends ConsumerWidget {
           chartSubtitle: 'Breakdown of audit actions over recent entries',
           chartWidget: _ActionDistributionChart(actionCounts: actionCounts),
           events: recentEvents,
+          bottomSection: const AuditRequestActivitySection(),
           onViewAllEvents: () => context.go('/services/audit/log'),
           actions: [
             OutlinedButton.icon(
@@ -170,8 +174,7 @@ class _ActionDistributionChart extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: maxCount > 0 ? sorted[i].value / maxCount : 0,
-                    backgroundColor:
-                        theme.colorScheme.surfaceContainerHighest,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     color: colors[i % colors.length],
                     minHeight: 20,
                   ),
@@ -182,8 +185,9 @@ class _ActionDistributionChart extends StatelessWidget {
                 width: 36,
                 child: Text(
                   '${sorted[i].value}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   textAlign: TextAlign.end,
                 ),
               ),
@@ -192,6 +196,135 @@ class _ActionDistributionChart extends StatelessWidget {
           if (i < sorted.length - 1) const SizedBox(height: 8),
         ],
       ],
+    );
+  }
+}
+
+/// Gate-backed request activity trend for the audit service.
+///
+/// Queries the thesa analytics gate for [auditCompletedCallsMetric] over a
+/// selectable time range and renders friendly states for gate errors
+/// (400 allowlist, 403 unscoped, 5xx backend down).
+class AuditRequestActivitySection extends ConsumerStatefulWidget {
+  const AuditRequestActivitySection({super.key});
+
+  @override
+  ConsumerState<AuditRequestActivitySection> createState() =>
+      _AuditRequestActivitySectionState();
+}
+
+class _AuditRequestActivitySectionState
+    extends ConsumerState<AuditRequestActivitySection> {
+  AnalyticsTimeRange _timeRange = AnalyticsTimeRange.last30Days();
+
+  ServiceTimeSeriesParams get _params => ServiceTimeSeriesParams(
+    auditAnalyticsSpec.service,
+    auditCompletedCallsMetric,
+    timeRange: _timeRange,
+  );
+
+  void _refresh() => ref.invalidate(serviceTimeSeriesProvider(_params));
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final trendAsync = ref.watch(serviceTimeSeriesProvider(_params));
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Request Activity',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Completed audit service calls over time',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                reverse: true,
+                child: TimeRangeSelector(
+                  value: _timeRange,
+                  onChanged: (range) => setState(() => _timeRange = range),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          trendAsync.when(
+            data: (series) => TimeSeriesChart(
+              series: series,
+              granularity: _timeRange.granularity,
+            ),
+            loading: () => const SizedBox(
+              height: 240,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => _GateErrorCard(
+              message: analyticsGateMessage(e),
+              onRetry: _refresh,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GateErrorCard extends StatelessWidget {
+  const _GateErrorCard({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.errorContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.insights_outlined, color: cs.error, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: cs.error, fontSize: 13),
+            ),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(width: 8),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ],
+      ),
     );
   }
 }
