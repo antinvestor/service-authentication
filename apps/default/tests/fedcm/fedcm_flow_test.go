@@ -441,6 +441,10 @@ func (s *FedCMFlowSuite) doFedCMTokenExchange(
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseURL()+"/fedcm/token-exchange", bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
+	// Browsers always send Origin on cross-site/same-site POST fetches; the
+	// token-exchange endpoint binds the one-shot stash to the RP origin recorded
+	// at id-assertion time and rejects requests without a matching Origin.
+	req.Header.Set("Origin", s.baseURL())
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)
@@ -475,6 +479,9 @@ func (s *FedCMFlowSuite) doFedCMTokenExchangeExpectStatus(
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseURL()+"/fedcm/token-exchange", bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
+	// Send the matching Origin so replay rejection is exercised via the
+	// one-shot stash deletion, not the origin-binding check.
+	req.Header.Set("Origin", s.baseURL())
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)
