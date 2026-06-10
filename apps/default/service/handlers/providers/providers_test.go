@@ -202,8 +202,15 @@ func (suite *ProvidersTestSuite) TestStateCodec_DecodeTamperedData() {
 	encoded, err := codec.Encode("test", map[string]string{"k": "v"})
 	require.NoError(t, err)
 
-	// Tamper with the encoded data
-	tampered := encoded[:len(encoded)-2] + "XX"
+	// Tamper with the encoded data by flipping one ciphertext bit.
+	// (Replacing trailing base64 chars was flaky: RawURL base64's final
+	// character carries only partial bits, so with a random nonce the
+	// replacement occasionally decoded to identical bytes and the AEAD
+	// correctly accepted it.)
+	raw, err := base64.RawURLEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	raw[len(raw)/2] ^= 0x01
+	tampered := base64.RawURLEncoding.EncodeToString(raw)
 	err = codec.Decode("test", tampered, new(map[string]string))
 	assert.Error(t, err)
 }
