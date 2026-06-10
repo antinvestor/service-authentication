@@ -23,7 +23,7 @@ dependencies:
   # ThesaAnalyticsDataSource). Not on pub.dev yet -- develop against the
   # local checkout via the gitignored pubspec_overrides.yaml.
   antinvestor_ui_core: ^0.5.0
-  antinvestor_ui_profile: ^0.2.0
+  antinvestor_ui_profile: ^0.2.3
   antinvestor_api_tenancy: ^1.54.0
   antinvestor_api_common: ^1.52.0
   antinvestor_api_profile: ^1.52.0
