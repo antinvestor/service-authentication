@@ -25,7 +25,10 @@ import (
 // SQL migration files found at migrationPath.
 func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath string) error {
 	pool := dbManager.GetPool(ctx, datastore.DefaultMigrationPoolName)
+	// Models must be passed as pointers: tenancy enrollment checks for the
+	// tenancy.Tenanted interface whose methods have pointer receivers, so
+	// value models silently skip RLS policy installation.
 	return dbManager.Migrate(ctx, pool, migrationPath,
-		models.AuditEntry{},
+		&models.AuditEntry{},
 	)
 }

@@ -43,6 +43,7 @@ import (
 	"github.com/pitabwire/frame/frametests"
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/frametests/rlstest"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
@@ -267,7 +268,15 @@ func (bs *BaseTestSuite) CreateService(
 	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
 	require.NoError(t, err)
 
+	// The postgres testcontainer user is a SUPERUSER which bypasses RLS even
+	// with FORCE ROW LEVEL SECURITY, so tenancy isolation would never be
+	// exercised. rlstest drops application connections to an unprivileged
+	// role after migration so the suite runs with RLS actually enforced.
+	require.NoError(t, rlstest.CreateRole(ctx, testDS.String()))
+	rlsProv := rlstest.New()
+
 	opts := []frame.Option{frame.WithName("authentication_tests"), frame.WithConfig(&cfg),
+		frame.WithTenancyProvider(rlsProv),
 		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache())}
 
 	if bs.handler != nil {
@@ -294,6 +303,11 @@ func (bs *BaseTestSuite) CreateService(
 
 	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
 	require.NoError(t, err)
+
+	// Migration ran as superuser; grant the restricted role access to the
+	// migrated tables, then switch all application queries to it.
+	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
+	rlsProv.Enable()
 
 	go func() {
 		_ = svc.Run(ctx, "")
