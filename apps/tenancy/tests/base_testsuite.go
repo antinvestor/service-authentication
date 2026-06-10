@@ -38,6 +38,7 @@ import (
 	"github.com/pitabwire/frame/frametests/definition"
 	"github.com/pitabwire/frame/frametests/deps/testnats"
 	"github.com/pitabwire/frame/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/frametests/rlstest"
 	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
@@ -258,8 +259,11 @@ func (bs *BaseTestSuite) createServiceInternal(
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
 
+	// Migrate pins a dedicated connection for its advisory lock (frame
+	// >= v1.95) and runs the migration queries on a second one, so a
+	// single-connection pool deadlocks before the first table exists.
 	testDSLimited := testDS.
-		ExtendQuery("pool_max_conns", "1").
+		ExtendQuery("pool_max_conns", "2").
 		ExtendQuery("pool_min_conns", "0").
 		ExtendQuery("pool_max_conn_lifetime", "1s").
 		ExtendQuery("pool_max_conn_idle_time", "200ms").
@@ -287,8 +291,16 @@ func (bs *BaseTestSuite) createServiceInternal(
 	cfg.AuthorizationServiceReadURI = bs.ketoReadURI
 	cfg.AuthorizationServiceWriteURI = bs.ketoWriteURI
 
+	// The postgres testcontainer user is a SUPERUSER which bypasses RLS even
+	// with FORCE ROW LEVEL SECURITY, so tenancy isolation would never be
+	// exercised. rlstest drops application connections to an unprivileged
+	// role after migration so the suite runs with RLS actually enforced.
+	require.NoError(t, rlstest.CreateRole(ctx, testDS.String()))
+	rlsProv := rlstest.New()
+
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithName("tenancy tests"),
-		frame.WithConfig(&cfg), frame.WithDatastore(), frametests.WithNoopDriver())
+		frame.WithConfig(&cfg), frame.WithTenancyProvider(rlsProv),
+		frame.WithDatastore(), frametests.WithNoopDriver())
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
@@ -316,6 +328,11 @@ func (bs *BaseTestSuite) createServiceInternal(
 	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
 	require.NoError(t, err)
 	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)
+
+	// Migration ran as superuser; grant the restricted role access to the
+	// migrated tables, then switch all application queries to it.
+	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
+	rlsProv.Enable()
 
 	_ = svc.Run(ctx, "")
 

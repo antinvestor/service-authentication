@@ -176,7 +176,15 @@ func (pb *partitionBusiness) GetPartition(
 
 func (pb *partitionBusiness) GetPartitionParents(ctx context.Context, request *tenancyv1.GetPartitionParentsRequest) ([]*tenancyv1.PartitionObject, error) {
 
-	parentList, err := pb.partitionRepo.GetParents(ctx, request.GetId())
+	// Confirm the requested partition is visible under the caller's tenancy
+	// scope before traversing. Ancestor partitions carry their own
+	// partition_id, so the recursive walk itself has to run on the system
+	// path — RLS would otherwise filter out every parent row.
+	if _, err := pb.partitionRepo.GetByID(ctx, request.GetId()); err != nil {
+		return nil, err
+	}
+
+	parentList, err := pb.partitionRepo.GetParents(security.SkipTenancyChecksOnClaims(ctx), request.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +226,12 @@ func (pb *partitionBusiness) CreatePartition(
 	partition.TenantID = tenant.GetID()
 	partition.PartitionID = tenant.PartitionID
 
-	err = pb.partitionRepo.Create(ctx, partition)
+	// Creating a partition is an administrative write into the target
+	// tenant's scope: the row is stamped with the tenant being extended,
+	// not the caller's own tenancy, so the insert must run on the system
+	// path. Authorisation is enforced upstream (Keto) and the scoped
+	// GetByID above proved the caller can see the target tenant.
+	err = pb.partitionRepo.Create(security.SkipTenancyChecksOnClaims(ctx), partition)
 	if err != nil {
 		return nil, err
 	}

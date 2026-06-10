@@ -29,8 +29,11 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 		return errors.New("datastore pool is not initialised")
 	}
 
+	// Models must be passed as pointers: tenancy enrollment checks for the
+	// tenancy.Tenanted interface whose methods have pointer receivers, so
+	// value models silently skip RLS policy installation.
 	return dbManager.Migrate(ctx, pool, migrationPath,
-		models.Tenant{}, models.Partition{}, models.PartitionRole{},
-		models.Access{}, models.AccessRole{}, models.Page{},
-		models.Client{}, models.ServiceAccount{}, models.ServiceNamespace{})
+		&models.Tenant{}, &models.Partition{}, &models.PartitionRole{},
+		&models.Access{}, &models.AccessRole{}, &models.Page{},
+		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{})
 }
