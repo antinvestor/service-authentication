@@ -2,7 +2,7 @@ name: antinvestor_ui_audit
 description: >
   Audit trail UI library for Antinvestor. Browse, search, analyze audit entries
   with embeddable widgets for object-level and system-wide activity tracking.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/audit
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
@@ -19,7 +19,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  antinvestor_ui_core: ^0.3.0
+  # 0.5.0 ships the thesa-gated analytics pipeline (ServiceAnalyticsSpec,
+  # ThesaAnalyticsDataSource). Not on pub.dev yet -- develop against the
+  # local checkout via the gitignored pubspec_overrides.yaml.
+  antinvestor_ui_core: ^0.5.0
   antinvestor_api_audit: ^0.1.0
   antinvestor_api_common: ^1.52.0
   connectrpc: ^1.0.0
@@ -34,6 +37,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  http: ^1.6.0
 
 flutter:
   uses-material-design: true

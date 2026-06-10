@@ -1,5 +1,8 @@
 library;
 
+// Analytics
+export 'src/analytics/tenancy_analytics.dart';
+
 // Routing
 export 'src/routing/tenancy_route_module.dart';
 

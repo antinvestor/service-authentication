@@ -38,3 +38,6 @@ WORK_STATE.md
 pubspec.lock
 **/.flutter-plugins-dependencies
 .claude/
+
+# Local-only pub dependency overrides (path overrides for unpublished packages)
+pubspec_overrides.yaml

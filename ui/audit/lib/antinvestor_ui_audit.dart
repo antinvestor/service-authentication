@@ -31,6 +31,9 @@ export 'src/widgets/actor_activity_widget.dart';
 export 'src/widgets/audit_entry_tile.dart';
 export 'src/widgets/integrity_badge.dart';
 
+// -- Analytics --
+export 'src/analytics/audit_analytics.dart';
+
 // -- Screens --
 export 'src/screens/audit_log_screen.dart';
 export 'src/screens/audit_detail_screen.dart';
