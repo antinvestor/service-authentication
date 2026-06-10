@@ -2,7 +2,7 @@ name: antinvestor_ui_tenancy
 description: >
   Tenancy management UI library for Antinvestor. Tenants, partitions, roles,
   access control, service accounts, and permission management.
-version: 0.3.0
+version: 0.3.1
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/tenancy
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
