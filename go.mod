@@ -29,8 +29,8 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.54.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.98.0
-	github.com/pitabwire/util v0.9.0
+	github.com/pitabwire/frame v1.98.1
+	github.com/pitabwire/util v0.9.1
 	github.com/posthog/posthog-go v1.15.0
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
