@@ -1,3 +1,9 @@
+## 0.3.2
+
+- Fix: audit log filter dropdowns (Action, Resource Type, Service) set
+  `isExpanded` so long option labels ellipsize within their fixed-width
+  boxes instead of overflowing the filter row.
+
 ## 0.3.0
 
 - `AuditAnalyticsScreen` keeps its entry-derived KPI tiles and adds a
