@@ -10,14 +10,14 @@ require (
 	buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.20.0-20260510082436-ec3515043e42.1
 	buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.11-20260510082436-ec3515043e42.1
 	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260509050709-3f270876dbf3.1
-	buf.build/gen/go/antinvestor/device/connectrpc/go v1.20.0-20260511135702-7f6c3cf72171.1
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260511135702-7f6c3cf72171.1
+	buf.build/gen/go/antinvestor/device/connectrpc/go v1.20.0-20260612021939-65b33130c488.1
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260612021939-65b33130c488.1
 	buf.build/gen/go/antinvestor/files/connectrpc/go v1.20.0-20260511135453-ad06fa76a0de.1
 	buf.build/gen/go/antinvestor/files/protocolbuffers/go v1.36.11-20260511135453-ad06fa76a0de.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.20.0-20260511135618-9b1ea0d95bd7.1
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260511135618-9b1ea0d95bd7.1
-	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.20.0-20260511135702-c54f3e4a0a91.1
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260511135702-c54f3e4a0a91.1
+	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.20.0-20260612021939-e32a27e4910e.1
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260612021939-e32a27e4910e.1
 	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260510082433-f63874a7edbf.1
 	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260510082433-f63874a7edbf.1
 	connectrpc.com/connect v1.20.0
@@ -29,7 +29,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.54.2
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.98.2
+	github.com/pitabwire/frame v1.98.4
 	github.com/pitabwire/util v0.9.1
 	github.com/posthog/posthog-go v1.15.0
 	github.com/rs/xid v1.6.0
@@ -70,7 +70,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/exaring/otelpgx v0.11.1 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -156,7 +156,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gocloud.dev v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect

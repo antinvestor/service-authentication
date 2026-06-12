@@ -156,6 +156,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
             width: 160,
             child: DropdownButtonFormField<String>(
               initialValue: _filterAction,
+              isExpanded: true,
               isDense: true,
               decoration: const InputDecoration(
                 labelText: 'Action',
@@ -174,6 +175,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
             width: 160,
             child: DropdownButtonFormField<String>(
               initialValue: _filterResourceType,
+              isExpanded: true,
               isDense: true,
               decoration: const InputDecoration(
                 labelText: 'Resource Type',
@@ -192,6 +194,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
             width: 180,
             child: DropdownButtonFormField<String>(
               initialValue: _filterService,
+              isExpanded: true,
               isDense: true,
               decoration: const InputDecoration(
                 labelText: 'Service',
