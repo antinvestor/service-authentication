@@ -2,7 +2,7 @@ name: antinvestor_ui_audit
 description: >
   Audit trail UI library for Antinvestor. Browse, search, analyze audit entries
   with embeddable widgets for object-level and system-wide activity tracking.
-version: 0.3.1
+version: 0.3.2
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/audit
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
