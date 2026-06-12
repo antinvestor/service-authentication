@@ -51,7 +51,7 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '{"service_tenancy":["*"],"service_device":["*"],"service_profile":["*"],"service_notification":["*"],"service_payment":["*"],"service_ledger":["*"],"service_setting":["*"],"service_file":["*"],"service_trustage":["*"],"service_thesa":["*"],"service_audit":["*"]}',
+    '{"service_tenancy":["*"],"service_device":["*"],"service_profile":["*"],"service_notification":["*"],"service_payment":["*"],"service_ledger":["*"],"service_setting":["*"],"service_file":["*"],"service_trustage":["*"],"service_thesa":["*"],"service_audit":["*"],"service_geolocation":["*"]}',
     '{"uris":["https://thesa-dev.stawi.org/auth/callback","https://thesa0.web.app/auth/callback","org.stawi.thesa://auth/callback","http://localhost:5173/auth/callback","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://stawi.org/images/logo.png',
     '{"uris":["https://thesa-dev.stawi.org/","https://thesa0.web.app/","http://localhost:5173/"]}',
