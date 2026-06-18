@@ -179,7 +179,10 @@ class _Harness {
   final _FakeOAuthFlow oauth;
 }
 
-_Harness _build({required List<NativeCredentialProvider> providers}) {
+_Harness _build({
+  required List<NativeCredentialProvider> providers,
+  bool preferNativeCredentialSilentAttempt = true,
+}) {
   final cfg = resolveConfig(
     const AuthConfig(
       clientId: 'c',
@@ -205,6 +208,7 @@ _Harness _build({required List<NativeCredentialProvider> providers}) {
     worker: worker,
     oauthFlow: oauth,
     nativeProviders: providers,
+    preferNativeCredentialSilentAttempt: preferNativeCredentialSilentAttempt,
   );
   return _Harness(
     runtime: runtime,
@@ -265,6 +269,30 @@ void main() {
         await h.runtime.dispose();
       },
     );
+
+    test('preferSilent=false skips app-start silent attempt', () async {
+      final provider = _NonceEchoingProvider(
+        kind: NativeCredentialProviderKind.google,
+      );
+      final h = _build(
+        providers: [provider],
+        preferNativeCredentialSilentAttempt: false,
+      );
+      h.exchange.idTokenQueue.add(_tokenSet(access: 'native-at'));
+
+      await h.runtime.init();
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(h.worker.state, AuthState.unauthenticated);
+      expect(provider.silentCalls, 0);
+      expect(h.exchange.idTokenCalls, 0);
+      await h.runtime.ensureAuthenticated();
+      expect(provider.interactiveCalls, 1);
+      expect(h.worker.state, AuthState.authenticated);
+      await h.runtime.dispose();
+    });
 
     test(
       'silent-noSession + interactive-success → authenticated; no OAuth fallback',

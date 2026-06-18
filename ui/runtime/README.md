@@ -117,6 +117,25 @@ On every `ensureAuthenticated()`:
 
 ### Consumer setup
 
+Preferred setup uses `NativeCredentialConfig`. On Android, providing
+`googleServerClientId` enables the Google Sign-In v7 flow backed by Android
+Credential Manager / Sign in with Google; the runtime first attempts a no-UI
+returning-user sign-in when `preferSilent` is true, then opens the native sheet
+from `ensureAuthenticated()` before falling back to browser OAuth.
+
+```dart
+final runtime = createAuthRuntime(
+  cfg,
+  nativeCredentialConfig: NativeCredentialConfig(
+    googleServerClientId: googleServerClientId,
+    enableApple: true,
+  ),
+);
+```
+
+The lower-level provider list remains available for tests and apps with custom
+provider stacks:
+
 ```dart
 import 'dart:io';
 import 'package:antinvestor_auth_runtime/antinvestor_auth_runtime.dart';
@@ -129,8 +148,9 @@ final providers = <NativeCredentialProvider>[
 final runtime = createAuthRuntime(cfg, nativeProviders: providers);
 ```
 
-With Riverpod, also override `authNativeProvidersProvider` so widgets
-can render platform-aware sign-in buttons:
+With Riverpod and custom provider lists, also override
+`authNativeProvidersProvider` so widgets can render platform-aware sign-in
+buttons:
 
 ```dart
 ProviderScope(
@@ -158,10 +178,11 @@ ProviderScope(
 - Create a Google OAuth client in Google Cloud Console of type
   "Android" and record the **server client ID** (type "Web
   application") — the latter is what you pass to
+  `NativeCredentialConfig(googleServerClientId: …)` or
   `GoogleCredentialProvider(serverClientId: …)`.
 - Register the app's SHA-256 fingerprint on the Android OAuth client.
-- `android/app/build.gradle` must have `minSdkVersion >= 23`
-  (Credential Manager requirement).
+- `android/app/build.gradle` must have `minSdkVersion >= 21`, matching the
+  endorsed `google_sign_in_android` implementation.
 - No `google-services.json` is required: the Credential-Manager-backed
   `google_sign_in` v7 flow does not use Firebase.
 

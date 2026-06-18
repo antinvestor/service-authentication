@@ -37,14 +37,17 @@ class AuthRuntimeImpl implements AuthRuntime {
     required this.worker,
     required this.oauthFlow,
     List<NativeCredentialProvider> nativeProviders = const [],
+    bool preferNativeCredentialSilentAttempt = true,
     Random? random,
   })  : _nativeProviders = List<NativeCredentialProvider>.unmodifiable(
           nativeProviders,
         ),
+        _preferNativeCredentialSilentAttempt =
+            preferNativeCredentialSilentAttempt,
         _random = random ?? Random.secure(),
         _credentialController =
             StreamController<CredentialEvent>.broadcast() {
-    if (_nativeProviders.isNotEmpty) {
+    if (_nativeProviders.isNotEmpty && _preferNativeCredentialSilentAttempt) {
       _authStateSub = worker.authStateStream.listen(_onAuthStateChanged);
     }
   }
@@ -53,6 +56,7 @@ class AuthRuntimeImpl implements AuthRuntime {
   final TokenWorker worker;
   final OAuthFlow oauthFlow;
   final List<NativeCredentialProvider> _nativeProviders;
+  final bool _preferNativeCredentialSilentAttempt;
   final Random _random;
   final StreamController<CredentialEvent> _credentialController;
 
@@ -398,4 +402,3 @@ class AuthRuntimeImpl implements AuthRuntime {
     }
   }
 }
-

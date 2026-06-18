@@ -20,6 +20,8 @@ export 'src/credentials/credential_event.dart'
         CredentialSilentAttemptEvent;
 export 'src/credentials/google_credential_provider.dart'
     show GoogleCredentialProvider, GoogleSignInAdapter;
+export 'src/credentials/native_credential_config.dart'
+    show NativeCredentialConfig;
 export 'src/credentials/native_credential.dart'
     show
         Cancelled,

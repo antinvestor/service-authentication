@@ -100,6 +100,29 @@ class _FakeOAuthFlow extends OAuthFlow {
   }
 }
 
+class _DecliningNativeProvider implements NativeCredentialProvider {
+  @override
+  NativeCredentialProviderKind get kind => NativeCredentialProviderKind.google;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<NativeCredentialOutcome> attemptSilent({
+    required String nonce,
+  }) async =>
+      const NativeCredentialOutcome.noSession();
+
+  @override
+  Future<NativeCredentialOutcome> attemptInteractive({
+    required String nonce,
+  }) async =>
+      const NativeCredentialOutcome.cancelled();
+
+  @override
+  Future<void> signOut() async {}
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -217,6 +240,28 @@ void main() {
     await Future.wait([a, b]);
     expect(h.oauthFlow.authorizeCalls, 1);
     await rt.dispose();
+  });
+
+  test('createAuthRuntime rejects duplicate native credential configuration',
+      () {
+    expect(
+      () => createAuthRuntime(
+        _config,
+        nativeCredentialConfig: const NativeCredentialConfig(
+          googleServerClientId: 'web-client.apps.googleusercontent.com',
+        ),
+        nativeProviders: [_DecliningNativeProvider()],
+        keyManager: DefaultKeyManager(),
+        rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
+        tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
+        discoveryClient: _FakeDiscoveryClient(),
+        tokenExchange: _FakeTokenExchange(),
+        apiProxy: _FakeApiProxy(),
+        refreshLock: RefreshLock(),
+        oauthFlow: _FakeOAuthFlow(code: 'code-1'),
+      ),
+      throwsArgumentError,
+    );
   });
 
   test(
@@ -373,7 +418,7 @@ void main() {
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);
-    expect(rt.version, '0.4.0');
+    expect(rt.version, '0.4.2');
     await rt.dispose();
   });
 

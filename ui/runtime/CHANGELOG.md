@@ -3,6 +3,24 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.2 — 2026-06-18
+
+### Added
+- `NativeCredentialConfig`, a high-level factory configuration for Apple and
+  Google native credential providers. Android apps can now enable the
+  Google Sign-In v7 Credential Manager / One Tap path with
+  `createAuthRuntime(nativeCredentialConfig: NativeCredentialConfig(...))`.
+- `preferSilent` support for native credentials. Apps can now explicitly
+  disable the app-start no-UI credential attempt while keeping the interactive
+  native sheet on sign-in tap.
+
+### Changed
+- `createAuthRuntime` rejects simultaneous `nativeCredentialConfig` and
+  `nativeProviders` inputs to prevent ambiguous native credential setup.
+- Documentation now presents `NativeCredentialConfig` as the preferred app
+  integration path and keeps `nativeProviders` for tests and custom provider
+  stacks.
+
 ## 0.4.0 — 2026-05-01
 
 ### Changed

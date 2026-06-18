@@ -5,6 +5,7 @@ import 'package:antinvestor_auth_runtime/src/auth_runtime_impl.dart';
 import 'package:antinvestor_auth_runtime/src/config/auth_config.dart';
 import 'package:antinvestor_auth_runtime/src/config/resolve_config.dart';
 import 'package:antinvestor_auth_runtime/src/credentials/credential_event.dart';
+import 'package:antinvestor_auth_runtime/src/credentials/native_credential_config.dart';
 import 'package:antinvestor_auth_runtime/src/credentials/native_credential.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/default_key_manager.dart';
 import 'package:antinvestor_auth_runtime/src/crypto/key_manager.dart';
@@ -39,6 +40,7 @@ import 'package:antinvestor_auth_runtime/src/worker/token_worker.dart';
 AuthRuntime createAuthRuntime(
   AuthConfig config, {
   bool useIsolate = false,
+  NativeCredentialConfig? nativeCredentialConfig,
   List<NativeCredentialProvider> nativeProviders = const [],
   KeyManager? keyManager,
   RootKeyStore? rootKeyStore,
@@ -52,6 +54,12 @@ AuthRuntime createAuthRuntime(
   OAuthFlow? oauthFlow,
   Clock? clock,
 }) {
+  if (nativeCredentialConfig != null && nativeProviders.isNotEmpty) {
+    throw ArgumentError(
+      'Pass either nativeCredentialConfig or nativeProviders, not both.',
+    );
+  }
+
   final resolved = resolveConfig(config);
   if (useIsolate) {
     // v0.1 ships the isolate path in scaffolding form: lifecycle works
@@ -78,6 +86,8 @@ AuthRuntime createAuthRuntime(
   final proxy = apiProxy ?? ApiProxy();
   final lock = refreshLock ?? RefreshLock();
   final flow = oauthFlow ?? OAuthFlow();
+  final resolvedNativeProviders =
+      nativeCredentialConfig?.buildProviders() ?? nativeProviders;
 
   final worker = TokenWorker(
     config: resolved,
@@ -95,7 +105,9 @@ AuthRuntime createAuthRuntime(
     config: resolved,
     worker: worker,
     oauthFlow: flow,
-    nativeProviders: nativeProviders,
+    nativeProviders: resolvedNativeProviders,
+    preferNativeCredentialSilentAttempt:
+        nativeCredentialConfig?.preferSilent ?? true,
   );
   // Kick off session reload immediately so apps subscribing to
   // `authStateStream` don't miss the first transition while they're
@@ -228,4 +240,3 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
     await rt.dispose();
   }
 }
-
