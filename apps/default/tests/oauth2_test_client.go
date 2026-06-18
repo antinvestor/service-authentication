@@ -224,7 +224,7 @@ func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName stri
 	// Use comma-separated strings for lists to ensure compatibility with structpb serialisation.
 	props := data.JSONMap{
 		"redirect_uris":              redirectURI,
-		"scope":                      "openid offline offline_access profile contact",
+		"scope":                      "openid offline offline_access profile",
 		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
 		"token_endpoint_auth_method": "none",
 	}
@@ -287,7 +287,7 @@ func (c *OAuth2TestClient) CreateFedCMOAuth2Client(ctx context.Context, testName
 
 	props := data.JSONMap{
 		"redirect_uris":              redirectURIs,
-		"scope":                      "openid offline offline_access profile contact email",
+		"scope":                      "openid offline offline_access profile email",
 		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
 		"token_endpoint_auth_method": "none",
 	}
