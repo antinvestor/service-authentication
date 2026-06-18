@@ -24,7 +24,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
     type, grant_types, response_types, scopes, audiences, redirect_uris,
-    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, properties
 ) VALUES (
     'd6l82t4pf2t82gudn7tg',
     '9bsv0s0hijjg02z5lbjg','9bsv0s0hijjg02qk7l1g',
@@ -38,7 +38,8 @@ INSERT INTO clients (
     '{"uris":["https://chat.stawi.org/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://static.stawi.org/logo.png',
     '{"uris":["https://chat.stawi.org/sso/logout"]}',
-    'none'
+    'none',
+    '{"native_auth_enabled":true,"native_google_server_client_id":"265397001887-hjrrjml6ekekmrjlg4ku4bsgtobgid85.apps.googleusercontent.com"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Development/test tenant
@@ -63,7 +64,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
     type, grant_types, response_types, scopes, audiences, redirect_uris,
-    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
+    logo_uri, post_logout_redirect_uris, token_endpoint_auth_method, properties
 ) VALUES (
     'd6l82t4pf2t82gudn7u0',
     '9bsv0s0hijjg09bzz6dg','9bsv0s0hijjg02qks6i0',
@@ -77,5 +78,6 @@ INSERT INTO clients (
     '{"uris":["https://chat-dev.stawi.org/sso/redirect","https://stawi-chat.web.app/sso/redirect","org.stawi.chat://sso/redirect","http://localhost:5170/sso/redirect","https://accounts.stawi.org/_internal/fedcm-callback"]}',
     'https://static.stawi.org/logo.png',
     '{"uris":["https://chat-dev.stawi.org/sso/logout","https://stawi-chat.web.app/sso/logout","org.stawi.chat://sso/logout","http://localhost:5170/sso/logout"]}',
-    'none'
+    'none',
+    '{"native_auth_enabled":true,"native_google_server_client_id":"265397001887-hjrrjml6ekekmrjlg4ku4bsgtobgid85.apps.googleusercontent.com"}'
 ) ON CONFLICT (id) DO NOTHING;
