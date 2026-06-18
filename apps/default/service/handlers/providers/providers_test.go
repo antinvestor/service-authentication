@@ -681,6 +681,18 @@ func (suite *ProvidersTestSuite) TestFacebookProvider_CompleteLogin_GraphAPISucc
 
 // --- SetupAuthProviders Google error path ---
 
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_GooglePartialConfigSkipped() {
+	t := suite.T()
+	cfg := &config.AuthenticationConfig{
+		AuthProviderGoogleClientID: "google-client",
+	}
+
+	result, err := SetupAuthProviders(t.Context(), cfg)
+	require.NoError(t, err)
+	assert.NotContains(t, result, "google")
+	assert.Empty(t, result)
+}
+
 func (suite *ProvidersTestSuite) TestSetupAuthProviders_GoogleDiscoveryError() {
 	t := suite.T()
 	cfg := &config.AuthenticationConfig{

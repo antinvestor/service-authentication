@@ -26,7 +26,7 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 	log := util.Log(ctx)
 	providers := map[string]AuthProvider{}
 
-	if cfg.AuthProviderGoogleClientID != "" {
+	if cfg.GoogleLoginConfigured() {
 		p, err := NewGoogleOIDCProvider(
 			ctx,
 			cfg.AuthProviderGoogleClientID,

@@ -75,8 +75,14 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 
 	// Wrap file server with cache headers
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set cache headers for static assets (Cache-Control is preferred over Expires)
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable") // 1 year, immutable for versioned assets
+		// Auth assets are served from stable URLs, so they must stay revalidatable.
+		// Immutable caching is only safe for files whose URL changes when content changes.
+		switch filepath.Ext(r.URL.Path) {
+		case ".css", ".js":
+			w.Header().Set("Cache-Control", "no-cache")
+		default:
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
 
 		// Set proper content types
 		switch filepath.Ext(r.URL.Path) {

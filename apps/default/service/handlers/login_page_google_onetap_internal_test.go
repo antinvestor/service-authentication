@@ -16,9 +16,12 @@ package handlers
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,4 +111,61 @@ func TestLoginPageGoogleOneTapClientIDIsGoogleNotHydra(t *testing.T) {
 
 	// Sanity: the Hydra client id is still used by the first-party probe.
 	require.Contains(t, html, "clientId: \"HYDRA-CLIENT\"")
+}
+
+func TestSetupLoginOptionsRequiresCompleteGoogleConfiguration(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     config.AuthenticationConfig
+		enabled bool
+	}{
+		{
+			name: "missing all google settings",
+			cfg:  config.AuthenticationConfig{},
+		},
+		{
+			name: "client id only is not enough",
+			cfg: config.AuthenticationConfig{
+				AuthProviderGoogleClientID: "web-client.apps.googleusercontent.com",
+			},
+		},
+		{
+			name: "missing callback url",
+			cfg: config.AuthenticationConfig{
+				AuthProviderGoogleClientID: "web-client.apps.googleusercontent.com",
+				AuthProviderGoogleSecret:   "secret",
+			},
+		},
+		{
+			name: "complete google web login config",
+			cfg: config.AuthenticationConfig{
+				AuthProviderGoogleClientID:    "web-client.apps.googleusercontent.com",
+				AuthProviderGoogleSecret:      "secret",
+				AuthProviderGoogleCallbackURL: "https://accounts.stawi.org/s/social/callback",
+			},
+			enabled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &AuthServer{}
+			h.setupLoginOptions(&tt.cfg)
+
+			require.Equal(t, tt.enabled, h.loginOptions["enableGoogleLogin"] == true)
+		})
+	}
+}
+
+func TestGoogleFedCMScriptDoesNotAutoEscalateToOAuth(t *testing.T) {
+	path := filepath.Join("..", "..", "static", "js", "fedcm_google.js")
+	source, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	js := string(source)
+	require.Contains(t, js, `await runFlow(opts, "optional", "auto_prompt");`)
+	require.Contains(t, js, "fedcm_google_blocked_no_activation")
+	require.Contains(t, js, "bindFallbackTracking")
+	require.NotContains(t, js, "btn.click()")
+	require.NotContains(t, js, "fedcm_google_auto_escalate")
 }

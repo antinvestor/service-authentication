@@ -154,6 +154,9 @@ services:
       - TENANCY_SERVICE_URI=http://tenancy_svc:8083
       - DEVICE_SERVICE_URI=http://device_svc:8085
       - NOTIFICATION_SERVICE_URI=http://notification_svc:8087
+      - AUTH_PROVIDER_GOOGLE_CLIENT_ID=${AUTH_PROVIDER_GOOGLE_CLIENT_ID:-}
+      - AUTH_PROVIDER_GOOGLE_SECRET=${AUTH_PROVIDER_GOOGLE_SECRET:-}
+      - AUTH_PROVIDER_GOOGLE_CALLBACK_URL=${AUTH_PROVIDER_GOOGLE_CALLBACK_URL:-}
     ports:
       - "8080:8080"
     restart: unless-stopped

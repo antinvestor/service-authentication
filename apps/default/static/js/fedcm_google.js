@@ -2,26 +2,20 @@
 //
 // Google FedCM on /s/login — instant account chooser on page load.
 //
-// Three flows, tried in order:
+// Two flows, tried in order:
 //
 //   1. Auto-prompt (immediate): fires FedCM with mediation:"optional"
 //      the moment install() is called — no setTimeout, no waiting for
 //      paint. If the user has a prior FedCM session, Chrome shows the
 //      One Tap chip and login completes in ~200ms.
 //
-//   2. Auto-escalation: if the auto-prompt returns null (first visit),
-//      we programmatically click the Google button. The click gives
-//      Chrome the transient user activation it needs for
-//      mediation:"required", which opens the full account chooser.
-//      The user sees the chooser within ~300ms of page load.
-//
-//   3. Explicit click (manual): if the user dismisses the auto-chooser
+//   2. Explicit click (manual): if the user dismisses the auto-chooser
 //      and later clicks the Google button themselves, the same
 //      mediation:"required" flow runs again with an OAuth fallback.
 //
 // Hardened against:
 //   - Double-submit:    a single in-flight flag short-circuits repeat clicks
-//                       AND prevents auto-escalation from racing a manual click.
+//                       and prevents auto-prompt from racing a manual click.
 //   - Open-redirect:    the JSON response's redirect_url is only followed
 //                       when it is a same-origin path or an HTTPS URL.
 //   - Stale handlers:   install() is idempotent — re-running it on the same
@@ -50,6 +44,18 @@
       navigator.credentials &&
       typeof navigator.credentials.get === "function"
     );
+  }
+
+  function hasUserActivation(event) {
+    if (event && event.isTrusted === false) return false;
+    if (
+      navigator &&
+      navigator.userActivation &&
+      typeof navigator.userActivation.isActive === "boolean"
+    ) {
+      return navigator.userActivation.isActive;
+    }
+    return true;
   }
 
   function isSafeRedirect(raw) {
@@ -149,6 +155,20 @@
     }
   }
 
+  function bindFallbackTracking() {
+    var forms = document.querySelectorAll("form[data-fedcm-google]");
+    forms.forEach(function (form) {
+      if (form.__stawiGoogleFallbackTracked) return;
+      form.__stawiGoogleFallbackTracked = true;
+      form.addEventListener("submit", function () {
+        track("sign_in_method_clicked", {
+          method: "google",
+          fedcm_supported: false,
+        });
+      });
+    });
+  }
+
   function bindClick(opts) {
     var forms = document.querySelectorAll("form[data-fedcm-google]");
     forms.forEach(function (form) {
@@ -161,6 +181,10 @@
           return;
         }
         event.preventDefault();
+        if (!hasUserActivation(event)) {
+          track("fedcm_google_blocked_no_activation");
+          return;
+        }
         track("sign_in_method_clicked", {
           method: "google",
           fedcm_supported: true,
@@ -178,27 +202,19 @@
 
   // autoPrompt fires FedCM immediately — no setTimeout, no waiting for
   // paint. If mediation:"optional" returns null (first visit / no
-  // candidate), we escalate by programmatically clicking the Google
-  // button to gain transient activation for mediation:"required".
+  // candidate), the explicit Google button remains available. We do not
+  // synthesize a click: required mediation and the OAuth fallback both
+  // need to stay attached to a real user action.
   async function autoPrompt(opts) {
     if (inFlight) return;
-
-    var navigated = await runFlow(opts, "optional", "auto_prompt");
-    if (navigated) return;
-
-    // Escalate: click the Google button to get transient activation,
-    // which lets mediation:"required" show the full account chooser.
-    var btn = document.querySelector("form[data-fedcm-google] button");
-    if (btn && !inFlight) {
-      track("fedcm_google_auto_escalate");
-      btn.click();
-    }
+    await runFlow(opts, "optional", "auto_prompt");
   }
 
   function install(opts) {
     if (!opts || !opts.clientId || !opts.loginEventId) return;
     if (!fedcmSupported()) {
       track("fedcm_unsupported", { provider: "google" });
+      bindFallbackTracking();
       return;
     }
     bindClick(opts);

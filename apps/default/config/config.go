@@ -15,6 +15,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/pitabwire/frame/config"
 )
 
@@ -111,4 +113,16 @@ type AuthenticationConfig struct {
 	// back to a noop client).
 	PostHogHost   string `envDefault:"https://eu.posthog.com" env:"POSTHOG_HOST"`
 	PostHogAPIKey string `envDefault:"phc_zoC2QdgTQcNfo7RPqCYYMyjGmJxEynav54w2mjbHcTmm" env:"POSTHOG_API_KEY"`
+}
+
+// GoogleLoginConfigured reports whether the hosted web Google login flow is
+// fully configured. The login page needs the web client ID for FedCM/One Tap and
+// the secret + callback URL for the OAuth redirect fallback.
+func (c *AuthenticationConfig) GoogleLoginConfigured() bool {
+	if c == nil {
+		return false
+	}
+	return strings.TrimSpace(c.AuthProviderGoogleClientID) != "" &&
+		strings.TrimSpace(c.AuthProviderGoogleSecret) != "" &&
+		strings.TrimSpace(c.AuthProviderGoogleCallbackURL) != ""
 }

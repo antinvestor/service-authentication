@@ -33,7 +33,7 @@ func (h *AuthServer) setupLoginOptions(cfg *config.AuthenticationConfig) {
 
 	h.loginOptions = map[string]any{"enableContactLogin": !cfg.AuthProviderContactLoginDisabled}
 
-	if cfg.AuthProviderGoogleClientID != "" {
+	if cfg.GoogleLoginConfigured() {
 		h.loginOptions["enableGoogleLogin"] = true
 	}
 
