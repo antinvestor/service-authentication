@@ -61,5 +61,5 @@ type AuditFilter struct {
 	StartDate       *time.Time
 	EndDate         *time.Time
 	Limit           int
-	Cursor          string // ID-based cursor for pagination
+	Cursor          string // ID of the last entry from the previous page
 }

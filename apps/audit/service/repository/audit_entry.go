@@ -66,11 +66,11 @@ func (r *auditEntryRepository) List(ctx context.Context, filter *AuditFilter) ([
 	limit := normalizeLimit(filter.Limit)
 
 	if filter.Cursor != "" {
-		db = db.Where("id < ?", filter.Cursor)
+		db = applyPageCursor(db, filter.Cursor)
 	}
 
 	var entries []*models.AuditEntry
-	err := db.Order("id DESC").Limit(limit).Find(&entries).Error
+	err := latestFirst(db).Limit(limit).Find(&entries).Error
 	return entries, err
 }
 
@@ -88,11 +88,11 @@ func (r *auditEntryRepository) Search(ctx context.Context, query string, startDa
 		db = db.Where("created_at <= ?", *endDate)
 	}
 	if cursor != "" {
-		db = db.Where("id < ?", cursor)
+		db = applyPageCursor(db, cursor)
 	}
 
 	var entries []*models.AuditEntry
-	err := db.Order("id DESC").Limit(normalizeLimit(limit)).Find(&entries).Error
+	err := latestFirst(db).Limit(normalizeLimit(limit)).Find(&entries).Error
 	return entries, err
 }
 
@@ -159,6 +159,17 @@ func applyFilter(db *gorm.DB, filter *AuditFilter) *gorm.DB {
 		db = db.Where("created_at <= ?", *filter.EndDate)
 	}
 	return db
+}
+
+func applyPageCursor(db *gorm.DB, cursor string) *gorm.DB {
+	return db.Where(
+		"(created_at, id) < (SELECT created_at, id FROM audit_entries WHERE id = ? ORDER BY created_at DESC LIMIT 1)",
+		cursor,
+	)
+}
+
+func latestFirst(db *gorm.DB) *gorm.DB {
+	return db.Order("created_at DESC").Order("id DESC")
 }
 
 func normalizeLimit(limit int) int {
