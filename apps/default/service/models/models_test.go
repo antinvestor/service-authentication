@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/tenancy"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -53,6 +54,10 @@ func (s *ModelsTestSuite) TestLoginEvent_Getters() {
 	s.Equal("contact-1", le.GetContactID())
 	s.Equal("session-1", le.GetSessionID())
 	s.Equal("device-1", le.GetDeviceID())
+}
+
+func (s *ModelsTestSuite) TestLoginEvent_OptsOutOfAutomaticRLS() {
+	s.Implements((*tenancy.Unscoped)(nil), &LoginEvent{})
 }
 
 func (s *ModelsTestSuite) TestLoginEvent_GetRoles_ReturnsEmpty() {

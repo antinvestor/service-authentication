@@ -3,6 +3,14 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3 — 2026-06-19
+
+### Fixed
+- Interactive native credential sign-in no longer falls back to the browser
+  OAuth flow after a provider-issued ID token fails backend token exchange.
+  Apps now see the exchange failure directly, which keeps Android One Tap on
+  the native credential-exchange path instead of prompting for a second login.
+
 ## 0.4.2 — 2026-06-18
 
 ### Added

@@ -349,28 +349,36 @@ void main() {
     });
 
     test(
-      'worker exchange failure after interactive-ok → falls through to OAuth2',
+      'worker exchange failure after interactive-ok does not open OAuth2',
       () async {
         final provider = _NonceEchoingProvider(
           kind: NativeCredentialProviderKind.google,
           silentOutcome: const NativeCredentialOutcome.noSession(),
         );
         final h = _build(providers: [provider]);
-        // id-token exchange raises; OAuth2 leg succeeds.
         h.exchange.idTokenError = AuthError(
           AuthErrorCode.tokenExchangeFailed,
           'boom',
         );
-        h.exchange.codeQueue.add(_tokenSet(access: 'oauth-at'));
         await h.runtime.init();
 
         for (var i = 0; i < 5; i++) {
           await Future<void>.delayed(Duration.zero);
         }
-        await h.runtime.ensureAuthenticated();
-        expect(h.worker.state, AuthState.authenticated);
-        expect(h.oauth.calls, 1);
-        expect(h.exchange.codeCalls, 1);
+        await expectLater(
+          h.runtime.ensureAuthenticated(),
+          throwsA(
+            isA<AuthError>().having(
+              (e) => e.code,
+              'code',
+              AuthErrorCode.tokenExchangeFailed,
+            ),
+          ),
+        );
+        expect(h.worker.state, AuthState.unauthenticated);
+        expect(h.oauth.calls, 0);
+        expect(h.exchange.codeCalls, 0);
+        expect(h.exchange.idTokenCalls, 1);
         await h.runtime.dispose();
       },
     );

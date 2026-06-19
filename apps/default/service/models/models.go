@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/tenancy"
 )
 
 type LoginSource string
@@ -39,6 +40,7 @@ type Login struct {
 }
 
 type LoginEvent struct {
+	tenancy.UnscopedMarker
 	data.BaseModel
 	ClientID         string `gorm:"type:varchar(50);index"`
 	LoginID          string `gorm:"type:varchar(50);index"`

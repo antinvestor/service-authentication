@@ -225,15 +225,15 @@ class AuthRuntimeImpl implements AuthRuntime {
       _emitCredentialEvent(CredentialEvent.outcome(p.kind, outcome));
 
       if (outcome is Ok) {
-        try {
-          await worker.completeNativeCredential(
-            credential: outcome.result,
-            expectedNonce: nonce,
-          );
-          return;
-        } catch (_) {
-          // Exchange failed — fall through to the next provider / OAuth2.
-        }
+        // A provider-issued credential means the native sign-in leg
+        // succeeded. If the backend exchange fails, surface that failure
+        // instead of opening the browser login flow and hiding the real
+        // configuration or token-exchange problem.
+        await worker.completeNativeCredential(
+          credential: outcome.result,
+          expectedNonce: nonce,
+        );
+        return;
       }
       // Cancelled / NoSession / Unavailable / ErrorOutcome → fall through.
     }
