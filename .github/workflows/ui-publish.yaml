@@ -22,7 +22,7 @@ jobs:
       package: ${{ steps.extract.outputs.package }}
       working_dir: ${{ steps.extract.outputs.working_dir }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: extract
         env:
           REF: ${{ github.ref }}
@@ -47,7 +47,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # setup-dart with OIDC populates ~/.config/dart/pub-credentials.json
       # using the GitHub Actions OIDC token; flutter pub publish reads
