@@ -34,7 +34,7 @@ const kChatAuthConfig = AuthConfig(
   apiBaseUrl: 'https://api.antinvestor.com',
   redirectScheme: 'com.antinvestor.chat',
   redirectPath: '/sso/redirect',
-  scopes: ['openid', 'profile', 'contact', 'offline_access'],
+  scopes: ['openid', 'profile', 'offline_access'],
 );
 
 AuthRuntime buildChatRuntime() => createAuthRuntime(kChatAuthConfig);
