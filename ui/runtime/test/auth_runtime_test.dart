@@ -22,7 +22,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FakeDiscoveryClient implements DiscoveryClient {
   @override
-  Future<OidcDiscovery> getDiscovery(String idpBaseUrl, Duration timeout) async {
+  Future<OidcDiscovery> getDiscovery(
+    String idpBaseUrl,
+    Duration timeout,
+  ) async {
     return OidcDiscovery(
       issuer: idpBaseUrl,
       authorizationEndpoint: '$idpBaseUrl/oauth2/auth',
@@ -110,14 +113,12 @@ class _DecliningNativeProvider implements NativeCredentialProvider {
   @override
   Future<NativeCredentialOutcome> attemptSilent({
     required String nonce,
-  }) async =>
-      const NativeCredentialOutcome.noSession();
+  }) async => const NativeCredentialOutcome.noSession();
 
   @override
   Future<NativeCredentialOutcome> attemptInteractive({
     required String nonce,
-  }) async =>
-      const NativeCredentialOutcome.cancelled();
+  }) async => const NativeCredentialOutcome.cancelled();
 
   @override
   Future<void> signOut() async {}
@@ -139,18 +140,19 @@ TokenSet _tokens({
   String refresh = 'rt-1',
   String? id,
   DateTime? expiresAt,
-}) =>
-    TokenSet(
-      accessToken: access,
-      refreshToken: refresh,
-      expiresAt: expiresAt ?? DateTime.utc(2030, 1, 1),
-      tokenType: TokenType.bearer,
-      idToken: id,
-    );
+}) => TokenSet(
+  accessToken: access,
+  refreshToken: refresh,
+  expiresAt: expiresAt ?? DateTime.utc(2030, 1, 1),
+  tokenType: TokenType.bearer,
+  idToken: id,
+);
 
 String _makeJwt(Map<String, dynamic> payload) {
   String strip(String s) => s.replaceAll('=', '');
-  final header = strip(base64Url.encode(utf8.encode(json.encode({'alg': 'RS256'}))));
+  final header = strip(
+    base64Url.encode(utf8.encode(json.encode({'alg': 'RS256'}))),
+  );
   final body = strip(base64Url.encode(utf8.encode(json.encode(payload))));
   final sig = strip(base64Url.encode([1, 2, 3]));
   return '$header.$body.$sig';
@@ -162,10 +164,9 @@ class _Harness {
     _FakeOAuthFlow? flow,
     InMemoryKeyValueStore? sessionKv,
     InMemoryKeyValueStore? rootKv,
-  })  : sessionKv = sessionKv ?? InMemoryKeyValueStore(),
-        rootKv = rootKv ?? InMemoryKeyValueStore(),
-        oauthFlow = flow ??
-            _FakeOAuthFlow(code: 'code-1') {
+  }) : sessionKv = sessionKv ?? InMemoryKeyValueStore(),
+       rootKv = rootKv ?? InMemoryKeyValueStore(),
+       oauthFlow = flow ?? _FakeOAuthFlow(code: 'code-1') {
     exchange = _FakeTokenExchange();
     if (initialTokens != null) exchange.queue.add(initialTokens);
   }
@@ -177,16 +178,16 @@ class _Harness {
   final _FakeApiProxy apiProxy = _FakeApiProxy();
 
   AuthRuntime build() => createAuthRuntime(
-        _config,
-        keyManager: DefaultKeyManager(),
-        rootKeyStore: DefaultRootKeyStore(kv: rootKv),
-        tokenStore: SecureTokenStore(kv: sessionKv),
-        discoveryClient: _FakeDiscoveryClient(),
-        tokenExchange: exchange,
-        apiProxy: apiProxy,
-        refreshLock: RefreshLock(),
-        oauthFlow: oauthFlow,
-      );
+    _config,
+    keyManager: DefaultKeyManager(),
+    rootKeyStore: DefaultRootKeyStore(kv: rootKv),
+    tokenStore: SecureTokenStore(kv: sessionKv),
+    discoveryClient: _FakeDiscoveryClient(),
+    tokenExchange: exchange,
+    apiProxy: apiProxy,
+    refreshLock: RefreshLock(),
+    oauthFlow: oauthFlow,
+  );
 }
 
 void main() {
@@ -202,22 +203,24 @@ void main() {
     await rt.dispose();
   });
 
-  test('ensureAuthenticated drives OAuth and transitions to authenticated',
-      () async {
-    final h = _Harness(initialTokens: _tokens(access: 'at-fresh'));
-    final rt = h.build();
-    final states = <AuthState>[];
-    rt.authStateStream.listen(states.add);
+  test(
+    'ensureAuthenticated drives OAuth and transitions to authenticated',
+    () async {
+      final h = _Harness(initialTokens: _tokens(access: 'at-fresh'));
+      final rt = h.build();
+      final states = <AuthState>[];
+      rt.authStateStream.listen(states.add);
 
-    await rt.ensureAuthenticated();
-    await Future<void>.delayed(Duration.zero);
+      await rt.ensureAuthenticated();
+      await Future<void>.delayed(Duration.zero);
 
-    expect(rt.state, AuthState.authenticated);
-    expect(h.oauthFlow.authorizeCalls, 1);
-    expect(h.exchange.calls, 1);
-    expect(states.last, AuthState.authenticated);
-    await rt.dispose();
-  });
+      expect(rt.state, AuthState.authenticated);
+      expect(h.oauthFlow.authorizeCalls, 1);
+      expect(h.exchange.calls, 1);
+      expect(states.last, AuthState.authenticated);
+      await rt.dispose();
+    },
+  );
 
   test('ensureAuthenticated is a no-op when already authenticated', () async {
     final h = _Harness(initialTokens: _tokens());
@@ -226,13 +229,15 @@ void main() {
     expect(h.oauthFlow.authorizeCalls, 1);
 
     await rt.ensureAuthenticated();
-    expect(h.oauthFlow.authorizeCalls, 1,
-        reason: 'a second call with live session must not reopen the browser');
+    expect(
+      h.oauthFlow.authorizeCalls,
+      1,
+      reason: 'a second call with live session must not reopen the browser',
+    );
     await rt.dispose();
   });
 
-  test('concurrent ensureAuthenticated callers share one OAuth flow',
-      () async {
+  test('concurrent ensureAuthenticated callers share one OAuth flow', () async {
     final h = _Harness(initialTokens: _tokens());
     final rt = h.build();
     final a = rt.ensureAuthenticated();
@@ -242,30 +247,31 @@ void main() {
     await rt.dispose();
   });
 
-  test('createAuthRuntime rejects duplicate native credential configuration',
-      () {
-    expect(
-      () => createAuthRuntime(
-        _config,
-        nativeCredentialConfig: const NativeCredentialConfig(
-          googleServerClientId: 'web-client.apps.googleusercontent.com',
-        ),
-        nativeProviders: [_DecliningNativeProvider()],
-        keyManager: DefaultKeyManager(),
-        rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
-        tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
-        discoveryClient: _FakeDiscoveryClient(),
-        tokenExchange: _FakeTokenExchange(),
-        apiProxy: _FakeApiProxy(),
-        refreshLock: RefreshLock(),
-        oauthFlow: _FakeOAuthFlow(code: 'code-1'),
-      ),
-      throwsArgumentError,
-    );
-  });
-
   test(
-      'second runtime instance over the same storage starts authenticated '
+    'createAuthRuntime rejects duplicate native credential configuration',
+    () {
+      expect(
+        () => createAuthRuntime(
+          _config,
+          nativeCredentialConfig: const NativeCredentialConfig(
+            googleServerClientId: 'web-client.apps.googleusercontent.com',
+          ),
+          nativeProviders: [_DecliningNativeProvider()],
+          keyManager: DefaultKeyManager(),
+          rootKeyStore: DefaultRootKeyStore(kv: InMemoryKeyValueStore()),
+          tokenStore: SecureTokenStore(kv: InMemoryKeyValueStore()),
+          discoveryClient: _FakeDiscoveryClient(),
+          tokenExchange: _FakeTokenExchange(),
+          apiProxy: _FakeApiProxy(),
+          refreshLock: RefreshLock(),
+          oauthFlow: _FakeOAuthFlow(code: 'code-1'),
+        ),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  test('second runtime instance over the same storage starts authenticated '
       'without re-doing OAuth', () async {
     final sessionKv = InMemoryKeyValueStore();
     final rootKv = InMemoryKeyValueStore();
@@ -322,7 +328,9 @@ void main() {
       'sub': 'u-42',
       'roles': ['admin', 'staff'],
     });
-    final h = _Harness(initialTokens: _tokens(access: access, id: id));
+    final h = _Harness(
+      initialTokens: _tokens(access: access, id: id),
+    );
     final rt = h.build();
     await rt.ensureAuthenticated();
 
@@ -356,8 +364,7 @@ void main() {
     await rt.dispose();
   });
 
-  test('getUserClaims returns empty UserClaims when unauthenticated',
-      () async {
+  test('getUserClaims returns empty UserClaims when unauthenticated', () async {
     final h = _Harness();
     final rt = h.build();
     await Future<void>.delayed(Duration.zero);
@@ -367,17 +374,19 @@ void main() {
     await rt.dispose();
   });
 
-  test('logout clears local state and transitions to unauthenticated',
-      () async {
-    final h = _Harness(initialTokens: _tokens());
-    final rt = h.build();
-    await rt.ensureAuthenticated();
-    expect(rt.state, AuthState.authenticated);
+  test(
+    'logout clears local state and transitions to unauthenticated',
+    () async {
+      final h = _Harness(initialTokens: _tokens());
+      final rt = h.build();
+      await rt.ensureAuthenticated();
+      expect(rt.state, AuthState.authenticated);
 
-    await rt.logout();
-    expect(rt.state, AuthState.unauthenticated);
-    await rt.dispose();
-  });
+      await rt.logout();
+      expect(rt.state, AuthState.unauthenticated);
+      await rt.dispose();
+    },
+  );
 
   test('dispose is idempotent and subsequent operations throw', () async {
     final h = _Harness();
@@ -418,19 +427,21 @@ void main() {
   test('version exposes authRuntimeVersion constant', () async {
     final rt = _Harness().build();
     expect(rt.version, authRuntimeVersion);
-    expect(rt.version, '0.4.2');
+    expect(rt.version, '0.4.4');
     await rt.dispose();
   });
 
-  test('useIsolate: true returns an IsolatedAuthRuntime-backed shell',
-      () async {
-    // The shell spawns the scaffolding isolate entry point and only
-    // implements lifecycle in v0.1; data-plane calls throw
-    // UnimplementedError (covered by test/worker/token_isolate_test.dart).
-    final rt = createAuthRuntime(_config, useIsolate: true);
-    expect(rt.version, authRuntimeVersion);
-    await rt.dispose();
-  });
+  test(
+    'useIsolate: true returns an IsolatedAuthRuntime-backed shell',
+    () async {
+      // The shell spawns the scaffolding isolate entry point and only
+      // implements lifecycle in v0.1; data-plane calls throw
+      // UnimplementedError (covered by test/worker/token_isolate_test.dart).
+      final rt = createAuthRuntime(_config, useIsolate: true);
+      expect(rt.version, authRuntimeVersion);
+      await rt.dispose();
+    },
+  );
 
   test('concrete type is AuthRuntimeImpl (in-thread baseline)', () async {
     final rt = _Harness().build();

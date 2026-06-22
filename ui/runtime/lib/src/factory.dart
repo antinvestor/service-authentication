@@ -76,13 +76,15 @@ AuthRuntime createAuthRuntime(
   }
 
   final km = keyManager ?? DefaultKeyManager();
-  final rootStore = rootKeyStore ??
+  final rootStore =
+      rootKeyStore ??
       DefaultRootKeyStore(kv: rootKv ?? SecureStorageKeyValueStore());
-  final store = tokenStore ??
+  final store =
+      tokenStore ??
       SecureTokenStore(kv: sessionKv ?? SecureStorageKeyValueStore());
   final discovery = discoveryClient ?? DefaultDiscoveryClient();
-  final exchange = tokenExchange ??
-      TokenExchange(timeout: resolved.tokenTimeout);
+  final exchange =
+      tokenExchange ?? TokenExchange(timeout: resolved.tokenTimeout);
   final proxy = apiProxy ?? ApiProxy();
   final lock = refreshLock ?? RefreshLock();
   final flow = oauthFlow ?? OAuthFlow();
@@ -107,7 +109,7 @@ AuthRuntime createAuthRuntime(
     oauthFlow: flow,
     nativeProviders: resolvedNativeProviders,
     preferNativeCredentialSilentAttempt:
-        nativeCredentialConfig?.preferSilent ?? true,
+        nativeCredentialConfig?.preferSilent ?? false,
   );
   // Kick off session reload immediately so apps subscribing to
   // `authStateStream` don't miss the first transition while they're
@@ -143,8 +145,7 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
   late final Future<IsolatedAuthRuntime> _ready;
   bool _disposed = false;
 
-  Future<IsolatedAuthRuntime> _spawn() =>
-      spawnIsolatedAuthRuntime(config);
+  Future<IsolatedAuthRuntime> _spawn() => spawnIsolatedAuthRuntime(config);
 
   @override
   Future<void> ensureAuthenticated() async =>
@@ -157,9 +158,13 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
     Map<String, String>? headers,
     Object? body,
     Duration? timeout,
-  }) async =>
-      (await _ready).fetch(path,
-          method: method, headers: headers, body: body, timeout: timeout);
+  }) async => (await _ready).fetch(
+    path,
+    method: method,
+    headers: headers,
+    body: body,
+    timeout: timeout,
+  );
 
   @override
   Future<ApiResponse> upload(
@@ -171,25 +176,22 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
     required int length,
     Map<String, String>? headers,
     Duration? timeout,
-  }) async =>
-      (await _ready).upload(
-        path,
-        fieldName: fieldName,
-        filename: filename,
-        contentType: contentType,
-        bytes: bytes,
-        length: length,
-        headers: headers,
-        timeout: timeout,
-      );
+  }) async => (await _ready).upload(
+    path,
+    fieldName: fieldName,
+    filename: filename,
+    contentType: contentType,
+    bytes: bytes,
+    length: length,
+    headers: headers,
+    timeout: timeout,
+  );
 
   @override
-  Future<Map<String, dynamic>> getClaims() async =>
-      (await _ready).getClaims();
+  Future<Map<String, dynamic>> getClaims() async => (await _ready).getClaims();
 
   @override
-  Future<UserClaims> getUserClaims() async =>
-      (await _ready).getUserClaims();
+  Future<UserClaims> getUserClaims() async => (await _ready).getUserClaims();
 
   @override
   Future<List<String>> getRoles() async => (await _ready).getRoles();
@@ -226,8 +228,7 @@ class _LazyIsolatedAuthRuntime implements AuthRuntime {
   }
 
   @override
-  Future<void> prefetchDiscovery() async =>
-      (await _ready).prefetchDiscovery();
+  Future<void> prefetchDiscovery() async => (await _ready).prefetchDiscovery();
 
   @override
   String get version => authRuntimeVersion;

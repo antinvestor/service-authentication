@@ -13,10 +13,12 @@ import 'package:antinvestor_auth_runtime/src/models/user_claims.dart';
 abstract class AuthRuntime {
   /// Begins or resumes an authenticated session.
   ///
-  /// On fresh installs this opens the OAuth flow in the system browser
-  /// via `flutter_web_auth_2`; on subsequent launches a stored refresh
-  /// token short-circuits straight to the authenticated state without
-  /// any browser round-trip.
+  /// This is the interactive sign-in entry point. On fresh installs it
+  /// may open a native credential sheet or the OAuth flow in the system
+  /// browser via `flutter_web_auth_2`; callers should invoke it only
+  /// from an explicit user action such as a login button tap. On
+  /// subsequent launches a stored refresh token short-circuits straight
+  /// to the authenticated state without any browser round-trip.
   ///
   /// Completes when the runtime transitions to [AuthState.authenticated].
   /// Throws [AuthError] on any fatal failure.
@@ -86,14 +88,13 @@ abstract class AuthRuntime {
 
   /// Set of native credential providers advertised as currently available
   /// on this platform. Callers use this to decide whether to render a
-  /// "Continue with Apple/Google" button; the runtime additionally
-  /// attempts a proactive silent sign-in on each available provider when
-  /// [AuthState] settles in `unauthenticated`.
+  /// "Continue with Apple/Google" button. This probe is passive and must
+  /// not open native credential UI.
   Future<Set<NativeCredentialProviderKind>> availableNativeProviders();
 
   /// Fine-grained stream of native-credential lifecycle events (probe,
-  /// silent attempt, interactive attempt, outcome, sign-out). Independent
-  /// of [authStateStream] — useful for telemetry and debug UIs.
+  /// interactive attempt, outcome, sign-out). Independent of
+  /// [authStateStream] — useful for telemetry and debug UIs.
   Stream<CredentialEvent> get credentialEventStream;
 
   /// Warms the OIDC discovery cache. Optional — but reduces perceived
@@ -111,4 +112,4 @@ abstract class AuthRuntime {
 /// Version of the runtime. Callers include this in telemetry / bug
 /// reports. Kept as a bare constant for now; wired through
 /// `--dart-define=AUTH_RUNTIME_VERSION=...` in a follow-up task.
-const String authRuntimeVersion = '0.4.2';
+const String authRuntimeVersion = '0.4.4';

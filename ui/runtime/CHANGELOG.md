@@ -3,6 +3,15 @@
 All notable changes to `antinvestor_auth_runtime` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.4 — 2026-06-22
+
+### Fixed
+- Runtime initialization no longer starts a silent native credential attempt.
+  Google One Tap / Credential Manager and Sign in with Apple now run only from
+  an explicit `ensureAuthenticated()` call, such as a login button tap.
+- `NativeCredentialConfig.preferSilent` now defaults to `false` and is
+  documented as reserved for future no-UI returning-user behavior.
+
 ## 0.4.3 — 2026-06-19
 
 ### Fixed
@@ -18,9 +27,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   Google native credential providers. Android apps can now enable the
   Google Sign-In v7 Credential Manager / One Tap path with
   `createAuthRuntime(nativeCredentialConfig: NativeCredentialConfig(...))`.
-- `preferSilent` support for native credentials. Apps can now explicitly
-  disable the app-start no-UI credential attempt while keeping the interactive
-  native sheet on sign-in tap.
+- `preferSilent` support for native credentials. This flag is retained for
+  compatibility, but startup no-UI credential attempts are disabled as of
+  0.4.4.
 
 ### Changed
 - `createAuthRuntime` rejects simultaneous `nativeCredentialConfig` and
@@ -74,7 +83,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Native sign-in providers: `AppleCredentialProvider` (Sign in with Apple via `sign_in_with_apple`) and `GoogleCredentialProvider` (via `google_sign_in` v7; Android backed by CredentialManager).
 - `NativeCredentialProvider` abstraction — consumers can ship custom providers for enterprise IdPs.
 - OIDC token-exchange grant support (RFC 8693) in `TokenExchange` and `TokenWorker.completeNativeCredential`.
-- Native → OAuth2 sign-in waterfall: proactive silent attempt on mount; interactive attempt on sign-in click; OAuth2 fallback when all native providers decline.
+- Native → OAuth2 sign-in waterfall: native credential attempt on sign-in click; OAuth2 fallback when all native providers decline.
 - `AuthRuntime.availableNativeProviders()` helper + `credentialEventStream` telemetry.
 - `authNativeProvidersProvider` Riverpod override hook.
 - Four new `AuthErrorCode` values: `nativeCredentialCancelled`, `nativeCredentialUnavailable`, `nativeCredentialIssuerMismatch`, `nativeCredentialExchangeFailed`.

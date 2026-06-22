@@ -37,35 +37,24 @@ class AuthRuntimeImpl implements AuthRuntime {
     required this.worker,
     required this.oauthFlow,
     List<NativeCredentialProvider> nativeProviders = const [],
-    bool preferNativeCredentialSilentAttempt = true,
+    bool preferNativeCredentialSilentAttempt = false,
     Random? random,
-  })  : _nativeProviders = List<NativeCredentialProvider>.unmodifiable(
-          nativeProviders,
-        ),
-        _preferNativeCredentialSilentAttempt =
-            preferNativeCredentialSilentAttempt,
-        _random = random ?? Random.secure(),
-        _credentialController =
-            StreamController<CredentialEvent>.broadcast() {
-    if (_nativeProviders.isNotEmpty && _preferNativeCredentialSilentAttempt) {
-      _authStateSub = worker.authStateStream.listen(_onAuthStateChanged);
-    }
-  }
+  }) : _nativeProviders = List<NativeCredentialProvider>.unmodifiable(
+         nativeProviders,
+       ),
+       _random = random ?? Random.secure(),
+       _credentialController = StreamController<CredentialEvent>.broadcast();
 
   final ResolvedConfig config;
   final TokenWorker worker;
   final OAuthFlow oauthFlow;
   final List<NativeCredentialProvider> _nativeProviders;
-  final bool _preferNativeCredentialSilentAttempt;
   final Random _random;
   final StreamController<CredentialEvent> _credentialController;
 
   bool _disposed = false;
-  bool _proactiveSilentScheduled = false;
-  bool _proactiveSilentAttempted = false;
   Future<void>? _initFuture;
   Future<void>? _inflightEnsureAuthenticated;
-  StreamSubscription<AuthState>? _authStateSub;
 
   /// Kicks off the worker's initial reload. Idempotent: every caller
   /// awaits the same future so first-use races settle correctly.
@@ -83,78 +72,14 @@ class AuthRuntimeImpl implements AuthRuntime {
     for (final p in _nativeProviders) {
       try {
         final avail = await p.isAvailable();
-        _emitCredentialEvent(CredentialEvent.probe(
-          kind: p.kind,
-          available: avail,
-        ));
+        _emitCredentialEvent(
+          CredentialEvent.probe(kind: p.kind, available: avail),
+        );
       } catch (_) {
-        _emitCredentialEvent(CredentialEvent.probe(
-          kind: p.kind,
-          available: false,
-        ));
+        _emitCredentialEvent(
+          CredentialEvent.probe(kind: p.kind, available: false),
+        );
       }
-    }
-  }
-
-  void _onAuthStateChanged(AuthState next) {
-    if (next != AuthState.unauthenticated) return;
-    if (_proactiveSilentAttempted) return;
-    if (_proactiveSilentScheduled) return;
-    // An explicit ensureAuthenticated() is already running — let it drive
-    // the waterfall rather than racing a silent attempt onto the worker.
-    if (_inflightEnsureAuthenticated != null) return;
-    _proactiveSilentScheduled = true;
-    scheduleMicrotask(_proactiveSilentAttempt);
-  }
-
-  Future<void> _proactiveSilentAttempt() async {
-    // Mark as attempted before running so a synchronous failure that
-    // bounces state back to unauthenticated doesn't re-enter.
-    _proactiveSilentAttempted = true;
-    try {
-      for (final p in _nativeProviders) {
-        if (_disposed) return;
-        if (worker.state == AuthState.authenticated) return;
-        bool available;
-        try {
-          available = await p.isAvailable();
-        } catch (_) {
-          available = false;
-        }
-        if (_disposed) return;
-        if (!available) continue;
-
-        final nonce = generateNonce();
-        if (_disposed) return;
-        _emitCredentialEvent(CredentialEvent.silentAttempt(p.kind));
-        NativeCredentialOutcome outcome;
-        try {
-          outcome = await p.attemptSilent(nonce: nonce);
-        } catch (_) {
-          outcome = const NativeCredentialOutcome.noSession();
-        }
-        if (_disposed) return;
-        _emitCredentialEvent(CredentialEvent.outcome(p.kind, outcome));
-
-        if (outcome is Ok) {
-          if (_disposed) return;
-          try {
-            await worker.completeNativeCredential(
-              credential: outcome.result,
-              expectedNonce: nonce,
-            );
-            return;
-          } on StateError {
-            // Worker was destroyed mid-flight (dispose() ran). Treat as
-            // a clean shutdown, not an unhandled error.
-            return;
-          } catch (_) {
-            // Fall through to next provider.
-          }
-        }
-      }
-    } finally {
-      _proactiveSilentScheduled = false;
     }
   }
 
@@ -363,8 +288,7 @@ class AuthRuntimeImpl implements AuthRuntime {
   Stream<AuthState> get authStateStream => worker.authStateStream;
 
   @override
-  Stream<SecurityEvent> get securityEventStream =>
-      worker.securityEventStream;
+  Stream<SecurityEvent> get securityEventStream => worker.securityEventStream;
 
   @override
   AuthState get state => worker.state;
@@ -390,8 +314,6 @@ class AuthRuntimeImpl implements AuthRuntime {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    await _authStateSub?.cancel();
-    _authStateSub = null;
     await _credentialController.close();
     await worker.destroy();
   }

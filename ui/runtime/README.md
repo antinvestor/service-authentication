@@ -102,26 +102,26 @@ get the v0.1 OAuth2-only behaviour.
 
 ### How the waterfall works
 
-On every `ensureAuthenticated()`:
+On every explicit `ensureAuthenticated()` call:
 
-1. **Proactive silent** (on mount): each configured native provider is
-   asked for an auto-select credential. No UI. If one succeeds the
-   runtime exchanges the ID token via RFC 8693 token-exchange and
-   transitions to `authenticated`.
-2. **Interactive** (on sign-in click): for each provider in order, the
+1. **Interactive native credential** (on sign-in click): for each provider in order, the
    runtime calls `attemptInteractive`. The first `Ok` outcome is
    exchanged via token-exchange.
-3. **OAuth2 fallback**: if every native provider returns `Cancelled`,
+2. **OAuth2 fallback**: if every native provider returns `Cancelled`,
    `NoSession`, `Unavailable`, or `ErrorOutcome`, the runtime opens
    the system browser via `flutter_web_auth_2` exactly as in v0.1.
+
+Runtime construction and `init()` only restore existing stored tokens and
+probe native-provider availability. They never invoke Google One Tap,
+Credential Manager, Sign in with Apple, or browser OAuth before the app calls
+`ensureAuthenticated()` from a user action.
 
 ### Consumer setup
 
 Preferred setup uses `NativeCredentialConfig`. On Android, providing
 `googleServerClientId` enables the Google Sign-In v7 flow backed by Android
-Credential Manager / Sign in with Google; the runtime first attempts a no-UI
-returning-user sign-in when `preferSilent` is true, then opens the native sheet
-from `ensureAuthenticated()` before falling back to browser OAuth.
+Credential Manager / Sign in with Google. The native sheet opens only from
+`ensureAuthenticated()` before falling back to browser OAuth.
 
 ```dart
 final runtime = createAuthRuntime(

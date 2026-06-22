@@ -18,7 +18,7 @@ class NativeCredentialConfig extends Equatable {
       NativeCredentialProviderKind.apple,
       NativeCredentialProviderKind.google,
     ],
-    this.preferSilent = true,
+    this.preferSilent = false,
   });
 
   /// Google OAuth client ID of type "Web application".
@@ -38,11 +38,12 @@ class NativeCredentialConfig extends Equatable {
   /// occurrence.
   final List<NativeCredentialProviderKind> providerOrder;
 
-  /// Whether the runtime should attempt a no-UI native credential on app
-  /// startup before the user taps sign in.
+  /// Reserved for future no-UI returning-user credential attempts.
   ///
-  /// On Android this is the returning-user One Tap / automatic sign-in path
-  /// exposed by Google Sign-In through Credential Manager.
+  /// The current runtime never starts native credential sign-in during
+  /// construction or session restore. Apps must call `ensureAuthenticated()`
+  /// from an explicit user action before Google One Tap / Credential Manager
+  /// or Sign in with Apple can open.
   final bool preferSilent;
 
   /// Builds providers for the current Flutter target platform.

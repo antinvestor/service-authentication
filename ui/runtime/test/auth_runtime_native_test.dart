@@ -181,7 +181,7 @@ class _Harness {
 
 _Harness _build({
   required List<NativeCredentialProvider> providers,
-  bool preferNativeCredentialSilentAttempt = true,
+  bool preferNativeCredentialSilentAttempt = false,
 }) {
   final cfg = resolveConfig(
     const AuthConfig(
@@ -242,7 +242,7 @@ void main() {
     });
 
     test(
-      'proactive silent attempt: ok → authenticated; no OAuth fallback',
+      'init probes providers but does not start One Tap before user action',
       () async {
         final provider = _NonceEchoingProvider(
           kind: NativeCredentialProviderKind.google,
@@ -254,75 +254,72 @@ void main() {
         final credSub = h.runtime.credentialEventStream.listen(credEvents.add);
 
         await h.runtime.init();
-        // Let init flush + proactive silent microtask + worker completion settle.
+        // Let init flush provider probes and any accidental microtasks.
         for (var i = 0; i < 20; i++) {
           await Future<void>.delayed(Duration.zero);
         }
 
-        expect(h.worker.state, AuthState.authenticated);
-        expect(provider.silentCalls, 1);
-        expect(h.exchange.idTokenCalls, 1);
+        expect(h.worker.state, AuthState.unauthenticated);
+        expect(provider.silentCalls, 0);
+        expect(provider.interactiveCalls, 0);
+        expect(h.exchange.idTokenCalls, 0);
         expect(h.oauth.calls, 0);
-        expect(credEvents.whereType<CredentialSilentAttemptEvent>().length, 1);
-        expect(credEvents.whereType<CredentialOutcomeEvent>().length, 1);
+        expect(credEvents.whereType<CredentialSilentAttemptEvent>(), isEmpty);
+        expect(credEvents.whereType<CredentialOutcomeEvent>(), isEmpty);
         await credSub.cancel();
         await h.runtime.dispose();
       },
     );
 
-    test('preferSilent=false skips app-start silent attempt', () async {
-      final provider = _NonceEchoingProvider(
-        kind: NativeCredentialProviderKind.google,
-      );
-      final h = _build(
-        providers: [provider],
-        preferNativeCredentialSilentAttempt: false,
-      );
-      h.exchange.idTokenQueue.add(_tokenSet(access: 'native-at'));
-
-      await h.runtime.init();
-      for (var i = 0; i < 20; i++) {
-        await Future<void>.delayed(Duration.zero);
-      }
-
-      expect(h.worker.state, AuthState.unauthenticated);
-      expect(provider.silentCalls, 0);
-      expect(h.exchange.idTokenCalls, 0);
-      await h.runtime.ensureAuthenticated();
-      expect(provider.interactiveCalls, 1);
-      expect(h.worker.state, AuthState.authenticated);
-      await h.runtime.dispose();
-    });
-
     test(
-      'silent-noSession + interactive-success → authenticated; no OAuth fallback',
+      'preferSilent compatibility flag does not enable startup One Tap',
       () async {
         final provider = _NonceEchoingProvider(
           kind: NativeCredentialProviderKind.google,
-          silentOutcome: const NativeCredentialOutcome.noSession(),
-          // Interactive will yield ok-with-matching-nonce.
         );
-        final h = _build(providers: [provider]);
-        // Queue two token-exchange responses: one for the (absent) silent,
-        // one for the interactive attempt.
+        final h = _build(
+          providers: [provider],
+          preferNativeCredentialSilentAttempt: true,
+        );
         h.exchange.idTokenQueue.add(_tokenSet(access: 'native-at'));
-        await h.runtime.init();
 
-        for (var i = 0; i < 5; i++) {
+        await h.runtime.init();
+        for (var i = 0; i < 20; i++) {
           await Future<void>.delayed(Duration.zero);
         }
-        // Silent consumed: no worker exchange happened.
-        expect(h.worker.state, AuthState.unauthenticated);
-        expect(h.exchange.idTokenCalls, 0);
 
+        expect(h.worker.state, AuthState.unauthenticated);
+        expect(provider.silentCalls, 0);
+        expect(h.exchange.idTokenCalls, 0);
         await h.runtime.ensureAuthenticated();
-        expect(h.worker.state, AuthState.authenticated);
         expect(provider.interactiveCalls, 1);
-        expect(h.oauth.calls, 0);
-        expect(h.exchange.idTokenCalls, 1);
+        expect(h.worker.state, AuthState.authenticated);
         await h.runtime.dispose();
       },
     );
+
+    test('interactive-success → authenticated; no OAuth fallback', () async {
+      final provider = _NonceEchoingProvider(
+        kind: NativeCredentialProviderKind.google,
+      );
+      final h = _build(providers: [provider]);
+      h.exchange.idTokenQueue.add(_tokenSet(access: 'native-at'));
+      await h.runtime.init();
+
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(h.worker.state, AuthState.unauthenticated);
+      expect(provider.silentCalls, 0);
+      expect(h.exchange.idTokenCalls, 0);
+
+      await h.runtime.ensureAuthenticated();
+      expect(h.worker.state, AuthState.authenticated);
+      expect(provider.interactiveCalls, 1);
+      expect(h.oauth.calls, 0);
+      expect(h.exchange.idTokenCalls, 1);
+      await h.runtime.dispose();
+    });
 
     test('all providers decline → OAuth2 fallback', () async {
       final provider = _StubProvider(
@@ -337,8 +334,8 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await Future<void>.delayed(Duration.zero);
       }
-      // Proactive silent attempt ran; noSession → no authentication.
       expect(h.worker.state, AuthState.unauthenticated);
+      expect(provider.silentCalls, 0);
 
       await h.runtime.ensureAuthenticated();
       expect(h.worker.state, AuthState.authenticated);
@@ -383,8 +380,8 @@ void main() {
       },
     );
 
-    test('silent id-token with bogus iss is rejected by the worker; '
-        'proactive attempt leaves state unauthenticated', () async {
+    test('startup does not inspect silent id-token even when provider can '
+        'return one', () async {
       final provider = _BadIssuerProvider();
       final h = _build(providers: [provider]);
       await h.runtime.init();
@@ -393,7 +390,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
       }
       expect(h.worker.state, AuthState.unauthenticated);
-      // The worker rejected the token before any exchange call went out.
+      expect(provider.silentCalls, 0);
       expect(h.exchange.idTokenCalls, 0);
       await h.runtime.dispose();
     });
@@ -425,12 +422,10 @@ void main() {
     });
 
     test('ensureAuthenticated called immediately after construction runs '
-        'OAuth exactly once (no proactive-silent race)', () async {
+        'OAuth exactly once without startup native race', () async {
       // Provider reports unavailable so the waterfall falls straight
-      // through to OAuth. If the proactive-silent microtask were
-      // permitted to race an explicit ensureAuthenticated(), we would
-      // see the OAuth flow invoked more than once or the worker state
-      // thrash; neither should happen.
+      // through to OAuth. Startup must not race a second native attempt
+      // against an explicit ensureAuthenticated() call.
       final provider = _StubProvider(
         kind: NativeCredentialProviderKind.google,
         availability: false,
@@ -440,8 +435,8 @@ void main() {
 
       // Do NOT await init(); call ensureAuthenticated() straight away.
       final ensuring = h.runtime.ensureAuthenticated();
-      // Let microtasks settle so any would-be proactive-silent attempt
-      // has a chance to run alongside the in-flight waterfall.
+      // Let microtasks settle so any accidental startup attempt has a
+      // chance to run alongside the in-flight waterfall.
       for (var i = 0; i < 20; i++) {
         await Future<void>.delayed(Duration.zero);
       }
@@ -453,33 +448,30 @@ void main() {
       await h.runtime.dispose();
     });
 
-    test('dispose() while proactive silent is mid-flight does not raise '
-        'unhandled errors', () async {
-      final provider = _BlockingSilentProvider();
-      final h = _build(providers: [provider]);
+    test(
+      'dispose() after passive init does not call silent provider',
+      () async {
+        final provider = _BlockingSilentProvider();
+        final h = _build(providers: [provider]);
 
-      await h.runtime.init();
-      // Let the proactive silent microtask spin up and park on the
-      // pending Future inside attemptSilent().
-      for (var i = 0; i < 5; i++) {
-        await Future<void>.delayed(Duration.zero);
-      }
-      expect(provider.silentCalls, 1);
-
-      // Capture any unhandled zone errors.
-      final unhandled = <Object>[];
-      await runZonedGuarded<Future<void>>(() async {
-        await h.runtime.dispose();
-        // Release the provider's pending Future so the microtask
-        // resumes post-dispose. It must exit cleanly.
-        provider.releaseSilent(const NativeCredentialOutcome.noSession());
-        for (var i = 0; i < 20; i++) {
+        await h.runtime.init();
+        for (var i = 0; i < 5; i++) {
           await Future<void>.delayed(Duration.zero);
         }
-      }, (err, _) => unhandled.add(err));
+        expect(provider.silentCalls, 0);
 
-      expect(unhandled, isEmpty, reason: 'dispose should be clean');
-    });
+        // Capture any unhandled zone errors.
+        final unhandled = <Object>[];
+        await runZonedGuarded<Future<void>>(() async {
+          await h.runtime.dispose();
+          for (var i = 0; i < 20; i++) {
+            await Future<void>.delayed(Duration.zero);
+          }
+        }, (err, _) => unhandled.add(err));
+
+        expect(unhandled, isEmpty, reason: 'dispose should be clean');
+      },
+    );
 
     test(
       'provider throwing in isAvailable does not crash the waterfall',
@@ -599,8 +591,8 @@ class _NonceEchoingProvider implements NativeCredentialProvider {
 }
 
 /// Provider whose [attemptSilent] blocks on a manually-released Completer,
-/// so tests can inject a dispose() call while the runtime is parked
-/// inside the proactive-silent microtask.
+/// so tests can prove passive initialization never waits on a silent
+/// credential request.
 class _BlockingSilentProvider implements NativeCredentialProvider {
   final Completer<NativeCredentialOutcome> _gate =
       Completer<NativeCredentialOutcome>();
