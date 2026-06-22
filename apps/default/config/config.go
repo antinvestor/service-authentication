@@ -95,10 +95,12 @@ type AuthenticationConfig struct {
 	// underlying AES key.
 	FedCMIdPSessionCookieKey string `envDefault:"fedcm_idp_session_v1" env:"FEDCM_IDP_SESSION_COOKIE_KEY"`
 
-	// NativeCredentialExchangeEnabled gates the mobile Google/Apple ID-token
-	// exchange facade. Individual OAuth clients must still opt in through their
-	// tenancy properties.
-	NativeCredentialExchangeEnabled bool `envDefault:"false" env:"NATIVE_CREDENTIAL_EXCHANGE_ENABLED"`
+	// NativeCredentialExchangeEnabled is the deployment-level kill switch for
+	// mobile Google/Apple ID-token exchange. The default is enabled because each
+	// exchange is still constrained to a known local OAuth client whose tenancy
+	// properties opt that client into native login. Provider audiences come from
+	// server-side auth provider config unless a legacy client override is set.
+	NativeCredentialExchangeEnabled bool `envDefault:"true" env:"NATIVE_CREDENTIAL_EXCHANGE_ENABLED"`
 
 	// Oauth2HydraPublicInternalURL is the Hydra public URL used by the token
 	// facade when the externally advertised issuer routes /oauth2/token to the

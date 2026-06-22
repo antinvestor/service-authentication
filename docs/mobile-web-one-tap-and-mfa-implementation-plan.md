@@ -139,14 +139,17 @@ Required Hydra-safe decisions:
 Provider and MFA policy is resolved per OAuth client:
 
 - `native_auth_enabled`
-- `native_google_server_client_id`
-- `native_apple_client_id`
+- optional legacy `native_google_server_client_id` override
+- optional `native_apple_client_id` override
 - `mfa_policy`: `optional`, `required`, or `risk_based`
 - `mfa_trusted_device_ttl_days`
 - `mfa_required_for_roles`
 
-Store these on tenancy client or partition properties so rollout is per
-application without hard-coding client IDs in the auth service.
+Store the native-auth opt-in on tenancy client properties so rollout is per
+application without hard-coding OAuth client IDs in the auth service. Google
+audience verification uses the auth service's configured server Google client
+ID by default, so a client only needs `native_auth_enabled=true` unless it
+intentionally overrides provider audience policy.
 
 ### Execution Plane
 
@@ -309,8 +312,8 @@ Observability targets:
 - [x] Add `nativecredentials` package with issuer registry, JWKS cache, ID
       token verifier, replay cache, profile linker, and exchange coordinator.
 - [x] Add `external_identities` model, repository, and migration.
-- [x] Add per-client properties for `native_auth_enabled`,
-      `native_google_server_client_id`, and `native_apple_client_id`.
+- [x] Add per-client `native_auth_enabled` policy; provider audience defaults
+      to server-side auth provider config with legacy per-client overrides.
 - [x] Verify Google `iss`, `aud`, `exp`, `iat`, signature, and replay state.
 - [x] Verify Apple `iss`, `aud`, `exp`, `iat`, signature, and replay state.
 - [x] Resolve or create profile only from verified provider identity.
@@ -400,8 +403,10 @@ Add:
   advertises the auth-service facade as `token_endpoint`
 - config:
   - `OAUTH2_HYDRA_PUBLIC_INTERNAL_URL` for facade-to-Hydra proxying
-  - `NATIVE_CREDENTIAL_EXCHANGE_ENABLED`
+  - `NATIVE_CREDENTIAL_EXCHANGE_ENABLED` as a default-on deployment kill switch
   - per-client `native_auth_enabled` policy property
+  - `AUTH_PROVIDER_GOOGLE_CLIENT_ID` as the Google ID-token audience unless a
+    legacy client override is present
 
 Do not add the RFC 8693 grant to Hydra client `grant_types` as a hard
 requirement in facade mode. The auth service authorizes the native grant before
@@ -426,9 +431,10 @@ device_name=<optional human label>
 
 Validation:
 
-- `client_id` resolves to an active tenancy client.
-- Native auth is enabled for that client.
-- `subject_issuer` is allow-listed for that client.
+- `client_id` resolves to an active tenancy client row.
+- Native auth is enabled for that client row.
+- `subject_issuer` is supported and has a configured audience. Google uses
+  `AUTH_PROVIDER_GOOGLE_CLIENT_ID` by default.
 - ID token signature validates against issuer JWKS.
 - `iss`, `aud`, `exp`, and `iat` are valid.
 - Token freshness window is 5 minutes plus skew.

@@ -39,7 +39,7 @@ INSERT INTO clients (
     'https://static.stawi.org/logo.png',
     '{"uris":["https://chat.stawi.org/sso/logout"]}',
     'none',
-    '{"native_auth_enabled":true,"native_google_server_client_id":"265397001887-hjrrjml6ekekmrjlg4ku4bsgtobgid85.apps.googleusercontent.com"}'
+    '{"native_auth_enabled":true}'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Development/test tenant
@@ -79,5 +79,5 @@ INSERT INTO clients (
     'https://static.stawi.org/logo.png',
     '{"uris":["https://chat-dev.stawi.org/sso/logout","https://stawi-chat.web.app/sso/logout","org.stawi.chat://sso/logout","http://localhost:5170/sso/logout"]}',
     'none',
-    '{"native_auth_enabled":true,"native_google_server_client_id":"265397001887-hjrrjml6ekekmrjlg4ku4bsgtobgid85.apps.googleusercontent.com"}'
+    '{"native_auth_enabled":true}'
 ) ON CONFLICT (id) DO NOTHING;

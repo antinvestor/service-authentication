@@ -92,6 +92,8 @@ configuration.
 | d87bdkcpf2t58bn6vag0 | operations-formstore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_formstore.sql |
 | d87bdkcpf2t58bn6vahg | operations-queuestore | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260420_service_operations_queuestore.sql |
 | d8as62bvfo145u8bon3g | service-fort | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260526_seed_service_fort.sql |
+| d8le7qspf2t8u08dff3g | service-payment-pawapay | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260611_service_payment_pawapay.sql |
+| d8lt2gkpf2t1ql3csd1g | service-payment-checkout | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260612_service_payment_checkout.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -132,6 +134,8 @@ configuration.
 | d86tt34pf2tddudk9pog | d86tt34pf2tddudk9pp0 | d86tt34pf2tddudk9po0 | apps/tenancy/migrations/0001/20260420_service_payment_mtn.sql |
 | d86tt34pf2tddudk9pq0 | d86tt34pf2tddudk9pqg | d86tt34pf2tddudk9ppg | apps/tenancy/migrations/0001/20260420_service_payment_polar.sql |
 | d86tt34pf2tddudk9prg | d86tt34pf2tddudk9ps0 | d86tt34pf2tddudk9pr0 | apps/tenancy/migrations/0001/20260420_service_payment_stripe.sql |
+| d8le7qspf2t8u08dff40 | d8le7qspf2t8u08dff4g | d8le7qspf2t8u08dff3g | apps/tenancy/migrations/0001/20260611_service_payment_pawapay.sql |
+| d8lt2gkpf2t1ql3csd20 | d8lt2gkpf2t1ql3csd2g | d8lt2gkpf2t1ql3csd1g | apps/tenancy/migrations/0001/20260612_service_payment_checkout.sql |
 | d86tt34pf2tddudk9q00 | d86tt34pf2tddudk9q0g | d86tt34pf2tddudk9pvg | apps/tenancy/migrations/0001/20260420_service_opportunities_api.sql |
 | d86tt34pf2tddudk9q1g | d86tt34pf2tddudk9q20 | d86tt34pf2tddudk9q10 | apps/tenancy/migrations/0001/20260420_service_opportunities_crawler.sql |
 | d86tt34pf2tddudk9q30 | d86tt34pf2tddudk9q3g | d86tt34pf2tddudk9q2g | apps/tenancy/migrations/0001/20260420_service_opportunities_matching.sql |
@@ -139,6 +143,11 @@ configuration.
 | d86tt34pf2tddudk9q60 | d86tt34pf2tddudk9q6g | d86tt34pf2tddudk9q5g | apps/tenancy/migrations/0001/20260420_service_opportunities_worker.sql |
 | d86tt34pf2tddudk9q7g | d86tt34pf2tddudk9q80 | d86tt34pf2tddudk9q70 | apps/tenancy/migrations/0001/20260420_service_opportunities_writer.sql |
 | d8as62fieol45uar4okg | d8as6297jdi45ufqlh70 | d8as62bvfo145u8bon3g | apps/tenancy/migrations/0001/20260526_seed_service_fort.sql |
+
+## Referenced profile IDs
+| xid | what | file |
+|-----|------|------|
+| d75qclkpf2t1uum8ij3g | platform operator profile | apps/tenancy/migrations/0001/20260612_backfill_root_operator_owner_role.sql |
 
 ## Partition roles
 | xid | role | partition | file |

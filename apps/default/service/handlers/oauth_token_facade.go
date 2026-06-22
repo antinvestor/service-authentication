@@ -85,6 +85,7 @@ func sameHTTPHost(a, b string) bool {
 }
 
 type nativeClientConfig struct {
+	ClientID       string
 	Enabled        bool
 	GoogleAudience string
 	AppleAudience  string
@@ -241,9 +242,11 @@ func shouldProxyResponseHeader(key string) bool {
 }
 
 // handleNativeTokenExchange validates a provider ID token and mints a Hydra
-// session for the resolved profile. It is double-gated: the deployment-wide
-// NativeCredentialExchangeEnabled flag (default false) AND a per-client
-// native_auth_enabled property must both be set.
+// session for the resolved profile. The deployment-wide
+// NativeCredentialExchangeEnabled flag is a kill switch; normal authorization
+// is constrained by a known local OAuth client and that client's
+// native_auth_enabled property. Google audience verification uses the server
+// Google client ID unless the client row carries a legacy explicit override.
 //
 // NOTE: this path does not enforce a step-up MFA challenge — possession of a
 // fresh, verified Google/Apple ID token is treated as the authentication
@@ -265,6 +268,7 @@ func (h *AuthServer) handleNativeTokenExchange(ctx context.Context, r *http.Requ
 	if err != nil {
 		return nil, oauthErr(http.StatusBadRequest, "invalid_client", err.Error())
 	}
+	clientID = clientCfg.ClientID
 	if !clientCfg.Enabled {
 		return nil, oauthErr(http.StatusBadRequest, "invalid_grant", "native auth is not enabled for this client")
 	}
@@ -388,28 +392,53 @@ func (c nativeClientConfig) audienceForIssuer(issuer string) string {
 }
 
 func (h *AuthServer) resolveNativeClientConfig(ctx context.Context, clientID string) (*nativeClientConfig, anyHydraClient, error) {
-	hydraClient, err := h.defaultHydraCli.GetOAuth2Client(ctx, clientID)
+	if h.partitionCli == nil {
+		return nil, nil, fmt.Errorf("tenancy client lookup is unavailable")
+	}
+
+	clientResp, err := h.partitionCli.GetClient(ctx, connect.NewRequest(&tenancyv1.GetClientRequest{ClientId: clientID}))
+	if err != nil {
+		return nil, nil, fmt.Errorf("client lookup failed: %w", err)
+	}
+	clientObj := clientResp.Msg.GetData()
+	if clientObj == nil {
+		return nil, nil, fmt.Errorf("client lookup returned no data")
+	}
+	resolvedClientID := strings.TrimSpace(clientObj.GetClientId())
+	if resolvedClientID == "" {
+		return nil, nil, fmt.Errorf("client lookup returned no client_id")
+	}
+
+	if h.defaultHydraCli == nil {
+		return nil, nil, fmt.Errorf("hydra client lookup is unavailable")
+	}
+	hydraClient, err := h.defaultHydraCli.GetOAuth2Client(ctx, resolvedClientID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("hydra client lookup failed: %w", err)
 	}
 
 	props := map[string]any{}
-	clientResp, clientErr := h.partitionCli.GetClient(ctx, connect.NewRequest(&tenancyv1.GetClientRequest{ClientId: clientID}))
-	if clientErr == nil && clientResp.Msg.GetData() != nil && clientResp.Msg.GetData().GetProperties() != nil {
-		props = clientResp.Msg.GetData().GetProperties().AsMap()
-	} else if partition, perr := h.resolvePartitionByClientID(ctx, clientID); perr == nil && partition.GetProperties() != nil {
-		props = partition.GetProperties().AsMap()
+	if clientObj.GetProperties() != nil {
+		props = clientObj.GetProperties().AsMap()
 	}
 
-	// Audiences are intentionally NOT defaulted to the platform-wide
-	// AuthProviderGoogleClientID/AuthProviderAppleClientID. A shared default
-	// would let an ID token minted for one app bootstrap a session on any other
-	// native-enabled client. Each client must declare its own provider audience.
+	return h.nativeClientConfigFromProperties(resolvedClientID, props), hydraClient, nil
+}
+
+func (h *AuthServer) nativeClientConfigFromProperties(clientID string, props map[string]any) *nativeClientConfig {
+	googleAudience := ""
+	appleAudience := ""
+	if h != nil && h.config != nil {
+		googleAudience = h.config.AuthProviderGoogleClientID
+		appleAudience = h.config.AuthProviderAppleClientID
+	}
+
 	return &nativeClientConfig{
+		ClientID:       strings.TrimSpace(clientID),
 		Enabled:        boolProperty(props, "native_auth_enabled"),
-		GoogleAudience: stringProperty(props, "native_google_server_client_id", ""),
-		AppleAudience:  stringProperty(props, "native_apple_client_id", ""),
-	}, hydraClient, nil
+		GoogleAudience: stringProperty(props, "native_google_server_client_id", googleAudience),
+		AppleAudience:  stringProperty(props, "native_apple_client_id", appleAudience),
+	}
 }
 
 type anyHydraClient interface {

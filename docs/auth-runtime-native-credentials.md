@@ -8,9 +8,8 @@ sign-in path work end-to-end.
 the Flutter runtime to exchange Apple / Google ID tokens into Antinvestor
 sessions.
 
-**Status:** this is a **future enablement**. The Flutter runtime already
-ships the client side in v0.2. The Go service needs a token endpoint facade
-before it can honour the native exchange end-to-end.
+**Status:** the Flutter runtime ships the client side in v0.2+, and the Go
+service token endpoint facade handles native provider-token exchange.
 
 ---
 
@@ -26,7 +25,8 @@ before it can honour the native exchange end-to-end.
   `refresh_token` grants enabled.
 - Ability to update client registrations via Hydra's admin API or
   equivalent tenancy config.
-- A trusted-issuer registry the auth service consults during native exchange.
+- The auth service has `AUTH_PROVIDER_GOOGLE_CLIENT_ID` configured to the
+  Google web/server client ID used for native Google ID-token verification.
 
 ## 2. Token endpoint facade
 
@@ -125,17 +125,16 @@ Services ID for the requesting `client_id`.
 | Audience (`aud`) | The **server client ID** registered in Google Cloud Console (OAuth client of type "Web application"). |
 | Signing algs     | `RS256`.                                                    |
 
-Keep the Google server client ID in the same per-app mapping as Apple:
+Configure the Google server client ID once on the auth service:
 
-```yaml
-trusted_issuers:
-  google:
-    issuer: https://accounts.google.com
-    jwks_uri: https://www.googleapis.com/oauth2/v3/certs
-    audiences:
-      antinvestor-mobile: 123.apps.googleusercontent.com
-      antinvestor-chat-mobile: 456.apps.googleusercontent.com
+```dotenv
+AUTH_PROVIDER_GOOGLE_CLIENT_ID=123.apps.googleusercontent.com
 ```
+
+Each tenancy client row still decides whether native login is allowed by
+setting `native_auth_enabled=true`. A legacy
+`native_google_server_client_id` client property can override the server value,
+but new clients should not need it.
 
 ## 6. Claim-mapping rules
 
@@ -169,8 +168,9 @@ name on first sight; do not overwrite with nulls on repeat exchanges.
   the Flutter runtime — the runtime trusts the OS platform APIs, not
   the IdP.
 - **Audience pinning:** reject when `aud` does not match the expected
-  Services ID / server client ID for the requesting OAuth
-  `client_id`.
+  Services ID / server client ID. For Google, the expected audience is
+  `AUTH_PROVIDER_GOOGLE_CLIENT_ID` unless the tenancy client row carries a
+  legacy override.
 - **Issuer pinning:** reject when `iss` does not match the
   `subject_issuer` form parameter (defense in depth; the Flutter
   runtime already sends `subject_issuer` explicitly).
@@ -207,8 +207,9 @@ Before cutting over a production tenancy:
 - [ ] Mobile client has `authorization_code` and `refresh_token` grants.
 - [ ] Apple trusted issuer registered with correct Services ID per
       consuming app.
-- [ ] Google trusted issuer registered with correct server client ID
-      per consuming app.
+- [ ] `AUTH_PROVIDER_GOOGLE_CLIENT_ID` contains the correct Google
+      web/server client ID.
+- [ ] Each consuming tenancy client has `native_auth_enabled=true`.
 - [ ] JWKS URIs reachable from the IdP and cached.
 - [ ] A token-exchange with a **freshly-minted Apple ID token** (via
       the Flutter runtime's native path) completes with a 200 and

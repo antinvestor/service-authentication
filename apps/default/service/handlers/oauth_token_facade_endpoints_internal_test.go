@@ -46,11 +46,53 @@ func TestAudienceForIssuer(t *testing.T) {
 }
 
 func TestAudienceForIssuerUnsetReturnsEmpty(t *testing.T) {
-	// A client that did not configure an audience must not accept any token —
-	// no fallback to a shared platform-wide client ID.
 	cfg := nativeClientConfig{}
 	require.Empty(t, cfg.audienceForIssuer(nativecredentials.GoogleIssuer))
 	require.Empty(t, cfg.audienceForIssuer(nativecredentials.AppleIssuer))
+}
+
+func TestNativeClientConfigFromPropertiesUsesServerProviderConfig(t *testing.T) {
+	h := &AuthServer{config: &authconfig.AuthenticationConfig{
+		AuthProviderGoogleClientID: "server-google-client.apps.googleusercontent.com",
+		AuthProviderAppleClientID:  "com.example.server.apple",
+	}}
+
+	cfg := h.nativeClientConfigFromProperties("client-123", map[string]any{
+		"native_auth_enabled": true,
+	})
+
+	require.Equal(t, "client-123", cfg.ClientID)
+	require.True(t, cfg.Enabled)
+	require.Equal(t, "server-google-client.apps.googleusercontent.com", cfg.GoogleAudience)
+	require.Equal(t, "com.example.server.apple", cfg.AppleAudience)
+}
+
+func TestNativeClientConfigFromPropertiesAllowsLegacyAudienceOverride(t *testing.T) {
+	h := &AuthServer{config: &authconfig.AuthenticationConfig{
+		AuthProviderGoogleClientID: "server-google-client.apps.googleusercontent.com",
+		AuthProviderAppleClientID:  "com.example.server.apple",
+	}}
+
+	cfg := h.nativeClientConfigFromProperties("client-123", map[string]any{
+		"native_auth_enabled":            "1",
+		"native_google_server_client_id": "client-google-client.apps.googleusercontent.com",
+		"native_apple_client_id":         "com.example.client.apple",
+	})
+
+	require.True(t, cfg.Enabled)
+	require.Equal(t, "client-google-client.apps.googleusercontent.com", cfg.GoogleAudience)
+	require.Equal(t, "com.example.client.apple", cfg.AppleAudience)
+}
+
+func TestNativeClientConfigFromPropertiesRequiresExplicitNativeOptIn(t *testing.T) {
+	h := &AuthServer{config: &authconfig.AuthenticationConfig{
+		AuthProviderGoogleClientID: "server-google-client.apps.googleusercontent.com",
+	}}
+
+	cfg := h.nativeClientConfigFromProperties("client-123", map[string]any{})
+
+	require.False(t, cfg.Enabled)
+	require.Equal(t, "server-google-client.apps.googleusercontent.com", cfg.GoogleAudience)
 }
 
 func TestBoolProperty(t *testing.T) {
@@ -204,7 +246,7 @@ func TestOAuthTokenFacadeProxiesOrdinaryGrants(t *testing.T) {
 	require.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
 }
 
-func TestOAuthTokenFacadeNativeGrantDisabledByDefault(t *testing.T) {
+func TestOAuthTokenFacadeNativeGrantRespectsKillSwitch(t *testing.T) {
 	h := &AuthServer{config: &authconfig.AuthenticationConfig{}}
 	form := "grant_type=" + nativeTokenExchangeGrant
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/token", strings.NewReader(form))
@@ -216,6 +258,21 @@ func TestOAuthTokenFacadeNativeGrantDisabledByDefault(t *testing.T) {
 	var body map[string]string
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
 	require.Equal(t, "invalid_grant", body["error"])
+}
+
+func TestOAuthTokenFacadeNativeGrantEnabledRequiresLocalClientID(t *testing.T) {
+	h := &AuthServer{config: &authconfig.AuthenticationConfig{NativeCredentialExchangeEnabled: true}}
+	form := "grant_type=" + nativeTokenExchangeGrant + "&subject_token_type=" + idTokenSubjectTokenType
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/token", strings.NewReader(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+
+	require.NoError(t, h.OAuthTokenFacadeEndpoint(rec, req))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	var body map[string]string
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, "invalid_request", body["error"])
+	require.Equal(t, "client_id is required", body["error_description"])
 }
 
 func TestOAuthTokenFacadeRejectsNonPost(t *testing.T) {
