@@ -31,7 +31,7 @@ require (
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.98.4
 	github.com/pitabwire/util v0.9.1
-	github.com/posthog/posthog-go v1.16.1
+	github.com/posthog/posthog-go v1.16.2
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
@@ -40,7 +40,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 )
 
 require (
