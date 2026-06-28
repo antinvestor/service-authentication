@@ -1,0 +1,303 @@
+// Copyright 2023-2026 Ant Investor Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package tenancy.v2;
+
+import "buf/validate/validate.proto";
+import "common/v1/common.proto";
+import "common/v1/permissions.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/antinvestor/apis/go/tenancy/v2;tenancyv2";
+option java_multiple_files = true;
+option java_package = "tenancyv2";
+
+enum AuthorizationScope {
+  AUTHORIZATION_SCOPE_UNSPECIFIED = 0;
+  AUTHORIZATION_SCOPE_PARTITION_ONLY = 1;
+  AUTHORIZATION_SCOPE_PARTITION_TREE = 2;
+}
+
+enum AuthorizationPolicyStatus {
+  AUTHORIZATION_POLICY_STATUS_UNSPECIFIED = 0;
+  AUTHORIZATION_POLICY_STATUS_PENDING = 1;
+  AUTHORIZATION_POLICY_STATUS_APPLIED = 2;
+  AUTHORIZATION_POLICY_STATUS_FAILED = 3;
+}
+
+message OAuthClientConfiguration {
+  repeated string grant_types = 1 [(buf.validate.field).repeated = {
+    unique: true
+    items: {string: {in: ["authorization_code", "client_credentials", "refresh_token"]}}
+  }];
+  repeated string response_types = 2 [(buf.validate.field).repeated = {
+    unique: true
+    items: {string: {in: ["code", "token"]}}
+  }];
+  repeated string redirect_uris = 3;
+  string scopes = 4;
+  repeated string resource_recipients = 5 [
+    (buf.validate.field).repeated = {
+      min_items: 1
+      unique: true
+      items: {
+        string: {
+          uri: true
+          pattern: "^https://[^/?#]+/[^?#]+$"
+        }
+      }
+    }
+  ];
+  string token_endpoint_auth_method = 6 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      in: ["none", "client_secret_basic", "client_secret_post", "private_key_jwt"]
+    }
+  ];
+  google.protobuf.Struct properties = 7;
+}
+
+message OAuthClient {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string client_id = 3 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string type = 4 [(buf.validate.field).string = {
+    in: ["public", "confidential", "internal", "external"]
+  }];
+  OAuthClientConfiguration configuration = 5;
+  common.v1.STATE state = 6;
+  google.protobuf.Timestamp created_at = 7;
+  oneof owner {
+    string partition_id = 8 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+    string service_account_id = 9 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  }
+}
+
+message ServiceAuthorizationGrant {
+  string namespace = 1 [(buf.validate.field).string.pattern = "[a-z][a-z0-9_]{2,99}"];
+  repeated string permissions = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    unique: true
+    items: {string: {pattern: "[a-z][a-z0-9_]{1,99}"}}
+  }];
+  AuthorizationScope scope = 3 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+}
+
+message ServiceAuthorizationPolicyInput {
+  int32 schema_version = 1 [(buf.validate.field).int32.const = 1];
+  repeated ServiceAuthorizationGrant grants = 2 [(buf.validate.field).repeated.min_items = 1];
+}
+
+message ServiceAuthorizationPolicy {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  int32 schema_version = 2;
+  int64 generation = 3;
+  int64 applied_generation = 4;
+  AuthorizationPolicyStatus status = 5;
+  repeated ServiceAuthorizationGrant grants = 6;
+  string last_error_code = 7;
+  google.protobuf.Timestamp next_attempt_at = 8;
+  google.protobuf.Timestamp synced_at = 9;
+}
+
+message ServiceAccount {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string tenant_id = 2 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string partition_id = 3 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string profile_id = 4 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 5 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string type = 6 [(buf.validate.field).string = {in: ["internal", "external"]}];
+  OAuthClient oauth_client = 7;
+  ServiceAuthorizationPolicy authorization_policy = 8;
+  google.protobuf.Struct public_keys = 9;
+  google.protobuf.Struct properties = 10;
+  common.v1.STATE state = 11;
+  google.protobuf.Timestamp created_at = 12;
+}
+
+message CreateOAuthClientRequest {
+  string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string type = 3 [(buf.validate.field).string = {in: ["public", "confidential"]}];
+  OAuthClientConfiguration configuration = 4 [(buf.validate.field).required = true];
+}
+
+message CreateOAuthClientResponse {
+  OAuthClient data = 1;
+  string client_secret = 2;
+}
+
+message GetOAuthClientRequest {
+  oneof selector {
+    option (buf.validate.oneof).required = true;
+    string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+    string client_id = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  }
+}
+
+message GetOAuthClientResponse {
+  OAuthClient data = 1;
+}
+
+message ListOAuthClientsRequest {
+  oneof owner {
+    option (buf.validate.oneof).required = true;
+    string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+    string service_account_id = 2 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  }
+  common.v1.PageCursor cursor = 3;
+}
+
+message ListOAuthClientsResponse {
+  repeated OAuthClient data = 1;
+}
+
+message UpdateOAuthClientRequest {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 2 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {min_len: 3, max_len: 100}];
+  OAuthClientConfiguration configuration = 3;
+  google.protobuf.FieldMask update_mask = 4 [(buf.validate.field).required = true];
+}
+
+message UpdateOAuthClientResponse {
+  OAuthClient data = 1;
+}
+
+message RemoveOAuthClientRequest {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+}
+
+message RemoveOAuthClientResponse {
+  bool succeeded = 1;
+}
+
+message CreateServiceAccountRequest {
+  string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string profile_id = 2 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 3 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string type = 4 [(buf.validate.field).string = {in: ["internal", "external"]}];
+  OAuthClientConfiguration oauth_client = 5 [(buf.validate.field).required = true];
+  ServiceAuthorizationPolicyInput authorization_policy = 6 [(buf.validate.field).required = true];
+  google.protobuf.Struct public_keys = 7;
+  google.protobuf.Struct properties = 8;
+}
+
+message CreateServiceAccountResponse {
+  ServiceAccount data = 1;
+  string client_secret = 2;
+}
+
+message GetServiceAccountRequest {
+  oneof selector {
+    option (buf.validate.oneof).required = true;
+    string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+    string client_id = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  }
+}
+
+message GetServiceAccountResponse {
+  ServiceAccount data = 1;
+}
+
+message ListServiceAccountsRequest {
+  string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  common.v1.PageCursor cursor = 2;
+}
+
+message ListServiceAccountsResponse {
+  repeated ServiceAccount data = 1;
+}
+
+message UpdateServiceAccountRequest {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+  string name = 2 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string type = 3 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {in: ["internal", "external"]}];
+  OAuthClientConfiguration oauth_client = 4;
+  ServiceAuthorizationPolicyInput authorization_policy = 5;
+  google.protobuf.Struct public_keys = 6;
+  google.protobuf.Struct properties = 7;
+  google.protobuf.FieldMask update_mask = 8 [(buf.validate.field).required = true];
+}
+
+message UpdateServiceAccountResponse {
+  ServiceAccount data = 1;
+}
+
+message RemoveServiceAccountRequest {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+}
+
+message RemoveServiceAccountResponse {
+  bool succeeded = 1;
+}
+
+message ReconcileServiceAccountAuthorizationRequest {
+  string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
+}
+
+message ReconcileServiceAccountAuthorizationResponse {
+  int64 generation = 1;
+}
+
+service AuthContractService {
+  option (common.v1.service_permissions) = {
+    namespace: "service_tenancy"
+    permissions: ["service_account_view", "service_account_manage", "client_view", "client_manage"]
+  };
+
+  rpc CreateOAuthClient(CreateOAuthClientRequest) returns (CreateOAuthClientResponse) {
+    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+  }
+  rpc GetOAuthClient(GetOAuthClientRequest) returns (GetOAuthClientResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+  }
+  rpc ListOAuthClients(ListOAuthClientsRequest) returns (ListOAuthClientsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+  }
+  rpc UpdateOAuthClient(UpdateOAuthClientRequest) returns (UpdateOAuthClientResponse) {
+    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+  }
+  rpc RemoveOAuthClient(RemoveOAuthClientRequest) returns (RemoveOAuthClientResponse) {
+    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+  }
+  rpc CreateServiceAccount(CreateServiceAccountRequest) returns (CreateServiceAccountResponse) {
+    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+  }
+  rpc GetServiceAccount(GetServiceAccountRequest) returns (GetServiceAccountResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+  }
+  rpc ListServiceAccounts(ListServiceAccountsRequest) returns (ListServiceAccountsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+  }
+  rpc UpdateServiceAccount(UpdateServiceAccountRequest) returns (UpdateServiceAccountResponse) {
+    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+  }
+  rpc RemoveServiceAccount(RemoveServiceAccountRequest) returns (RemoveServiceAccountResponse) {
+    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+  }
+  rpc ReconcileServiceAccountAuthorization(ReconcileServiceAccountAuthorizationRequest) returns (ReconcileServiceAccountAuthorizationResponse) {
+    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+  }
+}
