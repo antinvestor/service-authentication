@@ -206,7 +206,7 @@ func setupDeviceClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.DeviceServiceURI,
 		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_device"},
+		ServiceID:             "devices",
 	}, devicev1connect.NewDeviceServiceClient)
 }
 
@@ -217,7 +217,7 @@ func setupNotificationClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.NotificationServiceURI,
 		WorkloadAPITargetPath: cfg.NotificationServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_notification"},
+		ServiceID:             "notification",
 	}, notificationv1connect.NewNotificationServiceClient)
 }
 
@@ -228,7 +228,7 @@ func setupPartitionClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.TenancyServiceURI,
 		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_tenancy"},
+		ServiceID:             "tenancy",
 	}, tenancyv1connect.NewTenancyServiceClient)
 }
 
@@ -239,7 +239,7 @@ func setupProfileClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_profile"},
+		ServiceID:             "profile",
 	}, profilev1connect.NewProfileServiceClient)
 }
 
@@ -251,7 +251,7 @@ func setupFilesClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.FilesServiceURI,
 		WorkloadAPITargetPath: cfg.FilesServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_file"},
+		ServiceID:             "files",
 	}, filesv1connect.NewFilesServiceClient)
 }
 

@@ -15,11 +15,139 @@
 package authz
 
 import (
+	"fmt"
 	"slices"
+	"sort"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/security"
 )
+
+// SortRelationTuples gives reconciliation and audit output a stable order.
+func SortRelationTuples(tuples []security.RelationTuple) {
+	sort.Slice(tuples, func(i, j int) bool {
+		left := tuples[i]
+		right := tuples[j]
+		leftKey := left.Object.Namespace + "\x00" + left.Object.ID + "\x00" + left.Relation + "\x00" +
+			left.Subject.Namespace + "\x00" + left.Subject.ID + "\x00" + left.Subject.Relation
+		rightKey := right.Object.Namespace + "\x00" + right.Object.ID + "\x00" + right.Relation + "\x00" +
+			right.Subject.Namespace + "\x00" + right.Subject.ID + "\x00" + right.Subject.Relation
+		return leftKey < rightKey
+	})
+}
+
+// ResolveServiceGrants validates and expands service-account grants against the
+// namespace manifests used to generate Keto's OPL. It returns only relations
+// that are guaranteed to exist in the currently registered schema.
+//
+// A wildcard is accepted only as authoring shorthand and is materialised into
+// the explicit permissions bound to the service role. No service-role bridge
+// tuple is written to Keto.
+func ResolveServiceGrants(
+	requested map[string][]string,
+	namespaces []*models.ServiceNamespace,
+) (map[string][]string, error) {
+	registry := make(map[string]*models.ServiceNamespace, len(namespaces))
+	for _, namespace := range namespaces {
+		registry[namespace.Namespace] = namespace
+	}
+
+	resolved := make(map[string][]string, len(requested))
+	for namespace, permissions := range requested {
+		manifest, ok := registry[namespace]
+		if !ok {
+			return nil, fmt.Errorf("authorization namespace %q is not registered", namespace)
+		}
+
+		available := jsonMapStringValues(manifest.Permissions, "values")
+		if IsFullAccess(permissions) {
+			permissions = jsonMapStringValues(manifest.RoleBindings, RoleService)
+			if len(permissions) == 0 {
+				return nil, fmt.Errorf("authorization namespace %q has no %q role binding", namespace, RoleService)
+			}
+		}
+		if len(permissions) == 0 {
+			return nil, fmt.Errorf("authorization namespace %q has no requested permissions", namespace)
+		}
+
+		permissions = slices.Clone(permissions)
+		slices.Sort(permissions)
+		permissions = slices.Compact(permissions)
+		for _, permission := range permissions {
+			if permission == PermissionFullAccess || !slices.Contains(available, permission) {
+				return nil, fmt.Errorf(
+					"authorization permission %q is not registered in namespace %q",
+					permission,
+					namespace,
+				)
+			}
+		}
+		resolved[namespace] = permissions
+	}
+
+	return resolved, nil
+}
+
+// SelectRegisteredServiceGrants separates functional grant declarations from
+// OAuth-only recipient identifiers in the pre-migration record. Namespace
+// registration is the authoritative boundary: values without a registered OPL
+// schema must never be sent to Keto.
+func SelectRegisteredServiceGrants(
+	requested map[string][]string,
+	namespaces []*models.ServiceNamespace,
+) map[string][]string {
+	registered := make(map[string]struct{}, len(namespaces))
+	for _, namespace := range namespaces {
+		registered[namespace.Namespace] = struct{}{}
+	}
+
+	selected := make(map[string][]string)
+	for namespace, permissions := range requested {
+		if _, ok := registered[namespace]; ok {
+			selected[namespace] = permissions
+		}
+	}
+	return selected
+}
+
+// SelectDeployedNamespaceRecords excludes runtime observations that are not in
+// the compiled GitOps schema shipped with the service.
+func SelectDeployedNamespaceRecords(
+	observed []*models.ServiceNamespace,
+) []*models.ServiceNamespace {
+	deployed := make(map[string]struct{}, len(deployedServicePermissions))
+	for namespace := range deployedServicePermissions {
+		deployed[namespace] = struct{}{}
+	}
+	selected := make([]*models.ServiceNamespace, 0, len(observed))
+	for _, namespace := range observed {
+		if _, ok := deployed[namespace.Namespace]; ok {
+			selected = append(selected, namespace)
+		}
+	}
+	return selected
+}
+
+func jsonMapStringValues(values map[string]any, key string) []string {
+	raw, ok := values[key]
+	if !ok {
+		return nil
+	}
+	switch typed := raw.(type) {
+	case []string:
+		return slices.Clone(typed)
+	case []any:
+		result := make([]string, 0, len(typed))
+		for _, value := range typed {
+			if stringValue, ok := value.(string); ok {
+				result = append(result, stringValue)
+			}
+		}
+		return result
+	default:
+		return nil
+	}
+}
 
 // RolePermissions documents the permission model defined in the OPL namespace config.
 // Keto's Check API evaluates OPL permits, so only role tuples need to be written;
@@ -191,9 +319,8 @@ func BuildPartitionInheritanceTuple(parentTenancyPath, childTenancyPath string) 
 }
 
 // BuildServiceAccessTuple creates a service relation tuple in tenancy_access,
-// marking a profile as a service account for the given tenancy path.
-// Service accounts with this tuple get full functional roles via subject set
-// bridge tuples that link tenancy_access#service to each service namespace.
+// marking a profile as a service account for data-access inheritance only.
+// Functional access is always represented by explicit granted_* tuples.
 func BuildServiceAccessTuple(tenancyPath, profileID string) security.RelationTuple {
 	return security.RelationTuple{
 		Object:   security.ObjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath},
@@ -212,24 +339,6 @@ func BuildServicePartitionInheritanceTuple(parentTenancyPath, childTenancyPath s
 		Relation: RoleService,
 		Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: parentTenancyPath, Relation: RoleService},
 	}
-}
-
-// BuildServiceInheritanceTuples creates the subject set chain that gives service
-// accounts automatic access to functional roles via Keto composition.
-// Bridge tuples (ns#service ← tenancy_access#service) are written for namespaces
-// derived from SA audiences — no hardcoded namespace lists.
-func BuildServiceInheritanceTuples(tenancyPath string, namespaces []string) []security.RelationTuple {
-	tuples := make([]security.RelationTuple, 0, len(namespaces))
-
-	for _, ns := range namespaces {
-		// Cross-namespace bridge: ns#service ← tenancy_access#service
-		tuples = append(tuples, security.RelationTuple{
-			Object:   security.ObjectRef{Namespace: ns, ID: tenancyPath},
-			Relation: RoleService,
-			Subject:  security.SubjectRef{Namespace: NamespaceTenancyAccess, ID: tenancyPath, Relation: RoleService},
-		})
-	}
-	return tuples
 }
 
 // StandardRoles lists the human-assignable roles that OPL recognises.
@@ -284,33 +393,24 @@ func BuildServicePermissionTuples(tenancyPath, profileID, namespace string, perm
 	return tuples
 }
 
-// AllServicePermissions returns the full list of permissions granted to the
-// "service" role in the service_tenancy namespace. Useful for tests and for
-// building explicit permission tuples when writing Keto tuples directly.
-func AllServicePermissions() []string {
-	return RolePermissions[RoleService]
-}
-
 // PermissionFullAccess is the wildcard marker for full service-level access.
-// When a namespace's permission list contains only "*", the SA gets a bridge
-// tuple (ns#service ← tenancy_access#service) instead of explicit granted_*
-// tuples. This is more readable than an empty array.
+// It is expanded to explicit grants from the registered service role before
+// any tuple is written.
 const PermissionFullAccess = "*"
 
-// IsFullAccess returns true if the permission list contains the wildcard "*",
-// meaning full service-level access via bridge tuples.
+// IsFullAccess returns true if the permission list contains the wildcard "*".
 // An empty list means no permissions are granted — it does NOT imply full access.
 func IsFullAccess(perms []string) bool {
 	return len(perms) == 1 && perms[0] == PermissionFullAccess
 }
 
-// ParseAudiencePermissions extracts per-namespace permission grants from an
-// Audiences JSONMap.
+// ParseAudiencePermissions extracts per-namespace permission grants from the
+// persisted authorization-grant map.
 //
 // Format: {"service_profile": ["profile_view"], "service_device": ["*"], ...}
 //
 // Each key is a Keto OPL namespace. The value is a list of permissions:
-//   - ["*"]                  → full service access via bridge tuple
+//   - ["*"]                  → expand the registered service-role permissions
 //   - ["perm1", "perm2"]    → only these granted_* permissions (least-privilege)
 //   - []                    → namespace is recorded but no permissions are granted
 //

@@ -309,6 +309,7 @@ func (c *Client) GetRoleNames() []string {
 
 type ServiceAccount struct {
 	data.BaseModel
+	Name         string `gorm:"type:varchar(100);not null;default:''"`
 	ProfileID    string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
 	ClientID     string `gorm:"type:varchar(100);uniqueIndex"`                // OAuth2 client_id (denormalized from Client for lookup)
 	ClientSecret string `gorm:"type:varchar(250);"`                           // DEPRECATED: kept for backward compat, new SAs use Client.ClientSecret

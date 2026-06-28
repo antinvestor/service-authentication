@@ -98,15 +98,14 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 		response["client_hydra_sync_error"] = err.Error()
 	}
 
-	// Sync service accounts — register/update Hydra OAuth2 clients (legacy SAs without ClientRef)
-	err = business.ReQueueServiceAccountsForHydraSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, syncQuery())
-	if err != nil {
-		log.WithError(err).Error("internal service error synchronising service accounts on Hydra")
-		response["service_account_hydra_sync_error"] = err.Error()
-	}
-
-	// Also sync service account Keto tuples
-	err = business.ReQueueServiceAccountsForSync(ctx, prtSrv.ServiceAccountRepo, prtSrv.eventsMan, syncQuery())
+	// Reconcile normalised service-account authorization policies.
+	err = business.ReQueueServiceAccountPolicies(
+		ctx,
+		prtSrv.ServiceAccountRepo,
+		prtSrv.AuthorizationPolicyRepo,
+		prtSrv.eventsMan,
+		syncQuery(),
+	)
 	if err != nil {
 		log.WithError(err).Error("internal service error synchronising service account authz")
 		response["service_account_authz_sync_error"] = err.Error()

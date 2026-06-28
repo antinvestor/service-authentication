@@ -238,6 +238,8 @@ func (bs *BaseTestSuite) createServiceInternal(
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
+	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://api.example.test/tenancy")
+	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://api.example.test")
 
 	cfg, err := config.LoadWithOIDC[aconfig.TenancyConfig](ctx)
 	require.NoError(t, err)
@@ -312,10 +314,9 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.PartitionRepo),
-		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.ServiceAccountRepo),
-		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ServiceAccountRepo, implementation.PartitionRepo),
-		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, auth),
-		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
+		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.OAuthRecipientRepo, implementation.ServiceAccountRepo),
+		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, implementation.ServiceNamespaceRepo, implementation.AuthorizationPolicyRepo, svc.EventsManager(), auth),
+		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, implementation.PartitionRepo, implementation.AuthorizationPolicyRepo, implementation.AuthContractRepo, svc.EventsManager(), auth),
 		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, implementation.ServiceNamespaceRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),
@@ -325,7 +326,18 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	svc.Init(ctx, serviceOptions...)
 
-	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
+	err = repository.Migrate(
+		ctx,
+		svc.DatastoreManager(),
+		"../../migrations/0001",
+		cfg.GetOauth2AudienceBaseURL(),
+		repository.AuthContractMigrationExpectations{
+			Clients:         -1,
+			ServiceAccounts: -1,
+			Recipients:      -1,
+			Grants:          -1,
+		},
+	)
 	require.NoError(t, err)
 	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)
 
@@ -454,7 +466,7 @@ func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, p
 					profileID = sa.ProfileID
 				}
 			}
-			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, cl, profileID); syncErr != nil {
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, partSrv.OAuthRecipientRepo, cl, profileID); syncErr != nil {
 				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
 			} else {
 				clientsSynced++

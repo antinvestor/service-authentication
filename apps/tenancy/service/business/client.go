@@ -328,7 +328,7 @@ func toJSONMapSlice(key string, values []string) data.JSONMap {
 
 // audiencesFromNamespaces builds an audiences JSONMap from a list of namespace names.
 // Each namespace is stored as a key with ["*"] meaning full service-level access
-// via bridge tuples (ns#service ← tenancy_access#service).
+// that the reconciler expands into explicit registered permissions.
 //
 // To grant explicit per-permission tuples, set the value to a list of
 // OPL permission names: {"service_profile": ["profile_view", "profile_create"]}.

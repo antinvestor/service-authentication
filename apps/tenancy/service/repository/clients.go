@@ -33,9 +33,27 @@ func (r *clientRepository) GetByClientID(ctx context.Context, clientID string) (
 	return client, err
 }
 
+func (r *clientRepository) GetByIDIncludingDeleted(ctx context.Context, id string) (*models.Client, error) {
+	client := &models.Client{}
+	err := r.Pool().DB(ctx, true).Unscoped().First(client, "id = ?", id).Error
+	return client, err
+}
+
 func (r *clientRepository) ListByPartition(ctx context.Context, partitionID string) ([]*models.Client, error) {
 	var clients []*models.Client
 	err := r.Pool().DB(ctx, true).Where("partition_id = ?", partitionID).Find(&clients).Error
+	return clients, err
+}
+
+func (r *clientRepository) ListByServiceAccountID(
+	ctx context.Context,
+	serviceAccountID string,
+) ([]*models.Client, error) {
+	var clients []*models.Client
+	err := r.Pool().DB(ctx, true).
+		Where("service_account_id = ?", serviceAccountID).
+		Order("id").
+		Find(&clients).Error
 	return clients, err
 }
 

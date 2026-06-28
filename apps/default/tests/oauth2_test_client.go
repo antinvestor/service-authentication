@@ -198,7 +198,7 @@ func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (te
 		ctx,
 		tenancyv1connect.NewTenancyServiceClient,
 		common.WithEndpoint(c.cfg.TenancyServiceURI),
-		common.WithAudiences("service_tenancy"),
+		common.WithAudiences("https://api.example.test/tenancy"),
 		common.WithTokenSource(tokenCfg.TokenSource(ctx)),
 	)
 	if err != nil {

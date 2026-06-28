@@ -18,8 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
+	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/data"
 	fevents "github.com/pitabwire/frame/events"
@@ -29,24 +32,32 @@ import (
 
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
 
-// AuthzServiceAccountSyncEvent writes Keto tuples for a service account after
-// it is created or during bulk sync.
-//
-// For each service account it writes:
-//   - tenancy_access:tenancyPath#member ← profile_user:profileID  (data access)
-//   - tenancy_access:tenancyPath#service ← profile_user:profileID (service marker)
-//   - Per-audience explicit permission tuples: ns:tenancyPath#granted_{perm} ← profile_user:profileID
+// AuthzServiceAccountSyncEvent reconciles exact Keto state from the normalised
+// authorization policy. Events carry a generation and are only a latency
+// mechanism; the policy and applied-tuple rows remain authoritative.
 type AuthzServiceAccountSyncEvent struct {
 	serviceAccountRepo repository.ServiceAccountRepository
+	partitionRepo      repository.PartitionRepository
+	policyRepo         repository.ServiceAccountAuthorizationPolicyRepository
+	authContractRepo   repository.AuthContractRepository
+	eventsMan          fevents.Manager
 	authorizer         security.Authorizer
 }
 
 func NewAuthzServiceAccountSyncEventHandler(
 	serviceAccountRepo repository.ServiceAccountRepository,
+	partitionRepo repository.PartitionRepository,
+	policyRepo repository.ServiceAccountAuthorizationPolicyRepository,
+	authContractRepo repository.AuthContractRepository,
+	eventsMan fevents.Manager,
 	auth security.Authorizer,
 ) fevents.EventI {
 	return &AuthzServiceAccountSyncEvent{
 		serviceAccountRepo: serviceAccountRepo,
+		partitionRepo:      partitionRepo,
+		policyRepo:         policyRepo,
+		authContractRepo:   authContractRepo,
+		eventsMan:          eventsMan,
 		authorizer:         auth,
 	}
 }
@@ -69,6 +80,9 @@ func (e *AuthzServiceAccountSyncEvent) Validate(_ context.Context, payload any) 
 	if m.GetString("id") == "" {
 		return errors.New("service account id is required")
 	}
+	if m.GetFloat("generation") < 1 {
+		return errors.New("authorization policy generation is required")
+	}
 	return nil
 }
 
@@ -84,6 +98,7 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
+	eventGeneration := int64(jsonPayload.GetFloat("generation"))
 	logger := util.Log(ctx).WithFields(map[string]any{
 		"service_account_id": serviceAccountID,
 		"type":               e.Name(),
@@ -98,54 +113,233 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		return fmt.Errorf("failed to get service account %s: %w", serviceAccountID, err)
 	}
 
-	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
-	subjectID := sa.ProfileID
-
-	// Layer 1: data access tuples (member + service marker)
-	// Write tuples for BOTH profileID and clientID because for client_credentials
-	// Hydra sets JWT sub to the client_id, not the profile_id. Services check
-	// Keto using the JWT sub value.
-	tuples := []security.RelationTuple{
-		authz.BuildAccessTuple(tenancyPath, subjectID),
-		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
+	policyState, err := e.policyRepo.GetByServiceAccountID(ctx, serviceAccountID)
+	if err != nil {
+		return fmt.Errorf("load service account %s authorization policy: %w", serviceAccountID, err)
 	}
-	if sa.ClientID != "" && sa.ClientID != subjectID {
-		tuples = append(tuples,
-			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
-			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
+	if eventGeneration < policyState.Policy.Generation {
+		logger.WithFields(map[string]any{
+			"event_generation":  eventGeneration,
+			"policy_generation": policyState.Policy.Generation,
+		}).Debug("stale authorization policy event ignored")
+		return nil
+	}
+	if eventGeneration != policyState.Policy.Generation {
+		return fmt.Errorf(
+			"authorization policy generation %d does not exist for service account %s (current %d)",
+			eventGeneration,
+			serviceAccountID,
+			policyState.Policy.Generation,
 		)
 	}
 
-	// Layer 2: per-namespace permission tuples and bridge tuples.
-	//
-	// Namespaces with an empty permission list get a bridge tuple
-	// (ns#service ← tenancy_access#service) which grants full service-level
-	// access via OPL permits.
-	//
-	// Namespaces with explicit permissions get only granted_* tuples,
-	// enforcing least-privilege — the bridge tuple is NOT written so the
-	// service account only has the permissions it declares.
-	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
-	var bridgeNamespaces []string
+	desired, err := e.desiredTuples(ctx, sa, policyState.Grants)
+	if err != nil {
+		return err
+	}
+	applied, err := e.policyRepo.ListAppliedTuples(ctx, policyState.Policy.ID)
+	if err != nil {
+		return fmt.Errorf("load applied authorization tuples: %w", err)
+	}
 
-	for ns, perms := range audiencePerms {
-		if authz.IsFullAccess(perms) {
-			// Full access (["*"] or []) → bridge tuple for full service role.
-			bridgeNamespaces = append(bridgeNamespaces, ns)
-			continue
+	deletes, writes := diffAuthorizationTuples(applied, desired)
+	if len(deletes) > 0 {
+		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
+			return e.authorizer.DeleteTuples(ctx, deletes)
+		}); err != nil {
+			return err
 		}
-		// Explicit permissions → granted_* tuples only, no bridge.
-		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, subjectID, ns, perms)...)
-		if sa.ClientID != "" && sa.ClientID != subjectID {
-			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
+	}
+	if len(writes) > 0 {
+		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
+			return e.authorizer.WriteTuples(ctx, writes)
+		}); err != nil {
+			return err
 		}
 	}
 
-	if len(bridgeNamespaces) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
+	if err = e.policyRepo.ReplaceAppliedState(ctx, policyState.Policy, desired); err != nil {
+		return fmt.Errorf("persist applied authorization state: %w", err)
+	}
+	if sa.State == int32(commonv1.STATE_DELETED) {
+		clientID, finalizeErr := e.authContractRepo.FinalizeServiceAccountRemoval(ctx, sa.ID)
+		if finalizeErr != nil {
+			return finalizeErr
+		}
+		if emitErr := e.eventsMan.Emit(ctx, EventKeyClientSynchronization, data.JSONMap{"id": clientID}); emitErr != nil {
+			return fmt.Errorf("enqueue Hydra client removal: %w", emitErr)
+		}
+	}
+	return nil
+}
+
+func (e *AuthzServiceAccountSyncEvent) desiredTuples(
+	ctx context.Context,
+	sa *models.ServiceAccount,
+	grants []repository.AuthorizationGrant,
+) ([]*models.ServiceAccountAppliedTuple, error) {
+	if sa.State == int32(commonv1.STATE_DELETED) {
+		return nil, nil
+	}
+	basePartition, err := e.partitionRepo.GetByID(ctx, sa.PartitionID)
+	if err != nil {
+		return nil, fmt.Errorf("load service account partition %s: %w", sa.PartitionID, err)
 	}
 
-	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
-		return e.authorizer.WriteTuples(ctx, tuples)
+	tree, err := e.partitionTree(ctx, basePartition)
+	if err != nil {
+		return nil, err
+	}
+	partitionsByID := make(map[string]*models.Partition, len(tree))
+	partitionsByID[basePartition.ID] = basePartition
+
+	desiredRelations := make([]security.RelationTuple, 0)
+	for _, grant := range grants {
+		resolved, resolveErr := authz.ResolveServiceGrants(
+			map[string][]string{grant.Namespace: grant.Permissions},
+			authz.DeployedServiceNamespaceRecords(),
+		)
+		if resolveErr != nil {
+			return nil, fmt.Errorf("invalid authorization policy grant: %w", resolveErr)
+		}
+
+		targets := []*models.Partition{basePartition}
+		switch grant.Scope {
+		case models.AuthorizationScopePartitionOnly:
+		case models.AuthorizationScopePartitionTree:
+			targets = tree
+		default:
+			return nil, fmt.Errorf("unsupported authorization scope %q", grant.Scope)
+		}
+
+		for _, partition := range targets {
+			if partition.TenantID != sa.TenantID {
+				return nil, fmt.Errorf("partition %s is outside service account tenant", partition.ID)
+			}
+			partitionsByID[partition.ID] = partition
+			tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
+			desiredRelations = append(desiredRelations, authz.BuildServicePermissionTuples(
+				tenancyPath,
+				sa.ProfileID,
+				grant.Namespace,
+				resolved[grant.Namespace],
+			)...)
+		}
+	}
+
+	for _, partition := range partitionsByID {
+		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
+		desiredRelations = append(desiredRelations, authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID))
+	}
+	authz.SortRelationTuples(desiredRelations)
+
+	desired := make([]*models.ServiceAccountAppliedTuple, 0, len(desiredRelations))
+	for _, relation := range desiredRelations {
+		desired = append(desired, appliedTupleModel(sa, relation))
+	}
+	return desired, nil
+}
+
+func (e *AuthzServiceAccountSyncEvent) partitionTree(
+	ctx context.Context,
+	root *models.Partition,
+) ([]*models.Partition, error) {
+	result := []*models.Partition{root}
+	queue := []*models.Partition{root}
+	seen := map[string]struct{}{root.ID: {}}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		children, err := e.partitionRepo.GetChildren(ctx, current.ID)
+		if err != nil {
+			return nil, fmt.Errorf("load children for partition %s: %w", current.ID, err)
+		}
+		for _, child := range children {
+			if _, exists := seen[child.ID]; exists {
+				continue
+			}
+			seen[child.ID] = struct{}{}
+			result = append(result, child)
+			queue = append(queue, child)
+		}
+	}
+	slices.SortFunc(result, func(left, right *models.Partition) int {
+		return compareTupleKey(left.ID, right.ID)
 	})
+	return result, nil
+}
+
+func appliedTupleModel(
+	sa *models.ServiceAccount,
+	tuple security.RelationTuple,
+) *models.ServiceAccountAppliedTuple {
+	return &models.ServiceAccountAppliedTuple{
+		Namespace:        tuple.Object.Namespace,
+		Object:           tuple.Object.ID,
+		Relation:         tuple.Relation,
+		SubjectNamespace: tuple.Subject.Namespace,
+		SubjectObject:    tuple.Subject.ID,
+		SubjectRelation:  tuple.Subject.Relation,
+		BaseModel: data.BaseModel{
+			TenantID:    sa.TenantID,
+			PartitionID: sa.PartitionID,
+		},
+	}
+}
+
+func diffAuthorizationTuples(
+	applied []*models.ServiceAccountAppliedTuple,
+	desired []*models.ServiceAccountAppliedTuple,
+) ([]security.RelationTuple, []security.RelationTuple) {
+	appliedByKey := make(map[string]*models.ServiceAccountAppliedTuple, len(applied))
+	desiredByKey := make(map[string]*models.ServiceAccountAppliedTuple, len(desired))
+	for _, tuple := range applied {
+		appliedByKey[appliedTupleKey(tuple)] = tuple
+	}
+	for _, tuple := range desired {
+		desiredByKey[appliedTupleKey(tuple)] = tuple
+	}
+
+	deletes := make([]security.RelationTuple, 0)
+	for key, tuple := range appliedByKey {
+		if _, exists := desiredByKey[key]; !exists {
+			deletes = append(deletes, relationTuple(tuple))
+		}
+	}
+	writes := make([]security.RelationTuple, 0)
+	for key, tuple := range desiredByKey {
+		if _, exists := appliedByKey[key]; !exists {
+			writes = append(writes, relationTuple(tuple))
+		}
+	}
+	authz.SortRelationTuples(deletes)
+	authz.SortRelationTuples(writes)
+	return deletes, writes
+}
+
+func relationTuple(tuple *models.ServiceAccountAppliedTuple) security.RelationTuple {
+	return security.RelationTuple{
+		Object:   security.ObjectRef{Namespace: tuple.Namespace, ID: tuple.Object},
+		Relation: tuple.Relation,
+		Subject: security.SubjectRef{
+			Namespace: tuple.SubjectNamespace,
+			ID:        tuple.SubjectObject,
+			Relation:  tuple.SubjectRelation,
+		},
+	}
+}
+
+func appliedTupleKey(tuple *models.ServiceAccountAppliedTuple) string {
+	return tuple.Namespace + "\x00" + tuple.Object + "\x00" + tuple.Relation + "\x00" +
+		tuple.SubjectNamespace + "\x00" + tuple.SubjectObject + "\x00" + tuple.SubjectRelation
+}
+
+func compareTupleKey(left, right string) int {
+	if left < right {
+		return -1
+	}
+	if left > right {
+		return 1
+	}
+	return 0
 }

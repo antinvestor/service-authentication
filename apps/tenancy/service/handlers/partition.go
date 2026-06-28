@@ -17,15 +17,12 @@ package handlers
 import (
 	"context"
 
-	"net/http"
-
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/opl"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame"
 	"github.com/pitabwire/frame/datastore"
@@ -37,14 +34,17 @@ type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
 
-	ProfileCli           profilev1connect.ProfileServiceClient
-	PartitionRepo        repository.PartitionRepository
-	ClientRepo           repository.ClientRepository
-	ServiceAccountRepo   repository.ServiceAccountRepository
-	AccessRepo           repository.AccessRepository
-	AccessRoleRepo       repository.AccessRoleRepository
-	PartitionRoleRepo    repository.PartitionRoleRepository
-	ServiceNamespaceRepo repository.ServiceNamespaceRepository
+	ProfileCli              profilev1connect.ProfileServiceClient
+	PartitionRepo           repository.PartitionRepository
+	ClientRepo              repository.ClientRepository
+	OAuthRecipientRepo      repository.OAuthClientRecipientRepository
+	ServiceAccountRepo      repository.ServiceAccountRepository
+	AuthorizationPolicyRepo repository.ServiceAccountAuthorizationPolicyRepository
+	AuthContractRepo        repository.AuthContractRepository
+	AccessRepo              repository.AccessRepository
+	AccessRoleRepo          repository.AccessRoleRepository
+	PartitionRoleRepo       repository.PartitionRoleRepository
+	ServiceNamespaceRepo    repository.ServiceNamespaceRepository
 
 	PartitionBusiness      business.PartitionBusiness
 	TenantBusiness         business.TenantBusiness
@@ -68,7 +68,10 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
+	oauthRecipientRepo := repository.NewOAuthClientRecipientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	authorizationPolicyRepo := repository.NewServiceAccountAuthorizationPolicyRepository(ctx, dbPool, workMan)
+	authContractRepo := repository.NewAuthContractRepository(dbPool)
 	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	cfg := service.Config().(*config.TenancyConfig)
@@ -76,30 +79,26 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 
 	// Create business layers with repository dependencies
 	return &TenancyServer{
-		svc:                    service,
-		eventsMan:              eventsMan,
-		ProfileCli:             profileCli,
-		PartitionRepo:          partitionRepo,
-		ClientRepo:             clientRepo,
-		ServiceAccountRepo:     serviceAccountRepo,
-		AccessRepo:             accessRepo,
-		AccessRoleRepo:         accessRoleRepo,
-		PartitionRoleRepo:      partitionRoleRepo,
-		ServiceNamespaceRepo:   serviceNamespaceRepo,
-		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
-		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
-		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo, serviceNamespaceRepo),
-		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
-		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
-		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
+		svc:                     service,
+		eventsMan:               eventsMan,
+		ProfileCli:              profileCli,
+		PartitionRepo:           partitionRepo,
+		ClientRepo:              clientRepo,
+		OAuthRecipientRepo:      oauthRecipientRepo,
+		ServiceAccountRepo:      serviceAccountRepo,
+		AuthorizationPolicyRepo: authorizationPolicyRepo,
+		AuthContractRepo:        authContractRepo,
+		AccessRepo:              accessRepo,
+		AccessRoleRepo:          accessRoleRepo,
+		PartitionRoleRepo:       partitionRoleRepo,
+		ServiceNamespaceRepo:    serviceNamespaceRepo,
+		PartitionBusiness:       business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
+		TenantBusiness:          business.NewTenantBusiness(service, tenantRepo, partitionRepo),
+		AccessBusiness:          business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo, serviceNamespaceRepo),
+		PageBusiness:            business.NewPageBusiness(service, pageRepo, partitionRepo),
+		ClientBusiness:          business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
+		ServiceAccountBusiness:  business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
 	}
-}
-
-// NewInternalOPLHandler returns an HTTP handler that serves the combined Keto
-// OPL generated from all registered permission manifests. Supports ?domain=
-// query parameter for per-domain Keto instances.
-func (prtSrv *TenancyServer) NewInternalOPLHandler() http.Handler {
-	return opl.NewHandler(prtSrv.ServiceNamespaceRepo)
 }
 
 func (prtSrv *TenancyServer) ListPartition(

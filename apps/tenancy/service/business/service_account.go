@@ -445,43 +445,33 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyClientSynchronization, data.JSONMap{"id": sa.ClientRef}); emitErr != nil {
 			log.WithError(emitErr).Warn("failed to emit client sync for deletion")
 		}
-	} else if sa.ClientID != "" {
-		// Legacy SA without ClientRef — emit SA sync for Hydra deletion
-		if emitErr := sb.eventsMan.Emit(ctx, events.EventKeyServiceAccountSynchronization, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
-			log.WithError(emitErr).Warn("failed to emit service account sync for deletion")
-		}
 	}
 
-	// Delete all Keto tuples: data access, explicit permissions, and bridge tuples
+	// Delete the stable service-account principal's data access and explicit
+	// permission grants. OAuth client IDs are credentials, never principals.
 	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, sa.ProfileID),
 		authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID),
 	}
 
-	// Also clean up tuples for clientID if different from profileID
-	if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
-		tuples = append(tuples,
-			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
-			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
-		)
-	}
-
-	// Delete per-namespace tuples: explicit permission grants AND bridge tuples
-	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
-	var bridgeNamespaces []string
-	for ns, perms := range audiencePerms {
-		if authz.IsFullAccess(perms) {
-			bridgeNamespaces = append(bridgeNamespaces, ns)
-		} else {
-			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ProfileID, ns, perms)...)
-			if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
-				tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
-			}
+	namespaces := authz.DeployedServiceNamespaceRecords()
+	requestedGrants := authz.SelectRegisteredServiceGrants(
+		authz.ParseAudiencePermissions(sa.Audiences),
+		namespaces,
+	)
+	grants, resolveErr := authz.ResolveServiceGrants(requestedGrants, namespaces)
+	if resolveErr != nil {
+		log.WithError(resolveErr).Warn("could not resolve authorization grants during service account removal")
+	} else {
+		for namespace, permissions := range grants {
+			tuples = append(tuples, authz.BuildServicePermissionTuples(
+				tenancyPath,
+				sa.ProfileID,
+				namespace,
+				permissions,
+			)...)
 		}
-	}
-	if len(bridgeNamespaces) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
 	}
 
 	if delErr := sb.authorizer.DeleteTuples(ctx, tuples); delErr != nil {
@@ -500,17 +490,16 @@ func generateClientSecret() (string, error) {
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b), nil
 }
 
-// ReQueueServiceAccountsForHydraSync re-queues all service accounts for Hydra client registration/update.
-func ReQueueServiceAccountsForHydraSync(ctx context.Context, saRepo repository.ServiceAccountRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
-	return reQueueServiceAccounts(ctx, saRepo, eventsMan, query, events.EventKeyServiceAccountSynchronization)
-}
-
-// ReQueueServiceAccountsForSync re-queues all service accounts for authorization tuple sync.
-func ReQueueServiceAccountsForSync(ctx context.Context, saRepo repository.ServiceAccountRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
-	return reQueueServiceAccounts(ctx, saRepo, eventsMan, query, events.EventKeyAuthzServiceAccountSync)
-}
-
-func reQueueServiceAccounts(ctx context.Context, saRepo repository.ServiceAccountRepository, eventsMan fevents.Manager, query *data.SearchQuery, eventKey string) error {
+// ReQueueServiceAccountPolicies re-enqueues current desired generations. This
+// periodic repair path makes event delivery an optimization rather than a
+// correctness dependency.
+func ReQueueServiceAccountPolicies(
+	ctx context.Context,
+	saRepo repository.ServiceAccountRepository,
+	policyRepo repository.ServiceAccountAuthorizationPolicyRepository,
+	eventsMan fevents.Manager,
+	query *data.SearchQuery,
+) error {
 	jobResult, err := saRepo.Search(ctx, query)
 	if err != nil {
 		return err
@@ -525,7 +514,15 @@ func reQueueServiceAccounts(ctx context.Context, saRepo repository.ServiceAccoun
 			return result.Error()
 		}
 		for _, sa := range result.Item() {
-			if emitErr := eventsMan.Emit(ctx, eventKey, data.JSONMap{"id": sa.GetID()}); emitErr != nil {
+			policy, policyErr := policyRepo.GetByServiceAccountID(ctx, sa.GetID())
+			if policyErr != nil {
+				return policyErr
+			}
+			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{
+				"id":         sa.GetID(),
+				"generation": policy.Policy.Generation,
+				"reason":     "periodic_repair",
+			}); emitErr != nil {
 				return emitErr
 			}
 		}

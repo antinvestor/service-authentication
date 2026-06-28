@@ -22,7 +22,13 @@ import (
 	"github.com/pitabwire/frame/datastore"
 )
 
-func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath string) error {
+func Migrate(
+	ctx context.Context,
+	dbManager datastore.Manager,
+	migrationPath string,
+	audienceBaseURL string,
+	expected AuthContractMigrationExpectations,
+) error {
 
 	pool := dbManager.GetPool(ctx, datastore.DefaultMigrationPoolName)
 	if pool == nil {
@@ -32,8 +38,18 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	// Models must be passed as pointers: tenancy enrollment checks for the
 	// tenancy.Tenanted interface whose methods have pointer receivers, so
 	// value models silently skip RLS policy installation.
-	return dbManager.Migrate(ctx, pool, migrationPath,
+	err := dbManager.Migrate(ctx, pool, migrationPath,
 		&models.Tenant{}, &models.Partition{}, &models.PartitionRole{},
 		&models.Access{}, &models.AccessRole{}, &models.Page{},
-		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{})
+		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{},
+		&models.OAuthClientRecipient{},
+		&models.ServiceAccountAuthorizationPolicy{},
+		&models.ServiceAccountAuthorizationGrant{},
+		&models.ServiceAccountAuthorizationPermission{},
+		&models.ServiceAccountAppliedTuple{})
+	if err != nil {
+		return err
+	}
+
+	return MigrateAuthContractV2(ctx, pool, audienceBaseURL, expected)
 }

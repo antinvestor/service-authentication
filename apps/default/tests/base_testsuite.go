@@ -234,6 +234,9 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
+	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://api.example.test/authentication")
+	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://api.example.test")
+	t.Setenv("SERVICE_NAME", "authentication_tests")
 
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
@@ -261,8 +264,14 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notification", "service_device"}
-	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
+	cfg.Oauth2AudienceBaseURL = "https://api.example.test"
+	cfg.Oauth2RequestedAudiences = []string{
+		"https://api.example.test/profile",
+		"https://api.example.test/tenancy",
+		"https://api.example.test/notification",
+		"https://api.example.test/devices",
+	}
+	cfg.Oauth2ResourceAudience = "https://api.example.test/authentication"
 	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
 	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
@@ -326,43 +335,69 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientID:   "dev_authentication_tests",
 			ClientName: "sa-authentication_tests",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
-			ProfileID:  "dev_authentication_tests",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_authentication_tests",
 		},
 		{
 			ClientID:   "dev_service_authentication",
 			ClientName: "sa-service_authentication",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
-			ProfileID:  "dev_service_authentication",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_service_authentication",
 		},
 		{
 			ClientID:   "dev_service_profile",
 			ClientName: "sa-service_profile",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notification", "service_tenancy"},
-			ProfileID:  "dev_service_profile",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
+			},
+			ProfileID: "dev_service_profile",
 		},
 		{
 			ClientID:   "dev_service_tenancy",
 			ClientName: "sa-service_tenancy",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notification", "service_profile", "authentication_tests"},
-			ProfileID:  "dev_service_tenancy",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
+			},
+			ProfileID: "dev_service_tenancy",
 		},
 		{
 			ClientID:   "dev_service_notification",
 			ClientName: "sa-service_notification",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_profile", "service_tenancy", "service_device"},
-			ProfileID:  "dev_service_notification",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_service_notification",
 		},
 		{
 			ClientID:   "dev_service_device",
 			ClientName: "sa-service_device",
 			Secret:     "hkBaJroO9cDGleFnuaAZ",
-			Audience:   []string{"service_notification", "service_tenancy", "service_profile", "authentication_tests"},
-			ProfileID:  "dev_service_device",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
+			},
+			ProfileID: "dev_service_device",
 		},
 	}
 
@@ -429,7 +464,7 @@ func setupDeviceClient(
 	cfg *aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.DeviceServiceURI,
-		Audiences: []string{"service_device"},
+		ServiceID: "devices",
 	})
 	if err != nil {
 		return nil, err
@@ -444,7 +479,7 @@ func setupNotificationClient(
 	cfg *aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.NotificationServiceURI,
-		Audiences: []string{"service_notification"},
+		ServiceID: "notification",
 	})
 	if err != nil {
 		return nil, err
@@ -459,7 +494,7 @@ func setupPartitionClient(
 	cfg *aconfig.AuthenticationConfig) (tenancyv1connect.TenancyServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.TenancyServiceURI,
-		Audiences: []string{"service_tenancy"},
+		ServiceID: "tenancy",
 	}, common.WithTraceRequests(), common.WithTraceResponses(), common.WithTraceHeaders())
 	if err != nil {
 		return nil, err
@@ -474,7 +509,7 @@ func setupProfileClient(
 	cfg *aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.ProfileServiceURI,
-		Audiences: []string{"service_profile"},
+		ServiceID: "profile",
 	})
 	if err != nil {
 		return nil, err
