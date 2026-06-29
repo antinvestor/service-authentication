@@ -91,7 +91,7 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, profileCli pr
 		ServiceNamespaceRepo:    serviceNamespaceRepo,
 		PartitionBusiness:       business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
 		TenantBusiness:          business.NewTenantBusiness(service, tenantRepo, partitionRepo),
-		AccessBusiness:          business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo, serviceNamespaceRepo),
+		AccessBusiness:          business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, serviceNamespaceRepo),
 		PageBusiness:            business.NewPageBusiness(service, pageRepo, partitionRepo),
 	}
 }

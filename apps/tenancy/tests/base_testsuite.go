@@ -98,7 +98,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Tenancy
 
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo, serviceNamespaceRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, serviceNamespaceRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
 	authContractBusiness, err := business.NewAuthContractBusiness(
 		cfg.GetOauth2AudienceBaseURL(),
@@ -327,7 +327,6 @@ func (bs *BaseTestSuite) createServiceInternal(
 	hydraClient := client.NewManager(context.Background())
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.PartitionRepo),
 		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.OAuthRecipientRepo, implementation.ServiceAccountRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, implementation.ServiceNamespaceRepo, implementation.AuthorizationPolicyRepo, svc.EventsManager(), auth),
 		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, implementation.PartitionRepo, implementation.AuthorizationPolicyRepo, implementation.AuthContractRepo, svc.EventsManager(), auth),
@@ -409,8 +408,8 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	bs.Require().NoError(err, "failed to seed tenant role")
 }
 
-// syncSeededRecordsToHydra syncs all seeded Partition and Client records to
-// Hydra after migrations. It uses a plain HTTP client (no OAuth2 transport)
+// syncSeededRecordsToHydra syncs all seeded OAuth client records to Hydra after
+// migrations. It uses a plain HTTP client (no OAuth2 transport)
 // because the service's own OAuth2 client (dev_service_tenancy) hasn't been
 // registered on Hydra yet — the Hydra admin API doesn't require auth.
 // Once the seeded clients are registered, the service's OAuth2-authenticated
@@ -424,34 +423,7 @@ func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, p
 	plainCli := client.NewManager(context.Background())
 	defer plainCli.Close()
 
-	// 1. Sync partitions (they're registered as Hydra OAuth2 clients too).
-	partQuery := data.NewSearchQuery(data.WithSearchLimit(200))
-	partResult, err := partSrv.PartitionRepo.Search(syncCtx, partQuery)
-	if err != nil {
-		log.WithError(err).Error("failed to search partitions for Hydra sync")
-	} else {
-		partsSynced := 0
-		for {
-			result, ok := partResult.ReadResult(syncCtx)
-			if !ok {
-				break
-			}
-			if result.IsError() {
-				log.WithError(result.Error()).Error("error reading partitions")
-				break
-			}
-			for _, p := range result.Item() {
-				if syncErr := events.SyncPartitionOnHydra(syncCtx, cfg, plainCli, partSrv.PartitionRepo, p); syncErr != nil {
-					log.WithError(syncErr).WithField("partition_id", p.GetID()).Error("failed to sync partition to Hydra")
-				} else {
-					partsSynced++
-				}
-			}
-		}
-		log.WithField("count", partsSynced).Info("synced seeded partitions to Hydra")
-	}
-
-	// 2. Sync clients (including service account clients like dev_service_tenancy).
+	// Sync clients, including service account clients like dev_service_tenancy.
 	clientQuery := data.NewSearchQuery(
 		data.WithSearchLimit(200),
 		data.WithSearchFiltersAndByValue(map[string]any{"synced_at IS NULL": ""}),

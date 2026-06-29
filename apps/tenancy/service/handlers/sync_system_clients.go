@@ -85,10 +85,10 @@ func (prtSrv *TenancyServer) executeSyncClients(rw http.ResponseWriter, req *htt
 		return data.NewSearchQuery(data.WithSearchLimit(limit))
 	}
 
-	err := business.ReQueuePrimaryPartitionsForSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, syncQuery())
+	err := business.ReQueuePartitionsForAuthorizationSync(ctx, prtSrv.PartitionRepo, prtSrv.eventsMan, syncQuery())
 	if err != nil {
-		log.WithError(err).Error("internal service error synchronising partitions")
-		response["partition_sync_error"] = err.Error()
+		log.WithError(err).Error("internal service error synchronising partition authorization")
+		response["partition_authz_sync_error"] = err.Error()
 	}
 
 	// Sync clients — register/update Hydra OAuth2 clients for Client records

@@ -146,7 +146,6 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithPermissionRegistration(sd),
 		frame.WithRegisterEvents(
-			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
 			events.NewClientSynchronizationEventHandler(
 				ctx,
 				&cfg,
