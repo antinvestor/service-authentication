@@ -301,9 +301,6 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 		}
 
 		for _, partition := range targets {
-			if partition.TenantID != sa.TenantID {
-				return nil, fmt.Errorf("partition %s is outside service account tenant", partition.ID)
-			}
 			partitionsByID[partition.ID] = partition
 			tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
 			desiredRelations = append(desiredRelations, authz.BuildServicePermissionTuples(
@@ -332,13 +329,21 @@ func (e *AuthzServiceAccountSyncEvent) partitionTree(
 	ctx context.Context,
 	root *models.Partition,
 ) ([]*models.Partition, error) {
+	return buildPartitionTree(ctx, root, e.partitionRepo.GetChildren)
+}
+
+func buildPartitionTree(
+	ctx context.Context,
+	root *models.Partition,
+	getChildren func(context.Context, string) ([]*models.Partition, error),
+) ([]*models.Partition, error) {
 	result := []*models.Partition{root}
 	queue := []*models.Partition{root}
 	seen := map[string]struct{}{root.ID: {}}
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		children, err := e.partitionRepo.GetChildren(ctx, current.ID)
+		children, err := getChildren(ctx, current.ID)
 		if err != nil {
 			return nil, fmt.Errorf("load children for partition %s: %w", current.ID, err)
 		}
