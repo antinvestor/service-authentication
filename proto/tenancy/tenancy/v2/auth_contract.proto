@@ -43,30 +43,48 @@ enum AuthorizationPolicyStatus {
 message OAuthClientConfiguration {
   repeated string grant_types = 1 [(buf.validate.field).repeated = {
     unique: true
-    items: {string: {in: ["authorization_code", "client_credentials", "refresh_token"]}}
+    items: {
+      string: {
+        in: [
+          "authorization_code",
+          "client_credentials",
+          "refresh_token"
+        ]
+      }
+    }
   }];
   repeated string response_types = 2 [(buf.validate.field).repeated = {
     unique: true
-    items: {string: {in: ["code", "token"]}}
+    items: {
+      string: {
+        in: [
+          "code",
+          "token"
+        ]
+      }
+    }
   }];
   repeated string redirect_uris = 3;
   string scopes = 4;
-  repeated string resource_recipients = 5 [
-    (buf.validate.field).repeated = {
-      min_items: 1
-      unique: true
-      items: {
-        string: {
-          uri: true
-          pattern: "^https://[^/?#]+/[^?#]+$"
-        }
+  repeated string resource_recipients = 5 [(buf.validate.field).repeated = {
+    min_items: 1
+    unique: true
+    items: {
+      string: {
+        uri: true
+        pattern: "^https://[^/?#]+/[^?#]+$"
       }
     }
-  ];
+  }];
   string token_endpoint_auth_method = 6 [
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
     (buf.validate.field).string = {
-      in: ["none", "client_secret_basic", "client_secret_post", "private_key_jwt"]
+      in: [
+        "none",
+        "client_secret_basic",
+        "client_secret_post",
+        "private_key_jwt"
+      ]
     }
   ];
   google.protobuf.Struct properties = 7;
@@ -74,10 +92,21 @@ message OAuthClientConfiguration {
 
 message OAuthClient {
   string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
-  string client_id = 3 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 100
+  }];
+  string client_id = 3 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 100
+  }];
   string type = 4 [(buf.validate.field).string = {
-    in: ["public", "confidential", "internal", "external"]
+    in: [
+      "public",
+      "confidential",
+      "internal",
+      "external"
+    ]
   }];
   OAuthClientConfiguration configuration = 5;
   common.v1.STATE state = 6;
@@ -123,8 +152,16 @@ message ServiceAccount {
   string tenant_id = 2 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
   string partition_id = 3 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
   string profile_id = 4 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 5 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
-  string type = 6 [(buf.validate.field).string = {in: ["internal", "external"]}];
+  string name = 5 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 100
+  }];
+  string type = 6 [(buf.validate.field).string = {
+    in: [
+      "internal",
+      "external"
+    ]
+  }];
   OAuthClient oauth_client = 7;
   ServiceAuthorizationPolicy authorization_policy = 8;
   google.protobuf.Struct public_keys = 9;
@@ -135,8 +172,16 @@ message ServiceAccount {
 
 message CreateOAuthClientRequest {
   string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
-  string type = 3 [(buf.validate.field).string = {in: ["public", "confidential"]}];
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 100
+  }];
+  string type = 3 [(buf.validate.field).string = {
+    in: [
+      "public",
+      "confidential"
+    ]
+  }];
   OAuthClientConfiguration configuration = 4 [(buf.validate.field).required = true];
 }
 
@@ -149,7 +194,10 @@ message GetOAuthClientRequest {
   oneof selector {
     option (buf.validate.oneof).required = true;
     string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-    string client_id = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+    string client_id = 2 [(buf.validate.field).string = {
+      min_len: 3
+      max_len: 100
+    }];
   }
 }
 
@@ -172,7 +220,13 @@ message ListOAuthClientsResponse {
 
 message UpdateOAuthClientRequest {
   string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 2 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {min_len: 3, max_len: 100}];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      min_len: 3
+      max_len: 100
+    }
+  ];
   OAuthClientConfiguration configuration = 3;
   google.protobuf.FieldMask update_mask = 4 [(buf.validate.field).required = true];
 }
@@ -192,8 +246,16 @@ message RemoveOAuthClientResponse {
 message CreateServiceAccountRequest {
   string partition_id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
   string profile_id = 2 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 3 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
-  string type = 4 [(buf.validate.field).string = {in: ["internal", "external"]}];
+  string name = 3 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 100
+  }];
+  string type = 4 [(buf.validate.field).string = {
+    in: [
+      "internal",
+      "external"
+    ]
+  }];
   OAuthClientConfiguration oauth_client = 5 [(buf.validate.field).required = true];
   ServiceAuthorizationPolicyInput authorization_policy = 6 [(buf.validate.field).required = true];
   google.protobuf.Struct public_keys = 7;
@@ -209,7 +271,10 @@ message GetServiceAccountRequest {
   oneof selector {
     option (buf.validate.oneof).required = true;
     string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-    string client_id = 2 [(buf.validate.field).string = {min_len: 3, max_len: 100}];
+    string client_id = 2 [(buf.validate.field).string = {
+      min_len: 3
+      max_len: 100
+    }];
   }
 }
 
@@ -228,8 +293,22 @@ message ListServiceAccountsResponse {
 
 message UpdateServiceAccountRequest {
   string id = 1 [(buf.validate.field).string.pattern = "[0-9a-z_-]{3,50}"];
-  string name = 2 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {min_len: 3, max_len: 100}];
-  string type = 3 [(buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE, (buf.validate.field).string = {in: ["internal", "external"]}];
+  string name = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      min_len: 3
+      max_len: 100
+    }
+  ];
+  string type = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      in: [
+        "internal",
+        "external"
+      ]
+    }
+  ];
   OAuthClientConfiguration oauth_client = 4;
   ServiceAuthorizationPolicyInput authorization_policy = 5;
   google.protobuf.Struct public_keys = 6;
@@ -260,7 +339,12 @@ message ReconcileServiceAccountAuthorizationResponse {
 service AuthContractService {
   option (common.v1.service_permissions) = {
     namespace: "service_tenancy"
-    permissions: ["service_account_view", "service_account_manage", "client_view", "client_manage"]
+    permissions: [
+      "service_account_view",
+      "service_account_manage",
+      "client_view",
+      "client_manage"
+    ]
   };
 
   rpc CreateOAuthClient(CreateOAuthClientRequest) returns (CreateOAuthClientResponse) {
