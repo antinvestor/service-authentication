@@ -1,4 +1,4 @@
-// Copyright 2023-2026 Ant Investor Ltd.
+// Copyright 2023-2026 Ant Investor Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models
+package business
 
 import (
-	"time"
+	"crypto/rand"
+	"encoding/base64"
 
-	"github.com/antinvestor/common/v2/timescale"
+	"github.com/pitabwire/frame/v2/data"
 )
 
-// Hypertables declares the TimescaleDB configuration for this app's
-// append-only tables. Applied idempotently by timescale.Ensure at
-// service startup.
-var Hypertables = []timescale.Hypertable{
-	{
-		Table:         "login_events",
-		TimeColumn:    "created_at",
-		ChunkInterval: 7 * 24 * time.Hour,
-		SegmentBy:     []string{"partition_id", "client_id"},
-		CompressAfter: 14 * 24 * time.Hour,
-		RetainFor:     365 * 24 * time.Hour,
-	},
+func generateClientSecret() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b), nil
+}
+
+func toJSONMapSlice(key string, values []string) data.JSONMap {
+	if len(values) == 0 {
+		return nil
+	}
+	items := make([]any, len(values))
+	for i, value := range values {
+		items[i] = value
+	}
+	return data.JSONMap{key: items}
 }

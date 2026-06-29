@@ -22,7 +22,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"

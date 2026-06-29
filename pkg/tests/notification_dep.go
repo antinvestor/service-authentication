@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -152,6 +152,8 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"OAUTH2_AUDIENCE_BASE_URL":          "https://api.example.test",
 			"OAUTH2_REQUESTED_AUDIENCES":        "https://api.example.test/profile,https://api.example.test/tenancy,https://api.example.test/devices",
 			"OAUTH2_RESOURCE_AUDIENCE":          "https://api.example.test/notification",
+			"OAUTH2_SERVICE_AUDIENCE":           "service_profile,service_tenancy,service_device",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":        "service_notification,https://api.example.test/notification",
 			"OAUTH2_JWT_VERIFY_ISSUER":          issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,
 		},

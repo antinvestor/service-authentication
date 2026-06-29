@@ -22,8 +22,8 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 )
 
 // AuditBusiness defines the business logic interface for audit operations.

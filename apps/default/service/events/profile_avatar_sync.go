@@ -33,7 +33,7 @@ import (
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
-	fevents "github.com/pitabwire/frame/events"
+	fevents "github.com/pitabwire/frame/v2/events"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )

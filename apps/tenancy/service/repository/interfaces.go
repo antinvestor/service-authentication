@@ -16,9 +16,10 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/v2/datastore"
 )
 
 type TenantRepository interface {
@@ -97,7 +98,9 @@ type AuthorizationPolicyState struct {
 type ServiceAccountAuthorizationPolicyRepository interface {
 	datastore.BaseRepository[*models.ServiceAccountAuthorizationPolicy]
 	GetByServiceAccountID(ctx context.Context, serviceAccountID string) (*AuthorizationPolicyState, error)
+	ListPending(ctx context.Context) ([]*models.ServiceAccountAuthorizationPolicy, error)
 	Replace(ctx context.Context, serviceAccount *models.ServiceAccount, grants []AuthorizationGrant) (*models.ServiceAccountAuthorizationPolicy, error)
+	RecordFailure(ctx context.Context, policyID string, generation int64, code, message string, nextAttempt time.Time) error
 	ListAppliedTuples(ctx context.Context, policyID string) ([]*models.ServiceAccountAppliedTuple, error)
 	ReplaceAppliedState(
 		ctx context.Context,

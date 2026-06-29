@@ -23,7 +23,7 @@ import (
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/util"
 )
 

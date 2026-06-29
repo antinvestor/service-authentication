@@ -19,8 +19,8 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

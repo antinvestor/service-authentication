@@ -28,23 +28,23 @@ import (
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	commonconnection "github.com/antinvestor/common/connection"
+	"github.com/antinvestor/common/v2"
+	commonconnection "github.com/antinvestor/common/v2/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/cache"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testpostgres"
-	"github.com/pitabwire/frame/frametests/rlstest"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/v2/frametests/rlstest"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -362,6 +362,8 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			Audience: []string{
 				"https://api.example.test/notification",
 				"https://api.example.test/tenancy",
+				"service_notification",
+				"service_tenancy",
 			},
 			ProfileID: "dev_service_profile",
 		},
@@ -384,6 +386,9 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 				"https://api.example.test/profile",
 				"https://api.example.test/tenancy",
 				"https://api.example.test/devices",
+				"service_profile",
+				"service_tenancy",
+				"service_device",
 			},
 			ProfileID: "dev_service_notification",
 		},

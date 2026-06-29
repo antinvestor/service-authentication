@@ -14,15 +14,15 @@
 
 package config
 
-import "github.com/pitabwire/frame/config"
+import "github.com/pitabwire/frame/v2/config"
 
 type TenancyConfig struct {
 	config.ConfigurationDefault
 
-	AuthContractExpectedClients         int64 `envDefault:"-1" env:"AUTH_CONTRACT_EXPECTED_CLIENTS"`
-	AuthContractExpectedServiceAccounts int64 `envDefault:"-1" env:"AUTH_CONTRACT_EXPECTED_SERVICE_ACCOUNTS"`
-	AuthContractExpectedRecipients      int64 `envDefault:"-1" env:"AUTH_CONTRACT_EXPECTED_RECIPIENTS"`
-	AuthContractExpectedGrants          int64 `envDefault:"-1" env:"AUTH_CONTRACT_EXPECTED_GRANTS"`
+	AuthContractExpectedClients         int64 `envDefault:"0" env:"AUTH_CONTRACT_EXPECTED_CLIENTS"`
+	AuthContractExpectedServiceAccounts int64 `envDefault:"0" env:"AUTH_CONTRACT_EXPECTED_SERVICE_ACCOUNTS"`
+	AuthContractExpectedRecipients      int64 `envDefault:"0" env:"AUTH_CONTRACT_EXPECTED_RECIPIENTS"`
+	AuthContractExpectedGrants          int64 `envDefault:"0" env:"AUTH_CONTRACT_EXPECTED_GRANTS"`
 
 	NotificationServiceURI                   string `envDefault:"127.0.0.1:7020" env:"NOTIFICATION_SERVICE_URI"`
 	NotificationServiceWorkloadAPITargetPath string `envDefault:"/ns/notifications/sa/service-notification" env:"NOTIFICATION_SERVICE_WORKLOAD_API_TARGET_PATH"`

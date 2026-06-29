@@ -23,9 +23,9 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore/pool"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

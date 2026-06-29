@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -502,6 +502,32 @@ func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_Valid() 
 	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
 	m := map[string]any{"id": "sa-456", "generation": float64(1)}
 	assert.NoError(t, e.Validate(context.Background(), &m))
+}
+
+func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_GenerationRepresentations() {
+	t := suite.T()
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
+
+	for name, generation := range map[string]any{
+		"queue JSON":     float64(2),
+		"startup direct": int64(2),
+		"native integer": 2,
+	} {
+		t.Run(name, func(t *testing.T) {
+			payload := map[string]any{"id": "sa-456", "generation": generation}
+			assert.NoError(t, e.Validate(context.Background(), &payload))
+		})
+	}
+
+	for name, generation := range map[string]any{
+		"fractional": float64(1.5),
+		"string":     "2",
+	} {
+		t.Run(name, func(t *testing.T) {
+			payload := map[string]any{"id": "sa-456", "generation": generation}
+			assert.Error(t, e.Validate(context.Background(), &payload))
+		})
+	}
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_MissingID() {

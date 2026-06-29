@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Code generated from catalog/auth-migration-v2.yaml; DO NOT EDIT.
+// Code generated from stawi.org/deployment.manifests/catalog/auth-migration-v2.yaml; DO NOT EDIT.
 package authz
 
 import (
 	"slices"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 )
 
 var deployedServicePermissions = map[string][]string{ //nolint:gochecknoglobals

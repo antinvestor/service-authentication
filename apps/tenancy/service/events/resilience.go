@@ -19,7 +19,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pitabwire/frame/security/authorizer"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,9 +40,9 @@ const (
 	ketoRetryBaseDelay = 500 * time.Millisecond
 )
 
-// isPermanentError returns true for errors that will never succeed on retry.
-// Returning true causes the event handler to log the error and ACK the
-// message so the queue does not redeliver it forever.
+// isPermanentError returns true for errors that should not be retried inside
+// one handler execution. The handler still returns the error so queue policy,
+// policy status, startup reconciliation, and operational alerts remain active.
 func isPermanentError(err error) bool {
 	if err == nil {
 		return false

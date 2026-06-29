@@ -15,8 +15,8 @@
 package testketo
 
 import (
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testoryketo"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testoryketo"
 )
 
 // ImageName is the Ory Keto image used for test containers.

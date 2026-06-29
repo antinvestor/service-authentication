@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/datastore/pool"
-	"github.com/pitabwire/frame/workerpool"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/datastore/pool"
+	"github.com/pitabwire/frame/v2/workerpool"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -73,6 +73,17 @@ func (r *serviceAccountAuthorizationPolicyRepository) GetByServiceAccountID(
 		})
 	}
 	return state, nil
+}
+
+func (r *serviceAccountAuthorizationPolicyRepository) ListPending(
+	ctx context.Context,
+) ([]*models.ServiceAccountAuthorizationPolicy, error) {
+	var policies []*models.ServiceAccountAuthorizationPolicy
+	err := r.pool.DB(ctx, true).
+		Where("status <> ? OR applied_generation <> generation", models.AuthorizationPolicyApplied).
+		Order("service_account_id").
+		Find(&policies).Error
+	return policies, err
 }
 
 func (r *serviceAccountAuthorizationPolicyRepository) Replace(
@@ -222,8 +233,8 @@ func (r *serviceAccountAuthorizationPolicyRepository) ReplaceAppliedState(
 			}
 		}
 		now := time.Now()
-		return tx.Model(&models.ServiceAccountAuthorizationPolicy{}).
-			Where("id = ? AND generation = ?", policy.ID, policy.Generation).
+		result := tx.Table("service_account_authorization_policies").
+			Where("id = ? AND generation = ? AND deleted_at IS NULL", policy.ID, policy.Generation).
 			Updates(map[string]any{
 				"applied_generation": policy.Generation,
 				"status":             models.AuthorizationPolicyApplied,
@@ -232,8 +243,42 @@ func (r *serviceAccountAuthorizationPolicyRepository) ReplaceAppliedState(
 				"last_error":         "",
 				"next_attempt_at":    nil,
 				"synced_at":          &now,
-			}).Error
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return fmt.Errorf("replace applied authorization state: policy generation changed")
+		}
+		return nil
 	})
+}
+
+func (r *serviceAccountAuthorizationPolicyRepository) RecordFailure(
+	ctx context.Context,
+	policyID string,
+	generation int64,
+	code string,
+	message string,
+	nextAttempt time.Time,
+) error {
+	result := r.pool.DB(ctx, false).
+		Table("service_account_authorization_policies").
+		Where("id = ? AND generation = ? AND deleted_at IS NULL", policyID, generation).
+		Updates(map[string]any{
+			"status":          models.AuthorizationPolicyFailed,
+			"retry_count":     gorm.Expr("retry_count + 1"),
+			"last_error_code": code,
+			"last_error":      message,
+			"next_attempt_at": nextAttempt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return fmt.Errorf("record authorization failure: policy generation changed")
+	}
+	return nil
 }
 
 func NewServiceAccountAuthorizationPolicyRepository(

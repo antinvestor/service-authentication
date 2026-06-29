@@ -19,7 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pitabwire/frame/security/authorizer"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -36,12 +36,12 @@ import (
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	commonconnection "github.com/antinvestor/common/connection"
+	"github.com/antinvestor/common/v2"
+	commonconnection "github.com/antinvestor/common/v2/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/frametests"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/frametests"
 	"github.com/pitabwire/util"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -190,7 +190,7 @@ func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (te
 		TokenURL:     c.cfg.GetOauth2TokenEndpoint(),
 		AuthStyle:    oauth2.AuthStyleInParams,
 		EndpointParams: url.Values{
-			"audience": []string{"service_tenancy"},
+			"audience": []string{"https://api.example.test/tenancy"},
 		},
 	}
 
@@ -198,7 +198,7 @@ func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (te
 		ctx,
 		tenancyv1connect.NewTenancyServiceClient,
 		common.WithEndpoint(c.cfg.TenancyServiceURI),
-		common.WithAudiences("https://api.example.test/tenancy"),
+		common.WithRequestedAudiences("https://api.example.test/tenancy"),
 		common.WithTokenSource(tokenCfg.TokenSource(ctx)),
 	)
 	if err != nil {

@@ -20,10 +20,10 @@ import (
 	"slices"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/datastore/pool"
-	"github.com/pitabwire/frame/workerpool"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/datastore/pool"
+	"github.com/pitabwire/frame/v2/workerpool"
 	"gorm.io/gorm"
 )
 

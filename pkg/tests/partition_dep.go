@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

@@ -19,15 +19,18 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
+	"google.golang.org/grpc/status"
 )
 
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
@@ -51,7 +54,7 @@ func NewAuthzServiceAccountSyncEventHandler(
 	authContractRepo repository.AuthContractRepository,
 	eventsMan fevents.Manager,
 	auth security.Authorizer,
-) fevents.EventI {
+) *AuthzServiceAccountSyncEvent {
 	return &AuthzServiceAccountSyncEvent{
 		serviceAccountRepo: serviceAccountRepo,
 		partitionRepo:      partitionRepo,
@@ -60,6 +63,28 @@ func NewAuthzServiceAccountSyncEventHandler(
 		eventsMan:          eventsMan,
 		authorizer:         auth,
 	}
+}
+
+// ReconcilePending synchronously materialises every policy whose desired
+// generation has not been applied. Startup calls this before serving traffic,
+// so missing Keto schema or stale derived state fails closed and self-heals on
+// the next restart after the dependency is corrected.
+func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) error {
+	policies, err := e.policyRepo.ListPending(ctx)
+	if err != nil {
+		return fmt.Errorf("list pending authorization policies: %w", err)
+	}
+	for _, policy := range policies {
+		payload := map[string]any{
+			"id":         policy.ServiceAccountID,
+			"generation": policy.Generation,
+			"reason":     "startup_reconciliation",
+		}
+		if err = e.Execute(ctx, &payload); err != nil {
+			return fmt.Errorf("reconcile service account %s policy: %w", policy.ServiceAccountID, err)
+		}
+	}
+	return nil
 }
 
 func (e *AuthzServiceAccountSyncEvent) Name() string {
@@ -80,7 +105,7 @@ func (e *AuthzServiceAccountSyncEvent) Validate(_ context.Context, payload any) 
 	if m.GetString("id") == "" {
 		return errors.New("service account id is required")
 	}
-	if m.GetFloat("generation") < 1 {
+	if authorizationPolicyGeneration(m) < 1 {
 		return errors.New("authorization policy generation is required")
 	}
 	return nil
@@ -98,7 +123,7 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
-	eventGeneration := int64(jsonPayload.GetFloat("generation"))
+	eventGeneration := authorizationPolicyGeneration(jsonPayload)
 	logger := util.Log(ctx).WithFields(map[string]any{
 		"service_account_id": serviceAccountID,
 		"type":               e.Name(),
@@ -135,11 +160,11 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 
 	desired, err := e.desiredTuples(ctx, sa, policyState.Grants)
 	if err != nil {
-		return err
+		return e.recordFailure(ctx, policyState.Policy, err)
 	}
 	applied, err := e.policyRepo.ListAppliedTuples(ctx, policyState.Policy.ID)
 	if err != nil {
-		return fmt.Errorf("load applied authorization tuples: %w", err)
+		return e.recordFailure(ctx, policyState.Policy, fmt.Errorf("load applied authorization tuples: %w", err))
 	}
 
 	deletes, writes := diffAuthorizationTuples(applied, desired)
@@ -147,19 +172,19 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
 			return e.authorizer.DeleteTuples(ctx, deletes)
 		}); err != nil {
-			return err
+			return e.recordFailure(ctx, policyState.Policy, err)
 		}
 	}
 	if len(writes) > 0 {
 		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
 			return e.authorizer.WriteTuples(ctx, writes)
 		}); err != nil {
-			return err
+			return e.recordFailure(ctx, policyState.Policy, err)
 		}
 	}
 
 	if err = e.policyRepo.ReplaceAppliedState(ctx, policyState.Policy, desired); err != nil {
-		return fmt.Errorf("persist applied authorization state: %w", err)
+		return e.recordFailure(ctx, policyState.Policy, fmt.Errorf("persist applied authorization state: %w", err))
 	}
 	if sa.State == int32(commonv1.STATE_DELETED) {
 		clientID, finalizeErr := e.authContractRepo.FinalizeServiceAccountRemoval(ctx, sa.ID)
@@ -171,6 +196,69 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		}
 	}
 	return nil
+}
+
+func authorizationPolicyGeneration(payload data.JSONMap) int64 {
+	switch value := payload["generation"].(type) {
+	case int:
+		return int64(value)
+	case int32:
+		return int64(value)
+	case int64:
+		return value
+	case uint:
+		return int64(value)
+	case uint32:
+		return int64(value)
+	case uint64:
+		if value <= uint64(^uint64(0)>>1) {
+			return int64(value)
+		}
+	case float32:
+		generation := int64(value)
+		if float32(generation) == value {
+			return generation
+		}
+	case float64:
+		generation := int64(value)
+		if float64(generation) == value {
+			return generation
+		}
+	}
+	return 0
+}
+
+func (e *AuthzServiceAccountSyncEvent) recordFailure(
+	ctx context.Context,
+	policy *models.ServiceAccountAuthorizationPolicy,
+	cause error,
+) error {
+	code := status.Code(cause).String()
+	var serviceErr *authorizer.AuthzServiceError
+	if errors.As(cause, &serviceErr) {
+		code = serviceErr.Code.String()
+		if serviceErr.SchemaReadiness {
+			code = "schema_not_ready"
+		}
+	}
+	message := cause.Error()
+	if len(message) > 4096 {
+		message = message[:4096]
+	}
+	recordCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	recordErr := e.policyRepo.RecordFailure(
+		recordCtx,
+		policy.ID,
+		policy.Generation,
+		code,
+		message,
+		time.Now().Add(time.Minute),
+	)
+	if recordErr != nil {
+		return errors.Join(cause, fmt.Errorf("record authorization policy failure: %w", recordErr))
+	}
+	return cause
 }
 
 func (e *AuthzServiceAccountSyncEvent) desiredTuples(

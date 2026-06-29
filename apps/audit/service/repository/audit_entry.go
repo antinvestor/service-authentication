@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
-	"github.com/pitabwire/frame/datastore/pool"
+	"github.com/pitabwire/frame/v2/datastore/pool"
 	"gorm.io/gorm"
 )
 

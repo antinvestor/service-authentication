@@ -26,7 +26,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/v2"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )

@@ -29,38 +29,40 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests/testketo"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testnats"
-	"github.com/pitabwire/frame/frametests/deps/testpostgres"
-	"github.com/pitabwire/frame/frametests/rlstest"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testnats"
+	"github.com/pitabwire/frame/v2/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/v2/frametests/rlstest"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )
 
 type DepsBuilder struct {
-	TenantRepo           repository.TenantRepository
-	PartitionRepo        repository.PartitionRepository
-	PartitionRoleRepo    repository.PartitionRoleRepository
-	AccessRepo           repository.AccessRepository
-	AccessRoleRepo       repository.AccessRoleRepository
-	PageRepo             repository.PageRepository
-	ClientRepo           repository.ClientRepository
-	ServiceAccountRepo   repository.ServiceAccountRepository
-	ServiceNamespaceRepo repository.ServiceNamespaceRepository
+	TenantRepo              repository.TenantRepository
+	PartitionRepo           repository.PartitionRepository
+	PartitionRoleRepo       repository.PartitionRoleRepository
+	AccessRepo              repository.AccessRepository
+	AccessRoleRepo          repository.AccessRoleRepository
+	PageRepo                repository.PageRepository
+	ClientRepo              repository.ClientRepository
+	OAuthRecipientRepo      repository.OAuthClientRecipientRepository
+	ServiceAccountRepo      repository.ServiceAccountRepository
+	AuthorizationPolicyRepo repository.ServiceAccountAuthorizationPolicyRepository
+	AuthContractRepo        repository.AuthContractRepository
+	ServiceNamespaceRepo    repository.ServiceNamespaceRepository
 
-	PartitionBusiness      business.PartitionBusiness
-	TenantBusiness         business.TenantBusiness
-	AccessBusiness         business.AccessBusiness
-	PageBusiness           business.PageBusiness
-	ClientBusiness         business.ClientBusiness
-	ServiceAccountBusiness business.ServiceAccountBusiness
+	PartitionBusiness    business.PartitionBusiness
+	TenantBusiness       business.TenantBusiness
+	AccessBusiness       business.AccessBusiness
+	PageBusiness         business.PageBusiness
+	AuthContractBusiness business.AuthContractBusiness
 
 	Server *handlers.TenancyServer
 }
@@ -72,34 +74,46 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Tenancy
 	eventsMan := svc.EventsManager()
 
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
+	oauthRecipientRepo := repository.NewOAuthClientRecipientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	authorizationPolicyRepo := repository.NewServiceAccountAuthorizationPolicyRepository(ctx, dbPool, workMan)
+	authContractRepo := repository.NewAuthContractRepository(dbPool)
 	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	depBuilder := &DepsBuilder{
-		TenantRepo:           repository.NewTenantRepository(ctx, dbPool, workMan),
-		PartitionRepo:        repository.NewPartitionRepository(ctx, dbPool, workMan),
-		PartitionRoleRepo:    repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
-		AccessRepo:           repository.NewAccessRepository(ctx, dbPool, workMan),
-		AccessRoleRepo:       repository.NewAccessRoleRepository(ctx, dbPool, workMan),
-		PageRepo:             repository.NewPageRepository(ctx, dbPool, workMan),
-		ClientRepo:           clientRepo,
-		ServiceAccountRepo:   serviceAccountRepo,
-		ServiceNamespaceRepo: serviceNamespaceRepo,
-		Server:               server,
+		TenantRepo:              repository.NewTenantRepository(ctx, dbPool, workMan),
+		PartitionRepo:           repository.NewPartitionRepository(ctx, dbPool, workMan),
+		PartitionRoleRepo:       repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
+		AccessRepo:              repository.NewAccessRepository(ctx, dbPool, workMan),
+		AccessRoleRepo:          repository.NewAccessRoleRepository(ctx, dbPool, workMan),
+		PageRepo:                repository.NewPageRepository(ctx, dbPool, workMan),
+		ClientRepo:              clientRepo,
+		OAuthRecipientRepo:      oauthRecipientRepo,
+		ServiceAccountRepo:      serviceAccountRepo,
+		AuthorizationPolicyRepo: authorizationPolicyRepo,
+		AuthContractRepo:        authContractRepo,
+		ServiceNamespaceRepo:    serviceNamespaceRepo,
+		Server:                  server,
 	}
 
-	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
 	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo, serviceNamespaceRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
-	depBuilder.ClientBusiness = business.NewClientBusiness(eventsMan, depBuilder.PartitionRepo, clientRepo)
-	depBuilder.ServiceAccountBusiness = business.NewServiceAccountBusiness(
-		eventsMan, auth, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo,
-		clientRepo, serviceAccountRepo, depBuilder.AccessRepo, depBuilder.AccessRoleRepo,
-		serviceNamespaceRepo,
+	authContractBusiness, err := business.NewAuthContractBusiness(
+		cfg.GetOauth2AudienceBaseURL(),
+		eventsMan,
+		depBuilder.PartitionRepo,
+		clientRepo,
+		oauthRecipientRepo,
+		serviceAccountRepo,
+		authorizationPolicyRepo,
+		authContractRepo,
 	)
-
+	if err != nil {
+		panic(err)
+	}
+	depBuilder.AuthContractBusiness = authContractBusiness
 	return depBuilder
 }
 
@@ -305,7 +319,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		frame.WithDatastore(), frametests.WithNoopDriver())
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
-	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
+	implementation := handlers.NewTenancyServer(ctx, svc, nil)
 
 	// Use a plain HTTP client for Hydra admin API calls (no OAuth2 transport).
 	// This matches production (cmd/main.go) where hydraClient is unauthenticated

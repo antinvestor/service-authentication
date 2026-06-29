@@ -19,7 +19,7 @@ import (
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
