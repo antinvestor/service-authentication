@@ -577,21 +577,14 @@ message RemovePageResponse {
 // -----------------------------------------------------
 
 message CreateAccessRequest {
-  oneof partition {
-    option (buf.validate.oneof).required = true;
+  reserved 3;
+  reserved "client_id";
 
-    string partition_id = 1 [
-      (buf.validate.field).string.min_len = 3,
-      (buf.validate.field).string.max_len = 40,
-      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
-    ];
-
-    string client_id = 3 [
-      (buf.validate.field).string.min_len = 3,
-      (buf.validate.field).string.max_len = 40,
-      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
-    ];
-  }
+  string partition_id = 1 [
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
 
   string profile_id = 2 [
     (buf.validate.field).string.min_len = 3,
@@ -605,6 +598,9 @@ message CreateAccessResponse {
 }
 
 message GetAccessRequest {
+  reserved 3;
+  reserved "client_id";
+
   string access_id = 1 [
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
     (buf.validate.field).string.min_len = 3,
@@ -612,21 +608,12 @@ message GetAccessRequest {
     (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
   ];
 
-  oneof partition {
-    option (buf.validate.oneof).required = false;
-
-    string partition_id = 2 [
-      (buf.validate.field).string.min_len = 3,
-      (buf.validate.field).string.max_len = 40,
-      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
-    ];
-
-    string client_id = 3 [
-      (buf.validate.field).string.min_len = 3,
-      (buf.validate.field).string.max_len = 40,
-      (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
-    ];
-  }
+  string partition_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 40,
+    (buf.validate.field).string.pattern = "[0-9a-z_-]{3,40}"
+  ];
 
   string profile_id = 4 [
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
