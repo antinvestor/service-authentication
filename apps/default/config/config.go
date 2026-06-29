@@ -17,7 +17,7 @@ package config
 import (
 	"strings"
 
-	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/v2/config"
 )
 
 const (
@@ -99,7 +99,7 @@ type AuthenticationConfig struct {
 	// mobile Google/Apple ID-token exchange. The default is enabled because each
 	// exchange is still constrained to a known local OAuth client whose tenancy
 	// properties opt that client into native login. Provider audiences come from
-	// server-side auth provider config unless a legacy client override is set.
+	// server-side authentication provider configuration.
 	NativeCredentialExchangeEnabled bool `envDefault:"true" env:"NATIVE_CREDENTIAL_EXCHANGE_ENABLED"`
 
 	// Oauth2HydraPublicInternalURL is the Hydra public URL used by the token

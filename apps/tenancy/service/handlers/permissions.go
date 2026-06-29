@@ -28,8 +28,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

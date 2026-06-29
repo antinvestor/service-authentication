@@ -19,7 +19,10 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -217,32 +220,6 @@ func (suite *RoleMappingTestSuite) TestBuildServicePartitionInheritanceTuple() {
 	assert.Equal(t, authz.RoleService, tuple.Subject.Relation)
 }
 
-func (suite *RoleMappingTestSuite) TestBuildServiceInheritanceTuples_Empty() {
-	t := suite.T()
-	tuples := authz.BuildServiceInheritanceTuples("t1/p1", nil)
-	assert.Empty(t, tuples)
-}
-
-func (suite *RoleMappingTestSuite) TestBuildServiceInheritanceTuples() {
-	t := suite.T()
-	tenancyPath := "tenant1/partition1"
-	// Only specific namespaces the bot needs, not all services
-	namespaces := []string{"service_commerce", "service_payment"}
-	tuples := authz.BuildServiceInheritanceTuples(tenancyPath, namespaces)
-
-	// 1 cross-namespace bridge per namespace — OPL permits handle permission resolution
-	assert.Len(t, tuples, len(namespaces))
-
-	for i, ns := range namespaces {
-		assert.Equal(t, ns, tuples[i].Object.Namespace)
-		assert.Equal(t, tenancyPath, tuples[i].Object.ID)
-		assert.Equal(t, authz.RoleService, tuples[i].Relation)
-		assert.Equal(t, authz.NamespaceTenancyAccess, tuples[i].Subject.Namespace)
-		assert.Equal(t, tenancyPath, tuples[i].Subject.ID)
-		assert.Equal(t, authz.RoleService, tuples[i].Subject.Relation)
-	}
-}
-
 func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples() {
 	t := suite.T()
 	perms := []string{"tenant_view", "partition_manage"}
@@ -328,4 +305,91 @@ func (suite *RoleMappingTestSuite) TestAudienceNamespaces_ExplicitFormat() {
 	}
 	result := authz.AudienceNamespaces(audiences)
 	assert.ElementsMatch(t, []string{"service_profile", "service_payment"}, result)
+}
+
+func (suite *RoleMappingTestSuite) TestResolveServiceGrantsExpandsServiceRole() {
+	t := suite.T()
+	namespaces := []*models.ServiceNamespace{{
+		Namespace:   "service_profile",
+		Permissions: data.JSONMap{"values": []any{"profile_view", "profile_manage"}},
+		RoleBindings: data.JSONMap{
+			authz.RoleService: []any{"profile_manage", "profile_view"},
+		},
+	}}
+
+	resolved, err := authz.ResolveServiceGrants(
+		map[string][]string{"service_profile": {"*"}},
+		namespaces,
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"profile_manage", "profile_view"}, resolved["service_profile"])
+}
+
+func (suite *RoleMappingTestSuite) TestResolveServiceGrantsRejectsUnknownSchema() {
+	t := suite.T()
+	namespaces := []*models.ServiceNamespace{{
+		Namespace:   "service_profile",
+		Permissions: data.JSONMap{"values": []any{"profile_view"}},
+	}}
+
+	_, err := authz.ResolveServiceGrants(
+		map[string][]string{"opportunities_api": {"opportunity_view"}},
+		namespaces,
+	)
+
+	require.ErrorContains(t, err, `authorization namespace "opportunities_api" is not registered`)
+}
+
+func (suite *RoleMappingTestSuite) TestResolveServiceGrantsRejectsUnknownPermission() {
+	t := suite.T()
+	namespaces := []*models.ServiceNamespace{{
+		Namespace:   "service_profile",
+		Permissions: data.JSONMap{"values": []any{"profile_view"}},
+	}}
+
+	_, err := authz.ResolveServiceGrants(
+		map[string][]string{"service_profile": {"profile_delete"}},
+		namespaces,
+	)
+
+	require.ErrorContains(t, err, `authorization permission "profile_delete" is not registered`)
+}
+
+func (suite *RoleMappingTestSuite) TestSelectRegisteredServiceGrantsExcludesOAuthRecipients() {
+	t := suite.T()
+	namespaces := []*models.ServiceNamespace{{Namespace: "service_profile"}}
+	requested := map[string][]string{
+		"service_profile":   {"profile_view"},
+		"opportunities_api": {"*"},
+	}
+
+	selected := authz.SelectRegisteredServiceGrants(requested, namespaces)
+
+	require.Equal(t, map[string][]string{"service_profile": {"profile_view"}}, selected)
+}
+
+func (suite *RoleMappingTestSuite) TestSortRelationTuples() {
+	t := suite.T()
+	tuples := []security.RelationTuple{
+		authz.BuildPermissionTuple("service_profile", "t/p", "profile_view", "profile-b"),
+		authz.BuildPermissionTuple("service_audit", "t/p", "audit_view", "profile-a"),
+	}
+
+	authz.SortRelationTuples(tuples)
+
+	require.Equal(t, "service_audit", tuples[0].Object.Namespace)
+	require.Equal(t, "service_profile", tuples[1].Object.Namespace)
+}
+
+func (suite *RoleMappingTestSuite) TestDeployedCatalogRejectsRuntimeOnlyNamespace() {
+	t := suite.T()
+	selected := authz.SelectDeployedNamespaceRecords([]*models.ServiceNamespace{
+		{Namespace: "service_profile"},
+		{Namespace: "opportunities_api"},
+	})
+
+	require.Len(t, selected, 1)
+	require.Equal(t, "service_profile", selected[0].Namespace)
+	require.NotEmpty(t, authz.DeployedServiceNamespaceRecords())
 }

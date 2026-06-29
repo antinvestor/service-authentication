@@ -27,13 +27,14 @@ import (
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	handlers2 "github.com/gorilla/handlers"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,10 +163,25 @@ func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
 		opCtx, opCancel := context.WithTimeout(testCtx, HandlerOperationTimeout)
 		defer opCancel()
 
-		parentPartition, err := tests.NewPartitionForOauthCli(opCtx, authServer.PartitionCli(), "Workspace Parent", "Parent partition", data.JSONMap{
+		parentPartition, err := tests.NewPartitionForOAuthClient(opCtx, authServer.PartitionCli(), "Workspace Parent", "Parent partition", data.JSONMap{
 			partitionpolicy.PropertyAllowAutoAccess: false,
 		})
 		require.NoError(t, err)
+		oauthClientResponse, err := authServer.AuthContractCli().CreateOAuthClient(opCtx, connect.NewRequest(&tenancyv2.CreateOAuthClientRequest{
+			PartitionId: parentPartition.GetId(),
+			Name:        "Workspace Parent",
+			Type:        "public",
+			Configuration: &tenancyv2.OAuthClientConfiguration{
+				GrantTypes:              []string{"authorization_code", "refresh_token"},
+				ResponseTypes:           []string{"code"},
+				RedirectUris:            []string{server.URL + "/oauth2/callback"},
+				Scopes:                  "openid offline_access profile",
+				ResourceRecipients:      []string{"https://api.example.test/authentication"},
+				TokenEndpointAuthMethod: "none",
+			},
+		}))
+		require.NoError(t, err)
+		require.NotNil(t, oauthClientResponse.Msg.GetData())
 
 		childResp, err := authServer.PartitionCli().CreatePartition(opCtx, connect.NewRequest(&tenancyv1.CreatePartitionRequest{
 			TenantId:    parentPartition.GetTenantId(),
@@ -193,7 +209,7 @@ func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
 		require.NoError(t, err)
 
 		loginEvent := &models.LoginEvent{
-			ClientID:         parentPartition.GetId(),
+			ClientID:         oauthClientResponse.Msg.GetData().GetClientId(),
 			ProfileID:        profile.GetId(),
 			LoginChallengeID: "workspace-challenge",
 		}

@@ -18,10 +18,10 @@ require (
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260511135618-9b1ea0d95bd7.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.20.0-20260612021939-e32a27e4910e.1
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260612021939-e32a27e4910e.1
-	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260629054636-19bb401b07c4.1
-	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260629054636-19bb401b07c4.1
+	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260629120315-dfdba54ae9d9.1
+	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260629120315-dfdba54ae9d9.1
 	connectrpc.com/connect v1.20.0
-	github.com/antinvestor/common v1.5.2
+	github.com/antinvestor/common/v2 v2.0.0
 	github.com/coreos/go-oidc/v3 v3.19.0
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -29,7 +29,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame v1.98.4
+	github.com/pitabwire/frame/v2 v2.0.1
 	github.com/pitabwire/util v0.9.1
 	github.com/posthog/posthog-go v1.17.1
 	github.com/rs/xid v1.6.0

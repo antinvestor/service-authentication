@@ -17,7 +17,7 @@ package models
 import (
 	"time"
 
-	"github.com/antinvestor/common/timescale"
+	"github.com/antinvestor/common/v2/timescale"
 )
 
 // Hypertables declares the TimescaleDB configuration for this app's

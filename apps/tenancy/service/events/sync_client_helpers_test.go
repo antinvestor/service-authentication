@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -72,10 +72,11 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_Basic() {
 		Scopes:   "openid offline",
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", []string{"https://api.example.test/profile"})
 	s.Equal("Test Client", payload["client_name"])
 	s.Equal("test-client-id", payload["client_id"])
 	s.Equal("openid offline", payload["scope"])
+	s.Equal([]string{"https://api.example.test/profile"}, payload["audience"])
 	s.Equal("none", payload["token_endpoint_auth_method"])
 	s.NotContains(payload, "subject")
 }
@@ -87,7 +88,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithProfile() {
 		Type:     "internal",
 	}
 
-	payload := buildClientHydraPayload(cl, "profile-1")
+	payload := buildClientHydraPayload(cl, "profile-1", nil)
 	s.Equal("profile-1", payload["subject"])
 	// Internal clients use private_key_jwt with Hydra's default JWKS
 	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
@@ -102,7 +103,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithSecret() {
 		Type:         "confidential",
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	s.Equal("secret-val", payload["client_secret"])
 	s.Equal("client_secret_post", payload["token_endpoint_auth_method"])
 }
@@ -114,7 +115,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_DefaultGrantTyp
 		Type:     "public",
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	grantTypes := payload["grant_types"].([]string)
 	s.Contains(grantTypes, "authorization_code")
 	s.Contains(grantTypes, "refresh_token")
@@ -128,7 +129,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_CustomGrantType
 		GrantTypes: data.JSONMap{"types": []any{"client_credentials"}},
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	grantTypes := payload["grant_types"].([]string)
 	s.Equal([]string{"client_credentials"}, grantTypes)
 }
@@ -142,7 +143,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithDisplayFiel
 		PostLogoutRedirectURIs: data.JSONMap{"uris": []any{"https://example.com/logout"}},
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	s.Equal("https://example.com/logo.png", payload["logo_uri"])
 	s.Equal([]string{"https://example.com/logout"}, payload["post_logout_redirect_uris"])
 }
@@ -156,7 +157,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_ExplicitAuthMet
 		TokenEndpointAuthMethod: "private_key_jwt",
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
 	_, hasSecret := payload["client_secret"]
 	s.False(hasSecret)
@@ -173,7 +174,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_JWKSURIInfersPr
 		},
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
 	s.Equal(
 		"http://service-profile.profile.svc.cluster.local/.well-known/oauth2-client-jwks.json",
@@ -190,7 +191,7 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_DefaultScopes()
 		Type:     "public",
 	}
 
-	payload := buildClientHydraPayload(cl, "")
+	payload := buildClientHydraPayload(cl, "", nil)
 	s.Equal("openid offline_access profile", payload["scope"])
 }
 

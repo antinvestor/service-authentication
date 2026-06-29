@@ -21,7 +21,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 

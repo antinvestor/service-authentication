@@ -40,9 +40,9 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testpostgres"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -154,7 +154,7 @@ func (s *FedCMFlowSuite) TestColdStartThenIDAssertion() {
 	authServer.ResetLoginRateLimit(testCtx, "::1")
 
 	// ------------------------------------------------------------------
-	// Step 0: create an OAuth2 client (partition) whose redirect URIs
+	// Step 0: create a partition-owned OAuth2 client whose redirect URIs
 	// include the FedCM internal callback. The headless driver will use
 	// this client to drive the headless authorization_code flow.
 	// ------------------------------------------------------------------

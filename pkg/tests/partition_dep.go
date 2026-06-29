@@ -18,15 +18,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
 
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	PartitionImage = "ghcr.io/antinvestor/service-authentication-tenancy:latest"
+	PartitionImage = "service-authentication-tenancy-test:current"
 )
 
 type partitionDependancy struct {
@@ -52,9 +54,29 @@ func (d *partitionDependancy) migrateContainer(
 	ntwk *testcontainers.DockerNetwork,
 	databaseURL string,
 ) error {
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return errors.New("could not locate tenancy test source")
+	}
+	repositoryRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "../.."))
+	buildPlatform := runtime.GOOS + "/" + runtime.GOARCH
+	targetOS := runtime.GOOS
+	targetArch := runtime.GOARCH
+
 	containerRequest := testcontainers.ContainerRequest{
-		Image: d.Name(),
-		Cmd:   []string{"migrate"},
+		Cmd: []string{"migrate"},
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    repositoryRoot,
+			Dockerfile: "apps/tenancy/Dockerfile",
+			Repo:       "service-authentication-tenancy-test",
+			Tag:        "current",
+			KeepImage:  true,
+			BuildArgs: map[string]*string{
+				"BUILDPLATFORM": &buildPlatform,
+				"TARGETOS":      &targetOS,
+				"TARGETARCH":    &targetArch,
+			},
+		},
 		Env: map[string]string{
 			"LOG_LEVEL":    "debug",
 			"DO_MIGRATION": "true",
@@ -129,6 +151,7 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 		Env: map[string]string{
 			"LOG_LEVEL":             "debug",
 			"RUN_SERVICE_SECURELY":  "false",
+			"AUTHORIZATION_MODE":    "disabled",
 			"TRACE_REQUESTS":        "true",
 			"DATABASE_LOG_QUERIES":  "true",
 			"OPENTELEMETRY_DISABLE": "true",
@@ -140,11 +163,11 @@ func (d *partitionDependancy) Setup(ctx context.Context, ntwk *testcontainers.Do
 			"OAUTH2_SERVICE_CLIENT_ID":                      "dev_service_tenancy",
 			"OAUTH2_SERVICE_CLIENT_SECRET":                  "hkGiJroO9cDS5eFnuaAV",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD":             "client_secret_post",
-			"OAUTH2_SERVICE_AUDIENCE":                       "service_notification,service_profile,authentication_tests",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":                    "service_tenancy",
+			"OAUTH2_AUDIENCE_BASE_URL":                      "https://api.example.test",
+			"OAUTH2_REQUESTED_AUDIENCES":                    "https://api.example.test/notification,https://api.example.test/profile,https://api.example.test/authentication",
+			"OAUTH2_RESOURCE_AUDIENCE":                      "https://api.example.test/tenancy",
 			"OAUTH2_JWT_VERIFY_ISSUER":                      issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":                    jwksData,
-			"SYNCHRONISE_PRIMARY_PARTITIONS":                "true",
 		},
 
 		WaitingFor: wait.ForLog("Initiating server operations"),

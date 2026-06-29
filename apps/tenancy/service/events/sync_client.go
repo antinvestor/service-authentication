@@ -20,27 +20,28 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 
 const EventKeyClientSynchronization = "client.synchronization.event"
 
 type ClientSyncEvent struct {
-	cfg                config.ConfigurationOAUTH2
-	cli                client.Manager
-	clientRepository   repository.ClientRepository
-	serviceAccountRepo repository.ServiceAccountRepository
+	cfg                 config.ConfigurationOAUTH2
+	cli                 client.Manager
+	clientRepository    repository.ClientRepository
+	recipientRepository repository.OAuthClientRecipientRepository
+	serviceAccountRepo  repository.ServiceAccountRepository
 }
 
 func NewClientSynchronizationEventHandler(
@@ -48,13 +49,15 @@ func NewClientSynchronizationEventHandler(
 	cfg config.ConfigurationOAUTH2,
 	cli client.Manager,
 	clientRepo repository.ClientRepository,
+	recipientRepo repository.OAuthClientRecipientRepository,
 	saRepo repository.ServiceAccountRepository,
 ) fevents.EventI {
 	return &ClientSyncEvent{
-		cfg:                cfg,
-		cli:                cli,
-		clientRepository:   clientRepo,
-		serviceAccountRepo: saRepo,
+		cfg:                 cfg,
+		cli:                 cli,
+		clientRepository:    clientRepo,
+		recipientRepository: recipientRepo,
+		serviceAccountRepo:  saRepo,
 	}
 }
 
@@ -98,7 +101,7 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 		"type":         e.Name(),
 	})
 
-	cl, err := e.clientRepository.GetByID(ctx, clientDBID)
+	cl, err := e.clientRepository.GetByIDIncludingDeleted(ctx, clientDBID)
 	if err != nil {
 		if isPermanentError(err) {
 			logger.WithError(err).Warn("client record not found — skipping sync")
@@ -115,7 +118,7 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 		}
 	}
 
-	err = SyncClientOnHydra(ctx, e.cfg, e.cli, e.clientRepository, cl, profileID)
+	err = SyncClientOnHydra(ctx, e.cfg, e.cli, e.clientRepository, e.recipientRepository, cl, profileID)
 	if err != nil {
 		if isPermanentError(err) {
 			logger.WithError(err).Warn("permanent error syncing client to Hydra — skipping")
@@ -134,6 +137,7 @@ func SyncClientOnHydra(
 	cfg config.ConfigurationOAUTH2,
 	cli client.Manager,
 	clientRepo repository.ClientRepository,
+	recipientRepo repository.OAuthClientRecipientRepository,
 	cl *models.Client,
 	profileID string,
 ) error {
@@ -166,8 +170,17 @@ func SyncClientOnHydra(
 		hydraURL = hydraIDURL
 	}
 
+	recipients, err := recipientRepo.ListByClientRef(ctx, cl.GetID())
+	if err != nil {
+		return fmt.Errorf("load OAuth recipients for client %q: %w", cl.GetID(), err)
+	}
+	audiences := make([]string, 0, len(recipients))
+	for _, recipient := range recipients {
+		audiences = append(audiences, recipient.ResourceAudience)
+	}
+
 	// Build payload
-	payload := buildClientHydraPayload(cl, profileID)
+	payload := buildClientHydraPayload(cl, profileID, audiences)
 
 	resp, err = cli.Invoke(ctx, httpMethod, hydraURL, payload, nil)
 	if err != nil {
@@ -188,7 +201,7 @@ func SyncClientOnHydra(
 	return updateClientWithResponse(ctx, clientRepo, cl, result)
 }
 
-func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any {
+func buildClientHydraPayload(cl *models.Client, profileID string, audiences []string) map[string]any {
 	grantTypes := getStringSlice(cl.GrantTypes, "types")
 	if len(grantTypes) == 0 {
 		grantTypes = []string{"authorization_code", "refresh_token"}
@@ -201,7 +214,6 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 
 	redirectURIs := getStringSlice(cl.RedirectURIs, "uris")
 	redirectURIs = ensureFedCMCallbackRedirectURI(redirectURIs, grantTypes)
-	audienceList := authz.AudienceNamespaces(cl.Audiences)
 
 	scopes := cl.Scopes
 	if scopes == "" {
@@ -215,7 +227,7 @@ func buildClientHydraPayload(cl *models.Client, profileID string) map[string]any
 		"response_types": responseTypes,
 		"scope":          scopes,
 		"redirect_uris":  redirectURIs,
-		"audience":       audienceList,
+		"audience":       slices.Clone(audiences),
 	}
 
 	applyHydraClientAuthPayload(

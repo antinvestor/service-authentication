@@ -25,27 +25,28 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	"github.com/antinvestor/common/connection"
-	"github.com/antinvestor/common/permissions"
-	"github.com/antinvestor/common/timescale"
+	"github.com/antinvestor/common/v2"
+	"github.com/antinvestor/common/v2/connection"
+	"github.com/antinvestor/common/v2/permissions"
+	"github.com/antinvestor/common/v2/timescale"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/cache"
-	"github.com/pitabwire/frame/cache/jetstreamkv"
-	"github.com/pitabwire/frame/cache/valkey"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/security"
-	"github.com/pitabwire/frame/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v2/cache/jetstreamkv"
+	"github.com/pitabwire/frame/v2/cache/valkey"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
 	"github.com/pitabwire/util"
 )
 
@@ -95,6 +96,10 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("could not setup partition service client")
 	}
+	authContractCli, err := setupAuthContractClient(ctx, cfg)
+	if err != nil {
+		log.WithError(err).Fatal("could not setup tenancy auth contract client")
+	}
 
 	notificationCli, err := setupNotificationClient(ctx, cfg)
 	if err != nil {
@@ -127,7 +132,7 @@ func main() {
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	externalIdentityRepo := repository.NewExternalIdentityRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, externalIdentityRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
+	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, externalIdentityRepo, profileCli, deviceCli, partitionCli, authContractCli, notificationCli, localizationMan)
 	srv.SetEventsManager(svc.EventsManager())
 
 	// Setup Connect RPC handler for login history API
@@ -206,7 +211,7 @@ func setupDeviceClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.DeviceServiceURI,
 		WorkloadAPITargetPath: cfg.DeviceServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_device"},
+		ServiceID:             "devices",
 	}, devicev1connect.NewDeviceServiceClient)
 }
 
@@ -217,7 +222,7 @@ func setupNotificationClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.NotificationServiceURI,
 		WorkloadAPITargetPath: cfg.NotificationServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_notification"},
+		ServiceID:             "notification",
 	}, notificationv1connect.NewNotificationServiceClient)
 }
 
@@ -228,8 +233,19 @@ func setupPartitionClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.TenancyServiceURI,
 		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_tenancy"},
+		ServiceID:             "tenancy",
 	}, tenancyv1connect.NewTenancyServiceClient)
+}
+
+func setupAuthContractClient(
+	ctx context.Context,
+	cfg aconfig.AuthenticationConfig,
+) (tenancyv2connect.AuthContractServiceClient, error) {
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.TenancyServiceURI,
+		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
+		ServiceID:             "tenancy",
+	}, tenancyv2connect.NewAuthContractServiceClient)
 }
 
 // setupProfileClient creates and configures the profile client.
@@ -239,7 +255,7 @@ func setupProfileClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_profile"},
+		ServiceID:             "profile",
 	}, profilev1connect.NewProfileServiceClient)
 }
 
@@ -251,7 +267,7 @@ func setupFilesClient(
 	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.FilesServiceURI,
 		WorkloadAPITargetPath: cfg.FilesServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_file"},
+		ServiceID:             "files",
 	}, filesv1connect.NewFilesServiceClient)
 }
 

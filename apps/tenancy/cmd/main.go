@@ -21,24 +21,26 @@ import (
 
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	"github.com/antinvestor/common/connection"
-	"github.com/antinvestor/common/permissions"
+	"github.com/antinvestor/common/v2"
+	"github.com/antinvestor/common/v2/connection"
+	"github.com/antinvestor/common/v2/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/security"
-	"github.com/pitabwire/frame/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
-	securityhttp "github.com/pitabwire/frame/security/interceptors/httptor"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
+	securityhttp "github.com/pitabwire/frame/v2/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
 
@@ -61,7 +63,18 @@ func main() {
 
 	// Handle database migration if requested
 	if isMigration {
-		if migErr := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath()); migErr != nil {
+		if migErr := repository.Migrate(
+			ctx,
+			svc.DatastoreManager(),
+			cfg.GetDatabaseMigrationPath(),
+			cfg.GetOauth2AudienceBaseURL(),
+			repository.AuthContractMigrationExpectations{
+				Clients:         cfg.AuthContractExpectedClients,
+				ServiceAccounts: cfg.AuthContractExpectedServiceAccounts,
+				Recipients:      cfg.AuthContractExpectedRecipients,
+				Grants:          cfg.AuthContractExpectedGrants,
+			},
+		); migErr != nil {
 			util.Log(ctx).WithError(migErr).Fatal("database migration failed")
 		}
 	}
@@ -77,14 +90,26 @@ func main() {
 	profileCli, err := connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_profile"},
+		ServiceID:             "profile",
 	}, profilev1connect.NewProfileServiceClient)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
 	}
 
 	auth := sm.GetAuthorizer(ctx)
-	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli)
+	partSrv := handlers.NewTenancyServer(ctx, svc, profileCli)
+	authContractSrv, err := handlers.NewAuthContractServer(partSrv, cfg.GetOauth2AudienceBaseURL())
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not setup tenancy v2 auth contract service")
+	}
+	policySync := events.NewAuthzServiceAccountSyncEventHandler(
+		partSrv.ServiceAccountRepo,
+		partSrv.PartitionRepo,
+		partSrv.AuthorizationPolicyRepo,
+		partSrv.AuthContractRepo,
+		svc.EventsManager(),
+		auth,
+	)
 
 	// Bootstrap root super-user authorization after migration only.
 	// This writes Keto tuples for migration-seeded root owners/admins.
@@ -100,12 +125,17 @@ func main() {
 		}); bootstrapErr != nil {
 			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
 		}
+	}
+	if reconcileErr := policySync.ReconcilePending(ctx); reconcileErr != nil {
+		util.Log(ctx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
+	}
+	if isMigration {
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
 
 	// Setup Connect server
-	connectHandler := setupConnectServer(ctx, sm, partSrv)
+	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
 
 	// Register permission manifest for the tenancy service so the UI can
 	// discover available permissions for assignment.
@@ -116,11 +146,23 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithPermissionRegistration(sd),
 		frame.WithRegisterEvents(
-			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
-			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
-			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
-			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, auth),
-			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
+			events.NewClientSynchronizationEventHandler(
+				ctx,
+				&cfg,
+				hydraClient,
+				partSrv.ClientRepo,
+				partSrv.OAuthRecipientRepo,
+				partSrv.ServiceAccountRepo,
+			),
+			events.NewAuthzPartitionSyncEventHandler(
+				partSrv.PartitionRepo,
+				partSrv.ServiceAccountRepo,
+				partSrv.ServiceNamespaceRepo,
+				partSrv.AuthorizationPolicyRepo,
+				svc.EventsManager(),
+				auth,
+			),
+			policySync,
 			events.NewAuthzAccessSyncEventHandler(partSrv.AccessRepo, partSrv.AccessRoleRepo, partSrv.PartitionRoleRepo, partSrv.ServiceNamespaceRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
 			events.NewTupleDeleteEventHandler(auth),
@@ -146,6 +188,7 @@ func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
 	implementation *handlers.TenancyServer,
+	authContractImplementation *handlers.AuthContractServer,
 ) http.Handler {
 
 	authenticator := sm.GetAuthenticator(ctx)
@@ -171,12 +214,32 @@ func setupConnectServer(
 	_, serverHandler := tenancyv1connect.NewTenancyServiceHandler(
 		implementation, connect.WithInterceptors(defaultInterceptorList...))
 
+	v2ServiceDescriptor := tenancyv2.File_tenancy_v2_auth_contract_proto.Services().ByName("AuthContractService")
+	v2ProcedureMap := permissions.BuildProcedureMap(v2ServiceDescriptor)
+	v2ServicePermissions := permissions.ForService(v2ServiceDescriptor)
+	v2FunctionChecker := authorizer.NewFunctionChecker(auth, v2ServicePermissions.Namespace)
+	v2FunctionInterceptor := connectInterceptors.NewFunctionAccessInterceptor(v2FunctionChecker, v2ProcedureMap)
+	v2Interceptors, err := connectInterceptors.DefaultList(
+		ctx,
+		authenticator,
+		tenancyAccessInterceptor,
+		v2FunctionInterceptor,
+	)
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("failed to create tenancy v2 interceptors")
+	}
+	v2Path, v2Handler := tenancyv2connect.NewAuthContractServiceHandler(
+		authContractImplementation,
+		connect.WithInterceptors(v2Interceptors...),
+	)
+
 	// HTTP: auth middleware (outer) populates claims → tenancy access (inner) verifies data access → handler.
 	publicRestHandler := securityhttp.AuthenticationMiddleware(
 		securityhttp.TenancyAccessMiddleware(implementation.NewSecureRouterV1(), tenancyAccessChecker),
 		authenticator)
 
 	mux := http.NewServeMux()
+	mux.Handle(v2Path, v2Handler)
 	mux.Handle("/", serverHandler)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
@@ -184,7 +247,6 @@ func setupConnectServer(
 	// reachable within the cluster (not exposed through the API gateway).
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
 	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
-	mux.Handle("/_internal/opl", implementation.NewInternalOPLHandler())
 
 	return mux
 }

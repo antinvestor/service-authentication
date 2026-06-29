@@ -27,11 +27,6 @@ const (
 	SATypeExternal = "external"
 )
 
-// Kept for backward compatibility — code that references these constants
-// will continue to compile. New code should use SATypeInternal/SATypeExternal.
-const RoleSystemInternal = SATypeInternal
-const RoleSystemExternal = SATypeExternal
-
 func isInternalSystemScoped(grantedScopes []string) bool {
 	return slices.Contains(grantedScopes, SATypeInternal)
 }

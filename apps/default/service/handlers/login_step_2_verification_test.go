@@ -27,15 +27,13 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -130,50 +128,9 @@ func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperti
 	testName string,
 	properties data.JSONMap,
 ) (*tests.OAuth2Client, error) {
-	redirectURI := suite.ServerUrl() + "/oauth2/callback"
-
-	props := data.JSONMap{
-		"redirect_uris":              redirectURI,
-		"scope":                      "openid offline offline_access profile",
-		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
-		"token_endpoint_auth_method": "none",
-	}
-	for key, value := range properties {
-		props[key] = value
-	}
-
-	partition, err := tests.NewPartitionForOauthCli(ctx, testCtx.AuthServer.PartitionCli(), testName, "Test OAuth2 client", props)
-	if err != nil {
-		return nil, err
-	}
-
-	clientID := partition.GetId()
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
-		resp, getErr := testCtx.AuthServer.PartitionCli().GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
-			Id: clientID,
-		}))
-		if getErr != nil {
-			return nil, nil
-		}
-		partObj := resp.Msg.GetData()
-		if partObj.GetProperties() != nil {
-			if _, ok := partObj.GetProperties().AsMap()["client_id"]; ok {
-				return partObj, nil
-			}
-		}
-		return nil, nil
-	}, 5*time.Second, 200*time.Millisecond)
-	if err != nil {
-		return nil, fmt.Errorf("partition sync to Hydra timed out: %w", err)
-	}
-
-	return &tests.OAuth2Client{
-		ClientID:     clientID,
-		ClientSecret: "",
-		RedirectURIs: []string{redirectURI},
-		Scope:        "openid offline_access profile",
-		Audience:     []string{"authentication_tests"},
-	}, nil
+	oauthClient := tests.NewOAuth2TestClient(testCtx.AuthServer)
+	oauthClient.SetAuthServiceURL(suite.ServerUrl())
+	return oauthClient.CreateOAuth2ClientWithProperties(ctx, testName, properties)
 }
 
 // TestCodeVerificationFlow tests the complete verification flow with real database verification codes

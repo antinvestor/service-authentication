@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
@@ -42,11 +42,11 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame/cache"
-	"github.com/pitabwire/frame/client"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/localization"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v2/client"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/localization"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -73,6 +73,7 @@ type AuthServer struct {
 	profileCli      profilev1connect.ProfileServiceClient
 	deviceCli       devicev1connect.DeviceServiceClient
 	partitionCli    tenancyv1connect.TenancyServiceClient
+	authContractCli tenancyv2connect.AuthContractServiceClient
 	notificationCli notificationv1connect.NotificationServiceClient
 
 	iCache cache.Cache[string, models.LoginEvent]
@@ -137,6 +138,7 @@ func NewAuthServer(ctx context.Context,
 	profileCli profilev1connect.ProfileServiceClient,
 	deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli tenancyv1connect.TenancyServiceClient,
+	authContractCli tenancyv2connect.AuthContractServiceClient,
 	notificationCli notificationv1connect.NotificationServiceClient,
 	localizationMan localization.Manager) *AuthServer {
 
@@ -165,6 +167,7 @@ func NewAuthServer(ctx context.Context,
 		profileCli:      profileCli,
 		deviceCli:       deviceCli,
 		partitionCli:    partitionCli,
+		authContractCli: authContractCli,
 		notificationCli: notificationCli,
 
 		// Initialise repositories
@@ -259,6 +262,10 @@ func (h *AuthServer) PartitionCli() tenancyv1connect.TenancyServiceClient {
 	return h.partitionCli
 }
 
+func (h *AuthServer) AuthContractCli() tenancyv2connect.AuthContractServiceClient {
+	return h.authContractCli
+}
+
 func (h *AuthServer) NotificationCli() notificationv1connect.NotificationServiceClient {
 	return h.notificationCli
 }
@@ -270,7 +277,7 @@ func (h *AuthServer) LoginEventRepo() repository.LoginEventRepository {
 // setupSecureCookies initialises the StateCodec used for encrypting cookie values.
 // It uses the SecureCookieBlockKey from config as the AES-256-GCM encryption key.
 func (h *AuthServer) setupSecureCookies(_ context.Context, cfg *aconfig.AuthenticationConfig) error {
-	isTestEnv := cfg.Name() == "authentication_tests" || slices.Contains(cfg.Oauth2JwtVerifyAudience, "authentication_tests")
+	isTestEnv := cfg.Name() == "authentication_tests"
 	if !isTestEnv {
 		if cfg.SecureCookieBlockKey == aconfig.DefaultSecureCookieBlockKey || cfg.SecureCookieHashKey == aconfig.DefaultSecureCookieHashKey {
 			return fmt.Errorf("insecure default cookie keys are not allowed outside test environments")

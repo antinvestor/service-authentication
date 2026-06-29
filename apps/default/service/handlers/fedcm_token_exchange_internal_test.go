@@ -26,7 +26,7 @@ import (
 	"time"
 
 	authconfig "github.com/antinvestor/service-authentication/apps/default/config"
-	"github.com/pitabwire/frame/cache"
+	"github.com/pitabwire/frame/v2/cache"
 	"github.com/stretchr/testify/require"
 )
 

@@ -16,9 +16,10 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/v2/datastore"
 )
 
 type TenantRepository interface {
@@ -61,8 +62,16 @@ type AccessRoleRepository interface {
 type ClientRepository interface {
 	datastore.BaseRepository[*models.Client]
 	GetByClientID(ctx context.Context, clientID string) (*models.Client, error)
+	GetByIDIncludingDeleted(ctx context.Context, id string) (*models.Client, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.Client, error)
+	ListByServiceAccountID(ctx context.Context, serviceAccountID string) ([]*models.Client, error)
 	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
+}
+
+type OAuthClientRecipientRepository interface {
+	datastore.BaseRepository[*models.OAuthClientRecipient]
+	ListByClientRef(ctx context.Context, clientRef string) ([]*models.OAuthClientRecipient, error)
+	ReplaceForClient(ctx context.Context, client *models.Client, audiences []string) error
 }
 
 type ServiceAccountRepository interface {
@@ -73,4 +82,53 @@ type ServiceAccountRepository interface {
 	GetByClientRef(ctx context.Context, clientRef string) (*models.ServiceAccount, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
 	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
+}
+
+type AuthorizationGrant struct {
+	Namespace   string
+	Scope       string
+	Permissions []string
+}
+
+type AuthorizationPolicyState struct {
+	Policy *models.ServiceAccountAuthorizationPolicy
+	Grants []AuthorizationGrant
+}
+
+type ServiceAccountAuthorizationPolicyRepository interface {
+	datastore.BaseRepository[*models.ServiceAccountAuthorizationPolicy]
+	GetByServiceAccountID(ctx context.Context, serviceAccountID string) (*AuthorizationPolicyState, error)
+	ListPending(ctx context.Context) ([]*models.ServiceAccountAuthorizationPolicy, error)
+	Replace(ctx context.Context, serviceAccount *models.ServiceAccount, grants []AuthorizationGrant) (*models.ServiceAccountAuthorizationPolicy, error)
+	RecordFailure(ctx context.Context, policyID string, generation int64, code, message string, nextAttempt time.Time) error
+	ListAppliedTuples(ctx context.Context, policyID string) ([]*models.ServiceAccountAppliedTuple, error)
+	ReplaceAppliedState(
+		ctx context.Context,
+		policy *models.ServiceAccountAuthorizationPolicy,
+		tuples []*models.ServiceAccountAppliedTuple,
+	) error
+}
+
+type AuthContractRepository interface {
+	CreateOAuthClient(ctx context.Context, client *models.Client, recipients []string) error
+	CreateServiceAccount(
+		ctx context.Context,
+		serviceAccount *models.ServiceAccount,
+		client *models.Client,
+		recipients []string,
+		grants []AuthorizationGrant,
+	) (*models.ServiceAccountAuthorizationPolicy, error)
+	UpdateOAuthClient(ctx context.Context, client *models.Client, fields []string, recipients []string) error
+	UpdateServiceAccount(
+		ctx context.Context,
+		serviceAccount *models.ServiceAccount,
+		serviceAccountFields []string,
+		client *models.Client,
+		clientFields []string,
+		recipients []string,
+		replaceRecipients bool,
+		grants []AuthorizationGrant,
+		replacePolicy bool,
+	) (*models.ServiceAccountAuthorizationPolicy, error)
+	FinalizeServiceAccountRemoval(ctx context.Context, serviceAccountID string) (string, error)
 }
