@@ -112,8 +112,13 @@ func (b *authContractBusiness) CreateOAuthClient(
 	authMethod := strings.TrimSpace(configuration.GetTokenEndpointAuthMethod())
 	if request.GetType() == "public" {
 		authMethod = "none"
-	} else if authMethod == "" {
-		authMethod = "client_secret_post"
+	} else {
+		if authMethod == "none" {
+			return nil, errors.New("confidential OAuth client cannot use token_endpoint_auth_method none")
+		}
+		if authMethod == "" {
+			authMethod = "client_secret_post"
+		}
 	}
 	clientSecret := ""
 	if authMethod == "client_secret_basic" || authMethod == "client_secret_post" {
@@ -557,7 +562,10 @@ func (b *authContractBusiness) validateRecipients(values []string) ([]string, er
 func validateAuthorizationPolicy(
 	policy *tenancyv2.ServiceAuthorizationPolicyInput,
 ) ([]repository.AuthorizationGrant, error) {
-	if policy == nil || policy.GetSchemaVersion() != models.AuthorizationPolicySchemaVersion {
+	if policy == nil {
+		return nil, errors.New("authorization policy is required")
+	}
+	if policy.GetSchemaVersion() != models.AuthorizationPolicySchemaVersion {
 		return nil, fmt.Errorf("authorization policy schema_version must be %d", models.AuthorizationPolicySchemaVersion)
 	}
 	if len(policy.GetGrants()) == 0 {

@@ -18,8 +18,10 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/suite"
@@ -27,6 +29,21 @@ import (
 
 type ClientRepositoryTestSuite struct {
 	tests.BaseTestSuite
+}
+
+func (s *ClientRepositoryTestSuite) TestCompletedAuthContractMigrationIgnoresHistoricalCounts() {
+	s.WithTestDependancies(s.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, svc, _ := s.CreateService(t, dep)
+		dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+
+		err := repository.MigrateAuthContractV2(
+			ctx,
+			dbPool,
+			"https://api.example.test",
+			repository.AuthContractMigrationExpectations{},
+		)
+		s.Require().NoError(err)
+	})
 }
 
 func (s *ClientRepositoryTestSuite) TestCreateAndGetByID() {

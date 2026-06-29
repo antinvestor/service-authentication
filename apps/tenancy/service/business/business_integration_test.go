@@ -147,6 +147,28 @@ func (s *BusinessTestSuite) TestCreateOAuthClientV2PersistsRecipientsSeparately(
 	s.Equal("https://api.example.test/profile", recipients[0].ResourceAudience)
 }
 
+func (s *BusinessTestSuite) TestCreateOAuthClientV2RejectsUnauthenticatedConfidentialClient() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	_, err := deps.AuthContractBusiness.CreateOAuthClient(ctx, &tenancyv2.CreateOAuthClientRequest{
+		PartitionId: partition.GetID(),
+		Name:        "invalid-confidential-client",
+		Type:        "confidential",
+		Configuration: &tenancyv2.OAuthClientConfiguration{
+			GrantTypes:              []string{"authorization_code"},
+			ResponseTypes:           []string{"code"},
+			RedirectUris:            []string{"https://app.example.test/callback"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
+			TokenEndpointAuthMethod: "none",
+		},
+	})
+
+	s.Require().EqualError(err, "confidential OAuth client cannot use token_endpoint_auth_method none")
+}
+
 func (s *BusinessTestSuite) TestCreateServiceAccountV2SeparatesRecipientsAndGrants() {
 	ctx := s.SuiteCtx
 	deps := s.SuiteDeps

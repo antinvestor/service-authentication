@@ -11,6 +11,9 @@ import (
 func TestValidateAuthorizationPolicyRequiresExplicitCataloguedPermissions(t *testing.T) {
 	t.Parallel()
 
+	_, err := validateAuthorizationPolicy(nil)
+	require.EqualError(t, err, "authorization policy is required")
+
 	grants, err := validateAuthorizationPolicy(&tenancyv2.ServiceAuthorizationPolicyInput{
 		SchemaVersion: models.AuthorizationPolicySchemaVersion,
 		Grants: []*tenancyv2.ServiceAuthorizationGrant{{

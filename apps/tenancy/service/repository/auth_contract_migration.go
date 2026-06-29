@@ -90,7 +90,12 @@ func MigrateAuthContractV2(
 		}
 
 		if !clientLegacy && !serviceAccountLegacy {
-			return validateMigratedAuthContract(tx, expected)
+			return validateMigratedAuthContract(tx, AuthContractMigrationExpectations{
+				Clients:         -1,
+				ServiceAccounts: -1,
+				Recipients:      -1,
+				Grants:          -1,
+			})
 		}
 		if !clientLegacy || !serviceAccountLegacy {
 			return errors.New("auth contract migration: legacy audience columns are partially removed")
