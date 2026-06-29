@@ -122,7 +122,9 @@ message ServiceAuthorizationGrant {
   repeated string permissions = 2 [(buf.validate.field).repeated = {
     min_items: 1
     unique: true
-    items: {string: {pattern: "[a-z][a-z0-9_]{1,99}"}}
+    items: {
+      string: {pattern: "[a-z][a-z0-9_]{1,99}"}
+    }
   }];
   AuthorizationScope scope = 3 [(buf.validate.field).enum = {
     defined_only: true
@@ -348,40 +350,62 @@ service AuthContractService {
   };
 
   rpc CreateOAuthClient(CreateOAuthClientRequest) returns (CreateOAuthClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
   }
   rpc GetOAuthClient(GetOAuthClientRequest) returns (GetOAuthClientResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
   }
   rpc ListOAuthClients(ListOAuthClientsRequest) returns (ListOAuthClientsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
   }
   rpc UpdateOAuthClient(UpdateOAuthClientRequest) returns (UpdateOAuthClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
   }
   rpc RemoveOAuthClient(RemoveOAuthClientRequest) returns (RemoveOAuthClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
   }
   rpc CreateServiceAccount(CreateServiceAccountRequest) returns (CreateServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
   }
   rpc GetServiceAccount(GetServiceAccountRequest) returns (GetServiceAccountResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
   }
   rpc ListServiceAccounts(ListServiceAccountsRequest) returns (ListServiceAccountsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
   }
   rpc UpdateServiceAccount(UpdateServiceAccountRequest) returns (UpdateServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
   }
   rpc RemoveServiceAccount(RemoveServiceAccountRequest) returns (RemoveServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
   }
   rpc ReconcileServiceAccountAuthorization(ReconcileServiceAccountAuthorizationRequest) returns (ReconcileServiceAccountAuthorizationResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
   }
 }
