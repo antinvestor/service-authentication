@@ -1216,7 +1216,9 @@ service TenancyService {
   // GetTenant retrieves a tenant by ID.
   rpc GetTenant(GetTenantRequest) returns (GetTenantResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["tenant_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getTenant"
       summary: "Get tenant"
@@ -1228,7 +1230,9 @@ service TenancyService {
   // ListTenant retrieves all tenants matching criteria.
   rpc ListTenant(ListTenantRequest) returns (stream ListTenantResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["tenant_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listTenants"
       summary: "List tenants"
@@ -1239,7 +1243,9 @@ service TenancyService {
 
   // CreateTenant creates a new tenant.
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse) {
-    option (common.v1.method_permissions) = {permissions: ["tenant_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createTenant"
       summary: "Create tenant"
@@ -1250,7 +1256,9 @@ service TenancyService {
 
   // UpdateTenant updates an existing tenant.
   rpc UpdateTenant(UpdateTenantRequest) returns (UpdateTenantResponse) {
-    option (common.v1.method_permissions) = {permissions: ["tenant_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updateTenant"
       summary: "Update tenant"
@@ -1261,7 +1269,9 @@ service TenancyService {
 
   // RemoveTenant soft-deletes a tenant and all its partitions.
   rpc RemoveTenant(RemoveTenantRequest) returns (RemoveTenantResponse) {
-    option (common.v1.method_permissions) = {permissions: ["tenant_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["tenant_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removeTenant"
       summary: "Remove tenant"
@@ -1273,7 +1283,9 @@ service TenancyService {
   // ListPartition retrieves all partitions matching criteria.
   rpc ListPartition(ListPartitionRequest) returns (stream ListPartitionResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["partition_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listPartitions"
       summary: "List partitions"
@@ -1284,7 +1296,9 @@ service TenancyService {
 
   // CreatePartition creates a new partition.
   rpc CreatePartition(CreatePartitionRequest) returns (CreatePartitionResponse) {
-    option (common.v1.method_permissions) = {permissions: ["partition_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createPartition"
       summary: "Create partition"
@@ -1296,7 +1310,9 @@ service TenancyService {
   // GetPartition retrieves a partition by ID or domain.
   rpc GetPartition(GetPartitionRequest) returns (GetPartitionResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["partition_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getPartition"
       summary: "Get partition"
@@ -1308,7 +1324,9 @@ service TenancyService {
   // GetPartitionParents retrieves the parent hierarchy.
   rpc GetPartitionParents(GetPartitionParentsRequest) returns (GetPartitionParentsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["partition_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getPartitionParents"
       summary: "Get partition parents"
@@ -1319,7 +1337,9 @@ service TenancyService {
 
   // RemovePartition soft-deletes a partition.
   rpc RemovePartition(RemovePartitionRequest) returns (RemovePartitionResponse) {
-    option (common.v1.method_permissions) = {permissions: ["partition_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removePartition"
       summary: "Remove partition"
@@ -1330,7 +1350,9 @@ service TenancyService {
 
   // UpdatePartition updates an existing partition.
   rpc UpdatePartition(UpdatePartitionRequest) returns (UpdatePartitionResponse) {
-    option (common.v1.method_permissions) = {permissions: ["partition_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["partition_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updatePartition"
       summary: "Update partition"
@@ -1341,7 +1363,9 @@ service TenancyService {
 
   // CreatePartitionRole creates a role within a partition.
   rpc CreatePartitionRole(CreatePartitionRoleRequest) returns (CreatePartitionRoleResponse) {
-    option (common.v1.method_permissions) = {permissions: ["role_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createPartitionRole"
       summary: "Create partition role"
@@ -1353,7 +1377,9 @@ service TenancyService {
   // ListPartitionRole retrieves all roles for a partition.
   rpc ListPartitionRole(ListPartitionRoleRequest) returns (stream ListPartitionRoleResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["role_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listPartitionRoles"
       summary: "List partition roles"
@@ -1364,7 +1390,9 @@ service TenancyService {
 
   // UpdatePartitionRole updates an existing partition role.
   rpc UpdatePartitionRole(UpdatePartitionRoleRequest) returns (UpdatePartitionRoleResponse) {
-    option (common.v1.method_permissions) = {permissions: ["role_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updatePartitionRole"
       summary: "Update partition role"
@@ -1375,7 +1403,9 @@ service TenancyService {
 
   // RemovePartitionRole deletes a partition role.
   rpc RemovePartitionRole(RemovePartitionRoleRequest) returns (RemovePartitionRoleResponse) {
-    option (common.v1.method_permissions) = {permissions: ["role_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["role_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removePartitionRole"
       summary: "Remove partition role"
@@ -1386,7 +1416,9 @@ service TenancyService {
 
   // CreatePage creates a custom UI page for a partition.
   rpc CreatePage(CreatePageRequest) returns (CreatePageResponse) {
-    option (common.v1.method_permissions) = {permissions: ["page_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createPage"
       summary: "Create custom page"
@@ -1398,7 +1430,9 @@ service TenancyService {
   // ListPage retrieves all custom pages for a partition.
   rpc ListPage(ListPageRequest) returns (stream ListPageResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["page_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["page_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listPages"
       summary: "List custom pages"
@@ -1410,7 +1444,9 @@ service TenancyService {
   // GetPage retrieves a custom page.
   rpc GetPage(GetPageRequest) returns (GetPageResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["page_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["page_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getPage"
       summary: "Get custom page"
@@ -1421,7 +1457,9 @@ service TenancyService {
 
   // UpdatePage updates an existing custom page.
   rpc UpdatePage(UpdatePageRequest) returns (UpdatePageResponse) {
-    option (common.v1.method_permissions) = {permissions: ["page_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updatePage"
       summary: "Update custom page"
@@ -1432,7 +1470,9 @@ service TenancyService {
 
   // RemovePage deletes a custom page.
   rpc RemovePage(RemovePageRequest) returns (RemovePageResponse) {
-    option (common.v1.method_permissions) = {permissions: ["page_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["page_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removePage"
       summary: "Remove custom page"
@@ -1443,7 +1483,9 @@ service TenancyService {
 
   // CreateAccess grants a profile access to a partition.
   rpc CreateAccess(CreateAccessRequest) returns (CreateAccessResponse) {
-    option (common.v1.method_permissions) = {permissions: ["access_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["access_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createAccess"
       summary: "Create access grant"
@@ -1455,7 +1497,9 @@ service TenancyService {
   // GetAccess retrieves an access grant.
   rpc GetAccess(GetAccessRequest) returns (GetAccessResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["access_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getAccess"
       summary: "Get access grant"
@@ -1467,7 +1511,9 @@ service TenancyService {
   // ListAccess retrieves all access grants for a partition or profile.
   rpc ListAccess(ListAccessRequest) returns (stream ListAccessResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["access_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listAccess"
       summary: "List access grants"
@@ -1478,7 +1524,9 @@ service TenancyService {
 
   // RemoveAccess revokes a profile's access to a partition.
   rpc RemoveAccess(RemoveAccessRequest) returns (RemoveAccessResponse) {
-    option (common.v1.method_permissions) = {permissions: ["access_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["access_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removeAccess"
       summary: "Remove access grant"
@@ -1489,7 +1537,9 @@ service TenancyService {
 
   // CreateAccessRole assigns a role to an access grant.
   rpc CreateAccessRole(CreateAccessRoleRequest) returns (CreateAccessRoleResponse) {
-    option (common.v1.method_permissions) = {permissions: ["permission_grant"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createAccessRole"
       summary: "Assign role to access"
@@ -1501,7 +1551,9 @@ service TenancyService {
   // ListAccessRole retrieves all roles for an access grant.
   rpc ListAccessRole(ListAccessRoleRequest) returns (stream ListAccessRoleResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["access_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["access_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listAccessRoles"
       summary: "List access roles"
@@ -1512,7 +1564,9 @@ service TenancyService {
 
   // RemoveAccessRole removes a role from an access grant.
   rpc RemoveAccessRole(RemoveAccessRoleRequest) returns (RemoveAccessRoleResponse) {
-    option (common.v1.method_permissions) = {permissions: ["permission_grant"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removeAccessRole"
       summary: "Remove access role"
@@ -1523,7 +1577,9 @@ service TenancyService {
 
   // CreateServiceAccount registers a service account (bot) for a partition.
   rpc CreateServiceAccount(CreateServiceAccountRequest) returns (CreateServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createServiceAccount"
       summary: "Create service account"
@@ -1535,7 +1591,9 @@ service TenancyService {
   // GetServiceAccount retrieves a service account.
   rpc GetServiceAccount(GetServiceAccountRequest) returns (GetServiceAccountResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getServiceAccount"
       summary: "Get service account"
@@ -1546,7 +1604,9 @@ service TenancyService {
 
   // UpdateServiceAccount updates an existing service account.
   rpc UpdateServiceAccount(UpdateServiceAccountRequest) returns (UpdateServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updateServiceAccount"
       summary: "Update service account"
@@ -1558,7 +1618,9 @@ service TenancyService {
   // ListServiceAccount retrieves all service accounts for a partition.
   rpc ListServiceAccount(ListServiceAccountRequest) returns (stream ListServiceAccountResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["service_account_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listServiceAccounts"
       summary: "List service accounts"
@@ -1569,7 +1631,9 @@ service TenancyService {
 
   // RemoveServiceAccount deregisters a service account.
   rpc RemoveServiceAccount(RemoveServiceAccountRequest) returns (RemoveServiceAccountResponse) {
-    option (common.v1.method_permissions) = {permissions: ["service_account_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["service_account_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removeServiceAccount"
       summary: "Remove service account"
@@ -1580,7 +1644,9 @@ service TenancyService {
 
   // CreateClient registers an OAuth2 client for a partition or service account.
   rpc CreateClient(CreateClientRequest) returns (CreateClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "createClient"
       summary: "Create OAuth2 client"
@@ -1592,7 +1658,9 @@ service TenancyService {
   // GetClient retrieves an OAuth2 client by ID or client_id.
   rpc GetClient(GetClientRequest) returns (GetClientResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "getClient"
       summary: "Get OAuth2 client"
@@ -1604,7 +1672,9 @@ service TenancyService {
   // ListClient retrieves all OAuth2 clients for a partition or service account.
   rpc ListClient(ListClientRequest) returns (stream ListClientResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["client_view"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_view"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listClients"
       summary: "List OAuth2 clients"
@@ -1615,7 +1685,9 @@ service TenancyService {
 
   // UpdateClient updates an existing OAuth2 client.
   rpc UpdateClient(UpdateClientRequest) returns (UpdateClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "updateClient"
       summary: "Update OAuth2 client"
@@ -1626,7 +1698,9 @@ service TenancyService {
 
   // RemoveClient deletes an OAuth2 client.
   rpc RemoveClient(RemoveClientRequest) returns (RemoveClientResponse) {
-    option (common.v1.method_permissions) = {permissions: ["client_manage"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["client_manage"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "removeClient"
       summary: "Remove OAuth2 client"
@@ -1638,7 +1712,9 @@ service TenancyService {
   // ListServiceNamespaces returns all registered service permission namespaces.
   rpc ListServiceNamespaces(ListServiceNamespacesRequest) returns (ListServiceNamespacesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
-    option (common.v1.method_permissions) = {permissions: ["permission_grant"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "listServiceNamespaces"
       summary: "List service namespaces"
@@ -1649,7 +1725,9 @@ service TenancyService {
 
   // GrantPermission grants a specific permission to a profile in a service namespace.
   rpc GrantPermission(GrantPermissionRequest) returns (GrantPermissionResponse) {
-    option (common.v1.method_permissions) = {permissions: ["permission_grant"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "grantPermission"
       summary: "Grant permission"
@@ -1660,7 +1738,9 @@ service TenancyService {
 
   // RevokePermission revokes a specific permission from a profile in a service namespace.
   rpc RevokePermission(RevokePermissionRequest) returns (RevokePermissionResponse) {
-    option (common.v1.method_permissions) = {permissions: ["permission_grant"]};
+    option (common.v1.method_permissions) = {
+      permissions: ["permission_grant"]
+    };
     option (gnostic.openapi.v3.operation) = {
       operation_id: "revokePermission"
       summary: "Revoke permission"
