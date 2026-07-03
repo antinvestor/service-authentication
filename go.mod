@@ -31,7 +31,7 @@ require (
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame v1.98.5
 	github.com/pitabwire/util v0.9.1
-	github.com/posthog/posthog-go v1.17.2
+	github.com/posthog/posthog-go v1.17.4
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
