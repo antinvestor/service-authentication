@@ -178,11 +178,10 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 			deployedNamespaces,
 		)
 		if resolveErr != nil {
-			return fmt.Errorf(
-				"invalid authorization grants for parent service account %s: %w",
-				serviceAccount.GetID(),
-				resolveErr,
-			)
+			logger.WithError(resolveErr).
+				WithField("service_account_id", serviceAccount.GetID()).
+				Warn("skipping invalid authorization grants for parent service account during partition sync")
+			continue
 		}
 		for namespace, permissions := range grants {
 			schemaTuples = append(schemaTuples, authz.BuildServicePermissionTuples(

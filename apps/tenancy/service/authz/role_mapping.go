@@ -15,9 +15,9 @@
 package authz
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
-	"sort"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/v2/security"
@@ -25,14 +25,20 @@ import (
 
 // SortRelationTuples gives reconciliation and audit output a stable order.
 func SortRelationTuples(tuples []security.RelationTuple) {
-	sort.Slice(tuples, func(i, j int) bool {
-		left := tuples[i]
-		right := tuples[j]
-		leftKey := left.Object.Namespace + "\x00" + left.Object.ID + "\x00" + left.Relation + "\x00" +
-			left.Subject.Namespace + "\x00" + left.Subject.ID + "\x00" + left.Subject.Relation
-		rightKey := right.Object.Namespace + "\x00" + right.Object.ID + "\x00" + right.Relation + "\x00" +
-			right.Subject.Namespace + "\x00" + right.Subject.ID + "\x00" + right.Subject.Relation
-		return leftKey < rightKey
+	slices.SortFunc(tuples, func(left, right security.RelationTuple) int {
+		for _, comparison := range [][2]string{
+			{left.Object.Namespace, right.Object.Namespace},
+			{left.Object.ID, right.Object.ID},
+			{left.Relation, right.Relation},
+			{left.Subject.Namespace, right.Subject.Namespace},
+			{left.Subject.ID, right.Subject.ID},
+			{left.Subject.Relation, right.Subject.Relation},
+		} {
+			if result := cmp.Compare(comparison[0], comparison[1]); result != 0 {
+				return result
+			}
+		}
+		return 0
 	})
 }
 
