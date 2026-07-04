@@ -28,6 +28,7 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common/v2"
@@ -61,6 +62,7 @@ type DepsBuilder struct {
 	ProfileCli      profilev1connect.ProfileServiceClient
 	DeviceCli       devicev1connect.DeviceServiceClient
 	PartitionCli    tenancyv1connect.TenancyServiceClient
+	AuthContractCli tenancyv2connect.AuthContractServiceClient
 	NotificationCli notificationv1connect.NotificationServiceClient
 }
 
@@ -78,6 +80,10 @@ func BuildRepos(ctx context.Context, svc *frame.Service) (*DepsBuilder, error) {
 	var err error
 
 	depBuilder.PartitionCli, err = setupPartitionClient(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	depBuilder.AuthContractCli, err = setupAuthContractClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +311,8 @@ func (bs *BaseTestSuite) CreateService(
 
 	authServer := handlers.NewAuthServer(ctx, svc.SecurityManager(), &cfg,
 		svc.CacheManager(), depsBuilder.LoginRepo, depsBuilder.LoginEventRepo,
-		depsBuilder.ExternalIdentityRepo, depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli, depsBuilder.NotificationCli, nil)
+		depsBuilder.ExternalIdentityRepo, depsBuilder.ProfileCli, depsBuilder.DeviceCli, depsBuilder.PartitionCli,
+		depsBuilder.AuthContractCli, depsBuilder.NotificationCli, nil)
 
 	authServiceHandlers := authServer.SetupRouterV1(ctx)
 
@@ -365,6 +372,7 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 				"https://api.example.test/notification",
 				"https://api.example.test/tenancy",
 				"service_notification",
+				"service_tenancy",
 			},
 			ProfileID: "dev_service_profile",
 		},
@@ -387,6 +395,9 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 				"https://api.example.test/profile",
 				"https://api.example.test/tenancy",
 				"https://api.example.test/devices",
+				"service_profile",
+				"service_tenancy",
+				"service_device",
 			},
 			ProfileID: "dev_service_notification",
 		},
@@ -506,6 +517,21 @@ func setupPartitionClient(
 	return newTestConnectClient(ctx, tenancyv1connect.NewTenancyServiceClient, opts...)
 }
 
+func setupAuthContractClient(
+	ctx context.Context,
+	cfg *aconfig.AuthenticationConfig,
+) (tenancyv2connect.AuthContractServiceClient, error) {
+	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
+		Endpoint:  cfg.TenancyServiceURI,
+		ServiceID: servicecatalog.ServiceTenancy,
+	}, common.WithTraceRequests(), common.WithTraceResponses(), common.WithTraceHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return newTestConnectClient(ctx, tenancyv2connect.NewAuthContractServiceClient, opts...)
+}
+
 // setupProfileClient creates and configures the profile client.
 func setupProfileClient(
 	ctx context.Context,
@@ -521,7 +547,7 @@ func setupProfileClient(
 	return newTestConnectClient(ctx, profilev1connect.NewProfileServiceClient, opts...)
 }
 
-func NewPartitionForOauthCli(ctx context.Context, partitionCli tenancyv1connect.TenancyServiceClient, name, description string, properties data.JSONMap) (*tenancyv1.PartitionObject, error) {
+func NewPartitionForOAuthClient(ctx context.Context, partitionCli tenancyv1connect.TenancyServiceClient, name, description string, properties data.JSONMap) (*tenancyv1.PartitionObject, error) {
 
 	var propsStruct *structpb.Struct
 	if properties != nil {

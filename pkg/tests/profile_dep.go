@@ -168,6 +168,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"OAUTH2_REQUESTED_AUDIENCES":        "https://api.example.test/notification,https://api.example.test/tenancy",
 			"OAUTH2_RESOURCE_AUDIENCE":          "https://api.example.test/profile",
 			"OAUTH2_SERVICE_AUDIENCE":           "service_notification,service_tenancy",
+			"OAUTH2_JWT_VERIFY_AUDIENCE":        "service_profile,https://api.example.test/profile",
 			"OAUTH2_JWT_VERIFY_ISSUER":          issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,
 			"NOTIFICATION_SERVICE_URI":          notificationService,

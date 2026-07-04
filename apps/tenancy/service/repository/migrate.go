@@ -19,10 +19,33 @@ import (
 	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/frame/v2/datastore"
 )
 
-func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath string) error {
+type legacyClientMigrationModel struct {
+	models.Client
+	Audiences data.JSONMap
+	Roles     data.JSONMap
+}
+
+func (*legacyClientMigrationModel) TableName() string { return "clients" }
+
+type legacyServiceAccountMigrationModel struct {
+	models.ServiceAccount
+	Audiences    data.JSONMap
+	ClientSecret string `gorm:"type:varchar(250);"`
+}
+
+func (*legacyServiceAccountMigrationModel) TableName() string { return "service_accounts" }
+
+func Migrate(
+	ctx context.Context,
+	dbManager datastore.Manager,
+	migrationPath string,
+	audienceBaseURL string,
+	expected AuthContractMigrationExpectations,
+) error {
 
 	pool := dbManager.GetPool(ctx, datastore.DefaultMigrationPoolName)
 	if pool == nil {
@@ -32,8 +55,38 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	// Models must be passed as pointers: tenancy enrollment checks for the
 	// tenancy.Tenanted interface whose methods have pointer receivers, so
 	// value models silently skip RLS policy installation.
-	return dbManager.Migrate(ctx, pool, migrationPath,
+	db := pool.DB(ctx, false)
+	if db == nil {
+		return errors.New("writable datastore is not configured")
+	}
+	clientModel := any(&models.Client{})
+	if !db.Migrator().HasTable(&models.Client{}) {
+		clientModel = &legacyClientMigrationModel{}
+	}
+	serviceAccountModel := any(&models.ServiceAccount{})
+	if !db.Migrator().HasTable(&models.ServiceAccount{}) {
+		serviceAccountModel = &legacyServiceAccountMigrationModel{}
+	}
+
+	migrationModels := []any{
 		&models.Tenant{}, &models.Partition{}, &models.PartitionRole{},
 		&models.Access{}, &models.AccessRole{}, &models.Page{},
-		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{})
+		clientModel, serviceAccountModel, &models.ServiceNamespace{},
+		&models.OAuthClientRecipient{},
+		&models.ServiceAccountAuthorizationPolicy{},
+		&models.ServiceAccountAuthorizationGrant{},
+		&models.ServiceAccountAuthorizationPermission{},
+		&models.ServiceAccountAppliedTuple{},
+	}
+
+	// A fresh database must replay historical SQL against the schema those
+	// migrations were written for. Add the four legacy columns only while
+	// bootstrapping; MigrateAuthContractV2 backfills and drops them before the
+	// application starts. Existing v2 databases must never recreate them.
+	err := dbManager.Migrate(ctx, pool, migrationPath, migrationModels...)
+	if err != nil {
+		return err
+	}
+
+	return MigrateAuthContractV2(ctx, pool, audienceBaseURL, expected)
 }

@@ -45,22 +45,24 @@ import (
 )
 
 type DepsBuilder struct {
-	TenantRepo           repository.TenantRepository
-	PartitionRepo        repository.PartitionRepository
-	PartitionRoleRepo    repository.PartitionRoleRepository
-	AccessRepo           repository.AccessRepository
-	AccessRoleRepo       repository.AccessRoleRepository
-	PageRepo             repository.PageRepository
-	ClientRepo           repository.ClientRepository
-	ServiceAccountRepo   repository.ServiceAccountRepository
-	ServiceNamespaceRepo repository.ServiceNamespaceRepository
+	TenantRepo              repository.TenantRepository
+	PartitionRepo           repository.PartitionRepository
+	PartitionRoleRepo       repository.PartitionRoleRepository
+	AccessRepo              repository.AccessRepository
+	AccessRoleRepo          repository.AccessRoleRepository
+	PageRepo                repository.PageRepository
+	ClientRepo              repository.ClientRepository
+	OAuthRecipientRepo      repository.OAuthClientRecipientRepository
+	ServiceAccountRepo      repository.ServiceAccountRepository
+	AuthorizationPolicyRepo repository.ServiceAccountAuthorizationPolicyRepository
+	AuthContractRepo        repository.AuthContractRepository
+	ServiceNamespaceRepo    repository.ServiceNamespaceRepository
 
-	PartitionBusiness      business.PartitionBusiness
-	TenantBusiness         business.TenantBusiness
-	AccessBusiness         business.AccessBusiness
-	PageBusiness           business.PageBusiness
-	ClientBusiness         business.ClientBusiness
-	ServiceAccountBusiness business.ServiceAccountBusiness
+	PartitionBusiness    business.PartitionBusiness
+	TenantBusiness       business.TenantBusiness
+	AccessBusiness       business.AccessBusiness
+	PageBusiness         business.PageBusiness
+	AuthContractBusiness business.AuthContractBusiness
 
 	Server *handlers.TenancyServer
 }
@@ -72,34 +74,46 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Tenancy
 	eventsMan := svc.EventsManager()
 
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
+	oauthRecipientRepo := repository.NewOAuthClientRecipientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	authorizationPolicyRepo := repository.NewServiceAccountAuthorizationPolicyRepository(ctx, dbPool, workMan)
+	authContractRepo := repository.NewAuthContractRepository(dbPool)
 	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	depBuilder := &DepsBuilder{
-		TenantRepo:           repository.NewTenantRepository(ctx, dbPool, workMan),
-		PartitionRepo:        repository.NewPartitionRepository(ctx, dbPool, workMan),
-		PartitionRoleRepo:    repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
-		AccessRepo:           repository.NewAccessRepository(ctx, dbPool, workMan),
-		AccessRoleRepo:       repository.NewAccessRoleRepository(ctx, dbPool, workMan),
-		PageRepo:             repository.NewPageRepository(ctx, dbPool, workMan),
-		ClientRepo:           clientRepo,
-		ServiceAccountRepo:   serviceAccountRepo,
-		ServiceNamespaceRepo: serviceNamespaceRepo,
-		Server:               server,
+		TenantRepo:              repository.NewTenantRepository(ctx, dbPool, workMan),
+		PartitionRepo:           repository.NewPartitionRepository(ctx, dbPool, workMan),
+		PartitionRoleRepo:       repository.NewPartitionRoleRepository(ctx, dbPool, workMan),
+		AccessRepo:              repository.NewAccessRepository(ctx, dbPool, workMan),
+		AccessRoleRepo:          repository.NewAccessRoleRepository(ctx, dbPool, workMan),
+		PageRepo:                repository.NewPageRepository(ctx, dbPool, workMan),
+		ClientRepo:              clientRepo,
+		OAuthRecipientRepo:      oauthRecipientRepo,
+		ServiceAccountRepo:      serviceAccountRepo,
+		AuthorizationPolicyRepo: authorizationPolicyRepo,
+		AuthContractRepo:        authContractRepo,
+		ServiceNamespaceRepo:    serviceNamespaceRepo,
+		Server:                  server,
 	}
 
-	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	depBuilder.PartitionBusiness = business.NewPartitionBusiness(*cfg, eventsMan, depBuilder.TenantRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, depBuilder.AccessRepo, clientRepo, serviceAccountRepo)
 	depBuilder.TenantBusiness = business.NewTenantBusiness(svc, depBuilder.TenantRepo, depBuilder.PartitionRepo)
-	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, clientRepo, serviceNamespaceRepo)
+	depBuilder.AccessBusiness = business.NewAccessBusiness(svc, eventsMan, depBuilder.AccessRepo, depBuilder.AccessRoleRepo, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo, serviceNamespaceRepo)
 	depBuilder.PageBusiness = business.NewPageBusiness(svc, depBuilder.PageRepo, depBuilder.PartitionRepo)
-	depBuilder.ClientBusiness = business.NewClientBusiness(eventsMan, depBuilder.PartitionRepo, clientRepo)
-	depBuilder.ServiceAccountBusiness = business.NewServiceAccountBusiness(
-		eventsMan, auth, depBuilder.PartitionRepo, depBuilder.PartitionRoleRepo,
-		clientRepo, serviceAccountRepo, depBuilder.AccessRepo, depBuilder.AccessRoleRepo,
-		serviceNamespaceRepo,
+	authContractBusiness, err := business.NewAuthContractBusiness(
+		cfg.GetOauth2AudienceBaseURL(),
+		eventsMan,
+		depBuilder.PartitionRepo,
+		clientRepo,
+		oauthRecipientRepo,
+		serviceAccountRepo,
+		authorizationPolicyRepo,
+		authContractRepo,
 	)
-
+	if err != nil {
+		panic(err)
+	}
+	depBuilder.AuthContractBusiness = authContractBusiness
 	return depBuilder
 }
 
@@ -305,7 +319,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		frame.WithDatastore(), frametests.WithNoopDriver())
 
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
-	implementation := handlers.NewTenancyServer(ctx, svc, auth, nil)
+	implementation := handlers.NewTenancyServer(ctx, svc, nil)
 
 	// Use a plain HTTP client for Hydra admin API calls (no OAuth2 transport).
 	// This matches production (cmd/main.go) where hydraClient is unauthenticated
@@ -313,11 +327,9 @@ func (bs *BaseTestSuite) createServiceInternal(
 	hydraClient := client.NewManager(context.Background())
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
-		events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.PartitionRepo),
-		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.ServiceAccountRepo),
-		events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ServiceAccountRepo, implementation.PartitionRepo),
-		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, implementation.ServiceNamespaceRepo, auth),
-		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, auth),
+		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.OAuthRecipientRepo, implementation.ServiceAccountRepo),
+		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, implementation.ServiceNamespaceRepo, implementation.AuthorizationPolicyRepo, svc.EventsManager(), auth),
+		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, implementation.PartitionRepo, implementation.AuthorizationPolicyRepo, implementation.AuthContractRepo, svc.EventsManager(), auth),
 		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, implementation.ServiceNamespaceRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),
@@ -327,7 +339,18 @@ func (bs *BaseTestSuite) createServiceInternal(
 
 	svc.Init(ctx, serviceOptions...)
 
-	err = repository.Migrate(ctx, svc.DatastoreManager(), "../../migrations/0001")
+	err = repository.Migrate(
+		ctx,
+		svc.DatastoreManager(),
+		"../../migrations/0001",
+		cfg.GetOauth2AudienceBaseURL(),
+		repository.AuthContractMigrationExpectations{
+			Clients:         -1,
+			ServiceAccounts: -1,
+			Recipients:      -1,
+			Grants:          -1,
+		},
+	)
 	require.NoError(t, err)
 	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)
 
@@ -385,8 +408,8 @@ func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service,
 	bs.Require().NoError(err, "failed to seed tenant role")
 }
 
-// syncSeededRecordsToHydra syncs all seeded Partition and Client records to
-// Hydra after migrations. It uses a plain HTTP client (no OAuth2 transport)
+// syncSeededRecordsToHydra syncs all seeded OAuth client records to Hydra after
+// migrations. It uses a plain HTTP client (no OAuth2 transport)
 // because the service's own OAuth2 client (dev_service_tenancy) hasn't been
 // registered on Hydra yet — the Hydra admin API doesn't require auth.
 // Once the seeded clients are registered, the service's OAuth2-authenticated
@@ -400,34 +423,7 @@ func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, p
 	plainCli := client.NewManager(context.Background())
 	defer plainCli.Close()
 
-	// 1. Sync partitions (they're registered as Hydra OAuth2 clients too).
-	partQuery := data.NewSearchQuery(data.WithSearchLimit(200))
-	partResult, err := partSrv.PartitionRepo.Search(syncCtx, partQuery)
-	if err != nil {
-		log.WithError(err).Error("failed to search partitions for Hydra sync")
-	} else {
-		partsSynced := 0
-		for {
-			result, ok := partResult.ReadResult(syncCtx)
-			if !ok {
-				break
-			}
-			if result.IsError() {
-				log.WithError(result.Error()).Error("error reading partitions")
-				break
-			}
-			for _, p := range result.Item() {
-				if syncErr := events.SyncPartitionOnHydra(syncCtx, cfg, plainCli, partSrv.PartitionRepo, p); syncErr != nil {
-					log.WithError(syncErr).WithField("partition_id", p.GetID()).Error("failed to sync partition to Hydra")
-				} else {
-					partsSynced++
-				}
-			}
-		}
-		log.WithField("count", partsSynced).Info("synced seeded partitions to Hydra")
-	}
-
-	// 2. Sync clients (including service account clients like dev_service_tenancy).
+	// Sync clients, including service account clients like dev_service_tenancy.
 	clientQuery := data.NewSearchQuery(
 		data.WithSearchLimit(200),
 		data.WithSearchFiltersAndByValue(map[string]any{"synced_at IS NULL": ""}),
@@ -456,7 +452,7 @@ func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, p
 					profileID = sa.ProfileID
 				}
 			}
-			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, cl, profileID); syncErr != nil {
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, partSrv.OAuthRecipientRepo, cl, profileID); syncErr != nil {
 				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
 			} else {
 				clientsSynced++

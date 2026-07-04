@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Code generated from catalog/auth-migration-v2.yaml; DO NOT EDIT.
+// Code generated from stawi.org/deployment.manifests/catalog/auth-migration-v2.yaml; DO NOT EDIT.
 package authz
 
 import (
@@ -247,6 +247,46 @@ var deployedServicePermissions = map[string][]string{ //nolint:gochecknoglobals
 	"service_checkout": {},
 }
 
+var legacyRecipientAudiencePaths = map[string]string{ //nolint:gochecknoglobals
+	"opportunities_api":          "/jobs",
+	"opportunities_crawler":      "/opportunities-crawler",
+	"opportunities_matching":     "/matching",
+	"opportunities_materializer": "/opportunities-materializer",
+	"opportunities_writer":       "/opportunities-writer",
+	"service_audit":              "/audit",
+	"service_chat":               "/chat-gateway",
+	"service_chat_drone":         "/chat-drone",
+	"service_device":             "/devices",
+	"service_field":              "/identity",
+	"service_file":               "/files",
+	"service_files":              "/files",
+	"service_funding":            "/funding",
+	"service_geolocation":        "/geolocation",
+	"service_identity":           "/identity",
+	"service_ledger":             "/ledger",
+	"service_loans":              "/loans",
+	"service_notification":       "/notification",
+	"service_operations":         "/operations",
+	"service_payment":            "/payment",
+	"service_payment_checkout":   "/checkout",
+	"service_profile":            "/profile",
+	"service_redirect":           "/redirect",
+	"service_savings":            "/savings",
+	"service_setting":            "/settings",
+	"service_tenancy":            "/tenancy",
+	"service_thesa":              "/thesa",
+	"service_trustage":           "/trustage",
+}
+
+func LegacyRecipientAudiencePath(recipient string) (string, bool) {
+	path, ok := legacyRecipientAudiencePaths[recipient]
+	return path, ok
+}
+
+func DeployedPermissions(namespace string) ([]string, bool) {
+	permissions, ok := deployedServicePermissions[namespace]
+	return slices.Clone(permissions), ok
+}
 func DeployedServiceNamespaceRecords() []*models.ServiceNamespace {
 	namespaces := make([]*models.ServiceNamespace, 0, len(deployedServicePermissions))
 	for namespace, permissions := range deployedServicePermissions {

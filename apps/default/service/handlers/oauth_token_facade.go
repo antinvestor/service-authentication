@@ -27,7 +27,6 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
@@ -245,8 +244,8 @@ func shouldProxyResponseHeader(key string) bool {
 // session for the resolved profile. The deployment-wide
 // NativeCredentialExchangeEnabled flag is a kill switch; normal authorization
 // is constrained by a known local OAuth client and that client's
-// native_auth_enabled property. Google audience verification uses the server
-// Google client ID unless the client row carries a legacy explicit override.
+// native_auth_enabled property. Provider audience verification uses the
+// authentication service's server-side provider configuration.
 //
 // NOTE: this path does not enforce a step-up MFA challenge — possession of a
 // fresh, verified Google/Apple ID token is treated as the authentication
@@ -303,7 +302,11 @@ func (h *AuthServer) handleNativeTokenExchange(ctx context.Context, r *http.Requ
 		return nil, oauthErr(http.StatusBadRequest, "invalid_grant", err.Error())
 	}
 
-	accessObj, err := h.getOrCreateTenancyAccessByClientID(ctx, clientID, profileID)
+	ownerPartition, err := h.resolvePartitionByClientID(ctx, clientID)
+	if err != nil {
+		return nil, oauthErr(http.StatusForbidden, "access_denied", "OAuth client has no partition owner")
+	}
+	accessObj, err := h.getOrCreateTenancyAccessByPartitionID(ctx, ownerPartition, profileID)
 	if err != nil {
 		return nil, oauthErr(http.StatusForbidden, "access_denied", "profile is not allowed for this client")
 	}
@@ -392,17 +395,13 @@ func (c nativeClientConfig) audienceForIssuer(issuer string) string {
 }
 
 func (h *AuthServer) resolveNativeClientConfig(ctx context.Context, clientID string) (*nativeClientConfig, anyHydraClient, error) {
-	if h.partitionCli == nil {
+	if h.authContractCli == nil {
 		return nil, nil, fmt.Errorf("tenancy client lookup is unavailable")
 	}
 
-	clientResp, err := h.partitionCli.GetClient(ctx, connect.NewRequest(&tenancyv1.GetClientRequest{ClientId: clientID}))
+	clientObj, err := h.getOAuthClient(ctx, clientID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("client lookup failed: %w", err)
-	}
-	clientObj := clientResp.Msg.GetData()
-	if clientObj == nil {
-		return nil, nil, fmt.Errorf("client lookup returned no data")
 	}
 	resolvedClientID := strings.TrimSpace(clientObj.GetClientId())
 	if resolvedClientID == "" {
@@ -418,8 +417,8 @@ func (h *AuthServer) resolveNativeClientConfig(ctx context.Context, clientID str
 	}
 
 	props := map[string]any{}
-	if clientObj.GetProperties() != nil {
-		props = clientObj.GetProperties().AsMap()
+	if clientObj.GetConfiguration().GetProperties() != nil {
+		props = clientObj.GetConfiguration().GetProperties().AsMap()
 	}
 
 	return h.nativeClientConfigFromProperties(resolvedClientID, props), hydraClient, nil
@@ -436,8 +435,8 @@ func (h *AuthServer) nativeClientConfigFromProperties(clientID string, props map
 	return &nativeClientConfig{
 		ClientID:       strings.TrimSpace(clientID),
 		Enabled:        boolProperty(props, "native_auth_enabled"),
-		GoogleAudience: stringProperty(props, "native_google_server_client_id", googleAudience),
-		AppleAudience:  stringProperty(props, "native_apple_client_id", appleAudience),
+		GoogleAudience: strings.TrimSpace(googleAudience),
+		AppleAudience:  strings.TrimSpace(appleAudience),
 	}
 }
 
@@ -459,17 +458,6 @@ func boolProperty(props map[string]any, key string) bool {
 	default:
 		return false
 	}
-}
-
-func stringProperty(props map[string]any, key string, fallback string) string {
-	v, ok := props[key]
-	if !ok {
-		return strings.TrimSpace(fallback)
-	}
-	if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
-		return strings.TrimSpace(s)
-	}
-	return strings.TrimSpace(fallback)
 }
 
 func tokenScopes(raw string) []string {

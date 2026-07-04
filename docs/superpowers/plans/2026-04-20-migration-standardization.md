@@ -1066,9 +1066,8 @@ Performed manually after Phases 1–4 land and the PR is merged:
 1. Announce maintenance window; inform operators of Stawi Jobs frontend redeploy window.
 2. Wipe the production tenancy DB and Keto tuple store.
 3. Let Flux reconcile; new migration job runs the v2 baseline.
-4. Restart service-tenancy; `SYNCHRONISE_PRIMARY_PARTITIONS=True` propagates to Hydra.
-5. Trigger `synchronize-partitions` CronJob manually; confirm Keto tuples populate.
-6. Smoke-test: social login, FedCM, avatar sync.
+4. Trigger `synchronize-partitions` CronJob manually; confirm explicit OAuth clients sync to Hydra and Keto tuples populate.
+5. Smoke-test: social login, FedCM, avatar sync.
 
 ---
 

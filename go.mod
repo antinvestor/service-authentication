@@ -18,9 +18,10 @@ require (
 	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260511135618-9b1ea0d95bd7.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.20.0-20260612021939-e32a27e4910e.1
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260612021939-e32a27e4910e.1
-	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260629054636-19bb401b07c4.1
-	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260629054636-19bb401b07c4.1
+	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260629120315-dfdba54ae9d9.1
+	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260629120315-dfdba54ae9d9.1
 	connectrpc.com/connect v1.20.0
+	github.com/antinvestor/common/v2 v2.0.0
 	github.com/coreos/go-oidc/v3 v3.19.0
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -53,7 +54,6 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/antinvestor/common/v2 v2.0.0
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/caarlos0/env/v11 v11.4.1 // indirect

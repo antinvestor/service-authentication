@@ -67,23 +67,6 @@ func TestNativeClientConfigFromPropertiesUsesServerProviderConfig(t *testing.T) 
 	require.Equal(t, "com.example.server.apple", cfg.AppleAudience)
 }
 
-func TestNativeClientConfigFromPropertiesAllowsLegacyAudienceOverride(t *testing.T) {
-	h := &AuthServer{config: &authconfig.AuthenticationConfig{
-		AuthProviderGoogleClientID: "server-google-client.apps.googleusercontent.com",
-		AuthProviderAppleClientID:  "com.example.server.apple",
-	}}
-
-	cfg := h.nativeClientConfigFromProperties("client-123", map[string]any{
-		"native_auth_enabled":            "1",
-		"native_google_server_client_id": "client-google-client.apps.googleusercontent.com",
-		"native_apple_client_id":         "com.example.client.apple",
-	})
-
-	require.True(t, cfg.Enabled)
-	require.Equal(t, "client-google-client.apps.googleusercontent.com", cfg.GoogleAudience)
-	require.Equal(t, "com.example.client.apple", cfg.AppleAudience)
-}
-
 func TestNativeClientConfigFromPropertiesRequiresExplicitNativeOptIn(t *testing.T) {
 	h := &AuthServer{config: &authconfig.AuthenticationConfig{
 		AuthProviderGoogleClientID: "server-google-client.apps.googleusercontent.com",
@@ -103,14 +86,6 @@ func TestBoolProperty(t *testing.T) {
 	require.False(t, boolProperty(map[string]any{"k": "false"}, "k"))
 	require.False(t, boolProperty(map[string]any{"k": 1}, "k"))
 	require.False(t, boolProperty(map[string]any{}, "k"))
-}
-
-func TestStringProperty(t *testing.T) {
-	require.Equal(t, "v", stringProperty(map[string]any{"k": "v"}, "k", "fb"))
-	require.Equal(t, "fb", stringProperty(map[string]any{"k": "  "}, "k", "fb"))
-	require.Equal(t, "fb", stringProperty(map[string]any{}, "k", "fb"))
-	require.Equal(t, "", stringProperty(map[string]any{}, "k", ""))
-	require.Equal(t, "v", stringProperty(map[string]any{"k": " v "}, "k", "fb"))
 }
 
 func TestTokenScopesDefaults(t *testing.T) {

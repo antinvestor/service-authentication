@@ -40,6 +40,8 @@ type AuthzPartitionSyncEvent struct {
 	partitionRepo        repository.PartitionRepository
 	serviceAccountRepo   repository.ServiceAccountRepository
 	serviceNamespaceRepo repository.ServiceNamespaceRepository
+	policyRepo           repository.ServiceAccountAuthorizationPolicyRepository
+	eventsMan            fevents.Manager
 	authorizer           security.Authorizer
 }
 
@@ -47,12 +49,16 @@ func NewAuthzPartitionSyncEventHandler(
 	partitionRepo repository.PartitionRepository,
 	serviceAccountRepo repository.ServiceAccountRepository,
 	serviceNamespaceRepo repository.ServiceNamespaceRepository,
+	policyRepo repository.ServiceAccountAuthorizationPolicyRepository,
+	eventsMan fevents.Manager,
 	auth security.Authorizer,
 ) fevents.EventI {
 	return &AuthzPartitionSyncEvent{
 		partitionRepo:        partitionRepo,
 		serviceAccountRepo:   serviceAccountRepo,
 		serviceNamespaceRepo: serviceNamespaceRepo,
+		policyRepo:           policyRepo,
+		eventsMan:            eventsMan,
 		authorizer:           auth,
 	}
 }
@@ -127,29 +133,19 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	parentPath := fmt.Sprintf("%s/%s", parentPartition.TenantID, parentPartition.GetID())
 
-	// Load parent service accounts and the exact schema registry that generated
-	// Keto's OPL. Tuple construction below is limited to this registry.
-	parentSAs, err := e.serviceAccountRepo.ListByPartition(ctx, partition.ParentID)
-	if err != nil {
-		logger.WithError(err).Warn("failed to list parent partition SAs, writing inheritance tuples only")
-		parentSAs = nil
-	}
 	namespaces, err := e.serviceNamespaceRepo.ListAll(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to load registered authorization namespaces: %w", err)
 	}
 	namespaces = authz.SelectDeployedNamespaceRecords(namespaces)
-	deployedNamespaces := authz.DeployedServiceNamespaceRecords()
 
-	// Stage 1: Write the critical inheritance tuples (member + service).
-	// These MUST succeed — they allow parent partition service accounts
-	// and members to access this child partition via Keto graph traversal.
+	// Human access retains subject-set inheritance. Service-account access is
+	// materialised directly by each policy reconciler and never inherited via a
+	// shared service relation.
 	memberTuple := authz.BuildPartitionInheritanceTuple(parentPath, tenancyPath)
-	serviceTuple := authz.BuildServicePartitionInheritanceTuple(parentPath, tenancyPath)
-	inheritanceTuples := []security.RelationTuple{memberTuple, serviceTuple}
 
 	if writeErr := writeTuplesWithRetry(ctx, e.Name()+".inheritance", func(ctx context.Context) error {
-		return e.authorizer.WriteTuples(ctx, inheritanceTuples)
+		return e.authorizer.WriteTuple(ctx, memberTuple)
 	}); writeErr != nil {
 		logger.WithError(writeErr).Error("failed to write partition inheritance tuples")
 		return writeErr
@@ -158,9 +154,7 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	logger.WithField("parent_path", parentPath).
 		Debug("partition inheritance tuples written")
 
-	// Stage 2: Materialise only relations declared by registered manifests.
-	// Human roles retain subject-set inheritance. Service accounts receive
-	// explicit grants, never a blanket #service bridge.
+	// Materialise human-role inheritance only.
 	var schemaTuples []security.RelationTuple
 	for _, role := range authz.StandardRoles {
 		supportedNamespaces := authz.FilterNamespacesForRole(namespaces, role)
@@ -168,31 +162,6 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 			authz.BuildRoleInheritanceTuples(tenancyPath, supportedNamespaces, []string{role})...,
 		)
 	}
-	for _, serviceAccount := range parentSAs {
-		requestedGrants := authz.SelectRegisteredServiceGrants(
-			authz.ParseAudiencePermissions(serviceAccount.Audiences),
-			deployedNamespaces,
-		)
-		grants, resolveErr := authz.ResolveServiceGrants(
-			requestedGrants,
-			deployedNamespaces,
-		)
-		if resolveErr != nil {
-			logger.WithError(resolveErr).
-				WithField("service_account_id", serviceAccount.GetID()).
-				Warn("skipping invalid authorization grants for parent service account during partition sync")
-			continue
-		}
-		for namespace, permissions := range grants {
-			schemaTuples = append(schemaTuples, authz.BuildServicePermissionTuples(
-				tenancyPath,
-				serviceAccount.ProfileID,
-				namespace,
-				permissions,
-			)...)
-		}
-	}
-
 	if len(schemaTuples) > 0 {
 		authz.SortRelationTuples(schemaTuples)
 		if writeErr := writeTuplesWithRetry(ctx, e.Name()+".schema", func(ctx context.Context) error {
@@ -202,5 +171,49 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		}
 	}
 
+	if err = e.requeueAncestorServiceAccountPolicies(ctx, partition); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *AuthzPartitionSyncEvent) requeueAncestorServiceAccountPolicies(
+	ctx context.Context,
+	partition interface{ GetID() string },
+) error {
+	ancestors, err := e.partitionRepo.GetParents(ctx, partition.GetID())
+	if err != nil {
+		return fmt.Errorf("load partition ancestors for policy reconciliation: %w", err)
+	}
+	for _, ancestor := range ancestors {
+		serviceAccounts, listErr := e.serviceAccountRepo.ListByPartition(ctx, ancestor.GetID())
+		if listErr != nil {
+			return fmt.Errorf("list service accounts for ancestor %s: %w", ancestor.GetID(), listErr)
+		}
+		for _, serviceAccount := range serviceAccounts {
+			policyState, policyErr := e.policyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
+			if policyErr != nil {
+				return fmt.Errorf("load policy for service account %s: %w", serviceAccount.GetID(), policyErr)
+			}
+			usesPartitionTree := false
+			for _, grant := range policyState.Grants {
+				if grant.Scope == "partition_tree" {
+					usesPartitionTree = true
+					break
+				}
+			}
+			if !usesPartitionTree {
+				continue
+			}
+			if emitErr := e.eventsMan.Emit(ctx, EventKeyAuthzServiceAccountSync, data.JSONMap{
+				"id":         serviceAccount.GetID(),
+				"generation": policyState.Policy.Generation,
+				"reason":     "partition_topology_changed",
+			}); emitErr != nil {
+				return fmt.Errorf("enqueue service account %s policy: %w", serviceAccount.GetID(), emitErr)
+			}
+		}
+	}
 	return nil
 }

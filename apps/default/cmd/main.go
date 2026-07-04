@@ -27,6 +27,7 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common/v2"
 	"github.com/antinvestor/common/v2/connection"
@@ -97,6 +98,10 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("could not setup partition service client")
 	}
+	authContractCli, err := setupAuthContractClient(ctx, cfg)
+	if err != nil {
+		log.WithError(err).Fatal("could not setup tenancy auth contract client")
+	}
 
 	notificationCli, err := setupNotificationClient(ctx, cfg)
 	if err != nil {
@@ -129,7 +134,7 @@ func main() {
 	loginEventRepo := repository.NewLoginEventRepository(ctx, dbPool, workManager)
 	externalIdentityRepo := repository.NewExternalIdentityRepository(ctx, dbPool, workManager)
 
-	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, externalIdentityRepo, profileCli, deviceCli, partitionCli, notificationCli, localizationMan)
+	srv := handlers.NewAuthServer(ctx, sm, &cfg, cacheManager, loginRepo, loginEventRepo, externalIdentityRepo, profileCli, deviceCli, partitionCli, authContractCli, notificationCli, localizationMan)
 	srv.SetEventsManager(svc.EventsManager())
 
 	// Setup Connect RPC handler for login history API
@@ -232,6 +237,17 @@ func setupPartitionClient(
 		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
 		ServiceID:             servicecatalog.ServiceTenancy,
 	}, tenancyv1connect.NewTenancyServiceClient)
+}
+
+func setupAuthContractClient(
+	ctx context.Context,
+	cfg aconfig.AuthenticationConfig,
+) (tenancyv2connect.AuthContractServiceClient, error) {
+	return connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
+		Endpoint:              cfg.TenancyServiceURI,
+		WorkloadAPITargetPath: cfg.TenancyServiceWorkloadAPITargetPath,
+		ServiceID:             servicecatalog.ServiceTenancy,
+	}, tenancyv2connect.NewAuthContractServiceClient)
 }
 
 // setupProfileClient creates and configures the profile client.
