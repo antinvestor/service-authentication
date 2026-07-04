@@ -26,9 +26,9 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 
@@ -452,36 +452,31 @@ func (sb *serviceAccountBusiness) RemoveServiceAccount(
 		}
 	}
 
-	// Delete all Keto tuples: data access, explicit permissions, and bridge tuples
+	// Delete the stable service-account principal's data access and explicit
+	// permission grants. OAuth client IDs are credentials, never principals.
 	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, sa.ProfileID),
 		authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID),
 	}
 
-	// Also clean up tuples for clientID if different from profileID
-	if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
-		tuples = append(tuples,
-			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
-			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
-		)
-	}
-
-	// Delete per-namespace tuples: explicit permission grants AND bridge tuples
-	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
-	var bridgeNamespaces []string
-	for ns, perms := range audiencePerms {
-		if authz.IsFullAccess(perms) {
-			bridgeNamespaces = append(bridgeNamespaces, ns)
-		} else {
-			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ProfileID, ns, perms)...)
-			if sa.ClientID != "" && sa.ClientID != sa.ProfileID {
-				tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
-			}
+	namespaces := authz.DeployedServiceNamespaceRecords()
+	requestedGrants := authz.SelectRegisteredServiceGrants(
+		authz.ParseAudiencePermissions(sa.Audiences),
+		namespaces,
+	)
+	grants, resolveErr := authz.ResolveServiceGrants(requestedGrants, namespaces)
+	if resolveErr != nil {
+		log.WithError(resolveErr).Warn("could not resolve authorization grants during service account removal")
+	} else {
+		for namespace, permissions := range grants {
+			tuples = append(tuples, authz.BuildServicePermissionTuples(
+				tenancyPath,
+				sa.ProfileID,
+				namespace,
+				permissions,
+			)...)
 		}
-	}
-	if len(bridgeNamespaces) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
 	}
 
 	if delErr := sb.authorizer.DeleteTuples(ctx, tuples); delErr != nil {

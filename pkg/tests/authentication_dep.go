@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -131,8 +131,9 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 			"OAUTH2_SERVICE_CLIENT_ID":                      "dev_service_authentication",
 			"OAUTH2_SERVICE_CLIENT_SECRET":                  "vkGiJroO9dAS5eFnuaGy",
 			"OAUTH2_TOKEN_ENDPOINT_AUTH_METHOD":             "client_secret_post",
-			"OAUTH2_SERVICE_AUDIENCE":                       "service_device,service_notification,service_tenancy,service_profile",
-			"OAUTH2_JWT_VERIFY_AUDIENCE":                    "service_tenancy,authentication_tests",
+			"OAUTH2_AUDIENCE_BASE_URL":                      "https://api.example.test",
+			"OAUTH2_REQUESTED_AUDIENCES":                    "https://api.example.test/devices,https://api.example.test/notification,https://api.example.test/tenancy,https://api.example.test/profile",
+			"OAUTH2_RESOURCE_AUDIENCE":                      "https://api.example.test/authentication",
 			"OAUTH2_JWT_VERIFY_ISSUER":                      issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":                    jwksData,
 		},

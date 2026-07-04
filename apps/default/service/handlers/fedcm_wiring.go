@@ -20,7 +20,7 @@ import (
 
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
-	"github.com/pitabwire/frame/cache"
+	"github.com/pitabwire/frame/v2/cache"
 )
 
 // hydraPublicURL returns the Hydra public endpoint URL used by the FedCM

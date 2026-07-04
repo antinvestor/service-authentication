@@ -19,7 +19,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pitabwire/frame/security/authorizer"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -82,11 +82,10 @@ func withEventTimeout(ctx context.Context) (context.Context, context.CancelFunc)
 }
 
 // writeTuplesWithRetry wraps an authorizer WriteTuples call with bounded
-// retries for transient errors and immediate exit for permanent ones.
-// If all retries are exhausted the error is logged and nil is returned so
-// the message is ACKed — the operator can trigger a manual re-sync later.
-//
-//nolint:unparam // Always returns nil by design — errors are logged and swallowed to prevent infinite queue loops.
+// retries for transient errors and immediate exit for permanent ones. Errors
+// are returned to the event manager so failed mutations are never acknowledged
+// as successful; queue retry/dead-letter policy and periodic reconciliation
+// provide bounded recovery.
 func writeTuplesWithRetry(ctx context.Context, eventName string, fn func(ctx context.Context) error) error {
 	logger := util.Log(ctx).WithField("event", eventName)
 
@@ -99,8 +98,8 @@ func writeTuplesWithRetry(ctx context.Context, eventName string, fn func(ctx con
 
 		if isPermanentError(lastErr) {
 			logger.WithError(lastErr).WithField("attempt", attempt).
-				Warn("permanent error in authz sync — skipping event (re-sync to retry)")
-			return nil
+				Error("authorization mutation rejected")
+			return lastErr
 		}
 
 		if attempt < maxKetoRetries {
@@ -113,15 +112,14 @@ func writeTuplesWithRetry(ctx context.Context, eventName string, fn func(ctx con
 			select {
 			case <-ctx.Done():
 				logger.WithError(ctx.Err()).Warn("context cancelled during retry backoff")
-				return nil
+				return ctx.Err()
 			case <-time.After(delay):
 			}
 		}
 	}
 
-	// All retries exhausted — log and ACK so the queue doesn't loop forever.
-	// The /_system/sync/clients endpoint can re-queue everything later.
+	// All retries exhausted. Return the cause so the event is not falsely ACKed.
 	logger.WithError(lastErr).WithField("max_retries", maxKetoRetries).
-		Error("authz sync failed after retries — giving up (use /_system/sync/clients to retry)")
-	return nil
+		Error("authorization mutation failed after bounded retries")
+	return lastErr
 }

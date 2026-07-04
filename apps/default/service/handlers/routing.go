@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/pitabwire/util"
@@ -57,7 +56,7 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	// Configure CSRF middleware based on environment
 	// In test environments, disable CSRF middleware to allow HTTP requests
 	serviceName := h.Config().Name()
-	isTestEnv := serviceName == "authentication_tests" || slices.Contains(h.Config().Oauth2JwtVerifyAudience, "authentication_tests")
+	isTestEnv := serviceName == "authentication_tests"
 
 	var csrfMiddleware func(http.Handler) http.Handler
 	if isTestEnv {

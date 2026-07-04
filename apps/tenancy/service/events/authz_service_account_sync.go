@@ -21,9 +21,9 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 
@@ -101,49 +101,32 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	tenancyPath := fmt.Sprintf("%s/%s", sa.TenantID, sa.PartitionID)
 	subjectID := sa.ProfileID
 
-	// Layer 1: data access tuples (member + service marker)
-	// Write tuples for BOTH profileID and clientID because for client_credentials
-	// Hydra sets JWT sub to the client_id, not the profile_id. Services check
-	// Keto using the JWT sub value.
+	// Data access is always keyed by the service account's stable profile
+	// identity. Hydra is configured to issue that identity as the token subject;
+	// OAuth client IDs are credentials, not authorization principals.
 	tuples := []security.RelationTuple{
 		authz.BuildAccessTuple(tenancyPath, subjectID),
 		authz.BuildServiceAccessTuple(tenancyPath, subjectID),
 	}
-	if sa.ClientID != "" && sa.ClientID != subjectID {
-		tuples = append(tuples,
-			authz.BuildAccessTuple(tenancyPath, sa.ClientID),
-			authz.BuildServiceAccessTuple(tenancyPath, sa.ClientID),
-		)
-	}
 
-	// Layer 2: per-namespace permission tuples and bridge tuples.
-	//
-	// Namespaces with an empty permission list get a bridge tuple
-	// (ns#service ← tenancy_access#service) which grants full service-level
-	// access via OPL permits.
-	//
-	// Namespaces with explicit permissions get only granted_* tuples,
-	// enforcing least-privilege — the bridge tuple is NOT written so the
-	// service account only has the permissions it declares.
-	audiencePerms := authz.ParseAudiencePermissions(sa.Audiences)
-	var bridgeNamespaces []string
-
-	for ns, perms := range audiencePerms {
-		if authz.IsFullAccess(perms) {
-			// Full access (["*"] or []) → bridge tuple for full service role.
-			bridgeNamespaces = append(bridgeNamespaces, ns)
-			continue
-		}
-		// Explicit permissions → granted_* tuples only, no bridge.
-		tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, subjectID, ns, perms)...)
-		if sa.ClientID != "" && sa.ClientID != subjectID {
-			tuples = append(tuples, authz.BuildServicePermissionTuples(tenancyPath, sa.ClientID, ns, perms)...)
-		}
+	namespaces := authz.DeployedServiceNamespaceRecords()
+	requestedGrants := authz.SelectRegisteredServiceGrants(
+		authz.ParseAudiencePermissions(sa.Audiences),
+		namespaces,
+	)
+	grants, err := authz.ResolveServiceGrants(requestedGrants, namespaces)
+	if err != nil {
+		return fmt.Errorf("invalid service account authorization grants: %w", err)
 	}
-
-	if len(bridgeNamespaces) > 0 {
-		tuples = append(tuples, authz.BuildServiceInheritanceTuples(tenancyPath, bridgeNamespaces)...)
+	for namespace, permissions := range grants {
+		tuples = append(tuples, authz.BuildServicePermissionTuples(
+			tenancyPath,
+			subjectID,
+			namespace,
+			permissions,
+		)...)
 	}
+	authz.SortRelationTuples(tuples)
 
 	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
 		return e.authorizer.WriteTuples(ctx, tuples)

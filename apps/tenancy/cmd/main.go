@@ -19,26 +19,28 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/antinvestor/common/v2/servicecatalog"
+
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	"github.com/antinvestor/common/connection"
-	"github.com/antinvestor/common/permissions"
+	"github.com/antinvestor/common/v2"
+	"github.com/antinvestor/common/v2/connection"
+	"github.com/antinvestor/common/v2/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/security"
-	"github.com/pitabwire/frame/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/security/interceptors/connect"
-	securityhttp "github.com/pitabwire/frame/security/interceptors/httptor"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
+	securityhttp "github.com/pitabwire/frame/v2/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
 
@@ -77,7 +79,7 @@ func main() {
 	profileCli, err := connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,
 		WorkloadAPITargetPath: cfg.ProfileServiceWorkloadAPITargetPath,
-		Audiences:             []string{"service_profile"},
+		ServiceID:             servicecatalog.ServiceProfile,
 	}, profilev1connect.NewProfileServiceClient)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
@@ -119,7 +121,7 @@ func main() {
 			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
 			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
 			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
-			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, auth),
+			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, partSrv.ServiceNamespaceRepo, auth),
 			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
 			events.NewAuthzAccessSyncEventHandler(partSrv.AccessRepo, partSrv.AccessRoleRepo, partSrv.PartitionRoleRepo, partSrv.ServiceNamespaceRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
@@ -184,7 +186,6 @@ func setupConnectServer(
 	// reachable within the cluster (not exposed through the API gateway).
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
 	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
-	mux.Handle("/_internal/opl", implementation.NewInternalOPLHandler())
 
 	return mux
 }

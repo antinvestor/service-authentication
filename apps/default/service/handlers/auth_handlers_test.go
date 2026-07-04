@@ -24,7 +24,7 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	handlers2 "github.com/gorilla/handlers"
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

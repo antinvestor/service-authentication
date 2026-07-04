@@ -23,10 +23,10 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 
@@ -432,9 +432,8 @@ func (ab *accessBusiness) CreateAccessRole(
 
 	// Emit event to write Keto tuples asynchronously.
 	// Tuples are written to both service_tenancy and tenancy_access.
-	// OPL bridge tuples (written during partition sync) propagate the role
-	// from tenancy_access to all service namespaces — no per-namespace
-	// code needed here.
+	// OPL role-inheritance tuples (written during partition sync) propagate
+	// the role from tenancy_access to registered namespaces that support it.
 	if ab.eventsMan != nil {
 		roleName := partitionRoles[0].Name
 		tenancyPath := fmt.Sprintf("%s/%s", access.TenantID, access.PartitionID)

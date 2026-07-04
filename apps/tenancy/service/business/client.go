@@ -26,8 +26,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/data"
-	fevents "github.com/pitabwire/frame/events"
+	"github.com/pitabwire/frame/v2/data"
+	fevents "github.com/pitabwire/frame/v2/events"
 	"github.com/pitabwire/util"
 )
 
@@ -328,7 +328,7 @@ func toJSONMapSlice(key string, values []string) data.JSONMap {
 
 // audiencesFromNamespaces builds an audiences JSONMap from a list of namespace names.
 // Each namespace is stored as a key with ["*"] meaning full service-level access
-// via bridge tuples (ns#service ← tenancy_access#service).
+// that the reconciler expands into explicit registered permissions.
 //
 // To grant explicit per-permission tuples, set the value to a list of
 // OPL permission names: {"service_profile": ["profile_view", "profile_create"]}.

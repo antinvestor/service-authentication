@@ -14,7 +14,7 @@
 
 package config
 
-import "github.com/pitabwire/frame/config"
+import "github.com/pitabwire/frame/v2/config"
 
 // AuditConfig holds configuration for the audit service.
 type AuditConfig struct {

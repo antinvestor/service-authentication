@@ -24,7 +24,7 @@ import (
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
