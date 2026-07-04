@@ -32,9 +32,9 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/nativecredentials"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/client"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )

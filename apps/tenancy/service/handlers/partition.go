@@ -17,20 +17,17 @@ package handlers
 import (
 	"context"
 
-	"net/http"
-
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/opl"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/events"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v2/security"
 )
 
 type TenancyServer struct {
@@ -93,13 +90,6 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
 		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
 	}
-}
-
-// NewInternalOPLHandler returns an HTTP handler that serves the combined Keto
-// OPL generated from all registered permission manifests. Supports ?domain=
-// query parameter for per-domain Keto instances.
-func (prtSrv *TenancyServer) NewInternalOPLHandler() http.Handler {
-	return opl.NewHandler(prtSrv.ServiceNamespaceRepo)
 }
 
 func (prtSrv *TenancyServer) ListPartition(

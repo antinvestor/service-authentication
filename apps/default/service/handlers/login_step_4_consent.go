@@ -29,8 +29,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )

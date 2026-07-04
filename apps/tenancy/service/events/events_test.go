@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -203,13 +203,13 @@ func (suite *EventsTestSuite) TestTupleDeleteEvent_Validate_EmptyTuples() {
 
 func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Name() {
 	t := suite.T()
-	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil)
+	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil, nil)
 	assert.Equal(t, EventKeyAuthzPartitionSync, e.Name())
 }
 
 func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_PayloadType() {
 	t := suite.T()
-	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil)
+	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil, nil)
 	pt := e.PayloadType()
 	_, ok := pt.(*map[string]any)
 	assert.True(t, ok)
@@ -217,14 +217,14 @@ func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_PayloadType() {
 
 func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_Valid() {
 	t := suite.T()
-	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil)
+	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil, nil)
 	m := map[string]any{"id": "partition123"}
 	assert.NoError(t, e.Validate(context.Background(), &m))
 }
 
 func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_MissingID() {
 	t := suite.T()
-	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil)
+	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil, nil)
 	m := map[string]any{"other": "value"}
 	err := e.Validate(context.Background(), &m)
 	assert.Error(t, err)
@@ -233,7 +233,7 @@ func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_MissingID() {
 
 func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_WrongType() {
 	t := suite.T()
-	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil)
+	e := NewAuthzPartitionSyncEventHandler(nil, nil, nil, nil)
 	assert.Error(t, e.Validate(context.Background(), "invalid"))
 }
 

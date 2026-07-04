@@ -22,29 +22,31 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/antinvestor/common/v2/servicecatalog"
+
 	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	commonconnection "github.com/antinvestor/common/connection"
+	"github.com/antinvestor/common/v2"
+	commonconnection "github.com/antinvestor/common/v2/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame"
-	"github.com/pitabwire/frame/cache"
-	"github.com/pitabwire/frame/config"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/datastore"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testpostgres"
-	"github.com/pitabwire/frame/frametests/rlstest"
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/v2/frametests/rlstest"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -234,6 +236,9 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
+	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://api.example.test/authentication")
+	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://api.example.test")
+	t.Setenv("SERVICE_NAME", "authentication_tests")
 
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
 	require.NoError(t, err)
@@ -261,8 +266,14 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2ServiceAudience = []string{"service_profile", "service_tenancy", "service_notification", "service_device"}
-	cfg.Oauth2JwtVerifyAudience = []string{"authentication_tests"}
+	cfg.Oauth2AudienceBaseURL = "https://api.example.test"
+	cfg.Oauth2RequestedAudiences = []string{
+		"https://api.example.test/profile",
+		"https://api.example.test/tenancy",
+		"https://api.example.test/notification",
+		"https://api.example.test/devices",
+	}
+	cfg.Oauth2ResourceAudience = "https://api.example.test/authentication"
 	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
 	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
@@ -326,43 +337,70 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientID:   "dev_authentication_tests",
 			ClientName: "sa-authentication_tests",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
-			ProfileID:  "dev_authentication_tests",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_authentication_tests",
 		},
 		{
 			ClientID:   "dev_service_authentication",
 			ClientName: "sa-service_authentication",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
-			Audience:   []string{"service_profile", "service_tenancy", "service_notification", "service_device"},
-			ProfileID:  "dev_service_authentication",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_service_authentication",
 		},
 		{
 			ClientID:   "dev_service_profile",
 			ClientName: "sa-service_profile",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notification", "service_tenancy"},
-			ProfileID:  "dev_service_profile",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
+				"service_notification",
+			},
+			ProfileID: "dev_service_profile",
 		},
 		{
 			ClientID:   "dev_service_tenancy",
 			ClientName: "sa-service_tenancy",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_notification", "service_profile", "authentication_tests"},
-			ProfileID:  "dev_service_tenancy",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
+			},
+			ProfileID: "dev_service_tenancy",
 		},
 		{
 			ClientID:   "dev_service_notification",
 			ClientName: "sa-service_notification",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
-			Audience:   []string{"service_profile", "service_tenancy", "service_device"},
-			ProfileID:  "dev_service_notification",
+			Audience: []string{
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/devices",
+			},
+			ProfileID: "dev_service_notification",
 		},
 		{
 			ClientID:   "dev_service_device",
 			ClientName: "sa-service_device",
 			Secret:     "hkBaJroO9cDGleFnuaAZ",
-			Audience:   []string{"service_notification", "service_tenancy", "service_profile", "authentication_tests"},
-			ProfileID:  "dev_service_device",
+			Audience: []string{
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
+			},
+			ProfileID: "dev_service_device",
 		},
 	}
 
@@ -429,7 +467,7 @@ func setupDeviceClient(
 	cfg *aconfig.AuthenticationConfig) (devicev1connect.DeviceServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.DeviceServiceURI,
-		Audiences: []string{"service_device"},
+		ServiceID: servicecatalog.ServiceDevices,
 	})
 	if err != nil {
 		return nil, err
@@ -444,7 +482,7 @@ func setupNotificationClient(
 	cfg *aconfig.AuthenticationConfig) (notificationv1connect.NotificationServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.NotificationServiceURI,
-		Audiences: []string{"service_notification"},
+		ServiceID: servicecatalog.ServiceNotification,
 	})
 	if err != nil {
 		return nil, err
@@ -459,7 +497,7 @@ func setupPartitionClient(
 	cfg *aconfig.AuthenticationConfig) (tenancyv1connect.TenancyServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.TenancyServiceURI,
-		Audiences: []string{"service_tenancy"},
+		ServiceID: servicecatalog.ServiceTenancy,
 	}, common.WithTraceRequests(), common.WithTraceResponses(), common.WithTraceHeaders())
 	if err != nil {
 		return nil, err
@@ -474,7 +512,7 @@ func setupProfileClient(
 	cfg *aconfig.AuthenticationConfig) (profilev1connect.ProfileServiceClient, error) {
 	opts, err := common.ClientOptions(ctx, cfg, common.ServiceTarget{
 		Endpoint:  cfg.ProfileServiceURI,
-		Audiences: []string{"service_profile"},
+		ServiceID: servicecatalog.ServiceProfile,
 	})
 	if err != nil {
 		return nil, err

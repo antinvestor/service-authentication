@@ -33,9 +33,9 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/frametests"
-	"github.com/pitabwire/frame/frametests/definition"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -133,9 +133,11 @@ func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperti
 	redirectURI := suite.ServerUrl() + "/oauth2/callback"
 
 	props := data.JSONMap{
-		"redirect_uris":              redirectURI,
-		"scope":                      "openid offline offline_access profile",
-		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
+		"redirect_uris": redirectURI,
+		"scope":         "openid offline offline_access profile",
+		"audience": "https://api.example.test/devices,https://api.example.test/profile," +
+			"https://api.example.test/tenancy,https://api.example.test/files," +
+			"https://api.example.test/authentication",
 		"token_endpoint_auth_method": "none",
 	}
 	for key, value := range properties {
@@ -172,7 +174,7 @@ func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperti
 		ClientSecret: "",
 		RedirectURIs: []string{redirectURI},
 		Scope:        "openid offline_access profile",
-		Audience:     []string{"authentication_tests"},
+		Audience:     []string{"https://api.example.test/authentication"},
 	}, nil
 }
 

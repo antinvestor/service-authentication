@@ -19,7 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pitabwire/frame/security/authorizer"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -74,8 +74,7 @@ func TestWriteTuplesWithRetry_PermanentError(t *testing.T) {
 		calls++
 		return status.Error(codes.NotFound, "namespace not found")
 	})
-	// Should return nil (ACK the message) after detecting permanent error.
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, 1, calls, "should not retry permanent errors")
 }
 
@@ -100,8 +99,7 @@ func TestWriteTuplesWithRetry_ExhaustsRetries(t *testing.T) {
 		calls++
 		return status.Error(codes.Unavailable, "keto down")
 	})
-	// Should return nil (ACK) after exhausting retries.
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, maxKetoRetries, calls)
 }
 
@@ -113,8 +111,7 @@ func TestWriteTuplesWithRetry_ContextCancelled(t *testing.T) {
 		cancel() // cancel during first retry backoff
 		return status.Error(codes.Unavailable, "keto down")
 	})
-	// Should return nil — don't block on cancelled context.
-	assert.NoError(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestWithEventTimeout(t *testing.T) {

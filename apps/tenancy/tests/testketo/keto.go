@@ -15,8 +15,8 @@
 package testketo
 
 import (
-	"github.com/pitabwire/frame/frametests/definition"
-	"github.com/pitabwire/frame/frametests/deps/testoryketo"
+	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v2/frametests/deps/testoryketo"
 )
 
 // ImageName is the Ory Keto image used for test containers.
@@ -64,7 +64,6 @@ class service_profile implements Namespace {
     owner: profile_user[]
     admin: profile_user[]
     member: profile_user[]
-    service: (profile_user | tenancy_access)[]
   }
 }
 
@@ -73,7 +72,6 @@ class service_device implements Namespace {
     owner: profile_user[]
     admin: profile_user[]
     member: profile_user[]
-    service: (profile_user | tenancy_access)[]
   }
 }
 
@@ -82,7 +80,6 @@ class service_setting implements Namespace {
     owner: profile_user[]
     admin: profile_user[]
     member: profile_user[]
-    service: (profile_user | tenancy_access)[]
   }
 }
 
@@ -91,7 +88,6 @@ class service_audit implements Namespace {
     owner: profile_user[]
     admin: profile_user[]
     member: profile_user[]
-    service: (profile_user | tenancy_access)[]
   }
 }
 
@@ -100,7 +96,6 @@ class service_tenancy implements Namespace {
     owner: profile_user[]
     admin: profile_user[]
     member: profile_user[]
-    service: (profile_user | tenancy_access)[]
 
     // Direct permission grants (prefixed with granted_ to avoid
     // name conflict with permits — Keto skips permit evaluation
@@ -123,83 +118,69 @@ class service_tenancy implements Namespace {
 
   permits = {
     tenant_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.granted_tenant_manage.includes(ctx.subject),
 
     tenant_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.permits.tenant_manage(ctx) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.member.includes(ctx.subject) ||
       this.related.granted_tenant_view.includes(ctx.subject),
 
     partition_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_partition_manage.includes(ctx.subject),
 
     partition_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.permits.partition_manage(ctx) ||
       this.related.member.includes(ctx.subject) ||
       this.related.granted_partition_view.includes(ctx.subject),
 
     access_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_access_manage.includes(ctx.subject),
 
     access_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.permits.access_manage(ctx) ||
       this.related.granted_access_view.includes(ctx.subject),
 
     roles_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_roles_manage.includes(ctx.subject),
 
     pages_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_pages_manage.includes(ctx.subject),
 
     pages_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.permits.pages_manage(ctx) ||
       this.related.member.includes(ctx.subject) ||
       this.related.granted_pages_view.includes(ctx.subject),
 
     permission_grant: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_permission_grant.includes(ctx.subject),
 
     service_account_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_service_account_view.includes(ctx.subject),
 
     service_account_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.granted_service_account_manage.includes(ctx.subject),
 
     client_view: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.admin.includes(ctx.subject) ||
       this.related.granted_client_view.includes(ctx.subject),
 
     client_manage: (ctx: Context): boolean =>
-      this.related.service.includes(ctx.subject) ||
       this.related.owner.includes(ctx.subject) ||
       this.related.granted_client_manage.includes(ctx.subject),
   }

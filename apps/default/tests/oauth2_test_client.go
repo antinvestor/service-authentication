@@ -36,15 +36,11 @@ import (
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect"
-	"github.com/antinvestor/common"
-	commonconnection "github.com/antinvestor/common/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/pitabwire/frame/data"
-	"github.com/pitabwire/frame/frametests"
+	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/frametests"
 	"github.com/pitabwire/util"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -184,28 +180,7 @@ func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (te
 		return c.PartitionCli, nil
 	}
 
-	tokenCfg := &clientcredentials.Config{
-		ClientID:     c.cfg.GetOauth2ServiceClientID(),
-		ClientSecret: c.cfg.GetOauth2ServiceClientSecret(),
-		TokenURL:     c.cfg.GetOauth2TokenEndpoint(),
-		AuthStyle:    oauth2.AuthStyleInParams,
-		EndpointParams: url.Values{
-			"audience": []string{"service_tenancy"},
-		},
-	}
-
-	client, err := commonconnection.NewConnectClient(
-		ctx,
-		tenancyv1connect.NewTenancyServiceClient,
-		common.WithEndpoint(c.cfg.TenancyServiceURI),
-		common.WithAudiences("service_tenancy"),
-		common.WithTokenSource(tokenCfg.TokenSource(ctx)),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("partition client: %w", err)
-	}
-
-	return client, nil
+	return setupPartitionClient(ctx, c.cfg)
 }
 
 // CreateOAuth2Client creates a test OAuth2 client in Hydra via the partition service.

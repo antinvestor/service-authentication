@@ -18,7 +18,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pitabwire/frame/security"
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 )
 

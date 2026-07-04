@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/v2/datastore"
 )
 
 func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath string) error {

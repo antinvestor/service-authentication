@@ -15,7 +15,7 @@
 package models
 
 import (
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 )
 
 // AuditEntry is an append-only, tamper-proof audit trail record.

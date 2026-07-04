@@ -17,7 +17,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/pitabwire/frame/data"
+	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/util"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/events"

@@ -17,7 +17,7 @@ package config
 import (
 	"strings"
 
-	"github.com/pitabwire/frame/config"
+	"github.com/pitabwire/frame/v2/config"
 )
 
 const (

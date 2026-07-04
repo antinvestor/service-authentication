@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame/datastore"
+	"github.com/pitabwire/frame/v2/datastore"
 )
 
 // LoginRepository handles database operations for Login entities
