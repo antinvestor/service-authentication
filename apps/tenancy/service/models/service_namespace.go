@@ -26,11 +26,14 @@ import (
 // service to enable dynamic permission management.
 type ServiceNamespace struct {
 	data.BaseModel
-	Namespace    string       `gorm:"type:varchar(100);uniqueIndex;not null"`
-	Domain       string       `gorm:"type:varchar(50);not null;default:'platform'"`
-	Permissions  data.JSONMap `gorm:"type:jsonb"`
-	RoleBindings data.JSONMap `gorm:"type:jsonb"`
-	RegisteredAt *time.Time
+	Namespace             string       `gorm:"type:varchar(100);uniqueIndex;not null"`
+	OwnerServiceAccountID string       `gorm:"type:varchar(100);index;not null"`
+	Domain                string       `gorm:"type:varchar(50);not null;default:'platform'"`
+	Permissions           data.JSONMap `gorm:"type:jsonb"`
+	RoleBindings          data.JSONMap `gorm:"type:jsonb"`
+	RegisteredAt          *time.Time
+	Generation            int64 `gorm:"not null;default:1"`
+	ReconciledGeneration  int64 `gorm:"not null;default:0"`
 }
 
 // DomainDefault is the default domain for all namespaces. As the platform

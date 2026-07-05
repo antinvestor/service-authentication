@@ -34,19 +34,20 @@ func TestRoleMappingTestSuite(t *testing.T) {
 	suite.Run(t, new(RoleMappingTestSuite))
 }
 
-func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyAccess() {
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_RegisteredNamespacesAndTenancyAccess() {
 	t := suite.T()
 	role := authz.RoleAdmin
-	nsRecords := authz.CoreServiceNamespaceRecords()
+	nsRecords := []*models.ServiceNamespace{
+		{Namespace: "service_profile", RoleBindings: data.JSONMap{role: []string{"profile_view"}}},
+		{Namespace: "service_tenancy", RoleBindings: data.JSONMap{role: []string{"tenant_view"}}},
+	}
 	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role, nsRecords)
 
-	// One tuple per CoreServiceNamespace + one for tenancy_access
-	expectedCount := len(authz.CoreServiceNamespaces) + 1
+	expectedCount := len(nsRecords) + 1
 	assert.Len(t, tuples, expectedCount)
 
-	// All core service namespaces get direct profile_user role tuples
-	for i, ns := range authz.CoreServiceNamespaces {
-		assert.Equal(t, ns, tuples[i].Object.Namespace)
+	for i, namespace := range nsRecords {
+		assert.Equal(t, namespace.Namespace, tuples[i].Object.Namespace)
 		assert.Equal(t, "tenant1/partition1", tuples[i].Object.ID)
 		assert.Equal(t, role, tuples[i].Relation)
 		assert.Equal(t, authz.NamespaceProfile, tuples[i].Subject.Namespace)
@@ -112,9 +113,9 @@ func (suite *RoleMappingTestSuite) TestBuildRoleTuples_SkipsNamespacesWithoutRol
 func (suite *RoleMappingTestSuite) TestRegisteredNamespaceNames() {
 	t := suite.T()
 
-	// Nil input falls back to CoreServiceNamespaces
+	// No runtime registrations means no service namespace names.
 	result := authz.RegisteredNamespaceNames(nil)
-	assert.Equal(t, authz.CoreServiceNamespaces, result)
+	assert.Empty(t, result)
 
 	// Non-empty input extracts namespace strings
 	input := []*models.ServiceNamespace{
@@ -309,16 +310,4 @@ func (suite *RoleMappingTestSuite) TestSortRelationTuples() {
 
 	require.Equal(t, "service_audit", tuples[0].Object.Namespace)
 	require.Equal(t, "service_profile", tuples[1].Object.Namespace)
-}
-
-func (suite *RoleMappingTestSuite) TestDeployedCatalogRejectsRuntimeOnlyNamespace() {
-	t := suite.T()
-	selected := authz.SelectDeployedNamespaceRecords([]*models.ServiceNamespace{
-		{Namespace: "service_profile"},
-		{Namespace: "opportunities_api"},
-	})
-
-	require.Len(t, selected, 1)
-	require.Equal(t, "service_profile", selected[0].Namespace)
-	require.NotEmpty(t, authz.DeployedServiceNamespaceRecords())
 }

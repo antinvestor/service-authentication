@@ -101,6 +101,7 @@ func main() {
 		partSrv.ServiceAccountRepo,
 		partSrv.PartitionRepo,
 		partSrv.AuthorizationPolicyRepo,
+		partSrv.ServiceNamespaceRepo,
 		partSrv.AuthContractRepo,
 		svc.EventsManager(),
 		auth,
@@ -128,7 +129,6 @@ func main() {
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
-
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
 
@@ -238,10 +238,13 @@ func setupConnectServer(
 	mux.Handle("/", serverHandler)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
-	// Internal endpoints — no auth middleware. Safe because they're only
-	// reachable within the cluster (not exposed through the API gateway).
+	// Client bootstrap remains cluster-internal. Permission registration also
+	// requires a verified service-account token and binds namespaces to it.
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
-	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
+	mux.Handle(
+		"/_internal/register/permissions",
+		securityhttp.AuthenticationMiddleware(implementation.NewPermissionRegistrationHandler(), authenticator),
+	)
 
 	return mux
 }

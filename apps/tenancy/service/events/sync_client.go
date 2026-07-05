@@ -255,6 +255,9 @@ func buildClientHydraPayload(cl *models.Client, profileID string, audiences []st
 	if profileID != "" {
 		metadata["profile_id"] = profileID
 	}
+	if cl.ServiceAccountID != "" {
+		metadata["service_account_id"] = cl.ServiceAccountID
+	}
 	if accessID := cl.Properties.GetString("access_id"); accessID != "" {
 		metadata["access_id"] = accessID
 	}

@@ -39,14 +39,14 @@ func (r *serviceAccountAuthorizationPolicyRepository) GetByServiceAccountID(
 	serviceAccountID string,
 ) (*AuthorizationPolicyState, error) {
 	policy := &models.ServiceAccountAuthorizationPolicy{}
-	if err := r.pool.DB(ctx, true).
+	if err := r.pool.DB(ctx, false).
 		Where("service_account_id = ?", serviceAccountID).
 		First(policy).Error; err != nil {
 		return nil, err
 	}
 
 	var grants []*models.ServiceAccountAuthorizationGrant
-	if err := r.pool.DB(ctx, true).
+	if err := r.pool.DB(ctx, false).
 		Where("policy_id = ?", policy.ID).
 		Order("namespace, scope").
 		Find(&grants).Error; err != nil {
@@ -56,7 +56,7 @@ func (r *serviceAccountAuthorizationPolicyRepository) GetByServiceAccountID(
 	state := &AuthorizationPolicyState{Policy: policy, Grants: make([]AuthorizationGrant, 0, len(grants))}
 	for _, grant := range grants {
 		var permissions []*models.ServiceAccountAuthorizationPermission
-		if err := r.pool.DB(ctx, true).
+		if err := r.pool.DB(ctx, false).
 			Where("grant_id = ?", grant.ID).
 			Order("permission").
 			Find(&permissions).Error; err != nil {
@@ -79,11 +79,30 @@ func (r *serviceAccountAuthorizationPolicyRepository) ListPending(
 	ctx context.Context,
 ) ([]*models.ServiceAccountAuthorizationPolicy, error) {
 	var policies []*models.ServiceAccountAuthorizationPolicy
-	err := r.pool.DB(ctx, true).
+	err := r.pool.DB(ctx, false).
 		Where("status <> ? OR applied_generation <> generation", models.AuthorizationPolicyApplied).
 		Order("service_account_id").
 		Find(&policies).Error
 	return policies, err
+}
+
+func (r *serviceAccountAuthorizationPolicyRepository) ListByNamespace(
+	ctx context.Context,
+	namespace string,
+) ([]*models.ServiceAccountAuthorizationPolicy, error) {
+	var policies []*models.ServiceAccountAuthorizationPolicy
+	err := r.pool.DB(ctx, false).
+		Table("service_account_authorization_policies AS policies").
+		Select("DISTINCT policies.*").
+		Joins("JOIN service_account_authorization_grants AS grants ON grants.policy_id = policies.id").
+		Where("grants.namespace = ?", namespace).
+		Where("policies.deleted_at IS NULL AND grants.deleted_at IS NULL").
+		Order("policies.service_account_id").
+		Find(&policies).Error
+	if err != nil {
+		return nil, fmt.Errorf("list authorization policies by namespace: %w", err)
+	}
+	return policies, nil
 }
 
 func (r *serviceAccountAuthorizationPolicyRepository) Replace(

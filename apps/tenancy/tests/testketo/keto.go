@@ -20,7 +20,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/frame/v2/frametests/deps/testoryketo"
 )
@@ -67,15 +66,17 @@ func renderOPLNamespaces() string {
 	var builder strings.Builder
 	builder.WriteString(oplHeader)
 
-	namespaces := authz.DeployedServiceNamespaceRecords()
-	sort.Slice(namespaces, func(i, j int) bool {
-		return namespaces[i].Namespace < namespaces[j].Namespace
-	})
+	catalog := testPermissionCatalog()
+	namespaces := make([]string, 0, len(catalog))
+	for namespace := range catalog {
+		namespaces = append(namespaces, namespace)
+	}
+	sort.Strings(namespaces)
 	for _, namespace := range namespaces {
-		permissions, _ := authz.DeployedPermissions(namespace.Namespace)
+		permissions := catalog[namespace]
 		slices.Sort(permissions)
 
-		_, _ = fmt.Fprintf(&builder, "\nclass %s implements Namespace {\n  related: {\n", namespace.Namespace)
+		_, _ = fmt.Fprintf(&builder, "\nclass %s implements Namespace {\n  related: {\n", namespace)
 		builder.WriteString("    owner: profile_user[]\n")
 		builder.WriteString("    admin: profile_user[]\n")
 		builder.WriteString("    operator: profile_user[]\n")
@@ -86,7 +87,7 @@ func renderOPLNamespaces() string {
 				&builder,
 				"    granted_%s: (profile_user | %s)[]\n",
 				permission,
-				namespace.Namespace,
+				namespace,
 			)
 		}
 		builder.WriteString("  }\n")
@@ -109,6 +110,17 @@ func renderOPLNamespaces() string {
 	}
 
 	return builder.String()
+}
+
+func testPermissionCatalog() map[string][]string {
+	return map[string][]string{
+		"service_profile": {"profile_update", "profile_view"},
+		"service_tenancy": {
+			"access_manage", "access_view", "client_manage", "client_view", "page_manage", "page_view",
+			"partition_manage", "partition_view", "permission_grant", "role_manage", "service_account_manage",
+			"service_account_view", "tenant_manage", "tenant_view",
+		},
+	}
 }
 
 // NewWithOpts creates a new Keto test resource with OPL namespace support.

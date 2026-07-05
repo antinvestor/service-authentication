@@ -41,31 +41,34 @@ const maxConcurrentAuthorizationReconciliations = 4
 // authorization policy. Events carry a generation and are only a latency
 // mechanism; the policy and applied-tuple rows remain authoritative.
 type AuthzServiceAccountSyncEvent struct {
-	serviceAccountRepo repository.ServiceAccountRepository
-	partitionRepo      repository.PartitionRepository
-	policyRepo         repository.ServiceAccountAuthorizationPolicyRepository
-	authContractRepo   repository.AuthContractRepository
-	eventsMan          fevents.Manager
-	authorizer         security.Authorizer
-	concurrency        chan struct{}
+	serviceAccountRepo   repository.ServiceAccountRepository
+	partitionRepo        repository.PartitionRepository
+	policyRepo           repository.ServiceAccountAuthorizationPolicyRepository
+	serviceNamespaceRepo repository.ServiceNamespaceRepository
+	authContractRepo     repository.AuthContractRepository
+	eventsMan            fevents.Manager
+	authorizer           security.Authorizer
+	concurrency          chan struct{}
 }
 
 func NewAuthzServiceAccountSyncEventHandler(
 	serviceAccountRepo repository.ServiceAccountRepository,
 	partitionRepo repository.PartitionRepository,
 	policyRepo repository.ServiceAccountAuthorizationPolicyRepository,
+	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 	authContractRepo repository.AuthContractRepository,
 	eventsMan fevents.Manager,
 	auth security.Authorizer,
 ) *AuthzServiceAccountSyncEvent {
 	return &AuthzServiceAccountSyncEvent{
-		serviceAccountRepo: serviceAccountRepo,
-		partitionRepo:      partitionRepo,
-		policyRepo:         policyRepo,
-		authContractRepo:   authContractRepo,
-		eventsMan:          eventsMan,
-		authorizer:         auth,
-		concurrency:        make(chan struct{}, maxConcurrentAuthorizationReconciliations),
+		serviceAccountRepo:   serviceAccountRepo,
+		partitionRepo:        partitionRepo,
+		policyRepo:           policyRepo,
+		serviceNamespaceRepo: serviceNamespaceRepo,
+		authContractRepo:     authContractRepo,
+		eventsMan:            eventsMan,
+		authorizer:           auth,
+		concurrency:          make(chan struct{}, maxConcurrentAuthorizationReconciliations),
 	}
 }
 
@@ -74,21 +77,58 @@ func NewAuthzServiceAccountSyncEventHandler(
 // so missing Keto schema or stale derived state fails closed and self-heals on
 // the next restart after the dependency is corrected.
 func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) error {
+	namespaces, err := e.serviceNamespaceRepo.ListAll(ctx)
+	if err != nil {
+		return fmt.Errorf("list registered permission namespaces: %w", err)
+	}
+	registered := make(map[string]struct{}, len(namespaces))
+	for _, namespace := range namespaces {
+		registered[namespace.Namespace] = struct{}{}
+	}
+
 	policies, err := e.policyRepo.ListPending(ctx)
 	if err != nil {
 		return fmt.Errorf("list pending authorization policies: %w", err)
 	}
+	var failures []error
 	for _, policy := range policies {
+		state, stateErr := e.policyRepo.GetByServiceAccountID(ctx, policy.ServiceAccountID)
+		if stateErr != nil {
+			failures = append(failures, fmt.Errorf("load service account %s policy: %w", policy.ServiceAccountID, stateErr))
+			continue
+		}
+		missing := missingPolicyNamespaces(state.Grants, registered)
+		if len(missing) > 0 {
+			util.Log(ctx).WithFields(map[string]any{
+				"service_account_id": policy.ServiceAccountID,
+				"namespaces":         missing,
+			}).Info("authorization policy remains pending until service manifests register")
+			continue
+		}
 		payload := map[string]any{
 			"id":         policy.ServiceAccountID,
 			"generation": policy.Generation,
 			"reason":     "startup_reconciliation",
 		}
 		if err = e.Execute(ctx, &payload); err != nil {
-			return fmt.Errorf("reconcile service account %s policy: %w", policy.ServiceAccountID, err)
+			failures = append(failures, fmt.Errorf("reconcile service account %s policy: %w", policy.ServiceAccountID, err))
 		}
 	}
-	return nil
+	return errors.Join(failures...)
+}
+
+func missingPolicyNamespaces(
+	grants []repository.AuthorizationGrant,
+	registered map[string]struct{},
+) []string {
+	missing := make([]string, 0)
+	for _, grant := range grants {
+		if _, ok := registered[grant.Namespace]; !ok {
+			missing = append(missing, grant.Namespace)
+		}
+	}
+	slices.Sort(missing)
+	return slices.Compact(missing)
 }
 
 func (e *AuthzServiceAccountSyncEvent) Name() string {
@@ -284,9 +324,9 @@ func (e *AuthzServiceAccountSyncEvent) handleFailure(
 			"generation":         policy.Generation,
 		})
 		if isPermanentError(cause) {
-			logger.Error("permanent authorization reconciliation failure recorded; awaiting scheduled reconciliation")
+			logger.Error("permanent authorization reconciliation failure recorded; awaiting explicit reconciliation")
 		} else {
-			logger.Warn("transient authorization reconciliation failure recorded; awaiting scheduled reconciliation")
+			logger.Warn("transient authorization reconciliation failure recorded; awaiting explicit reconciliation")
 		}
 		return nil
 	}
@@ -314,6 +354,10 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	if sa.State == int32(commonv1.STATE_DELETED) {
 		return nil, nil
 	}
+	namespaces, err := e.serviceNamespaceRepo.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load registered permission namespaces: %w", err)
+	}
 	basePartition, err := e.partitionRepo.GetByID(ctx, sa.PartitionID)
 	if err != nil {
 		return nil, fmt.Errorf("load service account partition %s: %w", sa.PartitionID, err)
@@ -330,7 +374,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	for _, grant := range grants {
 		resolved, resolveErr := authz.ResolveServiceGrants(
 			map[string][]string{grant.Namespace: grant.Permissions},
-			authz.DeployedServiceNamespaceRecords(),
+			namespaces,
 		)
 		if resolveErr != nil {
 			return nil, fmt.Errorf("invalid authorization policy grant: %w", resolveErr)

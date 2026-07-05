@@ -136,7 +136,7 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 			} else {
 				registeredNS, nsErr := e.serviceNamespaceRepo.ListAll(ctx)
 				if nsErr != nil {
-					logger.WithError(nsErr).Warn("failed to list service namespaces, using core defaults")
+					return fmt.Errorf("list registered service namespaces: %w", nsErr)
 				}
 
 				for _, role := range roles {

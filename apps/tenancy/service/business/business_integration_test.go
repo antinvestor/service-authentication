@@ -230,6 +230,7 @@ func (s *BusinessTestSuite) TestAuthorizationSchemaFailureRemainsPendingAndFails
 		deps.ServiceAccountRepo,
 		deps.PartitionRepo,
 		deps.AuthorizationPolicyRepo,
+		deps.ServiceNamespaceRepo,
 		deps.AuthContractRepo,
 		nil,
 		schemaMissingAuthorizer{},

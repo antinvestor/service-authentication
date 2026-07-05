@@ -38,6 +38,7 @@ func NewAuthContractServer(parent *TenancyServer, audienceBaseURL string) (*Auth
 		parent.OAuthRecipientRepo,
 		parent.ServiceAccountRepo,
 		parent.AuthorizationPolicyRepo,
+		parent.ServiceNamespaceRepo,
 		parent.AuthContractRepo,
 	)
 	if err != nil {

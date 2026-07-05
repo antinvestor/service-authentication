@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +46,7 @@ func TestDiffAuthorizationTuplesDeletesRevokedAndWritesNew(t *testing.T) {
 func TestAuthorizationReconciliationConcurrencyIsBounded(t *testing.T) {
 	t.Parallel()
 
-	reconciler := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
+	reconciler := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil)
 	for range maxConcurrentAuthorizationReconciliations {
 		require.NoError(t, reconciler.acquire(t.Context()))
 	}
@@ -59,6 +60,18 @@ func TestAuthorizationReconciliationConcurrencyIsBounded(t *testing.T) {
 	for range maxConcurrentAuthorizationReconciliations {
 		reconciler.release()
 	}
+}
+
+func TestMissingPolicyNamespacesAreDeferredUntilRegistration(t *testing.T) {
+	t.Parallel()
+
+	missing := missingPolicyNamespaces([]repository.AuthorizationGrant{
+		{Namespace: "service_records"},
+		{Namespace: "service_profile"},
+		{Namespace: "service_records"},
+	}, map[string]struct{}{"service_profile": {}})
+
+	require.Equal(t, []string{"service_records"}, missing)
 }
 
 func TestBuildPartitionTreeUsesStructuralAncestryAcrossTenantBoundaries(t *testing.T) {

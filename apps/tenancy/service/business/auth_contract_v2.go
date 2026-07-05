@@ -19,13 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"slices"
 	"strings"
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"github.com/antinvestor/common/v2/servicecatalog"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -52,14 +52,15 @@ type AuthContractBusiness interface {
 }
 
 type authContractBusiness struct {
-	catalog            *servicecatalog.Catalog
-	eventsMan          fevents.Manager
-	partitionRepo      repository.PartitionRepository
-	clientRepo         repository.ClientRepository
-	recipientRepo      repository.OAuthClientRecipientRepository
-	serviceAccountRepo repository.ServiceAccountRepository
-	policyRepo         repository.ServiceAccountAuthorizationPolicyRepository
-	authContractRepo   repository.AuthContractRepository
+	audienceBaseURL      string
+	eventsMan            fevents.Manager
+	partitionRepo        repository.PartitionRepository
+	clientRepo           repository.ClientRepository
+	recipientRepo        repository.OAuthClientRecipientRepository
+	serviceAccountRepo   repository.ServiceAccountRepository
+	policyRepo           repository.ServiceAccountAuthorizationPolicyRepository
+	serviceNamespaceRepo repository.ServiceNamespaceRepository
+	authContractRepo     repository.AuthContractRepository
 }
 
 func NewAuthContractBusiness(
@@ -70,21 +71,23 @@ func NewAuthContractBusiness(
 	recipientRepo repository.OAuthClientRecipientRepository,
 	serviceAccountRepo repository.ServiceAccountRepository,
 	policyRepo repository.ServiceAccountAuthorizationPolicyRepository,
+	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 	authContractRepo repository.AuthContractRepository,
 ) (AuthContractBusiness, error) {
-	catalog, err := servicecatalog.New(audienceBaseURL)
+	normalizedAudienceBaseURL, err := normalizeAudienceBaseURL(audienceBaseURL)
 	if err != nil {
 		return nil, err
 	}
 	return &authContractBusiness{
-		catalog:            catalog,
-		eventsMan:          eventsMan,
-		partitionRepo:      partitionRepo,
-		clientRepo:         clientRepo,
-		recipientRepo:      recipientRepo,
-		serviceAccountRepo: serviceAccountRepo,
-		policyRepo:         policyRepo,
-		authContractRepo:   authContractRepo,
+		audienceBaseURL:      normalizedAudienceBaseURL,
+		eventsMan:            eventsMan,
+		partitionRepo:        partitionRepo,
+		clientRepo:           clientRepo,
+		recipientRepo:        recipientRepo,
+		serviceAccountRepo:   serviceAccountRepo,
+		policyRepo:           policyRepo,
+		serviceNamespaceRepo: serviceNamespaceRepo,
+		authContractRepo:     authContractRepo,
 	}, nil
 }
 
@@ -285,7 +288,7 @@ func (b *authContractBusiness) CreateServiceAccount(
 	if err != nil {
 		return nil, err
 	}
-	grants, err := validateAuthorizationPolicy(request.GetAuthorizationPolicy())
+	grants, err := b.validateAuthorizationPolicy(ctx, request.GetAuthorizationPolicy())
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +463,7 @@ func (b *authContractBusiness) UpdateServiceAccount(
 			replaceRecipients = true
 			clientChanged = true
 		case "authorization_policy":
-			grants, err = validateAuthorizationPolicy(request.GetAuthorizationPolicy())
+			grants, err = b.validateAuthorizationPolicy(ctx, request.GetAuthorizationPolicy())
 			if err != nil {
 				return nil, err
 			}
@@ -543,24 +546,85 @@ func (b *authContractBusiness) ReconcileServiceAccountAuthorization(
 }
 
 func (b *authContractBusiness) validateRecipients(values []string) ([]string, error) {
+	return validateResourceRecipients(b.audienceBaseURL, values)
+}
+
+func validateResourceRecipients(audienceBaseURL string, values []string) ([]string, error) {
 	if len(values) == 0 {
 		return nil, errors.New("at least one OAuth resource recipient is required")
 	}
-	values = slices.Clone(values)
-	slices.Sort(values)
-	if len(slices.Compact(slices.Clone(values))) != len(values) {
+	base, err := url.Parse(audienceBaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse OAuth2 audience base URL: %w", err)
+	}
+
+	normalised := make([]string, 0, len(values))
+	for _, value := range values {
+		audience := strings.TrimSpace(value)
+		if audience == "" || strings.Contains(audience, "%") {
+			return nil, fmt.Errorf("resource audience %q is not a canonical platform audience", value)
+		}
+		parsed, parseErr := url.Parse(audience)
+		if parseErr != nil || parsed.Scheme != "https" || parsed.Host == "" ||
+			parsed.User != nil || parsed.Port() != "" || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
+			return nil, fmt.Errorf("resource audience %q must be an absolute HTTPS URL without credentials, port, query, or fragment", value)
+		}
+		parsed.Host = strings.ToLower(parsed.Hostname())
+		parsed.RawPath = ""
+		if parsed.Host != base.Host || path.Clean(parsed.Path) != parsed.Path ||
+			!isAudiencePathBelowBase(base.Path, parsed.Path) {
+			return nil, fmt.Errorf("resource audience %q is outside the configured platform audience base", value)
+		}
+		normalised = append(normalised, parsed.String())
+	}
+	slices.Sort(normalised)
+	if len(slices.Compact(slices.Clone(normalised))) != len(normalised) {
 		return nil, errors.New("OAuth resource recipients must be unique")
 	}
-	for _, audience := range values {
-		if _, err := b.catalog.ServiceForAudience(audience); err != nil {
-			return nil, err
-		}
+	return normalised, nil
+}
+
+func normalizeAudienceBaseURL(value string) (string, error) {
+	value = strings.TrimSuffix(strings.TrimSpace(value), "/")
+	if value == "" || strings.Contains(value, "%") {
+		return "", errors.New("OAuth2 audience base URL must be a canonical absolute HTTPS URL")
 	}
-	return values, nil
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return "", fmt.Errorf("parse OAuth2 audience base URL: %w", err)
+	}
+	if parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || parsed.Port() != "" ||
+		parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" ||
+		(parsed.Path != "" && path.Clean(parsed.Path) != parsed.Path) {
+		return "", errors.New("OAuth2 audience base URL must be a canonical absolute HTTPS URL")
+	}
+	parsed.Host = strings.ToLower(parsed.Hostname())
+	parsed.RawPath = ""
+	return strings.TrimSuffix(parsed.String(), "/"), nil
+}
+
+func isAudiencePathBelowBase(basePath, audiencePath string) bool {
+	basePath = strings.TrimSuffix(basePath, "/")
+	if basePath == "" {
+		return strings.HasPrefix(audiencePath, "/") && audiencePath != "/" && !strings.HasSuffix(audiencePath, "/")
+	}
+	return strings.HasPrefix(audiencePath, basePath+"/") && !strings.HasSuffix(audiencePath, "/")
+}
+
+func (b *authContractBusiness) validateAuthorizationPolicy(
+	ctx context.Context,
+	policy *tenancyv2.ServiceAuthorizationPolicyInput,
+) ([]repository.AuthorizationGrant, error) {
+	namespaces, err := b.serviceNamespaceRepo.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load registered permission namespaces: %w", err)
+	}
+	return validateAuthorizationPolicy(policy, namespaces)
 }
 
 func validateAuthorizationPolicy(
 	policy *tenancyv2.ServiceAuthorizationPolicyInput,
+	namespaces []*models.ServiceNamespace,
 ) ([]repository.AuthorizationGrant, error) {
 	if policy == nil {
 		return nil, errors.New("authorization policy is required")
@@ -595,7 +659,7 @@ func validateAuthorizationPolicy(
 		}
 		resolved, err := authz.ResolveServiceGrants(
 			map[string][]string{grant.GetNamespace(): permissions},
-			authz.DeployedServiceNamespaceRecords(),
+			namespaces,
 		)
 		if err != nil {
 			return nil, err

@@ -83,9 +83,10 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_Basic() {
 
 func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithProfile() {
 	cl := &models.Client{
-		Name:     "SA Client",
-		ClientID: "sa-id",
-		Type:     "internal",
+		Name:             "SA Client",
+		ClientID:         "sa-id",
+		ServiceAccountID: "service-account-1",
+		Type:             "internal",
 	}
 
 	payload := buildClientHydraPayload(cl, "profile-1", nil)
@@ -93,6 +94,9 @@ func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithProfile() {
 	// Internal clients use private_key_jwt with Hydra's default JWKS
 	s.Equal("private_key_jwt", payload["token_endpoint_auth_method"])
 	s.Equal(DefaultHydraPublicJWKSURI, payload["jwks_uri"])
+	metadata, ok := payload["metadata"].(map[string]any)
+	s.Require().True(ok)
+	s.Equal("service-account-1", metadata["service_account_id"])
 }
 
 func (s *SyncClientHelpersTestSuite) TestBuildClientHydraPayload_WithSecret() {

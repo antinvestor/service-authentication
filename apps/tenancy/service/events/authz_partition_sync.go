@@ -137,8 +137,6 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	if err != nil {
 		return fmt.Errorf("failed to load registered authorization namespaces: %w", err)
 	}
-	namespaces = authz.SelectDeployedNamespaceRecords(namespaces)
-
 	// Human access retains subject-set inheritance. Service-account access is
 	// materialised directly by each policy reconciler and never inherited via a
 	// shared service relation.

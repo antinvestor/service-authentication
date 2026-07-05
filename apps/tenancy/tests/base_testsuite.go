@@ -26,6 +26,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests/testketo"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
@@ -108,6 +109,7 @@ func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.Tenancy
 		oauthRecipientRepo,
 		serviceAccountRepo,
 		authorizationPolicyRepo,
+		serviceNamespaceRepo,
 		authContractRepo,
 	)
 	if err != nil {
@@ -329,7 +331,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
 		events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, implementation.ClientRepo, implementation.OAuthRecipientRepo, implementation.ServiceAccountRepo),
 		events.NewAuthzPartitionSyncEventHandler(implementation.PartitionRepo, implementation.ServiceAccountRepo, implementation.ServiceNamespaceRepo, implementation.AuthorizationPolicyRepo, svc.EventsManager(), auth),
-		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, implementation.PartitionRepo, implementation.AuthorizationPolicyRepo, implementation.AuthContractRepo, svc.EventsManager(), auth),
+		events.NewAuthzServiceAccountSyncEventHandler(implementation.ServiceAccountRepo, implementation.PartitionRepo, implementation.AuthorizationPolicyRepo, implementation.ServiceNamespaceRepo, implementation.AuthContractRepo, svc.EventsManager(), auth),
 		events.NewAuthzAccessSyncEventHandler(implementation.AccessRepo, implementation.AccessRoleRepo, implementation.PartitionRoleRepo, implementation.ServiceNamespaceRepo, auth),
 		events.NewTupleWriteEventHandler(auth),
 		events.NewTupleDeleteEventHandler(auth),
@@ -346,6 +348,29 @@ func (bs *BaseTestSuite) createServiceInternal(
 	)
 	require.NoError(t, err)
 	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)
+
+	now := time.Now().UTC()
+	for _, namespace := range []*models.ServiceNamespace{
+		{
+			Namespace:    "service_profile",
+			Permissions:  data.JSONMap{"values": []string{"profile_update", "profile_view"}},
+			RoleBindings: data.JSONMap{"owner": []string{"profile_update", "profile_view"}},
+			RegisteredAt: &now,
+		},
+		{
+			Namespace: "service_tenancy",
+			Permissions: data.JSONMap{"values": []string{
+				"access_manage", "access_view", "client_manage", "client_view", "page_manage", "page_view",
+				"partition_manage", "partition_view", "permission_grant", "role_manage", "service_account_manage",
+				"service_account_view", "tenant_manage", "tenant_view",
+			}},
+			RoleBindings: data.JSONMap{"owner": []string{"tenant_manage", "tenant_view"}},
+			RegisteredAt: &now,
+		},
+	} {
+		_, registerErr := implementation.ServiceNamespaceRepo.RegisterOwned(ctx, namespace, "test-service-account")
+		require.NoError(t, registerErr)
+	}
 
 	// Migration ran as superuser; grant the restricted role access to the
 	// migrated tables, then switch all application queries to it.
@@ -395,9 +420,16 @@ func (bs *BaseTestSuite) SeedTenantAccess(ctx context.Context, svc *frame.Servic
 func (bs *BaseTestSuite) SeedTenantRole(ctx context.Context, svc *frame.Service, tenantID, partitionID, profileID, role string) {
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", tenantID, partitionID)
+	namespaceRepo := repository.NewServiceNamespaceRepository(
+		ctx,
+		svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName),
+		svc.WorkManager(),
+	)
+	namespaces, err := namespaceRepo.ListAll(ctx)
+	bs.Require().NoError(err, "failed to load registered permission namespaces")
 
-	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role, authz.CoreServiceNamespaceRecords())
-	err := auth.WriteTuples(ctx, tuples)
+	tuples := authz.BuildRoleTuples(tenancyPath, profileID, role, namespaces)
+	err = auth.WriteTuples(ctx, tuples)
 	bs.Require().NoError(err, "failed to seed tenant role")
 }
 

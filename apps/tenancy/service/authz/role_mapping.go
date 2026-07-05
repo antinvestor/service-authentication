@@ -94,24 +94,6 @@ func ResolveServiceGrants(
 	return resolved, nil
 }
 
-// SelectDeployedNamespaceRecords excludes runtime observations that are not in
-// the compiled GitOps schema shipped with the service.
-func SelectDeployedNamespaceRecords(
-	observed []*models.ServiceNamespace,
-) []*models.ServiceNamespace {
-	deployed := make(map[string]struct{}, len(deployedServicePermissions))
-	for namespace := range deployedServicePermissions {
-		deployed[namespace] = struct{}{}
-	}
-	selected := make([]*models.ServiceNamespace, 0, len(observed))
-	for _, namespace := range observed {
-		if _, ok := deployed[namespace.Namespace]; ok {
-			selected = append(selected, namespace)
-		}
-	}
-	return selected
-}
-
 func jsonMapStringValues(values map[string]any, key string) []string {
 	raw, ok := values[key]
 	if !ok {
@@ -192,14 +174,8 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 	},
 }
 
-// RegisteredNamespaceNames extracts the namespace name strings from a list of
-// ServiceNamespace records. If the list is empty, it falls back to
-// CoreServiceNamespaces so that callers without DB access still get the
-// minimum set of namespaces.
+// RegisteredNamespaceNames extracts namespace names from runtime registrations.
 func RegisteredNamespaceNames(namespaces []*models.ServiceNamespace) []string {
-	if len(namespaces) == 0 {
-		return CoreServiceNamespaces
-	}
 	result := make([]string, 0, len(namespaces))
 	for _, ns := range namespaces {
 		result = append(result, ns.Namespace)

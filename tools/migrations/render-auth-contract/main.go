@@ -20,10 +20,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/pitabwire/frame/v2/config"
 	"github.com/pitabwire/util"
@@ -33,6 +33,11 @@ type grantInput struct {
 	Scope       string   `json:"scope"`
 	Permissions []string `json:"permissions"`
 }
+
+var (
+	grantNamespaceRegexp  = regexp.MustCompile("^[a-z][a-z0-9_]{2,99}$") //nolint:gochecknoglobals
+	grantPermissionRegexp = regexp.MustCompile("^[a-z][a-z0-9_]{1,99}$") //nolint:gochecknoglobals
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -88,16 +93,25 @@ func run() error {
 	if len(grants) == 0 {
 		return errors.New("at least one authorization grant is required with service-account-id")
 	}
-	requested := make(map[string][]string, len(grants))
 	for namespace, grant := range grants {
+		if !grantNamespaceRegexp.MatchString(namespace) {
+			return fmt.Errorf("grant has invalid namespace %q", namespace)
+		}
 		if grant.Scope != models.AuthorizationScopePartitionOnly && grant.Scope != models.AuthorizationScopePartitionTree {
 			return fmt.Errorf("grant %q has invalid scope %q", namespace, grant.Scope)
 		}
-		requested[namespace] = grant.Permissions
-	}
-	resolved, err := authz.ResolveServiceGrants(requested, authz.DeployedServiceNamespaceRecords())
-	if err != nil {
-		return fmt.Errorf("validate grants: %w", err)
+		grant.Permissions = slices.Clone(grant.Permissions)
+		slices.Sort(grant.Permissions)
+		grant.Permissions = slices.Compact(grant.Permissions)
+		if len(grant.Permissions) == 0 {
+			return fmt.Errorf("grant %q has no permissions", namespace)
+		}
+		for _, permission := range grant.Permissions {
+			if !grantPermissionRegexp.MatchString(permission) {
+				return fmt.Errorf("grant %q has invalid permission %q", namespace, permission)
+			}
+		}
+		grants[namespace] = grant
 	}
 
 	fmt.Printf(
@@ -106,8 +120,8 @@ func run() error {
 		models.AuthorizationPolicySchemaVersion, quote(models.AuthorizationPolicyPending),
 	)
 
-	namespaces := make([]string, 0, len(resolved))
-	for namespace := range resolved {
+	namespaces := make([]string, 0, len(grants))
+	for namespace := range grants {
 		namespaces = append(namespaces, namespace)
 	}
 	slices.Sort(namespaces)
@@ -117,7 +131,7 @@ func run() error {
 			"\nINSERT INTO service_account_authorization_grants (id, tenant_id, partition_id, policy_id, namespace, scope) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING;\n",
 			quote(grantID), quote(*tenantID), quote(*partitionID), quote(*policyID), quote(namespace), quote(grants[namespace].Scope),
 		)
-		for _, permission := range resolved[namespace] {
+		for _, permission := range grants[namespace].Permissions {
 			fmt.Printf(
 				"INSERT INTO service_account_authorization_permissions (id, tenant_id, partition_id, grant_id, permission) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING;\n",
 				quote(util.IDString()), quote(*tenantID), quote(*partitionID), quote(grantID), quote(permission),

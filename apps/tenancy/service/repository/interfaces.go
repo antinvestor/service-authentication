@@ -76,6 +76,7 @@ type OAuthClientRecipientRepository interface {
 
 type ServiceAccountRepository interface {
 	datastore.BaseRepository[*models.ServiceAccount]
+	GetByIDPrimary(ctx context.Context, id string) (*models.ServiceAccount, error)
 	GetByPartitionAndProfile(ctx context.Context, partitionID, profileID string) (*models.ServiceAccount, error)
 	GetByClientAndProfile(ctx context.Context, clientID, profileID string) (*models.ServiceAccount, error)
 	GetByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
@@ -99,6 +100,7 @@ type ServiceAccountAuthorizationPolicyRepository interface {
 	datastore.BaseRepository[*models.ServiceAccountAuthorizationPolicy]
 	GetByServiceAccountID(ctx context.Context, serviceAccountID string) (*AuthorizationPolicyState, error)
 	ListPending(ctx context.Context) ([]*models.ServiceAccountAuthorizationPolicy, error)
+	ListByNamespace(ctx context.Context, namespace string) ([]*models.ServiceAccountAuthorizationPolicy, error)
 	Replace(ctx context.Context, serviceAccount *models.ServiceAccount, grants []AuthorizationGrant) (*models.ServiceAccountAuthorizationPolicy, error)
 	RecordFailure(ctx context.Context, policyID string, generation int64, code, message string, nextAttempt time.Time) error
 	ListAppliedTuples(ctx context.Context, policyID string) ([]*models.ServiceAccountAppliedTuple, error)

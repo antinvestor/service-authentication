@@ -173,23 +173,23 @@ func (suite *EventsTestSuite) TestAuthzPartitionSyncEvent_Validate_WrongType() {
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Name() {
-	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil)
 	assert.Equal(suite.T(), EventKeyAuthzServiceAccountSync, e.Name())
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_PayloadType() {
-	_, ok := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil).PayloadType().(*map[string]any)
+	_, ok := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil).PayloadType().(*map[string]any)
 	assert.True(suite.T(), ok)
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_Valid() {
 	payload := map[string]any{"id": "sa-456", "generation": float64(1)}
-	assert.NoError(suite.T(), NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil).
+	assert.NoError(suite.T(), NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil).
 		Validate(context.Background(), &payload))
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_GenerationRepresentations() {
-	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
+	e := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil)
 	for name, generation := range map[string]any{
 		"queue JSON": float64(2), "startup direct": int64(2), "native integer": 2,
 	} {
@@ -209,14 +209,14 @@ func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_Generati
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_MissingID() {
 	t := suite.T()
 	payload := map[string]any{"other": "value"}
-	err := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil).
+	err := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil).
 		Validate(context.Background(), &payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "service account id is required")
 }
 
 func (suite *EventsTestSuite) TestAuthzServiceAccountSyncEvent_Validate_WrongType() {
-	assert.Error(suite.T(), NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil).
+	assert.Error(suite.T(), NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil).
 		Validate(context.Background(), 42))
 }
 

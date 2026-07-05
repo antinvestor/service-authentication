@@ -14,57 +14,11 @@
 
 package authz
 
-import (
-	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/v2/data"
-)
-
 const (
-	NamespaceTenancy        = "service_tenancy"
-	NamespaceTenancyAccess  = "tenancy_access"
-	NamespaceProfile        = "profile_user"
-	NamespaceServiceProfile = "service_profile"
-	NamespaceServiceDevice  = "service_device"
-	NamespaceServiceSetting = "service_setting"
-	NamespaceServiceAudit   = "service_audit"
+	NamespaceTenancy       = "service_tenancy"
+	NamespaceTenancyAccess = "tenancy_access"
+	NamespaceProfile       = "profile_user"
 )
-
-// CoreServiceNamespaces lists the service namespaces that receive direct role
-// tuples (profile_user → ns#role) whenever a user is assigned a partition role.
-// This ensures that functional permissions in these namespaces are resolved
-// directly by Keto without bridge tuples.
-//
-// Root partition owners/admins get owner/member tuples written to every entry
-// here at bootstrap, which guarantees they can always manage tenancy, audit,
-// profile, device, and setting services without any manual provisioning.
-var CoreServiceNamespaces = []string{ //nolint:gochecknoglobals // namespace registry
-	NamespaceTenancy,
-	NamespaceServiceAudit,
-	NamespaceServiceProfile,
-	NamespaceServiceDevice,
-	NamespaceServiceSetting,
-}
-
-// CoreServiceNamespaceRecords returns ServiceNamespace records for the core
-// namespaces with RoleBindings set for all standard roles. Use this when you
-// need []*models.ServiceNamespace but only have the hardcoded core list
-// (e.g., in tests where the OPL is known to have all standard roles).
-func CoreServiceNamespaceRecords() []*models.ServiceNamespace {
-	bindings := data.JSONMap{
-		RoleOwner:   []string{},
-		RoleAdmin:   []string{},
-		RoleMember:  []string{},
-		RoleService: []string{},
-	}
-	records := make([]*models.ServiceNamespace, 0, len(CoreServiceNamespaces))
-	for _, ns := range CoreServiceNamespaces {
-		records = append(records, &models.ServiceNamespace{
-			Namespace:    ns,
-			RoleBindings: bindings,
-		})
-	}
-	return records
-}
 
 // Permission constants for tenancy operations.
 // These names match the OPL permits functions and are used with Keto's Check API.
