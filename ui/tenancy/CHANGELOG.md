@@ -1,3 +1,9 @@
+## 0.4.0
+
+- Move OAuth client and service-account management to `tenancy.v2.AuthContractService`.
+- Require canonical resource-recipient URLs and explicit service-account permission grants.
+- Remove all UI use of the retired v1 audience/role contract.
+
 ## 0.3.0
 
 - `PartitionAnalyticsPage` drops its mocked 12-month growth bars and fake

@@ -4,7 +4,7 @@
 # Usage: NAME=<snake> DESCRIPTION=<"One line."> \
 #        TENANT_XID=<xid> PARTITION_XID=<xid> \
 #        PROFILE_XID=<placeholder profile xid> \
-#        AUDIENCES=<json> \
+#        RECIPIENTS=<json-array> GRANTS=<json-object> \
 #        ./tools/migrations/new-service.sh
 #
 # For Thesa-bound SAs, use the root tenant/partition xids.
@@ -17,7 +17,8 @@ set -euo pipefail
 : "${TENANT_XID:?TENANT_XID required}"
 : "${PARTITION_XID:?PARTITION_XID required}"
 : "${PROFILE_XID:?PROFILE_XID required (placeholder resolved by resolveBotProfiles at startup)}"
-: "${AUDIENCES:?AUDIENCES JSON required}"
+: "${RECIPIENTS:?RECIPIENTS JSON array required}"
+: "${GRANTS:?GRANTS JSON object required}"
 
 DATE=$(date +%Y%m%d)
 OUT="apps/tenancy/migrations/0001/${DATE}_service_${NAME}.sql"
@@ -32,10 +33,11 @@ if [ -f "$OUT" ]; then
   exit 1
 fi
 
-mapfile -t XIDS < <(go run ./tools/xid --count 3)
+mapfile -t XIDS < <(go run ./tools/xid --count 4)
 CLIENT="${XIDS[0]}"
 CLIENT_ID="${XIDS[1]}"
 SERVICE_ACCOUNT="${XIDS[2]}"
+POLICY="${XIDS[3]}"
 
 esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 
@@ -48,8 +50,16 @@ sed \
   -e "s/__CLIENT_ID_XID__/$CLIENT_ID/g" \
   -e "s/__SERVICE_ACCOUNT_XID__/$SERVICE_ACCOUNT/g" \
   -e "s/__PROFILE_XID__/$PROFILE_XID/g" \
-  -e "s|__AUDIENCES_JSON__|$(esc "$AUDIENCES")|g" \
   "$TEMPLATE" > "$OUT"
+
+go run ./tools/migrations/render-auth-contract \
+  --client-id "$CLIENT" \
+  --tenant-id "$TENANT_XID" \
+  --partition-id "$PARTITION_XID" \
+  --recipients "$RECIPIENTS" \
+  --service-account-id "$SERVICE_ACCOUNT" \
+  --policy-id "$POLICY" \
+  --grants "$GRANTS" >> "$OUT"
 
 REG="apps/tenancy/migrations/IDS.md"
 python3 - "$REG" "$CLIENT" "$CLIENT_ID" "$SERVICE_ACCOUNT" "$PROFILE_XID" "$NAME" "$OUT" <<'PY'

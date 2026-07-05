@@ -169,77 +169,6 @@ final $typed_data.Uint8List accessRoleObjectDescriptor = $convert.base64Decode(
     'UghhY2Nlc3NJZBIzCgRyb2xlGAMgASgLMh8udGVuYW5jeS52MS5QYXJ0aXRpb25Sb2xlT2JqZW'
     'N0UgRyb2xl');
 
-@$core.Deprecated('Use serviceAccountObjectDescriptor instead')
-const ServiceAccountObject$json = {
-  '1': 'ServiceAccountObject',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'tenantId'},
-    {'1': 'partition_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
-    {'1': 'profile_id', '3': 4, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
-    {'1': 'client_id', '3': 5, '4': 1, '5': 9, '8': {}, '10': 'clientId'},
-    {'1': 'state', '3': 6, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'audiences', '3': 7, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'properties', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'created_at', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'type', '3': 10, '4': 1, '5': 9, '8': {}, '10': 'type'},
-  ],
-};
-
-/// Descriptor for `ServiceAccountObject`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List serviceAccountObjectDescriptor = $convert.base64Decode(
-    'ChRTZXJ2aWNlQWNjb3VudE9iamVjdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC05YS16Xy'
-    '1dezMsNDB9UgJpZBI4Cgl0ZW5hbnRfaWQYAiABKAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXsz'
-    'LDQwfVIIdGVuYW50SWQSPgoMcGFydGl0aW9uX2lkGAMgASgJQhu6SBhyFhADGCgyEFswLTlhLX'
-    'pfLV17Myw0MH1SC3BhcnRpdGlvbklkEjoKCnByb2ZpbGVfaWQYBCABKAlCG7pIGHIWEAMYKDIQ'
-    'WzAtOWEtel8tXXszLDQwfVIJcHJvZmlsZUlkEjgKCWNsaWVudF9pZBgFIAEoCUIbukgYchYQAx'
-    'goMhBbMC05YS16Xy1dezMsNDB9UghjbGllbnRJZBImCgVzdGF0ZRgGIAEoDjIQLmNvbW1vbi52'
-    'MS5TVEFURVIFc3RhdGUSHAoJYXVkaWVuY2VzGAcgAygJUglhdWRpZW5jZXMSNwoKcHJvcGVydG'
-    'llcxgIIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3RSCnByb3BlcnRpZXMSOQoKY3JlYXRl'
-    'ZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBIwCgR0eX'
-    'BlGAogASgJQhy6SBnYAQFyFFIIaW50ZXJuYWxSCGV4dGVybmFsUgR0eXBl');
-
-@$core.Deprecated('Use clientObjectDescriptor instead')
-const ClientObject$json = {
-  '1': 'ClientObject',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'client_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'clientId'},
-    {'1': 'type', '3': 4, '4': 1, '5': 9, '8': {}, '10': 'type'},
-    {'1': 'grant_types', '3': 5, '4': 3, '5': 9, '10': 'grantTypes'},
-    {'1': 'response_types', '3': 6, '4': 3, '5': 9, '10': 'responseTypes'},
-    {'1': 'redirect_uris', '3': 7, '4': 3, '5': 9, '10': 'redirectUris'},
-    {'1': 'scopes', '3': 8, '4': 1, '5': 9, '10': 'scopes'},
-    {'1': 'audiences', '3': 9, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'roles', '3': 10, '4': 3, '5': 9, '10': 'roles'},
-    {'1': 'properties', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'state', '3': 12, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'created_at', '3': 13, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'partition', '3': 14, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '9': 0, '10': 'partition'},
-    {'1': 'service_account', '3': 15, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '9': 0, '10': 'serviceAccount'},
-  ],
-  '8': [
-    {'1': 'owner'},
-  ],
-};
-
-/// Descriptor for `ClientObject`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List clientObjectDescriptor = $convert.base64Decode(
-    'CgxDbGllbnRPYmplY3QSKwoCaWQYASABKAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfV'
-    'ICaWQSHQoEbmFtZRgCIAEoCUIJukgGcgQQAxhkUgRuYW1lEiYKCWNsaWVudF9pZBgDIAEoCUIJ'
-    'ukgGcgQQAxhkUghjbGllbnRJZBJDCgR0eXBlGAQgASgJQi+6SCxyKlIGcHVibGljUgxjb25maW'
-    'RlbnRpYWxSCGludGVybmFsUghleHRlcm5hbFIEdHlwZRIfCgtncmFudF90eXBlcxgFIAMoCVIK'
-    'Z3JhbnRUeXBlcxIlCg5yZXNwb25zZV90eXBlcxgGIAMoCVINcmVzcG9uc2VUeXBlcxIjCg1yZW'
-    'RpcmVjdF91cmlzGAcgAygJUgxyZWRpcmVjdFVyaXMSFgoGc2NvcGVzGAggASgJUgZzY29wZXMS'
-    'HAoJYXVkaWVuY2VzGAkgAygJUglhdWRpZW5jZXMSFAoFcm9sZXMYCiADKAlSBXJvbGVzEjcKCn'
-    'Byb3BlcnRpZXMYCyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEiYK'
-    'BXN0YXRlGAwgASgOMhAuY29tbW9uLnYxLlNUQVRFUgVzdGF0ZRI5CgpjcmVhdGVkX2F0GA0gAS'
-    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0EjsKCXBhcnRpdGlvbhgO'
-    'IAEoCzIbLnRlbmFuY3kudjEuUGFydGl0aW9uT2JqZWN0SABSCXBhcnRpdGlvbhJLCg9zZXJ2aW'
-    'NlX2FjY291bnQYDyABKAsyIC50ZW5hbmN5LnYxLlNlcnZpY2VBY2NvdW50T2JqZWN0SABSDnNl'
-    'cnZpY2VBY2NvdW50QgcKBW93bmVy');
-
 @$core.Deprecated('Use getTenantRequestDescriptor instead')
 const GetTenantRequest$json = {
   '1': 'GetTenantRequest',
@@ -843,22 +772,20 @@ final $typed_data.Uint8List removePageResponseDescriptor = $convert.base64Decode
 const CreateAccessRequest$json = {
   '1': 'CreateAccessRequest',
   '2': [
-    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'partitionId'},
-    {'1': 'client_id', '3': 3, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'clientId'},
+    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
     {'1': 'profile_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
   ],
-  '8': [
-    {'1': 'partition', '2': {}},
+  '9': [
+    {'1': 3, '2': 4},
   ],
+  '10': ['client_id'],
 };
 
 /// Descriptor for `CreateAccessRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createAccessRequestDescriptor = $convert.base64Decode(
-    'ChNDcmVhdGVBY2Nlc3NSZXF1ZXN0EkAKDHBhcnRpdGlvbl9pZBgBIAEoCUIbukgYchYQAxgoMh'
-    'BbMC05YS16Xy1dezMsNDB9SABSC3BhcnRpdGlvbklkEjoKCWNsaWVudF9pZBgDIAEoCUIbukgY'
-    'chYQAxgoMhBbMC05YS16Xy1dezMsNDB9SABSCGNsaWVudElkEjoKCnByb2ZpbGVfaWQYAiABKA'
-    'lCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfVIJcHJvZmlsZUlkQhIKCXBhcnRpdGlvbhIF'
-    'ukgCCAE=');
+    'ChNDcmVhdGVBY2Nlc3NSZXF1ZXN0Ej4KDHBhcnRpdGlvbl9pZBgBIAEoCUIbukgYchYQAxgoMh'
+    'BbMC05YS16Xy1dezMsNDB9UgtwYXJ0aXRpb25JZBI6Cgpwcm9maWxlX2lkGAIgASgJQhu6SBhy'
+    'FhADGCgyEFswLTlhLXpfLV17Myw0MH1SCXByb2ZpbGVJZEoECAMQBFIJY2xpZW50X2lk');
 
 @$core.Deprecated('Use createAccessResponseDescriptor instead')
 const CreateAccessResponse$json = {
@@ -878,23 +805,22 @@ const GetAccessRequest$json = {
   '1': 'GetAccessRequest',
   '2': [
     {'1': 'access_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'accessId'},
-    {'1': 'partition_id', '3': 2, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'partitionId'},
-    {'1': 'client_id', '3': 3, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'clientId'},
+    {'1': 'partition_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
     {'1': 'profile_id', '3': 4, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
   ],
-  '8': [
-    {'1': 'partition', '2': {}},
+  '9': [
+    {'1': 3, '2': 4},
   ],
+  '10': ['client_id'],
 };
 
 /// Descriptor for `GetAccessRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getAccessRequestDescriptor = $convert.base64Decode(
     'ChBHZXRBY2Nlc3NSZXF1ZXN0EjsKCWFjY2Vzc19pZBgBIAEoCUIeukgb2AEBchYQAxgoMhBbMC'
-    '05YS16Xy1dezMsNDB9UghhY2Nlc3NJZBJACgxwYXJ0aXRpb25faWQYAiABKAlCG7pIGHIWEAMY'
-    'KDIQWzAtOWEtel8tXXszLDQwfUgAUgtwYXJ0aXRpb25JZBI6CgljbGllbnRfaWQYAyABKAlCG7'
-    'pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfUgAUghjbGllbnRJZBI9Cgpwcm9maWxlX2lkGAQg'
-    'ASgJQh66SBvYAQFyFhADGCgyEFswLTlhLXpfLV17Myw0MH1SCXByb2ZpbGVJZEISCglwYXJ0aX'
-    'Rpb24SBbpIAggA');
+    '05YS16Xy1dezMsNDB9UghhY2Nlc3NJZBJBCgxwYXJ0aXRpb25faWQYAiABKAlCHrpIG9gBAXIW'
+    'EAMYKDIQWzAtOWEtel8tXXszLDQwfVILcGFydGl0aW9uSWQSPQoKcHJvZmlsZV9pZBgEIAEoCU'
+    'Ieukgb2AEBchYQAxgoMhBbMC05YS16Xy1dezMsNDB9Uglwcm9maWxlSWRKBAgDEARSCWNsaWVu'
+    'dF9pZA==');
 
 @$core.Deprecated('Use getAccessResponseDescriptor instead')
 const GetAccessResponse$json = {
@@ -1048,343 +974,6 @@ const ListAccessRoleResponse$json = {
 final $typed_data.Uint8List listAccessRoleResponseDescriptor = $convert.base64Decode(
     'ChZMaXN0QWNjZXNzUm9sZVJlc3BvbnNlEjAKBGRhdGEYASADKAsyHC50ZW5hbmN5LnYxLkFjY2'
     'Vzc1JvbGVPYmplY3RSBGRhdGE=');
-
-@$core.Deprecated('Use createServiceAccountRequestDescriptor instead')
-const CreateServiceAccountRequest$json = {
-  '1': 'CreateServiceAccountRequest',
-  '2': [
-    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
-    {'1': 'profile_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
-    {'1': 'name', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'audiences', '3': 4, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'type', '3': 6, '4': 1, '5': 9, '8': {}, '10': 'type'},
-    {'1': 'roles', '3': 7, '4': 3, '5': 9, '10': 'roles'},
-    {'1': 'public_keys', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'publicKeys'},
-  ],
-};
-
-/// Descriptor for `CreateServiceAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createServiceAccountRequestDescriptor = $convert.base64Decode(
-    'ChtDcmVhdGVTZXJ2aWNlQWNjb3VudFJlcXVlc3QSPgoMcGFydGl0aW9uX2lkGAEgASgJQhu6SB'
-    'hyFhADGCgyEFswLTlhLXpfLV17Myw0MH1SC3BhcnRpdGlvbklkEjoKCnByb2ZpbGVfaWQYAiAB'
-    'KAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfVIJcHJvZmlsZUlkEh0KBG5hbWUYAyABKA'
-    'lCCbpIBnIEEAMYZFIEbmFtZRIcCglhdWRpZW5jZXMYBCADKAlSCWF1ZGllbmNlcxI3Cgpwcm9w'
-    'ZXJ0aWVzGAUgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdFIKcHJvcGVydGllcxIwCgR0eX'
-    'BlGAYgASgJQhy6SBnYAQFyFFIIaW50ZXJuYWxSCGV4dGVybmFsUgR0eXBlEhQKBXJvbGVzGAcg'
-    'AygJUgVyb2xlcxI4CgtwdWJsaWNfa2V5cxgIIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3'
-    'RSCnB1YmxpY0tleXM=');
-
-@$core.Deprecated('Use createServiceAccountResponseDescriptor instead')
-const CreateServiceAccountResponse$json = {
-  '1': 'CreateServiceAccountResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
-    {'1': 'client_secret', '3': 2, '4': 1, '5': 9, '10': 'clientSecret'},
-  ],
-};
-
-/// Descriptor for `CreateServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChxDcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5Ln'
-    'YxLlNlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRhEiMKDWNsaWVudF9zZWNyZXQYAiABKAlSDGNs'
-    'aWVudFNlY3JldA==');
-
-@$core.Deprecated('Use getServiceAccountRequestDescriptor instead')
-const GetServiceAccountRequest$json = {
-  '1': 'GetServiceAccountRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'client_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'clientId'},
-    {'1': 'profile_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
-  ],
-};
-
-/// Descriptor for `GetServiceAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getServiceAccountRequestDescriptor = $convert.base64Decode(
-    'ChhHZXRTZXJ2aWNlQWNjb3VudFJlcXVlc3QSLgoCaWQYASABKAlCHrpIG9gBAXIWEAMYKDIQWz'
-    'AtOWEtel8tXXszLDQwfVICaWQSOwoJY2xpZW50X2lkGAIgASgJQh66SBvYAQFyFhADGCgyEFsw'
-    'LTlhLXpfLV17Myw0MH1SCGNsaWVudElkEj0KCnByb2ZpbGVfaWQYAyABKAlCHrpIG9gBAXIWEA'
-    'MYKDIQWzAtOWEtel8tXXszLDQwfVIJcHJvZmlsZUlk');
-
-@$core.Deprecated('Use getServiceAccountResponseDescriptor instead')
-const GetServiceAccountResponse$json = {
-  '1': 'GetServiceAccountResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `GetServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChlHZXRTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5LnYxLl'
-    'NlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRh');
-
-@$core.Deprecated('Use listServiceAccountRequestDescriptor instead')
-const ListServiceAccountRequest$json = {
-  '1': 'ListServiceAccountRequest',
-  '2': [
-    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
-  ],
-};
-
-/// Descriptor for `ListServiceAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listServiceAccountRequestDescriptor = $convert.base64Decode(
-    'ChlMaXN0U2VydmljZUFjY291bnRSZXF1ZXN0Ej4KDHBhcnRpdGlvbl9pZBgBIAEoCUIbukgYch'
-    'YQAxgoMhBbMC05YS16Xy1dezMsNDB9UgtwYXJ0aXRpb25JZBItCgZjdXJzb3IYAiABKAsyFS5j'
-    'b21tb24udjEuUGFnZUN1cnNvclIGY3Vyc29y');
-
-@$core.Deprecated('Use listServiceAccountResponseDescriptor instead')
-const ListServiceAccountResponse$json = {
-  '1': 'ListServiceAccountResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `ListServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChpMaXN0U2VydmljZUFjY291bnRSZXNwb25zZRI0CgRkYXRhGAEgAygLMiAudGVuYW5jeS52MS'
-    '5TZXJ2aWNlQWNjb3VudE9iamVjdFIEZGF0YQ==');
-
-@$core.Deprecated('Use updateServiceAccountRequestDescriptor instead')
-const UpdateServiceAccountRequest$json = {
-  '1': 'UpdateServiceAccountRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'audiences', '3': 3, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'properties', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'type', '3': 5, '4': 1, '5': 9, '8': {}, '10': 'type'},
-    {'1': 'roles', '3': 6, '4': 3, '5': 9, '10': 'roles'},
-    {'1': 'public_keys', '3': 7, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'publicKeys'},
-    {'1': 'state', '3': 8, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-  ],
-};
-
-/// Descriptor for `UpdateServiceAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updateServiceAccountRequestDescriptor = $convert.base64Decode(
-    'ChtVcGRhdGVTZXJ2aWNlQWNjb3VudFJlcXVlc3QSKwoCaWQYASABKAlCG7pIGHIWEAMYKDIQWz'
-    'AtOWEtel8tXXszLDQwfVICaWQSIAoEbmFtZRgCIAEoCUIMukgJ2AEBcgQQAxhkUgRuYW1lEhwK'
-    'CWF1ZGllbmNlcxgDIAMoCVIJYXVkaWVuY2VzEjcKCnByb3BlcnRpZXMYBCABKAsyFy5nb29nbG'
-    'UucHJvdG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEjAKBHR5cGUYBSABKAlCHLpIGdgBAXIUUghp'
-    'bnRlcm5hbFIIZXh0ZXJuYWxSBHR5cGUSFAoFcm9sZXMYBiADKAlSBXJvbGVzEjgKC3B1YmxpY1'
-    '9rZXlzGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdFIKcHVibGljS2V5cxImCgVzdGF0'
-    'ZRgIIAEoDjIQLmNvbW1vbi52MS5TVEFURVIFc3RhdGU=');
-
-@$core.Deprecated('Use updateServiceAccountResponseDescriptor instead')
-const UpdateServiceAccountResponse$json = {
-  '1': 'UpdateServiceAccountResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ServiceAccountObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `UpdateServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updateServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChxVcGRhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEjQKBGRhdGEYASABKAsyIC50ZW5hbmN5Ln'
-    'YxLlNlcnZpY2VBY2NvdW50T2JqZWN0UgRkYXRh');
-
-@$core.Deprecated('Use removeServiceAccountRequestDescriptor instead')
-const RemoveServiceAccountRequest$json = {
-  '1': 'RemoveServiceAccountRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-  ],
-};
-
-/// Descriptor for `RemoveServiceAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeServiceAccountRequestDescriptor = $convert.base64Decode(
-    'ChtSZW1vdmVTZXJ2aWNlQWNjb3VudFJlcXVlc3QSKwoCaWQYASABKAlCG7pIGHIWEAMYKDIQWz'
-    'AtOWEtel8tXXszLDQwfVICaWQ=');
-
-@$core.Deprecated('Use removeServiceAccountResponseDescriptor instead')
-const RemoveServiceAccountResponse$json = {
-  '1': 'RemoveServiceAccountResponse',
-  '2': [
-    {'1': 'succeeded', '3': 1, '4': 1, '5': 8, '10': 'succeeded'},
-  ],
-};
-
-/// Descriptor for `RemoveServiceAccountResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeServiceAccountResponseDescriptor = $convert.base64Decode(
-    'ChxSZW1vdmVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlEhwKCXN1Y2NlZWRlZBgBIAEoCFIJc3VjY2'
-    'VlZGVk');
-
-@$core.Deprecated('Use createClientRequestDescriptor instead')
-const CreateClientRequest$json = {
-  '1': 'CreateClientRequest',
-  '2': [
-    {'1': 'name', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'type', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'type'},
-    {'1': 'grant_types', '3': 3, '4': 3, '5': 9, '10': 'grantTypes'},
-    {'1': 'response_types', '3': 4, '4': 3, '5': 9, '10': 'responseTypes'},
-    {'1': 'redirect_uris', '3': 5, '4': 3, '5': 9, '10': 'redirectUris'},
-    {'1': 'scopes', '3': 6, '4': 1, '5': 9, '10': 'scopes'},
-    {'1': 'audiences', '3': 7, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'roles', '3': 8, '4': 3, '5': 9, '10': 'roles'},
-    {'1': 'properties', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'partition_id', '3': 10, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'partitionId'},
-    {'1': 'service_account_id', '3': 11, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'serviceAccountId'},
-  ],
-  '8': [
-    {'1': 'owner', '2': {}},
-  ],
-};
-
-/// Descriptor for `CreateClientRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createClientRequestDescriptor = $convert.base64Decode(
-    'ChNDcmVhdGVDbGllbnRSZXF1ZXN0Eh0KBG5hbWUYASABKAlCCbpIBnIEEAMYZFIEbmFtZRJDCg'
-    'R0eXBlGAIgASgJQi+6SCxyKlIGcHVibGljUgxjb25maWRlbnRpYWxSCGludGVybmFsUghleHRl'
-    'cm5hbFIEdHlwZRIfCgtncmFudF90eXBlcxgDIAMoCVIKZ3JhbnRUeXBlcxIlCg5yZXNwb25zZV'
-    '90eXBlcxgEIAMoCVINcmVzcG9uc2VUeXBlcxIjCg1yZWRpcmVjdF91cmlzGAUgAygJUgxyZWRp'
-    'cmVjdFVyaXMSFgoGc2NvcGVzGAYgASgJUgZzY29wZXMSHAoJYXVkaWVuY2VzGAcgAygJUglhdW'
-    'RpZW5jZXMSFAoFcm9sZXMYCCADKAlSBXJvbGVzEjcKCnByb3BlcnRpZXMYCSABKAsyFy5nb29n'
-    'bGUucHJvdG9idWYuU3RydWN0Ugpwcm9wZXJ0aWVzEkAKDHBhcnRpdGlvbl9pZBgKIAEoCUIbuk'
-    'gYchYQAxgoMhBbMC05YS16Xy1dezMsNDB9SABSC3BhcnRpdGlvbklkEksKEnNlcnZpY2VfYWNj'
-    'b3VudF9pZBgLIAEoCUIbukgYchYQAxgoMhBbMC05YS16Xy1dezMsNDB9SABSEHNlcnZpY2VBY2'
-    'NvdW50SWRCDgoFb3duZXISBbpIAggB');
-
-@$core.Deprecated('Use createClientResponseDescriptor instead')
-const CreateClientResponse$json = {
-  '1': 'CreateClientResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
-    {'1': 'client_secret', '3': 2, '4': 1, '5': 9, '10': 'clientSecret'},
-  ],
-};
-
-/// Descriptor for `CreateClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createClientResponseDescriptor = $convert.base64Decode(
-    'ChRDcmVhdGVDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbn'
-    'RPYmplY3RSBGRhdGESIwoNY2xpZW50X3NlY3JldBgCIAEoCVIMY2xpZW50U2VjcmV0');
-
-@$core.Deprecated('Use getClientRequestDescriptor instead')
-const GetClientRequest$json = {
-  '1': 'GetClientRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'client_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'clientId'},
-  ],
-};
-
-/// Descriptor for `GetClientRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getClientRequestDescriptor = $convert.base64Decode(
-    'ChBHZXRDbGllbnRSZXF1ZXN0Ei4KAmlkGAEgASgJQh66SBvYAQFyFhADGCgyEFswLTlhLXpfLV'
-    '17Myw0MH1SAmlkEikKCWNsaWVudF9pZBgCIAEoCUIMukgJ2AEBcgQQAxhkUghjbGllbnRJZA==');
-
-@$core.Deprecated('Use getClientResponseDescriptor instead')
-const GetClientResponse$json = {
-  '1': 'GetClientResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `GetClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getClientResponseDescriptor = $convert.base64Decode(
-    'ChFHZXRDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbnRPYm'
-    'plY3RSBGRhdGE=');
-
-@$core.Deprecated('Use listClientRequestDescriptor instead')
-const ListClientRequest$json = {
-  '1': 'ListClientRequest',
-  '2': [
-    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'partitionId'},
-    {'1': 'service_account_id', '3': 2, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'serviceAccountId'},
-    {'1': 'cursor', '3': 3, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
-  ],
-  '8': [
-    {'1': 'owner', '2': {}},
-  ],
-};
-
-/// Descriptor for `ListClientRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listClientRequestDescriptor = $convert.base64Decode(
-    'ChFMaXN0Q2xpZW50UmVxdWVzdBJACgxwYXJ0aXRpb25faWQYASABKAlCG7pIGHIWEAMYKDIQWz'
-    'AtOWEtel8tXXszLDQwfUgAUgtwYXJ0aXRpb25JZBJLChJzZXJ2aWNlX2FjY291bnRfaWQYAiAB'
-    'KAlCG7pIGHIWEAMYKDIQWzAtOWEtel8tXXszLDQwfUgAUhBzZXJ2aWNlQWNjb3VudElkEi0KBm'
-    'N1cnNvchgDIAEoCzIVLmNvbW1vbi52MS5QYWdlQ3Vyc29yUgZjdXJzb3JCDgoFb3duZXISBbpI'
-    'AggB');
-
-@$core.Deprecated('Use listClientResponseDescriptor instead')
-const ListClientResponse$json = {
-  '1': 'ListClientResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `ListClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listClientResponseDescriptor = $convert.base64Decode(
-    'ChJMaXN0Q2xpZW50UmVzcG9uc2USLAoEZGF0YRgBIAMoCzIYLnRlbmFuY3kudjEuQ2xpZW50T2'
-    'JqZWN0UgRkYXRh');
-
-@$core.Deprecated('Use updateClientRequestDescriptor instead')
-const UpdateClientRequest$json = {
-  '1': 'UpdateClientRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-    {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'grant_types', '3': 3, '4': 3, '5': 9, '10': 'grantTypes'},
-    {'1': 'response_types', '3': 4, '4': 3, '5': 9, '10': 'responseTypes'},
-    {'1': 'redirect_uris', '3': 5, '4': 3, '5': 9, '10': 'redirectUris'},
-    {'1': 'scopes', '3': 6, '4': 1, '5': 9, '10': 'scopes'},
-    {'1': 'audiences', '3': 7, '4': 3, '5': 9, '10': 'audiences'},
-    {'1': 'roles', '3': 8, '4': 3, '5': 9, '10': 'roles'},
-    {'1': 'properties', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'state', '3': 10, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-  ],
-};
-
-/// Descriptor for `UpdateClientRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updateClientRequestDescriptor = $convert.base64Decode(
-    'ChNVcGRhdGVDbGllbnRSZXF1ZXN0EisKAmlkGAEgASgJQhu6SBhyFhADGCgyEFswLTlhLXpfLV'
-    '17Myw0MH1SAmlkEiAKBG5hbWUYAiABKAlCDLpICdgBAXIEEAMYZFIEbmFtZRIfCgtncmFudF90'
-    'eXBlcxgDIAMoCVIKZ3JhbnRUeXBlcxIlCg5yZXNwb25zZV90eXBlcxgEIAMoCVINcmVzcG9uc2'
-    'VUeXBlcxIjCg1yZWRpcmVjdF91cmlzGAUgAygJUgxyZWRpcmVjdFVyaXMSFgoGc2NvcGVzGAYg'
-    'ASgJUgZzY29wZXMSHAoJYXVkaWVuY2VzGAcgAygJUglhdWRpZW5jZXMSFAoFcm9sZXMYCCADKA'
-    'lSBXJvbGVzEjcKCnByb3BlcnRpZXMYCSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0Ugpw'
-    'cm9wZXJ0aWVzEiYKBXN0YXRlGAogASgOMhAuY29tbW9uLnYxLlNUQVRFUgVzdGF0ZQ==');
-
-@$core.Deprecated('Use updateClientResponseDescriptor instead')
-const UpdateClientResponse$json = {
-  '1': 'UpdateClientResponse',
-  '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.ClientObject', '10': 'data'},
-  ],
-};
-
-/// Descriptor for `UpdateClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updateClientResponseDescriptor = $convert.base64Decode(
-    'ChRVcGRhdGVDbGllbnRSZXNwb25zZRIsCgRkYXRhGAEgASgLMhgudGVuYW5jeS52MS5DbGllbn'
-    'RPYmplY3RSBGRhdGE=');
-
-@$core.Deprecated('Use removeClientRequestDescriptor instead')
-const RemoveClientRequest$json = {
-  '1': 'RemoveClientRequest',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
-  ],
-};
-
-/// Descriptor for `RemoveClientRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeClientRequestDescriptor = $convert.base64Decode(
-    'ChNSZW1vdmVDbGllbnRSZXF1ZXN0EisKAmlkGAEgASgJQhu6SBhyFhADGCgyEFswLTlhLXpfLV'
-    '17Myw0MH1SAmlk');
-
-@$core.Deprecated('Use removeClientResponseDescriptor instead')
-const RemoveClientResponse$json = {
-  '1': 'RemoveClientResponse',
-  '2': [
-    {'1': 'succeeded', '3': 1, '4': 1, '5': 8, '10': 'succeeded'},
-  ],
-};
-
-/// Descriptor for `RemoveClientResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeClientResponseDescriptor = $convert.base64Decode(
-    'ChRSZW1vdmVDbGllbnRSZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA==');
 
 @$core.Deprecated('Use serviceNamespaceObjectDescriptor instead')
 const ServiceNamespaceObject$json = {
@@ -1603,38 +1192,6 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '6': true,
     },
     {'1': 'RemoveAccessRole', '2': '.tenancy.v1.RemoveAccessRoleRequest', '3': '.tenancy.v1.RemoveAccessRoleResponse', '4': {}},
-    {'1': 'CreateServiceAccount', '2': '.tenancy.v1.CreateServiceAccountRequest', '3': '.tenancy.v1.CreateServiceAccountResponse', '4': {}},
-    {
-      '1': 'GetServiceAccount',
-      '2': '.tenancy.v1.GetServiceAccountRequest',
-      '3': '.tenancy.v1.GetServiceAccountResponse',
-      '4': {'34': 1},
-    },
-    {'1': 'UpdateServiceAccount', '2': '.tenancy.v1.UpdateServiceAccountRequest', '3': '.tenancy.v1.UpdateServiceAccountResponse', '4': {}},
-    {
-      '1': 'ListServiceAccount',
-      '2': '.tenancy.v1.ListServiceAccountRequest',
-      '3': '.tenancy.v1.ListServiceAccountResponse',
-      '4': {'34': 1},
-      '6': true,
-    },
-    {'1': 'RemoveServiceAccount', '2': '.tenancy.v1.RemoveServiceAccountRequest', '3': '.tenancy.v1.RemoveServiceAccountResponse', '4': {}},
-    {'1': 'CreateClient', '2': '.tenancy.v1.CreateClientRequest', '3': '.tenancy.v1.CreateClientResponse', '4': {}},
-    {
-      '1': 'GetClient',
-      '2': '.tenancy.v1.GetClientRequest',
-      '3': '.tenancy.v1.GetClientResponse',
-      '4': {'34': 1},
-    },
-    {
-      '1': 'ListClient',
-      '2': '.tenancy.v1.ListClientRequest',
-      '3': '.tenancy.v1.ListClientResponse',
-      '4': {'34': 1},
-      '6': true,
-    },
-    {'1': 'UpdateClient', '2': '.tenancy.v1.UpdateClientRequest', '3': '.tenancy.v1.UpdateClientResponse', '4': {}},
-    {'1': 'RemoveClient', '2': '.tenancy.v1.RemoveClientRequest', '3': '.tenancy.v1.RemoveClientResponse', '4': {}},
     {
       '1': 'ListServiceNamespaces',
       '2': '.tenancy.v1.ListServiceNamespacesRequest',
@@ -1715,28 +1272,6 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> TenancySer
   '.tenancy.v1.ListAccessRoleResponse': ListAccessRoleResponse$json,
   '.tenancy.v1.RemoveAccessRoleRequest': RemoveAccessRoleRequest$json,
   '.tenancy.v1.RemoveAccessRoleResponse': RemoveAccessRoleResponse$json,
-  '.tenancy.v1.CreateServiceAccountRequest': CreateServiceAccountRequest$json,
-  '.tenancy.v1.CreateServiceAccountResponse': CreateServiceAccountResponse$json,
-  '.tenancy.v1.ServiceAccountObject': ServiceAccountObject$json,
-  '.tenancy.v1.GetServiceAccountRequest': GetServiceAccountRequest$json,
-  '.tenancy.v1.GetServiceAccountResponse': GetServiceAccountResponse$json,
-  '.tenancy.v1.UpdateServiceAccountRequest': UpdateServiceAccountRequest$json,
-  '.tenancy.v1.UpdateServiceAccountResponse': UpdateServiceAccountResponse$json,
-  '.tenancy.v1.ListServiceAccountRequest': ListServiceAccountRequest$json,
-  '.tenancy.v1.ListServiceAccountResponse': ListServiceAccountResponse$json,
-  '.tenancy.v1.RemoveServiceAccountRequest': RemoveServiceAccountRequest$json,
-  '.tenancy.v1.RemoveServiceAccountResponse': RemoveServiceAccountResponse$json,
-  '.tenancy.v1.CreateClientRequest': CreateClientRequest$json,
-  '.tenancy.v1.CreateClientResponse': CreateClientResponse$json,
-  '.tenancy.v1.ClientObject': ClientObject$json,
-  '.tenancy.v1.GetClientRequest': GetClientRequest$json,
-  '.tenancy.v1.GetClientResponse': GetClientResponse$json,
-  '.tenancy.v1.ListClientRequest': ListClientRequest$json,
-  '.tenancy.v1.ListClientResponse': ListClientResponse$json,
-  '.tenancy.v1.UpdateClientRequest': UpdateClientRequest$json,
-  '.tenancy.v1.UpdateClientResponse': UpdateClientResponse$json,
-  '.tenancy.v1.RemoveClientRequest': RemoveClientRequest$json,
-  '.tenancy.v1.RemoveClientResponse': RemoveClientResponse$json,
   '.tenancy.v1.ListServiceNamespacesRequest': ListServiceNamespacesRequest$json,
   '.tenancy.v1.ListServiceNamespacesResponse': ListServiceNamespacesResponse$json,
   '.tenancy.v1.ServiceNamespaceObject': ServiceNamespaceObject$json,
@@ -1871,89 +1406,41 @@ final $typed_data.Uint8List tenancyServiceDescriptor = $convert.base64Decode(
     'ZXNzUm9sZVJlc3BvbnNlIroBukegAQoGQWNjZXNzEhJSZW1vdmUgYWNjZXNzIHJvbGUacFJlbW'
     '92ZXMgYSBzcGVjaWZpYyByb2xlIGZyb20gYW4gYWNjZXNzIGdyYW50LiBUaGUgcHJvZmlsZSBy'
     'ZXRhaW5zIGFjY2VzcyBidXQgbG9zZXMgdGhlIHBlcm1pc3Npb25zIG9mIHRoaXMgcm9sZS4qEH'
-    'JlbW92ZUFjY2Vzc1JvbGWCtRgSChBwZXJtaXNzaW9uX2dyYW50EocDChRDcmVhdGVTZXJ2aWNl'
-    'QWNjb3VudBInLnRlbmFuY3kudjEuQ3JlYXRlU2VydmljZUFjY291bnRSZXF1ZXN0GigudGVuYW'
-    '5jeS52MS5DcmVhdGVTZXJ2aWNlQWNjb3VudFJlc3BvbnNlIpsCukf7AQoPU2VydmljZUFjY291'
-    'bnRzEhZDcmVhdGUgc2VydmljZSBhY2NvdW50GrkBUmVnaXN0ZXJzIGEgcHJlLWF1dGhvcml6ZW'
-    'Qgc2VydmljZSBhY2NvdW50IGZvciBtYWNoaW5lLXRvLW1hY2hpbmUgYXV0aGVudGljYXRpb24u'
-    'IENyZWF0ZXMgYSBkZWRpY2F0ZWQgY2hpbGQgcGFydGl0aW9uIHdpdGggY2xpZW50X2NyZWRlbn'
-    'RpYWxzIGdyYW50IHR5cGUgYW5kIHdyaXRlcyBhdXRob3JpemF0aW9uIHR1cGxlcy4qFGNyZWF0'
-    'ZVNlcnZpY2VBY2NvdW50grUYGAoWc2VydmljZV9hY2NvdW50X21hbmFnZRL6AQoRR2V0U2Vydm'
-    'ljZUFjY291bnQSJC50ZW5hbmN5LnYxLkdldFNlcnZpY2VBY2NvdW50UmVxdWVzdBolLnRlbmFu'
-    'Y3kudjEuR2V0U2VydmljZUFjY291bnRSZXNwb25zZSKXAZACAbpHdwoPU2VydmljZUFjY291bn'
-    'RzEhNHZXQgc2VydmljZSBhY2NvdW50GjxSZXRyaWV2ZXMgYSBzZXJ2aWNlIGFjY291bnQgYnkg'
-    'SUQsIGNsaWVudCBJRCwgb3IgcHJvZmlsZSBJRC4qEWdldFNlcnZpY2VBY2NvdW50grUYFgoUc2'
-    'VydmljZV9hY2NvdW50X3ZpZXcSowIKFFVwZGF0ZVNlcnZpY2VBY2NvdW50EicudGVuYW5jeS52'
-    'MS5VcGRhdGVTZXJ2aWNlQWNjb3VudFJlcXVlc3QaKC50ZW5hbmN5LnYxLlVwZGF0ZVNlcnZpY2'
-    'VBY2NvdW50UmVzcG9uc2UitwG6R5cBCg9TZXJ2aWNlQWNjb3VudHMSFlVwZGF0ZSBzZXJ2aWNl'
-    'IGFjY291bnQaVlVwZGF0ZXMgYSBzZXJ2aWNlIGFjY291bnQncyBuYW1lLCBhdWRpZW5jZXMsIH'
-    'R5cGUsIHJvbGVzLCBwdWJsaWMga2V5cywgYW5kIHByb3BlcnRpZXMuKhR1cGRhdGVTZXJ2aWNl'
-    'QWNjb3VudIK1GBgKFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2US/QEKEkxpc3RTZXJ2aWNlQWNjb3'
-    'VudBIlLnRlbmFuY3kudjEuTGlzdFNlcnZpY2VBY2NvdW50UmVxdWVzdBomLnRlbmFuY3kudjEu'
-    'TGlzdFNlcnZpY2VBY2NvdW50UmVzcG9uc2UilQGQAgG6R3UKD1NlcnZpY2VBY2NvdW50cxIVTG'
-    'lzdCBzZXJ2aWNlIGFjY291bnRzGjZMaXN0cyBhbGwgc2VydmljZSBhY2NvdW50cyByZWdpc3Rl'
-    'cmVkIGZvciBhIHBhcnRpdGlvbi4qE2xpc3RTZXJ2aWNlQWNjb3VudHOCtRgWChRzZXJ2aWNlX2'
-    'FjY291bnRfdmlldzABEqsCChRSZW1vdmVTZXJ2aWNlQWNjb3VudBInLnRlbmFuY3kudjEuUmVt'
-    'b3ZlU2VydmljZUFjY291bnRSZXF1ZXN0GigudGVuYW5jeS52MS5SZW1vdmVTZXJ2aWNlQWNjb3'
-    'VudFJlc3BvbnNlIr8BukefAQoPU2VydmljZUFjY291bnRzEhZSZW1vdmUgc2VydmljZSBhY2Nv'
-    'dW50Gl5EZXJlZ2lzdGVycyBhIHNlcnZpY2UgYWNjb3VudCwgZGVsZXRpbmcgaXRzIGNoaWxkIH'
-    'BhcnRpdGlvbiBhbmQgcmV2b2tpbmcgYXV0aG9yaXphdGlvbiB0dXBsZXMuKhRyZW1vdmVTZXJ2'
-    'aWNlQWNjb3VudIK1GBgKFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USxwIKDENyZWF0ZUNsaWVudB'
-    'IfLnRlbmFuY3kudjEuQ3JlYXRlQ2xpZW50UmVxdWVzdBogLnRlbmFuY3kudjEuQ3JlYXRlQ2xp'
-    'ZW50UmVzcG9uc2Ui8wG6R9wBCgdDbGllbnRzEhRDcmVhdGUgT0F1dGgyIGNsaWVudBqsAUNyZW'
-    'F0ZXMgYSBuZXcgT0F1dGgyIGNsaWVudCBhdHRhY2hlZCB0byBlaXRoZXIgYSBwYXJ0aXRpb24g'
-    'KGZvciB1c2VyIGF1dGggZmxvd3MpIG9yIGEgc2VydmljZSBhY2NvdW50IChmb3IgY2xpZW50X2'
-    'NyZWRlbnRpYWxzIGZsb3dzKS4gUmV0dXJucyB0aGUgY2xpZW50IHNlY3JldCBvbiBjcmVhdGlv'
-    'bi4qDGNyZWF0ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USywEKCUdldENsaWVudBIcLnRlbm'
-    'FuY3kudjEuR2V0Q2xpZW50UmVxdWVzdBodLnRlbmFuY3kudjEuR2V0Q2xpZW50UmVzcG9uc2Ui'
-    'gAGQAgG6R2kKB0NsaWVudHMSEUdldCBPQXV0aDIgY2xpZW50GkBSZXRyaWV2ZXMgYW4gT0F1dG'
-    'gyIGNsaWVudCBieSBpdHMgcmVjb3JkIElEIG9yIE9BdXRoMiBjbGllbnRfaWQuKglnZXRDbGll'
-    'bnSCtRgNCgtjbGllbnRfdmlldxLZAQoKTGlzdENsaWVudBIdLnRlbmFuY3kudjEuTGlzdENsaW'
-    'VudFJlcXVlc3QaHi50ZW5hbmN5LnYxLkxpc3RDbGllbnRSZXNwb25zZSKJAZACAbpHcgoHQ2xp'
-    'ZW50cxITTGlzdCBPQXV0aDIgY2xpZW50cxpFTGlzdHMgYWxsIE9BdXRoMiBjbGllbnRzIGJlbG'
-    '9uZ2luZyB0byBhIHBhcnRpdGlvbiBvciBzZXJ2aWNlIGFjY291bnQuKgtsaXN0Q2xpZW50c4K1'
-    'GA0KC2NsaWVudF92aWV3MAES/AEKDFVwZGF0ZUNsaWVudBIfLnRlbmFuY3kudjEuVXBkYXRlQ2'
-    'xpZW50UmVxdWVzdBogLnRlbmFuY3kudjEuVXBkYXRlQ2xpZW50UmVzcG9uc2UiqAG6R5EBCgdD'
-    'bGllbnRzEhRVcGRhdGUgT0F1dGgyIGNsaWVudBpiVXBkYXRlcyBhbiBleGlzdGluZyBPQXV0aD'
-    'IgY2xpZW50J3MgbmFtZSwgcmVkaXJlY3QgVVJJcywgc2NvcGVzLCBhdWRpZW5jZXMsIHJvbGVz'
-    'LCBhbmQgcHJvcGVydGllcy4qDHVwZGF0ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USzAEKDF'
-    'JlbW92ZUNsaWVudBIfLnRlbmFuY3kudjEuUmVtb3ZlQ2xpZW50UmVxdWVzdBogLnRlbmFuY3ku'
-    'djEuUmVtb3ZlQ2xpZW50UmVzcG9uc2UiebpHYwoHQ2xpZW50cxIUUmVtb3ZlIE9BdXRoMiBjbG'
-    'llbnQaNFJlbW92ZXMgYW4gT0F1dGgyIGNsaWVudCBhbmQgaXRzIEh5ZHJhIHJlZ2lzdHJhdGlv'
-    'bi4qDHJlbW92ZUNsaWVudIK1GA8KDWNsaWVudF9tYW5hZ2USswIKFUxpc3RTZXJ2aWNlTmFtZX'
-    'NwYWNlcxIoLnRlbmFuY3kudjEuTGlzdFNlcnZpY2VOYW1lc3BhY2VzUmVxdWVzdBopLnRlbmFu'
-    'Y3kudjEuTGlzdFNlcnZpY2VOYW1lc3BhY2VzUmVzcG9uc2UixAGQAgG6R6cBCgtQZXJtaXNzaW'
-    '9ucxIXTGlzdCBzZXJ2aWNlIG5hbWVzcGFjZXMaaFJldHVybnMgYWxsIHJlZ2lzdGVyZWQgc2Vy'
-    'dmljZSBwZXJtaXNzaW9uIG5hbWVzcGFjZXMgd2l0aCB0aGVpciBhdmFpbGFibGUgcGVybWlzc2'
-    'lvbnMgYW5kIHJvbGUgYmluZGluZ3MuKhVsaXN0U2VydmljZU5hbWVzcGFjZXOCtRgSChBwZXJt'
-    'aXNzaW9uX2dyYW50EpoCCg9HcmFudFBlcm1pc3Npb24SIi50ZW5hbmN5LnYxLkdyYW50UGVybW'
-    'lzc2lvblJlcXVlc3QaIy50ZW5hbmN5LnYxLkdyYW50UGVybWlzc2lvblJlc3BvbnNlIr0Bukej'
-    'AQoLUGVybWlzc2lvbnMSEEdyYW50IHBlcm1pc3Npb24acUNyZWF0ZXMgYSBncmFudGVkXyogS2'
-    'V0byB0dXBsZSBnaXZpbmcgdGhlIHNwZWNpZmllZCBwcm9maWxlIGEgc3BlY2lmaWMgcGVybWlz'
-    'c2lvbiBpbiB0aGUgZ2l2ZW4gc2VydmljZSBuYW1lc3BhY2UuKg9ncmFudFBlcm1pc3Npb26CtR'
-    'gSChBwZXJtaXNzaW9uX2dyYW50EpwCChBSZXZva2VQZXJtaXNzaW9uEiMudGVuYW5jeS52MS5S'
-    'ZXZva2VQZXJtaXNzaW9uUmVxdWVzdBokLnRlbmFuY3kudjEuUmV2b2tlUGVybWlzc2lvblJlc3'
-    'BvbnNlIrwBukeiAQoLUGVybWlzc2lvbnMSEVJldm9rZSBwZXJtaXNzaW9uGm5EZWxldGVzIHRo'
-    'ZSBncmFudGVkXyogS2V0byB0dXBsZSByZW1vdmluZyBhIHNwZWNpZmljIHBlcm1pc3Npb24gZn'
-    'JvbSBhIHByb2ZpbGUgaW4gdGhlIGdpdmVuIHNlcnZpY2UgbmFtZXNwYWNlLioQcmV2b2tlUGVy'
-    'bWlzc2lvboK1GBIKEHBlcm1pc3Npb25fZ3JhbnQatgiCtRixCAoPc2VydmljZV90ZW5hbmN5Eg'
-    't0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdGlvbl9t'
-    'YW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcGFnZV92aW'
-    'V3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50X3ZpZXcS'
-    'FnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdlGt0BCA'
-    'ESC3RlbmFudF92aWV3Eg10ZW5hbnRfbWFuYWdlEg5wYXJ0aXRpb25fdmlldxIQcGFydGl0aW9u'
-    'X21hbmFnZRILYWNjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEglwYWdlX3'
-    'ZpZXcSC3BhZ2VfbWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291bnRfdmll'
-    'dxIWc2VydmljZV9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW5hZ2Uazg'
-    'EIAhILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb25fbWFuYWdlEgthY2Nl'
-    'c3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2VfdmlldxILcGFnZV9tYW'
-    '5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aWV3EhZzZXJ2aWNlX2Fj'
-    'Y291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRpaCAMSC3RlbmFudF92aW'
-    'V3Eg5wYXJ0aXRpb25fdmlldxILYWNjZXNzX3ZpZXcSCXBhZ2VfdmlldxIUc2VydmljZV9hY2Nv'
-    'dW50X3ZpZXcSC2NsaWVudF92aWV3GioIBBILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3Eg'
-    'lwYWdlX3ZpZXcaKggFEgt0ZW5hbnRfdmlldxIOcGFydGl0aW9uX3ZpZXcSCXBhZ2Vfdmlldxrd'
-    'AQgGEgt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdG'
+    'JlbW92ZUFjY2Vzc1JvbGWCtRgSChBwZXJtaXNzaW9uX2dyYW50ErMCChVMaXN0U2VydmljZU5h'
+    'bWVzcGFjZXMSKC50ZW5hbmN5LnYxLkxpc3RTZXJ2aWNlTmFtZXNwYWNlc1JlcXVlc3QaKS50ZW'
+    '5hbmN5LnYxLkxpc3RTZXJ2aWNlTmFtZXNwYWNlc1Jlc3BvbnNlIsQBkAIBukenAQoLUGVybWlz'
+    'c2lvbnMSF0xpc3Qgc2VydmljZSBuYW1lc3BhY2VzGmhSZXR1cm5zIGFsbCByZWdpc3RlcmVkIH'
+    'NlcnZpY2UgcGVybWlzc2lvbiBuYW1lc3BhY2VzIHdpdGggdGhlaXIgYXZhaWxhYmxlIHBlcm1p'
+    'c3Npb25zIGFuZCByb2xlIGJpbmRpbmdzLioVbGlzdFNlcnZpY2VOYW1lc3BhY2VzgrUYEgoQcG'
+    'VybWlzc2lvbl9ncmFudBKaAgoPR3JhbnRQZXJtaXNzaW9uEiIudGVuYW5jeS52MS5HcmFudFBl'
+    'cm1pc3Npb25SZXF1ZXN0GiMudGVuYW5jeS52MS5HcmFudFBlcm1pc3Npb25SZXNwb25zZSK9Ab'
+    'pHowEKC1Blcm1pc3Npb25zEhBHcmFudCBwZXJtaXNzaW9uGnFDcmVhdGVzIGEgZ3JhbnRlZF8q'
+    'IEtldG8gdHVwbGUgZ2l2aW5nIHRoZSBzcGVjaWZpZWQgcHJvZmlsZSBhIHNwZWNpZmljIHBlcm'
+    '1pc3Npb24gaW4gdGhlIGdpdmVuIHNlcnZpY2UgbmFtZXNwYWNlLioPZ3JhbnRQZXJtaXNzaW9u'
+    'grUYEgoQcGVybWlzc2lvbl9ncmFudBKcAgoQUmV2b2tlUGVybWlzc2lvbhIjLnRlbmFuY3kudj'
+    'EuUmV2b2tlUGVybWlzc2lvblJlcXVlc3QaJC50ZW5hbmN5LnYxLlJldm9rZVBlcm1pc3Npb25S'
+    'ZXNwb25zZSK8AbpHogEKC1Blcm1pc3Npb25zEhFSZXZva2UgcGVybWlzc2lvbhpuRGVsZXRlcy'
+    'B0aGUgZ3JhbnRlZF8qIEtldG8gdHVwbGUgcmVtb3ZpbmcgYSBzcGVjaWZpYyBwZXJtaXNzaW9u'
+    'IGZyb20gYSBwcm9maWxlIGluIHRoZSBnaXZlbiBzZXJ2aWNlIG5hbWVzcGFjZS4qEHJldm9rZV'
+    'Blcm1pc3Npb26CtRgSChBwZXJtaXNzaW9uX2dyYW50GrYIgrUYsQgKD3NlcnZpY2VfdGVuYW5j'
+    'eRILdGVuYW50X3ZpZXcSDXRlbmFudF9tYW5hZ2USDnBhcnRpdGlvbl92aWV3EhBwYXJ0aXRpb2'
+    '5fbWFuYWdlEgthY2Nlc3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCXBhZ2Vf'
+    'dmlldxILcGFnZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3VudF92aW'
+    'V3EhZzZXJ2aWNlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbmFnZRrd'
+    'AQgBEgt0ZW5hbnRfdmlldxINdGVuYW50X21hbmFnZRIOcGFydGl0aW9uX3ZpZXcSEHBhcnRpdG'
     'lvbl9tYW5hZ2USC2FjY2Vzc192aWV3Eg1hY2Nlc3NfbWFuYWdlEgtyb2xlX21hbmFnZRIJcGFn'
     'ZV92aWV3EgtwYWdlX21hbmFnZRIQcGVybWlzc2lvbl9ncmFudBIUc2VydmljZV9hY2NvdW50X3'
-    'ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdl');
+    'ZpZXcSFnNlcnZpY2VfYWNjb3VudF9tYW5hZ2USC2NsaWVudF92aWV3Eg1jbGllbnRfbWFuYWdl'
+    'Gs4BCAISC3RlbmFudF92aWV3Eg5wYXJ0aXRpb25fdmlldxIQcGFydGl0aW9uX21hbmFnZRILYW'
+    'NjZXNzX3ZpZXcSDWFjY2Vzc19tYW5hZ2USC3JvbGVfbWFuYWdlEglwYWdlX3ZpZXcSC3BhZ2Vf'
+    'bWFuYWdlEhBwZXJtaXNzaW9uX2dyYW50EhRzZXJ2aWNlX2FjY291bnRfdmlldxIWc2VydmljZV'
+    '9hY2NvdW50X21hbmFnZRILY2xpZW50X3ZpZXcSDWNsaWVudF9tYW5hZ2UaWggDEgt0ZW5hbnRf'
+    'dmlldxIOcGFydGl0aW9uX3ZpZXcSC2FjY2Vzc192aWV3EglwYWdlX3ZpZXcSFHNlcnZpY2VfYW'
+    'Njb3VudF92aWV3EgtjbGllbnRfdmlldxoqCAQSC3RlbmFudF92aWV3Eg5wYXJ0aXRpb25fdmll'
+    'dxIJcGFnZV92aWV3GioIBRILdGVuYW50X3ZpZXcSDnBhcnRpdGlvbl92aWV3EglwYWdlX3ZpZX'
+    'ca3QEIBhILdGVuYW50X3ZpZXcSDXRlbmFudF9tYW5hZ2USDnBhcnRpdGlvbl92aWV3EhBwYXJ0'
+    'aXRpb25fbWFuYWdlEgthY2Nlc3NfdmlldxINYWNjZXNzX21hbmFnZRILcm9sZV9tYW5hZ2USCX'
+    'BhZ2VfdmlldxILcGFnZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3Vu'
+    'dF92aWV3EhZzZXJ2aWNlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbm'
+    'FnZQ==');
 

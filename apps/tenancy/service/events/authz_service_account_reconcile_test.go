@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -39,6 +40,25 @@ func TestDiffAuthorizationTuplesDeletesRevokedAndWritesNew(t *testing.T) {
 	require.Len(t, writes, 1)
 	require.Equal(t, "service_tenancy", writes[0].Object.Namespace)
 	require.Equal(t, "granted_partition_view", writes[0].Relation)
+}
+
+func TestAuthorizationReconciliationConcurrencyIsBounded(t *testing.T) {
+	t.Parallel()
+
+	reconciler := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil)
+	for range maxConcurrentAuthorizationReconciliations {
+		require.NoError(t, reconciler.acquire(t.Context()))
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := reconciler.acquire(ctx)
+	require.Error(t, err)
+	require.True(t, errors.Is(err, context.Canceled))
+
+	for range maxConcurrentAuthorizationReconciliations {
+		reconciler.release()
+	}
 }
 
 func TestBuildPartitionTreeUsesStructuralAncestryAcrossTenantBoundaries(t *testing.T) {

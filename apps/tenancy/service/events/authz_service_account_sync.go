@@ -35,6 +35,8 @@ import (
 
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
 
+const maxConcurrentAuthorizationReconciliations = 4
+
 // AuthzServiceAccountSyncEvent reconciles exact Keto state from the normalised
 // authorization policy. Events carry a generation and are only a latency
 // mechanism; the policy and applied-tuple rows remain authoritative.
@@ -45,6 +47,7 @@ type AuthzServiceAccountSyncEvent struct {
 	authContractRepo   repository.AuthContractRepository
 	eventsMan          fevents.Manager
 	authorizer         security.Authorizer
+	concurrency        chan struct{}
 }
 
 func NewAuthzServiceAccountSyncEventHandler(
@@ -62,6 +65,7 @@ func NewAuthzServiceAccountSyncEventHandler(
 		authContractRepo:   authContractRepo,
 		eventsMan:          eventsMan,
 		authorizer:         auth,
+		concurrency:        make(chan struct{}, maxConcurrentAuthorizationReconciliations),
 	}
 }
 
@@ -121,6 +125,10 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
 	ctx, cancel := withEventTimeout(ctx)
 	defer cancel()
+	if err := e.acquire(ctx); err != nil {
+		return err
+	}
+	defer e.release()
 
 	serviceAccountID := jsonPayload.GetString("id")
 	eventGeneration := authorizationPolicyGeneration(jsonPayload)
@@ -270,14 +278,32 @@ func (e *AuthzServiceAccountSyncEvent) handleFailure(
 	if recordErr != nil {
 		return errors.Join(cause, fmt.Errorf("record authorization policy failure: %w", recordErr))
 	}
-	if reason != "startup_reconciliation" && isPermanentError(cause) {
-		util.Log(ctx).WithError(cause).WithFields(map[string]any{
+	if reason != "startup_reconciliation" {
+		logger := util.Log(ctx).WithError(cause).WithFields(map[string]any{
 			"service_account_id": policy.ServiceAccountID,
 			"generation":         policy.Generation,
-		}).Error("permanent authorization reconciliation failure recorded; awaiting explicit reconciliation")
+		})
+		if isPermanentError(cause) {
+			logger.Error("permanent authorization reconciliation failure recorded; awaiting scheduled reconciliation")
+		} else {
+			logger.Warn("transient authorization reconciliation failure recorded; awaiting scheduled reconciliation")
+		}
 		return nil
 	}
 	return cause
+}
+
+func (e *AuthzServiceAccountSyncEvent) acquire(ctx context.Context) error {
+	select {
+	case e.concurrency <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for authorization reconciliation capacity: %w", ctx.Err())
+	}
+}
+
+func (e *AuthzServiceAccountSyncEvent) release() {
+	<-e.concurrency
 }
 
 func (e *AuthzServiceAccountSyncEvent) desiredTuples(

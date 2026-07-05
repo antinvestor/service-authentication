@@ -4,7 +4,7 @@
 #
 # Usage: NAME=<snake_name> PARENT=<parent partition xid or ROOT> \
 #        DISPLAY_NAME=<"Display Name"> DESCRIPTION=<"One line."> \
-#        ENVIRONMENT=production AUDIENCES=<json> \
+#        ENVIRONMENT=production RECIPIENTS=<json-array> \
 #        REDIRECTS=<json> POST_LOGOUT=<json> LOGO=<url> \
 #        CLIENT_NAME=<"Client Name"> \
 #        SUPPORT_MSISDN=<phone> SUPPORT_EMAIL=<email> \
@@ -16,7 +16,7 @@ set -euo pipefail
 : "${DISPLAY_NAME:?DISPLAY_NAME required}"
 : "${DESCRIPTION:?DESCRIPTION required}"
 : "${ENVIRONMENT:?ENVIRONMENT required (production|development)}"
-: "${AUDIENCES:?AUDIENCES JSON required}"
+: "${RECIPIENTS:?RECIPIENTS JSON array required}"
 : "${REDIRECTS:?REDIRECTS JSON required}"
 : "${POST_LOGOUT:?POST_LOGOUT JSON required}"
 : "${LOGO:?LOGO URL required}"
@@ -69,13 +69,18 @@ sed \
   -e "s/__CLIENT_XID__/$CLIENT/g" \
   -e "s/__CLIENT_ID_XID__/$CLIENT_ID/g" \
   -e "s/__CLIENT_NAME__/$(esc "$CLIENT_NAME")/g" \
-  -e "s|__AUDIENCES_JSON__|$(esc "$AUDIENCES")|g" \
   -e "s|__REDIRECT_URIS_JSON__|$(esc "$REDIRECTS")|g" \
   -e "s|__POST_LOGOUT_URIS_JSON__|$(esc "$POST_LOGOUT")|g" \
   -e "s|__LOGO_URI__|$(esc "$LOGO")|g" \
   -e "s/__SUPPORT_MSISDN__/$(esc "$SUPPORT_MSISDN")/g" \
   -e "s/__SUPPORT_EMAIL__/$(esc "$SUPPORT_EMAIL")/g" \
   "$TEMPLATE" > "$OUT"
+
+go run ./tools/migrations/render-auth-contract \
+  --client-id "$CLIENT" \
+  --tenant-id "$TENANT" \
+  --partition-id "$PARTITION" \
+  --recipients "$RECIPIENTS" >> "$OUT"
 
 REG="apps/tenancy/migrations/IDS.md"
 python3 - "$REG" "$TENANT" "$PARTITION" "$PARENT_XID" "$CLIENT" "$CLIENT_ID" \

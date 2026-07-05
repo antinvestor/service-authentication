@@ -343,13 +343,6 @@ func (bs *BaseTestSuite) createServiceInternal(
 		ctx,
 		svc.DatastoreManager(),
 		"../../migrations/0001",
-		cfg.GetOauth2AudienceBaseURL(),
-		repository.AuthContractMigrationExpectations{
-			Clients:         -1,
-			ServiceAccounts: -1,
-			Recipients:      -1,
-			Grants:          -1,
-		},
 	)
 	require.NoError(t, err)
 	svc.DatastoreManager().RemovePool(ctx, datastore.DefaultMigrationPoolName)

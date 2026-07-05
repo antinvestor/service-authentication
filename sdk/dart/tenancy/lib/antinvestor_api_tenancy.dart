@@ -36,6 +36,13 @@ export 'src/tenancy/v1/tenancy.pbjson.dart';
 export 'src/tenancy/v1/tenancy.connect.client.dart';
 export 'src/tenancy/v1/tenancy.connect.spec.dart';
 
+// Export the v2 OAuth client and service-account contract.
+export 'src/tenancy/v2/auth_contract.pb.dart';
+export 'src/tenancy/v2/auth_contract.pbenum.dart';
+export 'src/tenancy/v2/auth_contract.pbjson.dart';
+export 'src/tenancy/v2/auth_contract.connect.client.dart';
+export 'src/tenancy/v2/auth_contract.connect.spec.dart';
+
 // Export common types used in tenancy API
 export 'src/common/v1/common.pb.dart';
 export 'src/common/v1/common.pbenum.dart';

@@ -1,0 +1,1675 @@
+openapi: 3.1.0
+info:
+  title: tenancy.v2
+paths:
+  /tenancy.v2.AuthContractService/CreateOAuthClient:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: CreateOAuthClient
+      operationId: tenancy.v2.AuthContractService.CreateOAuthClient
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.CreateOAuthClientRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.CreateOAuthClientResponse'
+  /tenancy.v2.AuthContractService/CreateServiceAccount:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: CreateServiceAccount
+      operationId: tenancy.v2.AuthContractService.CreateServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.CreateServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.CreateServiceAccountResponse'
+  /tenancy.v2.AuthContractService/GetOAuthClient:
+    get:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: GetOAuthClient
+      operationId: tenancy.v2.AuthContractService.GetOAuthClient.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetOAuthClientRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetOAuthClientResponse'
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: GetOAuthClient
+      operationId: tenancy.v2.AuthContractService.GetOAuthClient
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.GetOAuthClientRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetOAuthClientResponse'
+  /tenancy.v2.AuthContractService/GetServiceAccount:
+    get:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: GetServiceAccount
+      operationId: tenancy.v2.AuthContractService.GetServiceAccount.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetServiceAccountRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetServiceAccountResponse'
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: GetServiceAccount
+      operationId: tenancy.v2.AuthContractService.GetServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.GetServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.GetServiceAccountResponse'
+  /tenancy.v2.AuthContractService/ListOAuthClients:
+    get:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: ListOAuthClients
+      operationId: tenancy.v2.AuthContractService.ListOAuthClients.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListOAuthClientsRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListOAuthClientsResponse'
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: ListOAuthClients
+      operationId: tenancy.v2.AuthContractService.ListOAuthClients
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.ListOAuthClientsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListOAuthClientsResponse'
+  /tenancy.v2.AuthContractService/ListServiceAccounts:
+    get:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: ListServiceAccounts
+      operationId: tenancy.v2.AuthContractService.ListServiceAccounts.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListServiceAccountsRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListServiceAccountsResponse'
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: ListServiceAccounts
+      operationId: tenancy.v2.AuthContractService.ListServiceAccounts
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.ListServiceAccountsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ListServiceAccountsResponse'
+  /tenancy.v2.AuthContractService/ReconcileServiceAccountAuthorization:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: ReconcileServiceAccountAuthorization
+      operationId: tenancy.v2.AuthContractService.ReconcileServiceAccountAuthorization
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.ReconcileServiceAccountAuthorizationRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.ReconcileServiceAccountAuthorizationResponse'
+  /tenancy.v2.AuthContractService/RemoveOAuthClient:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: RemoveOAuthClient
+      operationId: tenancy.v2.AuthContractService.RemoveOAuthClient
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.RemoveOAuthClientRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.RemoveOAuthClientResponse'
+  /tenancy.v2.AuthContractService/RemoveServiceAccount:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: RemoveServiceAccount
+      operationId: tenancy.v2.AuthContractService.RemoveServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.RemoveServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.RemoveServiceAccountResponse'
+  /tenancy.v2.AuthContractService/UpdateOAuthClient:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: UpdateOAuthClient
+      operationId: tenancy.v2.AuthContractService.UpdateOAuthClient
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.UpdateOAuthClientRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.UpdateOAuthClientResponse'
+  /tenancy.v2.AuthContractService/UpdateServiceAccount:
+    post:
+      tags:
+        - tenancy.v2.AuthContractService
+      summary: UpdateServiceAccount
+      operationId: tenancy.v2.AuthContractService.UpdateServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenancy.v2.UpdateServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenancy.v2.UpdateServiceAccountResponse'
+components:
+  schemas:
+    base64:
+      type: boolean
+      title: base64
+      description: Specifies if the message query param is base64 encoded, which may be required for binary data
+    common.v1.PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+          title: limit
+          format: int32
+          description: Number of items per cursor (limit)
+        page:
+          type: string
+          title: page
+          description: Page number/ cursor representing last id from result
+      title: PageCursor
+      additionalProperties: false
+      description: |-
+        PageCursor provides standard offset-based pagination/cursor stream parameters.
+         Used for list operations that return large result sets.
+    common.v1.STATE:
+      type: string
+      title: STATE
+      enum:
+        - CREATED
+        - CHECKED
+        - ACTIVE
+        - INACTIVE
+        - DELETED
+      description: |-
+        STATE represents the lifecycle state of an entity across all services.
+         This enum provides a consistent way to track entity states from creation to deletion.
+         buf:lint:ignore ENUM_VALUE_PREFIX
+    compression:
+      title: compression
+      enum:
+        - identity
+        - gzip
+        - br
+      description: Which compression algorithm to use for this request
+    connect:
+      title: connect
+      enum:
+        - v1
+      description: Define the version of the Connect protocol
+    connect-protocol-version:
+      type: number
+      title: Connect-Protocol-Version
+      enum:
+        - 1
+      description: Define the version of the Connect protocol
+      const: 1
+    connect-timeout-header:
+      type: number
+      title: Connect-Timeout-Ms
+      description: Define the timeout, in ms
+    connect.error:
+      type: object
+      properties:
+        code:
+          type: string
+          examples:
+            - not_found
+          enum:
+            - canceled
+            - unknown
+            - invalid_argument
+            - deadline_exceeded
+            - not_found
+            - already_exists
+            - permission_denied
+            - resource_exhausted
+            - failed_precondition
+            - aborted
+            - out_of_range
+            - unimplemented
+            - internal
+            - unavailable
+            - data_loss
+            - unauthenticated
+          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+        message:
+          type: string
+          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/connect.error_details.Any'
+          description: A list of messages that carry the error details. There is no limit on the number of messages.
+      title: Connect Error
+      additionalProperties: true
+      description: 'Error type returned by Connect: https://connectrpc.com/docs/go/errors/#http-representation'
+    connect.error_details.Any:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.'
+        value:
+          type: string
+          format: binary
+          description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
+        debug:
+          oneOf:
+            - type: object
+              title: Any
+              additionalProperties: true
+              description: Detailed error information.
+          discriminator:
+            propertyName: type
+          title: Debug
+          description: Deserialized error detail payload. The 'type' field indicates the schema. This field is for easier debugging and should not be relied upon for application logic.
+      additionalProperties: true
+      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.
+    encoding:
+      title: encoding
+      enum:
+        - proto
+        - json
+      description: Define which encoding or 'Message-Codec' to use
+    google.protobuf.FieldMask:
+      type: string
+      description: |-
+        `FieldMask` represents a set of symbolic field paths, for example:
+
+             paths: "f.a"
+             paths: "f.b.d"
+
+         Here `f` represents a field in some root message, `a` and `b`
+         fields in the message found in `f`, and `d` a field found in the
+         message in `f.b`.
+
+         Field masks are used to specify a subset of fields that should be
+         returned by a get operation or modified by an update operation.
+         Field masks also have a custom JSON encoding (see below).
+
+         # Field Masks in Projections
+
+         When used in the context of a projection, a response message or
+         sub-message is filtered by the API to only contain those fields as
+         specified in the mask. For example, if the mask in the previous
+         example is applied to a response message as follows:
+
+             f {
+               a : 22
+               b {
+                 d : 1
+                 x : 2
+               }
+               y : 13
+             }
+             z: 8
+
+         The result will not contain specific values for fields x,y and z
+         (their value will be set to the default, and omitted in proto text
+         output):
+
+
+             f {
+               a : 22
+               b {
+                 d : 1
+               }
+             }
+
+         A repeated field is not allowed except at the last position of a
+         paths string.
+
+         If a FieldMask object is not present in a get operation, the
+         operation applies to all fields (as if a FieldMask of all fields
+         had been specified).
+
+         Note that a field mask does not necessarily apply to the
+         top-level response message. In case of a REST get operation, the
+         field mask applies directly to the response, but in case of a REST
+         list operation, the mask instead applies to each individual message
+         in the returned resource list. In case of a REST custom method,
+         other definitions may be used. Where the mask applies will be
+         clearly documented together with its declaration in the API.  In
+         any case, the effect on the returned resource/resources is required
+         behavior for APIs.
+
+         # Field Masks in Update Operations
+
+         A field mask in update operations specifies which fields of the
+         targeted resource are going to be updated. The API is required
+         to only change the values of the fields as specified in the mask
+         and leave the others untouched. If a resource is passed in to
+         describe the updated values, the API ignores the values of all
+         fields not covered by the mask.
+
+         If a repeated field is specified for an update operation, new values will
+         be appended to the existing repeated field in the target resource. Note that
+         a repeated field is only allowed in the last position of a `paths` string.
+
+         If a sub-message is specified in the last position of the field mask for an
+         update operation, then new value will be merged into the existing sub-message
+         in the target resource.
+
+         For example, given the target message:
+
+             f {
+               b {
+                 d: 1
+                 x: 2
+               }
+               c: [1]
+             }
+
+         And an update message:
+
+             f {
+               b {
+                 d: 10
+               }
+               c: [2]
+             }
+
+         then if the field mask is:
+
+          paths: ["f.b", "f.c"]
+
+         then the result will be:
+
+             f {
+               b {
+                 d: 10
+                 x: 2
+               }
+               c: [1, 2]
+             }
+
+         An implementation may provide options to override this default behavior for
+         repeated and message fields.
+
+         In order to reset a field's value to the default, the field must
+         be in the mask and set to the default value in the provided resource.
+         Hence, in order to reset all fields of a resource, provide a default
+         instance of the resource and set all fields in the mask, or do
+         not provide a mask as described below.
+
+         If a field mask is not present on update, the operation applies to
+         all fields (as if a field mask of all fields has been specified).
+         Note that in the presence of schema evolution, this may mean that
+         fields the client does not know and has therefore not filled into
+         the request will be reset to their default. If this is unwanted
+         behavior, a specific service may require a client to always specify
+         a field mask, producing an error if not.
+
+         As with get operations, the location of the resource which
+         describes the updated values in the request message depends on the
+         operation kind. In any case, the effect of the field mask is
+         required to be honored by the API.
+
+         ## Considerations for HTTP REST
+
+         The HTTP kind of an update operation which uses a field mask must
+         be set to PATCH instead of PUT in order to satisfy HTTP semantics
+         (PUT must only be used for full updates).
+
+         # JSON Encoding of Field Masks
+
+         In JSON, a field mask is encoded as a single string where paths are
+         separated by a comma. Fields name in each path are converted
+         to/from lower-camel naming conventions.
+
+         As an example, consider the following message declarations:
+
+             message Profile {
+               User user = 1;
+               Photo photo = 2;
+             }
+             message User {
+               string display_name = 1;
+               string address = 2;
+             }
+
+         In proto a field mask for `Profile` may look as such:
+
+             mask {
+               paths: "user.display_name"
+               paths: "photo"
+             }
+
+         In JSON, the same mask is represented as below:
+
+             {
+               mask: "user.displayName,photo"
+             }
+
+         # Field Masks and Oneof Fields
+
+         Field masks treat fields in oneofs just as regular fields. Consider the
+         following message:
+
+             message SampleMessage {
+               oneof test_oneof {
+                 string name = 4;
+                 SubMessage sub_message = 9;
+               }
+             }
+
+         The field mask can be:
+
+             mask {
+               paths: "name"
+             }
+
+         Or:
+
+             mask {
+               paths: "sub_message"
+             }
+
+         Note that oneof type names ("test_oneof" in this case) cannot be used in
+         paths.
+
+         ## Field Mask Verification
+
+         The implementation of any API method which has a FieldMask type field in the
+         request should verify the included field paths, and return an
+         `INVALID_ARGUMENT` error if any path is unmappable.
+    google.protobuf.ListValue:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/google.protobuf.Value'
+          title: values
+          description: Repeated field of dynamically typed values.
+      title: ListValue
+      additionalProperties: false
+      description: |-
+        `ListValue` is a wrapper around a repeated field of values.
+
+         The JSON representation for `ListValue` is JSON array.
+    google.protobuf.NullValue:
+      type: string
+      title: NullValue
+      enum:
+        - NULL_VALUE
+      description: |-
+        `NullValue` is a singleton enumeration to represent the null value for the
+         `Value` type union.
+
+         The JSON representation for `NullValue` is JSON `null`.
+    google.protobuf.Struct:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/google.protobuf.Value'
+      description: |-
+        `Struct` represents a structured data value, consisting of fields
+         which map to dynamically typed values. In some languages, `Struct`
+         might be supported by a native representation. For example, in
+         scripting languages like JS a struct is represented as an
+         object. The details of that representation are described together
+         with the proto support for the language.
+
+         The JSON representation for `Struct` is JSON object.
+    google.protobuf.Struct.FieldsEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/google.protobuf.Value'
+      title: FieldsEntry
+      additionalProperties: false
+    google.protobuf.Timestamp:
+      type: string
+      examples:
+        - "2023-01-15T01:30:15.01Z"
+        - "2024-12-25T12:00:00Z"
+      format: date-time
+      description: |-
+        A Timestamp represents a point in time independent of any time zone or local
+         calendar, encoded as a count of seconds and fractions of seconds at
+         nanosecond resolution. The count is relative to an epoch at UTC midnight on
+         January 1, 1970, in the proleptic Gregorian calendar which extends the
+         Gregorian calendar backwards to year one.
+
+         All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+         second table is needed for interpretation, using a [24-hour linear
+         smear](https://developers.google.com/time/smear).
+
+         The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+         restricting to that range, we ensure that we can convert to and from [RFC
+         3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+
+         # Examples
+
+         Example 1: Compute Timestamp from POSIX `time()`.
+
+             Timestamp timestamp;
+             timestamp.set_seconds(time(NULL));
+             timestamp.set_nanos(0);
+
+         Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+
+             struct timeval tv;
+             gettimeofday(&tv, NULL);
+
+             Timestamp timestamp;
+             timestamp.set_seconds(tv.tv_sec);
+             timestamp.set_nanos(tv.tv_usec * 1000);
+
+         Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+
+             FILETIME ft;
+             GetSystemTimeAsFileTime(&ft);
+             UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+
+             // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+             // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+             Timestamp timestamp;
+             timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+             timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+
+         Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+
+             long millis = System.currentTimeMillis();
+
+             Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+                 .setNanos((int) ((millis % 1000) * 1000000)).build();
+
+         Example 5: Compute Timestamp from Java `Instant.now()`.
+
+             Instant now = Instant.now();
+
+             Timestamp timestamp =
+                 Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+                     .setNanos(now.getNano()).build();
+
+         Example 6: Compute Timestamp from current time in Python.
+
+             timestamp = Timestamp()
+             timestamp.GetCurrentTime()
+
+         # JSON Mapping
+
+         In JSON format, the Timestamp type is encoded as a string in the
+         [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+         format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+         where {year} is always expressed using four digits while {month}, {day},
+         {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+         seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+         are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+         is required. A proto3 JSON serializer should always use UTC (as indicated by
+         "Z") when printing the Timestamp type and a proto3 JSON parser should be
+         able to accept both UTC and other timezones (as indicated by an offset).
+
+         For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+         01:30 UTC on January 15, 2017.
+
+         In JavaScript, one can convert a Date object to this format using the
+         standard
+         [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+         method. In Python, a standard `datetime.datetime` object can be converted
+         to this format using
+         [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+         the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+         the Joda Time's [`ISODateTimeFormat.dateTime()`](
+         http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+         ) to obtain a formatter capable of generating timestamps in this format.
+    google.protobuf.Value:
+      oneOf:
+        - type: "null"
+        - type: number
+        - type: string
+        - type: boolean
+        - type: array
+        - type: object
+          additionalProperties: true
+      description: |-
+        `Value` represents a dynamically typed value which can be either
+         null, a number, a string, a boolean, a recursive struct value, or a
+         list of values. A producer of value is expected to set one of these
+         variants. Absence of any variant indicates an error.
+
+         The JSON representation for `Value` is JSON value.
+    tenancy.v2.AuthorizationPolicyStatus:
+      type: string
+      title: AuthorizationPolicyStatus
+      enum:
+        - AUTHORIZATION_POLICY_STATUS_UNSPECIFIED
+        - AUTHORIZATION_POLICY_STATUS_PENDING
+        - AUTHORIZATION_POLICY_STATUS_APPLIED
+        - AUTHORIZATION_POLICY_STATUS_FAILED
+    tenancy.v2.AuthorizationScope:
+      type: string
+      title: AuthorizationScope
+      enum:
+        - AUTHORIZATION_SCOPE_UNSPECIFIED
+        - AUTHORIZATION_SCOPE_PARTITION_ONLY
+        - AUTHORIZATION_SCOPE_PARTITION_TREE
+    tenancy.v2.CreateOAuthClientRequest:
+      type: object
+      properties:
+        partitionId:
+          type: string
+          title: partition_id
+          pattern: '[0-9a-z_-]{3,50}'
+        name:
+          type: string
+          title: name
+          maxLength: 100
+          minLength: 3
+        type:
+          type: string
+          title: type
+          enum:
+            - public
+            - confidential
+        configuration:
+          title: configuration
+          $ref: '#/components/schemas/tenancy.v2.OAuthClientConfiguration'
+      title: CreateOAuthClientRequest
+      required:
+        - configuration
+      additionalProperties: false
+    tenancy.v2.CreateOAuthClientResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.OAuthClient'
+        clientSecret:
+          type: string
+          title: client_secret
+      title: CreateOAuthClientResponse
+      additionalProperties: false
+    tenancy.v2.CreateServiceAccountRequest:
+      type: object
+      properties:
+        partitionId:
+          type: string
+          title: partition_id
+          pattern: '[0-9a-z_-]{3,50}'
+        profileId:
+          type: string
+          title: profile_id
+          pattern: '[0-9a-z_-]{3,50}'
+        name:
+          type: string
+          title: name
+          maxLength: 100
+          minLength: 3
+        type:
+          type: string
+          title: type
+          enum:
+            - internal
+            - external
+        oauthClient:
+          title: oauth_client
+          $ref: '#/components/schemas/tenancy.v2.OAuthClientConfiguration'
+        authorizationPolicy:
+          title: authorization_policy
+          $ref: '#/components/schemas/tenancy.v2.ServiceAuthorizationPolicyInput'
+        publicKeys:
+          title: public_keys
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        properties:
+          title: properties
+          $ref: '#/components/schemas/google.protobuf.Struct'
+      title: CreateServiceAccountRequest
+      required:
+        - oauthClient
+        - authorizationPolicy
+      additionalProperties: false
+    tenancy.v2.CreateServiceAccountResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.ServiceAccount'
+        clientSecret:
+          type: string
+          title: client_secret
+      title: CreateServiceAccountResponse
+      additionalProperties: false
+    tenancy.v2.GetOAuthClientRequest:
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            clientId:
+              type: string
+              title: client_id
+              maxLength: 100
+              minLength: 3
+          title: client_id
+          required:
+            - clientId
+        - type: object
+          properties:
+            id:
+              type: string
+              title: id
+              pattern: '[0-9a-z_-]{3,50}'
+          title: id
+          required:
+            - id
+      title: GetOAuthClientRequest
+      additionalProperties: false
+    tenancy.v2.GetOAuthClientResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.OAuthClient'
+      title: GetOAuthClientResponse
+      additionalProperties: false
+    tenancy.v2.GetServiceAccountRequest:
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            clientId:
+              type: string
+              title: client_id
+              maxLength: 100
+              minLength: 3
+          title: client_id
+          required:
+            - clientId
+        - type: object
+          properties:
+            id:
+              type: string
+              title: id
+              pattern: '[0-9a-z_-]{3,50}'
+          title: id
+          required:
+            - id
+      title: GetServiceAccountRequest
+      additionalProperties: false
+    tenancy.v2.GetServiceAccountResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.ServiceAccount'
+      title: GetServiceAccountResponse
+      additionalProperties: false
+    tenancy.v2.ListOAuthClientsRequest:
+      type: object
+      allOf:
+        - properties:
+            cursor:
+              title: cursor
+              $ref: '#/components/schemas/common.v1.PageCursor'
+        - oneOf:
+            - type: object
+              properties:
+                partitionId:
+                  type: string
+                  title: partition_id
+                  pattern: '[0-9a-z_-]{3,50}'
+              title: partition_id
+              required:
+                - partitionId
+            - type: object
+              properties:
+                serviceAccountId:
+                  type: string
+                  title: service_account_id
+                  pattern: '[0-9a-z_-]{3,50}'
+              title: service_account_id
+              required:
+                - serviceAccountId
+      title: ListOAuthClientsRequest
+      additionalProperties: false
+    tenancy.v2.ListOAuthClientsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/tenancy.v2.OAuthClient'
+          title: data
+      title: ListOAuthClientsResponse
+      additionalProperties: false
+    tenancy.v2.ListServiceAccountsRequest:
+      type: object
+      properties:
+        partitionId:
+          type: string
+          title: partition_id
+          pattern: '[0-9a-z_-]{3,50}'
+        cursor:
+          title: cursor
+          $ref: '#/components/schemas/common.v1.PageCursor'
+      title: ListServiceAccountsRequest
+      additionalProperties: false
+    tenancy.v2.ListServiceAccountsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/tenancy.v2.ServiceAccount'
+          title: data
+      title: ListServiceAccountsResponse
+      additionalProperties: false
+    tenancy.v2.OAuthClient:
+      type: object
+      allOf:
+        - properties:
+            id:
+              type: string
+              title: id
+              pattern: '[0-9a-z_-]{3,50}'
+            name:
+              type: string
+              title: name
+              maxLength: 100
+              minLength: 3
+            clientId:
+              type: string
+              title: client_id
+              maxLength: 100
+              minLength: 3
+            type:
+              type: string
+              title: type
+              enum:
+                - public
+                - confidential
+                - internal
+                - external
+            configuration:
+              title: configuration
+              $ref: '#/components/schemas/tenancy.v2.OAuthClientConfiguration'
+            state:
+              title: state
+              $ref: '#/components/schemas/common.v1.STATE'
+            createdAt:
+              title: created_at
+              $ref: '#/components/schemas/google.protobuf.Timestamp'
+        - oneOf:
+            - type: object
+              properties:
+                partitionId:
+                  type: string
+                  title: partition_id
+                  pattern: '[0-9a-z_-]{3,50}'
+              title: partition_id
+              required:
+                - partitionId
+            - type: object
+              properties:
+                serviceAccountId:
+                  type: string
+                  title: service_account_id
+                  pattern: '[0-9a-z_-]{3,50}'
+              title: service_account_id
+              required:
+                - serviceAccountId
+      title: OAuthClient
+      additionalProperties: false
+    tenancy.v2.OAuthClientConfiguration:
+      type: object
+      properties:
+        grantTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - authorization_code
+              - client_credentials
+              - refresh_token
+          title: grant_types
+          uniqueItems: true
+        responseTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - code
+              - token
+          title: response_types
+          uniqueItems: true
+        redirectUris:
+          type: array
+          items:
+            type: string
+          title: redirect_uris
+        scopes:
+          type: string
+          title: scopes
+        resourceRecipients:
+          type: array
+          items:
+            type: string
+            pattern: ^https://[^/?#]+/[^?#]+$
+            format: uri
+          title: resource_recipients
+          minItems: 1
+          uniqueItems: true
+        tokenEndpointAuthMethod:
+          type: string
+          title: token_endpoint_auth_method
+          enum:
+            - none
+            - client_secret_basic
+            - client_secret_post
+            - private_key_jwt
+        properties:
+          title: properties
+          $ref: '#/components/schemas/google.protobuf.Struct'
+      title: OAuthClientConfiguration
+      additionalProperties: false
+    tenancy.v2.ReconcileServiceAccountAuthorizationRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+      title: ReconcileServiceAccountAuthorizationRequest
+      additionalProperties: false
+    tenancy.v2.ReconcileServiceAccountAuthorizationResponse:
+      type: object
+      properties:
+        generation:
+          type:
+            - integer
+            - string
+          title: generation
+          format: int64
+      title: ReconcileServiceAccountAuthorizationResponse
+      additionalProperties: false
+    tenancy.v2.RemoveOAuthClientRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+      title: RemoveOAuthClientRequest
+      additionalProperties: false
+    tenancy.v2.RemoveOAuthClientResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+          title: succeeded
+      title: RemoveOAuthClientResponse
+      additionalProperties: false
+    tenancy.v2.RemoveServiceAccountRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+      title: RemoveServiceAccountRequest
+      additionalProperties: false
+    tenancy.v2.RemoveServiceAccountResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+          title: succeeded
+      title: RemoveServiceAccountResponse
+      additionalProperties: false
+    tenancy.v2.ServiceAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+        tenantId:
+          type: string
+          title: tenant_id
+          pattern: '[0-9a-z_-]{3,50}'
+        partitionId:
+          type: string
+          title: partition_id
+          pattern: '[0-9a-z_-]{3,50}'
+        profileId:
+          type: string
+          title: profile_id
+          pattern: '[0-9a-z_-]{3,50}'
+        name:
+          type: string
+          title: name
+          maxLength: 100
+          minLength: 3
+        type:
+          type: string
+          title: type
+          enum:
+            - internal
+            - external
+        oauthClient:
+          title: oauth_client
+          $ref: '#/components/schemas/tenancy.v2.OAuthClient'
+        authorizationPolicy:
+          title: authorization_policy
+          $ref: '#/components/schemas/tenancy.v2.ServiceAuthorizationPolicy'
+        publicKeys:
+          title: public_keys
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        properties:
+          title: properties
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        state:
+          title: state
+          $ref: '#/components/schemas/common.v1.STATE'
+        createdAt:
+          title: created_at
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: ServiceAccount
+      additionalProperties: false
+    tenancy.v2.ServiceAuthorizationGrant:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          pattern: '[a-z][a-z0-9_]{2,99}'
+        permissions:
+          type: array
+          items:
+            type: string
+            pattern: '[a-z][a-z0-9_]{1,99}'
+          title: permissions
+          minItems: 1
+          uniqueItems: true
+        scope:
+          not:
+            enum:
+              - AUTHORIZATION_SCOPE_UNSPECIFIED
+          title: scope
+          $ref: '#/components/schemas/tenancy.v2.AuthorizationScope'
+      title: ServiceAuthorizationGrant
+      additionalProperties: false
+    tenancy.v2.ServiceAuthorizationPolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+        schemaVersion:
+          type: integer
+          title: schema_version
+          format: int32
+        generation:
+          type:
+            - integer
+            - string
+          title: generation
+          format: int64
+        appliedGeneration:
+          type:
+            - integer
+            - string
+          title: applied_generation
+          format: int64
+        status:
+          title: status
+          $ref: '#/components/schemas/tenancy.v2.AuthorizationPolicyStatus'
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/tenancy.v2.ServiceAuthorizationGrant'
+          title: grants
+        lastErrorCode:
+          type: string
+          title: last_error_code
+        nextAttemptAt:
+          title: next_attempt_at
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        syncedAt:
+          title: synced_at
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: ServiceAuthorizationPolicy
+      additionalProperties: false
+    tenancy.v2.ServiceAuthorizationPolicyInput:
+      type: object
+      properties:
+        schemaVersion:
+          type: integer
+          title: schema_version
+          format: int32
+          const: 1
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/tenancy.v2.ServiceAuthorizationGrant'
+          title: grants
+          minItems: 1
+      title: ServiceAuthorizationPolicyInput
+      additionalProperties: false
+    tenancy.v2.UpdateOAuthClientRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+        name:
+          type: string
+          title: name
+          maxLength: 100
+          minLength: 3
+        configuration:
+          title: configuration
+          $ref: '#/components/schemas/tenancy.v2.OAuthClientConfiguration'
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateOAuthClientRequest
+      required:
+        - updateMask
+      additionalProperties: false
+    tenancy.v2.UpdateOAuthClientResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.OAuthClient'
+      title: UpdateOAuthClientResponse
+      additionalProperties: false
+    tenancy.v2.UpdateServiceAccountRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          pattern: '[0-9a-z_-]{3,50}'
+        name:
+          type: string
+          title: name
+          maxLength: 100
+          minLength: 3
+        type:
+          type: string
+          title: type
+          enum:
+            - internal
+            - external
+        oauthClient:
+          title: oauth_client
+          $ref: '#/components/schemas/tenancy.v2.OAuthClientConfiguration'
+        authorizationPolicy:
+          title: authorization_policy
+          $ref: '#/components/schemas/tenancy.v2.ServiceAuthorizationPolicyInput'
+        publicKeys:
+          title: public_keys
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        properties:
+          title: properties
+          $ref: '#/components/schemas/google.protobuf.Struct'
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateServiceAccountRequest
+      required:
+        - updateMask
+      additionalProperties: false
+    tenancy.v2.UpdateServiceAccountResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/tenancy.v2.ServiceAccount'
+      title: UpdateServiceAccountResponse
+      additionalProperties: false
+security: []
+tags:
+  - name: tenancy.v2.AuthContractService

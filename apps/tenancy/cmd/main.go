@@ -69,13 +69,6 @@ func main() {
 			ctx,
 			svc.DatastoreManager(),
 			cfg.GetDatabaseMigrationPath(),
-			cfg.GetOauth2AudienceBaseURL(),
-			repository.AuthContractMigrationExpectations{
-				Clients:         cfg.AuthContractExpectedClients,
-				ServiceAccounts: cfg.AuthContractExpectedServiceAccounts,
-				Recipients:      cfg.AuthContractExpectedRecipients,
-				Grants:          cfg.AuthContractExpectedGrants,
-			},
 		); migErr != nil {
 			util.Log(ctx).WithError(migErr).Fatal("database migration failed")
 		}

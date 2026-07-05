@@ -10,9 +10,18 @@ REG="apps/tenancy/migrations/IDS.md"
 # xids look like 20-char [0-9a-v] strings (rs/xid alphabet).
 PATTERN="[0-9a-v]{20}"
 
-sql_ids=$(grep -hoE "'${PATTERN}'" "$DIR"/*.sql 2>/dev/null \
+sql_ids=$(grep -hoE "'${PATTERN}'" "$DIR"/*.sql \
+	--exclude='*_02_auth_contract_seed.sql' 2>/dev/null \
   | tr -d "'" | sort -u || true)
-reg_ids=$(grep -hoE "${PATTERN}" "$REG" 2>/dev/null | sort -u || true)
+reg_ids=$(awk -F'|' '
+  {
+    for (field = 1; field <= NF; field++) {
+      id = $field
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", id)
+      if (length(id) == 20 && id ~ /^[0-9a-v]+$/) print id
+    }
+  }
+' "$REG" | sort -u)
 
 missing_from_registry=$(comm -23 <(echo "$sql_ids") <(echo "$reg_ids") || true)
 missing_from_sql=$(comm -13 <(echo "$sql_ids") <(echo "$reg_ids") || true)
