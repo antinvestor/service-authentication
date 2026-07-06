@@ -40,7 +40,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO clients (
     id, tenant_id, partition_id, name, client_id,
-    type, grant_types, response_types, scopes, audiences, redirect_uris,
+    type, grant_types, response_types, scopes, redirect_uris,
     logo_uri, post_logout_redirect_uris, token_endpoint_auth_method
 ) VALUES (
     '__CLIENT_XID__',
@@ -51,7 +51,6 @@ INSERT INTO clients (
     '{"types": ["authorization_code","refresh_token"]}',
     '{"types": ["code"]}',
     'openid offline_access profile',
-    '__AUDIENCES_JSON__',
     '__REDIRECT_URIS_JSON__',
     '__LOGO_URI__',
     '__POST_LOGOUT_URIS_JSON__',

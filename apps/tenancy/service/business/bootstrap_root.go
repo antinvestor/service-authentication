@@ -16,6 +16,7 @@ package business
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
@@ -35,9 +36,9 @@ type RootAuthorizationDeps struct {
 }
 
 // EnsureRootAuthorization synchronously provisions the Keto tuples that make
-// root-partition owners/admins fully functional super-users. It runs once at
-// service start, blocks until every write succeeds, and returns an error if
-// any step fails so the service never comes up half-provisioned.
+// root-partition owners/admins fully functional super-users. It runs during
+// migration bootstrap and manifest reconciliation, and returns an error if
+// any write fails.
 //
 // For every access record on the root partition that has an owner or admin
 // role it writes, without any self-healing or retries:
@@ -108,14 +109,15 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 		return nil
 	}
 
-	// Group tuples by namespace so that a namespace missing from Keto's OPL
-	// doesn't fail the entire batch. This is expected during initial cluster
-	// setup where OPL configs deploy asynchronously.
+	// Group tuples by namespace so successful writes remain idempotently
+	// applied while an unavailable schema is retried on the next registration.
 	grouped := groupTuplesByNamespace(allTuples)
 	var written, skipped int
+	var failures []error
 	for ns, tuples := range grouped {
 		if writeErr := deps.Authorizer.WriteTuples(ctx, tuples); writeErr != nil {
 			skipped += len(tuples)
+			failures = append(failures, fmt.Errorf("namespace %s: %w", ns, writeErr))
 			logger.WithFields(map[string]any{
 				"namespace": ns,
 				"tuples":    len(tuples),
@@ -125,6 +127,14 @@ func EnsureRootAuthorization(ctx context.Context, deps RootAuthorizationDeps) er
 		written += len(tuples)
 	}
 
+	if len(failures) > 0 {
+		return fmt.Errorf(
+			"bootstrap: wrote %d and deferred %d root tuples: %w",
+			written,
+			skipped,
+			errors.Join(failures...),
+		)
+	}
 	if written == 0 {
 		return fmt.Errorf("bootstrap: wrote 0 of %d root tuples — no namespaces available in Keto", len(allTuples))
 	}

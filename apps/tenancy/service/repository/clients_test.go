@@ -20,6 +20,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/suite"
@@ -27,6 +28,43 @@ import (
 
 type ClientRepositoryTestSuite struct {
 	tests.BaseTestSuite
+}
+
+func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthContract() {
+	s.WithTestDependancies(s.T(), func(t *testing.T, dep *definition.DependencyOption) {
+		ctx, svc, _ := s.CreateService(t, dep)
+		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
+
+		for table, expected := range map[string]int64{
+			"clients":                                   56,
+			"oauth_client_recipients":                   246,
+			"service_accounts":                          45,
+			"service_account_authorization_policies":    45,
+			"service_account_authorization_grants":      177,
+			"service_account_authorization_permissions": 1845,
+		} {
+			var count int64
+			s.Require().NoError(db.Table(table).Count(&count).Error)
+			s.Equal(expected, count, table)
+		}
+
+		s.False(db.Migrator().HasColumn("clients", "audiences"))
+		s.False(db.Migrator().HasColumn("clients", "roles"))
+		s.False(db.Migrator().HasColumn("service_accounts", "audiences"))
+		s.False(db.Migrator().HasColumn("service_accounts", "client_secret"))
+
+		var invalidRecipients int64
+		s.Require().NoError(db.Table("oauth_client_recipients").
+			Where("resource_audience NOT LIKE ?", "https://%").
+			Count(&invalidRecipients).Error)
+		s.Zero(invalidRecipients)
+
+		var wildcardPermissions int64
+		s.Require().NoError(db.Table("service_account_authorization_permissions").
+			Where("permission = ?", "*").
+			Count(&wildcardPermissions).Error)
+		s.Zero(wildcardPermissions)
+	})
 }
 
 func (s *ClientRepositoryTestSuite) TestCreateAndGetByID() {

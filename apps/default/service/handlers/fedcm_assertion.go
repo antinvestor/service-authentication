@@ -111,7 +111,7 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	// The webhook requires a non-empty access_id; without it the token enrichment
 	// will be rejected. We use the same method the consent handler uses so the
 	// access record is consistent across both flows.
-	accessObj, aerr := h.getOrCreateTenancyAccessByClientID(ctx, body.ClientID, entry.ProfileID)
+	accessObj, aerr := h.getOrCreateTenancyAccessByPartitionID(ctx, partition, entry.ProfileID)
 	accessID := ""
 	if aerr != nil {
 		log.WithError(aerr).Warn("fedcm: access record lookup failed; access_id will be empty")

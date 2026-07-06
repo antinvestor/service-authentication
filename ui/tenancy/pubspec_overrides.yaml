@@ -1,0 +1,4 @@
+# Resolve the matching SDK from this monorepo for repository tests and validation.
+dependency_overrides:
+  antinvestor_api_tenancy:
+    path: ../../sdk/dart/tenancy

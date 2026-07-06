@@ -52,7 +52,6 @@ func NewAccessBusiness(
 	accessRoleRepo repository.AccessRoleRepository,
 	partitionRepo repository.PartitionRepository,
 	partitionRoleRepo repository.PartitionRoleRepository,
-	clientRepo repository.ClientRepository,
 	serviceNamespaceRepo repository.ServiceNamespaceRepository,
 ) AccessBusiness {
 	return &accessBusiness{
@@ -62,7 +61,6 @@ func NewAccessBusiness(
 		accessRoleRepo:       accessRoleRepo,
 		partitionRepo:        partitionRepo,
 		partitionRoleRepo:    partitionRoleRepo,
-		clientRepo:           clientRepo,
 		serviceNamespaceRepo: serviceNamespaceRepo,
 	}
 }
@@ -74,7 +72,6 @@ type accessBusiness struct {
 	accessRoleRepo       repository.AccessRoleRepository
 	partitionRepo        repository.PartitionRepository
 	partitionRoleRepo    repository.PartitionRoleRepository
-	clientRepo           repository.ClientRepository
 	serviceNamespaceRepo repository.ServiceNamespaceRepository
 }
 
@@ -89,34 +86,6 @@ func (ab *accessBusiness) registeredNamespaces(ctx context.Context) []*models.Se
 		return nil
 	}
 	return ns
-}
-
-// resolvePartition finds a partition by partition ID or by looking up the Client's
-// partition when a Hydra client_id is provided.
-func (ab *accessBusiness) resolvePartition(ctx context.Context, partitionID, clientID string) (*models.Partition, error) {
-	if partitionID != "" {
-		return ab.partitionRepo.GetByID(ctx, partitionID)
-	}
-	if clientID == "" {
-		return nil, fmt.Errorf("partition_id or client_id is required")
-	}
-
-	// First try as a partition ID (backward compatibility)
-	partition, err := ab.partitionRepo.GetByID(ctx, clientID)
-	if err == nil {
-		return partition, nil
-	}
-
-	// Fall back to looking up the Client record by its Hydra client_id
-	if ab.clientRepo != nil {
-		client, clientErr := ab.clientRepo.GetByClientID(ctx, clientID)
-		if clientErr != nil {
-			return nil, fmt.Errorf("no partition or client found for id %q: %w", clientID, clientErr)
-		}
-		return ab.partitionRepo.GetByID(ctx, client.PartitionID)
-	}
-
-	return nil, err
 }
 
 func (ab *accessBusiness) GetAccess(
@@ -141,7 +110,11 @@ func (ab *accessBusiness) GetAccess(
 		return access.ToAPI(partitionObject)
 	}
 
-	partition, err := ab.resolvePartition(ctx, request.GetPartitionId(), request.GetClientId())
+	partitionID := request.GetPartitionId()
+	if partitionID == "" {
+		return nil, fmt.Errorf("access_id or partition_id is required")
+	}
+	partition, err := ab.partitionRepo.GetByID(ctx, partitionID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +230,7 @@ func (ab *accessBusiness) CreateAccess(
 
 	logger.Debug("creating access record")
 
-	partition, err := ab.resolvePartition(ctx, request.GetPartitionId(), request.GetClientId())
+	partition, err := ab.partitionRepo.GetByID(ctx, request.GetPartitionId())
 	if err != nil {
 		return nil, err
 	}

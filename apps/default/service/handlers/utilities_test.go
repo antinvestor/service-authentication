@@ -76,11 +76,6 @@ func (s *UtilitiesTestSuite) TestIsNonUserRole_OtherTypes() {
 	s.False(isNonUserRole(123))
 }
 
-func (s *UtilitiesTestSuite) TestRoleConstants() {
-	s.Equal("internal", RoleSystemInternal)
-	s.Equal("external", RoleSystemExternal)
-}
-
 func TestUtilities(t *testing.T) {
 	suite.Run(t, new(UtilitiesTestSuite))
 }

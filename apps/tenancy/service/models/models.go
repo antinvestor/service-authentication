@@ -17,7 +17,6 @@ package models
 import (
 	"errors"
 	"maps"
-	"slices"
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
@@ -180,8 +179,6 @@ type Client struct {
 	ResponseTypes           data.JSONMap `                                                                                  json:"response_types"`             // ["code","token"]
 	RedirectURIs            data.JSONMap `                                                                                  json:"redirect_uris"`              // ["https://app.example.com/callback"]
 	Scopes                  string       `gorm:"type:text;"                                                                 json:"scopes"`                     // "openid offline_access profile"
-	Audiences               data.JSONMap `                                                                                  json:"audiences"`                  // {"service_profile": [], "service_tenancy": ["tenant_view"]}
-	Roles                   data.JSONMap `                                                                                  json:"roles"`                      // ["admin","member"] — permission template for SA tokens
 	LogoURI                 string       `gorm:"type:text;"                                                                 json:"logo_uri"`                   // Logo URL for OIDC clients
 	PostLogoutRedirectURIs  data.JSONMap `                                                                                  json:"post_logout_redirect_uris"`  // {"uris": ["https://app.example.com/"]}
 	TokenEndpointAuthMethod string       `gorm:"type:varchar(50);"                                                          json:"token_endpoint_auth_method"` // "none", "client_secret_post", "client_secret_basic", "private_key_jwt"
@@ -191,161 +188,16 @@ type Client struct {
 	SyncedAt                *time.Time   `gorm:"index"                                                                      json:"synced_at"`
 }
 
-func (c *Client) ToAPI() *tenancyv1.ClientObject {
-	state := commonv1.STATE_ACTIVE
-	if c.DeletedAt.Valid {
-		state = commonv1.STATE_DELETED
-	}
-
-	obj := &tenancyv1.ClientObject{
-		Id:            c.ID,
-		Name:          c.Name,
-		ClientId:      c.ClientID,
-		Type:          c.Type,
-		GrantTypes:    jsonMapToStringSlice(c.GrantTypes, "grant_types"),
-		ResponseTypes: jsonMapToStringSlice(c.ResponseTypes, "response_types"),
-		RedirectUris:  jsonMapToStringSlice(c.RedirectURIs, "uris"),
-		Scopes:        c.Scopes,
-		Audiences:     audienceMapKeys(c.Audiences),
-		Roles:         c.GetRoleNames(),
-		State:         state,
-		CreatedAt:     timestamppb.New(c.CreatedAt),
-	}
-
-	props := make(data.JSONMap)
-	if c.Properties != nil {
-		maps.Copy(props, c.Properties)
-	}
-	if c.LogoURI != "" {
-		props["logo_uri"] = c.LogoURI
-	}
-	if plru := jsonMapToStringSlice(c.PostLogoutRedirectURIs, "uris"); len(plru) > 0 {
-		props["post_logout_redirect_uris"] = plru
-	}
-	if c.TokenEndpointAuthMethod != "" {
-		props["token_endpoint_auth_method"] = c.TokenEndpointAuthMethod
-	}
-	if c.ServiceAccountID != "" {
-		props["service_account_id"] = c.ServiceAccountID
-	}
-	if len(props) > 0 {
-		obj.Properties = props.ToProtoStruct()
-	}
-
-	// Populate the partition owner directly from the Client's own tenancy
-	// fields. The Client row is the authoritative source of its tenant/
-	// partition linkage, so callers can resolve tenant/partition context
-	// from a Hydra client_id without a follow-up partition fetch — and
-	// without depending on the caller's tenancy scope being able to read
-	// the target partition row.
-	if c.PartitionID != "" {
-		obj.SetPartition(&tenancyv1.PartitionObject{
-			Id:       c.PartitionID,
-			TenantId: c.TenantID,
-		})
-	}
-
-	return obj
-}
-
-// ToServiceAccountAPI returns a ServiceAccountObject view of this client for backward compatibility.
-func (c *Client) ToServiceAccountAPI() *tenancyv1.ServiceAccountObject {
-	state := commonv1.STATE_ACTIVE
-	if c.DeletedAt.Valid {
-		state = commonv1.STATE_DELETED
-	}
-
-	props := make(data.JSONMap, len(c.Properties)+3)
-	maps.Copy(props, c.Properties)
-	props["type"] = c.Type
-	if c.GrantTypes != nil {
-		props["grant_types"] = c.GrantTypes
-	}
-	if c.RedirectURIs != nil {
-		props["redirect_uris"] = c.RedirectURIs
-	}
-	if c.Roles != nil {
-		props["roles"] = c.Roles
-	}
-
-	obj := &tenancyv1.ServiceAccountObject{
-		Id:          c.ID,
-		TenantId:    c.TenantID,
-		PartitionId: c.PartitionID,
-		ClientId:    c.ClientID,
-		State:       state,
-		CreatedAt:   timestamppb.New(c.CreatedAt),
-		Properties:  props.ToProtoStruct(),
-		Type:        c.Type,
-		Audiences:   audienceMapKeys(c.Audiences),
-	}
-
-	return obj
-}
-
-// GetRoleNames extracts the list of role name strings from the Roles JSONMap.
-func (c *Client) GetRoleNames() []string {
-	if c.Roles == nil {
-		return nil
-	}
-	raw, ok := c.Roles["roles"]
-	if !ok {
-		return nil
-	}
-	switch typed := raw.(type) {
-	case []any:
-		result := make([]string, 0, len(typed))
-		for _, v := range typed {
-			if s, ok := v.(string); ok {
-				result = append(result, s)
-			}
-		}
-		return result
-	case []string:
-		return typed
-	}
-	return nil
-}
-
 type ServiceAccount struct {
 	data.BaseModel
-	ProfileID    string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
-	ClientID     string `gorm:"type:varchar(100);uniqueIndex"`                // OAuth2 client_id (denormalized from Client for lookup)
-	ClientSecret string `gorm:"type:varchar(250);"`                           // DEPRECATED: kept for backward compat, new SAs use Client.ClientSecret
-	ClientRef    string `gorm:"type:varchar(50);index:idx_sa_client_ref"`     // FK → Client.ID
-	Type         string `gorm:"type:varchar(20);not null;default:'internal'"` // "internal" or "external"
-	State        int32
-	Audiences    data.JSONMap // {"service_tenancy": [], "service_profile": ["profile_view"], ...}
-	PublicKeys   data.JSONMap // {"keys": [{"kid":"k1","kty":"EC","crv":"P-256","x":"...","y":"..."}]}
-	Properties   data.JSONMap
-}
-
-func (sa *ServiceAccount) ToAPI() *tenancyv1.ServiceAccountObject {
-	state := commonv1.STATE_ACTIVE
-	if sa.DeletedAt.Valid {
-		state = commonv1.STATE_DELETED
-	}
-
-	obj := &tenancyv1.ServiceAccountObject{
-		Id:          sa.ID,
-		TenantId:    sa.TenantID,
-		PartitionId: sa.PartitionID,
-		ProfileId:   sa.ProfileID,
-		ClientId:    sa.ClientID,
-		State:       state,
-		CreatedAt:   timestamppb.New(sa.CreatedAt),
-		Type:        sa.Type,
-	}
-
-	if sa.Audiences != nil {
-		obj.Audiences = audienceMapKeys(sa.Audiences)
-	}
-
-	if sa.Properties != nil {
-		obj.Properties = sa.Properties.ToProtoStruct()
-	}
-
-	return obj
+	Name       string `gorm:"type:varchar(100);not null;default:''"`
+	ProfileID  string `gorm:"type:varchar(50);not null;index:idx_sa_profile"`
+	ClientID   string `gorm:"type:varchar(100);uniqueIndex"`            // OAuth2 client_id (denormalized from Client for lookup)
+	ClientRef  string `gorm:"type:varchar(50);index:idx_sa_client_ref"` // FK → Client.ID
+	Type       string `gorm:"type:varchar(20);not null;default:'internal'"`
+	State      int32
+	PublicKeys data.JSONMap
+	Properties data.JSONMap
 }
 
 type AccessRole struct {
@@ -360,42 +212,4 @@ func (ar *AccessRole) ToAPI(partitionRoleObj *tenancyv1.PartitionRoleObject) *te
 		AccessId: ar.AccessID,
 		Role:     partitionRoleObj,
 	}
-}
-
-// audienceMapKeys returns sorted namespace names from an audiences JSONMap.
-// The audiences map uses namespace names as keys: {"ns1": [], "ns2": ["perm"]}.
-func audienceMapKeys(m data.JSONMap) []string {
-	if len(m) == 0 {
-		return nil
-	}
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
-}
-
-// jsonMapToStringSlice extracts a []string from a JSONMap entry keyed by key.
-func jsonMapToStringSlice(m data.JSONMap, key string) []string {
-	if m == nil {
-		return nil
-	}
-	raw, ok := m[key]
-	if !ok {
-		return nil
-	}
-	switch typed := raw.(type) {
-	case []any:
-		result := make([]string, 0, len(typed))
-		for _, v := range typed {
-			if s, ok := v.(string); ok {
-				result = append(result, s)
-			}
-		}
-		return result
-	case []string:
-		return typed
-	}
-	return nil
 }

@@ -68,7 +68,7 @@ The existing browser login paths already fit Hydra's login/consent contract:
   calls `AcceptLoginRequest`; consent and token issuance remain Hydra-owned.
 - First-party FedCM already runs a server-side authorization-code flow with the
   `fedcm.HeadlessDriver` and exchanges the code at Hydra's `/oauth2/token`.
-- Hydra client provisioning already defaults partition clients to
+- Hydra client provisioning defaults partition-owned OAuth clients to
   `authorization_code` plus `refresh_token`, and current seeds include the
   internal FedCM callback redirect URI.
 
@@ -139,8 +139,6 @@ Required Hydra-safe decisions:
 Provider and MFA policy is resolved per OAuth client:
 
 - `native_auth_enabled`
-- optional legacy `native_google_server_client_id` override
-- optional `native_apple_client_id` override
 - `mfa_policy`: `optional`, `required`, or `risk_based`
 - `mfa_trusted_device_ttl_days`
 - `mfa_required_for_roles`
@@ -312,8 +310,8 @@ Observability targets:
 - [x] Add `nativecredentials` package with issuer registry, JWKS cache, ID
       token verifier, replay cache, profile linker, and exchange coordinator.
 - [x] Add `external_identities` model, repository, and migration.
-- [x] Add per-client `native_auth_enabled` policy; provider audience defaults
-      to server-side auth provider config with legacy per-client overrides.
+- [x] Add per-client `native_auth_enabled` policy; provider audiences come
+      from server-side authentication provider configuration.
 - [x] Verify Google `iss`, `aud`, `exp`, `iat`, signature, and replay state.
 - [x] Verify Apple `iss`, `aud`, `exp`, `iat`, signature, and replay state.
 - [x] Resolve or create profile only from verified provider identity.
@@ -405,8 +403,7 @@ Add:
   - `OAUTH2_HYDRA_PUBLIC_INTERNAL_URL` for facade-to-Hydra proxying
   - `NATIVE_CREDENTIAL_EXCHANGE_ENABLED` as a default-on deployment kill switch
   - per-client `native_auth_enabled` policy property
-  - `AUTH_PROVIDER_GOOGLE_CLIENT_ID` as the Google ID-token audience unless a
-    legacy client override is present
+  - `AUTH_PROVIDER_GOOGLE_CLIENT_ID` as the Google ID-token audience
 
 Do not add the RFC 8693 grant to Hydra client `grant_types` as a hard
 requirement in facade mode. The auth service authorizes the native grant before

@@ -17,7 +17,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"slices"
 	"time"
@@ -28,11 +30,14 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const maxPermissionManifestBytes = 256 * 1024
 
 // permissionManifest matches the payload published by services at startup.
 type permissionManifest struct {
@@ -43,10 +48,9 @@ type permissionManifest struct {
 	RegisteredAt time.Time           `json:"registered_at"`
 }
 
-// NewInternalPermissionsHandler returns an HTTP handler for the internal
-// (unauthenticated) permission manifest registration endpoint. This is only
-// accessible within the cluster — not exposed through the API gateway.
-func (prtSrv *TenancyServer) NewInternalPermissionsHandler() http.Handler {
+// NewPermissionRegistrationHandler accepts authenticated manifests published
+// by Frame services during startup.
+func (prtSrv *TenancyServer) NewPermissionRegistrationHandler() http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			http.Error(rw, "method not allowed", http.StatusMethodNotAllowed)
@@ -56,90 +60,89 @@ func (prtSrv *TenancyServer) NewInternalPermissionsHandler() http.Handler {
 	})
 }
 
-// registerPermissionManifest handles POST requests to register a service's
-// permission manifest. It upserts the service namespace record.
+// registerPermissionManifest registers an authenticated service-owned
+// permission manifest and triggers generation reconciliation.
 func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	ctx = security.SkipTenancyChecksOnClaims(ctx)
 	logger := util.Log(ctx)
 
+	claims := security.ClaimsFromContext(ctx)
+	ownerServiceAccountID := serviceAccountIDFromClaims(claims)
+	if ownerServiceAccountID == "" {
+		http.Error(rw, "service-account identity is required", http.StatusForbidden)
+		return
+	}
+
 	var manifest permissionManifest
-	if err := json.NewDecoder(req.Body).Decode(&manifest); err != nil {
+	req.Body = http.MaxBytesReader(rw, req.Body, maxPermissionManifestBytes)
+	decoder := json.NewDecoder(req.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&manifest); err != nil {
 		http.Error(rw, "invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	if manifest.Namespace == "" {
-		http.Error(rw, "namespace is required", http.StatusBadRequest)
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		http.Error(rw, "request body must contain one manifest", http.StatusBadRequest)
 		return
 	}
 
-	created, err := prtSrv.upsertServiceNamespace(ctx, manifest)
+	registration, err := business.RegisterPermissionManifest(ctx, business.PermissionRegistryDeps{
+		ServiceNamespaceRepo: prtSrv.ServiceNamespaceRepo,
+		ServiceAccountRepo:   prtSrv.ServiceAccountRepo,
+		PolicyRepo:           prtSrv.AuthorizationPolicyRepo,
+		PartitionRepo:        prtSrv.PartitionRepo,
+		AccessRepo:           prtSrv.AccessRepo,
+		AccessRoleRepo:       prtSrv.AccessRoleRepo,
+		PartitionRoleRepo:    prtSrv.PartitionRoleRepo,
+		EventsManager:        prtSrv.eventsMan,
+		Authorizer:           prtSrv.svc.SecurityManager().GetAuthorizer(ctx),
+	}, ownerServiceAccountID, business.PermissionManifest{
+		Namespace:    manifest.Namespace,
+		Domain:       manifest.Domain,
+		Permissions:  manifest.Permissions,
+		RoleBindings: manifest.RoleBindings,
+	})
 	if err != nil {
-		logger.WithError(err).Error("failed to upsert service namespace")
-		http.Error(rw, "internal error", http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, business.ErrInvalidPermissionManifest):
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, business.ErrPermissionManifestOwner):
+			http.Error(rw, "service account cannot register this namespace", http.StatusForbidden)
+		case errors.Is(err, repository.ErrServiceNamespaceOwnerMismatch),
+			errors.Is(err, repository.ErrServiceNamespacePermissionRemoval),
+			errors.Is(err, repository.ErrServiceNamespaceRoleRemoval),
+			errors.Is(err, repository.ErrServiceNamespaceDomainChange):
+			http.Error(rw, err.Error(), http.StatusConflict)
+		default:
+			logger.WithError(err).Error("failed to register service namespace")
+			http.Error(rw, "internal error", http.StatusInternalServerError)
+		}
 		return
 	}
 
-	// When a brand-new service joins the platform, backfill root super-user
-	// tuples for it synchronously so platform owners can grant permissions in
-	// the namespace immediately. Re-registrations skip this step — the set
-	// is stable.
-	if created {
-		if backfillErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
-			AccessRepo:           prtSrv.AccessRepo,
-			AccessRoleRepo:       prtSrv.AccessRoleRepo,
-			PartitionRoleRepo:    prtSrv.PartitionRoleRepo,
-			ServiceNamespaceRepo: prtSrv.ServiceNamespaceRepo,
-			Authorizer:           prtSrv.svc.SecurityManager().GetAuthorizer(ctx),
-		}); backfillErr != nil {
-			logger.WithError(backfillErr).Error("root authz backfill for new namespace failed")
-			http.Error(rw, "internal error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	logger.WithField("namespace", manifest.Namespace).Debug("permission manifest registered")
+	logger.WithFields(map[string]any{
+		"namespace":          manifest.Namespace,
+		"service_account_id": ownerServiceAccountID,
+		"created":            registration.Created,
+		"changed":            registration.Changed,
+	}).Info("permission manifest registered")
+	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(rw).Encode(map[string]any{"registered": true})
+	if err = json.NewEncoder(rw).Encode(map[string]any{
+		"registered": true,
+		"created":    registration.Created,
+		"changed":    registration.Changed,
+	}); err != nil {
+		logger.WithError(err).Warn("failed to encode permission registration response")
+	}
 }
 
-// upsertServiceNamespace persists a manifest and reports whether the namespace
-// record was newly created (true) or updated in place (false). Callers use the
-// flag to decide whether to backfill root-user tuples for the new namespace.
-func (prtSrv *TenancyServer) upsertServiceNamespace(ctx context.Context, manifest permissionManifest) (bool, error) {
-	permList := data.JSONMap{"values": manifest.Permissions}
-	roleBindings := make(data.JSONMap, len(manifest.RoleBindings))
-	for role, perms := range manifest.RoleBindings {
-		roleBindings[role] = perms
+func serviceAccountIDFromClaims(claims *security.AuthenticationClaims) string {
+	if claims == nil || claims.Ext == nil {
+		return ""
 	}
-
-	domain := manifest.Domain
-	if domain == "" {
-		domain = models.DomainDefault
-	}
-
-	existing, err := prtSrv.ServiceNamespaceRepo.GetByNamespace(ctx, manifest.Namespace)
-	if err != nil {
-		ns := &models.ServiceNamespace{
-			Namespace:    manifest.Namespace,
-			Domain:       domain,
-			Permissions:  permList,
-			RoleBindings: roleBindings,
-			RegisteredAt: &manifest.RegisteredAt,
-		}
-		if createErr := prtSrv.ServiceNamespaceRepo.Create(ctx, ns); createErr != nil {
-			return false, createErr
-		}
-		return true, nil
-	}
-
-	existing.Domain = domain
-	existing.Permissions = permList
-	existing.RoleBindings = roleBindings
-	existing.RegisteredAt = &manifest.RegisteredAt
-	_, err = prtSrv.ServiceNamespaceRepo.Update(ctx, existing, "domain", "permissions", "role_bindings", "registered_at")
-	return false, err
+	serviceAccountID, _ := claims.Ext["service_account_id"].(string)
+	return serviceAccountID
 }
 
 // ListServiceNamespaces implements the Connect RPC to list all registered service namespaces.

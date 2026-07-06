@@ -40,9 +40,9 @@ const (
 	ketoRetryBaseDelay = 500 * time.Millisecond
 )
 
-// isPermanentError returns true for errors that will never succeed on retry.
-// Returning true causes the event handler to log the error and ACK the
-// message so the queue does not redeliver it forever.
+// isPermanentError returns true for errors that should not be retried inside
+// one handler execution. Stateful reconcilers record these failures before
+// acknowledging asynchronous events; startup reconciliation still fails closed.
 func isPermanentError(err error) bool {
 	if err == nil {
 		return false

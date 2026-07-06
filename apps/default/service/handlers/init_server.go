@@ -31,6 +31,7 @@ import (
 	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	"connectrpc.com/connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
@@ -72,6 +73,7 @@ type AuthServer struct {
 	profileCli      profilev1connect.ProfileServiceClient
 	deviceCli       devicev1connect.DeviceServiceClient
 	partitionCli    tenancyv1connect.TenancyServiceClient
+	authContractCli tenancyv2connect.AuthContractServiceClient
 	notificationCli notificationv1connect.NotificationServiceClient
 
 	iCache cache.Cache[string, models.LoginEvent]
@@ -136,6 +138,7 @@ func NewAuthServer(ctx context.Context,
 	profileCli profilev1connect.ProfileServiceClient,
 	deviceCli devicev1connect.DeviceServiceClient,
 	partitionCli tenancyv1connect.TenancyServiceClient,
+	authContractCli tenancyv2connect.AuthContractServiceClient,
 	notificationCli notificationv1connect.NotificationServiceClient,
 	localizationMan localization.Manager) *AuthServer {
 
@@ -164,6 +167,7 @@ func NewAuthServer(ctx context.Context,
 		profileCli:      profileCli,
 		deviceCli:       deviceCli,
 		partitionCli:    partitionCli,
+		authContractCli: authContractCli,
 		notificationCli: notificationCli,
 
 		// Initialise repositories
@@ -256,6 +260,10 @@ func (h *AuthServer) DeviceCli() devicev1connect.DeviceServiceClient {
 
 func (h *AuthServer) PartitionCli() tenancyv1connect.TenancyServiceClient {
 	return h.partitionCli
+}
+
+func (h *AuthServer) AuthContractCli() tenancyv2connect.AuthContractServiceClient {
+	return h.authContractCli
 }
 
 func (h *AuthServer) NotificationCli() notificationv1connect.NotificationServiceClient {

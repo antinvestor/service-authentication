@@ -27,33 +27,33 @@ import (
 	"github.com/pitabwire/frame/v2"
 	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/events"
-	"github.com/pitabwire/frame/v2/security"
 )
 
 type TenancyServer struct {
 	svc       *frame.Service
 	eventsMan events.Manager
 
-	ProfileCli           profilev1connect.ProfileServiceClient
-	PartitionRepo        repository.PartitionRepository
-	ClientRepo           repository.ClientRepository
-	ServiceAccountRepo   repository.ServiceAccountRepository
-	AccessRepo           repository.AccessRepository
-	AccessRoleRepo       repository.AccessRoleRepository
-	PartitionRoleRepo    repository.PartitionRoleRepository
-	ServiceNamespaceRepo repository.ServiceNamespaceRepository
+	ProfileCli              profilev1connect.ProfileServiceClient
+	PartitionRepo           repository.PartitionRepository
+	ClientRepo              repository.ClientRepository
+	OAuthRecipientRepo      repository.OAuthClientRecipientRepository
+	ServiceAccountRepo      repository.ServiceAccountRepository
+	AuthorizationPolicyRepo repository.ServiceAccountAuthorizationPolicyRepository
+	AuthContractRepo        repository.AuthContractRepository
+	AccessRepo              repository.AccessRepository
+	AccessRoleRepo          repository.AccessRoleRepository
+	PartitionRoleRepo       repository.PartitionRoleRepository
+	ServiceNamespaceRepo    repository.ServiceNamespaceRepository
 
-	PartitionBusiness      business.PartitionBusiness
-	TenantBusiness         business.TenantBusiness
-	AccessBusiness         business.AccessBusiness
-	PageBusiness           business.PageBusiness
-	ClientBusiness         business.ClientBusiness
-	ServiceAccountBusiness business.ServiceAccountBusiness
+	PartitionBusiness business.PartitionBusiness
+	TenantBusiness    business.TenantBusiness
+	AccessBusiness    business.AccessBusiness
+	PageBusiness      business.PageBusiness
 	tenancyv1connect.UnimplementedTenancyServiceHandler
 }
 
 // NewTenancyServer creates a new TenancyServer with injected dependencies.
-func NewTenancyServer(ctx context.Context, service *frame.Service, auth security.Authorizer, profileCli profilev1connect.ProfileServiceClient) *TenancyServer {
+func NewTenancyServer(ctx context.Context, service *frame.Service, profileCli profilev1connect.ProfileServiceClient) *TenancyServer {
 	// Create all repositories once
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	workMan := service.WorkManager()
@@ -65,7 +65,10 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 	accessRoleRepo := repository.NewAccessRoleRepository(ctx, dbPool, workMan)
 	pageRepo := repository.NewPageRepository(ctx, dbPool, workMan)
 	clientRepo := repository.NewClientRepository(ctx, dbPool, workMan)
+	oauthRecipientRepo := repository.NewOAuthClientRecipientRepository(ctx, dbPool, workMan)
 	serviceAccountRepo := repository.NewServiceAccountRepository(ctx, dbPool, workMan)
+	authorizationPolicyRepo := repository.NewServiceAccountAuthorizationPolicyRepository(ctx, dbPool, workMan)
+	authContractRepo := repository.NewAuthContractRepository(dbPool)
 	serviceNamespaceRepo := repository.NewServiceNamespaceRepository(ctx, dbPool, workMan)
 
 	cfg := service.Config().(*config.TenancyConfig)
@@ -73,22 +76,23 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, auth security
 
 	// Create business layers with repository dependencies
 	return &TenancyServer{
-		svc:                    service,
-		eventsMan:              eventsMan,
-		ProfileCli:             profileCli,
-		PartitionRepo:          partitionRepo,
-		ClientRepo:             clientRepo,
-		ServiceAccountRepo:     serviceAccountRepo,
-		AccessRepo:             accessRepo,
-		AccessRoleRepo:         accessRoleRepo,
-		PartitionRoleRepo:      partitionRoleRepo,
-		ServiceNamespaceRepo:   serviceNamespaceRepo,
-		PartitionBusiness:      business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
-		TenantBusiness:         business.NewTenantBusiness(service, tenantRepo, partitionRepo),
-		AccessBusiness:         business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, clientRepo, serviceNamespaceRepo),
-		PageBusiness:           business.NewPageBusiness(service, pageRepo, partitionRepo),
-		ClientBusiness:         business.NewClientBusiness(eventsMan, partitionRepo, clientRepo),
-		ServiceAccountBusiness: business.NewServiceAccountBusiness(eventsMan, auth, partitionRepo, partitionRoleRepo, clientRepo, serviceAccountRepo, accessRepo, accessRoleRepo, serviceNamespaceRepo),
+		svc:                     service,
+		eventsMan:               eventsMan,
+		ProfileCli:              profileCli,
+		PartitionRepo:           partitionRepo,
+		ClientRepo:              clientRepo,
+		OAuthRecipientRepo:      oauthRecipientRepo,
+		ServiceAccountRepo:      serviceAccountRepo,
+		AuthorizationPolicyRepo: authorizationPolicyRepo,
+		AuthContractRepo:        authContractRepo,
+		AccessRepo:              accessRepo,
+		AccessRoleRepo:          accessRoleRepo,
+		PartitionRoleRepo:       partitionRoleRepo,
+		ServiceNamespaceRepo:    serviceNamespaceRepo,
+		PartitionBusiness:       business.NewPartitionBusiness(*cfg, eventsMan, tenantRepo, partitionRepo, partitionRoleRepo, accessRepo, clientRepo, serviceAccountRepo),
+		TenantBusiness:          business.NewTenantBusiness(service, tenantRepo, partitionRepo),
+		AccessBusiness:          business.NewAccessBusiness(service, eventsMan, accessRepo, accessRoleRepo, partitionRepo, partitionRoleRepo, serviceNamespaceRepo),
+		PageBusiness:            business.NewPageBusiness(service, pageRepo, partitionRepo),
 	}
 }
 

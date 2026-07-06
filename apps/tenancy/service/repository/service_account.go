@@ -27,6 +27,14 @@ type serviceAccountRepository struct {
 	datastore.BaseRepository[*models.ServiceAccount]
 }
 
+func (r *serviceAccountRepository) GetByIDPrimary(ctx context.Context, id string) (*models.ServiceAccount, error) {
+	serviceAccount := &models.ServiceAccount{}
+	if err := r.Pool().DB(ctx, false).First(serviceAccount, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return serviceAccount, nil
+}
+
 func (r *serviceAccountRepository) GetByPartitionAndProfile(
 	ctx context.Context,
 	partitionID string,

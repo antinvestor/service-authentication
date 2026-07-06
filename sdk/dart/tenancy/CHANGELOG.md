@@ -1,3 +1,8 @@
+## 2.0.0
+
+- Add the `tenancy.v2.AuthContractService` client and normalized OAuth/resource authorization models.
+- Remove the retired v1 OAuth client and service-account messages and RPC methods.
+
 ## 1.54.0
 
 - Add ListServiceNamespaces, GrantPermission, RevokePermission Connect RPCs

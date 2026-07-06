@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -34,9 +35,9 @@ import (
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
+	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
 	"connectrpc.com/connect"
-	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/frame/v2/frametests"
@@ -46,13 +47,13 @@ import (
 
 // OAuth2TestClient provides utilities for testing OAuth2 flows with Hydra
 type OAuth2TestClient struct {
-	HydraAdminURL  string
-	HydraPublicURL string
-	AuthServiceURL string
-	PartitionCli   tenancyv1connect.TenancyServiceClient
-	Client         *http.Client
-	t              *testing.T
-	cfg            *aconfig.AuthenticationConfig
+	HydraAdminURL   string
+	HydraPublicURL  string
+	AuthServiceURL  string
+	PartitionCli    tenancyv1connect.TenancyServiceClient
+	AuthContractCli tenancyv2connect.AuthContractServiceClient
+	Client          *http.Client
+	t               *testing.T
 
 	clientIdList []string
 	cookieJar    http.CookieJar // Store reference to cookie jar for clearing
@@ -124,24 +125,20 @@ func NewOAuth2TestClient(authServer *handlers.AuthServer) *OAuth2TestClient {
 	}
 	jar, _ := cookiejar.New(options)
 
-	client := &OAuth2TestClient{
-		HydraAdminURL:  adminURL,
-		HydraPublicURL: publicURL,
-		AuthServiceURL: "", // Will be set by test server
-		PartitionCli:   authServer.PartitionCli(),
-		Client: &http.Client{
-			Jar:     jar,
-			Timeout: 10 * time.Second, // Reduced from 30s to 10s for faster failure detection
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				ctx := req.Context()
-				util.Log(ctx).Info("Redirecting to : " + req.URL.String())
-
-				// Don't follow redirects automatically - we want to capture them
-				return http.ErrUseLastResponse
-			},
+	httpClient := &http.Client{
+		Jar:     jar,
+		Timeout: 10 * time.Second,
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+			util.Log(req.Context()).Info("Redirecting to : " + req.URL.String())
+			return http.ErrUseLastResponse
 		},
-		t:   nil, // No testing.T required for basic functionality
-		cfg: authServer.Config(),
+	}
+	client := &OAuth2TestClient{
+		HydraAdminURL:   adminURL,
+		HydraPublicURL:  publicURL,
+		PartitionCli:    authServer.PartitionCli(),
+		AuthContractCli: authServer.AuthContractCli(),
+		Client:          httpClient,
 	}
 	client.cookieJar = jar // Store reference to cookie jar for clearing
 	return client
@@ -171,140 +168,121 @@ type OAuth2Client struct {
 	Audience     []string
 }
 
-func (c *OAuth2TestClient) PostLoginRedirectHandler() {
-
-}
-
-func (c *OAuth2TestClient) authenticatedPartitionClient(ctx context.Context) (tenancyv1connect.TenancyServiceClient, error) {
-	if c.cfg == nil {
-		return c.PartitionCli, nil
-	}
-
-	return setupPartitionClient(ctx, c.cfg)
-}
-
-// CreateOAuth2Client creates a test OAuth2 client in Hydra via the partition service.
-// It creates a partition with OAuth2 config in properties, which triggers the partition
-// sync event to create a Hydra client with client_id = partition_id.
 func (c *OAuth2TestClient) CreateOAuth2Client(ctx context.Context, testName string) (*OAuth2Client, error) {
-	partitionCli, err := c.authenticatedPartitionClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Use a proper callback URI that won't interfere with OAuth2 endpoints
 	redirectURI := c.AuthServiceURL + "/oauth2/callback"
+	return c.createPartitionOAuth2Client(ctx, testName, nil, []string{redirectURI}, "openid offline_access profile")
+}
 
-	// Create partition with OAuth2 config in properties (triggers partition sync → Hydra client)
-	// Use comma-separated strings for lists to ensure compatibility with structpb serialisation.
-	props := data.JSONMap{
-		"redirect_uris":              redirectURI,
-		"scope":                      "openid offline offline_access profile",
-		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
-		"token_endpoint_auth_method": "none",
-	}
-
-	partition, err := NewPartitionForOauthCli(ctx, partitionCli, testName, "Test OAuth2 client", props)
-	if err != nil {
-		if c.t != nil {
-			c.t.Logf("DEBUG: Failed to create partition for OAuth2 client: %v", err)
-		}
-		return nil, fmt.Errorf("failed to create partition: %w", err)
-	}
-
-	// Wait for partition sync to Hydra (client_id appears in properties)
-	clientID := partition.GetId()
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
-		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
-			Id: clientID,
-		}))
-		if err0 != nil {
-			return nil, nil
-		}
-		partObj := resp.Msg.GetData()
-		if partObj.GetProperties() != nil {
-			propsMap := partObj.GetProperties().AsMap()
-			if _, ok := propsMap["client_id"]; ok {
-				return partObj, nil
-			}
-		}
-		return nil, nil
-	}, 5*time.Second, 200*time.Millisecond)
-	if err != nil {
-		return nil, fmt.Errorf("partition sync to Hydra timed out: %w", err)
-	}
-
-	c.clientIdList = append(c.clientIdList, clientID)
-
-	client := &OAuth2Client{
-		ClientID:     clientID,
-		ClientSecret: "", // public client
-		RedirectURIs: []string{redirectURI},
-		Scope:        "openid offline_access profile",
-		Audience:     []string{"authentication_tests"},
-	}
-
-	return client, nil
+func (c *OAuth2TestClient) CreateOAuth2ClientWithProperties(
+	ctx context.Context,
+	testName string,
+	properties data.JSONMap,
+) (*OAuth2Client, error) {
+	redirectURI := c.AuthServiceURL + "/oauth2/callback"
+	return c.createPartitionOAuth2Client(ctx, testName, properties, []string{redirectURI}, "openid offline_access profile")
 }
 
 // CreateFedCMOAuth2Client creates an OAuth2 client suitable for FedCM tests.
 // It registers multiple redirect URIs including the standard callback and the
 // FedCM headless-driver internal callback (/_internal/fedcm-callback).
-// extraRedirectURIs are appended to the standard redirect_uris.
 func (c *OAuth2TestClient) CreateFedCMOAuth2Client(ctx context.Context, testName, standardURI, fedcmCallbackURI string) (*OAuth2Client, error) {
-	partitionCli, err := c.authenticatedPartitionClient(ctx)
+	return c.createPartitionOAuth2Client(
+		ctx,
+		testName,
+		nil,
+		[]string{standardURI, fedcmCallbackURI},
+		"openid offline_access profile email",
+	)
+}
+
+func (c *OAuth2TestClient) createPartitionOAuth2Client(
+	ctx context.Context,
+	testName string,
+	partitionProperties data.JSONMap,
+	redirectURIs []string,
+	scopes string,
+) (*OAuth2Client, error) {
+	if c.PartitionCli == nil {
+		return nil, errors.New("tenancy partition client is unavailable")
+	}
+	if c.AuthContractCli == nil {
+		return nil, errors.New("tenancy auth contract client is unavailable")
+	}
+
+	partition, err := NewPartitionForOAuthClient(ctx, c.PartitionCli, testName, "Test OAuth2 partition", partitionProperties)
 	if err != nil {
+		return nil, fmt.Errorf("create OAuth partition: %w", err)
+	}
+
+	response, err := c.AuthContractCli.CreateOAuthClient(ctx, connect.NewRequest(&tenancyv2.CreateOAuthClientRequest{
+		PartitionId: partition.GetId(),
+		Name:        testName,
+		Type:        "public",
+		Configuration: &tenancyv2.OAuthClientConfiguration{
+			GrantTypes:    []string{"authorization_code", "refresh_token"},
+			ResponseTypes: []string{"code"},
+			RedirectUris:  redirectURIs,
+			Scopes:        scopes,
+			ResourceRecipients: []string{
+				"https://api.example.test/devices",
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/files",
+				"https://api.example.test/authentication",
+			},
+			TokenEndpointAuthMethod: "none",
+		},
+	}))
+	if err != nil {
+		return nil, fmt.Errorf("create OAuth client: %w", err)
+	}
+	client := response.Msg.GetData()
+	if client == nil || client.GetClientId() == "" {
+		return nil, errors.New("create OAuth client returned no client id")
+	}
+	if err = c.waitForHydraClient(ctx, client.GetClientId()); err != nil {
 		return nil, err
 	}
 
-	// Hydra accepts a comma-separated list in the redirect_uris property.
-	redirectURIs := standardURI + "," + fedcmCallbackURI
-
-	props := data.JSONMap{
-		"redirect_uris":              redirectURIs,
-		"scope":                      "openid offline offline_access profile email",
-		"audience":                   "service_device,service_profile,service_tenancy,service_file,authentication_tests",
-		"token_endpoint_auth_method": "none",
-	}
-
-	partition, err := NewPartitionForOauthCli(ctx, partitionCli, testName, "FedCM Test OAuth2 client", props)
-	if err != nil {
-		if c.t != nil {
-			c.t.Logf("DEBUG: Failed to create FedCM partition: %v", err)
-		}
-		return nil, fmt.Errorf("failed to create FedCM partition: %w", err)
-	}
-
-	clientID := partition.GetId()
-	_, err = frametests.WaitForConditionWithResult(ctx, func() (*tenancyv1.PartitionObject, error) {
-		resp, err0 := partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{
-			Id: clientID,
-		}))
-		if err0 != nil {
-			return nil, nil
-		}
-		partObj := resp.Msg.GetData()
-		if partObj.GetProperties() != nil {
-			propsMap := partObj.GetProperties().AsMap()
-			if _, ok := propsMap["client_id"]; ok {
-				return partObj, nil
-			}
-		}
-		return nil, nil
-	}, 10*time.Second, 200*time.Millisecond)
-	if err != nil {
-		return nil, fmt.Errorf("FedCM partition sync to Hydra timed out: %w", err)
-	}
-
-	c.clientIdList = append(c.clientIdList, clientID)
+	c.clientIdList = append(c.clientIdList, client.GetClientId())
 
 	return &OAuth2Client{
-		ClientID:     clientID,
-		ClientSecret: "", // public client
-		RedirectURIs: []string{standardURI, fedcmCallbackURI},
-		Scope:        "openid offline_access profile email",
-		Audience:     []string{"authentication_tests"},
+		ClientID:     client.GetClientId(),
+		ClientSecret: response.Msg.GetClientSecret(),
+		RedirectURIs: redirectURIs,
+		Scope:        scopes,
+		Audience:     []string{"https://api.example.test/authentication"},
 	}, nil
+}
+
+func (c *OAuth2TestClient) waitForHydraClient(ctx context.Context, clientID string) error {
+	_, err := frametests.WaitForConditionWithResult(ctx, func() (*struct{}, error) {
+		request, requestErr := http.NewRequestWithContext(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("%s/admin/clients/%s", c.HydraAdminURL, clientID),
+			nil,
+		)
+		if requestErr != nil {
+			return nil, requestErr
+		}
+		response, requestErr := c.Client.Do(request)
+		if requestErr != nil {
+			return nil, requestErr
+		}
+		defer util.CloseAndLogOnError(ctx, response.Body)
+		if response.StatusCode == http.StatusNotFound {
+			return nil, nil
+		}
+		if response.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("hydra client lookup returned status %d", response.StatusCode)
+		}
+		return &struct{}{}, nil
+	}, 10*time.Second, 200*time.Millisecond)
+	if err != nil {
+		return fmt.Errorf("wait for OAuth client %q to sync to Hydra: %w", clientID, err)
+	}
+	return nil
 }
 
 // generateCodeVerifier generates a random code verifier for PKCE
@@ -1017,25 +995,28 @@ type OAuth2FlowResult struct {
 	AuthorizationCode string
 }
 
-// CleanupOAuth2Client deletes the OAuth2 client from Hydra
+// CleanupOAuth2Client removes the OAuth client through the tenancy contract.
 func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID string) error {
 	if clientID == "" {
 		return nil
 	}
+	if c.AuthContractCli == nil {
+		return errors.New("tenancy auth contract client is unavailable")
+	}
 
-	deleteURL := fmt.Sprintf("%s/admin/clients/%s", c.HydraAdminURL, clientID)
-	req, err := http.NewRequestWithContext(ctx, "DELETE", deleteURL, nil)
+	lookup, err := c.AuthContractCli.GetOAuthClient(ctx, connect.NewRequest(&tenancyv2.GetOAuthClientRequest{
+		Selector: &tenancyv2.GetOAuthClientRequest_ClientId{ClientId: clientID},
+	}))
 	if err != nil {
 		return err
 	}
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
+	if lookup.Msg.GetData() == nil {
+		return errors.New("OAuth client lookup returned no data")
 	}
-	defer util.CloseAndLogOnError(ctx, resp.Body)
-
-	return nil
+	_, err = c.AuthContractCli.RemoveOAuthClient(ctx, connect.NewRequest(&tenancyv2.RemoveOAuthClientRequest{
+		Id: lookup.Msg.GetData().GetId(),
+	}))
+	return err
 }
 
 // GetVerificationCodeByLoginEventID retrieves the actual verification code from the database

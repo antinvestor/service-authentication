@@ -154,7 +154,7 @@ func (s *FedCMFlowSuite) TestColdStartThenIDAssertion() {
 	authServer.ResetLoginRateLimit(testCtx, "::1")
 
 	// ------------------------------------------------------------------
-	// Step 0: create an OAuth2 client (partition) whose redirect URIs
+	// Step 0: create a partition-owned OAuth2 client whose redirect URIs
 	// include the FedCM internal callback. The headless driver will use
 	// this client to drive the headless authorization_code flow.
 	// ------------------------------------------------------------------

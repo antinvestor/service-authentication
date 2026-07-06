@@ -15,22 +15,65 @@
 package business_test
 
 import (
+	"context"
 	"testing"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type BusinessTestSuite struct {
 	tests.BaseTestSuite
+}
+
+type schemaMissingAuthorizer struct{}
+
+func (schemaMissingAuthorizer) Check(context.Context, security.CheckRequest) (security.CheckResult, error) {
+	return security.CheckResult{}, nil
+}
+
+func (schemaMissingAuthorizer) BatchCheck(context.Context, []security.CheckRequest) ([]security.CheckResult, error) {
+	return nil, nil
+}
+
+func (schemaMissingAuthorizer) WriteTuple(context.Context, security.RelationTuple) error {
+	return authorizer.NewAuthzServiceError("write_tuples", status.Error(codes.NotFound, "namespace is not deployed"))
+}
+
+func (schemaMissingAuthorizer) WriteTuples(context.Context, []security.RelationTuple) error {
+	return authorizer.NewAuthzServiceError("write_tuples", status.Error(codes.NotFound, "namespace is not deployed"))
+}
+
+func (schemaMissingAuthorizer) DeleteTuple(context.Context, security.RelationTuple) error { return nil }
+
+func (schemaMissingAuthorizer) DeleteTuples(context.Context, []security.RelationTuple) error {
+	return nil
+}
+
+func (schemaMissingAuthorizer) ListRelations(context.Context, security.ObjectRef) ([]security.RelationTuple, error) {
+	return nil, nil
+}
+
+func (schemaMissingAuthorizer) ListSubjectRelations(context.Context, security.SubjectRef, string) ([]security.RelationTuple, error) {
+	return nil, nil
+}
+
+func (schemaMissingAuthorizer) Expand(context.Context, security.ObjectRef, string) ([]security.SubjectRef, error) {
+	return nil, nil
 }
 
 func TestBusinessTestSuite(t *testing.T) {
@@ -73,7 +116,143 @@ func (s *BusinessTestSuite) setupTenantAndPartition() *models.Partition {
 	return partition
 }
 
+// Auth Contract v2 Tests
 // ========================
+
+func (s *BusinessTestSuite) TestCreateOAuthClientV2PersistsRecipientsSeparately() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	result, err := deps.AuthContractBusiness.CreateOAuthClient(ctx, &tenancyv2.CreateOAuthClientRequest{
+		PartitionId: partition.GetID(),
+		Name:        "browser-client",
+		Type:        "public",
+		Configuration: &tenancyv2.OAuthClientConfiguration{
+			GrantTypes:              []string{"authorization_code", "refresh_token"},
+			ResponseTypes:           []string{"code"},
+			RedirectUris:            []string{"https://app.example.test/callback"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
+			TokenEndpointAuthMethod: "none",
+		},
+	})
+
+	s.Require().NoError(err)
+	s.Empty(result.GetClientSecret())
+	s.Equal([]string{"https://api.example.test/profile"}, result.GetData().GetConfiguration().GetResourceRecipients())
+	recipients, err := deps.OAuthRecipientRepo.ListByClientRef(ctx, result.GetData().GetId())
+	s.Require().NoError(err)
+	s.Require().Len(recipients, 1)
+	s.Equal("https://api.example.test/profile", recipients[0].ResourceAudience)
+}
+
+func (s *BusinessTestSuite) TestCreateOAuthClientV2RejectsUnauthenticatedConfidentialClient() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	_, err := deps.AuthContractBusiness.CreateOAuthClient(ctx, &tenancyv2.CreateOAuthClientRequest{
+		PartitionId: partition.GetID(),
+		Name:        "invalid-confidential-client",
+		Type:        "confidential",
+		Configuration: &tenancyv2.OAuthClientConfiguration{
+			GrantTypes:              []string{"authorization_code"},
+			ResponseTypes:           []string{"code"},
+			RedirectUris:            []string{"https://app.example.test/callback"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
+			TokenEndpointAuthMethod: "none",
+		},
+	})
+
+	s.Require().EqualError(err, "confidential OAuth client cannot use token_endpoint_auth_method none")
+}
+
+func (s *BusinessTestSuite) TestCreateServiceAccountV2SeparatesRecipientsAndGrants() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	result, err := deps.AuthContractBusiness.CreateServiceAccount(ctx, &tenancyv2.CreateServiceAccountRequest{
+		PartitionId: partition.GetID(),
+		ProfileId:   util.IDString(),
+		Name:        "profile-reader",
+		Type:        "internal",
+		OauthClient: &tenancyv2.OAuthClientConfiguration{
+			GrantTypes:              []string{"client_credentials"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
+			TokenEndpointAuthMethod: "client_secret_post",
+		},
+		AuthorizationPolicy: &tenancyv2.ServiceAuthorizationPolicyInput{
+			SchemaVersion: models.AuthorizationPolicySchemaVersion,
+			Grants: []*tenancyv2.ServiceAuthorizationGrant{{
+				Namespace:   "service_profile",
+				Permissions: []string{"profile_view"},
+				Scope:       tenancyv2.AuthorizationScope_AUTHORIZATION_SCOPE_PARTITION_ONLY,
+			}},
+		},
+	})
+
+	s.Require().NoError(err)
+	s.NotEmpty(result.GetClientSecret())
+	s.Equal([]string{"https://api.example.test/profile"}, result.GetData().GetOauthClient().GetConfiguration().GetResourceRecipients())
+	policy, err := deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, result.GetData().GetId())
+	s.Require().NoError(err)
+	s.Require().Len(policy.Grants, 1)
+	s.Equal("service_profile", policy.Grants[0].Namespace)
+	s.Equal([]string{"profile_view"}, policy.Grants[0].Permissions)
+}
+
+func (s *BusinessTestSuite) TestAuthorizationSchemaFailureRemainsPendingAndFailsReconciliation() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	serviceAccount := &models.ServiceAccount{
+		Name:      "schema-test",
+		ProfileID: util.IDString(),
+		ClientID:  util.IDString(),
+		Type:      "internal",
+		BaseModel: data.BaseModel{TenantID: partition.TenantID, PartitionID: partition.GetID()},
+	}
+	s.Require().NoError(deps.ServiceAccountRepo.Create(ctx, serviceAccount))
+	policy, err := deps.AuthorizationPolicyRepo.Replace(ctx, serviceAccount, []repository.AuthorizationGrant{{
+		Namespace:   "service_profile",
+		Scope:       models.AuthorizationScopePartitionOnly,
+		Permissions: []string{"profile_view"},
+	}})
+	s.Require().NoError(err)
+
+	reconciler := events.NewAuthzServiceAccountSyncEventHandler(
+		deps.ServiceAccountRepo,
+		deps.PartitionRepo,
+		deps.AuthorizationPolicyRepo,
+		deps.ServiceNamespaceRepo,
+		deps.AuthContractRepo,
+		nil,
+		schemaMissingAuthorizer{},
+	)
+	payload := map[string]any{"id": serviceAccount.GetID(), "generation": float64(policy.Generation)}
+	err = reconciler.Execute(ctx, &payload)
+	s.Require().NoError(err)
+
+	failed, err := deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
+	s.Require().NoError(err)
+	s.Equal(models.AuthorizationPolicyFailed, failed.Policy.Status)
+	s.Equal(int32(1), failed.Policy.RetryCount)
+	s.Equal("schema_not_ready", failed.Policy.LastErrorCode)
+	s.NotNil(failed.Policy.NextAttemptAt)
+
+	err = reconciler.ReconcilePending(ctx)
+	s.Require().Error(err)
+	failed, err = deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
+	s.Require().NoError(err)
+	s.Equal(int32(2), failed.Policy.RetryCount)
+}
+
 // Tenant Business Tests
 // ========================
 
@@ -839,189 +1018,6 @@ func (s *BusinessTestSuite) TestRemovePage() {
 }
 
 // ========================
-// Service Account Business Tests
-// ========================
-
-func (s *BusinessTestSuite) TestCreateServiceAccount_Internal() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	result, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx,
-		partition.GetID(),
-		profileID,
-		"test-sa",
-		"internal",
-		[]string{"service_profile"},
-		nil, nil, nil,
-	)
-	s.Require().NoError(err)
-	s.Require().NotNil(result)
-	s.NotEmpty(result.ClientSecret)
-	s.Equal("internal", result.ServiceAccount.Type)
-	s.Equal(profileID, result.ServiceAccount.ProfileID)
-	s.NotEmpty(result.ServiceAccount.ClientID)
-	s.NotEmpty(result.Client.GetID())
-}
-
-func (s *BusinessTestSuite) TestCreateServiceAccount_External() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	result, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx,
-		partition.GetID(),
-		profileID,
-		"ext-sa",
-		"external",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-	s.Equal("external", result.ServiceAccount.Type)
-}
-
-func (s *BusinessTestSuite) TestCreateServiceAccount_InvalidType() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
-
-	_, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx,
-		partition.GetID(),
-		util.IDString(),
-		"bad-sa",
-		"unknown",
-		nil, nil, nil, nil,
-	)
-	s.Require().Error(err)
-	s.Contains(err.Error(), "invalid service account type")
-}
-
-func (s *BusinessTestSuite) TestCreateServiceAccount_InvalidPartition() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
-
-	_, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx,
-		"nonexistent-partition",
-		util.IDString(),
-		"sa",
-		"internal",
-		nil, nil, nil, nil,
-	)
-	s.Require().Error(err)
-	s.Contains(err.Error(), "target partition not found")
-}
-
-func (s *BusinessTestSuite) TestGetServiceAccount_ByID() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	created, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "get-sa", "internal",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	fetched, err := deps.ServiceAccountBusiness.GetServiceAccount(ctx, created.ServiceAccount.GetID(), "", "")
-	s.Require().NoError(err)
-	s.Equal(created.ServiceAccount.GetID(), fetched.GetID())
-}
-
-func (s *BusinessTestSuite) TestGetServiceAccount_ByClientID() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	created, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "get-sa-cid", "internal",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	fetched, err := deps.ServiceAccountBusiness.GetServiceAccount(ctx, "", created.ServiceAccount.ClientID, "")
-	s.Require().NoError(err)
-	s.Equal(created.ServiceAccount.ClientID, fetched.ClientID)
-}
-
-func (s *BusinessTestSuite) TestGetServiceAccountByClientID_Empty() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
-
-	_, err := deps.ServiceAccountBusiness.GetServiceAccount(ctx, "", "", "")
-	s.Require().Error(err)
-}
-
-func (s *BusinessTestSuite) TestListServiceAccounts() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	// Create two SAs
-	_, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "sa-1", "internal",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	_, err = deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "sa-2", "external",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	accounts, err := deps.ServiceAccountBusiness.ListServiceAccounts(ctx, partition.GetID())
-	s.Require().NoError(err)
-	s.GreaterOrEqual(len(accounts), 2)
-}
-
-// ========================
 // Remove Guards Tests
 // ========================
 
@@ -1288,150 +1284,4 @@ func (s *BusinessTestSuite) TestListAccess_ByProfile() {
 	accesses, err := deps.AccessBusiness.ListAccess(ctx, req)
 	s.Require().NoError(err)
 	s.GreaterOrEqual(len(accesses), 1)
-}
-
-// ========================
-// UpdateServiceAccount Tests
-// ========================
-
-func (s *BusinessTestSuite) TestUpdateServiceAccount() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	result, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "sa-update", "internal",
-		[]string{"service_profile"}, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	updated, err := deps.ServiceAccountBusiness.UpdateServiceAccount(ctx, &tenancyv1.UpdateServiceAccountRequest{
-		Id:        result.ServiceAccount.GetID(),
-		Type:      "external",
-		Audiences: []string{"service_tenancy", "service_notification"},
-	})
-
-	s.Require().NoError(err)
-	s.Equal("external", updated.Type)
-	s.ElementsMatch([]string{"service_tenancy", "service_notification"}, updated.Audiences)
-}
-
-// ========================
-// Client Business Tests
-// ========================
-
-func (s *BusinessTestSuite) TestCreateClient() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	partition := s.setupTenantAndPartition()
-	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
-
-	result, err := deps.ClientBusiness.CreateClient(
-		ctx, partition.GetID(), "test-client", "public",
-		nil, nil, []string{"https://example.com/callback"},
-		"", nil, nil, nil,
-	)
-
-	s.Require().NoError(err)
-	s.NotNil(result.Client)
-	s.Equal("public", result.Client.Type)
-	s.NotEmpty(result.Client.ClientID)
-}
-
-func (s *BusinessTestSuite) TestUpdateClient() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	partition := s.setupTenantAndPartition()
-	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
-
-	result, err := deps.ClientBusiness.CreateClient(
-		ctx, partition.GetID(), "original", "confidential",
-		nil, nil, nil, "", nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	updated, err := deps.ClientBusiness.UpdateClient(ctx, &tenancyv1.UpdateClientRequest{
-		Id:           result.Client.GetID(),
-		Name:         "updated",
-		RedirectUris: []string{"https://new.example.com/callback"},
-	})
-
-	s.Require().NoError(err)
-	s.Equal("updated", updated.Name)
-	s.Equal([]string{"https://new.example.com/callback"}, updated.RedirectUris)
-}
-
-func (s *BusinessTestSuite) TestListClients() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	partition := s.setupTenantAndPartition()
-	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
-
-	for _, name := range []string{"client-a", "client-b"} {
-		_, err := deps.ClientBusiness.CreateClient(
-			ctx, partition.GetID(), name, "public",
-			nil, nil, nil, "", nil, nil, nil,
-		)
-		s.Require().NoError(err)
-	}
-
-	clients, err := deps.ClientBusiness.ListClients(ctx, partition.GetID())
-	s.Require().NoError(err)
-	s.GreaterOrEqual(len(clients), 2)
-}
-
-func (s *BusinessTestSuite) TestRemoveClient() {
-	ctx := s.SuiteCtx
-	deps := s.SuiteDeps
-
-	partition := s.setupTenantAndPartition()
-	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
-
-	result, err := deps.ClientBusiness.CreateClient(
-		ctx, partition.GetID(), "rm-client", "public",
-		nil, nil, nil, "", nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	err = deps.ClientBusiness.RemoveClient(ctx, result.Client.GetID())
-	s.Require().NoError(err)
-
-	_, err = deps.ClientBusiness.GetClient(ctx, result.Client.GetID())
-	s.Require().Error(err)
-}
-
-func (s *BusinessTestSuite) TestRemoveServiceAccount() {
-	ctx := s.SuiteCtx
-	svc := s.SuiteSvc
-	deps := s.SuiteDeps
-
-	tenant := s.createTestTenant("T")
-	partition := s.createTestPartition(tenant.GetID())
-
-	profileID := util.IDString()
-	s.SeedTenantAccess(ctx, svc, tenant.GetID(), partition.GetID(), profileID)
-	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), profileID)
-
-	result, err := deps.ServiceAccountBusiness.CreateServiceAccount(
-		ctx, partition.GetID(), profileID, "sa-rm", "internal",
-		nil, nil, nil, nil,
-	)
-	s.Require().NoError(err)
-
-	err = deps.ServiceAccountBusiness.RemoveServiceAccount(ctx, result.ServiceAccount.GetID())
-	s.Require().NoError(err)
-
-	// Verify it's gone
-	_, err = deps.ServiceAccountBusiness.GetServiceAccount(ctx, result.ServiceAccount.GetID(), "", "")
-	s.Require().Error(err)
 }

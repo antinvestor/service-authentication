@@ -132,9 +132,8 @@ AUTH_PROVIDER_GOOGLE_CLIENT_ID=123.apps.googleusercontent.com
 ```
 
 Each tenancy client row still decides whether native login is allowed by
-setting `native_auth_enabled=true`. A legacy
-`native_google_server_client_id` client property can override the server value,
-but new clients should not need it.
+setting `native_auth_enabled=true`. Provider audiences cannot be overridden by
+client properties.
 
 ## 6. Claim-mapping rules
 
@@ -169,8 +168,7 @@ name on first sight; do not overwrite with nulls on repeat exchanges.
   the IdP.
 - **Audience pinning:** reject when `aud` does not match the expected
   Services ID / server client ID. For Google, the expected audience is
-  `AUTH_PROVIDER_GOOGLE_CLIENT_ID` unless the tenancy client row carries a
-  legacy override.
+  `AUTH_PROVIDER_GOOGLE_CLIENT_ID`.
 - **Issuer pinning:** reject when `iss` does not match the
   `subject_issuer` form parameter (defense in depth; the Flutter
   runtime already sends `subject_issuer` explicitly).

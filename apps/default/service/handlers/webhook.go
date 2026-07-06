@@ -31,12 +31,13 @@ import (
 )
 
 type serviceAccountAuthContext struct {
-	ClientID    string
-	TenantID    string
-	PartitionID string
-	ProfileID   string
-	Type        string
-	AccessID    string
+	ClientID         string
+	ServiceAccountID string
+	TenantID         string
+	PartitionID      string
+	ProfileID        string
+	Type             string
+	AccessID         string
 }
 
 // extractGrantedScopes extracts and normalises granted_scopes to []string
@@ -396,6 +397,9 @@ func buildServiceAccountClaims(
 		"profile_id":     sa.ProfileID,
 		"session_id":     loginEventID,
 		"login_event_id": loginEventID,
+		"ext": map[string]any{
+			"service_account_id": sa.ServiceAccountID,
+		},
 	}
 	if accessID != "" {
 		claims["access_id"] = accessID
@@ -719,6 +723,7 @@ func serviceAccountFromHydraClient(
 	profileID, _ := metadata["profile_id"].(string)
 	clientType, _ := metadata["type"].(string)
 	accessID, _ := metadata["access_id"].(string)
+	serviceAccountID, _ := metadata["service_account_id"].(string)
 	if profileID == "" {
 		profileID = clientID
 	}
@@ -736,12 +741,13 @@ func serviceAccountFromHydraClient(
 	}
 
 	return &serviceAccountAuthContext{
-		ClientID:    clientID,
-		TenantID:    tenantID,
-		PartitionID: partitionID,
-		ProfileID:   profileID,
-		Type:        clientType,
-		AccessID:    accessID,
+		ClientID:         clientID,
+		ServiceAccountID: serviceAccountID,
+		TenantID:         tenantID,
+		PartitionID:      partitionID,
+		ProfileID:        profileID,
+		Type:             clientType,
+		AccessID:         accessID,
 	}, nil
 }
 

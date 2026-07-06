@@ -85,43 +85,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreateAccessRoleResponse'
-  /tenancy.v1.TenancyService/CreateClient:
-    post:
-      tags:
-        - Clients
-        - tenancy.v1.TenancyService
-      summary: Create OAuth2 client
-      description: Creates a new OAuth2 client attached to either a partition (for user auth flows) or a service account (for client_credentials flows). Returns the client secret on creation.
-      operationId: createClient
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.CreateClientRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.CreateClientResponse'
   /tenancy.v1.TenancyService/CreatePage:
     post:
       tags:
@@ -233,43 +196,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.CreatePartitionRoleResponse'
-  /tenancy.v1.TenancyService/CreateServiceAccount:
-    post:
-      tags:
-        - ServiceAccounts
-        - tenancy.v1.TenancyService
-      summary: Create service account
-      description: Registers a pre-authorized service account for machine-to-machine authentication. Creates a dedicated child partition with client_credentials grant type and writes authorization tuples.
-      operationId: createServiceAccount
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.CreateServiceAccountResponse'
   /tenancy.v1.TenancyService/CreateTenant:
     post:
       tags:
@@ -397,96 +323,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetAccessResponse'
-  /tenancy.v1.TenancyService/GetClient:
-    get:
-      tags:
-        - Clients
-        - tenancy.v1.TenancyService
-      summary: Get OAuth2 client
-      description: Retrieves an OAuth2 client by its record ID or OAuth2 client_id.
-      operationId: getClient
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-        - name: message
-          in: query
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetClientRequest'
-        - name: encoding
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/encoding'
-        - name: base64
-          in: query
-          schema:
-            $ref: '#/components/schemas/base64'
-        - name: compression
-          in: query
-          schema:
-            $ref: '#/components/schemas/compression'
-        - name: connect
-          in: query
-          schema:
-            $ref: '#/components/schemas/connect'
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
-    post:
-      tags:
-        - Clients
-        - tenancy.v1.TenancyService
-      summary: Get OAuth2 client
-      description: Retrieves an OAuth2 client by its record ID or OAuth2 client_id.
-      operationId: getClient
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.GetClientRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetClientResponse'
   /tenancy.v1.TenancyService/GetPage:
     get:
       tags:
@@ -757,96 +593,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.GetPartitionParentsResponse'
-  /tenancy.v1.TenancyService/GetServiceAccount:
-    get:
-      tags:
-        - ServiceAccounts
-        - tenancy.v1.TenancyService
-      summary: Get service account
-      description: Retrieves a service account by ID, client ID, or profile ID.
-      operationId: getServiceAccount
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-        - name: message
-          in: query
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountRequest'
-        - name: encoding
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/encoding'
-        - name: base64
-          in: query
-          schema:
-            $ref: '#/components/schemas/base64'
-        - name: compression
-          in: query
-          schema:
-            $ref: '#/components/schemas/compression'
-        - name: connect
-          in: query
-          schema:
-            $ref: '#/components/schemas/connect'
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
-    post:
-      tags:
-        - ServiceAccounts
-        - tenancy.v1.TenancyService
-      summary: Get service account
-      description: Retrieves a service account by ID, client ID, or profile ID.
-      operationId: getServiceAccount
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.GetServiceAccountRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.GetServiceAccountResponse'
   /tenancy.v1.TenancyService/GetTenant:
     get:
       tags:
@@ -976,11 +722,9 @@ paths:
                 $ref: '#/components/schemas/tenancy.v1.GrantPermissionResponse'
   /tenancy.v1.TenancyService/ListAccess: {}
   /tenancy.v1.TenancyService/ListAccessRole: {}
-  /tenancy.v1.TenancyService/ListClient: {}
   /tenancy.v1.TenancyService/ListPage: {}
   /tenancy.v1.TenancyService/ListPartition: {}
   /tenancy.v1.TenancyService/ListPartitionRole: {}
-  /tenancy.v1.TenancyService/ListServiceAccount: {}
   /tenancy.v1.TenancyService/ListServiceNamespaces:
     get:
       tags:
@@ -1146,43 +890,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemoveAccessRoleResponse'
-  /tenancy.v1.TenancyService/RemoveClient:
-    post:
-      tags:
-        - Clients
-        - tenancy.v1.TenancyService
-      summary: Remove OAuth2 client
-      description: Removes an OAuth2 client and its Hydra registration.
-      operationId: removeClient
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.RemoveClientRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.RemoveClientResponse'
   /tenancy.v1.TenancyService/RemovePage:
     post:
       tags:
@@ -1294,43 +1001,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RemovePartitionRoleResponse'
-  /tenancy.v1.TenancyService/RemoveServiceAccount:
-    post:
-      tags:
-        - ServiceAccounts
-        - tenancy.v1.TenancyService
-      summary: Remove service account
-      description: Deregisters a service account, deleting its child partition and revoking authorization tuples.
-      operationId: removeServiceAccount
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.RemoveServiceAccountResponse'
   /tenancy.v1.TenancyService/RemoveTenant:
     post:
       tags:
@@ -1405,43 +1075,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.RevokePermissionResponse'
-  /tenancy.v1.TenancyService/UpdateClient:
-    post:
-      tags:
-        - Clients
-        - tenancy.v1.TenancyService
-      summary: Update OAuth2 client
-      description: Updates an existing OAuth2 client's name, redirect URIs, scopes, audiences, roles, and properties.
-      operationId: updateClient
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.UpdateClientRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.UpdateClientResponse'
   /tenancy.v1.TenancyService/UpdatePage:
     post:
       tags:
@@ -1553,43 +1186,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/tenancy.v1.UpdatePartitionRoleResponse'
-  /tenancy.v1.TenancyService/UpdateServiceAccount:
-    post:
-      tags:
-        - ServiceAccounts
-        - tenancy.v1.TenancyService
-      summary: Update service account
-      description: Updates a service account's name, audiences, type, roles, public keys, and properties.
-      operationId: updateServiceAccount
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/tenancy.v1.UpdateServiceAccountResponse'
   /tenancy.v1.TenancyService/UpdateTenant:
     post:
       tags:
@@ -1967,142 +1563,21 @@ components:
       title: AccessRoleObject
       additionalProperties: false
       description: AccessRoleObject links an access grant to a partition role.
-    tenancy.v1.ClientObject:
-      type: object
-      allOf:
-        - properties:
-            id:
-              type: string
-              title: id
-              maxLength: 40
-              minLength: 3
-              pattern: '[0-9a-z_-]{3,40}'
-              description: Unique client record ID
-            name:
-              type: string
-              title: name
-              maxLength: 100
-              minLength: 3
-              description: Display name
-            clientId:
-              type: string
-              title: client_id
-              maxLength: 100
-              minLength: 3
-              description: OAuth2 client_id (= Hydra client identifier)
-            type:
-              type: string
-              title: type
-              enum:
-                - public
-                - confidential
-                - internal
-                - external
-              description: 'Client type: public, confidential, internal, external'
-            grantTypes:
-              type: array
-              items:
-                type: string
-              title: grant_types
-              description: OAuth2 grant types (authorization_code, refresh_token, client_credentials)
-            responseTypes:
-              type: array
-              items:
-                type: string
-              title: response_types
-              description: OAuth2 response types (code, token)
-            redirectUris:
-              type: array
-              items:
-                type: string
-              title: redirect_uris
-              description: Allowed redirect URIs
-            scopes:
-              type: string
-              title: scopes
-              description: Space-separated OAuth2 scopes
-            audiences:
-              type: array
-              items:
-                type: string
-              title: audiences
-              description: Service namespaces the client can access
-            roles:
-              type: array
-              items:
-                type: string
-              title: roles
-              description: Permission role names for SA tokens
-            properties:
-              title: properties
-              description: Additional metadata
-              $ref: '#/components/schemas/google.protobuf.Struct'
-            state:
-              title: state
-              description: Client state
-              $ref: '#/components/schemas/common.v1.STATE'
-            createdAt:
-              title: created_at
-              description: Creation timestamp
-              $ref: '#/components/schemas/google.protobuf.Timestamp'
-        - oneOf:
-            - type: object
-              properties:
-                partition:
-                  title: partition
-                  description: Partition that owns this client (user auth flows)
-                  $ref: '#/components/schemas/tenancy.v1.PartitionObject'
-              title: partition
-              required:
-                - partition
-            - type: object
-              properties:
-                serviceAccount:
-                  title: service_account
-                  description: Service account that owns this client (client_credentials flows)
-                  $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
-              title: service_account
-              required:
-                - serviceAccount
-      title: ClientObject
-      additionalProperties: false
-      description: |-
-        ClientObject represents an OAuth2 client configuration.
-         A client can be owned by either a partition (for user auth flows like PKCE)
-         or a service account (for client_credentials machine-to-machine flows).
     tenancy.v1.CreateAccessRequest:
       type: object
-      allOf:
-        - properties:
-            profileId:
-              type: string
-              title: profile_id
-              maxLength: 40
-              minLength: 3
-              pattern: '[0-9a-z_-]{3,40}'
-        - oneOf:
-            - type: object
-              properties:
-                clientId:
-                  type: string
-                  title: client_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: client_id
-              required:
-                - clientId
-            - type: object
-              properties:
-                partitionId:
-                  type: string
-                  title: partition_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: partition_id
-              required:
-                - partitionId
+      properties:
+        partitionId:
+          type: string
+          title: partition_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
+        profileId:
+          type: string
+          title: profile_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
       title: CreateAccessRequest
       additionalProperties: false
     tenancy.v1.CreateAccessResponse:
@@ -2137,91 +1612,6 @@ components:
           title: data
           $ref: '#/components/schemas/tenancy.v1.AccessRoleObject'
       title: CreateAccessRoleResponse
-      additionalProperties: false
-    tenancy.v1.CreateClientRequest:
-      type: object
-      allOf:
-        - properties:
-            name:
-              type: string
-              title: name
-              maxLength: 100
-              minLength: 3
-            type:
-              type: string
-              title: type
-              enum:
-                - public
-                - confidential
-                - internal
-                - external
-            grantTypes:
-              type: array
-              items:
-                type: string
-              title: grant_types
-            responseTypes:
-              type: array
-              items:
-                type: string
-              title: response_types
-            redirectUris:
-              type: array
-              items:
-                type: string
-              title: redirect_uris
-            scopes:
-              type: string
-              title: scopes
-            audiences:
-              type: array
-              items:
-                type: string
-              title: audiences
-            roles:
-              type: array
-              items:
-                type: string
-              title: roles
-            properties:
-              title: properties
-              $ref: '#/components/schemas/google.protobuf.Struct'
-        - oneOf:
-            - type: object
-              properties:
-                partitionId:
-                  type: string
-                  title: partition_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: partition_id
-              required:
-                - partitionId
-            - type: object
-              properties:
-                serviceAccountId:
-                  type: string
-                  title: service_account_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: service_account_id
-              required:
-                - serviceAccountId
-      title: CreateClientRequest
-      additionalProperties: false
-    tenancy.v1.CreateClientResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ClientObject'
-        clientSecret:
-          type: string
-          title: client_secret
-          description: Only returned on creation
-      title: CreateClientResponse
       additionalProperties: false
     tenancy.v1.CreatePageRequest:
       type: object
@@ -2324,70 +1714,6 @@ components:
           $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
       title: CreatePartitionRoleResponse
       additionalProperties: false
-    tenancy.v1.CreateServiceAccountRequest:
-      type: object
-      properties:
-        partitionId:
-          type: string
-          title: partition_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Target partition the bot operates on
-        profileId:
-          type: string
-          title: profile_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Identity/subject of the service bot
-        name:
-          type: string
-          title: name
-          maxLength: 100
-          minLength: 3
-          description: Display name for the service account
-        audiences:
-          type: array
-          items:
-            type: string
-          title: audiences
-          description: Service namespaces the bot needs access to
-        properties:
-          title: properties
-          description: Additional metadata
-          $ref: '#/components/schemas/google.protobuf.Struct'
-        type:
-          type: string
-          title: type
-          enum:
-            - internal
-            - external
-          description: Service account type (defaults to "internal")
-        roles:
-          type: array
-          items:
-            type: string
-          title: roles
-          description: Partition role names to assign to the service account
-        publicKeys:
-          title: public_keys
-          description: 'Public keys for JWT-based authentication (e.g. {"keys": [{"kid":"k1","kty":"EC",...}]})'
-          $ref: '#/components/schemas/google.protobuf.Struct'
-      title: CreateServiceAccountRequest
-      additionalProperties: false
-    tenancy.v1.CreateServiceAccountResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
-        clientSecret:
-          type: string
-          title: client_secret
-          description: Only returned on creation
-      title: CreateServiceAccountResponse
-      additionalProperties: false
     tenancy.v1.CreateTenantRequest:
       type: object
       properties:
@@ -2419,43 +1745,25 @@ components:
       additionalProperties: false
     tenancy.v1.GetAccessRequest:
       type: object
-      allOf:
-        - properties:
-            accessId:
-              type: string
-              title: access_id
-              maxLength: 40
-              minLength: 3
-              pattern: '[0-9a-z_-]{3,40}'
-            profileId:
-              type: string
-              title: profile_id
-              maxLength: 40
-              minLength: 3
-              pattern: '[0-9a-z_-]{3,40}'
-        - oneOf:
-            - type: object
-              properties:
-                clientId:
-                  type: string
-                  title: client_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: client_id
-              required:
-                - clientId
-            - type: object
-              properties:
-                partitionId:
-                  type: string
-                  title: partition_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: partition_id
-              required:
-                - partitionId
+      properties:
+        accessId:
+          type: string
+          title: access_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
+        partitionId:
+          type: string
+          title: partition_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
+        profileId:
+          type: string
+          title: profile_id
+          maxLength: 40
+          minLength: 3
+          pattern: '[0-9a-z_-]{3,40}'
       title: GetAccessRequest
       additionalProperties: false
     tenancy.v1.GetAccessResponse:
@@ -2465,32 +1773,6 @@ components:
           title: data
           $ref: '#/components/schemas/tenancy.v1.AccessObject'
       title: GetAccessResponse
-      additionalProperties: false
-    tenancy.v1.GetClientRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Client record ID
-        clientId:
-          type: string
-          title: client_id
-          maxLength: 100
-          minLength: 3
-          description: OAuth2 client_id
-      title: GetClientRequest
-      additionalProperties: false
-    tenancy.v1.GetClientResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ClientObject'
-      title: GetClientResponse
       additionalProperties: false
     tenancy.v1.GetPageRequest:
       type: object
@@ -2567,40 +1849,6 @@ components:
           title: data
           $ref: '#/components/schemas/tenancy.v1.PartitionObject'
       title: GetPartitionResponse
-      additionalProperties: false
-    tenancy.v1.GetServiceAccountRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Service account ID
-        clientId:
-          type: string
-          title: client_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Child partition ID (= Hydra client_id)
-        profileId:
-          type: string
-          title: profile_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Identity/subject of the service bot
-      title: GetServiceAccountRequest
-      additionalProperties: false
-    tenancy.v1.GetServiceAccountResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
-      title: GetServiceAccountResponse
       additionalProperties: false
     tenancy.v1.GetTenantRequest:
       type: object
@@ -2721,48 +1969,6 @@ components:
           title: data
       title: ListAccessRoleResponse
       additionalProperties: false
-    tenancy.v1.ListClientRequest:
-      type: object
-      allOf:
-        - properties:
-            cursor:
-              title: cursor
-              $ref: '#/components/schemas/common.v1.PageCursor'
-        - oneOf:
-            - type: object
-              properties:
-                partitionId:
-                  type: string
-                  title: partition_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: partition_id
-              required:
-                - partitionId
-            - type: object
-              properties:
-                serviceAccountId:
-                  type: string
-                  title: service_account_id
-                  maxLength: 40
-                  minLength: 3
-                  pattern: '[0-9a-z_-]{3,40}'
-              title: service_account_id
-              required:
-                - serviceAccountId
-      title: ListClientRequest
-      additionalProperties: false
-    tenancy.v1.ListClientResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/tenancy.v1.ClientObject'
-          title: data
-      title: ListClientResponse
-      additionalProperties: false
     tenancy.v1.ListPageRequest:
       type: object
       properties:
@@ -2845,30 +2051,6 @@ components:
             $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
           title: data
       title: ListPartitionRoleResponse
-      additionalProperties: false
-    tenancy.v1.ListServiceAccountRequest:
-      type: object
-      properties:
-        partitionId:
-          type: string
-          title: partition_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-        cursor:
-          title: cursor
-          $ref: '#/components/schemas/common.v1.PageCursor'
-      title: ListServiceAccountRequest
-      additionalProperties: false
-    tenancy.v1.ListServiceAccountResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
-          title: data
-      title: ListServiceAccountResponse
       additionalProperties: false
     tenancy.v1.ListServiceNamespacesRequest:
       type: object
@@ -3097,25 +2279,6 @@ components:
           title: succeeded
       title: RemoveAccessRoleResponse
       additionalProperties: false
-    tenancy.v1.RemoveClientRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-      title: RemoveClientRequest
-      additionalProperties: false
-    tenancy.v1.RemoveClientResponse:
-      type: object
-      properties:
-        succeeded:
-          type: boolean
-          title: succeeded
-      title: RemoveClientResponse
-      additionalProperties: false
     tenancy.v1.RemovePageRequest:
       type: object
       properties:
@@ -3172,25 +2335,6 @@ components:
           type: boolean
           title: succeeded
       title: RemovePartitionRoleResponse
-      additionalProperties: false
-    tenancy.v1.RemoveServiceAccountRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-      title: RemoveServiceAccountRequest
-      additionalProperties: false
-    tenancy.v1.RemoveServiceAccountResponse:
-      type: object
-      properties:
-        succeeded:
-          type: boolean
-          title: succeeded
-      title: RemoveServiceAccountResponse
       additionalProperties: false
     tenancy.v1.RemoveTenantRequest:
       type: object
@@ -3251,74 +2395,6 @@ components:
       title: RolePermissionList
       additionalProperties: false
       description: RolePermissionList holds the permissions granted to a role.
-    tenancy.v1.ServiceAccountObject:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Unique service account ID
-        tenantId:
-          type: string
-          title: tenant_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Tenant ID
-        partitionId:
-          type: string
-          title: partition_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Target partition ID the bot operates on
-        profileId:
-          type: string
-          title: profile_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Identity/subject of the service bot
-        clientId:
-          type: string
-          title: client_id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-          description: Dedicated child partition ID (= Hydra client_id)
-        state:
-          title: state
-          description: Service account state
-          $ref: '#/components/schemas/common.v1.STATE'
-        audiences:
-          type: array
-          items:
-            type: string
-          title: audiences
-          description: Service namespaces the bot can access
-        properties:
-          title: properties
-          description: Additional metadata
-          $ref: '#/components/schemas/google.protobuf.Struct'
-        createdAt:
-          title: created_at
-          description: Creation timestamp
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
-        type:
-          type: string
-          title: type
-          enum:
-            - internal
-            - external
-          description: 'Service account type: internal (service-to-service) or external (API consumers)'
-      title: ServiceAccountObject
-      additionalProperties: false
-      description: |-
-        ServiceAccountObject represents a pre-registered service account (bot) for a partition.
-         Service accounts get a dedicated child partition with client_credentials grant type.
     tenancy.v1.ServiceNamespaceObject:
       type: object
       properties:
@@ -3405,64 +2481,6 @@ components:
       title: TenantObject
       additionalProperties: false
       description: TenantObject represents a top-level organizational unit.
-    tenancy.v1.UpdateClientRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-        name:
-          type: string
-          title: name
-          maxLength: 100
-          minLength: 3
-        grantTypes:
-          type: array
-          items:
-            type: string
-          title: grant_types
-        responseTypes:
-          type: array
-          items:
-            type: string
-          title: response_types
-        redirectUris:
-          type: array
-          items:
-            type: string
-          title: redirect_uris
-        scopes:
-          type: string
-          title: scopes
-        audiences:
-          type: array
-          items:
-            type: string
-          title: audiences
-        roles:
-          type: array
-          items:
-            type: string
-          title: roles
-        properties:
-          title: properties
-          $ref: '#/components/schemas/google.protobuf.Struct'
-        state:
-          title: state
-          $ref: '#/components/schemas/common.v1.STATE'
-      title: UpdateClientRequest
-      additionalProperties: false
-    tenancy.v1.UpdateClientResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ClientObject'
-      title: UpdateClientResponse
-      additionalProperties: false
     tenancy.v1.UpdatePageRequest:
       type: object
       properties:
@@ -3566,57 +2584,6 @@ components:
           title: data
           $ref: '#/components/schemas/tenancy.v1.PartitionRoleObject'
       title: UpdatePartitionRoleResponse
-      additionalProperties: false
-    tenancy.v1.UpdateServiceAccountRequest:
-      type: object
-      properties:
-        id:
-          type: string
-          title: id
-          maxLength: 40
-          minLength: 3
-          pattern: '[0-9a-z_-]{3,40}'
-        name:
-          type: string
-          title: name
-          maxLength: 100
-          minLength: 3
-        audiences:
-          type: array
-          items:
-            type: string
-          title: audiences
-          description: Updated service namespaces
-        properties:
-          title: properties
-          $ref: '#/components/schemas/google.protobuf.Struct'
-        type:
-          type: string
-          title: type
-          enum:
-            - internal
-            - external
-        roles:
-          type: array
-          items:
-            type: string
-          title: roles
-          description: Updated partition role names
-        publicKeys:
-          title: public_keys
-          $ref: '#/components/schemas/google.protobuf.Struct'
-        state:
-          title: state
-          $ref: '#/components/schemas/common.v1.STATE'
-      title: UpdateServiceAccountRequest
-      additionalProperties: false
-    tenancy.v1.UpdateServiceAccountResponse:
-      type: object
-      properties:
-        data:
-          title: data
-          $ref: '#/components/schemas/tenancy.v1.ServiceAccountObject'
-      title: UpdateServiceAccountResponse
       additionalProperties: false
     tenancy.v1.UpdateTenantRequest:
       type: object

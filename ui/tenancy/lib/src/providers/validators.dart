@@ -12,7 +12,9 @@ String? validateRedirectUri(String uri) {
   }
 
   // For http, only allow localhost
-  if (parsed.scheme == 'http' && parsed.host != 'localhost' && parsed.host != '127.0.0.1') {
+  if (parsed.scheme == 'http' &&
+      parsed.host != 'localhost' &&
+      parsed.host != '127.0.0.1') {
     return 'HTTP is only allowed for localhost';
   }
 
@@ -36,14 +38,12 @@ String? validateRedirectUris(String? value) {
 String? validateGrantTypes(String? value) {
   if (value == null || value.trim().isEmpty) return null;
 
-  const valid = {
-    'authorization_code',
-    'client_credentials',
-    'refresh_token',
-    'implicit',
-  };
+  const valid = {'authorization_code', 'client_credentials', 'refresh_token'};
 
-  final types = value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
+  final types = value
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty);
   for (final t in types) {
     if (!valid.contains(t)) {
       return 'Invalid grant type: "$t". Valid: ${valid.join(", ")}';
@@ -56,9 +56,12 @@ String? validateGrantTypes(String? value) {
 String? validateResponseTypes(String? value) {
   if (value == null || value.trim().isEmpty) return null;
 
-  const valid = {'code', 'token', 'id_token'};
+  const valid = {'code', 'token'};
 
-  final types = value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
+  final types = value
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty);
   for (final t in types) {
     if (!valid.contains(t)) {
       return 'Invalid response type: "$t". Valid: ${valid.join(", ")}';
@@ -70,13 +73,41 @@ String? validateResponseTypes(String? value) {
 /// Validates a client name.
 String? validateClientName(String? value) {
   if (value == null || value.trim().isEmpty) return 'Client name is required';
-  if (value.trim().length < 2) return 'At least 2 characters';
+  if (value.trim().length < 3) return 'At least 3 characters';
   return null;
 }
 
 /// Validates OAuth2 scopes (space-separated).
 String? validateScopes(String? value) {
-  if (value == null || value.trim().isEmpty) return 'At least one scope is required';
+  if (value == null || value.trim().isEmpty) {
+    return 'At least one scope is required';
+  }
+  return null;
+}
+
+/// Validates canonical HTTPS OAuth resource recipients.
+String? validateResourceRecipients(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return 'At least one resource recipient is required';
+  }
+
+  for (final raw in value.split(',')) {
+    final recipient = raw.trim();
+    final uri = Uri.tryParse(recipient);
+    if (uri == null ||
+        !RegExp(r'^https://[^/:?#]+/[^?#]+$').hasMatch(recipient) ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty ||
+        uri.hasPort ||
+        uri.path.isEmpty ||
+        uri.path == '/' ||
+        uri.path.endsWith('/') ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        uri.userInfo.isNotEmpty) {
+      return 'Invalid canonical resource recipient: "$recipient"';
+    }
+  }
   return null;
 }
 

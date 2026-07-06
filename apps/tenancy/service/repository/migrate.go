@@ -22,7 +22,11 @@ import (
 	"github.com/pitabwire/frame/v2/datastore"
 )
 
-func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath string) error {
+func Migrate(
+	ctx context.Context,
+	dbManager datastore.Manager,
+	migrationPath string,
+) error {
 
 	pool := dbManager.GetPool(ctx, datastore.DefaultMigrationPoolName)
 	if pool == nil {
@@ -32,8 +36,20 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	// Models must be passed as pointers: tenancy enrollment checks for the
 	// tenancy.Tenanted interface whose methods have pointer receivers, so
 	// value models silently skip RLS policy installation.
-	return dbManager.Migrate(ctx, pool, migrationPath,
+	if pool.DB(ctx, false) == nil {
+		return errors.New("writable datastore is not configured")
+	}
+
+	migrationModels := []any{
 		&models.Tenant{}, &models.Partition{}, &models.PartitionRole{},
 		&models.Access{}, &models.AccessRole{}, &models.Page{},
-		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{})
+		&models.Client{}, &models.ServiceAccount{}, &models.ServiceNamespace{},
+		&models.OAuthClientRecipient{},
+		&models.ServiceAccountAuthorizationPolicy{},
+		&models.ServiceAccountAuthorizationGrant{},
+		&models.ServiceAccountAuthorizationPermission{},
+		&models.ServiceAccountAppliedTuple{},
+	}
+
+	return dbManager.Migrate(ctx, pool, migrationPath, migrationModels...)
 }

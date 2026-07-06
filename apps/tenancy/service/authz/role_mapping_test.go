@@ -34,19 +34,20 @@ func TestRoleMappingTestSuite(t *testing.T) {
 	suite.Run(t, new(RoleMappingTestSuite))
 }
 
-func (suite *RoleMappingTestSuite) TestBuildRoleTuples_CoreNamespacesAndTenancyAccess() {
+func (suite *RoleMappingTestSuite) TestBuildRoleTuples_RegisteredNamespacesAndTenancyAccess() {
 	t := suite.T()
 	role := authz.RoleAdmin
-	nsRecords := authz.CoreServiceNamespaceRecords()
+	nsRecords := []*models.ServiceNamespace{
+		{Namespace: "service_profile", RoleBindings: data.JSONMap{role: []string{"profile_view"}}},
+		{Namespace: "service_tenancy", RoleBindings: data.JSONMap{role: []string{"tenant_view"}}},
+	}
 	tuples := authz.BuildRoleTuples("tenant1/partition1", "profile1", role, nsRecords)
 
-	// One tuple per CoreServiceNamespace + one for tenancy_access
-	expectedCount := len(authz.CoreServiceNamespaces) + 1
+	expectedCount := len(nsRecords) + 1
 	assert.Len(t, tuples, expectedCount)
 
-	// All core service namespaces get direct profile_user role tuples
-	for i, ns := range authz.CoreServiceNamespaces {
-		assert.Equal(t, ns, tuples[i].Object.Namespace)
+	for i, namespace := range nsRecords {
+		assert.Equal(t, namespace.Namespace, tuples[i].Object.Namespace)
 		assert.Equal(t, "tenant1/partition1", tuples[i].Object.ID)
 		assert.Equal(t, role, tuples[i].Relation)
 		assert.Equal(t, authz.NamespaceProfile, tuples[i].Subject.Namespace)
@@ -112,9 +113,9 @@ func (suite *RoleMappingTestSuite) TestBuildRoleTuples_SkipsNamespacesWithoutRol
 func (suite *RoleMappingTestSuite) TestRegisteredNamespaceNames() {
 	t := suite.T()
 
-	// Nil input falls back to CoreServiceNamespaces
+	// No runtime registrations means no service namespace names.
 	result := authz.RegisteredNamespaceNames(nil)
-	assert.Equal(t, authz.CoreServiceNamespaces, result)
+	assert.Empty(t, result)
 
 	// Non-empty input extracts namespace strings
 	input := []*models.ServiceNamespace{
@@ -240,54 +241,6 @@ func (suite *RoleMappingTestSuite) TestBuildServicePermissionTuples_Empty() {
 	assert.Empty(suite.T(), tuples)
 }
 
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_FullAccessWildcard() {
-	t := suite.T()
-	audiences := map[string]any{"service_profile": []any{"*"}, "service_payment": []any{"*"}}
-	result := authz.ParseAudiencePermissions(audiences)
-
-	assert.Len(t, result, 2)
-	// ["*"] is parsed as-is — IsFullAccess checks for it.
-	assert.Equal(t, []string{"*"}, result["service_profile"])
-	assert.Equal(t, []string{"*"}, result["service_payment"])
-}
-
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_EmptyArrayNoAccess() {
-	t := suite.T()
-	// Empty arrays mean no permissions — NOT full access.
-	audiences := map[string]any{"service_profile": []any{}}
-	result := authz.ParseAudiencePermissions(audiences)
-
-	assert.Len(t, result, 1)
-	assert.Contains(t, result, "service_profile")
-	assert.Nil(t, result["service_profile"])
-	assert.False(t, authz.IsFullAccess(result["service_profile"]))
-}
-
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_ExplicitFormat() {
-	t := suite.T()
-	audiences := map[string]any{
-		"service_profile": []any{"tenant_view", "partition_view"},
-		"service_payment": []any{"tenant_view"},
-	}
-	result := authz.ParseAudiencePermissions(audiences)
-
-	assert.Len(t, result, 2)
-	assert.Equal(t, []string{"tenant_view", "partition_view"}, result["service_profile"])
-	assert.Equal(t, []string{"tenant_view"}, result["service_payment"])
-}
-
-func (suite *RoleMappingTestSuite) TestParseAudiencePermissions_NonArrayValueIgnored() {
-	t := suite.T()
-	audiences := map[string]any{
-		"other": "value",
-	}
-	result := authz.ParseAudiencePermissions(audiences)
-	// Non-array values produce nil permissions — namespace is recorded but no access.
-	assert.Len(t, result, 1)
-	assert.Contains(t, result, "other")
-	assert.Nil(t, result["other"])
-}
-
 func (suite *RoleMappingTestSuite) TestIsFullAccess() {
 	t := suite.T()
 	assert.False(t, authz.IsFullAccess(nil))
@@ -295,16 +248,6 @@ func (suite *RoleMappingTestSuite) TestIsFullAccess() {
 	assert.True(t, authz.IsFullAccess([]string{"*"}))
 	assert.False(t, authz.IsFullAccess([]string{"tenant_view"}))
 	assert.False(t, authz.IsFullAccess([]string{"*", "tenant_view"}))
-}
-
-func (suite *RoleMappingTestSuite) TestAudienceNamespaces_ExplicitFormat() {
-	t := suite.T()
-	audiences := map[string]any{
-		"service_profile": []any{"tenant_view"},
-		"service_payment": []any{"tenant_view"},
-	}
-	result := authz.AudienceNamespaces(audiences)
-	assert.ElementsMatch(t, []string{"service_profile", "service_payment"}, result)
 }
 
 func (suite *RoleMappingTestSuite) TestResolveServiceGrantsExpandsServiceRole() {
@@ -356,19 +299,6 @@ func (suite *RoleMappingTestSuite) TestResolveServiceGrantsRejectsUnknownPermiss
 	require.ErrorContains(t, err, `authorization permission "profile_delete" is not registered`)
 }
 
-func (suite *RoleMappingTestSuite) TestSelectRegisteredServiceGrantsExcludesOAuthRecipients() {
-	t := suite.T()
-	namespaces := []*models.ServiceNamespace{{Namespace: "service_profile"}}
-	requested := map[string][]string{
-		"service_profile":   {"profile_view"},
-		"opportunities_api": {"*"},
-	}
-
-	selected := authz.SelectRegisteredServiceGrants(requested, namespaces)
-
-	require.Equal(t, map[string][]string{"service_profile": {"profile_view"}}, selected)
-}
-
 func (suite *RoleMappingTestSuite) TestSortRelationTuples() {
 	t := suite.T()
 	tuples := []security.RelationTuple{
@@ -380,16 +310,4 @@ func (suite *RoleMappingTestSuite) TestSortRelationTuples() {
 
 	require.Equal(t, "service_audit", tuples[0].Object.Namespace)
 	require.Equal(t, "service_profile", tuples[1].Object.Namespace)
-}
-
-func (suite *RoleMappingTestSuite) TestDeployedCatalogRejectsRuntimeOnlyNamespace() {
-	t := suite.T()
-	selected := authz.SelectDeployedNamespaceRecords([]*models.ServiceNamespace{
-		{Namespace: "service_profile"},
-		{Namespace: "opportunities_api"},
-	})
-
-	require.Len(t, selected, 1)
-	require.Equal(t, "service_profile", selected[0].Namespace)
-	require.NotEmpty(t, authz.DeployedServiceNamespaceRecords())
 }

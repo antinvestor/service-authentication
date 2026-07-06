@@ -17,3 +17,10 @@ final tenancyServiceClientProvider = Provider<TenancyServiceClient>((ref) {
   final transport = ref.watch(tenancyTransportProvider);
   return TenancyServiceClient(transport);
 });
+
+final authContractServiceClientProvider = Provider<AuthContractServiceClient>((
+  ref,
+) {
+  final transport = ref.watch(tenancyTransportProvider);
+  return AuthContractServiceClient(transport);
+});

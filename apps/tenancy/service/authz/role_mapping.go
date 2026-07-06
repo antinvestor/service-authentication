@@ -94,46 +94,6 @@ func ResolveServiceGrants(
 	return resolved, nil
 }
 
-// SelectRegisteredServiceGrants separates functional grant declarations from
-// OAuth-only recipient identifiers in the pre-migration record. Namespace
-// registration is the authoritative boundary: values without a registered OPL
-// schema must never be sent to Keto.
-func SelectRegisteredServiceGrants(
-	requested map[string][]string,
-	namespaces []*models.ServiceNamespace,
-) map[string][]string {
-	registered := make(map[string]struct{}, len(namespaces))
-	for _, namespace := range namespaces {
-		registered[namespace.Namespace] = struct{}{}
-	}
-
-	selected := make(map[string][]string)
-	for namespace, permissions := range requested {
-		if _, ok := registered[namespace]; ok {
-			selected[namespace] = permissions
-		}
-	}
-	return selected
-}
-
-// SelectDeployedNamespaceRecords excludes runtime observations that are not in
-// the compiled GitOps schema shipped with the service.
-func SelectDeployedNamespaceRecords(
-	observed []*models.ServiceNamespace,
-) []*models.ServiceNamespace {
-	deployed := make(map[string]struct{}, len(deployedServicePermissions))
-	for namespace := range deployedServicePermissions {
-		deployed[namespace] = struct{}{}
-	}
-	selected := make([]*models.ServiceNamespace, 0, len(observed))
-	for _, namespace := range observed {
-		if _, ok := deployed[namespace.Namespace]; ok {
-			selected = append(selected, namespace)
-		}
-	}
-	return selected
-}
-
 func jsonMapStringValues(values map[string]any, key string) []string {
 	raw, ok := values[key]
 	if !ok {
@@ -214,14 +174,8 @@ var RolePermissions = map[string][]string{ //nolint:gochecknoglobals // permissi
 	},
 }
 
-// RegisteredNamespaceNames extracts the namespace name strings from a list of
-// ServiceNamespace records. If the list is empty, it falls back to
-// CoreServiceNamespaces so that callers without DB access still get the
-// minimum set of namespaces.
+// RegisteredNamespaceNames extracts namespace names from runtime registrations.
 func RegisteredNamespaceNames(namespaces []*models.ServiceNamespace) []string {
-	if len(namespaces) == 0 {
-		return CoreServiceNamespaces
-	}
 	result := make([]string, 0, len(namespaces))
 	for _, ns := range namespaces {
 		result = append(result, ns.Namespace)
@@ -408,49 +362,4 @@ const PermissionFullAccess = "*"
 // An empty list means no permissions are granted — it does NOT imply full access.
 func IsFullAccess(perms []string) bool {
 	return len(perms) == 1 && perms[0] == PermissionFullAccess
-}
-
-// ParseAudiencePermissions extracts per-namespace permission grants from the
-// persisted authorization-grant map.
-//
-// Format: {"service_profile": ["profile_view"], "service_device": ["*"], ...}
-//
-// Each key is a Keto OPL namespace. The value is a list of permissions:
-//   - ["*"]                  → expand the registered service-role permissions
-//   - ["perm1", "perm2"]    → only these granted_* permissions (least-privilege)
-//   - []                    → namespace is recorded but no permissions are granted
-//
-// Returns a map of namespace → permission list.
-func ParseAudiencePermissions(audiences map[string]any) map[string][]string {
-	result := make(map[string][]string)
-
-	for ns, raw := range audiences {
-		var perms []string
-		switch typed := raw.(type) {
-		case []any:
-			for _, v := range typed {
-				if s, ok := v.(string); ok {
-					perms = append(perms, s)
-				}
-			}
-		case []string:
-			perms = typed
-		}
-		result[ns] = perms
-	}
-
-	return result
-}
-
-// AudienceNamespaces extracts the sorted list of namespace names from an audiences map.
-func AudienceNamespaces(audiences map[string]any) []string {
-	if len(audiences) == 0 {
-		return nil
-	}
-	namespaces := make([]string, 0, len(audiences))
-	for ns := range audiences {
-		namespaces = append(namespaces, ns)
-	}
-	slices.Sort(namespaces)
-	return namespaces
 }

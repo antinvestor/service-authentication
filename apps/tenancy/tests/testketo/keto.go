@@ -15,6 +15,11 @@
 package testketo
 
 import (
+	"fmt"
+	"slices"
+	"sort"
+	"strings"
+
 	"github.com/pitabwire/frame/v2/frametests/definition"
 	"github.com/pitabwire/frame/v2/frametests/deps/testoryketo"
 )
@@ -43,7 +48,7 @@ namespaces:
 
 `
 
-const oplNamespaces = `import { Namespace, Context } from "@ory/keto-namespace-types"
+const oplHeader = `import { Namespace, Context } from "@ory/keto-namespace-types"
 
 class profile_user implements Namespace {}
 
@@ -55,137 +60,68 @@ class tenancy_access implements Namespace {
     service: (profile_user | SubjectSet<tenancy_access, "service">)[]
   }
 }
-
-// Core service namespaces that receive direct role tuples alongside
-// service_tenancy when a user is assigned a partition role.
-
-class service_profile implements Namespace {
-  related: {
-    owner: profile_user[]
-    admin: profile_user[]
-    member: profile_user[]
-  }
-}
-
-class service_device implements Namespace {
-  related: {
-    owner: profile_user[]
-    admin: profile_user[]
-    member: profile_user[]
-  }
-}
-
-class service_setting implements Namespace {
-  related: {
-    owner: profile_user[]
-    admin: profile_user[]
-    member: profile_user[]
-  }
-}
-
-class service_audit implements Namespace {
-  related: {
-    owner: profile_user[]
-    admin: profile_user[]
-    member: profile_user[]
-  }
-}
-
-class service_tenancy implements Namespace {
-  related: {
-    owner: profile_user[]
-    admin: profile_user[]
-    member: profile_user[]
-
-    // Direct permission grants (prefixed with granted_ to avoid
-    // name conflict with permits — Keto skips permit evaluation
-    // when a relation with the same name exists)
-    granted_tenant_manage: (profile_user | service_tenancy)[]
-    granted_tenant_view: (profile_user | service_tenancy)[]
-    granted_partition_manage: (profile_user | service_tenancy)[]
-    granted_partition_view: (profile_user | service_tenancy)[]
-    granted_access_manage: (profile_user | service_tenancy)[]
-    granted_access_view: (profile_user | service_tenancy)[]
-    granted_roles_manage: (profile_user | service_tenancy)[]
-    granted_pages_manage: (profile_user | service_tenancy)[]
-    granted_pages_view: (profile_user | service_tenancy)[]
-    granted_permission_grant: (profile_user | service_tenancy)[]
-    granted_service_account_view: (profile_user | service_tenancy)[]
-    granted_service_account_manage: (profile_user | service_tenancy)[]
-    granted_client_view: (profile_user | service_tenancy)[]
-    granted_client_manage: (profile_user | service_tenancy)[]
-  }
-
-  permits = {
-    tenant_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.granted_tenant_manage.includes(ctx.subject),
-
-    tenant_view: (ctx: Context): boolean =>
-      this.permits.tenant_manage(ctx) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.member.includes(ctx.subject) ||
-      this.related.granted_tenant_view.includes(ctx.subject),
-
-    partition_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_partition_manage.includes(ctx.subject),
-
-    partition_view: (ctx: Context): boolean =>
-      this.permits.partition_manage(ctx) ||
-      this.related.member.includes(ctx.subject) ||
-      this.related.granted_partition_view.includes(ctx.subject),
-
-    access_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_access_manage.includes(ctx.subject),
-
-    access_view: (ctx: Context): boolean =>
-      this.permits.access_manage(ctx) ||
-      this.related.granted_access_view.includes(ctx.subject),
-
-    roles_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_roles_manage.includes(ctx.subject),
-
-    pages_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_pages_manage.includes(ctx.subject),
-
-    pages_view: (ctx: Context): boolean =>
-      this.permits.pages_manage(ctx) ||
-      this.related.member.includes(ctx.subject) ||
-      this.related.granted_pages_view.includes(ctx.subject),
-
-    permission_grant: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_permission_grant.includes(ctx.subject),
-
-    service_account_view: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_service_account_view.includes(ctx.subject),
-
-    service_account_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.granted_service_account_manage.includes(ctx.subject),
-
-    client_view: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.admin.includes(ctx.subject) ||
-      this.related.granted_client_view.includes(ctx.subject),
-
-    client_manage: (ctx: Context): boolean =>
-      this.related.owner.includes(ctx.subject) ||
-      this.related.granted_client_manage.includes(ctx.subject),
-  }
-}
 `
+
+func renderOPLNamespaces() string {
+	var builder strings.Builder
+	builder.WriteString(oplHeader)
+
+	catalog := testPermissionCatalog()
+	namespaces := make([]string, 0, len(catalog))
+	for namespace := range catalog {
+		namespaces = append(namespaces, namespace)
+	}
+	sort.Strings(namespaces)
+	for _, namespace := range namespaces {
+		permissions := catalog[namespace]
+		slices.Sort(permissions)
+
+		_, _ = fmt.Fprintf(&builder, "\nclass %s implements Namespace {\n  related: {\n", namespace)
+		builder.WriteString("    owner: profile_user[]\n")
+		builder.WriteString("    admin: profile_user[]\n")
+		builder.WriteString("    operator: profile_user[]\n")
+		builder.WriteString("    viewer: profile_user[]\n")
+		builder.WriteString("    member: profile_user[]\n")
+		for _, permission := range permissions {
+			_, _ = fmt.Fprintf(
+				&builder,
+				"    granted_%s: (profile_user | %s)[]\n",
+				permission,
+				namespace,
+			)
+		}
+		builder.WriteString("  }\n")
+
+		if len(permissions) > 0 {
+			builder.WriteString("\n  permits = {\n")
+			for _, permission := range permissions {
+				_, _ = fmt.Fprintf(
+					&builder,
+					"    %s: (ctx: Context): boolean =>\n"+
+						"      this.related.owner.includes(ctx.subject) ||\n"+
+						"      this.related.granted_%s.includes(ctx.subject),\n",
+					permission,
+					permission,
+				)
+			}
+			builder.WriteString("  }\n")
+		}
+		builder.WriteString("}\n")
+	}
+
+	return builder.String()
+}
+
+func testPermissionCatalog() map[string][]string {
+	return map[string][]string{
+		"service_profile": {"profile_update", "profile_view"},
+		"service_tenancy": {
+			"access_manage", "access_view", "client_manage", "client_view", "page_manage", "page_view",
+			"partition_manage", "partition_view", "permission_grant", "role_manage", "service_account_manage",
+			"service_account_view", "tenant_manage", "tenant_view",
+		},
+	}
+}
 
 // NewWithOpts creates a new Keto test resource with OPL namespace support.
 func NewWithOpts(
@@ -196,7 +132,7 @@ func NewWithOpts(
 		[]testoryketo.NamespaceFile{
 			{
 				ContainerPath: "/home/ory/namespaces/tenancy.ts",
-				Content:       oplNamespaces,
+				Content:       renderOPLNamespaces(),
 			},
 		},
 		containerOpts...,

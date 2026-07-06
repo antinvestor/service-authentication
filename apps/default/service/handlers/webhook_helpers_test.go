@@ -336,6 +336,19 @@ func (s *WebhookHelpersTestSuite) TestBuildClaimsFromLoginEvent() {
 	s.Equal("evt-1", claims["login_event_id"])
 }
 
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaimsIncludesStableIdentity() {
+	claims := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		TenantID:         "tenant-1",
+		PartitionID:      "partition-1",
+		ProfileID:        "profile-1",
+	}, "access-1", []string{"internal"})
+
+	ext, ok := claims["ext"].(map[string]any)
+	s.Require().True(ok)
+	s.Equal("service-account-1", ext["service_account_id"])
+}
+
 // --- extractSessionAccessTokenClaims ---
 
 func (s *WebhookHelpersTestSuite) TestExtractSessionAccessTokenClaims() {
@@ -375,11 +388,12 @@ func (s *WebhookHelpersTestSuite) TestGetMapKeys() {
 func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient() {
 	client := hydraclientgo.NewOAuth2Client()
 	client.SetMetadata(map[string]any{
-		"tenant_id":    "tenant-1",
-		"partition_id": "partition-1",
-		"profile_id":   "profile-1",
-		"type":         "internal",
-		"access_id":    "access-1",
+		"tenant_id":          "tenant-1",
+		"partition_id":       "partition-1",
+		"profile_id":         "profile-1",
+		"service_account_id": "service-account-1",
+		"type":               "internal",
+		"access_id":          "access-1",
 	})
 
 	sa, err := serviceAccountFromHydraClient(client, "client-1")
@@ -388,6 +402,7 @@ func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient() {
 	s.Equal("tenant-1", sa.TenantID)
 	s.Equal("partition-1", sa.PartitionID)
 	s.Equal("profile-1", sa.ProfileID)
+	s.Equal("service-account-1", sa.ServiceAccountID)
 	s.Equal("internal", sa.Type)
 	s.Equal("access-1", sa.AccessID)
 }

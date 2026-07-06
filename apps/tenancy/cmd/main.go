@@ -23,7 +23,9 @@ import (
 
 	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
+	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common/v2"
 	"github.com/antinvestor/common/v2/connection"
@@ -63,7 +65,11 @@ func main() {
 
 	// Handle database migration if requested
 	if isMigration {
-		if migErr := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath()); migErr != nil {
+		if migErr := repository.Migrate(
+			ctx,
+			svc.DatastoreManager(),
+			cfg.GetDatabaseMigrationPath(),
+		); migErr != nil {
 			util.Log(ctx).WithError(migErr).Fatal("database migration failed")
 		}
 	}
@@ -86,7 +92,20 @@ func main() {
 	}
 
 	auth := sm.GetAuthorizer(ctx)
-	partSrv := handlers.NewTenancyServer(ctx, svc, auth, profileCli)
+	partSrv := handlers.NewTenancyServer(ctx, svc, profileCli)
+	authContractSrv, err := handlers.NewAuthContractServer(partSrv, cfg.GetOauth2AudienceBaseURL())
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not setup tenancy v2 auth contract service")
+	}
+	policySync := events.NewAuthzServiceAccountSyncEventHandler(
+		partSrv.ServiceAccountRepo,
+		partSrv.PartitionRepo,
+		partSrv.AuthorizationPolicyRepo,
+		partSrv.ServiceNamespaceRepo,
+		partSrv.AuthContractRepo,
+		svc.EventsManager(),
+		auth,
+	)
 
 	// Bootstrap root super-user authorization after migration only.
 	// This writes Keto tuples for migration-seeded root owners/admins.
@@ -102,12 +121,16 @@ func main() {
 		}); bootstrapErr != nil {
 			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
 		}
+	}
+	if reconcileErr := policySync.ReconcilePending(ctx); reconcileErr != nil {
+		util.Log(ctx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
+	}
+	if isMigration {
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
-
 	// Setup Connect server
-	connectHandler := setupConnectServer(ctx, sm, partSrv)
+	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
 
 	// Register permission manifest for the tenancy service so the UI can
 	// discover available permissions for assignment.
@@ -118,11 +141,23 @@ func main() {
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithPermissionRegistration(sd),
 		frame.WithRegisterEvents(
-			events.NewPartitionSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.PartitionRepo),
-			events.NewClientSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ClientRepo, partSrv.ServiceAccountRepo),
-			events.NewServiceAccountSynchronizationEventHandler(ctx, &cfg, hydraClient, partSrv.ServiceAccountRepo, partSrv.PartitionRepo),
-			events.NewAuthzPartitionSyncEventHandler(partSrv.PartitionRepo, partSrv.ServiceAccountRepo, partSrv.ServiceNamespaceRepo, auth),
-			events.NewAuthzServiceAccountSyncEventHandler(partSrv.ServiceAccountRepo, auth),
+			events.NewClientSynchronizationEventHandler(
+				ctx,
+				&cfg,
+				hydraClient,
+				partSrv.ClientRepo,
+				partSrv.OAuthRecipientRepo,
+				partSrv.ServiceAccountRepo,
+			),
+			events.NewAuthzPartitionSyncEventHandler(
+				partSrv.PartitionRepo,
+				partSrv.ServiceAccountRepo,
+				partSrv.ServiceNamespaceRepo,
+				partSrv.AuthorizationPolicyRepo,
+				svc.EventsManager(),
+				auth,
+			),
+			policySync,
 			events.NewAuthzAccessSyncEventHandler(partSrv.AccessRepo, partSrv.AccessRoleRepo, partSrv.PartitionRoleRepo, partSrv.ServiceNamespaceRepo, auth),
 			events.NewTupleWriteEventHandler(auth),
 			events.NewTupleDeleteEventHandler(auth),
@@ -148,6 +183,7 @@ func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
 	implementation *handlers.TenancyServer,
+	authContractImplementation *handlers.AuthContractServer,
 ) http.Handler {
 
 	authenticator := sm.GetAuthenticator(ctx)
@@ -173,19 +209,42 @@ func setupConnectServer(
 	_, serverHandler := tenancyv1connect.NewTenancyServiceHandler(
 		implementation, connect.WithInterceptors(defaultInterceptorList...))
 
+	v2ServiceDescriptor := tenancyv2.File_tenancy_v2_auth_contract_proto.Services().ByName("AuthContractService")
+	v2ProcedureMap := permissions.BuildProcedureMap(v2ServiceDescriptor)
+	v2ServicePermissions := permissions.ForService(v2ServiceDescriptor)
+	v2FunctionChecker := authorizer.NewFunctionChecker(auth, v2ServicePermissions.Namespace)
+	v2FunctionInterceptor := connectInterceptors.NewFunctionAccessInterceptor(v2FunctionChecker, v2ProcedureMap)
+	v2Interceptors, err := connectInterceptors.DefaultList(
+		ctx,
+		authenticator,
+		tenancyAccessInterceptor,
+		v2FunctionInterceptor,
+	)
+	if err != nil {
+		util.Log(ctx).WithError(err).Fatal("failed to create tenancy v2 interceptors")
+	}
+	v2Path, v2Handler := tenancyv2connect.NewAuthContractServiceHandler(
+		authContractImplementation,
+		connect.WithInterceptors(v2Interceptors...),
+	)
+
 	// HTTP: auth middleware (outer) populates claims → tenancy access (inner) verifies data access → handler.
 	publicRestHandler := securityhttp.AuthenticationMiddleware(
 		securityhttp.TenancyAccessMiddleware(implementation.NewSecureRouterV1(), tenancyAccessChecker),
 		authenticator)
 
 	mux := http.NewServeMux()
+	mux.Handle(v2Path, v2Handler)
 	mux.Handle("/", serverHandler)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
-	// Internal endpoints — no auth middleware. Safe because they're only
-	// reachable within the cluster (not exposed through the API gateway).
+	// Client bootstrap remains cluster-internal. Permission registration also
+	// requires a verified service-account token and binds namespaces to it.
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
-	mux.Handle("/_internal/register/permissions", implementation.NewInternalPermissionsHandler())
+	mux.Handle(
+		"/_internal/register/permissions",
+		securityhttp.AuthenticationMiddleware(implementation.NewPermissionRegistrationHandler(), authenticator),
+	)
 
 	return mux
 }

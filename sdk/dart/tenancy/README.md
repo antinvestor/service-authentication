@@ -8,7 +8,7 @@ Data partitioning, multi-tenancy, access control, service accounts, and OAuth2 c
 
 ```yaml
 dependencies:
-  antinvestor_api_tenancy: ^1.53.0
+  antinvestor_api_tenancy: ^2.0.0
 ```
 
 ## License

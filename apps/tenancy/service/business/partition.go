@@ -236,11 +236,6 @@ func (pb *partitionBusiness) CreatePartition(
 		return nil, err
 	}
 
-	err = pb.eventsMan.Emit(ctx, events.EventKeyPartitionHydraSync, data.JSONMap{"id": partition.GetID()})
-	if err != nil {
-		return nil, err
-	}
-
 	// Emit authz partition sync to write inheritance tuples for partitions with parents.
 	if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); emitErr != nil {
 		util.Log(ctx).WithError(emitErr).Warn("failed to emit authz partition sync event")
@@ -433,7 +428,7 @@ func (pb *partitionBusiness) CreatePartitionRole(
 	return toAPIPartitionRole(partitionRole), nil
 }
 
-func ReQueuePrimaryPartitionsForSync(ctx context.Context, partitionRepo repository.PartitionRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
+func ReQueuePartitionsForAuthorizationSync(ctx context.Context, partitionRepo repository.PartitionRepository, eventsMan fevents.Manager, query *data.SearchQuery) error {
 
 	jobResult, err := partitionRepo.Search(ctx, query)
 	if err != nil {
@@ -452,13 +447,8 @@ func ReQueuePrimaryPartitionsForSync(ctx context.Context, partitionRepo reposito
 		}
 
 		for _, partition := range result.Item() {
-			err = eventsMan.Emit(ctx, events.EventKeyPartitionHydraSync, data.JSONMap{"id": partition.GetID()})
-			if err != nil {
+			if err = eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); err != nil {
 				return err
-			}
-
-			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); emitErr != nil {
-				util.Log(ctx).WithError(emitErr).Warn("failed to emit authz partition sync event")
 			}
 		}
 	}
