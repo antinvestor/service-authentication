@@ -327,8 +327,17 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
 	rlsProv.Enable()
 
-	// WithNoopDriver: Run completes after startups finish (frame test-driver contract).
-	require.NoError(t, svc.Run(ctx, ""))
+	// Suite-level service (handler == nil) is the real HTTP listener Hydra
+	// redirects to, so it uses the production driver and Run blocks until
+	// Stop — start it in a goroutine. Per-test services use WithNoopDriver,
+	// which returns from Run after startups (frame v2.0.3+ test-driver contract).
+	if bs.handler == nil {
+		go func() {
+			_ = svc.Run(ctx, "")
+		}()
+	} else {
+		require.NoError(t, svc.Run(ctx, ""))
+	}
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
