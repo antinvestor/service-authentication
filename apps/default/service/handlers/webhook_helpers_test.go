@@ -253,7 +253,11 @@ func (s *WebhookHelpersTestSuite) TestExtractNestedClaims_Nil() {
 func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_Priority() {
 	at := map[string]any{"from": "access_token"}
 	deep := map[string]any{"from": "deep"}
-	ext := map[string]any{"tenant_id": "t-1", "from": "ext"}
+	ext := map[string]any{
+		"tenant_id":    "t-1",
+		"partition_id": "p-1",
+		"from":         "ext",
+	}
 	extra := map[string]any{"from": "extra"}
 
 	s.Equal(at, selectFinalClaims(at, deep, ext, extra))
@@ -267,8 +271,12 @@ func (s *WebhookHelpersTestSuite) TestSelectFinalClaims_ExtWithoutTenantID() {
 	ext := map[string]any{"other": "val"} // no tenant_id
 	extra := map[string]any{"from": "extra"}
 
-	// ext without tenant_id should be skipped (tenant_id is always set by consent)
+	// ext without a complete tenancy pair should be skipped
 	s.Equal(extra, selectFinalClaims(nil, nil, ext, extra))
+
+	// ext with only tenant_id (partial pair) is not preferred over extra
+	partialExt := map[string]any{"tenant_id": "t-only"}
+	s.Equal(extra, selectFinalClaims(nil, nil, partialExt, extra))
 }
 
 // --- writeTokenHookResponse ---
@@ -314,11 +322,25 @@ func (s *WebhookHelpersTestSuite) TestMissingRequiredUserClaims_Incomplete() {
 		"tenant_id": "t",
 	}
 	missing := missingRequiredUserClaims(claims)
+	// Partial tenancy pairs report both members missing — they are atomic.
+	s.Contains(missing, "tenant_id")
 	s.Contains(missing, "partition_id")
 	s.Contains(missing, "access_id")
 	s.Contains(missing, "session_id")
 	s.Contains(missing, "profile_id")
-	s.NotContains(missing, "tenant_id")
+}
+
+func (s *WebhookHelpersTestSuite) TestMissingRequiredUserClaims_PartialPartitionOnly() {
+	claims := map[string]any{
+		"partition_id": "p",
+		"access_id":    "a",
+		"session_id":   "s",
+		"profile_id":   "pr",
+	}
+	missing := missingRequiredUserClaims(claims)
+	s.Contains(missing, "tenant_id")
+	s.Contains(missing, "partition_id")
+	s.NotContains(missing, "access_id")
 }
 
 // --- buildClaimsFromLoginEvent ---
@@ -337,16 +359,29 @@ func (s *WebhookHelpersTestSuite) TestBuildClaimsFromLoginEvent() {
 }
 
 func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaimsIncludesStableIdentity() {
-	claims := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
 		ServiceAccountID: "service-account-1",
 		TenantID:         "tenant-1",
 		PartitionID:      "partition-1",
 		ProfileID:        "profile-1",
 	}, "access-1", []string{"internal"})
+	s.Require().NoError(err)
 
 	ext, ok := claims["ext"].(map[string]any)
 	s.Require().True(ok)
 	s.Equal("service-account-1", ext["service_account_id"])
+	s.Equal("tenant-1", claims["tenant_id"])
+	s.Equal("partition-1", claims["partition_id"])
+}
+
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_RejectsIncompleteTenancyPair() {
+	_, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		TenantID:         "tenant-1",
+		// PartitionID missing
+		ProfileID: "profile-1",
+	}, "access-1", []string{"internal"})
+	s.ErrorIs(err, ErrIncompleteTenancyPair)
 }
 
 // --- extractSessionAccessTokenClaims ---

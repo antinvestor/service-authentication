@@ -343,7 +343,10 @@ func (h *AuthServer) handleNativeTokenExchange(ctx context.Context, r *http.Requ
 	if len(roles) == 0 {
 		roles = []string{"user"}
 	}
-	claims := BuildUserTokenClaims(loginEvent, profileID, deviceID, roles)
+	claims, err := BuildUserTokenClaims(loginEvent, profileID, deviceID, roles)
+	if err != nil {
+		return nil, oauthErr(http.StatusInternalServerError, "server_error", "incomplete tenancy claims")
+	}
 	scopes := tokenScopes(hydraClient.GetScope())
 	nonce := strings.TrimSpace(form.Get("nonce"))
 

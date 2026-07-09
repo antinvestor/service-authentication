@@ -230,12 +230,29 @@ func (ab *accessBusiness) CreateAccess(
 
 	logger.Debug("creating access record")
 
-	partition, err := ab.partitionRepo.GetByID(ctx, request.GetPartitionId())
+	partitionID := ""
+	profileID := ""
+	if request != nil {
+		partitionID = request.GetPartitionId()
+		profileID = request.GetProfileId()
+	}
+	if partitionID == "" {
+		return nil, fmt.Errorf("partition_id is required")
+	}
+	if profileID == "" {
+		return nil, fmt.Errorf("profile_id is required")
+	}
+
+	partition, err := ab.partitionRepo.GetByID(ctx, partitionID)
 	if err != nil {
 		return nil, err
 	}
+	// Access records must carry a complete tenancy pair derived from the partition.
+	if partition.TenantID == "" || partition.GetID() == "" {
+		return nil, fmt.Errorf("partition has incomplete tenancy context")
+	}
 
-	access, err := ab.accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), request.GetProfileId())
+	access, err := ab.accessRepo.GetByPartitionAndProfile(ctx, partition.GetID(), profileID)
 	if err != nil {
 		if !data.ErrorIsNoRows(err) {
 			return nil, err
@@ -246,7 +263,7 @@ func (ab *accessBusiness) CreateAccess(
 	}
 
 	access = &models.Access{
-		ProfileID: request.GetProfileId(),
+		ProfileID: profileID,
 		BaseModel: data.BaseModel{
 			TenantID:    partition.TenantID,
 			PartitionID: partition.GetID(),
@@ -258,10 +275,11 @@ func (ab *accessBusiness) CreateAccess(
 		return nil, err
 	}
 
-	// Emit event to write tenancy_access#member tuple asynchronously
+	// Emit event to write tenancy_access#member tuple asynchronously.
+	// Path is always tenant_id/partition_id as a pair.
+	tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 	if ab.eventsMan != nil {
-		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
-		accessTuple := authz.BuildAccessTuple(tenancyPath, request.GetProfileId())
+		accessTuple := authz.BuildAccessTuple(tenancyPath, profileID)
 		payload := events.TuplesToPayload([]security.RelationTuple{accessTuple})
 		if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 			util.Log(ctx).WithError(emitErr).Warn("failed to emit tenancy_access tuple write event")
@@ -274,7 +292,6 @@ func (ab *accessBusiness) CreateAccess(
 		logger.WithError(defaultErr).Warn("failed to query default partition roles")
 	}
 	if len(defaultRoles) > 0 {
-		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.GetID())
 		for _, role := range defaultRoles {
 			accessRole := &models.AccessRole{
 				AccessID:        access.GetID(),
@@ -285,7 +302,7 @@ func (ab *accessBusiness) CreateAccess(
 				continue
 			}
 			if ab.eventsMan != nil {
-				tuples := authz.BuildRoleTuples(tenancyPath, request.GetProfileId(), role.Name, ab.registeredNamespaces(ctx))
+				tuples := authz.BuildRoleTuples(tenancyPath, profileID, role.Name, ab.registeredNamespaces(ctx))
 				payload := events.TuplesToPayload(tuples)
 				if emitErr := ab.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); emitErr != nil {
 					logger.WithError(emitErr).Warn("failed to emit default role tuple write")

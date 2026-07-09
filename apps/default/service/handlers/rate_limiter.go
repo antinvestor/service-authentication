@@ -18,22 +18,23 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/pitabwire/frame/v2/cache"
 	"github.com/pitabwire/util"
 )
 
-// Rate limit cache key prefix - uses alphanumeric and underscore (NATS-safe)
-const rateLimitCachePrefix = "login_rl_ip_"
+// Rate limit cache key prefix - uses alphanumeric and underscore (NATS-safe).
+const rateLimitCachePrefix = "login_rl_"
 
-// RateLimitConfig holds configuration for rate limiting
+// RateLimitConfig holds configuration for rate limiting.
 type RateLimitConfig struct {
 	MaxAttempts int           // Maximum attempts allowed
 	Window      time.Duration // Time window for rate limiting
 }
 
-// DefaultLoginRateLimitConfig returns the default rate limit config for login attempts
+// DefaultLoginRateLimitConfig returns the default rate limit config for login attempts.
 func DefaultLoginRateLimitConfig() RateLimitConfig {
 	return RateLimitConfig{
 		MaxAttempts: 7,
@@ -41,14 +42,7 @@ func DefaultLoginRateLimitConfig() RateLimitConfig {
 	}
 }
 
-// RateLimitEntry tracks attempts for a single key
-type RateLimitEntry struct {
-	Attempts  int       `json:"attempts"`
-	FirstAt   time.Time `json:"first_at"`
-	ExpiresAt time.Time `json:"expires_at"`
-}
-
-// RateLimitResult contains the result of a rate limit check
+// RateLimitResult contains the result of a rate limit check.
 type RateLimitResult struct {
 	Allowed       bool
 	AttemptsUsed  int
@@ -57,130 +51,147 @@ type RateLimitResult struct {
 	RetryAfterSec int
 }
 
-// hashIP creates a SHA256 hash of the IP address for privacy
+// hashIP creates a SHA256 hash of the rate-limit key (IP or compound key) for privacy.
 func hashIP(ip string) string {
 	hash := sha256.Sum256([]byte(ip))
 	return hex.EncodeToString(hash[:])
 }
 
-// rateLimitCacheKey generates a cache key for rate limiting by IP
-func rateLimitCacheKey(ip string) string {
-	return rateLimitCachePrefix + hashIP(ip)
-}
-
-// rateLimitCache returns the generic cache for rate limit entries
-func (h *AuthServer) rateLimitCache() cache.Cache[string, RateLimitEntry] {
-	if h.rateLimitICache == nil {
-		if h.cacheMan == nil {
-			return nil
-		}
-		rCache, ok := h.cacheMan.GetRawCache(h.config.CacheName)
-		if !ok {
-			return nil
-		}
-
-		h.rateLimitICache = cache.NewGenericCache[string, RateLimitEntry](rCache, func(k string) string {
-			return k
-		})
+// rateLimitBucketKey builds a fixed-window counter key for the given identity and time.
+func rateLimitBucketKey(key string, window time.Duration, now time.Time) string {
+	windowSecs := int64(window.Seconds())
+	if windowSecs <= 0 {
+		windowSecs = int64(time.Hour.Seconds())
 	}
-	return h.rateLimitICache
+	bucket := now.Unix() / windowSecs
+	return fmt.Sprintf("%s%s:%d", rateLimitCachePrefix, hashIP(key), bucket)
 }
 
-// CheckLoginRateLimit checks rate limits for the given IP address
-// Returns the result indicating if the request is allowed
-func (h *AuthServer) CheckLoginRateLimit(ctx context.Context, ip string) RateLimitResult {
+func (h *AuthServer) rateLimitConfig() RateLimitConfig {
+	cfg := h.loginRateLimitConfig
+	if cfg.MaxAttempts <= 0 {
+		cfg.MaxAttempts = DefaultLoginRateLimitConfig().MaxAttempts
+	}
+	if cfg.Window <= 0 {
+		cfg.Window = DefaultLoginRateLimitConfig().Window
+	}
+	return cfg
+}
+
+func (h *AuthServer) rawRateLimitCache() cache.RawCache {
+	if h == nil || h.cacheMan == nil || h.config == nil {
+		return nil
+	}
+	name := h.config.CacheName
+	if name == "" {
+		name = "defaultCache"
+	}
+	raw, ok := h.cacheMan.GetRawCache(name)
+	if !ok {
+		return nil
+	}
+	return raw
+}
+
+func denyRateLimitResult(cfg RateLimitConfig, retryAfter time.Duration) RateLimitResult {
+	if retryAfter < 0 {
+		retryAfter = 0
+	}
+	return RateLimitResult{
+		Allowed:       false,
+		AttemptsUsed:  cfg.MaxAttempts,
+		AttemptsLeft:  0,
+		RetryAfter:    retryAfter,
+		RetryAfterSec: int(retryAfter.Seconds()),
+	}
+}
+
+func windowRetryAfter(window time.Duration, now time.Time) time.Duration {
+	windowSecs := int64(window.Seconds())
+	if windowSecs <= 0 {
+		windowSecs = int64(time.Hour.Seconds())
+	}
+	endOfWindow := time.Unix((now.Unix()/windowSecs+1)*windowSecs, 0).UTC()
+	retryAfter := endOfWindow.Sub(now)
+	if retryAfter < 0 {
+		return 0
+	}
+	return retryAfter
+}
+
+// CheckLoginRateLimit checks rate limits for the given key (IP or compound identity).
+//
+// Semantics:
+//   - Atomic fixed-window counter via cache.Increment (safe under concurrency)
+//   - Fail-closed when the cache is unavailable or increment fails — login
+//     surfaces must not become unbounded under infrastructure faults
+func (h *AuthServer) CheckLoginRateLimit(ctx context.Context, key string) RateLimitResult {
 	log := util.Log(ctx)
-	now := time.Now()
+	cfg := h.rateLimitConfig()
+	now := time.Now().UTC()
+	retryAfter := windowRetryAfter(cfg.Window, now)
 
-	cacheInst := h.rateLimitCache()
-	if cacheInst == nil {
-		// Cache not available, allow request but log warning
-		log.Warn("rate limit cache not available, allowing request")
-		return RateLimitResult{
-			Allowed:      true,
-			AttemptsUsed: 0,
-			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts,
-		}
+	raw := h.rawRateLimitCache()
+	if raw == nil {
+		log.Error("rate limit cache not available, denying request")
+		return denyRateLimitResult(cfg, retryAfter)
 	}
 
-	cacheKey := rateLimitCacheKey(ip)
-	entry, found, err := cacheInst.Get(ctx, cacheKey)
+	bucketKey := rateLimitBucketKey(key, cfg.Window, now)
+	count, err := raw.Increment(ctx, bucketKey, 1)
 	if err != nil {
-		log.WithError(err).Warn("rate limit cache read error, allowing request")
-		return RateLimitResult{
-			Allowed:      true,
-			AttemptsUsed: 0,
-			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts,
+		log.WithError(err).Error("rate limit increment failed, denying request")
+		return denyRateLimitResult(cfg, retryAfter)
+	}
+
+	// Best-effort TTL so backends that support it reclaim the bucket.
+	// Backends without per-key TTL still isolate counts by window id in the key.
+	if count == 1 {
+		if expErr := raw.Expire(ctx, bucketKey, cfg.Window+time.Second); expErr != nil {
+			log.WithError(expErr).Debug("rate limit bucket expire failed")
 		}
 	}
 
-	// If entry doesn't exist or has expired, create a new one
-	if !found || now.After(entry.ExpiresAt) {
-		newEntry := RateLimitEntry{
-			Attempts:  1,
-			FirstAt:   now,
-			ExpiresAt: now.Add(h.loginRateLimitConfig.Window),
-		}
-
-		if setErr := cacheInst.Set(ctx, cacheKey, newEntry, h.loginRateLimitConfig.Window); setErr != nil {
-			log.WithError(setErr).Warn("failed to set rate limit entry in cache")
-		}
-
-		return RateLimitResult{
-			Allowed:      true,
-			AttemptsUsed: 1,
-			AttemptsLeft: h.loginRateLimitConfig.MaxAttempts - 1,
-		}
-	}
-
-	// Check if limit exceeded
-	if entry.Attempts >= h.loginRateLimitConfig.MaxAttempts {
-		retryAfter := entry.ExpiresAt.Sub(now)
+	if count > int64(cfg.MaxAttempts) {
 		log.WithFields(map[string]any{
-			"ip_hash":       hashIP(ip)[:16] + "...",
-			"attempts":      entry.Attempts,
+			"key_hash":      hashIP(key)[:16] + "...",
+			"attempts":      count,
 			"retry_after_s": int(retryAfter.Seconds()),
-		}).Warn("login rate limit exceeded for IP")
+		}).Warn("login rate limit exceeded")
 
 		return RateLimitResult{
 			Allowed:       false,
-			AttemptsUsed:  entry.Attempts,
+			AttemptsUsed:  int(count),
 			AttemptsLeft:  0,
 			RetryAfter:    retryAfter,
 			RetryAfterSec: int(retryAfter.Seconds()),
 		}
 	}
 
-	// Increment counter
-	entry.Attempts++
-	ttlRemaining := entry.ExpiresAt.Sub(now)
-	if setErr := cacheInst.Set(ctx, cacheKey, entry, ttlRemaining); setErr != nil {
-		log.WithError(setErr).Warn("failed to update rate limit entry in cache")
-	}
-
 	return RateLimitResult{
 		Allowed:      true,
-		AttemptsUsed: entry.Attempts,
-		AttemptsLeft: h.loginRateLimitConfig.MaxAttempts - entry.Attempts,
+		AttemptsUsed: int(count),
+		AttemptsLeft: cfg.MaxAttempts - int(count),
 	}
 }
 
-// ResetLoginRateLimit resets rate limits after successful login for the given IP
-func (h *AuthServer) ResetLoginRateLimit(ctx context.Context, ip string) {
-	cacheInst := h.rateLimitCache()
-	if cacheInst == nil {
+// ResetLoginRateLimit clears the current window counter after successful auth.
+func (h *AuthServer) ResetLoginRateLimit(ctx context.Context, key string) {
+	raw := h.rawRateLimitCache()
+	if raw == nil {
 		return
 	}
 
-	cacheKey := rateLimitCacheKey(ip)
-	if err := cacheInst.Delete(ctx, cacheKey); err != nil {
-		util.Log(ctx).WithError(err).Debug("failed to delete rate limit entry from cache")
+	cfg := h.rateLimitConfig()
+	bucketKey := rateLimitBucketKey(key, cfg.Window, time.Now().UTC())
+	if err := raw.Delete(ctx, bucketKey); err != nil {
+		util.Log(ctx).WithError(err).Debug("failed to delete rate limit bucket from cache")
 	}
 }
 
 // ResetAllLoginRateLimits is a no-op for cache-based rate limiting
-// as cache entries will naturally expire. This is kept for test compatibility.
+// as cache entries will naturally expire. Kept for test compatibility.
 func (h *AuthServer) ResetAllLoginRateLimits() {
-	// Cache entries expire naturally based on TTL.
-	// For testing purposes, individual entries can be reset via ResetLoginRateLimit.
+	// Cache entries expire naturally based on TTL / window id rotation.
+	// For testing, reset individual keys via ResetLoginRateLimit.
 }

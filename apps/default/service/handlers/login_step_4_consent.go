@@ -270,9 +270,14 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 		return nil, fmt.Errorf("failed to create login event: %w", createErr)
 	}
 
+	tenantID, partitionID := NormalizeTenancyPair(sa.GetTenantId(), sa.GetPartitionId())
+	if !ValidTenancyPair(tenantID, partitionID) {
+		return nil, ErrIncompleteTenancyPair
+	}
+
 	return map[string]any{
-		"tenant_id":      sa.GetTenantId(),
-		"partition_id":   sa.GetPartitionId(),
+		"tenant_id":      tenantID,
+		"partition_id":   partitionID,
 		"access_id":      accessObj.GetId(),
 		"roles":          roles,
 		"profile_id":     subjectID,
@@ -386,19 +391,30 @@ func (h *AuthServer) buildUserTokenClaims(
 		log.WithError(err).Debug("failed to persist roles in login event properties")
 	}
 
-	return BuildUserTokenClaims(loginEvent, subjectID, deviceObj.GetId(), roles), nil
+	return BuildUserTokenClaims(loginEvent, subjectID, deviceObj.GetId(), roles)
 }
 
 // BuildUserTokenClaims returns the map of claims inserted into user-facing
 // access and ID tokens at consent time. It is exported so the FedCM headless
 // driver can reuse the exact same shape.
 //
+// tenant_id and partition_id are required as a pair — incomplete tenancy
+// context fails closed rather than minting a partial token.
+//
 // The returned map must contain only string keys and JSON-serialisable values
 // because Hydra places it verbatim into AccessTokenExtras / IdTokenExtras.
-func BuildUserTokenClaims(loginEvent *models.LoginEvent, subjectID, deviceID string, roles []string) map[string]any {
+func BuildUserTokenClaims(loginEvent *models.LoginEvent, subjectID, deviceID string, roles []string) (map[string]any, error) {
+	if loginEvent == nil {
+		return nil, fmt.Errorf("login event is required")
+	}
+	tenantID, partitionID := NormalizeTenancyPair(loginEvent.GetTenantID(), loginEvent.GetPartitionID())
+	if !ValidTenancyPair(tenantID, partitionID) {
+		return nil, ErrIncompleteTenancyPair
+	}
+
 	return map[string]any{
-		"tenant_id":         loginEvent.GetTenantID(),
-		"partition_id":      loginEvent.GetPartitionID(),
+		"tenant_id":         tenantID,
+		"partition_id":      partitionID,
 		"access_id":         loginEvent.GetAccessID(),
 		"contact_id":        loginEvent.GetContactID(),
 		"session_id":        loginEvent.GetID(),
@@ -407,7 +423,7 @@ func BuildUserTokenClaims(loginEvent *models.LoginEvent, subjectID, deviceID str
 		"roles":             roles,
 		"device_id":         deviceID,
 		"profile_id":        subjectID,
-	}
+	}, nil
 }
 
 // extractLoginEventID extracts the login event ID from the consent context.

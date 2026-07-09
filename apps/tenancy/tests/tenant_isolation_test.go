@@ -112,3 +112,64 @@ func (suite *TenantIsolationTestSuite) TestAccess_CrossTenantReadsReturnNothing(
 	require.NoError(t, err)
 	assert.Len(t, allList, 1)
 }
+
+func (suite *TenantIsolationTestSuite) TestServiceAccount_CrossTenantReadsReturnNothing() {
+	t := suite.T()
+	ctx, _, deps := suite.CreateService(t, definition.NewDependancyOption("sa_isolation", util.RandomAlphaNumericString(8), nil))
+	saRepo := deps.ServiceAccountRepo
+
+	ctxA := suite.WithAuthClaims(ctx, "tenant-iso-a", "partition-iso-a", "profile-a")
+	ctxB := suite.WithAuthClaims(ctx, "tenant-iso-b", "partition-iso-b", "profile-b")
+
+	sa := &models.ServiceAccount{
+		Name:      "tenant-a-bot",
+		ProfileID: "profile-iso-a",
+		ClientID:  util.IDString(),
+		Type:      "internal",
+	}
+	sa.GenID(ctxA)
+	require.NoError(t, saRepo.Create(ctxA, sa))
+	require.Equal(t, "tenant-iso-a", sa.TenantID)
+	require.Equal(t, "partition-iso-a", sa.PartitionID)
+
+	own, err := saRepo.GetByID(ctxA, sa.GetID())
+	require.NoError(t, err)
+	require.Equal(t, sa.GetID(), own.GetID())
+
+	_, err = saRepo.GetByID(ctxB, sa.GetID())
+	require.Error(t, err, "cross-tenant GetByID must not return another tenant's service account")
+
+	count, err := saRepo.CountByPartitionID(ctxB, "partition-iso-a")
+	require.NoError(t, err)
+	assert.Zero(t, count, "cross-tenant count must not include tenant A's service accounts")
+}
+
+func (suite *TenantIsolationTestSuite) TestClient_CrossTenantReadsReturnNothing() {
+	t := suite.T()
+	ctx, _, deps := suite.CreateService(t, definition.NewDependancyOption("client_isolation", util.RandomAlphaNumericString(8), nil))
+	clientRepo := deps.ClientRepo
+
+	ctxA := suite.WithAuthClaims(ctx, "tenant-iso-a", "partition-iso-a", "profile-a")
+	ctxB := suite.WithAuthClaims(ctx, "tenant-iso-b", "partition-iso-b", "profile-b")
+
+	client := &models.Client{
+		Name:     "tenant-a-client",
+		ClientID: util.IDString(),
+		Type:     "public",
+	}
+	client.GenID(ctxA)
+	require.NoError(t, clientRepo.Create(ctxA, client))
+	require.Equal(t, "tenant-iso-a", client.TenantID)
+	require.Equal(t, "partition-iso-a", client.PartitionID)
+
+	own, err := clientRepo.GetByID(ctxA, client.GetID())
+	require.NoError(t, err)
+	require.Equal(t, client.GetID(), own.GetID())
+
+	_, err = clientRepo.GetByID(ctxB, client.GetID())
+	require.Error(t, err, "cross-tenant GetByID must not return another tenant's OAuth client")
+
+	count, err := clientRepo.CountByPartitionID(ctxB, "partition-iso-a")
+	require.NoError(t, err)
+	assert.Zero(t, count, "cross-tenant count must not include tenant A's clients")
+}

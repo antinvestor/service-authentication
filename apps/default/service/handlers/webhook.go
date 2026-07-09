@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -309,7 +310,11 @@ func extractNestedClaims(idTokenWrapper map[string]any) (map[string]any, map[str
 }
 
 // selectFinalClaims selects the best available claims from multiple sources.
-// Priority: access_token > ext.id_token_claims > ext (with tenant_id) > session.extra
+// Priority: access_token > ext.id_token_claims > ext (complete tenancy pair) > session.extra
+//
+// tenant_id and partition_id are always treated as a pair: a source that only
+// carries one of them is not preferred over a fuller source, and is never
+// considered "complete consent extras" on its own.
 func selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims map[string]any) map[string]any {
 	if len(accessTokenClaims) > 0 {
 		return accessTokenClaims
@@ -317,13 +322,11 @@ func selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClai
 	if len(deepNestedClaims) > 0 {
 		return deepNestedClaims
 	}
-	if len(extClaims) > 0 {
-		// Use ext claims if they contain our tenant_id claim, which is always
-		// present in consent-set extras (unlike contact_id which may be empty
-		// and omitted by Hydra's JSON serialisation for some flows).
-		if tenantID, _ := extClaims["tenant_id"].(string); tenantID != "" {
-			return extClaims
-		}
+	if len(extClaims) > 0 && ClaimsHaveTenancyPair(extClaims) {
+		// Consent-set extras always carry the full tenancy pair (unlike
+		// contact_id which may be empty and omitted by Hydra's JSON
+		// serialisation for some flows).
+		return extClaims
 	}
 	if len(extraClaims) > 0 {
 		return extraClaims
@@ -389,10 +392,18 @@ func buildServiceAccountClaims(
 	sa *serviceAccountAuthContext,
 	accessID string,
 	roles []string,
-) map[string]any {
+) (map[string]any, error) {
+	if sa == nil {
+		return nil, errors.New("service account context is required")
+	}
+	tenantID, partitionID := NormalizeTenancyPair(sa.TenantID, sa.PartitionID)
+	if !ValidTenancyPair(tenantID, partitionID) {
+		return nil, ErrIncompleteTenancyPair
+	}
+
 	claims := map[string]any{
-		"tenant_id":      sa.TenantID,
-		"partition_id":   sa.PartitionID,
+		"tenant_id":      tenantID,
+		"partition_id":   partitionID,
 		"roles":          roles,
 		"profile_id":     sa.ProfileID,
 		"session_id":     loginEventID,
@@ -404,7 +415,7 @@ func buildServiceAccountClaims(
 	if accessID != "" {
 		claims["access_id"] = accessID
 	}
-	return claims
+	return claims, nil
 }
 
 // extractSessionAccessTokenClaims extracts the access_token claims from the session object.
@@ -464,8 +475,15 @@ func loginEventRoles(loginEvent *models.LoginEvent) []string {
 }
 
 func missingRequiredUserClaims(claims map[string]any) []string {
-	required := []string{"tenant_id", "partition_id", "access_id", "session_id", "profile_id"}
-	missing := make([]string, 0, len(required))
+	required := []string{"access_id", "session_id", "profile_id"}
+	missing := make([]string, 0, len(required)+2)
+
+	// Tenancy is atomic: either both tenant_id and partition_id are present,
+	// or both are reported missing so partial pairs never pass validation.
+	if !ClaimsHaveTenancyPair(claims) {
+		missing = append(missing, "tenant_id", "partition_id")
+	}
+
 	for _, key := range required {
 		if claimString(claims, key) == "" {
 			missing = append(missing, key)
@@ -671,7 +689,11 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 		accessID = claimString(sessionClaims, "access_id")
 	}
 
-	claims := buildServiceAccountClaims(loginEvent.GetID(), sa, accessID, roles)
+	claims, claimsErr := buildServiceAccountClaims(loginEvent.GetID(), sa, accessID, roles)
+	if claimsErr != nil {
+		log.WithError(claimsErr).Error("service account claims incomplete")
+		return h.writeWebhookError(rw, "incomplete tenancy claims")
+	}
 	h.recordTokenWebhookTrace(ctx, loginEvent, tokenType, grantType, "service_account", grantedScopes)
 
 	log.WithFields(map[string]any{
@@ -796,10 +818,14 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		return h.writeWebhookError(rw, "missing user claims in consent session")
 	}
 
-	// If the session claims contain non-user roles (system_internal/system_external),
+	// If the session claims contain non-user roles (internal/external),
 	// pass them through directly. These tokens were set server-side during consent
-	// and do not require login event lookup.
+	// and do not require login event lookup — but the tenancy pair is still required.
 	if isNonUserRole(finalClaims["roles"]) {
+		if !ClaimsHaveTenancyPair(finalClaims) {
+			log.Warn("token enrichment rejected: non-user roles without complete tenancy pair")
+			return h.writeWebhookError(rw, "incomplete tenancy claims")
+		}
 		log.Debug("non-user role detected in session claims - passing through without login event lookup")
 		return writeTokenHookResponse(rw, finalClaims)
 	}
