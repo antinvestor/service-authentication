@@ -327,9 +327,8 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
 	rlsProv.Enable()
 
-	go func() {
-		_ = svc.Run(ctx, "")
-	}()
+	// WithNoopDriver: Run completes after startups finish (frame test-driver contract).
+	require.NoError(t, svc.Run(ctx, ""))
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 
