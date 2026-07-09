@@ -274,7 +274,7 @@ func (r *loginEventRepository) Search(
 		r.WorkManager(),
 		query,
 		func(ctx context.Context, query *data.SearchQuery) ([]*models.LoginEvent, error) {
-			return data.SearchFunc[*models.LoginEvent](
+			return datastore.SearchFunc[*models.LoginEvent](
 				ctx,
 				scopeLoginEventQuery(ctx, r.Pool().DB(ctx, true)),
 				query,
