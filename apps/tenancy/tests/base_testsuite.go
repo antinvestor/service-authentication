@@ -377,7 +377,15 @@ func (bs *BaseTestSuite) createServiceInternal(
 	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
 	rlsProv.Enable()
 
-	_ = svc.Run(ctx, "")
+	// Frame v2.0.2+ ignores nil driver exits in sendStopError, so NoopDriver
+	// no longer makes Run return immediately. Always run the service in a
+	// goroutine (same pattern as apps/default tests) and stop it in cleanup.
+	go func() {
+		_ = svc.Run(ctx, "")
+	}()
+	// Startups (event registration + queue subscribers) run inside initServer
+	// before ListenAndServe; give that path a beat before emitting work.
+	time.Sleep(200 * time.Millisecond)
 
 	// Sync seeded records to Hydra so SA credentials work for service-to-service auth.
 	// Must happen after migrations and before any OAuth2-authenticated calls.
