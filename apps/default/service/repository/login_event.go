@@ -274,7 +274,9 @@ func (r *loginEventRepository) Search(
 		r.WorkManager(),
 		query,
 		func(ctx context.Context, query *data.SearchQuery) ([]*models.LoginEvent, error) {
-			return datastore.SearchFunc[*models.LoginEvent](
+			// Frame v2.0.2+ moved SearchFunc from datastore → data (shared query
+			// helper used by BaseRepository.Search as well).
+			return data.SearchFunc[*models.LoginEvent](
 				ctx,
 				scopeLoginEventQuery(ctx, r.Pool().DB(ctx, true)),
 				query,
