@@ -201,9 +201,30 @@ func (pb *partitionBusiness) GetPartitionParents(ctx context.Context, request *t
 func (pb *partitionBusiness) CreatePartition(
 	ctx context.Context,
 	request *tenancyv1.CreatePartitionRequest) (*tenancyv1.PartitionObject, error) {
-	tenant, err := pb.tenantRepo.GetByID(ctx, request.GetTenantId())
+	tenantID := strings.TrimSpace(request.GetTenantId())
+	if tenantID == "" {
+		return nil, fmt.Errorf("tenant_id is required")
+	}
+	if strings.TrimSpace(request.GetName()) == "" {
+		return nil, fmt.Errorf("partition name is required")
+	}
+
+	tenant, err := pb.tenantRepo.GetByID(ctx, tenantID)
 	if err != nil {
 		return nil, err
+	}
+
+	parentID := strings.TrimSpace(request.GetParentId())
+	if parentID != "" {
+		// Parent lookup uses the caller's tenancy scope. Cross-tenant parents
+		// either 404 under RLS or fail the explicit tenant match below.
+		parent, parentErr := pb.partitionRepo.GetByID(ctx, parentID)
+		if parentErr != nil {
+			return nil, fmt.Errorf("parent partition not found: %w", parentErr)
+		}
+		if parent.TenantID != tenant.GetID() {
+			return nil, fmt.Errorf("parent partition must belong to the same tenant")
+		}
 	}
 
 	reqProperties := request.GetProperties().AsMap()
@@ -214,7 +235,7 @@ func (pb *partitionBusiness) CreatePartition(
 	delete(reqProperties, partitionpolicy.PropertyAllowAutoAccessSetup)
 
 	partition := &models.Partition{
-		ParentID:    request.GetParentId(),
+		ParentID:    parentID,
 		Name:        request.GetName(),
 		Description: request.GetDescription(),
 		Domain:      domain,
@@ -223,8 +244,11 @@ func (pb *partitionBusiness) CreatePartition(
 	partition.SetAllowAutoAccess(allowAutoAccess)
 
 	partition.GenID(ctx)
+	// Tenant + partition are stamped together. Partitions are self-scoped for
+	// RLS: partition_id equals the partition's own id so child resources
+	// (access, roles, clients, service accounts) can share that key.
 	partition.TenantID = tenant.GetID()
-	partition.PartitionID = tenant.PartitionID
+	partition.PartitionID = partition.GetID()
 
 	// Creating a partition is an administrative write into the target
 	// tenant's scope: the row is stamped with the tenant being extended,

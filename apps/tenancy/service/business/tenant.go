@@ -17,6 +17,7 @@ package business
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
@@ -81,13 +82,20 @@ func (t *tenantBusiness) CreateTenant(
 	ctx context.Context,
 	request *tenancyv1.CreateTenantRequest,
 ) (*tenancyv1.TenantObject, error) {
+	if request == nil {
+		return nil, fmt.Errorf("request is required")
+	}
+	if strings.TrimSpace(request.GetName()) == "" {
+		return nil, fmt.Errorf("tenant name is required")
+	}
+
 	environment := tenantenv.FromProto(request.GetEnvironment())
 	if environment == "" {
 		return nil, fmt.Errorf("tenant environment is required")
 	}
 
 	tenantModel := &models.Tenant{
-		Name:        request.GetName(),
+		Name:        strings.TrimSpace(request.GetName()),
 		Description: request.GetDescription(),
 		Environment: environment,
 		Properties:  request.GetProperties().AsMap(),

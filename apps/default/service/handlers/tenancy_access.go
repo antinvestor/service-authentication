@@ -599,12 +599,12 @@ func (h *AuthServer) ensureLoginEventTenancyAccess(
 		loginEvent.AccessID = accessObj.GetId()
 		changed["access_id"] = struct{}{}
 	}
-	if loginEvent.PartitionID != accessPartition.GetId() {
+	// Tenant and partition are always updated as a pair so login events never
+	// hold a split tenancy context after access resolution.
+	if loginEvent.PartitionID != accessPartition.GetId() || loginEvent.TenantID != accessPartition.GetTenantId() {
 		loginEvent.PartitionID = accessPartition.GetId()
-		changed["partition_id"] = struct{}{}
-	}
-	if loginEvent.TenantID != accessPartition.GetTenantId() {
 		loginEvent.TenantID = accessPartition.GetTenantId()
+		changed["partition_id"] = struct{}{}
 		changed["tenant_id"] = struct{}{}
 	}
 

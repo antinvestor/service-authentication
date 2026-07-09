@@ -37,7 +37,8 @@ func TestBuildUserTokenClaims_IncludesAllRequiredKeys(t *testing.T) {
 	ev.TenantID = "tenant_1"
 	ev.PartitionID = "part_1"
 
-	claims := handlers.BuildUserTokenClaims(ev, "prof_1", "dev_1", []string{"user"})
+	claims, err := handlers.BuildUserTokenClaims(ev, "prof_1", "dev_1", []string{"user"})
+	require.NoError(t, err)
 
 	require.Equal(t, "tenant_1", claims["tenant_id"])
 	require.Equal(t, "part_1", claims["partition_id"])
@@ -48,4 +49,25 @@ func TestBuildUserTokenClaims_IncludesAllRequiredKeys(t *testing.T) {
 	require.Equal(t, "contact_1", claims["contact_id"])
 	require.Equal(t, "access_1", claims["access_id"])
 	require.Equal(t, []string{"user"}, claims["roles"])
+}
+
+func TestBuildUserTokenClaims_RejectsIncompleteTenancyPair(t *testing.T) {
+	ev := &models.LoginEvent{
+		ProfileID: "prof_1",
+		AccessID:  "access_1",
+	}
+	ev.BaseModel = data.BaseModel{}
+	ev.ID = "login_evt_1"
+	ev.TenantID = "tenant_1"
+	// partition_id intentionally missing
+
+	claims, err := handlers.BuildUserTokenClaims(ev, "prof_1", "dev_1", []string{"user"})
+	require.ErrorIs(t, err, handlers.ErrIncompleteTenancyPair)
+	require.Nil(t, claims)
+
+	ev.TenantID = ""
+	ev.PartitionID = "part_1"
+	claims, err = handlers.BuildUserTokenClaims(ev, "prof_1", "dev_1", []string{"user"})
+	require.ErrorIs(t, err, handlers.ErrIncompleteTenancyPair)
+	require.Nil(t, claims)
 }

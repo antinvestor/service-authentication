@@ -90,8 +90,7 @@ type AuthServer struct {
 
 	defaultHydraCli hydra.Hydra
 
-	// Rate limiter cache and config for login attempts
-	rateLimitICache      cache.Cache[string, RateLimitEntry]
+	// Rate limit config for login attempts (counters live in cacheMan)
 	loginRateLimitConfig RateLimitConfig
 
 	// Localization manager for i18n support

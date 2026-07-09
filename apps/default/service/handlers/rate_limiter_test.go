@@ -15,9 +15,14 @@
 package handlers
 
 import (
+	"context"
+	"sync"
 	"testing"
 	"time"
 
+	authconfig "github.com/antinvestor/service-authentication/apps/default/config"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,27 +47,17 @@ func (s *RateLimiterTestSuite) TestHashIP_Length() {
 	s.Len(hash, 64, "SHA256 hex should be 64 chars")
 }
 
-func (s *RateLimiterTestSuite) TestRateLimitCacheKey() {
-	key := rateLimitCacheKey("192.168.1.1")
+func (s *RateLimiterTestSuite) TestRateLimitBucketKey() {
+	now := time.Unix(1_700_000_000, 0).UTC()
+	key := rateLimitBucketKey("192.168.1.1", time.Hour, now)
 	s.Contains(key, rateLimitCachePrefix)
-	s.Len(key, len(rateLimitCachePrefix)+64)
+	s.Contains(key, ":")
 }
 
 func (s *RateLimiterTestSuite) TestDefaultLoginRateLimitConfig() {
 	cfg := DefaultLoginRateLimitConfig()
 	s.Equal(7, cfg.MaxAttempts)
 	s.Equal(time.Hour, cfg.Window)
-}
-
-func (s *RateLimiterTestSuite) TestRateLimitEntry_Fields() {
-	now := time.Now()
-	entry := RateLimitEntry{
-		Attempts:  3,
-		FirstAt:   now,
-		ExpiresAt: now.Add(time.Hour),
-	}
-	s.Equal(3, entry.Attempts)
-	s.Equal(now, entry.FirstAt)
 }
 
 func (s *RateLimiterTestSuite) TestRateLimitResult_Fields() {
@@ -80,4 +75,112 @@ func (s *RateLimiterTestSuite) TestRateLimitResult_Fields() {
 
 func TestRateLimiter(t *testing.T) {
 	suite.Run(t, new(RateLimiterTestSuite))
+}
+
+func newRateLimitTestServer(t *testing.T, maxAttempts int) *AuthServer {
+	t.Helper()
+	cacheMan := cache.NewManager()
+	cacheMan.AddCache("defaultCache", cache.NewInMemoryCache())
+	return &AuthServer{
+		config: &authconfig.AuthenticationConfig{
+			CacheName: "defaultCache",
+		},
+		cacheMan: cacheMan,
+		loginRateLimitConfig: RateLimitConfig{
+			MaxAttempts: maxAttempts,
+			Window:      time.Hour,
+		},
+	}
+}
+
+func TestCheckLoginRateLimit_AllowsUntilMaxThenDenies(t *testing.T) {
+	t.Parallel()
+	h := newRateLimitTestServer(t, 3)
+	ctx := context.Background()
+	ip := "203.0.113.10"
+
+	for i := 1; i <= 3; i++ {
+		result := h.CheckLoginRateLimit(ctx, ip)
+		require.True(t, result.Allowed, "attempt %d should be allowed", i)
+		require.Equal(t, i, result.AttemptsUsed)
+		require.Equal(t, 3-i, result.AttemptsLeft)
+	}
+
+	denied := h.CheckLoginRateLimit(ctx, ip)
+	require.False(t, denied.Allowed)
+	require.Equal(t, 0, denied.AttemptsLeft)
+	require.Greater(t, denied.RetryAfterSec, 0)
+}
+
+func TestCheckLoginRateLimit_ResetClearsWindow(t *testing.T) {
+	t.Parallel()
+	h := newRateLimitTestServer(t, 2)
+	ctx := context.Background()
+	ip := "203.0.113.11"
+
+	require.True(t, h.CheckLoginRateLimit(ctx, ip).Allowed)
+	require.True(t, h.CheckLoginRateLimit(ctx, ip).Allowed)
+	require.False(t, h.CheckLoginRateLimit(ctx, ip).Allowed)
+
+	h.ResetLoginRateLimit(ctx, ip)
+
+	result := h.CheckLoginRateLimit(ctx, ip)
+	require.True(t, result.Allowed)
+	require.Equal(t, 1, result.AttemptsUsed)
+}
+
+func TestCheckLoginRateLimit_FailClosedWithoutCache(t *testing.T) {
+	t.Parallel()
+	h := &AuthServer{
+		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
+	}
+	result := h.CheckLoginRateLimit(context.Background(), "203.0.113.12")
+	require.False(t, result.Allowed, "missing cache must deny, not fail open")
+}
+
+func TestCheckLoginRateLimit_IsolatesKeys(t *testing.T) {
+	t.Parallel()
+	h := newRateLimitTestServer(t, 1)
+	ctx := context.Background()
+
+	require.True(t, h.CheckLoginRateLimit(ctx, "203.0.113.20").Allowed)
+	require.False(t, h.CheckLoginRateLimit(ctx, "203.0.113.20").Allowed)
+	require.True(t, h.CheckLoginRateLimit(ctx, "203.0.113.21").Allowed,
+		"a different IP must have an independent budget")
+}
+
+func TestCheckLoginRateLimit_ConcurrentIncrementsDoNotBypassLimit(t *testing.T) {
+	t.Parallel()
+	const maxAttempts = 20
+	const workers = 50
+
+	h := newRateLimitTestServer(t, maxAttempts)
+	ctx := context.Background()
+	ip := "203.0.113.30"
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		allowed int
+		denied  int
+	)
+
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			result := h.CheckLoginRateLimit(ctx, ip)
+			mu.Lock()
+			if result.Allowed {
+				allowed++
+			} else {
+				denied++
+			}
+			mu.Unlock()
+		}()
+	}
+	wg.Wait()
+
+	require.Equal(t, maxAttempts, allowed, "exactly MaxAttempts should succeed under contention")
+	require.Equal(t, workers-maxAttempts, denied)
 }

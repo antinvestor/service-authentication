@@ -197,12 +197,61 @@ func (s *BusinessTestSuite) TestCreateServiceAccountV2SeparatesRecipientsAndGran
 
 	s.Require().NoError(err)
 	s.NotEmpty(result.GetClientSecret())
+	s.Equal(partition.TenantID, result.GetData().GetTenantId())
+	s.Equal(partition.GetID(), result.GetData().GetPartitionId())
 	s.Equal([]string{"https://api.example.test/profile"}, result.GetData().GetOauthClient().GetConfiguration().GetResourceRecipients())
 	policy, err := deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, result.GetData().GetId())
 	s.Require().NoError(err)
 	s.Require().Len(policy.Grants, 1)
 	s.Equal("service_profile", policy.Grants[0].Namespace)
 	s.Equal([]string{"profile_view"}, policy.Grants[0].Permissions)
+}
+
+func (s *BusinessTestSuite) TestCreateServiceAccountV2_RequiresIdentityFields() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	partition := s.setupTenantAndPartition()
+	ctx = s.WithAuthClaims(ctx, partition.TenantID, partition.GetID(), util.IDString())
+
+	base := func() *tenancyv2.CreateServiceAccountRequest {
+		return &tenancyv2.CreateServiceAccountRequest{
+			PartitionId: partition.GetID(),
+			ProfileId:   util.IDString(),
+			Name:        "sa-name",
+			Type:        "internal",
+			OauthClient: &tenancyv2.OAuthClientConfiguration{
+				GrantTypes:              []string{"client_credentials"},
+				ResourceRecipients:      []string{"https://api.example.test/profile"},
+				TokenEndpointAuthMethod: "client_secret_post",
+			},
+			AuthorizationPolicy: &tenancyv2.ServiceAuthorizationPolicyInput{
+				SchemaVersion: models.AuthorizationPolicySchemaVersion,
+				Grants: []*tenancyv2.ServiceAuthorizationGrant{{
+					Namespace:   "service_profile",
+					Permissions: []string{"profile_view"},
+					Scope:       tenancyv2.AuthorizationScope_AUTHORIZATION_SCOPE_PARTITION_ONLY,
+				}},
+			},
+		}
+	}
+
+	missingPartition := base()
+	missingPartition.PartitionId = ""
+	_, err := deps.AuthContractBusiness.CreateServiceAccount(ctx, missingPartition)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "partition_id")
+
+	missingProfile := base()
+	missingProfile.ProfileId = ""
+	_, err = deps.AuthContractBusiness.CreateServiceAccount(ctx, missingProfile)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "profile_id")
+
+	missingName := base()
+	missingName.Name = "  "
+	_, err = deps.AuthContractBusiness.CreateServiceAccount(ctx, missingName)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "name")
 }
 
 func (s *BusinessTestSuite) TestAuthorizationSchemaFailureRemainsPendingAndFailsReconciliation() {
@@ -275,6 +324,25 @@ func (s *BusinessTestSuite) TestCreateTenant() {
 	s.Require().Equal("Test Tenant", resp.Name)
 	s.Require().Equal("A test tenant", resp.Description)
 	s.Require().Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.GetEnvironment())
+}
+
+func (s *BusinessTestSuite) TestCreateTenant_RequiresNameAndEnvironment() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
+
+	_, err := deps.TenantBusiness.CreateTenant(ctx, &tenancyv1.CreateTenantRequest{
+		Name:        "  ",
+		Environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
+	})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "name")
+
+	_, err = deps.TenantBusiness.CreateTenant(ctx, &tenancyv1.CreateTenantRequest{
+		Name: "Valid Name",
+	})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "environment")
 }
 
 func (s *BusinessTestSuite) TestGetTenant() {
@@ -435,8 +503,56 @@ func (s *BusinessTestSuite) TestCreatePartition() {
 	s.Require().NoError(err)
 	s.NotEmpty(resp.Id)
 	s.Equal("Partition A", resp.Name)
+	s.Equal(tenant.GetID(), resp.GetTenantId(), "partition must belong to the target tenant")
 	s.Equal(false, resp.GetProperties().AsMap()[partitionpolicy.PropertyAllowAutoAccess])
 	s.Equal("https://members.example.com/apply", resp.GetProperties().AsMap()[partitionpolicy.PropertyAccessRequestURI])
+
+	// Stored row must be self-scoped: partition_id == id for RLS child resources.
+	stored, err := deps.PartitionRepo.GetByID(security.SkipTenancyChecksOnClaims(ctx), resp.GetId())
+	s.Require().NoError(err)
+	s.Equal(tenant.GetID(), stored.TenantID)
+	s.Equal(stored.GetID(), stored.PartitionID, "partition_id must self-reference the partition id")
+}
+
+func (s *BusinessTestSuite) TestCreatePartition_RequiresNameAndTenant() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	tenant := s.createTestTenant("CP Validation")
+	ctx = s.WithAuthClaims(ctx, tenant.GetID(), tenant.GetID(), util.IDString())
+
+	_, err := deps.PartitionBusiness.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
+		TenantId: tenant.GetID(),
+		Name:     "  ",
+	})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "name")
+
+	_, err = deps.PartitionBusiness.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
+		Name: "orphan",
+	})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "tenant_id")
+}
+
+func (s *BusinessTestSuite) TestCreatePartition_ParentMustSameTenant() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+
+	tenantA := s.createTestTenant("Parent A")
+	tenantB := s.createTestTenant("Parent B")
+	partitionB := s.createTestPartition(tenantB.GetID())
+
+	// System path so create can resolve parent across tenants for the negative check;
+	// CreatePartition still rejects when parent.TenantID != target tenant.
+	ctx = security.SkipTenancyChecksOnClaims(ctx)
+
+	_, err := deps.PartitionBusiness.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
+		TenantId: tenantA.GetID(),
+		ParentId: partitionB.GetID(),
+		Name:     "cross-tenant-child",
+	})
+	s.Require().Error(err)
+	s.Contains(err.Error(), "same tenant")
 }
 
 func (s *BusinessTestSuite) TestCreatePartition_InvalidTenant() {
@@ -726,6 +842,31 @@ func (s *BusinessTestSuite) TestCreateAccess() {
 	resp, err := deps.AccessBusiness.CreateAccess(ctx, s.newCreateAccessReq(partition.GetID(), profileID))
 	s.Require().NoError(err)
 	s.NotEmpty(resp.GetId())
+	s.Equal(partition.GetID(), resp.GetPartition().GetId())
+	s.Equal(tenant.GetID(), resp.GetPartition().GetTenantId())
+
+	// Access row must carry the full tenancy pair from the partition.
+	stored, err := deps.AccessRepo.GetByID(ctx, resp.GetId())
+	s.Require().NoError(err)
+	s.Equal(tenant.GetID(), stored.TenantID)
+	s.Equal(partition.GetID(), stored.PartitionID)
+	s.Equal(profileID, stored.ProfileID)
+}
+
+func (s *BusinessTestSuite) TestCreateAccess_RequiresPartitionAndProfile() {
+	ctx := s.SuiteCtx
+	deps := s.SuiteDeps
+	tenant := s.createTestTenant("CA Val")
+	partition := s.createTestPartition(tenant.GetID())
+	ctx = s.WithAuthClaims(ctx, tenant.GetID(), partition.GetID(), util.IDString())
+
+	_, err := deps.AccessBusiness.CreateAccess(ctx, s.newCreateAccessReq(partition.GetID(), ""))
+	s.Require().Error(err)
+	s.Contains(err.Error(), "profile_id")
+
+	_, err = deps.AccessBusiness.CreateAccess(ctx, s.newCreateAccessReq("", util.IDString()))
+	s.Require().Error(err)
+	s.Contains(err.Error(), "partition_id")
 }
 
 func (s *BusinessTestSuite) TestCreateAccess_Idempotent() {

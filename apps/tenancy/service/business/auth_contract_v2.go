@@ -277,9 +277,27 @@ func (b *authContractBusiness) CreateServiceAccount(
 	ctx context.Context,
 	request *tenancyv2.CreateServiceAccountRequest,
 ) (*tenancyv2.CreateServiceAccountResponse, error) {
+	if request == nil {
+		return nil, errors.New("request is required")
+	}
+	if strings.TrimSpace(request.GetPartitionId()) == "" {
+		return nil, errors.New("partition_id is required")
+	}
+	if strings.TrimSpace(request.GetProfileId()) == "" {
+		return nil, errors.New("profile_id is required")
+	}
+	if strings.TrimSpace(request.GetName()) == "" {
+		return nil, errors.New("service account name is required")
+	}
+
 	partition, err := b.partitionRepo.GetByID(ctx, request.GetPartitionId())
 	if err != nil {
 		return nil, fmt.Errorf("target partition not found: %w", err)
+	}
+	// SA rows and their OAuth clients always inherit tenant_id + partition_id
+	// from the target partition as a pair.
+	if partition.TenantID == "" || partition.GetID() == "" {
+		return nil, errors.New("partition has incomplete tenancy context")
 	}
 	if request.GetType() != "internal" && request.GetType() != "external" {
 		return nil, errors.New("service account type must be internal or external")

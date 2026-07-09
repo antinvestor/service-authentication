@@ -17,9 +17,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	authconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
+	"github.com/pitabwire/frame/v2/cache"
+	"github.com/stretchr/testify/require"
 )
 
 // These tests cover the input-validation perimeter of the Google FedCM
@@ -47,13 +48,20 @@ func newGoogleFedCMRequest(t *testing.T, body any, applyHeaders func(*http.Reque
 
 // fedcmEndpointHarness returns the minimal AuthServer surface needed to
 // exercise the endpoint's early-return paths. Steady-state assumes:
-//   - no rate-limit cache → CheckLoginRateLimit auto-allows
+//   - in-memory rate-limit cache so CheckLoginRateLimit is fail-closed-safe
 //   - noop analytics (telemetry.New with empty key) so emit calls don't panic
 //   - no LoginEventRepo so any test that needs the cache lookup would
 //     crash; tests must short-circuit before that.
 func fedcmEndpointHarness() *AuthServer {
+	cacheMan := cache.NewManager()
+	cacheMan.AddCache("defaultCache", cache.NewInMemoryCache())
 	return &AuthServer{
 		analytics: telemetry.New(context.Background(), "", ""),
+		config: &authconfig.AuthenticationConfig{
+			CacheName: "defaultCache",
+		},
+		cacheMan:             cacheMan,
+		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
 	}
 }
 
