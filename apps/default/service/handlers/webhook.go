@@ -418,16 +418,19 @@ func buildServiceAccountClaims(
 		return nil, ErrIncompleteTenancyPair
 	}
 
+	// Flat claims only — Hydra already nests the whole access_token map under
+	// JWT "ext" when mirror_top_level_claims is on. Nesting another "ext" here
+	// produced ext.ext.service_account_id and broke permission registration
+	// ownership checks (403). Keep service_account_id at the same level as
+	// profile_id so Frame claims.Ext["service_account_id"] resolves.
 	claims := map[string]any{
-		"tenant_id":      tenantID,
-		"partition_id":   partitionID,
-		"roles":          roles,
-		"profile_id":     sa.ProfileID,
-		"session_id":     loginEventID,
-		"login_event_id": loginEventID,
-		"ext": map[string]any{
-			"service_account_id": sa.ServiceAccountID,
-		},
+		"tenant_id":          tenantID,
+		"partition_id":       partitionID,
+		"roles":              roles,
+		"profile_id":         sa.ProfileID,
+		"session_id":         loginEventID,
+		"login_event_id":     loginEventID,
+		"service_account_id": sa.ServiceAccountID,
 	}
 	if accessID != "" {
 		claims["access_id"] = accessID

@@ -163,11 +163,34 @@ func validatePermissionManifestOwner(
 		return fmt.Errorf("load permission manifest owner: %w", err)
 	}
 	if owner.Type != "internal" || owner.State == int32(commonv1.STATE_DELETED) ||
-		owner.PartitionID != authz.RootPartitionID ||
-		strings.TrimSpace(owner.Name) != namespace {
+		owner.PartitionID != authz.RootPartitionID {
+		return fmt.Errorf("%w: service account %q cannot own %q", ErrPermissionManifestOwner, owner.Name, namespace)
+	}
+	// Ownership is name-or-client identity for the namespace. SA.Name is the
+	// canonical namespace id (e.g. service_profile). ClientID uses hyphens
+	// (service-profile); both must resolve to the same permission namespace.
+	if !serviceAccountOwnsNamespace(owner, namespace) {
 		return fmt.Errorf("%w: service account %q cannot own %q", ErrPermissionManifestOwner, owner.Name, namespace)
 	}
 	return nil
+}
+
+// serviceAccountOwnsNamespace reports whether the SA is the declared owner of
+// the permission namespace. Matching is by SA.Name (preferred) or by normalising
+// OAuth client_id hyphens to underscores (service-profile → service_profile).
+func serviceAccountOwnsNamespace(owner *models.ServiceAccount, namespace string) bool {
+	if owner == nil {
+		return false
+	}
+	namespace = strings.TrimSpace(namespace)
+	if namespace == "" {
+		return false
+	}
+	if strings.TrimSpace(owner.Name) == namespace {
+		return true
+	}
+	clientAsNS := strings.ReplaceAll(strings.TrimSpace(owner.ClientID), "-", "_")
+	return clientAsNS == namespace
 }
 
 func normalizePermissionManifest(manifest PermissionManifest) (PermissionManifest, error) {
