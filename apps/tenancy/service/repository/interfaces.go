@@ -32,6 +32,8 @@ type PartitionRepository interface {
 	GetChildren(ctx context.Context, id string) ([]*models.Partition, error)
 	GetParents(ctx context.Context, id string) ([]*models.Partition, error)
 	CountByTenantID(ctx context.Context, tenantID string) (int64, error)
+	// ListAll returns every partition (used by authz bootstrap).
+	ListAll(ctx context.Context) ([]*models.Partition, error)
 }
 type PartitionRoleRepository interface {
 	datastore.BaseRepository[*models.PartitionRole]
@@ -82,6 +84,8 @@ type ServiceAccountRepository interface {
 	GetByClientID(ctx context.Context, clientID string) (*models.ServiceAccount, error)
 	GetByClientRef(ctx context.Context, clientRef string) (*models.ServiceAccount, error)
 	ListByPartition(ctx context.Context, partitionID string) ([]*models.ServiceAccount, error)
+	// ListAll returns every service account (used by authz bootstrap).
+	ListAll(ctx context.Context) ([]*models.ServiceAccount, error)
 	CountByPartitionID(ctx context.Context, partitionID string) (int64, error)
 }
 

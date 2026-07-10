@@ -94,6 +94,15 @@ func (r *serviceAccountRepository) ListByPartition(
 	return accounts, nil
 }
 
+func (r *serviceAccountRepository) ListAll(ctx context.Context) ([]*models.ServiceAccount, error) {
+	var accounts []*models.ServiceAccount
+	err := r.Pool().DB(ctx, true).Find(&accounts).Error
+	if err != nil {
+		return nil, err
+	}
+	return accounts, nil
+}
+
 func (r *serviceAccountRepository) CountByPartitionID(ctx context.Context, partitionID string) (int64, error) {
 	var count int64
 	err := r.Pool().DB(ctx, true).Model(&models.ServiceAccount{}).Where("partition_id = ?", partitionID).Count(&count).Error

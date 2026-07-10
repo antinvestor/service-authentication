@@ -109,8 +109,6 @@ func main() {
 
 	// Bootstrap root super-user authorization after migration only.
 	// This writes Keto tuples for migration-seeded root owners/admins.
-	// Regular pods skip this — tuples persist in Keto and don't need
-	// re-provisioning on every restart.
 	if isMigration {
 		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
 			AccessRepo:           partSrv.AccessRepo,
@@ -122,6 +120,25 @@ func main() {
 			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
 		}
 	}
+
+	// Service-bot Plane-1 access must self-heal on every start. Without
+	// tenancy_access#service grants (and parent→child inheritance), internal
+	// services fail with "cannot service on tenancy_access:<tenant>/<partition>"
+	// during user login when the request carries a non-root partition.
+	if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
+		ServiceAccountRepo: partSrv.ServiceAccountRepo,
+		PartitionRepo:      partSrv.PartitionRepo,
+		Authorizer:         auth,
+	}); botErr != nil {
+		// Non-fatal on regular pods so a temporary Keto outage does not brick
+		// the API; migration still fails closed so deploys don't go green
+		// without authz.
+		if isMigration {
+			util.Log(ctx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
+		}
+		util.Log(ctx).WithError(botErr).Error("service bot tenancy access bootstrap failed; will retry on next restart")
+	}
+
 	if reconcileErr := policySync.ReconcilePending(ctx); reconcileErr != nil {
 		util.Log(ctx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
 	}
