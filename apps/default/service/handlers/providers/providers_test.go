@@ -471,6 +471,7 @@ func (suite *ProvidersTestSuite) TestGoogleOIDCProvider_AuthCodeURL_WithoutNonce
 	assert.Contains(t, url, "state=state-val")
 	assert.Contains(t, url, "code_challenge=challenge-val")
 	assert.Contains(t, url, "code_challenge_method=S256")
+	assert.Contains(t, url, "prompt=select_account")
 	assert.NotContains(t, url, "nonce=")
 }
 

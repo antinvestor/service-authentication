@@ -163,8 +163,9 @@ func TestGoogleFedCMScriptDoesNotAutoEscalateToOAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	js := string(source)
-	require.Contains(t, js, `await runFlow(opts, "optional", "auto_prompt");`)
-	// Auto-prompt must stay FedCM-only; OAuth starts only after an explicit click.
+	require.Contains(t, js, `await runFlow(opts, "optional", "auto_prompt", "");`)
+	// Explicit click prefers FedCM button-mode account picker, then OAuth.
+	require.Contains(t, js, `"button"`)
 	require.Contains(t, js, "fedcm_google_fallback_to_oauth")
 	require.Contains(t, js, "oauthRedirectFallback")
 	require.Contains(t, js, `Accept: "application/json"`)
