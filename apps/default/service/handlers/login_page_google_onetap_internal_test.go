@@ -50,30 +50,28 @@ func baseLoginPayload() map[string]any {
 	}
 }
 
-func TestLoginPageWiresGoogleOneTapWhenEnabled(t *testing.T) {
+func TestLoginPageWiresGoogleOAuthWhenEnabled(t *testing.T) {
 	payload := baseLoginPayload()
 	payload["enableGoogleLogin"] = true
 
 	html := renderLoginPage(t, payload)
 
-	// The Google FedCM script is loaded and the install() call is present with
-	// the Google web client ID, the per-login nonce, and the login event id.
-	require.Contains(t, html, "/static/js/fedcm_google.js")
+	// Google OAuth script is loaded; install() binds the button with the
+	// Google web client ID (kept for config parity) and login event id.
+	require.Contains(t, html, "/static/js/fedcm_google.js?v=2.0.5")
 	require.Contains(t, html, "stawiGoogleFedCM.install")
 	require.Contains(t, html, "web-client.apps.googleusercontent.com")
-	require.Contains(t, html, "nonce-xyz")
 	require.Contains(t, html, "loginEventId: \"le-123\"")
 
-	// The Google form is FedCM-managed and still carries its OAuth-redirect
-	// fallback action so non-FedCM browsers keep working.
+	// Form posts to classic OAuth start (JSON redirect handled by JS).
 	require.Contains(t, html, "data-fedcm-google")
 	require.Contains(t, html, "/s/social/login/le-123?provider=google")
 
-	// The first-party FedCM probe still runs first (returning-user path).
+	// First-party FedCM probe still runs first (our IdP, not Google).
 	require.Contains(t, html, "stawiFedCM.probeAndComplete")
 }
 
-func TestLoginPageOmitsGoogleOneTapWhenDisabled(t *testing.T) {
+func TestLoginPageOmitsGoogleOAuthWhenDisabled(t *testing.T) {
 	payload := baseLoginPayload()
 	payload["enableGoogleLogin"] = false
 
@@ -89,10 +87,9 @@ func TestLoginPageOmitsGoogleOneTapWhenDisabled(t *testing.T) {
 	require.Contains(t, html, "stawiFedCM.probeAndComplete")
 }
 
-func TestLoginPageGoogleOneTapClientIDIsGoogleNotHydra(t *testing.T) {
-	// Regression guard: the FedCM clientId passed to Google must be the Google
-	// web client ID, never the Antinvestor/Hydra ClientID (which is used only
-	// for the first-party /fedcm/config.json probe).
+func TestLoginPageGoogleInstallClientIDIsGoogleNotHydra(t *testing.T) {
+	// Regression guard: install() clientId must be the Google web client ID,
+	// never the Hydra ClientID (used only for first-party /fedcm/config.json).
 	payload := baseLoginPayload()
 	payload["enableGoogleLogin"] = true
 	payload["GoogleClientID"] = "GOOGLE-AUD"
@@ -100,9 +97,6 @@ func TestLoginPageGoogleOneTapClientIDIsGoogleNotHydra(t *testing.T) {
 
 	html := renderLoginPage(t, payload)
 
-	// Scope to the Google install() call: its clientId must be the Google
-	// audience, not the Hydra client (which legitimately appears in the
-	// first-party probe elsewhere on the page).
 	idx := strings.Index(html, "stawiGoogleFedCM.install")
 	require.GreaterOrEqual(t, idx, 0, "google install call must be present")
 	installBlock := html[idx:]
@@ -157,20 +151,39 @@ func TestSetupLoginOptionsRequiresCompleteGoogleConfiguration(t *testing.T) {
 	}
 }
 
-func TestGoogleFedCMScriptDoesNotAutoEscalateToOAuth(t *testing.T) {
+func TestGoogleScriptIsOAuthOnlyNoFedCM(t *testing.T) {
 	path := filepath.Join("..", "..", "static", "js", "fedcm_google.js")
 	source, err := os.ReadFile(path)
 	require.NoError(t, err)
 
 	js := string(source)
-	// Auto-prompt is FedCM-only and non-blocking; explicit click is OAuth-primary.
-	require.Contains(t, js, `source: "auto_prompt"`)
+	// Pure OAuth: no Google FedCM runtime (strip comments before negative asserts).
+	codeOnly := stripJSComments(js)
+	require.NotContains(t, codeOnly, "navigator.credentials.get")
+	require.NotContains(t, codeOnly, "IdentityCredential")
+	require.NotContains(t, codeOnly, "auto_prompt")
+	require.NotContains(t, codeOnly, "gsi/fedcm.json")
+	require.NotContains(t, codeOnly, "fedcm-complete")
+	// Click path: JSON OAuth start with complete authorize URL validation.
 	require.Contains(t, js, "startGoogleOAuth")
-	require.Contains(t, js, `path: "oauth_primary"`)
+	require.Contains(t, js, `path: "oauth_only"`)
 	require.Contains(t, js, `Accept: "application/json"`)
 	require.Contains(t, js, "isCompleteGoogleAuthorizeURL")
-	require.NotContains(t, js, "btn.click()")
-	require.NotContains(t, js, "fedcm_google_auto_escalate")
-	// Click must not await FedCM (that hung production buttons).
-	require.NotContains(t, js, `source: "click"`)
+	require.Contains(t, codeOnly, "response_type")
+	require.NotContains(t, codeOnly, "btn.click()")
+	require.NotContains(t, codeOnly, "fedcm_google_auto_escalate")
+}
+
+// stripJSComments removes // line comments so negative assertions do not
+// match explanatory prose in the file header.
+func stripJSComments(src string) string {
+	var b strings.Builder
+	for _, line := range strings.Split(src, "\n") {
+		if i := strings.Index(line, "//"); i >= 0 {
+			line = line[:i]
+		}
+		b.WriteString(line)
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
