@@ -24,6 +24,9 @@ Hydra may leave wire `sub=client_id` for `client_credentials`; Frame normalizes 
 in-process subject is always `profile_id`. Full write-up:
 [`docs/IDENTITY_AND_AUTHORIZATION.md`](docs/IDENTITY_AND_AUTHORIZATION.md).
 
+Permission namespace registration (secure M2M, ownership-bound):
+[`docs/PERMISSION_REGISTRATION.md`](docs/PERMISSION_REGISTRATION.md).
+
 ## Architecture
 
 ```

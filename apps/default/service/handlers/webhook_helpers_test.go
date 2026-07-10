@@ -367,9 +367,12 @@ func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaimsIncludesStableIde
 	}, "access-1", []string{"internal"})
 	s.Require().NoError(err)
 
-	ext, ok := claims["ext"].(map[string]any)
-	s.Require().True(ok)
-	s.Equal("service-account-1", ext["service_account_id"])
+	// Flat service_account_id — must not nest under "ext" (Hydra already nests
+	// the whole access_token map under JWT ext).
+	s.Equal("service-account-1", claims["service_account_id"])
+	_, hasNestedExt := claims["ext"]
+	s.False(hasNestedExt, "must not double-nest under ext")
+	s.Equal("profile-1", claims["profile_id"])
 	s.Equal("tenant-1", claims["tenant_id"])
 	s.Equal("partition-1", claims["partition_id"])
 }

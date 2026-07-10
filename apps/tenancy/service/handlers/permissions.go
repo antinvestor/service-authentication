@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
@@ -62,11 +63,19 @@ func (prtSrv *TenancyServer) NewPermissionRegistrationHandler() http.Handler {
 
 // registerPermissionManifest registers an authenticated service-owned
 // permission manifest and triggers generation reconciliation.
+//
+// Security: requires a valid internal service-account token (AuthenticationMiddleware
+// already verified JWT). The caller must present service_account_id in claims and
+// that SA must own the namespace (internal, root partition, name/client matches).
 func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logger := util.Log(ctx)
 
 	claims := security.ClaimsFromContext(ctx)
+	if claims == nil || !claims.IsInternalSystem() {
+		http.Error(rw, "internal service-account token is required", http.StatusForbidden)
+		return
+	}
 	ownerServiceAccountID := serviceAccountIDFromClaims(claims)
 	if ownerServiceAccountID == "" {
 		http.Error(rw, "service-account identity is required", http.StatusForbidden)
@@ -137,12 +146,41 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 	}
 }
 
+// serviceAccountIDFromClaims extracts the registering SA id from JWT claims.
+//
+// Preferred shape (after token-hook fix): claims.Ext["service_account_id"] or a
+// top-level claim when mirrored. Legacy tokens nested the id under Ext["ext"]
+// because buildServiceAccountClaims used to embed a nested "ext" map inside
+// Hydra access-token extras (which Hydra already nests under "ext").
 func serviceAccountIDFromClaims(claims *security.AuthenticationClaims) string {
-	if claims == nil || claims.Ext == nil {
+	if claims == nil {
 		return ""
 	}
-	serviceAccountID, _ := claims.Ext["service_account_id"].(string)
-	return serviceAccountID
+	if id := stringClaim(claims.Ext, "service_account_id"); id != "" {
+		return id
+	}
+	// Legacy double-nested shape: ext.ext.service_account_id
+	if nested, ok := claims.Ext["ext"].(map[string]any); ok {
+		if id := stringClaim(nested, "service_account_id"); id != "" {
+			return id
+		}
+	}
+	return ""
+}
+
+func stringClaim(m map[string]any, key string) string {
+	if m == nil {
+		return ""
+	}
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(s)
 }
 
 // ListServiceNamespaces implements the Connect RPC to list all registered service namespaces.

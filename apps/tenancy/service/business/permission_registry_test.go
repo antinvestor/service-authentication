@@ -17,8 +17,27 @@ package business
 import (
 	"testing"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/stretchr/testify/require"
 )
+
+func TestServiceAccountOwnsNamespace(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, serviceAccountOwnsNamespace(&models.ServiceAccount{
+		Name:     "service_profile",
+		ClientID: "service-profile",
+	}, "service_profile"))
+	require.True(t, serviceAccountOwnsNamespace(&models.ServiceAccount{
+		Name:     "other",
+		ClientID: "service-profile",
+	}, "service_profile"), "client_id hyphen form must match underscore namespace")
+	require.False(t, serviceAccountOwnsNamespace(&models.ServiceAccount{
+		Name:     "service_payment",
+		ClientID: "service-payment",
+	}, "service_profile"))
+	require.False(t, serviceAccountOwnsNamespace(nil, "service_profile"))
+}
 
 func TestNormalizePermissionManifest(t *testing.T) {
 	t.Parallel()
