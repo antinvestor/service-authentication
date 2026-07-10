@@ -57,6 +57,12 @@ const SessionKeyLoginEventID = "login-event-id"
 
 // updateTenancyForLoginEvent enriches the login event with partition/tenant info.
 // This is designed to run asynchronously to avoid blocking the login response.
+//
+// Resolution order:
+//  1. Tenancy service GetOAuthClient → partition (preferred, full tenancy graph)
+//  2. Hydra OAuth2 client metadata tenant_id/partition_id (fallback when tenancy
+//     ReBAC denies service-authentication, which would otherwise break social
+//     login at SocialLoginCallbackEndpoint with "unable to resolve tenancy")
 func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventID string) {
 	log := util.Log(ctx).WithField("login_event_id", loginEventID)
 	start := time.Now()
@@ -73,15 +79,35 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 		return
 	}
 
+	source := "tenancy_service"
 	partitionObj, err := h.resolvePartitionByClientID(ctx, loginEvt.ClientID)
-	if err != nil {
-		log.WithError(err).WithField("client_id", loginEvt.ClientID).
-			Warn("partition lookup failed for login event enrichment")
-		return
+	if err == nil && partitionObj != nil {
+		loginEvt.PartitionID = partitionObj.GetId()
+		loginEvt.TenantID = partitionObj.GetTenantId()
+	} else {
+		if err != nil {
+			log.WithError(err).WithField("client_id", loginEvt.ClientID).
+				Warn("partition lookup failed for login event enrichment; trying Hydra client metadata")
+		}
+		tenantID, partitionID, metaErr := h.tenancyIDsFromHydraClient(ctx, loginEvt.ClientID)
+		if metaErr != nil {
+			log.WithError(metaErr).WithField("client_id", loginEvt.ClientID).
+				Warn("hydra client metadata tenancy fallback failed")
+			return
+		}
+		loginEvt.TenantID = tenantID
+		loginEvt.PartitionID = partitionID
+		source = "hydra_client_metadata"
 	}
 
-	loginEvt.PartitionID = partitionObj.GetId()
-	loginEvt.TenantID = partitionObj.GetTenantId()
+	if !ValidTenancyPair(loginEvt.TenantID, loginEvt.PartitionID) {
+		log.WithFields(map[string]any{
+			"client_id":    loginEvt.ClientID,
+			"tenant_id":    loginEvt.TenantID,
+			"partition_id": loginEvt.PartitionID,
+		}).Warn("resolved incomplete tenancy pair for login event")
+		return
+	}
 
 	if err = h.setLoginEventToCache(ctx, loginEvt); err != nil {
 		log.WithError(err).Error("failed to update login event cache with partition info")
@@ -91,6 +117,7 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 	log.WithFields(map[string]any{
 		"partition_id": loginEvt.PartitionID,
 		"tenant_id":    loginEvt.TenantID,
+		"source":       source,
 		"duration_ms":  time.Since(start).Milliseconds(),
 	}).Debug("login event enriched with partition info")
 }
