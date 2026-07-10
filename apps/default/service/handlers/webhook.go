@@ -347,15 +347,34 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 	return json.NewEncoder(rw).Encode(hookResponse)
 }
 
-// writeTokenHookResponseWithSubject writes a token enrichment response that also
-// overrides the JWT sub claim. For client_credentials grants Hydra sets sub to
-// the client_id; this allows the webhook to correct it to the profile_id.
+// writeTokenHookResponseWithSubject writes a token enrichment response.
+//
+// Important (Hydra v2+): Ory Hydra cannot override the JWT "sub" claim from the
+// token hook for any grant type — including client_credentials. For machine
+// tokens, sub remains the OAuth2 client_id. The optional top-level "subject"
+// field is accepted for forward compatibility but is ignored by Hydra today.
+//
+// Therefore:
+//   - Access-token claims carry profile_id / tenant_id / roles / etc.
+//   - Keto Plane-1/2 subjects for service accounts MUST use client_id (JWT sub),
+//     not profile_id. See apps/tenancy SA sync + service bot bootstrap.
+//
+// The subject argument is still recorded as the intended logical identity
+// (profile_id) for logs and any future Hydra support.
 func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
+	if claims != nil && subject != "" {
+		// Ensure profile_id is always present in token extras even if callers
+		// forget to put it in claims — it is the durable SA identity for audit.
+		if _, ok := claims["profile_id"]; !ok {
+			claims["profile_id"] = subject
+		}
+	}
 	hookResponse := map[string]any{
 		"session": map[string]any{
 			"access_token": claims,
 			"id_token":     claims,
 		},
+		// Hydra ignores this today; kept for documentation/forward-compat.
 		"subject": subject,
 	}
 	rw.Header().Set("Content-Type", "application/json")

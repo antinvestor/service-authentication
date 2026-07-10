@@ -35,21 +35,32 @@ type ServiceBotTenancyDeps struct {
 }
 
 // EnsureServiceBotTenancyAccess writes the Keto tuples that let internal
-// service bots operate across every tenant/partition:
+// service bots operate across every tenant/partition.
 //
-//  1. tenancy_access:<tenant>/<partition>#service ← profile_user:<sa.profile_id>
+// Identity model (critical):
+//
+//	Ory Hydra cannot override the JWT "sub" claim for client_credentials tokens
+//	(sub is always the OAuth2 client_id). Frame's TenancyAccessChecker checks
+//	Keto with subject_id = JWT sub. Therefore SA Plane-1 subjects MUST be the
+//	Hydra client_id (e.g. "service-authentication"), not the profile_id.
+//
+// Tuples written:
+//
+//  1. tenancy_access:<tenant>/<partition>#service ← <sa.client_id>
 //     for every service account × every partition (including root)
 //  2. tenancy_access:<child>#service ← tenancy_access:<parent>#service
 //     for every parent→child partition edge (inheritance for future partitions)
+//
+// Profile_id is dual-written as a secondary subject when present so any
+// caller that still checks profile identity continues to work.
 //
 // Cross-tenant product partitions (e.g. opportunities) are not descendants of
 // the platform root path, so inheritance alone is insufficient — we grant
 // explicit service access on each known partition.
 //
-// Without these grants, service-authentication fails Plane-1 checks when a
-// login sets request tenancy to a product partition:
+// Without these grants, service-authentication fails Plane-1 checks:
 //
-//	permission_denied: cannot service on tenancy_access:<tenant>/<partition>
+//	permission_denied: service-authentication cannot service on tenancy_access:…
 //
 // Idempotent and safe to run on every tenancy pod start.
 func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDeps) error {
@@ -73,8 +84,8 @@ func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDe
 		return fmt.Errorf("service bot bootstrap: list partitions: %w", err)
 	}
 
-	profiles, paths := collectServiceBotProfilesAndPaths(accounts, partitions)
-	tuples := buildServiceBotTenancyTuples(profiles, paths, partitions)
+	subjects, paths := collectServiceBotSubjectsAndPaths(accounts, partitions)
+	tuples := buildServiceBotTenancyTuples(subjects, paths, partitions)
 
 	if len(tuples) == 0 {
 		logger.Warn("no service bot tenancy tuples to write")
@@ -87,17 +98,32 @@ func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDe
 
 	logger.WithFields(map[string]any{
 		"service_accounts": len(accounts),
-		"bot_profiles":     len(profiles),
+		"bot_subjects":     len(subjects),
 		"partition_paths":  len(paths),
 		"tuples_written":   len(tuples),
 	}).Info("service bot tenancy access bootstrap complete")
 	return nil
 }
 
-func collectServiceBotProfilesAndPaths(
+// serviceAccountKetoSubject returns the identity used in Keto checks for a
+// service account. Hydra sets JWT sub to the OAuth2 client_id for
+// client_credentials grants and does not allow the token hook to override it,
+// so client_id is the primary subject. Profile_id is a fallback when client_id
+// has not been denormalised yet.
+func serviceAccountKetoSubject(sa *models.ServiceAccount) string {
+	if sa == nil {
+		return ""
+	}
+	if clientID := strings.TrimSpace(sa.ClientID); clientID != "" {
+		return clientID
+	}
+	return strings.TrimSpace(sa.ProfileID)
+}
+
+func collectServiceBotSubjectsAndPaths(
 	accounts []*models.ServiceAccount,
 	partitions []*models.Partition,
-) (profiles map[string]struct{}, paths map[string]struct{}) {
+) (subjects map[string]struct{}, paths map[string]struct{}) {
 	paths = map[string]struct{}{
 		fmt.Sprintf("%s/%s", authz.RootTenantID, authz.RootPartitionID): {},
 	}
@@ -112,35 +138,39 @@ func collectServiceBotProfilesAndPaths(
 		paths[fmt.Sprintf("%s/%s", tenantID, p.ID)] = struct{}{}
 	}
 
-	profiles = make(map[string]struct{}, len(accounts))
+	subjects = make(map[string]struct{}, len(accounts)*2)
 	for _, sa := range accounts {
 		if sa == nil {
 			continue
 		}
-		profileID := strings.TrimSpace(sa.ProfileID)
-		if profileID == "" {
-			continue
+		// Primary: JWT sub (client_id). Secondary: profile_id for dual-write.
+		for _, subject := range []string{
+			strings.TrimSpace(sa.ClientID),
+			strings.TrimSpace(sa.ProfileID),
+		} {
+			if subject != "" {
+				subjects[subject] = struct{}{}
+			}
 		}
-		profiles[profileID] = struct{}{}
 		tenantID := strings.TrimSpace(sa.TenantID)
 		partitionID := strings.TrimSpace(sa.PartitionID)
 		if tenantID != "" && partitionID != "" {
 			paths[fmt.Sprintf("%s/%s", tenantID, partitionID)] = struct{}{}
 		}
 	}
-	return profiles, paths
+	return subjects, paths
 }
 
 func buildServiceBotTenancyTuples(
-	profiles map[string]struct{},
+	subjects map[string]struct{},
 	paths map[string]struct{},
 	partitions []*models.Partition,
 ) []security.RelationTuple {
-	tuples := make([]security.RelationTuple, 0, len(profiles)*len(paths)+len(partitions))
+	tuples := make([]security.RelationTuple, 0, len(subjects)*len(paths)+len(partitions))
 
-	for profileID := range profiles {
+	for subject := range subjects {
 		for path := range paths {
-			tuples = append(tuples, authz.BuildServiceAccessTuple(path, profileID))
+			tuples = append(tuples, authz.BuildServiceAccessTuple(path, subject))
 		}
 	}
 
