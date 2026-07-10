@@ -1,34 +1,26 @@
 // apps/default/static/js/fedcm_google.js
 //
-// Google sign-in on /s/login.
+// Google sign-in on /s/login — classic OAuth only (v2.0.5).
 //
-// DESIGN (v2.0.4) — explicit click is OAuth-primary:
+// Why FedCM is disabled for Google:
+//   Production screencast (2026-07-10) showed Google's FedCM account picker
+//   ("Sign in to stawi.org with google.com") → "Verifying…" → popup to
+//   accounts.google.com/signin/oauth/error with
+//   "Required parameter is missing: response_type" (Error 400: invalid_request).
+//   That popup is Google's FedCM→OAuth escalation, not our authorize URL.
+//   Server-built OAuth (response_type=code + prompt=select_account) is reliable.
 //
-//   Why not FedCM on click?
-//   Browser repro on production showed navigator.credentials.get() either
-//   hanging or erroring ("Not signed in with the identity provider") and
-//   never reaching /s/social/login. Users then saw broken Google error pages
-//   (e.g. missing response_type) or infinite spinner. Classic OAuth with a
-//   server-built authorize URL is the reliable path.
+// Click path:
+//   POST /s/social/login/{id}?provider=google  Accept: application/json
+//   → { redirect_url: "https://accounts.google.com/o/oauth2/v2/auth?...&response_type=code&..." }
+//   → window.location.assign(redirect_url)  (full-page navigation)
 //
-//   Click path:
-//     POST /s/social/login/{id}?provider=google  Accept: application/json
-//     → { redirect_url: "https://accounts.google.com/o/oauth2/v2/auth?...&response_type=code&prompt=select_account&..." }
-//     → window.location.assign(redirect_url)
-//
-//   Auto-prompt path (optional, non-blocking):
-//     FedCM mediation:optional for returning users only. Never blocks the
-//     Google button. Never auto-escalates to multi-page OAuth.
-//
+// No auto-prompt. No navigator.credentials.get() for Google.
 // Server contract: ProviderLoginEndpointV2 returns JSON when Accept includes
 // application/json (avoids opaque cross-origin Location on 303→Google).
 (function () {
   "use strict";
 
-  var GOOGLE_FEDCM_CONFIG = "https://accounts.google.com/gsi/fedcm.json";
-  var COMPLETE_ENDPOINT = "/s/social/google/fedcm-complete";
-  // Separate flags so auto-prompt cannot block explicit OAuth click.
-  var autoPromptInFlight = false;
   var clickInFlight = false;
 
   function track(event, props) {
@@ -37,16 +29,6 @@
         window.stawiTrack(event, props || {});
       }
     } catch (_e) {}
-  }
-
-  function fedcmSupported() {
-    return (
-      typeof window !== "undefined" &&
-      "IdentityCredential" in window &&
-      navigator &&
-      navigator.credentials &&
-      typeof navigator.credentials.get === "function"
-    );
   }
 
   function isSafeRedirect(raw) {
@@ -88,81 +70,6 @@
     }
   }
 
-  async function attemptGoogleFedCM(opts, mediation) {
-    try {
-      var cred = await navigator.credentials.get({
-        identity: {
-          context: "signin",
-          providers: [
-            {
-              configURL: GOOGLE_FEDCM_CONFIG,
-              clientId: opts.clientId,
-              params: {nonce: opts.nonce},
-            },
-          ],
-        },
-        mediation: mediation || "optional",
-      });
-      if (cred && typeof cred.token === "string" && cred.token.length > 0) {
-        return cred.token;
-      }
-      return null;
-    } catch (_err) {
-      return null;
-    }
-  }
-
-  async function sendCompletion(opts, idToken) {
-    try {
-      var res = await fetch(COMPLETE_ENDPOINT, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          login_event_id: opts.loginEventId,
-          id_token: idToken,
-        }),
-      });
-      if (!res.ok) return null;
-      var body = await res.json();
-      var redirect = body && body.redirect_url;
-      if (isSafeRedirect(redirect)) return redirect;
-      return null;
-    } catch (_err) {
-      return null;
-    }
-  }
-
-  // Silent/returning-user path only. Must never block the Google button.
-  async function autoPrompt(opts) {
-    if (!fedcmSupported() || autoPromptInFlight || clickInFlight) return;
-    autoPromptInFlight = true;
-    try {
-      track("fedcm_google_attempt", {
-        mediation: "optional",
-        source: "auto_prompt",
-        login_event_id: opts.loginEventId,
-      });
-      var idToken = await attemptGoogleFedCM(opts, "optional");
-      if (!idToken) {
-        track("fedcm_google_no_token", { source: "auto_prompt" });
-        return;
-      }
-      var redirect = await sendCompletion(opts, idToken);
-      if (!redirect) {
-        track("fedcm_google_server_rejected", { source: "auto_prompt" });
-        return;
-      }
-      track("fedcm_google_redirect", { source: "auto_prompt" });
-      window.location.assign(redirect);
-    } finally {
-      autoPromptInFlight = false;
-    }
-  }
-
   // Reliable OAuth start: JSON body with full authorize URL (includes
   // response_type=code). Never rely on reading 303 Location to Google
   // (opaque redirect — Location is not exposed to JS).
@@ -188,13 +95,13 @@
     var body = await res.json();
     var redirect = body && body.redirect_url;
     if (!isSafeRedirect(redirect) || !isCompleteGoogleAuthorizeURL(redirect)) {
-      track("fedcm_google_oauth_bad_redirect", {
+      track("google_oauth_bad_redirect", {
         has_url: !!redirect,
         complete: redirect ? isCompleteGoogleAuthorizeURL(redirect) : false,
       });
       throw new Error("incomplete_google_authorize_url");
     }
-    track("fedcm_google_oauth_json_redirect");
+    track("google_oauth_json_redirect");
     window.location.assign(redirect);
   }
 
@@ -238,15 +145,14 @@
         clickInFlight = true;
         track("sign_in_method_clicked", {
           method: "google",
-          path: "oauth_primary",
-          fedcm_supported: fedcmSupported(),
+          path: "oauth_only",
         });
         setGoogleButtonBusy(form, true);
         (async function () {
           try {
             await startGoogleOAuth(form);
           } catch (err) {
-            track("fedcm_google_oauth_failed", {
+            track("google_oauth_failed", {
               message: err && err.message ? String(err.message) : "unknown",
             });
             // Last resort: top-level form POST (browser follows 303).
@@ -261,16 +167,9 @@
     });
   }
 
-  function install(opts) {
-    if (!opts || !opts.clientId || !opts.loginEventId) return;
-    // Always bind OAuth-primary click — works with or without FedCM support.
+  function install(_opts) {
+    // OAuth-only: bind the Google button. No FedCM auto-prompt.
     bindClick();
-    // Optional silent FedCM for returning users; never blocks the button.
-    if (fedcmSupported()) {
-      autoPrompt(opts);
-    } else {
-      track("fedcm_unsupported", { provider: "google" });
-    }
   }
 
   window.stawiGoogleFedCM = { install: install };

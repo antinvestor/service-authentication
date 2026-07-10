@@ -135,13 +135,13 @@
 </script>
 <script src="/static/js/posthog.js" defer></script>
 <script src="/static/js/fedcm.js" defer></script>
-{{if .enableGoogleLogin}}<script src="/static/js/fedcm_google.js?v=2.0.4" defer></script>{{end}}
+{{if .enableGoogleLogin}}<script src="/static/js/fedcm_google.js?v=2.0.5" defer></script>{{end}}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // FedCM sign-in waterfall. The first-party probe (returning users with an
-    // idp_session cookie) runs first; if it does not sign the user in, Google
-    // One Tap/FedCM is offered. They run sequentially so the browser never
-    // sees two concurrent navigator.credentials.get() calls.
+    // First-party FedCM probe only (returning users with an idp_session cookie
+    // for *our* IdP). Google FedCM/One Tap is intentionally not used: it
+    // opens a broken Google OAuth popup (missing response_type). Google sign-in
+    // is classic OAuth via fedcm_google.js (button click → server authorize URL).
     (async function () {
       var navigated = null;
       if (window.stawiFedCM && "{{ .ClientID }}" && "{{ .loginEventId }}") {
@@ -155,10 +155,7 @@
       }
       if (navigated) return;
       {{if .enableGoogleLogin}}
-      // Google One Tap/FedCM. install() binds the Google button for manual
-      // clicks (FedCM-first, native OAuth fallback) and auto-prompts the
-      // account chooser. clientId is the Google web client ID; nonce binds the
-      // returned id_token to this server-issued login event.
+      // Bind Google button → OAuth-only (no Google FedCM auto-prompt).
       if (window.stawiGoogleFedCM && "{{ .GoogleClientID }}" && "{{ .loginEventId }}") {
         window.stawiGoogleFedCM.install({
           clientId: "{{ .GoogleClientID }}",
