@@ -9,15 +9,18 @@
 //      paint. If the user has a prior FedCM session, Chrome shows the
 //      One Tap chip and login completes in ~200ms.
 //
-//   2. Explicit click (manual): if the user dismisses the auto-chooser
-//      and later clicks the Google button themselves, the same
-//      mediation:"required" flow runs again with an OAuth fallback.
+//   2. Explicit click (manual): prefers classic OAuth (JSON redirect from
+//      /s/social/login) so Google always receives a complete authorize URL
+//      including response_type=code. FedCM is still tried first on click;
+//      on any failure we fall back to OAuth.
 //
 // Hardened against:
 //   - Double-submit:    a single in-flight flag short-circuits repeat clicks
 //                       and prevents auto-prompt from racing a manual click.
 //   - Open-redirect:    the JSON response's redirect_url is only followed
 //                       when it is a same-origin path or an HTTPS URL.
+//   - Opaque redirects: fetch cannot read Location for cross-origin 303s;
+//                       the server returns JSON {redirect_url} instead.
 //   - Stale handlers:   install() is idempotent — re-running it on the same
 //                       form is a no-op.
 //   - Silent IdP swap:  Google's configURL is hard-coded; not template-driven.
@@ -52,7 +55,14 @@
     try {
       var u = new URL(raw, window.location.href);
       if (u.origin === window.location.origin) return true;
-      return u.protocol === "https:";
+      // Google authorize / accounts hosts only — never open arbitrary https.
+      if (u.protocol !== "https:") return false;
+      var host = u.hostname;
+      return (
+        host === "accounts.google.com" ||
+        host === "oauth2.googleapis.com" ||
+        host.endsWith(".google.com")
+      );
     } catch (_e) {
       return false;
     }
@@ -88,7 +98,7 @@
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           login_event_id: opts.loginEventId,
@@ -157,58 +167,70 @@
     });
   }
 
-  // After an await, HTMLFormElement.submit() is unreliable: user-activation
-  // may be gone, and sibling handlers (auth.js) may have disabled the submit
-  // button. Fetch the OAuth start endpoint ourselves and follow Location so
-  // the browser always lands on Google's authorize URL with response_type=code.
+  // Ask /s/social/login for JSON {redirect_url} so we can navigate the top
+  // window to Google's authorize URL. fetch+redirect:manual cannot read
+  // Location when it is cross-origin (opaque redirect) — that was the bug
+  // behind Google's "Required parameter is missing: response_type" page.
   async function oauthRedirectFallback(form) {
     var action = form.getAttribute("action") || "";
     if (!action) {
-      form.submit();
+      nativeFormPost(form);
       return;
     }
     try {
       var res = await fetch(action, {
         method: "POST",
         credentials: "include",
-        redirect: "manual",
         headers: {
-          Accept: "text/html,application/xhtml+xml",
+          Accept: "application/json",
         },
       });
-      // Same-origin 303: expose Location. Cross-origin would be opaqueredirect.
-      var loc =
-        res.headers.get("Location") ||
-        res.headers.get("location") ||
-        "";
-      if (
-        (res.status === 303 ||
-          res.status === 302 ||
-          res.status === 301 ||
-          res.status === 307 ||
-          res.status === 308) &&
-        isSafeRedirect(loc)
-      ) {
-        track("fedcm_google_oauth_redirect", { status: res.status });
-        window.location.assign(loc);
-        return;
-      }
-      // 0 + opaqueredirect can happen if a proxy rewrites the Location host.
-      if (res.type === "opaqueredirect") {
-        track("fedcm_google_oauth_opaque_redirect");
+      if (res.ok) {
+        var body = await res.json();
+        var redirect = body && body.redirect_url;
+        if (isSafeRedirect(redirect)) {
+          // Hard-require response_type so we never send a broken Google URL.
+          try {
+            var u = new URL(redirect);
+            if (!u.searchParams.get("response_type")) {
+              track("fedcm_google_oauth_missing_response_type");
+              nativeFormPost(form);
+              return;
+            }
+          } catch (_e) {
+            nativeFormPost(form);
+            return;
+          }
+          track("fedcm_google_oauth_json_redirect");
+          window.location.assign(redirect);
+          return;
+        }
+        track("fedcm_google_oauth_unsafe_redirect");
       } else {
-        track("fedcm_google_oauth_unexpected_status", {
-          status: res.status,
-          type: res.type,
-        });
+        track("fedcm_google_oauth_http_error", { status: res.status });
       }
     } catch (err) {
       track("fedcm_google_oauth_fetch_failed", {
         message: err && err.message ? String(err.message) : "unknown",
       });
     }
-    // Last resort: native submit (works when the click stack is still sync).
-    form.submit();
+    // Last resort: top-level form POST; browser follows 303 to Google.
+    nativeFormPost(form);
+  }
+
+  function nativeFormPost(form) {
+    var action = form.getAttribute("action") || "";
+    if (!action) {
+      form.submit();
+      return;
+    }
+    // Fresh form avoids disabled-submit-button races and stale listeners.
+    var f = document.createElement("form");
+    f.method = "POST";
+    f.action = action;
+    f.style.display = "none";
+    document.body.appendChild(f);
+    f.submit();
   }
 
   function setGoogleButtonBusy(form, busy) {
@@ -234,7 +256,6 @@
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         if (inFlight) {
-          // Auto-prompt already running; do not leave the button stuck.
           track("fedcm_google_click_while_inflight");
           return;
         }
@@ -245,14 +266,15 @@
         setGoogleButtonBusy(form, true);
         (async function () {
           try {
+            // Prefer classic OAuth on explicit click — FedCM often fails when
+            // the browser has no Google IdP session and previously left users
+            // on a broken authorize URL. Still try FedCM first for one-tap.
             var navigated = await runFlow(opts, "required", "click");
             if (!navigated) {
               track("fedcm_google_fallback_to_oauth");
               await oauthRedirectFallback(form);
             }
           } finally {
-            // If we navigated away this is a no-op; if fallback failed,
-            // re-enable so the user can retry.
             setGoogleButtonBusy(form, false);
           }
         })();
@@ -263,8 +285,7 @@
   // autoPrompt fires FedCM immediately — no setTimeout, no waiting for
   // paint. If mediation:"optional" returns null (first visit / no
   // candidate), the explicit Google button remains available. We do not
-  // synthesize a click: required mediation and the OAuth fallback both
-  // need to stay attached to a real user action.
+  // synthesize a click: OAuth starts only after a real user action.
   async function autoPrompt(opts) {
     if (inFlight) return;
     await runFlow(opts, "optional", "auto_prompt");
@@ -275,6 +296,8 @@
     if (!fedcmSupported()) {
       track("fedcm_unsupported", { provider: "google" });
       bindFallbackTracking();
+      // Even without FedCM, intercept submit so we use the JSON OAuth path.
+      bindClick(opts);
       return;
     }
     bindClick(opts);
