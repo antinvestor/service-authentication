@@ -15,7 +15,7 @@
 //   → { redirect_url: "https://accounts.google.com/o/oauth2/v2/auth?...&response_type=code&..." }
 //   → window.location.assign(redirect_url)  (full-page navigation)
 //
-// No auto-prompt. No navigator.credentials.get() for Google.
+// No auto-prompt. No Google FedCM credential API on this page.
 // Server contract: ProviderLoginEndpointV2 returns JSON when Accept includes
 // application/json (avoids opaque cross-origin Location on 303→Google).
 (function () {
