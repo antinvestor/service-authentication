@@ -47,7 +47,9 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 		log.WithError(err).Error("cache lookup failed for login event")
 		return err
 	}
-	ctx = util.SetTenancy(ctx, loginEvt)
+	// Profile lookups/creates run as the service bot (JWT home tenancy).
+	// User-partition tenancy is applied only when needed for verification send.
+	ctx = serviceBotContext(ctx)
 
 	// Step 2: Handle contactDetail submission
 	contactDetail := req.FormValue("contactDetail")
@@ -133,8 +135,8 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 		profileID = existingProfile.GetId()
 	}
 
-	// Step 7: Create verification and send code
-	ctx = util.SetTenancy(ctx, loginEvt)
+	// Step 7: Create verification and send code (still service-bot Plane-1 path)
+	ctx = serviceBotContext(ctx)
 	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,

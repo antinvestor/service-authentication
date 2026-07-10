@@ -137,8 +137,8 @@ func (h *AuthServer) VerificationResendEndpoint(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	// Step 4: Generate new verification ID and send code
-	ctx = util.SetTenancy(ctx, loginEvent)
+	// Step 4: Generate new verification ID and send code (service-bot Plane-1)
+	ctx = serviceBotContext(ctx)
 	newVerificationID := util.IDString()
 
 	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{

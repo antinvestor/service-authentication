@@ -133,10 +133,15 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 		}
 	}
 
-	ctx = util.SetTenancy(ctx, loginEvt)
+	// Keep service-bot JWT tenancy for outbound profile/device S2S calls.
+	// Setting login-event tenancy here rewrites Plane-1 checks onto the
+	// product partition and fails when the bot only has service on root.
+	ctx = serviceBotContext(ctx)
 	log.WithFields(map[string]any{
-		"client_id":   loginEvt.ClientID,
-		"duration_ms": time.Since(start).Milliseconds(),
+		"client_id":    loginEvt.ClientID,
+		"tenant_id":    loginEvt.TenantID,
+		"partition_id": loginEvt.PartitionID,
+		"duration_ms":  time.Since(start).Milliseconds(),
 	}).Debug("provider callback processed, completing user login")
 
 	// Step 7: Complete the login flow
@@ -186,6 +191,11 @@ func (h *AuthServer) completeProviderLogin(
 		"provider":       provider,
 		"login_event_id": loginEvt.GetID(),
 	})
+
+	// Identity S2S (profile) must run with the service bot's JWT home tenancy.
+	// User-partition secondary tenancy is re-applied later only if needed for
+	// access provisioning (consent / ensureLoginEventTenancyAccess).
+	ctx = serviceBotContext(ctx)
 
 	contactDetail := loggedInUser.Contact
 	if contactDetail == "" {
@@ -301,7 +311,10 @@ func (h *AuthServer) completeProviderLogin(
 		return "", fmt.Errorf("resolved profile has empty ID")
 	}
 
-	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvt.ClientID, profileID)
+	// Access provisioning may need the OAuth client partition; hydrate secondary
+	// tenancy only for this step (Plane-1 still falls back via Hydra metadata).
+	accessCtx := withUserLoginTenancy(ctx, loginEvent)
+	loginEvent, err = h.ensureLoginEventTenancyAccess(accessCtx, loginEvent, loginEvt.ClientID, profileID)
 	if err != nil {
 		log.WithError(err).Error("failed to ensure tenancy access for provider login")
 		return "", fmt.Errorf("provider login tenancy access failed: %w", err)

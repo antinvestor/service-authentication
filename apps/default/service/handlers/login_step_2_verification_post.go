@@ -99,8 +99,8 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		return err
 	}
 
-	// Step 3.5: Set tenancy context for profile service calls
-	ctx = util.SetTenancy(ctx, loginEvent)
+	// Step 3.5: Profile S2S uses service-bot JWT tenancy (Plane 1 service on home path).
+	ctx = serviceBotContext(ctx)
 
 	// Step 4: Verify the login credentials
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
@@ -134,6 +134,8 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		}
 	}
 
+	// Access provisioning targets the OAuth client's partition — restore user tenancy.
+	ctx = withUserLoginTenancy(ctx, loginEvent)
 	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvent.ClientID, profileID)
 	if err != nil {
 		log.WithError(err).Error("failed to ensure tenancy access for login event")
