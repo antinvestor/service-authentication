@@ -192,10 +192,28 @@ func (h *AuthServer) resolvePartitionByClientID(ctx context.Context, clientID st
 		return nil, fmt.Errorf("OAuth client %q has no partition owner", clientID)
 	}
 	partition, err := h.getPartition(ctx, partitionID)
-	if err != nil {
+	if err == nil {
+		return partition, nil
+	}
+
+	// Tenancy partition Get can fail with the same ReBAC denial as GetOAuthClient.
+	// Fall back to Hydra client metadata so login enrichment still works.
+	tenantID, metaPartitionID, metaErr := h.tenancyIDsFromHydraClient(ctx, clientID)
+	if metaErr != nil {
+		return nil, fmt.Errorf("get partition %q for OAuth client %q: %w (hydra fallback: %v)", partitionID, clientID, err, metaErr)
+	}
+	if metaPartitionID != partitionID {
 		return nil, fmt.Errorf("get partition %q for OAuth client %q: %w", partitionID, clientID, err)
 	}
-	return partition, nil
+	util.Log(ctx).WithError(err).WithFields(map[string]any{
+		"client_id":    clientID,
+		"partition_id": partitionID,
+		"tenant_id":    tenantID,
+	}).Warn("tenancy GetPartition failed; using Hydra metadata partition stub")
+	return &tenancyv1.PartitionObject{
+		Id:       metaPartitionID,
+		TenantId: tenantID,
+	}, nil
 }
 
 func (h *AuthServer) getPartition(ctx context.Context, partitionID string) (*tenancyv1.PartitionObject, error) {
@@ -567,6 +585,22 @@ func (h *AuthServer) ensureLoginEventTenancyAccess(
 		var redirectErr *accessInstructionsRedirectError
 		if errors.As(err, &redirectErr) {
 			return nil, err
+		}
+		// When tenancy ReBAC blocks access APIs but the login event already
+		// has a valid tenant/partition pair (e.g. from Hydra client metadata),
+		// continue with that pair so OAuth consent can still mint tokens.
+		if ValidTenancyPair(loginEvent.GetTenantID(), loginEvent.GetPartitionID()) {
+			log.WithError(err).Warn("tenancy access resolve/create failed; continuing with login event tenancy pair")
+			return loginEvent, nil
+		}
+		if ValidTenancyPair(partitionObj.GetTenantId(), partitionObj.GetId()) {
+			log.WithError(err).Warn("tenancy access resolve/create failed; applying partition stub tenancy to login event")
+			loginEvent.TenantID = partitionObj.GetTenantId()
+			loginEvent.PartitionID = partitionObj.GetId()
+			if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
+				log.WithError(cacheErr).Debug("failed to cache login event after tenancy stub apply")
+			}
+			return loginEvent, nil
 		}
 		return nil, err
 	}
