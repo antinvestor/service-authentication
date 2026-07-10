@@ -363,7 +363,7 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
 	if claims != nil && subject != "" {
 		// profile_id must always be present — it is the authorization actor
-		// and the source Frame uses to normalize JWT sub.
+		// and the source Frame uses to normalise JWT sub.
 		claims["profile_id"] = subject
 	}
 	hookResponse := map[string]any{
