@@ -371,16 +371,12 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	partitionsByID := make(map[string]*models.Partition, len(tree))
 	partitionsByID[basePartition.ID] = basePartition
 
-	// Keto subject must match JWT "sub". Hydra sets sub=client_id for
-	// client_credentials and does not allow the token hook to override it.
-	// Frame checks subject_id = JWT sub, so grants keyed only by profile_id
-	// never match production service-account tokens.
-	subjectID := strings.TrimSpace(sa.ClientID)
-	if subjectID == "" {
-		subjectID = strings.TrimSpace(sa.ProfileID)
-	}
-	if subjectID == "" {
-		return nil, fmt.Errorf("service account %s has empty client_id and profile_id", sa.ID)
+	// Actor for all Keto grants is the service account's bot profile.
+	// client_id identifies the OAuth client / partition at token issuance only.
+	// See docs/IDENTITY_AND_AUTHORIZATION.md.
+	profileID := strings.TrimSpace(sa.ProfileID)
+	if profileID == "" {
+		return nil, fmt.Errorf("service account %s has empty profile_id", sa.ID)
 	}
 
 	desiredRelations := make([]security.RelationTuple, 0)
@@ -407,7 +403,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 			tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
 			desiredRelations = append(desiredRelations, authz.BuildServicePermissionTuples(
 				tenancyPath,
-				subjectID,
+				profileID,
 				grant.Namespace,
 				resolved[grant.Namespace],
 			)...)
@@ -416,7 +412,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 
 	for _, partition := range partitionsByID {
 		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
-		desiredRelations = append(desiredRelations, authz.BuildServiceAccessTuple(tenancyPath, subjectID))
+		desiredRelations = append(desiredRelations, authz.BuildServiceAccessTuple(tenancyPath, profileID))
 	}
 	authz.SortRelationTuples(desiredRelations)
 

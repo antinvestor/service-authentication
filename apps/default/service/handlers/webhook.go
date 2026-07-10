@@ -349,32 +349,29 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 
 // writeTokenHookResponseWithSubject writes a token enrichment response.
 //
-// Important (Hydra v2+): Ory Hydra cannot override the JWT "sub" claim from the
-// token hook for any grant type — including client_credentials. For machine
-// tokens, sub remains the OAuth2 client_id. The optional top-level "subject"
-// field is accepted for forward compatibility but is ignored by Hydra today.
+// Identity (see docs/IDENTITY_AND_AUTHORIZATION.md):
 //
-// Therefore:
-//   - Access-token claims carry profile_id / tenant_id / roles / etc.
-//   - Keto Plane-1/2 subjects for service accounts MUST use client_id (JWT sub),
-//     not profile_id. See apps/tenancy SA sync + service bot bootstrap.
+//   - profile_id is the acting principal for authorization (Keto subjects).
+//   - client_id identifies the OAuth2 client / partition at issuance only.
 //
-// The subject argument is still recorded as the intended logical identity
-// (profile_id) for logs and any future Hydra support.
+// Hydra note: for client_credentials, JWT "sub" often remains the OAuth2
+// client_id — Hydra does not honour a token-hook subject override. That is
+// fine: profile_id is always written into access_token (and id_token) extras,
+// and Frame's GetProfileID / ReBAC checkers prefer profile_id over JWT sub.
+//
+// The subject argument is the profile_id (bot profile for service accounts).
 func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
 	if claims != nil && subject != "" {
-		// Ensure profile_id is always present in token extras even if callers
-		// forget to put it in claims — it is the durable SA identity for audit.
-		if _, ok := claims["profile_id"]; !ok {
-			claims["profile_id"] = subject
-		}
+		// profile_id must always be present — it is the authorization actor.
+		claims["profile_id"] = subject
 	}
 	hookResponse := map[string]any{
 		"session": map[string]any{
 			"access_token": claims,
 			"id_token":     claims,
 		},
-		// Hydra ignores this today; kept for documentation/forward-compat.
+		// Best-effort: some Hydra versions may accept this; profile_id claim is
+		// the authoritative actor identity either way.
 		"subject": subject,
 	}
 	rw.Header().Set("Content-Type", "application/json")
