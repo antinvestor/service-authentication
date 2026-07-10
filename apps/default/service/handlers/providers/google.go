@@ -73,10 +73,15 @@ func (g *GoogleOIDCProvider) AuthCodeURL(state, challenge, nonce string) string 
 	// oauth2.Config.AuthCodeURL already sets response_type=code. We also pin
 	// it explicitly so a future Endpoint/options change cannot produce the
 	// Google "Required parameter is missing: response_type" 400 page.
+	//
+	// prompt=select_account keeps the classic OAuth fallback to an account
+	// picker when the user already has a Google session, instead of a full
+	// multi-step login form. First-time consent still appears once per client.
 	opts := []oauth2.AuthCodeOption{
 		oauth2.SetAuthURLParam("response_type", "code"),
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+		oauth2.SetAuthURLParam("prompt", "select_account"),
 		oauth2.AccessTypeOnline,
 	}
 	if nonce != "" {

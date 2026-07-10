@@ -1,29 +1,23 @@
 // apps/default/static/js/fedcm_google.js
 //
-// Google FedCM on /s/login — instant account chooser on page load.
+// Google sign-in on /s/login — account picker → logged in, minimal screens.
 //
-// Two flows, tried in order:
+// Preferred path (FedCM button mode):
+//   User clicks "Sign in with Google" → browser account picker → id_token →
+//   POST /s/social/google/fedcm-complete → redirect into Hydra → done.
+//   No full-page Google OAuth screens when FedCM works.
 //
-//   1. Auto-prompt (immediate): fires FedCM with mediation:"optional"
-//      the moment install() is called — no setTimeout, no waiting for
-//      paint. If the user has a prior FedCM session, Chrome shows the
-//      One Tap chip and login completes in ~200ms.
+// Fallback (classic OAuth, only if FedCM unavailable/fails):
+//   JSON redirect to Google authorize with prompt=select_account so a signed-in
+//   Google session is usually just account pick → redirect back.
 //
-//   2. Explicit click (manual): prefers classic OAuth (JSON redirect from
-//      /s/social/login) so Google always receives a complete authorize URL
-//      including response_type=code. FedCM is still tried first on click;
-//      on any failure we fall back to OAuth.
+// Auto-prompt (optional mediation) still runs on page load for returning users
+// who already have a FedCM session (one-tap style).
 //
 // Hardened against:
-//   - Double-submit:    a single in-flight flag short-circuits repeat clicks
-//                       and prevents auto-prompt from racing a manual click.
-//   - Open-redirect:    the JSON response's redirect_url is only followed
-//                       when it is a same-origin path or an HTTPS URL.
-//   - Opaque redirects: fetch cannot read Location for cross-origin 303s;
-//                       the server returns JSON {redirect_url} instead.
-//   - Stale handlers:   install() is idempotent — re-running it on the same
-//                       form is a no-op.
-//   - Silent IdP swap:  Google's configURL is hard-coded; not template-driven.
+//   - Opaque cross-origin Location headers (JSON redirect_url instead)
+//   - Open-redirect (HTTPS + Google hosts / same-origin only)
+//   - Double-submit / in-flight races
 (function () {
   "use strict";
 
@@ -55,30 +49,36 @@
     try {
       var u = new URL(raw, window.location.href);
       if (u.origin === window.location.origin) return true;
-      // Google authorize / accounts hosts only — never open arbitrary https.
       if (u.protocol !== "https:") return false;
       var host = u.hostname;
       return (
         host === "accounts.google.com" ||
         host === "oauth2.googleapis.com" ||
-        host.endsWith(".google.com")
+        host.endsWith(".google.com") ||
+        host.endsWith(".stawi.org") ||
+        host.endsWith(".antinvestor.com")
       );
     } catch (_e) {
       return false;
     }
   }
 
-  async function attemptGoogleFedCM(opts, mediation) {
+  async function attemptGoogleFedCM(opts, mediation, mode) {
     try {
+      var provider = {
+        configURL: GOOGLE_FEDCM_CONFIG,
+        clientId: opts.clientId,
+        params: {nonce: opts.nonce},
+      };
+      // Button mode is the Sign-in-with-Google account picker UX (no full
+      // redirect pages). Passive browsers ignore unknown fields.
+      if (mode) {
+        provider.mode = mode;
+      }
       var cred = await navigator.credentials.get({
         identity: {
-          providers: [
-            {
-              configURL: GOOGLE_FEDCM_CONFIG,
-              clientId: opts.clientId,
-              params: {nonce: opts.nonce},
-            },
-          ],
+          context: "signin",
+          providers: [provider],
         },
         mediation: mediation || "required",
       });
@@ -105,7 +105,10 @@
           id_token: idToken,
         }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        track("fedcm_google_server_status", { status: res.status });
+        return null;
+      }
       var body = await res.json();
       var redirect = body && body.redirect_url;
       if (isSafeRedirect(redirect)) return redirect;
@@ -115,21 +118,23 @@
     }
   }
 
-  async function runFlow(opts, mediation, source) {
+  async function runFlow(opts, mediation, source, mode) {
     if (inFlight) return false;
     inFlight = true;
     try {
       track("fedcm_google_attempt", {
         mediation: mediation,
         source: source,
+        mode: mode || "",
         login_event_id: opts.loginEventId,
       });
 
-      var idToken = await attemptGoogleFedCM(opts, mediation);
+      var idToken = await attemptGoogleFedCM(opts, mediation, mode);
       if (!idToken) {
         track("fedcm_google_no_token", {
           mediation: mediation,
           source: source,
+          mode: mode || "",
         });
         return false;
       }
@@ -167,10 +172,9 @@
     });
   }
 
-  // Ask /s/social/login for JSON {redirect_url} so we can navigate the top
-  // window to Google's authorize URL. fetch+redirect:manual cannot read
-  // Location when it is cross-origin (opaque redirect) — that was the bug
-  // behind Google's "Required parameter is missing: response_type" page.
+  // Classic OAuth via JSON {redirect_url} — used only when FedCM cannot
+  // complete. Server builds the full authorize URL (response_type=code +
+  // prompt=select_account).
   async function oauthRedirectFallback(form) {
     var action = form.getAttribute("action") || "";
     if (!action) {
@@ -189,7 +193,6 @@
         var body = await res.json();
         var redirect = body && body.redirect_url;
         if (isSafeRedirect(redirect)) {
-          // Hard-require response_type so we never send a broken Google URL.
           try {
             var u = new URL(redirect);
             if (!u.searchParams.get("response_type")) {
@@ -214,7 +217,6 @@
         message: err && err.message ? String(err.message) : "unknown",
       });
     }
-    // Last resort: top-level form POST; browser follows 303 to Google.
     nativeFormPost(form);
   }
 
@@ -224,7 +226,6 @@
       form.submit();
       return;
     }
-    // Fresh form avoids disabled-submit-button races and stale listeners.
     var f = document.createElement("form");
     f.method = "POST";
     f.action = action;
@@ -261,19 +262,27 @@
         }
         track("sign_in_method_clicked", {
           method: "google",
-          fedcm_supported: true,
+          fedcm_supported: fedcmSupported(),
         });
         setGoogleButtonBusy(form, true);
         (async function () {
           try {
-            // Prefer classic OAuth on explicit click — FedCM often fails when
-            // the browser has no Google IdP session and previously left users
-            // on a broken authorize URL. Still try FedCM first for one-tap.
-            var navigated = await runFlow(opts, "required", "click");
-            if (!navigated) {
-              track("fedcm_google_fallback_to_oauth");
-              await oauthRedirectFallback(form);
+            // Button-mode FedCM = in-browser account picker, then done.
+            // Only if that fails do we open classic Google OAuth pages.
+            if (fedcmSupported()) {
+              var navigated = await runFlow(
+                opts,
+                "required",
+                "click",
+                "button"
+              );
+              if (navigated) return;
+              // Retry without mode for older browsers that reject mode:button.
+              navigated = await runFlow(opts, "required", "click_retry", "");
+              if (navigated) return;
             }
+            track("fedcm_google_fallback_to_oauth");
+            await oauthRedirectFallback(form);
           } finally {
             setGoogleButtonBusy(form, false);
           }
@@ -282,13 +291,11 @@
     });
   }
 
-  // autoPrompt fires FedCM immediately — no setTimeout, no waiting for
-  // paint. If mediation:"optional" returns null (first visit / no
-  // candidate), the explicit Google button remains available. We do not
-  // synthesize a click: OAuth starts only after a real user action.
+  // Returning-user one-tap: silent/optional FedCM only — never auto-escalate
+  // to multi-page OAuth (that would surprise the user with new screens).
   async function autoPrompt(opts) {
     if (inFlight) return;
-    await runFlow(opts, "optional", "auto_prompt");
+    await runFlow(opts, "optional", "auto_prompt", "");
   }
 
   function install(opts) {
@@ -296,7 +303,6 @@
     if (!fedcmSupported()) {
       track("fedcm_unsupported", { provider: "google" });
       bindFallbackTracking();
-      // Even without FedCM, intercept submit so we use the JSON OAuth path.
       bindClick(opts);
       return;
     }
