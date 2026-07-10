@@ -164,7 +164,8 @@ func (h *AuthServer) FedCMGoogleCompleteEndpoint(w http.ResponseWriter, r *http.
 		}
 	}
 
-	ctx = util.SetTenancy(ctx, loginEvt)
+	// Service-bot context for profile S2S (see serviceBotContext docs).
+	ctx = serviceBotContext(ctx)
 
 	// Step 8: Run the shared profile-resolution + Hydra-acceptance path.
 	redirectURL, runErr := h.completeProviderLogin(ctx, r, loginEvt, user, googleProvider.Name())
