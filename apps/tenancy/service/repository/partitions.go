@@ -72,6 +72,12 @@ func (pr *partitionRepository) GetChildren(ctx context.Context, id string) ([]*m
 	return childPartition, err
 }
 
+func (pr *partitionRepository) ListAll(ctx context.Context) ([]*models.Partition, error) {
+	var partitions []*models.Partition
+	err := pr.Pool().DB(ctx, true).Find(&partitions).Error
+	return partitions, err
+}
+
 func (pr *partitionRepository) Delete(ctx context.Context, id string) error {
 	var partition models.Partition
 	if err := pr.Pool().DB(ctx, true).First(&partition, "id = ?", id).Error; err != nil {
