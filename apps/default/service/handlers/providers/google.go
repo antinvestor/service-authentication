@@ -70,20 +70,19 @@ func (g *GoogleOIDCProvider) ClientID() string {
 }
 
 func (g *GoogleOIDCProvider) AuthCodeURL(state, challenge, nonce string) string {
-	authURL := g.oauth2.AuthCodeURL(
-		state,
+	// oauth2.Config.AuthCodeURL already sets response_type=code. We also pin
+	// it explicitly so a future Endpoint/options change cannot produce the
+	// Google "Required parameter is missing: response_type" 400 page.
+	opts := []oauth2.AuthCodeOption{
+		oauth2.SetAuthURLParam("response_type", "code"),
 		oauth2.SetAuthURLParam("code_challenge", challenge),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-	)
-	if nonce != "" {
-		authURL = g.oauth2.AuthCodeURL(
-			state,
-			oauth2.SetAuthURLParam("code_challenge", challenge),
-			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-			oauth2.SetAuthURLParam("nonce", nonce),
-		)
+		oauth2.AccessTypeOnline,
 	}
-	return authURL
+	if nonce != "" {
+		opts = append(opts, oauth2.SetAuthURLParam("nonce", nonce))
+	}
+	return g.oauth2.AuthCodeURL(state, opts...)
 }
 
 // VerifyIDToken validates a Google-issued id_token against the discovered

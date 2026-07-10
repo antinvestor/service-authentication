@@ -652,6 +652,12 @@
         const socialForms = document.querySelectorAll('.social-login-form');
 
         socialForms.forEach(form => {
+            // FedCM-managed Google form owns its own loading/fallback state in
+            // fedcm_google.js. Disabling the button here races the async FedCM
+            // attempt and can leave OAuth fallback unable to complete.
+            if (form.hasAttribute('data-fedcm-google')) {
+                return;
+            }
             form.addEventListener('submit', function() {
                 const btn = this.querySelector('button');
                 if (btn) {
