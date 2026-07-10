@@ -15,8 +15,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/default/config"
@@ -104,8 +106,30 @@ func (h *AuthServer) ProviderLoginEndpointV2(rw http.ResponseWriter, req *http.R
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Debug("redirecting to external provider")
 
+	// Browser fetch() cannot read Location when it points at a third-party
+	// IdP (opaque redirect). Login JS therefore requests JSON and navigates
+	// with window.location.assign so Google always receives response_type=code.
+	if prefersJSON(req) {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Header().Set("Cache-Control", "no-store")
+		return json.NewEncoder(rw).Encode(map[string]string{
+			"redirect_url": authURL,
+		})
+	}
+
 	http.Redirect(rw, req, authURL, http.StatusSeeOther)
 	return nil
+}
+
+// prefersJSON reports whether the client asked for an application/json body
+// (used by the FedCM→OAuth fallback fetch) rather than a 303 redirect.
+func prefersJSON(req *http.Request) bool {
+	accept := req.Header.Get("Accept")
+	if accept == "" {
+		return false
+	}
+	// Prefer explicit JSON over broad */* so normal form POSTs still redirect.
+	return strings.Contains(accept, "application/json")
 }
 
 // loginAuthProviderNames returns registered provider names for diagnostic logging.
