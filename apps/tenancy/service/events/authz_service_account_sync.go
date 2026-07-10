@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
@@ -370,6 +371,14 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	partitionsByID := make(map[string]*models.Partition, len(tree))
 	partitionsByID[basePartition.ID] = basePartition
 
+	// Actor for all Keto grants is the service account's bot profile.
+	// client_id identifies the OAuth client / partition at token issuance only.
+	// See docs/IDENTITY_AND_AUTHORIZATION.md.
+	profileID := strings.TrimSpace(sa.ProfileID)
+	if profileID == "" {
+		return nil, fmt.Errorf("service account %s has empty profile_id", sa.ID)
+	}
+
 	desiredRelations := make([]security.RelationTuple, 0)
 	for _, grant := range grants {
 		resolved, resolveErr := authz.ResolveServiceGrants(
@@ -394,7 +403,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 			tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
 			desiredRelations = append(desiredRelations, authz.BuildServicePermissionTuples(
 				tenancyPath,
-				sa.ProfileID,
+				profileID,
 				grant.Namespace,
 				resolved[grant.Namespace],
 			)...)
@@ -403,7 +412,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 
 	for _, partition := range partitionsByID {
 		tenancyPath := fmt.Sprintf("%s/%s", partition.TenantID, partition.ID)
-		desiredRelations = append(desiredRelations, authz.BuildServiceAccessTuple(tenancyPath, sa.ProfileID))
+		desiredRelations = append(desiredRelations, authz.BuildServiceAccessTuple(tenancyPath, profileID))
 	}
 	authz.SortRelationTuples(desiredRelations)
 

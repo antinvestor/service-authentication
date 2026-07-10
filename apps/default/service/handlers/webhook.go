@@ -347,15 +347,31 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 	return json.NewEncoder(rw).Encode(hookResponse)
 }
 
-// writeTokenHookResponseWithSubject writes a token enrichment response that also
-// overrides the JWT sub claim. For client_credentials grants Hydra sets sub to
-// the client_id; this allows the webhook to correct it to the profile_id.
+// writeTokenHookResponseWithSubject writes a token enrichment response.
+//
+// Identity (see docs/IDENTITY_AND_AUTHORIZATION.md):
+//
+//   - profile_id is the acting principal for authorization (Keto subjects).
+//   - client_id identifies the OAuth2 client / partition at issuance only.
+//
+// Hydra note: for client_credentials, JWT "sub" often remains the OAuth2
+// client_id — Hydra does not honour a token-hook subject override. That is
+// fine: profile_id is always written into access_token (and id_token) extras,
+// and Frame's GetProfileID / ReBAC checkers prefer profile_id over JWT sub.
+//
+// The subject argument is the profile_id (bot profile for service accounts).
 func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
+	if claims != nil && subject != "" {
+		// profile_id must always be present — it is the authorization actor.
+		claims["profile_id"] = subject
+	}
 	hookResponse := map[string]any{
 		"session": map[string]any{
 			"access_token": claims,
 			"id_token":     claims,
 		},
+		// Best-effort: some Hydra versions may accept this; profile_id claim is
+		// the authoritative actor identity either way.
 		"subject": subject,
 	}
 	rw.Header().Set("Content-Type", "application/json")

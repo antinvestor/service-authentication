@@ -18,12 +18,33 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCollectServiceBotProfilesUsesProfileIDNotClientID(t *testing.T) {
+	t.Parallel()
+
+	accounts := []*models.ServiceAccount{
+		{ClientID: "service-authentication", ProfileID: "d75qclkpf2t1uum8ij40"},
+		{ClientID: "service-profile", ProfileID: "d75qclkpf2t1uum8ij4g"},
+		{ClientID: "orphan-client-only"}, // no profile → skipped
+		nil,
+	}
+	profiles, paths := collectServiceBotProfilesAndPaths(accounts, nil)
+
+	require.Contains(t, profiles, "d75qclkpf2t1uum8ij40")
+	require.Contains(t, profiles, "d75qclkpf2t1uum8ij4g")
+	require.NotContains(t, profiles, "service-authentication")
+	require.NotContains(t, profiles, "service-profile")
+	require.NotContains(t, profiles, "orphan-client-only")
+	require.Contains(t, paths, authz.RootTenantID+"/"+authz.RootPartitionID)
+}
 
 func TestServiceBotAccessTupleShapes(t *testing.T) {
 	t.Parallel()
 
+	// Keto subject is always the bot profile_id.
 	saProfile := "d75qclkpf2t1uum8ij40"
 	rootPath := authz.RootTenantID + "/" + authz.RootPartitionID
 	childPath := "d7gi6lkpf2t67dlsqre0/d7gi6lkpf2t67dlsqreg"

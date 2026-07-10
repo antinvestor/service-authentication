@@ -11,6 +11,16 @@ This is a multi-tenant OAuth2/OpenID Connect authentication service built on **O
 - **Multi-tenancy** with tenant/partition isolation
 - **Device tracking** for session management
 
+## Identity model (do not drift)
+
+| Concept | Meaning |
+|---------|---------|
+| **`profile_id`** | **Acting principal.** Permissions (Keto) are always granted to profiles (users or bot SAs). |
+| **`client_id`** | OAuth2 client used at login / token issuance; identifies which **partition** the flow belongs to. **Not** a Keto subject. |
+| **JWT `sub`** | Wire claim; may equal `client_id` on machine tokens. Authorization uses `profile_id` via Frame `GetProfileID()`. |
+
+Full write-up: [`docs/IDENTITY_AND_AUTHORIZATION.md`](docs/IDENTITY_AND_AUTHORIZATION.md).
+
 ## Architecture
 
 ```

@@ -73,23 +73,30 @@ These claims represent the session that created the token family and **should no
 
 ### 2. Identity Claims (Stable)
 
-These identify the user and rarely change:
+These identify the **acting principal**. Authorization (Keto) is always keyed by
+`profile_id`, never by OAuth `client_id`. See
+[`IDENTITY_AND_AUTHORIZATION.md`](IDENTITY_AND_AUTHORIZATION.md).
 
 | Claim | Description |
 |-------|-------------|
-| `profile_id` | User's profile identifier |
+| `profile_id` | **Actor** — user or service-account bot profile. Required on every access token. |
 | `profile_contact` | User's contact (currently same as profile_id) |
+
+For service accounts, Hydra may leave JWT `sub` as the OAuth `client_id`. The
+token hook still sets `profile_id` in session extras; Frame `GetProfileID()`
+prefers that claim for ReBAC.
 
 ### 3. Tenancy Claims (Client-Bound)
 
-These are determined by the OAuth2 client, not the user:
+These are determined by the OAuth2 **client** used at issuance (login or
+client_credentials), not by re-deriving identity from `client_id` at authz time:
 
 | Claim | Description |
 |-------|-------------|
 | `tenant_id` | Tenant the client belongs to |
-| `partition_id` | Partition (same as client_id) |
+| `partition_id` | Partition bound to the client |
 
-**Note:** These are stable for a given client. A client doesn't change tenants.
+**Note:** `client_id` is for partition resolution during login/token issuance only.
 
 ### 4. Authorization Claims (Could Be Dynamic)
 

@@ -35,9 +35,17 @@ type ServiceBotTenancyDeps struct {
 }
 
 // EnsureServiceBotTenancyAccess writes the Keto tuples that let internal
-// service bots operate across every tenant/partition:
+// service bots operate across every tenant/partition.
 //
-//  1. tenancy_access:<tenant>/<partition>#service ← profile_user:<sa.profile_id>
+// Identity model (see docs/IDENTITY_AND_AUTHORIZATION.md):
+//
+//	Permissions are always granted to profile_id. The service account's
+//	bot profile is the actor. OAuth2 client_id only identifies the client /
+//	partition used at token issuance — it is never a Keto subject.
+//
+// Tuples written:
+//
+//  1. tenancy_access:<tenant>/<partition>#service ← <sa.profile_id>
 //     for every service account × every partition (including root)
 //  2. tenancy_access:<child>#service ← tenancy_access:<parent>#service
 //     for every parent→child partition edge (inheritance for future partitions)
@@ -45,11 +53,6 @@ type ServiceBotTenancyDeps struct {
 // Cross-tenant product partitions (e.g. opportunities) are not descendants of
 // the platform root path, so inheritance alone is insufficient — we grant
 // explicit service access on each known partition.
-//
-// Without these grants, service-authentication fails Plane-1 checks when a
-// login sets request tenancy to a product partition:
-//
-//	permission_denied: cannot service on tenancy_access:<tenant>/<partition>
 //
 // Idempotent and safe to run on every tenancy pod start.
 func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDeps) error {
@@ -117,6 +120,7 @@ func collectServiceBotProfilesAndPaths(
 		if sa == nil {
 			continue
 		}
+		// Keto actor is always the bot profile — never client_id.
 		profileID := strings.TrimSpace(sa.ProfileID)
 		if profileID == "" {
 			continue
