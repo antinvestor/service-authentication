@@ -73,18 +73,18 @@ These claims represent the session that created the token family and **should no
 
 ### 2. Identity Claims (Stable)
 
-These identify the **acting principal**. Authorization (Keto) is always keyed by
-`profile_id`, never by OAuth `client_id`. See
+**Invariant: JWT `sub` === `profile_id`.** Authorization (Keto) is always keyed
+by that profile, never by OAuth `client_id`. See
 [`IDENTITY_AND_AUTHORIZATION.md`](IDENTITY_AND_AUTHORIZATION.md).
 
 | Claim | Description |
 |-------|-------------|
-| `profile_id` | **Actor** — user or service-account bot profile. Required on every access token. |
+| `profile_id` | **Actor** — user or service-account bot profile. Required on every access token; also the JWT `sub`. |
 | `profile_contact` | User's contact (currently same as profile_id) |
 
-For service accounts, Hydra may leave JWT `sub` as the OAuth `client_id`. The
-token hook still sets `profile_id` in session extras; Frame `GetProfileID()`
-prefers that claim for ReBAC.
+Token hook always sets `profile_id` (and requests subject override). Hydra v26
+may still leave wire `sub=client_id` for `client_credentials`; Frame
+`NormalizeIdentity()` rewrites in-process subject to `profile_id`.
 
 ### 3. Tenancy Claims (Client-Bound)
 
