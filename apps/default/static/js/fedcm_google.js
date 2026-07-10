@@ -46,18 +46,6 @@
     );
   }
 
-  function hasUserActivation(event) {
-    if (event && event.isTrusted === false) return false;
-    if (
-      navigator &&
-      navigator.userActivation &&
-      typeof navigator.userActivation.isActive === "boolean"
-    ) {
-      return navigator.userActivation.isActive;
-    }
-    return true;
-  }
-
   function isSafeRedirect(raw) {
     if (typeof raw !== "string" || raw.length === 0) return false;
     if (raw[0] === "/" && (raw.length === 1 || raw[1] !== "/")) return true;
@@ -169,6 +157,74 @@
     });
   }
 
+  // After an await, HTMLFormElement.submit() is unreliable: user-activation
+  // may be gone, and sibling handlers (auth.js) may have disabled the submit
+  // button. Fetch the OAuth start endpoint ourselves and follow Location so
+  // the browser always lands on Google's authorize URL with response_type=code.
+  async function oauthRedirectFallback(form) {
+    var action = form.getAttribute("action") || "";
+    if (!action) {
+      form.submit();
+      return;
+    }
+    try {
+      var res = await fetch(action, {
+        method: "POST",
+        credentials: "include",
+        redirect: "manual",
+        headers: {
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+      // Same-origin 303: expose Location. Cross-origin would be opaqueredirect.
+      var loc =
+        res.headers.get("Location") ||
+        res.headers.get("location") ||
+        "";
+      if (
+        (res.status === 303 ||
+          res.status === 302 ||
+          res.status === 301 ||
+          res.status === 307 ||
+          res.status === 308) &&
+        isSafeRedirect(loc)
+      ) {
+        track("fedcm_google_oauth_redirect", { status: res.status });
+        window.location.assign(loc);
+        return;
+      }
+      // 0 + opaqueredirect can happen if a proxy rewrites the Location host.
+      if (res.type === "opaqueredirect") {
+        track("fedcm_google_oauth_opaque_redirect");
+      } else {
+        track("fedcm_google_oauth_unexpected_status", {
+          status: res.status,
+          type: res.type,
+        });
+      }
+    } catch (err) {
+      track("fedcm_google_oauth_fetch_failed", {
+        message: err && err.message ? String(err.message) : "unknown",
+      });
+    }
+    // Last resort: native submit (works when the click stack is still sync).
+    form.submit();
+  }
+
+  function setGoogleButtonBusy(form, busy) {
+    var btn = form.querySelector("button");
+    if (!btn) return;
+    if (busy) {
+      btn.disabled = true;
+      btn.setAttribute("aria-busy", "true");
+      btn.classList.add("btn-loading");
+    } else {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+      btn.classList.remove("btn-loading");
+    }
+  }
+
   function bindClick(opts) {
     var forms = document.querySelectorAll("form[data-fedcm-google]");
     forms.forEach(function (form) {
@@ -176,24 +232,28 @@
       form.__stawiGoogleFedCMBound = true;
 
       form.addEventListener("submit", function (event) {
-        if (inFlight) {
-          event.preventDefault();
-          return;
-        }
         event.preventDefault();
-        if (!hasUserActivation(event)) {
-          track("fedcm_google_blocked_no_activation");
+        if (inFlight) {
+          // Auto-prompt already running; do not leave the button stuck.
+          track("fedcm_google_click_while_inflight");
           return;
         }
         track("sign_in_method_clicked", {
           method: "google",
           fedcm_supported: true,
         });
+        setGoogleButtonBusy(form, true);
         (async function () {
-          var navigated = await runFlow(opts, "required", "click");
-          if (!navigated) {
-            track("fedcm_google_fallback_to_oauth");
-            form.submit();
+          try {
+            var navigated = await runFlow(opts, "required", "click");
+            if (!navigated) {
+              track("fedcm_google_fallback_to_oauth");
+              await oauthRedirectFallback(form);
+            }
+          } finally {
+            // If we navigated away this is a no-op; if fallback failed,
+            // re-enable so the user can retry.
+            setGoogleButtonBusy(form, false);
           }
         })();
       });
