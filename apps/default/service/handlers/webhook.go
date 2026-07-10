@@ -349,20 +349,21 @@ func writeTokenHookResponse(rw http.ResponseWriter, claims map[string]any) error
 
 // writeTokenHookResponseWithSubject writes a token enrichment response.
 //
-// Identity (see docs/IDENTITY_AND_AUTHORIZATION.md):
+// Platform invariant (docs/IDENTITY_AND_AUTHORIZATION.md):
 //
-//   - profile_id is the acting principal for authorization (Keto subjects).
-//   - client_id identifies the OAuth2 client / partition at issuance only.
+//	JWT sub === profile_id always.
 //
-// Hydra note: for client_credentials, JWT "sub" often remains the OAuth2
-// client_id — Hydra does not honour a token-hook subject override. That is
-// fine: profile_id is always written into access_token (and id_token) extras,
-// and Frame's GetProfileID / ReBAC checkers prefer profile_id over JWT sub.
+// subject must be the profile_id (bot profile for service accounts). We always
+// write profile_id into access/id token claims and return top-level "subject"
+// so Hydra can set sub when supported.
 //
-// The subject argument is the profile_id (bot profile for service accounts).
+// Hydra v26 client_credentials still forces wire sub=client_id and ignores the
+// hook subject field. Frame NormalizeIdentity() then rewrites in-process
+// Subject to profile_id after JWT validation — never treat client_id as actor.
 func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string]any, subject string) error {
 	if claims != nil && subject != "" {
-		// profile_id must always be present — it is the authorization actor.
+		// profile_id must always be present — it is the authorization actor
+		// and the source Frame uses to normalize JWT sub.
 		claims["profile_id"] = subject
 	}
 	hookResponse := map[string]any{
@@ -370,8 +371,8 @@ func writeTokenHookResponseWithSubject(rw http.ResponseWriter, claims map[string
 			"access_token": claims,
 			"id_token":     claims,
 		},
-		// Best-effort: some Hydra versions may accept this; profile_id claim is
-		// the authoritative actor identity either way.
+		// Requested JWT sub. Hydra v26 may ignore this for client_credentials;
+		// profile_id claim + Frame NormalizeIdentity still enforce the invariant.
 		"subject": subject,
 	}
 	rw.Header().Set("Content-Type", "application/json")

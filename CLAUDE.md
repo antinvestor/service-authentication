@@ -13,13 +13,16 @@ This is a multi-tenant OAuth2/OpenID Connect authentication service built on **O
 
 ## Identity model (do not drift)
 
+**Invariant: `JWT sub === profile_id` always** (users and service accounts).
+
 | Concept | Meaning |
 |---------|---------|
-| **`profile_id`** | **Acting principal.** Permissions (Keto) are always granted to profiles (users or bot SAs). |
+| **`profile_id` / JWT `sub`** | **Acting principal.** Permissions (Keto) are always granted to profiles (users or bot SAs). |
 | **`client_id`** | OAuth2 client used at login / token issuance; identifies which **partition** the flow belongs to. **Not** a Keto subject. |
-| **JWT `sub`** | Wire claim; may equal `client_id` on machine tokens. Authorization uses `profile_id` via Frame `GetProfileID()`. |
 
-Full write-up: [`docs/IDENTITY_AND_AUTHORIZATION.md`](docs/IDENTITY_AND_AUTHORIZATION.md).
+Hydra may leave wire `sub=client_id` for `client_credentials`; Frame normalizes so
+in-process subject is always `profile_id`. Full write-up:
+[`docs/IDENTITY_AND_AUTHORIZATION.md`](docs/IDENTITY_AND_AUTHORIZATION.md).
 
 ## Architecture
 
