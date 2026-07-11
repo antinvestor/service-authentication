@@ -9,7 +9,7 @@ bootstrap code.
 1. **Declare once** in proto (`service_permissions` + `method_permissions`).
 2. **Register automatically** at process start (Frame + colony).
 3. **Grant via SA policy** (auth-contract / SA config), not imperative scripts.
-4. **Materialise to Keto** via the existing SA reconcile event pipeline.
+4. **Materialise to Keto** via the SA policy event pipeline.
 5. **No per-app goroutines**, no one-off bootstrap hooks, no copy-paste.
 
 ## Plug-and-play checklist (every service)
@@ -71,6 +71,11 @@ Service-account access-token extras (token webhook) **must** include:
 Colony injects `/tenancy` into `OAUTH2_REQUESTED_AUDIENCES` when
 `permissionsRegistrationUrl` is set so services do not list it by hand.
 
+On Hydra client sync, **internal** OAuth clients automatically get
+`{OAUTH2_AUDIENCE_BASE_URL}/tenancy` whitelisted even if the auth-contract
+recipient row was omitted — so registration is plug-and-play without
+per-service recipient edits.
+
 Hydra must allow top-level claim mirroring for `service_account_id` (see
 `oauth2.allowed_top_level_claims` / `mirror_top_level_claims` on the Hydra
 release).
@@ -86,14 +91,25 @@ An SA may register namespace `N` only if all hold:
 5. SA `Name == N` **or** `ClientID` with `-`→`_` equals `N`  
    (e.g. `service-devices` owns `service_device`)
 
-## Reliability
+## Reliability (no ad-hoc goroutines)
 
-- Registration is an **idempotent upsert** keyed by namespace.
-- Frame retries with backoff when tenancy/token signing is briefly unavailable.
-- After registration, pending SA policies for that namespace are **re-queued**
-  so Keto tuples catch up without manual intervention.
-- Plane-1 `#service` for bot profiles is maintained by platform bootstrap on
-  tenancy (not by each app).
+| Mechanism | When | What it does |
+|-----------|------|--------------|
+| Frame registration | Every service process start | Idempotent POST of proto manifest; retries with backoff |
+| Registration handler | On successful upsert | Re-queues **only** SA policies that grant that namespace |
+| `/_internal/sync/clients` (cron) | Hourly / operator-triggered | Bulk repair: Hydra clients, SA policies, partitions, accesses |
+| Migration job | Deploy migrate | Root super-user tuples + plane-1 bot access |
+
+What we **do not** do:
+
+- Per-app startup goroutines that bulk-reconcile all policies
+- Partition fan-out on every namespace registration (that O(N) storm
+  blocks registration for every other service)
+- Hand-written Keto grants to “unblock” consent
+
+After registration, pending SA policies for that namespace catch up through
+the event pipeline. Plane-1 `#service` for bot profiles is maintained by
+migration bootstrap and SA create/sync events.
 
 ## Debugging permission_denied (e.g. ShowConsent / device_manage)
 
@@ -108,14 +124,15 @@ Actor is **profile_id** of the calling SA (auth bot). Check in order:
 1. **Namespace registered?**  
    `SELECT namespace FROM service_namespaces WHERE namespace = 'service_device';`  
    If missing → owning service (`service-devices`) failed registration (usually
-   missing tenancy audience → 403 on register).
+   missing tenancy audience → 403 on register, or tenancy down → connection refused).
 
 2. **SA policy includes the grant?**  
    `service_account_authorization_grants` + `_permissions` for the caller SA.
 
 3. **Policy applied?**  
    `status = applied` and `applied_generation = generation`.  
-   If `failed` with `namespace "…" is not registered` → fix (1) then re-sync.
+   If `failed` with `namespace "…" is not registered` → fix (1) then wait for
+   registration re-queue or run `POST /_internal/sync/clients`.
 
 4. **Keto tuple exists?**  
    `service_device:t/p#granted_device_manage` subject = **profile_id**.
@@ -129,8 +146,10 @@ registration and SA policy config; the event pipeline is the framework.
 |------|----------|
 | Frame publisher | `frame.WithPermissionRegistration` |
 | Colony auto `/tenancy` audience | `charts/colony` ≥ 2.0.1 |
+| Hydra auto tenancy whitelist | `apps/tenancy/.../events/sync_client.go` `ensureTenancyAudience` |
 | Endpoint | `apps/tenancy/.../handlers/permissions.go` |
 | Business rules | `apps/tenancy/.../business/permission_registry.go` |
 | SA claims | `apps/default/.../handlers/webhook.go` |
 | SA Keto sync | `apps/tenancy/.../events/authz_service_account_sync.go` |
+| Bulk repair | `POST /_internal/sync/clients` (cron `synchronize-partitions`) |
 | Proto annotations | `common/v1/permissions.proto` + per-service protos |

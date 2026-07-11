@@ -174,9 +174,17 @@ func SyncClientOnHydra(
 	if err != nil {
 		return fmt.Errorf("load OAuth recipients for client %q: %w", cl.GetID(), err)
 	}
-	audiences := make([]string, 0, len(recipients))
+	audiences := make([]string, 0, len(recipients)+1)
 	for _, recipient := range recipients {
 		audiences = append(audiences, recipient.ResourceAudience)
+	}
+	// Internal service bots always need the tenancy resource audience so Frame
+	// can call /_internal/register/permissions without per-service custom code.
+	// Colony injects the matching OAUTH2_REQUESTED_AUDIENCES entry; Hydra must
+	// whitelist it on the client or token requests fail with "not been
+	// whitelisted by the OAuth 2.0 Client".
+	if cl.Type == "internal" {
+		audiences = ensureTenancyAudience(audiences, oauth2AudienceBaseURL(cfg))
 	}
 
 	// Build payload
@@ -274,6 +282,35 @@ func buildClientHydraPayload(cl *models.Client, profileID string, audiences []st
 	}
 
 	return payload
+}
+
+// oauth2AudienceBaseURL reads the platform API base from the concrete OAuth
+// config when available (ConfigurationOAUTH2 does not expose it).
+func oauth2AudienceBaseURL(cfg config.ConfigurationOAUTH2) string {
+	type audienceBaseURLProvider interface {
+		GetOauth2AudienceBaseURL() string
+	}
+	if provider, ok := cfg.(audienceBaseURLProvider); ok {
+		return provider.GetOauth2AudienceBaseURL()
+	}
+	return ""
+}
+
+// ensureTenancyAudience appends {base}/tenancy when missing so internal bots
+// can register permission manifests against tenancy without each service
+// authoring a custom oauth recipient row.
+func ensureTenancyAudience(audiences []string, audienceBaseURL string) []string {
+	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
+	if base == "" {
+		return audiences
+	}
+	tenancyAudience := base + "/tenancy"
+	for _, audience := range audiences {
+		if strings.EqualFold(strings.TrimSpace(audience), tenancyAudience) {
+			return audiences
+		}
+	}
+	return append(audiences, tenancyAudience)
 }
 
 func getStringSlice(m data.JSONMap, key string) []string {
