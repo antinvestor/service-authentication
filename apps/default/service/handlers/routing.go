@@ -100,11 +100,20 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 	h.addHandler(router, h.ErrorEndpoint, "/error", "ErrorEndpoint")
 	h.addHandler(router, h.SwaggerEndpoint, "/swagger.json", "SwaggerEndpoint")
 	router.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		setOAuthPublicCORSHeaders(w, r)
 		if err := h.OpenIDConfigurationFacadeEndpoint(w, r); err != nil {
 			h.writeAPIError(r.Context(), w, err, "OpenIDConfigurationFacade")
 		}
 	})
+	// Browser SPAs discover token_endpoint on the accounts host and preflight
+	// with OPTIONS before exchanging authorization codes (PKCE).
+	router.HandleFunc("OPTIONS /oauth2/token", func(w http.ResponseWriter, r *http.Request) {
+		setOAuthPublicCORSHeaders(w, r)
+		w.Header().Set("Allow", "POST, OPTIONS")
+		w.WriteHeader(http.StatusNoContent)
+	})
 	router.HandleFunc("POST /oauth2/token", func(w http.ResponseWriter, r *http.Request) {
+		setOAuthPublicCORSHeaders(w, r)
 		if err := h.OAuthTokenFacadeEndpoint(w, r); err != nil {
 			h.writeAPIError(r.Context(), w, err, "OAuthTokenFacade")
 		}

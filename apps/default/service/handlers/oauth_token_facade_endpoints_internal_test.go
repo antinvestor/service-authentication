@@ -113,6 +113,24 @@ func TestSameHTTPHost(t *testing.T) {
 	require.False(t, sameHTTPHost("https://a.example.com", "::::not-a-url"))
 }
 
+func TestSetOAuthPublicCORSHeadersEchoesOrigin(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodOptions, "/oauth2/token", nil)
+	req.Header.Set("Origin", "https://opportunities.stawi.org")
+	setOAuthPublicCORSHeaders(rec, req)
+	require.Equal(t, "https://opportunities.stawi.org", rec.Header().Get("Access-Control-Allow-Origin"))
+	require.Contains(t, rec.Header().Get("Access-Control-Allow-Methods"), "POST")
+	require.Contains(t, rec.Header().Get("Access-Control-Allow-Headers"), "Content-Type")
+	require.Equal(t, "Origin", rec.Header().Get("Vary"))
+}
+
+func TestSetOAuthPublicCORSHeadersSkipsWithoutOrigin(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/token", nil)
+	setOAuthPublicCORSHeaders(rec, req)
+	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+}
+
 func TestHydraUpstreamBaseRejectsSelfReference(t *testing.T) {
 	h := &AuthServer{config: &authconfig.AuthenticationConfig{
 		FedCMPublicOrigin:            "https://accounts.example.com",

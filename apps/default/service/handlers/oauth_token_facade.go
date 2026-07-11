@@ -148,6 +148,25 @@ func (h *AuthServer) OpenIDConfigurationFacadeEndpoint(w http.ResponseWriter, r 
 	return json.NewEncoder(w).Encode(doc)
 }
 
+// setOAuthPublicCORSHeaders enables browser PKCE/token exchange against the
+// accounts-hosted token facade. Credentials are not used (public clients /
+// Authorization header or form body), so a wildcard origin is safe and matches
+// the Gateway CORS policy on oauth2.stawi.org.
+func setOAuthPublicCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return
+	}
+	// Echo request origin when present so credentialed-or-not SPA fetches work
+	// consistently; do not set Allow-Credentials (token exchange is public).
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Vary", "Origin")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, DPoP, DPoP-Nonce")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Type, DPoP-Nonce")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+}
+
 // OAuthTokenFacadeEndpoint serves the public /oauth2/token facade. It handles
 // native provider ID-token exchange and proxies all ordinary grants to Hydra.
 func (h *AuthServer) OAuthTokenFacadeEndpoint(w http.ResponseWriter, r *http.Request) error {
