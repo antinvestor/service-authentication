@@ -213,7 +213,10 @@ func (s *PermissionRegistryTestSuite) TestConcurrentRegistrationHasOneOwner() {
 
 func serviceAccountContext(ctx context.Context, serviceAccountID string) context.Context {
 	claims := &security.AuthenticationClaims{
-		Ext: map[string]any{"service_account_id": serviceAccountID},
+		// Registration requires an internal service-account principal, not
+		// only a service_account_id claim.
+		Roles: []string{security.ConstantSystemInternalRole},
+		Ext:   map[string]any{"service_account_id": serviceAccountID},
 	}
 	claims.Subject = util.IDString()
 	return claims.ClaimsToContext(ctx)
