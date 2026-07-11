@@ -28,9 +28,9 @@ import (
 
 const (
 	// eventExecutionTimeout is the maximum time an event handler may run
-	// before the context is cancelled. This prevents handlers from hanging
-	// indefinitely on slow downstream calls.
-	eventExecutionTimeout = 30 * time.Second
+	// once it has started real work (after any concurrency-slot wait).
+	// Keto batch writes for large SA trees can exceed 30s under load.
+	eventExecutionTimeout = 2 * time.Minute
 
 	// maxKetoRetries is the number of times a transient Keto write is
 	// retried within a single handler execution before giving up.

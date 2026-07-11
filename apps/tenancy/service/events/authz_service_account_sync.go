@@ -36,7 +36,13 @@ import (
 
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
 
-const maxConcurrentAuthorizationReconciliations = 4
+// maxConcurrentAuthorizationReconciliations bounds parallel Keto policy
+// materialisations. Keep high enough that a full SA fleet (dozens of
+// accounts) drains without every waiter hitting eventExecutionTimeout while
+// blocked on acquire — that previously produced mass
+// "wait for authorization reconciliation capacity: context deadline exceeded"
+// and starved Hydra/partition sync work on the same process.
+const maxConcurrentAuthorizationReconciliations = 24
 
 // AuthzServiceAccountSyncEvent reconciles exact Keto state from the normalised
 // authorization policy. Events carry a generation and are only a latency
@@ -163,13 +169,16 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	}
 
 	jsonPayload := data.JSONMap(*d)
-	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
-	if err := e.acquire(ctx); err != nil {
+	// Acquire capacity on the parent context so a temporary backlog only waits
+	// — it must not burn the short eventExecutionTimeout and fail permanently.
+	if err := e.acquire(ictx); err != nil {
 		return err
 	}
 	defer e.release()
+
+	ctx := security.SkipTenancyChecksOnClaims(ictx)
+	ctx, cancel := withEventTimeout(ctx)
+	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
 	eventGeneration := authorizationPolicyGeneration(jsonPayload)
