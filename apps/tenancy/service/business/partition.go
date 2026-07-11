@@ -261,7 +261,10 @@ func (pb *partitionBusiness) CreatePartition(
 	}
 
 	// Emit authz partition sync to write inheritance tuples for partitions with parents.
-	if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); emitErr != nil {
+	if emitErr := pb.eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{
+		"id":     partition.GetID(),
+		"reason": "partition_created",
+	}); emitErr != nil {
 		util.Log(ctx).WithError(emitErr).Warn("failed to emit authz partition sync event")
 	}
 
@@ -471,7 +474,10 @@ func ReQueuePartitionsForAuthorizationSync(ctx context.Context, partitionRepo re
 		}
 
 		for _, partition := range result.Item() {
-			if err = eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{"id": partition.GetID()}); err != nil {
+			if err = eventsMan.Emit(ctx, events.EventKeyAuthzPartitionSync, data.JSONMap{
+				"id":     partition.GetID(),
+				"reason": "periodic_repair",
+			}); err != nil {
 				return err
 			}
 		}

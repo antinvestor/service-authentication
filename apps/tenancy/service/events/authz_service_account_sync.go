@@ -37,12 +37,11 @@ import (
 const EventKeyAuthzServiceAccountSync = "authorization.service_account.sync"
 
 // maxConcurrentAuthorizationReconciliations bounds parallel Keto policy
-// materialisations. Keep high enough that a full SA fleet (dozens of
-// accounts) drains without every waiter hitting eventExecutionTimeout while
-// blocked on acquire — that previously produced mass
-// "wait for authorization reconciliation capacity: context deadline exceeded"
-// and starved Hydra/partition sync work on the same process.
-const maxConcurrentAuthorizationReconciliations = 24
+// materialisations. Keep this modest: each SA with partition_tree grants
+// writes hundreds of tuples, and high concurrency saturates Keto + locks
+// service_account_authorization_policies, which then times out interactive
+// tenancy RPCs (GetPartition) used by login/consent.
+const maxConcurrentAuthorizationReconciliations = 4
 
 // AuthzServiceAccountSyncEvent reconciles exact Keto state from the normalised
 // authorization policy. Events carry a generation and are only a latency

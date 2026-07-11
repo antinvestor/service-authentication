@@ -169,8 +169,15 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 		}
 	}
 
-	if err = e.requeueAncestorServiceAccountPolicies(ctx, partition); err != nil {
-		return err
+	// Only re-queue partition_tree SA policies when topology actually changed.
+	// Periodic /_internal/sync/clients repair must NOT do this: every partition
+	// re-queue fan-out multiplies into full SA materialisations, overloads Keto,
+	// and starves interactive GetPartition/login with context deadlines.
+	reason := jsonPayload.GetString("reason")
+	if reason == "partition_created" || reason == "topology_changed" {
+		if err = e.requeueAncestorServiceAccountPolicies(ctx, partition); err != nil {
+			return err
+		}
 	}
 
 	return nil
