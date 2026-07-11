@@ -121,11 +121,11 @@ func main() {
 		}
 	}
 
-	// Service-bot Plane-1 access + pending SA policy reconcile can take minutes
-	// under a large backlog. Migration still runs them synchronously and fails
-	// closed; regular pods defer them so the HTTP server binds before probes
-	// kill the process.
-	runAuthzBootstrap := func(bootstrapCtx context.Context, fatal bool) {
+	// Service-bot Plane-1 access must self-heal. Under a large SA backlog this
+	// (and ReconcilePending) can take minutes, so:
+	//  - migration jobs: bot bootstrap only (fatal), no full SA reconcile
+	//  - regular pods: both run in the background after HTTP is ready
+	runServiceBotBootstrap := func(bootstrapCtx context.Context, fatal bool) {
 		if botErr := business.EnsureServiceBotTenancyAccess(bootstrapCtx, business.ServiceBotTenancyDeps{
 			ServiceAccountRepo: partSrv.ServiceAccountRepo,
 			PartitionRepo:      partSrv.PartitionRepo,
@@ -136,16 +136,12 @@ func main() {
 			}
 			util.Log(bootstrapCtx).WithError(botErr).Error("service bot tenancy access bootstrap failed; will retry on next restart")
 		}
-		if reconcileErr := policySync.ReconcilePending(bootstrapCtx); reconcileErr != nil {
-			if fatal {
-				util.Log(bootstrapCtx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
-			}
-			util.Log(bootstrapCtx).WithError(reconcileErr).Error("authorization policy startup reconciliation failed; queue consumers will continue retrying")
-		}
 	}
 
 	if isMigration {
-		runAuthzBootstrap(ctx, true)
+		// Do not run ReconcilePending here: it can exceed Helm job timeouts and
+		// leave the release Failed while runtime pods already handle the backlog.
+		runServiceBotBootstrap(ctx, true)
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
@@ -189,7 +185,15 @@ func main() {
 
 	// Heavy authz self-heal after Init so event workers exist, but off the
 	// request path so readiness/liveness can succeed immediately.
-	go runAuthzBootstrap(context.WithoutCancel(ctx), false)
+	go func() {
+		bootstrapCtx := context.WithoutCancel(ctx)
+		runServiceBotBootstrap(bootstrapCtx, false)
+		if reconcileErr := policySync.ReconcilePending(bootstrapCtx); reconcileErr != nil {
+			util.Log(bootstrapCtx).WithError(reconcileErr).Error(
+				"authorization policy startup reconciliation failed; queue consumers will continue retrying",
+			)
+		}
+	}()
 
 	err = svc.Run(ctx, "")
 	if err != nil {
