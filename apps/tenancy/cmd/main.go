@@ -107,8 +107,10 @@ func main() {
 		auth,
 	)
 
-	// Bootstrap root super-user authorization after migration only.
-	// This writes Keto tuples for migration-seeded root owners/admins.
+	// Migration path only: seed root super-user tuples + plane-1 bot access.
+	// Runtime pods must not run bulk reconcile/bootstrap in ad-hoc goroutines —
+	// permission registration + /_internal/sync/clients (cron) are the plug-
+	// and-play recovery paths and scale with the number of services.
 	if isMigration {
 		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
 			AccessRepo:           partSrv.AccessRepo,
@@ -119,29 +121,13 @@ func main() {
 		}); bootstrapErr != nil {
 			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
 		}
-	}
-
-	// Service-bot Plane-1 access must self-heal. Under a large SA backlog this
-	// (and ReconcilePending) can take minutes, so:
-	//  - migration jobs: bot bootstrap only (fatal), no full SA reconcile
-	//  - regular pods: both run in the background after HTTP is ready
-	runServiceBotBootstrap := func(bootstrapCtx context.Context, fatal bool) {
-		if botErr := business.EnsureServiceBotTenancyAccess(bootstrapCtx, business.ServiceBotTenancyDeps{
+		if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
 			ServiceAccountRepo: partSrv.ServiceAccountRepo,
 			PartitionRepo:      partSrv.PartitionRepo,
 			Authorizer:         auth,
 		}); botErr != nil {
-			if fatal {
-				util.Log(bootstrapCtx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
-			}
-			util.Log(bootstrapCtx).WithError(botErr).Error("service bot tenancy access bootstrap failed; will retry on next restart")
+			util.Log(ctx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
 		}
-	}
-
-	if isMigration {
-		// Do not run ReconcilePending here: it can exceed Helm job timeouts and
-		// leave the release Failed while runtime pods already handle the backlog.
-		runServiceBotBootstrap(ctx, true)
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
@@ -183,18 +169,8 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
-	// Heavy authz self-heal after Init so event workers exist, but off the
-	// request path so readiness/liveness can succeed immediately.
-	go func() {
-		bootstrapCtx := context.WithoutCancel(ctx)
-		runServiceBotBootstrap(bootstrapCtx, false)
-		if reconcileErr := policySync.ReconcilePending(bootstrapCtx); reconcileErr != nil {
-			util.Log(bootstrapCtx).WithError(reconcileErr).Error(
-				"authorization policy startup reconciliation failed; queue consumers will continue retrying",
-			)
-		}
-	}()
-
+	// Event workers + Frame permission registration handle the steady state.
+	// Bulk repair is intentionally left to /_internal/sync/clients (cron).
 	err = svc.Run(ctx, "")
 	if err != nil {
 		log := util.Log(ctx).WithError(err)

@@ -177,7 +177,10 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	defer e.release()
 
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	ctx, cancel := withEventTimeout(ctx)
+	// SA policies fan out granted_* tuples across partition trees; under
+	// concurrent registration/sync this routinely exceeds the default event
+	// budget. Use a dedicated longer timeout rather than ad-hoc retries.
+	ctx, cancel := context.WithTimeout(ctx, serviceAccountSyncTimeout)
 	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")

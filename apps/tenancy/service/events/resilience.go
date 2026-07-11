@@ -32,6 +32,11 @@ const (
 	// Keto batch writes for large SA trees can exceed 30s under load.
 	eventExecutionTimeout = 2 * time.Minute
 
+	// serviceAccountSyncTimeout covers partition_tree materialisation of
+	// multi-namespace SA policies (hundreds of granted_* tuples) without
+	// competing with short-lived partition/access sync handlers.
+	serviceAccountSyncTimeout = 5 * time.Minute
+
 	// maxKetoRetries is the number of times a transient Keto write is
 	// retried within a single handler execution before giving up.
 	maxKetoRetries = 3

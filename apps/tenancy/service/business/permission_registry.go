@@ -77,8 +77,8 @@ func RegisterPermissionManifest(
 		return nil, errors.New("permission manifest owner service account is required")
 	}
 	if deps.ServiceNamespaceRepo == nil || deps.ServiceAccountRepo == nil || deps.PolicyRepo == nil ||
-		deps.PartitionRepo == nil || deps.AccessRepo == nil || deps.AccessRoleRepo == nil ||
-		deps.PartitionRoleRepo == nil || deps.EventsManager == nil || deps.Authorizer == nil {
+		deps.AccessRepo == nil || deps.AccessRoleRepo == nil || deps.PartitionRoleRepo == nil ||
+		deps.EventsManager == nil || deps.Authorizer == nil {
 		return nil, errors.New("permission registry dependencies are incomplete")
 	}
 
@@ -104,16 +104,15 @@ func RegisterPermissionManifest(
 		return registration, nil
 	}
 
-	if err = EnsureRootAuthorization(ctx, RootAuthorizationDeps{
-		AccessRepo:           deps.AccessRepo,
-		AccessRoleRepo:       deps.AccessRoleRepo,
-		PartitionRoleRepo:    deps.PartitionRoleRepo,
-		ServiceNamespaceRepo: deps.ServiceNamespaceRepo,
-		Authorizer:           deps.Authorizer,
-	}); err != nil {
-		return nil, fmt.Errorf("ensure root authorization after namespace registration: %w", err)
-	}
-
+	// Hot path stays lightweight and config-driven:
+	// 1) re-queue only SA policies that grant this namespace
+	// 2) extend root super-user tuples for the new namespace
+	// 3) mark the manifest reconciled
+	//
+	// Do not re-queue every partition here — that O(partitions) fan-out
+	// saturates the DB/event queue and blocks other services from registering.
+	// Partition inheritance and bulk repair belong on the periodic
+	// /_internal/sync/clients job, not on every service startup.
 	policies, err := deps.PolicyRepo.ListByNamespace(ctx, normalised.Namespace)
 	if err != nil {
 		return nil, err
@@ -128,14 +127,19 @@ func RegisterPermissionManifest(
 		}
 	}
 
-	if err = ReQueuePartitionsForAuthorizationSync(
-		ctx,
-		deps.PartitionRepo,
-		deps.EventsManager,
-		data.NewSearchQuery(),
-	); err != nil {
-		return nil, fmt.Errorf("requeue partitions after namespace registration: %w", err)
+	if err = EnsureRootAuthorization(ctx, RootAuthorizationDeps{
+		AccessRepo:           deps.AccessRepo,
+		AccessRoleRepo:       deps.AccessRoleRepo,
+		PartitionRoleRepo:    deps.PartitionRoleRepo,
+		ServiceNamespaceRepo: deps.ServiceNamespaceRepo,
+		Authorizer:           deps.Authorizer,
+	}); err != nil {
+		// Root super-user extension is best-effort relative to SA grants.
+		// Surface the error but only after SA policies are already re-queued so
+		// service-to-service grants are not blocked by a Keto blip.
+		return nil, fmt.Errorf("ensure root authorization after namespace registration: %w", err)
 	}
+
 	if err = deps.ServiceNamespaceRepo.MarkReconciled(
 		ctx,
 		normalised.Namespace,
