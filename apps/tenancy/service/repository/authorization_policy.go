@@ -240,6 +240,15 @@ func (r *serviceAccountAuthorizationPolicyRepository) ReplaceAppliedState(
 	}
 
 	return r.pool.DB(ctx, false).Transaction(func(tx *gorm.DB) error {
+		// Serialise concurrent reconcilers for the same policy so delete+insert
+		// of applied tuples cannot race into unique index violations.
+		var locked models.ServiceAccountAuthorizationPolicy
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND generation = ? AND deleted_at IS NULL", policy.ID, policy.Generation).
+			First(&locked).Error; err != nil {
+			return fmt.Errorf("replace applied authorization state: lock policy: %w", err)
+		}
+
 		if err := tx.Unscoped().Where("policy_id = ?", policy.ID).
 			Delete(&models.ServiceAccountAppliedTuple{}).Error; err != nil {
 			return err
