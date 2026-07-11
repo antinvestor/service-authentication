@@ -121,31 +121,35 @@ func main() {
 		}
 	}
 
-	// Service-bot Plane-1 access must self-heal on every start. Without
-	// tenancy_access#service grants (and parent→child inheritance), internal
-	// services fail with "cannot service on tenancy_access:<tenant>/<partition>"
-	// during user login when the request carries a non-root partition.
-	if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
-		ServiceAccountRepo: partSrv.ServiceAccountRepo,
-		PartitionRepo:      partSrv.PartitionRepo,
-		Authorizer:         auth,
-	}); botErr != nil {
-		// Non-fatal on regular pods so a temporary Keto outage does not brick
-		// the API; migration still fails closed so deploys don't go green
-		// without authz.
-		if isMigration {
-			util.Log(ctx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
+	// Service-bot Plane-1 access + pending SA policy reconcile can take minutes
+	// under a large backlog. Migration still runs them synchronously and fails
+	// closed; regular pods defer them so the HTTP server binds before probes
+	// kill the process.
+	runAuthzBootstrap := func(bootstrapCtx context.Context, fatal bool) {
+		if botErr := business.EnsureServiceBotTenancyAccess(bootstrapCtx, business.ServiceBotTenancyDeps{
+			ServiceAccountRepo: partSrv.ServiceAccountRepo,
+			PartitionRepo:      partSrv.PartitionRepo,
+			Authorizer:         auth,
+		}); botErr != nil {
+			if fatal {
+				util.Log(bootstrapCtx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
+			}
+			util.Log(bootstrapCtx).WithError(botErr).Error("service bot tenancy access bootstrap failed; will retry on next restart")
 		}
-		util.Log(ctx).WithError(botErr).Error("service bot tenancy access bootstrap failed; will retry on next restart")
+		if reconcileErr := policySync.ReconcilePending(bootstrapCtx); reconcileErr != nil {
+			if fatal {
+				util.Log(bootstrapCtx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
+			}
+			util.Log(bootstrapCtx).WithError(reconcileErr).Error("authorization policy startup reconciliation failed; queue consumers will continue retrying")
+		}
 	}
 
-	if reconcileErr := policySync.ReconcilePending(ctx); reconcileErr != nil {
-		util.Log(ctx).WithError(reconcileErr).Fatal("authorization policy startup reconciliation failed")
-	}
 	if isMigration {
+		runAuthzBootstrap(ctx, true)
 		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
 		return
 	}
+
 	// Setup Connect server
 	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
 
@@ -182,6 +186,10 @@ func main() {
 	}
 
 	svc.Init(ctx, serviceOptions...)
+
+	// Heavy authz self-heal after Init so event workers exist, but off the
+	// request path so readiness/liveness can succeed immediately.
+	go runAuthzBootstrap(context.WithoutCancel(ctx), false)
 
 	err = svc.Run(ctx, "")
 	if err != nil {
