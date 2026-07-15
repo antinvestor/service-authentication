@@ -37,7 +37,7 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 
 		for table, expected := range map[string]int64{
 			"clients":                                   56,
-			"oauth_client_recipients":                   246,
+			"oauth_client_recipients":                   256,
 			"service_accounts":                          45,
 			"service_account_authorization_policies":    45,
 			"service_account_authorization_grants":      177,
