@@ -31,14 +31,14 @@ require (
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame/v2 v2.0.5
 	github.com/pitabwire/util v0.9.1
-	github.com/posthog/posthog-go v1.17.5
+	github.com/posthog/posthog-go v1.19.0
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
 	golang.org/x/crypto v0.54.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/grpc v1.82.0
+	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/gorm v1.31.2
 )
