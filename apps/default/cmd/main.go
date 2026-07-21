@@ -70,11 +70,15 @@ func main() {
 	}
 
 	// Migration-only path: database only — no cache, no OIDC network.
+	// Must Stop the service so background Frame workers do not keep the Job alive
+	// after migrate returns (Helm waits on Job completion).
 	if cfg.DoDatabaseMigrate() {
 		migrateCtx, svc := frame.NewServiceWithContext(ctx,
 			frame.WithConfig(&cfg),
 			frame.WithDatastore())
+		defer svc.Stop(migrateCtx)
 		if handleDatabaseMigration(migrateCtx, svc.DatastoreManager(), cfg) {
+			util.Log(migrateCtx).Info("database migration finished; exiting")
 			return
 		}
 		util.Log(migrateCtx).Fatal("DO_MIGRATION set but migration did not run")
