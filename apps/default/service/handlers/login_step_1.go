@@ -652,8 +652,14 @@ func (h *AuthServer) setLoginEventToCache(ctx context.Context, loginEvent *model
 		return nil
 	}
 
+	// Detach from a nearly-spent parent budget (soft tenancy is 80ms total).
+	// A spent parent was causing "context deadline exceeded" on Valkey SET
+	// even when the value was already resolved in memory.
+	cacheCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), loginCacheTimeout)
+	defer cancel()
+
 	cacheKey := loginEventCachePrefix + loginEvent.GetID()
-	if err := eventCache.Set(ctx, cacheKey, *loginEvent, time.Hour); err != nil {
+	if err := eventCache.Set(cacheCtx, cacheKey, *loginEvent, time.Hour); err != nil {
 		util.Log(ctx).WithError(err).Error("failed to update login event cache with partition info")
 		return err
 	}

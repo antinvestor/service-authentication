@@ -46,6 +46,16 @@ const (
 	saClaimsCacheTTL      = 10 * time.Minute
 	saNegativeCacheTTL    = 2 * time.Second
 	oauthClientTenancyTTL = 15 * time.Minute
+
+	// Social / OIDC provider callback (Google etc.). Must stay under the
+	// ~15s edge/gateway kill. Parent budget leaves headroom for redirect.
+	// Sub-budgets must fit under socialCallbackBudget.
+	socialCallbackBudget        = 8 * time.Second
+	socialGoogleExchangeTimeout = 3 * time.Second
+	socialProfileLookupTimeout  = 2 * time.Second
+	socialProfileCreateTimeout  = 2 * time.Second
+	socialStoreLoginTimeout     = 1 * time.Second
+	socialHydraAcceptTimeout    = 500 * time.Millisecond
 )
 
 // NATS JetStream KV-safe cache key prefixes (charset: [-/_=.a-zA-Z0-9], no colon).

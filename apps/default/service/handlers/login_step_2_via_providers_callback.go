@@ -32,7 +32,11 @@ import (
 )
 
 func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	// Parent budget under the ~15s edge/gateway kill. Sub-steps use their own
+	// tighter ceilings so a hung profile/Google call cannot stream-close.
+	parentCtx, parentCancel := context.WithTimeout(req.Context(), socialCallbackBudget)
+	defer parentCancel()
+	ctx := parentCtx
 	start := time.Now()
 	log := util.Log(ctx)
 
@@ -89,7 +93,7 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("provider %s is no longer available", authState.Provider)
 	}
 
-	// Step 5: Exchange authorization code for user info
+	// Step 5: Exchange authorization code for user info (bounded)
 	code := req.URL.Query().Get("code")
 	if code == "" {
 		log.Error("provider callback missing authorization code")
@@ -98,7 +102,9 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 
 	log.Debug("exchanging authorization code with external provider")
 
-	user, err := provider.CompleteLogin(ctx, code, authState.PKCEVerifier, authState.Nonce)
+	exCtx, exCancel := context.WithTimeout(ctx, socialGoogleExchangeTimeout)
+	user, err := provider.CompleteLogin(exCtx, code, authState.PKCEVerifier, authState.Nonce)
+	exCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to complete login with external provider - token exchange or user info retrieval failed")
 		return fmt.Errorf("provider login completion failed: %w", err)
@@ -114,23 +120,17 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 		return fmt.Errorf("login session not found: %w", err)
 	}
 
-	// Enrich login event with partition/tenant info if not already set.
-	// The normal contact login flow does this in LoginEndpointShow, but
-	// the social login redirect skips that step.
+	// Soft-enrich tenancy in-memory (Valkey map → Hydra admin → tenancy).
+	// Never hard-fail here: profile S2S uses service-bot context; strong
+	// tenancy + access binding run later under ensureLoginEventTenancyAccess.
+	// Mutate loginEvt in place — do not re-read cache (SET can race soft budget).
 	if loginEvt.TenantID == "" || loginEvt.PartitionID == "" {
-		h.updateTenancyForLoginEvent(ctx, authState.LoginEventID)
-
-		loginEvt, err = h.getLoginEventFromCache(ctx, authState.LoginEventID)
-		if err != nil {
-			log.WithError(err).Error("failed to reload login event after tenancy enrichment")
-			return fmt.Errorf("login session not found: %w", err)
-		}
-
-		if loginEvt.TenantID == "" || loginEvt.PartitionID == "" {
-			log.WithField("client_id", loginEvt.ClientID).
-				Error("login event still missing tenancy info after enrichment")
-			return fmt.Errorf("unable to resolve tenancy for login session")
-		}
+		src := h.softEnrichLoginEventTenancy(ctx, loginEvt, nil)
+		log.WithFields(map[string]any{
+			"tenancy_source": src,
+			"tenant_id":      loginEvt.TenantID,
+			"partition_id":   loginEvt.PartitionID,
+		}).Debug("social callback soft tenancy enrichment")
 	}
 
 	// Keep service-bot JWT tenancy for outbound profile/device S2S calls.
@@ -203,13 +203,17 @@ func (h *AuthServer) completeProviderLogin(
 		return "", fmt.Errorf("no contact detail provided by provider %s", provider)
 	}
 
-	// Step 1: Look up existing profile by contact
+	// Step 1: Look up existing profile by contact (bounded — never inherit
+	// Frame's 30s HTTP client timeout or hang until the gateway stream-closes).
 	log.Debug("looking up user profile by contact")
 
-	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
+	lookupCtx, lookupCancel := context.WithTimeout(ctx, socialProfileLookupTimeout)
+	result, err := h.profileCli.GetByContact(lookupCtx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
+	lookupCancel()
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
-			log.WithError(err).Error("profile service lookup failed")
+			log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
+				Error("profile service lookup failed")
 			return "", fmt.Errorf("profile lookup failed: %w", err)
 		}
 		log.Debug("no existing profile found for contact - will create new profile")
@@ -242,11 +246,13 @@ func (h *AuthServer) completeProviderLogin(
 			KeyProfileName: userName,
 		})
 
-		createResult, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+		createCtx, createCancel := context.WithTimeout(ctx, socialProfileCreateTimeout)
+		createResult, createErr := h.profileCli.Create(createCtx, connect.NewRequest(&profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    contactDetail,
 			Properties: properties,
 		}))
+		createCancel()
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create new profile via profile service")
 			return "", fmt.Errorf("profile creation failed: %w", createErr)
@@ -290,8 +296,9 @@ func (h *AuthServer) completeProviderLogin(
 	// Step 4: Store login attempt
 	log.Debug("storing login attempt")
 
+	storeCtx, storeCancel := context.WithTimeout(ctx, socialStoreLoginTimeout)
 	loginEvent, err := h.storeLoginAttempt(
-		ctx,
+		storeCtx,
 		loginEvt,
 		models.LoginSource(provider),
 		existingProfile.GetId(),
@@ -299,6 +306,7 @@ func (h *AuthServer) completeProviderLogin(
 		"",
 		loggedInUser.Raw,
 	)
+	storeCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to store login attempt in database")
 		return "", fmt.Errorf("login attempt storage failed: %w", err)
@@ -313,8 +321,10 @@ func (h *AuthServer) completeProviderLogin(
 
 	// Access provisioning may need the OAuth client partition; hydrate secondary
 	// tenancy only for this step (Plane-1 still falls back via Hydra metadata).
-	accessCtx := withUserLoginTenancy(ctx, loginEvent)
+	// Strong total budget so concurrent M2M cannot hang social login.
+	accessCtx, accessCancel := context.WithTimeout(withUserLoginTenancy(ctx, loginEvent), strongTenancyTotalTimeout)
 	loginEvent, err = h.ensureLoginEventTenancyAccess(accessCtx, loginEvent, loginEvt.ClientID, profileID)
+	accessCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to ensure tenancy access for provider login")
 		return "", fmt.Errorf("provider login tenancy access failed: %w", err)
@@ -336,7 +346,9 @@ func (h *AuthServer) completeProviderLogin(
 		"login_event_id": loginEvent.GetID(),
 	}
 
-	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, provider, contactID)
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, socialHydraAcceptTimeout)
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(hydraCtx, params, loginContext, provider, contactID)
+	hydraCancel()
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed after provider authentication")
 		return "", fmt.Errorf("failed to complete OAuth2 login: %w", err)
