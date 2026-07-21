@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
 	"github.com/pitabwire/frame/v2/data"
@@ -669,13 +670,15 @@ func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) er
 
 // handleServiceAccountEnrichment handles token enrichment for service account
 // client_credentials tokens (both internal and external).
-// It looks up the service account by client_id via the tenancy service API,
-// validates the scope matches the SA type, verifies the attached profile type,
-// and returns enriched claims.
+//
+// Hot path: shared Frame cache (GenericCache on RawCache) → Hydra admin on miss
+// → claims with stable session_id. Durable login_events audit is emitted to the
+// Frame events queue and never blocks token issuance when claims are complete.
 func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
 	log := util.Log(ctx).WithField("client_id", clientID)
+	start := time.Now()
 
-	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
+	sa, fromCache, err := h.lookupServiceAccountByClientIDCached(ctx, clientID)
 	if err != nil {
 		log.WithError(err).Error("service account lookup failed")
 		return h.writeWebhookError(rw, "service account not found")
@@ -689,46 +692,111 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 
 	// Pass SA type directly as the role — no transformation
 	// NOTE: Profile type validation (BOT for internal, PERSON/INSTITUTION for
-	// external) is enforced at SA creation time, not here. Validating on every
-	// token request would create a circular dependency: token → webhook →
-	// profile service → token → webhook → ...
+	// external) is enforced at SA creation time, not here.
 	roles := []string{sa.Type}
 
 	sessionClaims := extractSessionAccessTokenClaims(tokenObject)
-	loginEvent, err := h.ensureServiceAccountLoginEvent(ctx, clientID, sa, sessionClaims, tokenType, grantType, grantedScopes)
-	if err != nil {
-		log.WithError(err).Error("service account login event persistence failed")
-		return h.writeWebhookError(rw, "unable to trace service account login")
-	}
+	sessionID := stableSASessionID(clientID)
 
 	accessID := sa.AccessID
-	if accessID == "" {
-		accessID = loginEvent.AccessID
-	}
 	if accessID == "" {
 		accessID = claimString(sessionClaims, "access_id")
 	}
 
-	claims, claimsErr := buildServiceAccountClaims(loginEvent.GetID(), sa, accessID, roles)
+	claims, claimsErr := buildServiceAccountClaims(sessionID, sa, accessID, roles)
 	if claimsErr != nil {
 		log.WithError(claimsErr).Error("service account claims incomplete")
 		return h.writeWebhookError(rw, "incomplete tenancy claims")
 	}
-	h.recordTokenWebhookTrace(ctx, loginEvent, tokenType, grantType, "service_account", grantedScopes)
+
+	// Durable audit is off the hot path via Frame events (queue-backed).
+	// Token issuance never waits on DB INSERT.
+	h.emitServiceAccountLoginAudit(ctx, clientID, sa, sessionID, tokenType, grantType, grantedScopes)
 
 	log.WithFields(map[string]any{
-		"login_event_id": loginEvent.GetID(),
+		"login_event_id": sessionID,
 		"profile_id":     sa.ProfileID,
 		"partition_id":   sa.PartitionID,
 		"tenant_id":      sa.TenantID,
 		"sa_type":        sa.Type,
 		"token_type":     tokenType,
 		"grant_type":     grantType,
-	}).Info("enriched service account token with durable login event")
+		"sa_cache_hit":   fromCache,
+		"duration_ms":    time.Since(start).Milliseconds(),
+	}).Info("enriched service account token")
 
 	// Override JWT sub to profile_id — for client_credentials Hydra defaults
 	// sub to the client_id, but the canonical identity is the profile_id.
 	return writeTokenHookResponseWithSubject(rw, claims, sa.ProfileID)
+}
+
+// lookupServiceAccountByClientIDCached uses Frame GenericCache over the shared
+// RawCache backend (memory / NATS KV / Valkey).
+func (h *AuthServer) lookupServiceAccountByClientIDCached(
+	ctx context.Context,
+	clientID string,
+) (*serviceAccountAuthContext, bool, error) {
+	clientID = strings.TrimSpace(clientID)
+	if clientID == "" {
+		return nil, false, fmt.Errorf("client_id is required")
+	}
+	if sa, neg, ok := h.getCachedServiceAccount(ctx, clientID); ok {
+		if neg {
+			return nil, true, fmt.Errorf("service account not found (cached)")
+		}
+		return sa, true, nil
+	}
+
+	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
+	if err != nil {
+		h.setCachedServiceAccountNegative(ctx, clientID, saNegativeCacheTTL)
+		return nil, false, fmt.Errorf("lookup service account %q: %w", clientID, err)
+	}
+	h.setCachedServiceAccount(ctx, clientID, sa, saClaimsCacheTTL)
+	return sa, false, nil
+}
+
+// emitServiceAccountLoginAudit publishes durable audit work to the Frame events
+// queue. Failures are logged only — token response is not blocked.
+func (h *AuthServer) emitServiceAccountLoginAudit(
+	ctx context.Context,
+	clientID string,
+	sa *serviceAccountAuthContext,
+	sessionID string,
+	tokenType string,
+	grantType string,
+	grantedScopes []string,
+) {
+	if h == nil || sa == nil {
+		return
+	}
+	if h.eventsMan == nil {
+		util.Log(ctx).WithField("client_id", clientID).
+			Debug("sa login audit not emitted — events manager not configured")
+		return
+	}
+
+	payload := &events.ServiceAccountLoginAuditPayload{
+		LoginEventID:     sessionID,
+		ClientID:         clientID,
+		ServiceAccountID: sa.ServiceAccountID,
+		TenantID:         sa.TenantID,
+		PartitionID:      sa.PartitionID,
+		ProfileID:        sa.ProfileID,
+		AccessID:         sa.AccessID,
+		SAType:           sa.Type,
+		TokenType:        tokenType,
+		GrantType:        grantType,
+	}
+	if len(grantedScopes) > 0 {
+		payload.GrantedScopes = append([]string(nil), grantedScopes...)
+	}
+	if err := h.eventsMan.Emit(ctx, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
+		util.Log(ctx).WithError(err).WithFields(map[string]any{
+			"client_id":      clientID,
+			"login_event_id": sessionID,
+		}).Warn("failed to emit sa login audit event")
+	}
 }
 
 func (h *AuthServer) lookupServiceAccountByClientID(
@@ -910,109 +978,6 @@ func (h *AuthServer) getOrCreateLoginRecord(ctx context.Context, profileID, clie
 	}
 
 	return login, nil
-}
-
-func (h *AuthServer) ensureServiceAccountLoginEvent(
-	ctx context.Context,
-	clientID string,
-	sa *serviceAccountAuthContext,
-	sessionClaims map[string]any,
-	tokenType string,
-	grantType string,
-	grantedScopes []string,
-) (*models.LoginEvent, error) {
-	if sa == nil {
-		return nil, fmt.Errorf("service account context is required")
-	}
-
-	loginRecord, err := h.getOrCreateLoginRecord(ctx, sa.ProfileID, clientID, string(models.LoginSourceServiceAccount))
-	if err != nil {
-		return nil, fmt.Errorf("resolve login record: %w", err)
-	}
-
-	if loginEventID := claimString(sessionClaims, "session_id"); loginEventID != "" {
-		loginEvent, lookupErr := h.loginEventRepo.GetByID(ctx, loginEventID)
-		if lookupErr != nil {
-			return nil, fmt.Errorf("lookup existing login event: %w", lookupErr)
-		}
-		if loginEvent != nil {
-			return h.ensureServiceAccountLoginEventContext(ctx, loginEvent, loginRecord, sa), nil
-		}
-	}
-
-	loginEvent := &models.LoginEvent{
-		ClientID:  clientID,
-		LoginID:   loginRecord.GetID(),
-		ProfileID: sa.ProfileID,
-		AccessID:  sa.AccessID,
-		Properties: data.JSONMap{
-			"auth_flow":            "service_account_webhook",
-			"grant_type":           grantType,
-			"token_type":           tokenType,
-			"service_account_type": sa.Type,
-		},
-		Client: "hydra_token_webhook",
-		BaseModel: data.BaseModel{
-			TenantID:    sa.TenantID,
-			PartitionID: sa.PartitionID,
-		},
-	}
-	if len(grantedScopes) > 0 {
-		loginEvent.Properties["granted_scopes"] = append([]string(nil), grantedScopes...)
-	}
-	loginEvent.ID = util.IDString()
-
-	if err := h.loginEventRepo.Create(ctx, loginEvent); err != nil {
-		return nil, fmt.Errorf("create service account login event: %w", err)
-	}
-
-	return loginEvent, nil
-}
-
-func (h *AuthServer) ensureServiceAccountLoginEventContext(
-	ctx context.Context,
-	loginEvent *models.LoginEvent,
-	loginRecord *models.Login,
-	sa *serviceAccountAuthContext,
-) *models.LoginEvent {
-	if loginEvent == nil || sa == nil {
-		return loginEvent
-	}
-
-	changed := make([]string, 0, 5)
-	if loginEvent.ClientID == "" {
-		loginEvent.ClientID = sa.ClientID
-		changed = append(changed, "client_id")
-	}
-	if loginEvent.LoginID == "" && loginRecord != nil {
-		loginEvent.LoginID = loginRecord.GetID()
-		changed = append(changed, "login_id")
-	}
-	if loginEvent.ProfileID == "" {
-		loginEvent.ProfileID = sa.ProfileID
-		changed = append(changed, "profile_id")
-	}
-	if loginEvent.AccessID == "" && sa.AccessID != "" {
-		loginEvent.AccessID = sa.AccessID
-		changed = append(changed, "access_id")
-	}
-	if loginEvent.TenantID == "" {
-		loginEvent.TenantID = sa.TenantID
-		changed = append(changed, "tenant_id")
-	}
-	if loginEvent.PartitionID == "" {
-		loginEvent.PartitionID = sa.PartitionID
-		changed = append(changed, "partition_id")
-	}
-
-	if len(changed) > 0 {
-		if _, err := h.loginEventRepo.Update(ctx, loginEvent, changed...); err != nil {
-			util.Log(ctx).WithError(err).WithField("login_event_id", loginEvent.GetID()).
-				Warn("failed to update existing service account login event context")
-		}
-	}
-
-	return loginEvent
 }
 
 func (h *AuthServer) recordTokenWebhookTrace(

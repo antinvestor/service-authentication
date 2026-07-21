@@ -38,10 +38,6 @@ var (
 	ErrLoginEventCacheFailure = errors.New("failed to cache login event")
 )
 
-// Cache key prefix for login events to avoid collisions
-// Note: NATS JetStream KV only allows alphanumeric, dash, underscore, slash, equals, and period in keys
-const loginEventCachePrefix = "login_event_"
-
 // loginEventPropertyFedCMNonce holds the per-login nonce we pass into
 // navigator.credentials.get({identity: …}) on /s/login. The id_token returned
 // by FedCM (from either our own IdP or a federated provider like Google) MUST
@@ -55,19 +51,24 @@ const loginEventPropertyFedCMNonce = "fedcm_nonce"
 const SessionKeyLoginStorageName = "login-storage"
 const SessionKeyLoginEventID = "login-event-id"
 
-// updateTenancyForLoginEvent enriches the login event with partition/tenant info.
-// This is designed to run asynchronously to avoid blocking the login response.
+// updateTenancyForLoginEvent enriches a cached login event with partition/tenant
+// info. Used by paths that already have a login_event_id (e.g. Google FedCM
+// completion) and can tolerate soft failure. For the initial GET /s/login form
+// render use softEnrichLoginEventTenancy with the Hydra login request instead —
+// that path is budgeted and never blocks page render on tenancy RPC hangs.
 //
-// Resolution order:
-//  1. Tenancy service GetOAuthClient → partition (preferred, full tenancy graph)
-//  2. Hydra OAuth2 client metadata tenant_id/partition_id (fallback when tenancy
-//     ReBAC denies service-authentication, which would otherwise break social
-//     login at SocialLoginCallbackEndpoint with "unable to resolve tenancy")
+// Resolution order (when not soft-enriching from the login request):
+//  1. Tenancy service GetOAuthClient → partition
+//  2. Hydra OAuth2 client metadata tenant_id/partition_id
 func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventID string) {
 	log := util.Log(ctx).WithField("login_event_id", loginEventID)
 	start := time.Now()
 
-	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
+	// Soft budget so callers (FedCM) cannot hang for Frame's 30s default.
+	budgetCtx, cancel := context.WithTimeout(ctx, loginSoftTenancyBudget)
+	defer cancel()
+
+	loginEvt, err := h.getLoginEventFromCache(budgetCtx, loginEventID)
 	if err != nil {
 		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
 			Error("cache lookup failed for login event")
@@ -79,25 +80,26 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 		return
 	}
 
-	source := "tenancy_service"
-	partitionObj, err := h.resolvePartitionByClientID(ctx, loginEvt.ClientID)
-	if err == nil && partitionObj != nil {
-		loginEvt.PartitionID = partitionObj.GetId()
-		loginEvt.TenantID = partitionObj.GetTenantId()
-	} else {
-		if err != nil {
-			log.WithError(err).WithField("client_id", loginEvt.ClientID).
-				Warn("partition lookup failed for login event enrichment; trying Hydra client metadata")
-		}
-		tenantID, partitionID, metaErr := h.tenancyIDsFromHydraClient(ctx, loginEvt.ClientID)
-		if metaErr != nil {
-			log.WithError(metaErr).WithField("client_id", loginEvt.ClientID).
-				Warn("hydra client metadata tenancy fallback failed")
-			return
-		}
+	// Prefer Hydra admin first (no self-token loop), then tenancy best-effort.
+	source := tenancySourceHydraAdmin
+	adminCtx, adminCancel := context.WithTimeout(budgetCtx, loginHydraAdminTimeout)
+	tenantID, partitionID, metaErr := h.tenancyIDsFromHydraClient(adminCtx, loginEvt.ClientID)
+	adminCancel()
+	if metaErr == nil {
 		loginEvt.TenantID = tenantID
 		loginEvt.PartitionID = partitionID
-		source = "hydra_client_metadata"
+	} else {
+		tenCtx, tenCancel := context.WithTimeout(budgetCtx, loginTenancySoftTimeout)
+		partitionObj, partErr := h.resolvePartitionByClientID(tenCtx, loginEvt.ClientID)
+		tenCancel()
+		if partErr != nil || partitionObj == nil {
+			log.WithError(metaErr).WithField("client_id", loginEvt.ClientID).
+				Warn("login event tenancy enrichment failed within soft budget")
+			return
+		}
+		loginEvt.PartitionID = partitionObj.GetId()
+		loginEvt.TenantID = partitionObj.GetTenantId()
+		source = tenancySourceTenancy
 	}
 
 	if !ValidTenancyPair(loginEvt.TenantID, loginEvt.PartitionID) {
@@ -109,16 +111,16 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 		return
 	}
 
-	if err = h.setLoginEventToCache(ctx, loginEvt); err != nil {
+	if err = h.setLoginEventToCache(budgetCtx, loginEvt); err != nil {
 		log.WithError(err).Error("failed to update login event cache with partition info")
 		return
 	}
 
 	log.WithFields(map[string]any{
-		"partition_id": loginEvt.PartitionID,
-		"tenant_id":    loginEvt.TenantID,
-		"source":       source,
-		"duration_ms":  time.Since(start).Milliseconds(),
+		"partition_id":   loginEvt.PartitionID,
+		"tenant_id":      loginEvt.TenantID,
+		"tenancy_source": source,
+		"duration_ms":    time.Since(start).Milliseconds(),
 	}).Debug("login event enriched with partition info")
 }
 
@@ -174,6 +176,9 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 
 // LoginEndpointShow displays the login page for OAuth2 authorization flow.
 // It validates the login challenge, checks for session skip, and renders the login form.
+//
+// Latency: per-branch budgets (see latency_budgets.go). Form render soft-enriches
+// tenancy and always paints the form within loginFormBudget when Hydra is healthy.
 func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	start := time.Now()
@@ -196,14 +201,16 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	}
 	log = log.WithField("login_challenge_prefix", challengePrefix)
 
-	// Step 2: Fetch login request from Hydra
-	getLogReq, err := hydraCli.GetLoginRequest(ctx, loginChallenge)
+	// Step 2: Fetch login request from Hydra (hard budget)
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, loginHydraTimeout)
+	getLogReq, err := hydraCli.GetLoginRequest(hydraCtx, loginChallenge)
+	hydraCancel()
 	if err != nil {
 		log.WithError(err).Error("hydra login request lookup failed")
 		return fmt.Errorf("failed to get login request from hydra: %w", err)
 	}
 
-	// Step 3: Handle session skip (already authenticated)
+	// Step 3: Handle session skip (already authenticated) — distinct budget
 	if getLogReq.Skip {
 		subjectID := getLogReq.GetSubject()
 		oauth2SessionID := getLogReq.GetSessionId()
@@ -212,7 +219,10 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			"oauth2_session_id": oauth2SessionID,
 		}).Debug("skipping login - session already exists")
 
-		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(ctx, req, getLogReq, loginChallenge, subjectID)
+		skipCtx, skipCancel := context.WithTimeout(ctx, skipLoginBudget)
+		defer skipCancel()
+
+		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(skipCtx, req, getLogReq, loginChallenge, subjectID)
 		if skipErr != nil {
 			log.WithError(skipErr).Error("failed to resolve login event for skipped login")
 			return fmt.Errorf("failed to resolve skipped-login event: %w", skipErr)
@@ -232,7 +242,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			"login_event_id": skipLoginEvent.GetID(),
 		}
 
-		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, loginCtx, "session_refresh")
+		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(skipCtx, params, loginCtx, "session_refresh")
 		if acceptErr != nil {
 			log.WithError(acceptErr).Error("failed to accept login request for session skip")
 			return fmt.Errorf("failed to accept login request: %w", acceptErr)
@@ -249,10 +259,12 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
-	// Step 3.5: Attempt remember-me auto-login
+	// Step 3.5: Attempt remember-me auto-login (soft budget — fall through to form)
 	rememberMeLoginEventID := h.getRememberMeLoginEventID(req)
 	if rememberMeLoginEventID != "" {
-		redirectURL, rememberErr := h.attemptRememberMeLogin(ctx, req, loginChallenge, getLogReq, rememberMeLoginEventID)
+		remCtx, remCancel := context.WithTimeout(ctx, rememberMeSoftBudget)
+		redirectURL, rememberErr := h.attemptRememberMeLogin(remCtx, req, loginChallenge, getLogReq, rememberMeLoginEventID)
+		remCancel()
 		if rememberErr == nil {
 			log.WithField("old_login_event_id", rememberMeLoginEventID).
 				Info("remember-me auto-login successful")
@@ -263,31 +275,32 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		log.WithError(rememberErr).Debug("remember-me auto-login failed - showing login form")
 	}
 
-	// Step 4: Create login event for new authentication
-	loginEvent, err := h.createLoginEvent(ctx, req, getLogReq, loginChallenge)
+	// Step 4–7: New authentication form path (form budget)
+	formCtx, formCancel := context.WithTimeout(ctx, loginFormBudget)
+	defer formCancel()
+
+	loginEvent, err := h.createLoginEvent(formCtx, req, getLogReq, loginChallenge)
 	if err != nil {
 		log.WithError(err).Error("failed to create login event")
 		return err
 	}
 
-	// Step 5: Enrich login event with partition info synchronously
-	// This must complete before the user can submit their contact to ensure
-	// proper tenancy context for verification creation
-	h.updateTenancyForLoginEvent(ctx, loginEvent.GetID())
+	// Soft tenancy: never block form render on tenancy/token loops.
+	// Strong tenancy is enforced at verification complete and consent.
+	tenancySource := h.softEnrichLoginEventTenancy(formCtx, loginEvent, getLogReq)
 
-	// Step 6: Generate and persist the FedCM nonce. The same value is rendered
-	// into the page and stored on the LoginEvent — the completion endpoints
-	// then verify the id_token's nonce claim against the cached copy.
+	// FedCM nonce: same value is rendered into the page and stored on the LoginEvent.
 	fedcmNonce := util.IDString()
 	if loginEvent.Properties == nil {
 		loginEvent.Properties = map[string]any{}
 	}
 	loginEvent.Properties[loginEventPropertyFedCMNonce] = fedcmNonce
-	if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
+	cacheCtx, cacheCancel := context.WithTimeout(formCtx, loginCacheTimeout)
+	if cacheErr := h.setLoginEventToCache(cacheCtx, loginEvent); cacheErr != nil {
 		log.WithError(cacheErr).Debug("failed to re-cache login event with FedCM nonce")
 	}
+	cacheCancel()
 
-	// Step 7: Prepare and render login template
 	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()
 	payload["ClientID"] = loginEvent.ClientID
@@ -302,8 +315,9 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	log.WithFields(map[string]any{
 		"login_event_id": loginEvent.GetID(),
 		"client_id":      loginEvent.ClientID,
+		"tenancy_source": tenancySource,
 		"duration_ms":    time.Since(start).Milliseconds(),
-	}).Debug("login page rendered")
+	}).Info("login page rendered")
 
 	return loginTmpl.Execute(rw, payload)
 }

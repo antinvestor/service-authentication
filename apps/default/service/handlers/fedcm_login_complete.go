@@ -114,7 +114,7 @@ func (h *AuthServer) fedcmIDTokenIsFresh(ctx context.Context, idToken string) bo
 		return false
 	}
 	sum := sha256.Sum256([]byte(idToken))
-	key := "fedcm:exchange:" + hex.EncodeToString(sum[:])
+	key := fedcmExchangePrefix + hex.EncodeToString(sum[:])
 	c, err := h.fedcmExchangeCache()
 	if err != nil {
 		return false

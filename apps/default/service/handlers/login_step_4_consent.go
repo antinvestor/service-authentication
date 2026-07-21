@@ -64,8 +64,13 @@ func isRootAdminOrOwner(tenantID, partitionID string, roles []string) bool {
 
 // ShowConsentEndpoint handles the OAuth2 consent flow.
 // It retrieves consent challenge, processes device session, and grants consent.
+//
+// Bounded by consentStrongBudget so M2M token contention cannot hang consent
+// until the edge gateway kills the stream.
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	parent := req.Context()
+	ctx, cancel := context.WithTimeout(parent, consentStrongBudget)
+	defer cancel()
 	start := time.Now()
 	log := util.Log(ctx)
 
@@ -86,7 +91,9 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	log = log.WithField("consent_challenge_prefix", challengePrefix)
 
 	// Step 2: Get consent request from Hydra
-	getConseReq, err := hydraCli.GetConsentRequest(ctx, consentChallenge)
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, consentHydraTimeout)
+	getConseReq, err := hydraCli.GetConsentRequest(hydraCtx, consentChallenge)
+	hydraCancel()
 	if err != nil {
 		log.WithError(err).Error("hydra consent request lookup failed")
 		return fmt.Errorf("failed to get consent request: %w", err)
@@ -95,11 +102,14 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
 
-	clientObj, err := h.getOAuthClient(ctx, clientID)
+	oauthCtx, oauthCancel := context.WithTimeout(ctx, consentOAuthClientTimeout)
+	clientObj, err := h.getOAuthClient(oauthCtx, clientID)
+	oauthCancel()
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{
-			"client_id":  clientID,
-			"subject_id": getConseReq.GetSubject(),
+			"client_id":   clientID,
+			"subject_id":  getConseReq.GetSubject(),
+			"duration_ms": time.Since(start).Milliseconds(),
 		}).Error("could not obtain consent OAuth client")
 		return fmt.Errorf("resolve consent OAuth client %s: %w", clientID, err)
 	}
@@ -286,6 +296,35 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 	}, nil
 }
 
+// resolveConsentDeviceObject processes device tracking within consentDeviceTimeout.
+// Fail-open: returns an empty device on timeout/error so consent can complete.
+func (h *AuthServer) resolveConsentDeviceObject(
+	ctx context.Context,
+	rw http.ResponseWriter,
+	req *http.Request,
+	subjectID string,
+) *devicev1.DeviceObject {
+	log := util.Log(ctx)
+	devCtx, devCancel := context.WithTimeout(ctx, consentDeviceTimeout)
+	deviceObj, deviceErr := h.processDeviceSession(devCtx, subjectID, req.UserAgent())
+	devCancel()
+	if deviceErr != nil {
+		if deviceObj == nil {
+			log.WithError(deviceErr).Warn("device session processing failed within budget; continuing with empty device_id")
+			deviceObj = &devicev1.DeviceObject{}
+		} else {
+			log.WithError(deviceErr).Warn("device session processing had non-fatal error")
+		}
+	}
+	if deviceObj == nil {
+		deviceObj = &devicev1.DeviceObject{}
+	}
+	if err := h.storeDeviceID(ctx, rw, deviceObj); err != nil {
+		log.WithError(err).Debug("failed to store device ID cookie")
+	}
+	return deviceObj
+}
+
 // buildUserTokenClaims builds token claims for regular user logins.
 func (h *AuthServer) buildUserTokenClaims(
 	ctx context.Context,
@@ -303,20 +342,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("subject_id is required for user token claims")
 	}
 
-	// Process device session with User-Agent for proper device labelling
-	userAgent := req.UserAgent()
-	deviceObj, deviceErr := h.processDeviceSession(ctx, subjectID, userAgent)
-	if deviceErr != nil {
-		if deviceObj == nil {
-			log.WithError(deviceErr).Error("device session processing failed")
-			return nil, fmt.Errorf("failed to process device session: %w", deviceErr)
-		}
-		log.WithError(deviceErr).Warn("device session processing had non-fatal error")
-	}
-
-	if err := h.storeDeviceID(ctx, rw, deviceObj); err != nil {
-		log.WithError(err).Debug("failed to store device ID cookie")
-	}
+	deviceObj := h.resolveConsentDeviceObject(ctx, rw, req, subjectID)
 
 	// Extract login event ID from consent context.
 	// This is required for a strict 1:1 mapping between user access tokens and login events.
@@ -341,7 +367,9 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("login event subject mismatch")
 	}
 
-	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(ctx, loginEvent, clientObj.GetClientId(), subjectID)
+	tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
+	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(tenCtx, loginEvent, clientObj.GetClientId(), subjectID)
+	tenCancel()
 	if err != nil {
 		log.WithError(err).WithField("login_event_id", loginEvent.GetID()).Error("failed to ensure tenancy access for consent")
 		return nil, err
@@ -594,6 +622,9 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string,
 }
 
 func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, deviceObj *devicev1.DeviceObject) error {
+	if deviceObj == nil || deviceObj.GetId() == "" {
+		return nil
+	}
 
 	deviceID := utils.DeviceIDFromContext(ctx)
 

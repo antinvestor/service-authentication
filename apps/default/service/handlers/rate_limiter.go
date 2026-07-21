@@ -25,9 +25,6 @@ import (
 	"github.com/pitabwire/util"
 )
 
-// Rate limit cache key prefix - uses alphanumeric and underscore (NATS-safe).
-const rateLimitCachePrefix = "login_rl_"
-
 // RateLimitConfig holds configuration for rate limiting.
 type RateLimitConfig struct {
 	MaxAttempts int           // Maximum attempts allowed
@@ -64,7 +61,8 @@ func rateLimitBucketKey(key string, window time.Duration, now time.Time) string 
 		windowSecs = int64(time.Hour.Seconds())
 	}
 	bucket := now.Unix() / windowSecs
-	return fmt.Sprintf("%s%s:%d", rateLimitCachePrefix, hashIP(key), bucket)
+	// Underscore separator (NATS JetStream KV-safe; no colon).
+	return fmt.Sprintf("%s%s_%d", rateLimitCachePrefix, hashIP(key), bucket)
 }
 
 func (h *AuthServer) rateLimitConfig() RateLimitConfig {
@@ -78,7 +76,10 @@ func (h *AuthServer) rateLimitConfig() RateLimitConfig {
 	return cfg
 }
 
-func (h *AuthServer) rawRateLimitCache() cache.RawCache {
+// rawSharedCache returns the Frame RawCache for this service (rate limits, SA
+// claims, FedCM, login events). Always go through cache.Manager — never open
+// redis/valkey/NATS clients directly (golang-patterns).
+func (h *AuthServer) rawSharedCache() cache.RawCache {
 	if h == nil || h.cacheMan == nil || h.config == nil {
 		return nil
 	}
@@ -91,6 +92,11 @@ func (h *AuthServer) rawRateLimitCache() cache.RawCache {
 		return nil
 	}
 	return raw
+}
+
+// rawRateLimitCache is an alias kept for call-site clarity in rate limiting.
+func (h *AuthServer) rawRateLimitCache() cache.RawCache {
+	return h.rawSharedCache()
 }
 
 func denyRateLimitResult(cfg RateLimitConfig, retryAfter time.Duration) RateLimitResult {
