@@ -210,7 +210,11 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		return fmt.Errorf("failed to get login request from hydra: %w", err)
 	}
 
-	// Step 3: Handle session skip (already authenticated) — distinct budget
+	// Step 3: Handle session skip (already authenticated) — soft budget.
+	// Never abort the OAuth challenge on skip failure: fall through to the
+	// login form (same posture as remember-me). Hard errors here previously
+	// caused Hydra "Authorization request must be aborted" + gateway 504s
+	// for returning users (device S2S + login_events INSERT under 800ms).
 	if getLogReq.Skip {
 		subjectID := getLogReq.GetSubject()
 		oauth2SessionID := getLogReq.GetSessionId()
@@ -220,43 +224,40 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		}).Debug("skipping login - session already exists")
 
 		skipCtx, skipCancel := context.WithTimeout(ctx, skipLoginBudget)
-		defer skipCancel()
-
 		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(skipCtx, req, getLogReq, loginChallenge, subjectID)
-		if skipErr != nil {
-			log.WithError(skipErr).Error("failed to resolve login event for skipped login")
-			return fmt.Errorf("failed to resolve skipped-login event: %w", skipErr)
+		if skipErr == nil && skipLoginEvent != nil {
+			params := &hydra.AcceptLoginRequestParams{
+				LoginChallenge:   loginChallenge,
+				SubjectID:        subjectID,
+				SessionID:        skipLoginEvent.GetID(),
+				ExtendSession:    true,
+				Remember:         true,
+				RememberDuration: h.config.SessionRememberDuration,
+			}
+			loginCtx := map[string]any{
+				"login_event_id": skipLoginEvent.GetID(),
+			}
+			acceptCtx, acceptCancel := context.WithTimeout(skipCtx, loginHydraTimeout)
+			redirectURL, acceptErr := hydraCli.AcceptLoginRequest(acceptCtx, params, loginCtx, "session_refresh")
+			acceptCancel()
+			skipCancel()
+			if acceptErr == nil {
+				log.WithFields(map[string]any{
+					"subject_id":     subjectID,
+					"login_event_id": skipLoginEvent.GetID(),
+					"duration_ms":    time.Since(start).Milliseconds(),
+				}).Info("login skipped - redirecting to OAuth2 flow")
+				setLoginStatusLoggedIn(rw)
+				http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
+				return nil
+			}
+			log.WithError(acceptErr).Warn("session skip accept failed - showing login form")
+		} else {
+			skipCancel()
+			if skipErr != nil {
+				log.WithError(skipErr).Warn("session skip event resolve failed - showing login form")
+			}
 		}
-
-		params := &hydra.AcceptLoginRequestParams{
-			LoginChallenge: loginChallenge,
-			SubjectID:      subjectID,
-			SessionID:      skipLoginEvent.GetID(),
-
-			ExtendSession:    true,
-			Remember:         true,
-			RememberDuration: h.config.SessionRememberDuration,
-		}
-
-		loginCtx := map[string]any{
-			"login_event_id": skipLoginEvent.GetID(),
-		}
-
-		redirectURL, acceptErr := hydraCli.AcceptLoginRequest(skipCtx, params, loginCtx, "session_refresh")
-		if acceptErr != nil {
-			log.WithError(acceptErr).Error("failed to accept login request for session skip")
-			return fmt.Errorf("failed to accept login request: %w", acceptErr)
-		}
-
-		log.WithFields(map[string]any{
-			"subject_id":     subjectID,
-			"login_event_id": skipLoginEvent.GetID(),
-			"duration_ms":    time.Since(start).Milliseconds(),
-		}).Info("login skipped - redirecting to OAuth2 flow")
-
-		setLoginStatusLoggedIn(rw)
-		http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
-		return nil
 	}
 
 	// Step 3.5: Attempt remember-me auto-login (soft budget — fall through to form)
@@ -323,7 +324,9 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 }
 
 // ensureLoginEventForSkippedLogin guarantees that Hydra skip flows still carry a
-// durable login_event record and tenancy access context.
+// login_event identity Hydra can put in the session. Prefer cache + soft
+// tenancy; durable DB write and strong tenancy are best-effort so a slow
+// device/profile/DB path cannot burn skipLoginBudget and abort OAuth.
 func (h *AuthServer) ensureLoginEventForSkippedLogin(
 	ctx context.Context,
 	req *http.Request,
@@ -355,24 +358,41 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 		return nil, err
 	}
 
-	// Ensure device tracking for the skip flow. Non-browser clients (mobile apps, bots)
-	// won't have device cookies, so we create/find a device using the session or User-Agent.
+	// Device S2S is soft — never let processDeviceSession own the skip budget.
 	userAgent := req.UserAgent()
-	deviceID := h.resolveSkippedLoginDeviceID(ctx, subjectID, userAgent, existingLoginEvent)
+	deviceCtx, deviceCancel := context.WithTimeout(ctx, skipDeviceSoftTimeout)
+	deviceID := h.resolveSkippedLoginDeviceID(deviceCtx, subjectID, userAgent, existingLoginEvent)
+	deviceCancel()
+
 	newLoginEvent := newSkippedLoginEvent(req, loginChallenge, clientID, subjectID, oauth2SessionID, userAgent, deviceID, loginRecord, existingLoginEvent)
 	newLoginEvent.ID = util.IDString()
 
-	if err = h.loginEventRepo.Create(ctx, newLoginEvent); err != nil {
-		return nil, fmt.Errorf("failed to create login event for skipped login: %w", err)
-	}
+	// Soft tenancy from Hydra client metadata / Valkey map first (no S2S token loop).
+	_ = h.softEnrichLoginEventTenancy(ctx, newLoginEvent, loginReq)
 
-	newLoginEvent, err = h.ensureLoginEventTenancyAccess(ctx, newLoginEvent, clientID, subjectID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply tenancy context to skipped login event: %w", err)
-	}
-
+	// Cache first so AcceptLogin can proceed even if DB is slow.
 	if cacheErr := h.setLoginEventToCache(ctx, newLoginEvent); cacheErr != nil {
 		util.Log(ctx).WithError(cacheErr).Debug("failed to cache skipped-login event")
+	}
+
+	// Best-effort durable write under remaining budget; failure is non-fatal
+	// for skip accept (consent re-resolves tenancy under strong budgets).
+	dbCtx, dbCancel := context.WithTimeout(ctx, skipLoginDBTimeout)
+	if createErr := h.loginEventRepo.Create(dbCtx, newLoginEvent); createErr != nil {
+		util.Log(ctx).WithError(createErr).Warn("skipped-login event DB create failed; continuing with cache-only event")
+	}
+	dbCancel()
+
+	// Strong tenancy only if soft left us incomplete and budget remains.
+	if !ValidTenancyPair(newLoginEvent.TenantID, newLoginEvent.PartitionID) && ctx.Err() == nil {
+		tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
+		if enriched, tenErr := h.ensureLoginEventTenancyAccess(tenCtx, newLoginEvent, clientID, subjectID); tenErr != nil {
+			util.Log(ctx).WithError(tenErr).Warn("skipped-login strong tenancy failed; continuing with soft/cached tenancy")
+		} else {
+			newLoginEvent = enriched
+			_ = h.setLoginEventToCache(ctx, newLoginEvent)
+		}
+		tenCancel()
 	}
 
 	return newLoginEvent, nil

@@ -30,7 +30,12 @@ const (
 	loginCacheTimeout       = 50 * time.Millisecond
 
 	rememberMeSoftBudget = 200 * time.Millisecond
-	skipLoginBudget      = 800 * time.Millisecond
+	// Session skip (Hydra Skip=true): must finish under edge budget and never
+	// hard-fail the OAuth challenge. Sub-steps are soft so device/DB slowness
+	// falls through to the login form instead of aborting /oauth2/auth.
+	skipLoginBudget       = 1200 * time.Millisecond
+	skipDeviceSoftTimeout = 200 * time.Millisecond
+	skipLoginDBTimeout    = 300 * time.Millisecond
 
 	verifyStrongBudget = 2 * time.Second
 	// Parent budget for consent. Sub-budgets must fit under this parent.
