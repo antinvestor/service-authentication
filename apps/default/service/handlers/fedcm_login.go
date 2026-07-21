@@ -249,9 +249,11 @@ func (h *AuthServer) FedCMLoginComplete(
 // fedcmResolveContact looks up or creates the profile contact for the given
 // contact detail string. Returns contactID, profileID, profileName, error.
 func (h *AuthServer) fedcmResolveContact(ctx context.Context, contact string) (contactID, profileID, profileName string, err error) {
-	result, lookupErr := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{
+	lookupCtx, lookupCancel := context.WithTimeout(ctx, socialProfileLookupTimeout)
+	result, lookupErr := h.profileCli.GetByContact(lookupCtx, connect.NewRequest(&profilev1.GetByContactRequest{
 		Contact: contact,
 	}))
+	lookupCancel()
 	if lookupErr != nil && !frame.ErrorIsNotFound(lookupErr) {
 		return "", "", "", lookupErr
 	}
@@ -275,9 +277,11 @@ func (h *AuthServer) fedcmResolveContact(ctx context.Context, contact string) (c
 	}
 
 	if contactID == "" {
-		resp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
+		createCtx, createCancel := context.WithTimeout(ctx, socialProfileCreateTimeout)
+		resp, createErr := h.profileCli.CreateContact(createCtx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contact,
 		}))
+		createCancel()
 		if createErr != nil {
 			return "", "", "", createErr
 		}
