@@ -183,7 +183,10 @@ func main() {
 // migrationBudget is the hard upper bound for Helm pre-upgrade migrate Jobs.
 // Frame advisory locks retry until ctx is cancelled; without a deadline a
 // stuck lock (or OTLP/NATS side effects during NewService) hangs the Job.
-const migrationBudget = 90 * time.Second
+// Allow several minutes so a concurrent lock holder can finish without the
+// migrate Job dying mid-wait (seen as "couldn't acquire advisory lock" +
+// context deadline exceeded under a 90s cap).
+const migrationBudget = 5 * time.Minute
 
 // prepareMigrationEnvironment strips runtime-only deps so Frame bootstrap
 // during DO_MIGRATION cannot block on NATS JetStream or OTLP exporters.
