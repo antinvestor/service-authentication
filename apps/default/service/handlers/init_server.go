@@ -216,6 +216,9 @@ func NewAuthServer(ctx context.Context,
 	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(facadeUpstreamTimeout)}, httpOpts...)
 	h.tokenFacadeClient = client.NewHTTPClient(context.Background(), facadeHTTPOpts...)
 
+	// Load signing key before traffic so private_key_jwt is warm after deploy.
+	h.prewarmSigningKey(ctx)
+
 	h.analytics = telemetry.New(ctx, authConfig.PostHogAPIKey, authConfig.PostHogHost)
 
 	h.setupLoginOptions(authConfig)

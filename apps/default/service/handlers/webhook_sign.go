@@ -15,7 +15,6 @@
 package handlers
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -66,10 +65,7 @@ type signAssertionResponse struct {
 // be used by callers for private_key_jwt authentication against a token
 // endpoint. Hydra verifies the assertion via its own JWKS endpoint.
 func (h *AuthServer) SignPrivateKeyJWTEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	// Hot path for every private_key_jwt token mint — hard-cap so a hung Hydra
-	// JWKS fetch cannot cascade into 15s login timeouts.
-	ctx, cancel := context.WithTimeout(req.Context(), signJWTBudget)
-	defer cancel()
+	ctx := req.Context()
 	log := util.Log(ctx)
 
 	var body signAssertionRequest
@@ -88,15 +84,15 @@ func (h *AuthServer) SignPrivateKeyJWTEndpoint(rw http.ResponseWriter, req *http
 		setName = defaultJWKSetName
 	}
 
-	// Warm path uses process-local parsed key cache so short Hydra admin
-	// outages do not cascade into every private_key_jwt mint (and jti_known
-	// retries from reused assertions).
+	// Warm path is process-local cache (no Hydra hop). Cold path uses a
+	// detached jwkFetchTimeout so a tight parent deadline cannot starve JWKS.
 	signingKey, kid, err := h.getSigningKey(ctx, setName)
 	if err != nil {
 		log.WithError(err).WithField("jwk_set", setName).Error("failed to obtain signing key")
 		return writeSignError(rw, http.StatusBadGateway, "failed to fetch signing keys")
 	}
 
+	// JWT assembly is pure CPU after the key is in hand (warm path ≪ 1ms).
 	assertion, alg, expiresAt, err := buildSignedAssertion(signingKey, kid, clientID, &body)
 	if err != nil {
 		log.WithError(err).Error("failed to build signed assertion")

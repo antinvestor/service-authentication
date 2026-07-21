@@ -56,11 +56,13 @@ const (
 	// --- Hydra admin / sign webhook ---
 	// Transport-level ceiling for Hydra admin HTTP client (defence in depth).
 	hydraAdminHTTPTimeout = 2 * time.Second
-	// Sign JWT must stay tiny — sits on every private_key_jwt token mint path.
-	signJWTBudget = 150 * time.Millisecond
 	// Process-local parsed private key cache. Survives short Hydra admin blips
 	// without putting key material in Valkey. Hydra key rotation is rare.
+	// Warm private_key_jwt path is pure CPU (≪ 150ms) after the key is cached.
 	jwkSigningCacheTTL = 10 * time.Minute
+	// Cold JWKS fetch (cache miss / post-deploy). Detached so a slow Hydra
+	// admin does not inherit a spent parent request deadline.
+	jwkFetchTimeout = 1500 * time.Millisecond
 
 	// --- Token / discovery facade (public /oauth2/token proxy) ---
 	// Fail fast under the edge kill so clients retry instead of hanging 15s.

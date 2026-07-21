@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 	"crypto"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -79,6 +80,9 @@ func (c *jwkSigningCache) set(setName string, signer crypto.Signer, kid string, 
 // process-local cache on the warm path. Cold path hits Hydra admin once and
 // caches the parsed private key so subsequent private_key_jwt mints survive
 // short Hydra admin outages within jwkSigningCacheTTL.
+//
+// Hydra JWKS fetch uses a detached budget (jwkFetchTimeout) so a spent parent
+// request deadline or a sub-150ms sign budget cannot starve the cold path.
 func (h *AuthServer) getSigningKey(ctx context.Context, setName string) (crypto.Signer, string, error) {
 	setName = strings.TrimSpace(setName)
 	if setName == "" {
@@ -89,7 +93,14 @@ func (h *AuthServer) getSigningKey(ctx context.Context, setName string) (crypto.
 		return signer, kid, nil
 	}
 
-	jwks, err := h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
+	if h.defaultHydraCli == nil {
+		return nil, "", fmt.Errorf("hydra client is not configured")
+	}
+
+	fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), jwkFetchTimeout)
+	defer cancel()
+
+	jwks, err := h.defaultHydraCli.GetJsonWebKeySet(fetchCtx, setName)
 	if err != nil {
 		// Fall back to default set name once, then fail.
 		if setName != defaultJWKSetName {
@@ -98,7 +109,7 @@ func (h *AuthServer) getSigningKey(ctx context.Context, setName string) (crypto.
 			if signer, kid, ok := h.jwkSignCache.get(setName); ok {
 				return signer, kid, nil
 			}
-			jwks, err = h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
+			jwks, err = h.defaultHydraCli.GetJsonWebKeySet(fetchCtx, setName)
 		}
 		if err != nil {
 			return nil, "", err
@@ -112,4 +123,20 @@ func (h *AuthServer) getSigningKey(ctx context.Context, setName string) (crypto.
 
 	h.jwkSignCache.set(setName, signer, kid, jwkSigningCacheTTL)
 	return signer, kid, nil
+}
+
+// prewarmSigningKey loads the default JWK set into the process cache so the
+// first private_key_jwt mint after deploy is not a cold Hydra admin hop.
+// Failures are non-fatal — the next sign request will retry the fetch.
+func (h *AuthServer) prewarmSigningKey(ctx context.Context) {
+	if h == nil || h.defaultHydraCli == nil {
+		return
+	}
+	warmCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), jwkFetchTimeout)
+	defer cancel()
+	if _, _, err := h.getSigningKey(warmCtx, defaultJWKSetName); err != nil {
+		util.Log(ctx).WithError(err).Warn("signing key prewarm failed; first private_key_jwt may be cold")
+		return
+	}
+	util.Log(ctx).Info("signing key prewarmed")
 }
