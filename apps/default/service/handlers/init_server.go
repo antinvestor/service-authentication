@@ -116,9 +116,9 @@ type AuthServer struct {
 	analytics telemetry.Client
 
 	// eventsMan is used by handlers to publish async events (e.g. avatar
-	// sync after social login). Set via SetEventsManager after the frame
-	// service has been initialised. Emitters must nil-guard this field —
-	// local-dev and some test setups may run without a queue backend.
+	// sync after social login, SA login audit). Set via SetEventsManager after
+	// the frame service has been initialised. Emitters must nil-guard this
+	// field — local-dev and some test setups may run without a queue backend.
 	eventsMan fevents.Manager
 }
 

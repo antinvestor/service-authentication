@@ -191,7 +191,7 @@ func (h *AuthServer) stashFedCMExchange(ctx context.Context, idToken, clientID, 
 	log := util.Log(ctx)
 
 	sum := sha256.Sum256([]byte(idToken))
-	key := "fedcm:exchange:" + hex.EncodeToString(sum[:])
+	key := fedcmExchangePrefix + hex.EncodeToString(sum[:])
 
 	payload, merr := json.Marshal(map[string]any{
 		"access_token":  r.AccessToken,

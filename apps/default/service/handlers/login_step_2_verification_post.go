@@ -40,8 +40,13 @@ var (
 
 // VerificationEndpointSubmit handles the final login submission of verification results.
 // This is called after the user has verified their contact via code.
+//
+// Bounded by verifyStrongBudget so tenancy/token loops cannot hang until the
+// edge gateway kills the stream (~15s).
 func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	parent := req.Context()
+	ctx, cancel := context.WithTimeout(parent, verifyStrongBudget)
+	defer cancel()
 	start := time.Now()
 	log := util.Log(ctx)
 
@@ -135,11 +140,17 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	}
 
 	// Access provisioning targets the OAuth client's partition — restore user tenancy.
+	// Single child budget for the entire ensure* tree (not per-RPC 1s caps).
 	ctx = withUserLoginTenancy(ctx, loginEvent)
-	loginEvent, err = h.ensureLoginEventTenancyAccess(ctx, loginEvent, loginEvent.ClientID, profileID)
+	tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
+	loginEvent, err = h.ensureLoginEventTenancyAccess(tenCtx, loginEvent, loginEvent.ClientID, profileID)
+	tenCancel()
 	if err != nil {
-		log.WithError(err).Error("failed to ensure tenancy access for login event")
-		return err
+		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
+			Error("failed to ensure tenancy access for login event")
+		// Prefer a retriable user-facing message over gateway stream closed.
+		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType,
+			"We could not complete sign-in. Please try again.")
 	}
 
 	// Step 6: Update profile name if provided

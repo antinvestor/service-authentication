@@ -51,7 +51,9 @@ func (s *RateLimiterTestSuite) TestRateLimitBucketKey() {
 	now := time.Unix(1_700_000_000, 0).UTC()
 	key := rateLimitBucketKey("192.168.1.1", time.Hour, now)
 	s.Contains(key, rateLimitCachePrefix)
-	s.Contains(key, ":")
+	// Underscore separator keeps keys NATS JetStream KV-safe (no colon).
+	s.NotContains(key, ":")
+	s.Contains(key, "_")
 }
 
 func (s *RateLimiterTestSuite) TestDefaultLoginRateLimitConfig() {

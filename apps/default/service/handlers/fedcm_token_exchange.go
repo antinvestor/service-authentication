@@ -52,7 +52,7 @@ func (h *AuthServer) FedCMTokenExchangeEndpoint(w http.ResponseWriter, r *http.R
 
 	ctx := r.Context()
 	sum := sha256.Sum256([]byte(body.IDToken))
-	key := "fedcm:exchange:" + hex.EncodeToString(sum[:])
+	key := fedcmExchangePrefix + hex.EncodeToString(sum[:])
 
 	c, err := h.fedcmExchangeCache()
 	if err != nil {

@@ -154,9 +154,10 @@ func main() {
 	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
 	serviceOptions = append(serviceOptions, frame.WithPermissionRegistration(sd))
 
-	// Register async event consumers.
+	// Register async event consumers (queue-backed — scales with replicas).
 	serviceOptions = append(serviceOptions, frame.WithRegisterEvents(
 		events.NewProfileAvatarSyncEventHandler(profileCli, filesCli),
+		events.NewServiceAccountLoginAuditEventHandler(loginRepo, loginEventRepo),
 	))
 
 	svc.Init(ctx, serviceOptions...)

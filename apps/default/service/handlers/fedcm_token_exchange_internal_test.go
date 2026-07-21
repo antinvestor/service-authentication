@@ -47,7 +47,7 @@ func stashExchangeEntry(t *testing.T, h *AuthServer, idToken, clientID string) {
 	c, err := h.fedcmExchangeCache()
 	require.NoError(t, err)
 	sum := sha256.Sum256([]byte(idToken))
-	key := "fedcm:exchange:" + hex.EncodeToString(sum[:])
+	key := fedcmExchangePrefix + hex.EncodeToString(sum[:])
 	payload, err := json.Marshal(map[string]any{
 		"access_token":  "at",
 		"refresh_token": "rt",
