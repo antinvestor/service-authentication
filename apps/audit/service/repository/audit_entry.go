@@ -27,6 +27,11 @@ import (
 const defaultLimit = 50
 const maxLimit = 500
 
+// createBatchSize is the GORM CreateInBatches chunk size. Large enough to
+// amortise round-trips, small enough to stay under Postgres parameter limits
+// (~65k) for AuditEntry's column count.
+const createBatchSize = 100
+
 type auditEntryRepository struct {
 	pool pool.Pool
 }
@@ -39,14 +44,17 @@ func (r *auditEntryRepository) Create(ctx context.Context, entry *models.AuditEn
 	return r.pool.DB(ctx, false).Create(entry).Error
 }
 
+// CreateBatch persists entries with multi-row INSERT (CreateInBatches) inside
+// a single transaction. Prefer this over N× Create for BatchCreateAuditEntries.
+// Callers must pre-sign entries and pre-materialise BaseModel IDs/timestamps
+// so hash chains stay consistent with stored rows.
 func (r *auditEntryRepository) CreateBatch(ctx context.Context, entries []*models.AuditEntry) error {
-	return r.pool.DB(ctx, false).Transaction(func(tx *gorm.DB) error {
-		for _, entry := range entries {
-			if err := tx.Create(entry).Error; err != nil {
-				return err
-			}
-		}
+	if len(entries) == 0 {
 		return nil
+	}
+	return r.pool.DB(ctx, false).Transaction(func(tx *gorm.DB) error {
+		// CreateInBatches issues multi-value INSERTs (not N single-row Creates).
+		return tx.CreateInBatches(entries, createBatchSize).Error
 	})
 }
 
@@ -98,7 +106,9 @@ func (r *auditEntryRepository) Search(ctx context.Context, query string, startDa
 
 func (r *auditEntryRepository) GetLatestHash(ctx context.Context, tenantID string) (string, error) {
 	entry := &models.AuditEntry{}
-	err := r.pool.DB(ctx, true).
+	// Write path: chain tip must not lag a read replica or concurrent batch inserts
+	// will fork the hash chain.
+	err := r.pool.DB(ctx, false).
 		Where("tenant_id = ?", tenantID).
 		Order("created_at DESC, id DESC").
 		First(entry).Error

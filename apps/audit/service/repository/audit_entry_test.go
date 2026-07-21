@@ -16,6 +16,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -55,6 +56,38 @@ func TestAuditEntryRepository_ListAndSearchUseCreatedAtKeysetPagination(t *testi
 	searchPage, err := repo.Search(ctx, "login", nil, nil, 2, "a-new")
 	require.NoError(t, err)
 	require.Equal(t, []string{"m-mid", "z-old"}, auditEntryIDs(searchPage))
+}
+
+func TestAuditEntryRepository_CreateBatchInsertsAllRows(t *testing.T) {
+	ctx := t.Context()
+	dbPool := newAuditRepositoryTestPool(t)
+	require.NoError(t, dbPool.DB(ctx, false).AutoMigrate(&models.AuditEntry{}))
+
+	repo := NewAuditEntryRepository(dbPool)
+	base := time.Date(2026, 7, 21, 12, 0, 0, 0, time.UTC)
+	batch := make([]*models.AuditEntry, 0, 25)
+	for i := 0; i < 25; i++ {
+		id := fmt.Sprintf("batch-%02d", i)
+		batch = append(batch, newAuditEntry(
+			id,
+			base.Add(time.Duration(i)*time.Second),
+			"profile-batch",
+			"audit.batch_test",
+			fmt.Sprintf("hash-batch-%02d", i),
+		))
+	}
+
+	require.NoError(t, repo.CreateBatch(ctx, batch))
+	require.NoError(t, repo.CreateBatch(ctx, nil))
+	require.NoError(t, repo.CreateBatch(ctx, []*models.AuditEntry{}))
+
+	listed, err := repo.List(ctx, &AuditFilter{ProfileID: "profile-batch", Limit: 50})
+	require.NoError(t, err)
+	require.Len(t, listed, 25)
+
+	tip, err := repo.GetLatestHash(ctx, "tenant-1")
+	require.NoError(t, err)
+	require.Equal(t, "hash-batch-24", tip)
 }
 
 func newAuditRepositoryTestPool(t *testing.T) pool.Pool {

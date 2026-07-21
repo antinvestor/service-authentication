@@ -24,6 +24,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/pitabwire/frame/v2/security"
+	"github.com/rs/xid"
 )
 
 // AuditBusiness defines the business logic interface for audit operations.
@@ -78,6 +79,9 @@ func NewAuditBusiness(repo repository.AuditEntryRepository, signer *ChainSigner)
 }
 
 func (ab *auditBusiness) CreateEntry(ctx context.Context, input *CreateEntryInput) (*models.AuditEntry, error) {
+	if input == nil {
+		return nil, fmt.Errorf("audit entry input is required")
+	}
 	claims := security.ClaimsFromContext(ctx)
 	tenantID := ""
 	partitionID := ""
@@ -94,7 +98,7 @@ func (ab *auditBusiness) CreateEntry(ctx context.Context, input *CreateEntryInpu
 		return nil, fmt.Errorf("failed to get latest hash: %w", err)
 	}
 
-	entry := ab.buildEntry(tenantID, partitionID, input)
+	entry := ab.materializeEntry(ctx, tenantID, partitionID, input)
 	if err := ab.signer.SignEntry(entry, previousHash); err != nil {
 		return nil, fmt.Errorf("failed to sign entry: %w", err)
 	}
@@ -107,6 +111,10 @@ func (ab *auditBusiness) CreateEntry(ctx context.Context, input *CreateEntryInpu
 }
 
 func (ab *auditBusiness) BatchCreateEntries(ctx context.Context, inputs []*CreateEntryInput) ([]*models.AuditEntry, error) {
+	if len(inputs) == 0 {
+		return []*models.AuditEntry{}, nil
+	}
+
 	claims := security.ClaimsFromContext(ctx)
 	tenantID := ""
 	partitionID := ""
@@ -125,7 +133,13 @@ func (ab *auditBusiness) BatchCreateEntries(ctx context.Context, inputs []*Creat
 
 	entries := make([]*models.AuditEntry, 0, len(inputs))
 	for _, input := range inputs {
-		entry := ab.buildEntry(tenantID, partitionID, input)
+		if input == nil {
+			return nil, fmt.Errorf("audit entry input must not be nil")
+		}
+		// Materialise ID + CreatedAt before signing so EntryHash covers the
+		// same timestamps that land in the multi-row INSERT (BeforeCreate is
+		// a no-op when Version is already set).
+		entry := ab.materializeEntry(ctx, tenantID, partitionID, input)
 		if err := ab.signer.SignEntry(entry, previousHash); err != nil {
 			return nil, fmt.Errorf("failed to sign entry: %w", err)
 		}
@@ -240,4 +254,29 @@ func (ab *auditBusiness) buildEntry(tenantID, partitionID string, input *CreateE
 		TargetProfileID: input.TargetProfileID,
 		TraceID:         input.TraceID,
 	}
+}
+
+// materializeEntry assigns BaseModel ID and CreatedAt before signing so the
+// hash chain covers the same values that GORM will persist. When Version is
+// already set, BaseModel.BeforeCreate skips regenerating timestamps.
+func (ab *auditBusiness) materializeEntry(
+	ctx context.Context,
+	tenantID, partitionID string,
+	input *CreateEntryInput,
+) *models.AuditEntry {
+	entry := ab.buildEntry(tenantID, partitionID, input)
+	entry.GenID(ctx)
+	if entry.Version > 0 && !entry.CreatedAt.IsZero() {
+		return entry
+	}
+	created := time.Now().UTC()
+	if entry.ID != "" {
+		if parsed, err := xid.FromString(entry.ID); err == nil {
+			created = parsed.Time().UTC()
+		}
+	}
+	entry.CreatedAt = created
+	entry.ModifiedAt = created
+	entry.Version = 1
+	return entry
 }
