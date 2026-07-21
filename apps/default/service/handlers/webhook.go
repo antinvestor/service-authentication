@@ -598,9 +598,15 @@ func (h *AuthServer) reconstructClaimsFromLoginEvent(
 }
 
 // TokenEnrichmentEndpoint handles token enrichment requests from Ory Hydra
-// This is called during initial token issuance
+// This is called during initial token issuance.
+//
+// Parent budget keeps Hydra's token_hook under the p99 envelope even on a cold
+// SA cache miss (Hydra admin + Valkey). Warm path is typically << 50ms.
 func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	parent := req.Context()
+	// Cold budget is the worst-case envelope; warm SA hits finish far sooner.
+	ctx, cancel := context.WithTimeout(parent, saWebhookColdBudget+100*time.Millisecond)
+	defer cancel()
 	log := util.Log(ctx)
 
 	tokenObject, err := h.parseTokenWebhookRequest(ctx, req)

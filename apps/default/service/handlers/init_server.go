@@ -153,6 +153,8 @@ func NewAuthServer(ctx context.Context,
 	// Using the service context would cause a circular dependency: the signing
 	// webhook needs Hydra admin to fetch JWK sets, but the HTTP client would
 	// try to authenticate via the signer (itself) before making the request.
+	// Transport timeout is defence-in-depth; callers still apply context budgets.
+	httpOpts = append(httpOpts, client.WithHTTPTimeout(hydraAdminHTTPTimeout))
 	hydraHTTPCli := client.NewHTTPClient(context.Background(), httpOpts...)
 	hydraCli := hydra.NewDefaultHydra(hydraHTTPCli, authConfig.GetOauth2ServiceAdminURI())
 

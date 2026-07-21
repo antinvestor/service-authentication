@@ -102,6 +102,8 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	client := getConseReq.GetClient()
 	clientID := client.GetClientId()
 
+	// Prefer Hydra-embedded client / Valkey oauth-client tenancy map before
+	// a cold tenancy GetOAuthClient (S2S token loop).
 	oauthCtx, oauthCancel := context.WithTimeout(ctx, consentOAuthClientTimeout)
 	clientObj, err := h.getOAuthClient(oauthCtx, clientID)
 	oauthCancel()
@@ -135,7 +137,9 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		RememberDuration:  7776000, // remember for ninety days (until logout)
 	}
 
-	redirectURL, err := hydraCli.AcceptConsentRequest(ctx, params)
+	acceptCtx, acceptCancel := context.WithTimeout(ctx, consentHydraTimeout)
+	redirectURL, err := hydraCli.AcceptConsentRequest(acceptCtx, params)
+	acceptCancel()
 	if err != nil {
 		log.WithError(err).Error("hydra accept consent request failed")
 		return fmt.Errorf("failed to accept consent: %w", err)

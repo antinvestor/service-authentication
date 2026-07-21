@@ -99,8 +99,8 @@ func (h *AuthServer) VerificationEndpointShow(rw http.ResponseWriter, req *http.
 	return verifyContactTmpl.Execute(rw, payload)
 }
 
-// showVerificationPage redirects to the verification form with optional error message
-func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, contactType, errorMsg string) error {
+// showVerificationPage redirects to the verification form with optional error message.
+func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Request, loginEventID, profileName, contactType, errorMsg string) {
 	// Build query parameters using url.Values for proper encoding
 	params := url.Values{}
 	params.Set("login_event_id", loginEventID)
@@ -121,5 +121,4 @@ func (h *AuthServer) showVerificationPage(rw http.ResponseWriter, req *http.Requ
 	log.WithField("redirect_url", verificationPage).Debug("redirecting to verification page")
 
 	http.Redirect(rw, req, verificationPage, http.StatusSeeOther)
-	return nil
 }

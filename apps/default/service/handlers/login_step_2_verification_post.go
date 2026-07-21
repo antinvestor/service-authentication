@@ -111,13 +111,15 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
 	if err != nil {
 		log.WithError(err).Debug("login verification failed")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
+		h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
+		return nil
 	}
 
 	// Step 5: Validate profile ID before proceeding
 	if profileID == "" {
 		log.Error("profile ID is empty after verification - cannot complete login")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
+		h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "Login failed. Please try again.")
+		return nil
 	}
 
 	// Step 5.1: Reject bot profiles from completing UI login (defence-in-depth).
@@ -127,7 +129,8 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	if profileErr == nil && profileResp.Msg.GetData() != nil &&
 		profileResp.Msg.GetData().GetType() == profilev1.ProfileType_BOT {
 		log.WithField("profile_id", profileID).Warn("bot profile attempted UI login via verification")
-		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "This account cannot log in through the web interface.")
+		h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "This account cannot log in through the web interface.")
+		return nil
 	}
 
 	// Step 5.5: Ensure login event is bound to the authenticated profile and tenancy access.
@@ -149,8 +152,9 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
 			Error("failed to ensure tenancy access for login event")
 		// Prefer a retriable user-facing message over gateway stream closed.
-		return h.showVerificationPage(rw, req, loginEventID, profileName, contactType,
+		h.showVerificationPage(rw, req, loginEventID, profileName, contactType,
 			"We could not complete sign-in. Please try again.")
+		return nil
 	}
 
 	// Step 6: Update profile name if provided

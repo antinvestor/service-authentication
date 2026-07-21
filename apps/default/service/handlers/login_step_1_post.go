@@ -33,7 +33,9 @@ import (
 // LoginEndpointSubmit handles contact submission.
 // creates verification and sends code to user's contact.
 func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	parent := req.Context()
+	ctx, cancel := context.WithTimeout(parent, loginSubmitBudget)
+	defer cancel()
 	start := time.Now()
 	log := util.Log(ctx)
 
@@ -86,7 +88,9 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	var contactID string
 	var contactType profilev1.ContactType
 
-	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
+	lookupCtx, lookupCancel := context.WithTimeout(ctx, loginSubmitProfileTimeout)
+	result, err := h.profileCli.GetByContact(lookupCtx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
+	lookupCancel()
 	if err != nil && !frame.ErrorIsNotFound(err) {
 		log.WithError(err).Error("profile lookup failed")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -116,9 +120,11 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	// Step 5: Create contactDetail if not found
 	if contactID == "" {
-		contactResp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
+		createCtx, createCancel := context.WithTimeout(ctx, loginSubmitProfileTimeout)
+		contactResp, createErr := h.profileCli.CreateContact(createCtx, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contactDetail,
 		}))
+		createCancel()
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create contactDetail")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -137,15 +143,17 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	// Step 7: Create verification and send code (still service-bot Plane-1 path)
 	ctx = serviceBotContext(ctx)
-	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	verifyCtx, verifyCancel := context.WithTimeout(ctx, loginSubmitVerifyTimeout)
+	resp, err := h.profileCli.CreateContactVerification(verifyCtx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	}))
+	verifyCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to create contactDetail verification")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
-		return err
+		return nil
 	}
 
 	loginEvent, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profileID, contactID, resp.Msg.GetId(), nil)
@@ -175,7 +183,8 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 		"duration_ms":     time.Since(start).Milliseconds(),
 	}).Info("verification code sent")
 
-	return h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, contactType.String(), "")
+	h.showVerificationPage(rw, req, loginEvent.GetID(), profileName, contactType.String(), "")
+	return nil
 }
 
 func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {

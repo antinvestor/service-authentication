@@ -15,6 +15,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -65,7 +66,10 @@ type signAssertionResponse struct {
 // be used by callers for private_key_jwt authentication against a token
 // endpoint. Hydra verifies the assertion via its own JWKS endpoint.
 func (h *AuthServer) SignPrivateKeyJWTEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	// Hot path for every private_key_jwt token mint — hard-cap so a hung Hydra
+	// JWKS fetch cannot cascade into 15s login timeouts.
+	ctx, cancel := context.WithTimeout(req.Context(), signJWTBudget)
+	defer cancel()
 	log := util.Log(ctx)
 
 	var body signAssertionRequest

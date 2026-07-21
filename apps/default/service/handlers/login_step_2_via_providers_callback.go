@@ -321,13 +321,18 @@ func (h *AuthServer) completeProviderLogin(
 
 	// Access provisioning may need the OAuth client partition; hydrate secondary
 	// tenancy only for this step (Plane-1 still falls back via Hydra metadata).
-	// Strong total budget so concurrent M2M cannot hang social login.
-	accessCtx, accessCancel := context.WithTimeout(withUserLoginTenancy(ctx, loginEvent), strongTenancyTotalTimeout)
+	accessCtx, accessCancel := context.WithTimeout(withUserLoginTenancy(ctx, loginEvent), socialStrongTenancyTimeout)
 	loginEvent, err = h.ensureLoginEventTenancyAccess(accessCtx, loginEvent, loginEvt.ClientID, profileID)
 	accessCancel()
 	if err != nil {
-		log.WithError(err).Error("failed to ensure tenancy access for provider login")
-		return "", fmt.Errorf("provider login tenancy access failed: %w", err)
+		// Soft-fail when we already have a tenancy pair from soft enrich —
+		// consent re-resolves under its own budget.
+		if ValidTenancyPair(loginEvent.GetTenantID(), loginEvent.GetPartitionID()) {
+			log.WithError(err).Warn("provider login tenancy access failed; continuing with soft tenancy pair")
+		} else {
+			log.WithError(err).Error("failed to ensure tenancy access for provider login")
+			return "", fmt.Errorf("provider login tenancy access failed: %w", err)
+		}
 	}
 
 	// Step 6: Accept the Hydra login request to complete the OAuth2 flow

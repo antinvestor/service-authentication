@@ -124,8 +124,9 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 	}).Debug("login event enriched with partition info")
 }
 
-// createLoginEvent creates a new login event and caches it for the OAuth2 flow.
-// Returns the created event or an error if caching fails.
+// createLoginEvent creates a new login event and best-effort caches it for the
+// OAuth2 flow. Cache failure must never block form render (p99 SLO): Valkey
+// spikes were hard-failing GET /s/login into the error page under formCtx.
 func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, loginReq *client.OAuth2LoginRequest, loginChallenge string) (*models.LoginEvent, error) {
 	log := util.Log(ctx)
 	start := time.Now()
@@ -150,12 +151,12 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 	}
 	loginEvt.ID = util.IDString()
 
+	// Detached cache write: never inherit a spent formCtx deadline.
 	if err := h.setLoginEventToCache(ctx, &loginEvt); err != nil {
 		log.WithError(err).WithFields(map[string]any{
 			"login_event_id": loginEvt.GetID(),
 			"client_id":      clientID,
-		}).Error("failed to cache login event")
-		return nil, fmt.Errorf("%w: %v", ErrLoginEventCacheFailure, err)
+		}).Warn("failed to cache login event on create — rendering form anyway")
 	}
 
 	log.WithFields(map[string]any{
@@ -164,7 +165,7 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 		"session_id":     deviceSessionID,
 		"oauth2_session": loginReq.GetSessionId(),
 		"duration_ms":    time.Since(start).Milliseconds(),
-	}).Debug("login event created and cached")
+	}).Debug("login event created")
 
 	h.emitAnalyticsEvent(ctx, req, "", evtLoginEventCreated, map[string]any{
 		"login_event_id": loginEvt.GetID(),
@@ -276,12 +277,14 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		log.WithError(rememberErr).Debug("remember-me auto-login failed - showing login form")
 	}
 
-	// Step 4–7: New authentication form path (form budget)
+	// Step 4–7: New authentication form path (form budget).
+	// Use parent ctx for template i18n; only short steps use formCtx so a
+	// spent form budget cannot block HTML render after event creation.
 	formCtx, formCancel := context.WithTimeout(ctx, loginFormBudget)
-	defer formCancel()
 
 	loginEvent, err := h.createLoginEvent(formCtx, req, getLogReq, loginChallenge)
 	if err != nil {
+		formCancel()
 		log.WithError(err).Error("failed to create login event")
 		return err
 	}
@@ -296,11 +299,11 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		loginEvent.Properties = map[string]any{}
 	}
 	loginEvent.Properties[loginEventPropertyFedCMNonce] = fedcmNonce
-	cacheCtx, cacheCancel := context.WithTimeout(formCtx, loginCacheTimeout)
-	if cacheErr := h.setLoginEventToCache(cacheCtx, loginEvent); cacheErr != nil {
+	// Always detach cache write from formCtx so Valkey SET gets full loginCacheTimeout.
+	if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
 		log.WithError(cacheErr).Debug("failed to re-cache login event with FedCM nonce")
 	}
-	cacheCancel()
+	formCancel()
 
 	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()

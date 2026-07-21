@@ -19,48 +19,70 @@ import "time"
 // Per-branch latency budgets for interactive login and SA webhooks.
 // See docs/superpowers/specs/2026-07-21-subsecond-login-valkey-design.md.
 //
+// SLO: platform-controlled interactive paths aim for p99 < 1s wall clock.
+// Budgets below are hard ceilings for in-process work (not including RTT to
+// the browser or third-party IdPs like Google). Soft steps never hard-fail
+// the OAuth challenge — they degrade and continue.
+//
 // Do not wrap all of LoginEndpointShow in a single parent timeout — skip and
 // remember-me need different ceilings than form render.
 const (
-	loginFormBudget         = 450 * time.Millisecond
-	loginHydraTimeout       = 150 * time.Millisecond
+	// --- Login form (GET /s/login, non-skip) ---
+	loginFormBudget         = 500 * time.Millisecond
+	loginHydraTimeout       = 120 * time.Millisecond
 	loginSoftTenancyBudget  = 80 * time.Millisecond
 	loginHydraAdminTimeout  = 50 * time.Millisecond
 	loginTenancySoftTimeout = 40 * time.Millisecond
-	loginCacheTimeout       = 50 * time.Millisecond
+	// Valkey can spike under cross-AZ / concurrent SET; detached from parent.
+	loginCacheTimeout = 150 * time.Millisecond
 
+	// --- Session skip / remember-me ---
 	rememberMeSoftBudget = 200 * time.Millisecond
-	// Session skip (Hydra Skip=true): must finish under edge budget and never
-	// hard-fail the OAuth challenge. Sub-steps are soft so device/DB slowness
-	// falls through to the login form instead of aborting /oauth2/auth.
-	skipLoginBudget       = 1200 * time.Millisecond
-	skipDeviceSoftTimeout = 200 * time.Millisecond
-	skipLoginDBTimeout    = 300 * time.Millisecond
+	// Session skip (Hydra Skip=true): soft-fail into form on any error.
+	skipLoginBudget       = 800 * time.Millisecond
+	skipDeviceSoftTimeout = 150 * time.Millisecond
+	skipLoginDBTimeout    = 250 * time.Millisecond
 
-	verifyStrongBudget = 2 * time.Second
-	// Parent budget for consent. Sub-budgets must fit under this parent.
-	consentStrongBudget       = 3 * time.Second
-	consentHydraTimeout       = 150 * time.Millisecond
-	consentOAuthClientTimeout = 800 * time.Millisecond
-	consentDeviceTimeout      = 500 * time.Millisecond
-	// Single budget for the entire ensureLoginEventTenancyAccess call tree
-	// (getOAuthClient + getPartition + access list/create — NOT 1s per RPC).
-	strongTenancyTotalTimeout = 1 * time.Second
+	// --- Contact submit (POST /s/login/{id}/post) ---
+	// Profile GetByContact / CreateContact / CreateContactVerification.
+	// OTP delivery may be async; keep the HTTP path under 1s p99.
+	loginSubmitBudget         = 900 * time.Millisecond
+	loginSubmitProfileTimeout = 400 * time.Millisecond
+	loginSubmitVerifyTimeout  = 500 * time.Millisecond
 
+	// --- Verification complete (OTP submit) ---
+	// Profile CheckVerification + Hydra accept; must stay under 1s p99.
+	verifyStrongBudget = 900 * time.Millisecond
+	// --- Hydra admin / sign webhook ---
+	// Transport-level ceiling for Hydra admin HTTP client (defence in depth).
+	hydraAdminHTTPTimeout = 2 * time.Second
+	// Sign JWT must stay tiny — sits on every private_key_jwt token mint path.
+	signJWTBudget = 150 * time.Millisecond
+
+	// --- Consent (GET /s/consent) ---
+	consentStrongBudget       = 900 * time.Millisecond
+	consentHydraTimeout       = 120 * time.Millisecond
+	consentOAuthClientTimeout = 350 * time.Millisecond
+	consentDeviceTimeout      = 200 * time.Millisecond
+	// Entire ensureLoginEventTenancyAccess call tree (not per-RPC).
+	strongTenancyTotalTimeout = 500 * time.Millisecond
+
+	// --- SA token webhook (Hydra hook) ---
 	saWebhookColdBudget   = 200 * time.Millisecond
 	saClaimsCacheTTL      = 10 * time.Minute
 	saNegativeCacheTTL    = 2 * time.Second
 	oauthClientTenancyTTL = 15 * time.Minute
 
-	// Social / OIDC provider callback (Google etc.). Must stay under the
-	// ~15s edge/gateway kill. Parent budget leaves headroom for redirect.
-	// Sub-budgets must fit under socialCallbackBudget.
-	socialCallbackBudget        = 8 * time.Second
-	socialGoogleExchangeTimeout = 3 * time.Second
-	socialProfileLookupTimeout  = 2 * time.Second
-	socialProfileCreateTimeout  = 2 * time.Second
-	socialStoreLoginTimeout     = 1 * time.Second
-	socialHydraAcceptTimeout    = 500 * time.Millisecond
+	// --- Social / OIDC provider callback ---
+	// External Google token exchange is not under our p99 SLO; internal work
+	// after Google returns is capped so the total stays under the ~15s edge kill.
+	socialCallbackBudget        = 5 * time.Second
+	socialGoogleExchangeTimeout = 2500 * time.Millisecond
+	socialProfileLookupTimeout  = 800 * time.Millisecond
+	socialProfileCreateTimeout  = 800 * time.Millisecond
+	socialStoreLoginTimeout     = 400 * time.Millisecond
+	socialHydraAcceptTimeout    = 300 * time.Millisecond
+	socialStrongTenancyTimeout  = 500 * time.Millisecond
 )
 
 // NATS JetStream KV-safe cache key prefixes (charset: [-/_=.a-zA-Z0-9], no colon).
