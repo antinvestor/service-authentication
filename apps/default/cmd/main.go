@@ -56,7 +56,10 @@ func main() {
 
 	ctx := context.Background()
 
-	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
+	// Load env first. Migration jobs must not perform OIDC discovery / JWKS
+	// fetches (external jwks_uri hangs under NetworkPolicy / edge timeouts).
+	// Runtime still loads full OIDC via LoadOauth2Config below.
+	cfg, err := config.FromEnv[aconfig.AuthenticationConfig]()
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not process configs")
 		return
@@ -64,6 +67,23 @@ func main() {
 
 	if cfg.Name() == "" {
 		cfg.ServiceName = "service_authentication"
+	}
+
+	// Migration-only path: database only — no cache, no OIDC network.
+	if cfg.DoDatabaseMigrate() {
+		migrateCtx, svc := frame.NewServiceWithContext(ctx,
+			frame.WithConfig(&cfg),
+			frame.WithDatastore())
+		if handleDatabaseMigration(migrateCtx, svc.DatastoreManager(), cfg) {
+			return
+		}
+		util.Log(migrateCtx).Fatal("DO_MIGRATION set but migration did not run")
+		return
+	}
+
+	if err = cfg.LoadOauth2Config(ctx); err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not load oauth2/oidc config")
+		return
 	}
 
 	rawCache, err := setupCache(ctx, cfg)
@@ -83,11 +103,6 @@ func main() {
 
 	workManager := svc.WorkManager()
 	dbPool := dbManager.GetPool(ctx, datastore.DefaultPoolName)
-
-	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, dbManager, cfg) {
-		return
-	}
 
 	// Register hypertables (no-op WARN if timescaledb extension is absent).
 	if tsErr := timescale.Ensure(ctx, dbPool.DB(ctx, false), models.Hypertables); tsErr != nil {
