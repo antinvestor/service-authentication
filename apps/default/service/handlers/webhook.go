@@ -667,10 +667,18 @@ func (h *AuthServer) parseTokenWebhookRequest(ctx context.Context, req *http.Req
 	return tokenObject, nil
 }
 
-// writeWebhookError writes a JSON error response.
+// writeWebhookError writes a permanent denial (403) so Hydra treats the token
+// mint as access_denied.
 func (h *AuthServer) writeWebhookError(rw http.ResponseWriter, errMsg string) error {
+	return h.writeWebhookErrorStatus(rw, http.StatusForbidden, errMsg)
+}
+
+// writeWebhookErrorStatus writes a JSON error with an explicit status.
+// Use 5xx for transient failures so Hydra/clients can retry instead of
+// permanently failing with access_denied.
+func (h *AuthServer) writeWebhookErrorStatus(rw http.ResponseWriter, status int, errMsg string) error {
 	rw.Header().Set("Content-Type", "application/json")
-	rw.WriteHeader(http.StatusForbidden)
+	rw.WriteHeader(status)
 	return json.NewEncoder(rw).Encode(map[string]string{"error": errMsg})
 }
 
@@ -686,8 +694,14 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 
 	sa, fromCache, err := h.lookupServiceAccountByClientIDCached(ctx, clientID)
 	if err != nil {
-		log.WithError(err).Error("service account lookup failed")
-		return h.writeWebhookError(rw, "service account not found")
+		// Permanent miss → 403 (access_denied). Transient Hydra/network → 503
+		// so Hydra does not permanently fail every M2M mint during a blip.
+		if isDefinitiveServiceAccountMiss(err) {
+			log.WithError(err).Error("service account lookup failed (permanent)")
+			return h.writeWebhookError(rw, "service account not found")
+		}
+		log.WithError(err).Error("service account lookup failed (transient)")
+		return h.writeWebhookErrorStatus(rw, http.StatusServiceUnavailable, "service account lookup temporarily unavailable")
 	}
 
 	// Validate scope matches SA type
@@ -755,11 +769,57 @@ func (h *AuthServer) lookupServiceAccountByClientIDCached(
 
 	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
 	if err != nil {
-		h.setCachedServiceAccountNegative(ctx, clientID, saNegativeCacheTTL)
+		// Only negative-cache definitive "not found" / incomplete metadata.
+		// Timeouts and transport errors must not poison the warm path for 2s —
+		// that turns a single Hydra blip into a wave of token_hook 403s.
+		if isDefinitiveServiceAccountMiss(err) {
+			h.setCachedServiceAccountNegative(ctx, clientID, saNegativeCacheTTL)
+		}
 		return nil, false, fmt.Errorf("lookup service account %q: %w", clientID, err)
 	}
 	h.setCachedServiceAccount(ctx, clientID, sa, saClaimsCacheTTL)
 	return sa, false, nil
+}
+
+// isDefinitiveServiceAccountMiss reports whether the error means the client
+// will never succeed without operator action (missing client / metadata),
+// as opposed to a transient Hydra or network failure.
+func isDefinitiveServiceAccountMiss(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	// Hydra / our wrappers surface these for permanent client problems.
+	for _, needle := range []string{
+		"not found",
+		"does not exist",
+		"metadata missing",
+		"metadata incomplete",
+		"404",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	// Deadline / timeout wording without context.DeadlineExceeded wrap.
+	for _, needle := range []string{
+		"timeout",
+		"deadline exceeded",
+		"connection refused",
+		"connection reset",
+		"temporary failure",
+		"i/o timeout",
+		"unavailable",
+	} {
+		if strings.Contains(msg, needle) {
+			return false
+		}
+	}
+	// Unknown permanent-looking failures: do not cache (prefer retry).
+	return false
 }
 
 // emitServiceAccountLoginAudit publishes durable audit work to the Frame events

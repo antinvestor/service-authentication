@@ -15,6 +15,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
@@ -22,7 +23,8 @@ import (
 )
 
 func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
+	ctx, cancel := context.WithTimeout(req.Context(), logoutBudget)
+	defer cancel()
 	log := util.Log(ctx)
 	hydraCli := h.defaultHydraCli
 
@@ -32,14 +34,15 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 		return err
 	}
 
-	logoutReq, err := hydraCli.GetLogoutRequest(ctx, logoutChallenge)
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, logoutHydraTimeout)
+	logoutReq, err := hydraCli.GetLogoutRequest(hydraCtx, logoutChallenge)
+	hydraCancel()
 	if err != nil {
 		return err
 	}
 
-	// FedCM cleanup: remove this subject's idp_session entry and record
-	// revocations so any live session on other browsers sees the user as
-	// signed out on its next id_assertion.
+	// FedCM cleanup is best-effort under remaining budget — never block Hydra
+	// accept logout on revocation/cache blips.
 	if subject := logoutReq.GetSubject(); subject != "" {
 		if perr := h.purgeIdPSessionEntry(ctx, rw, req, subject); perr != nil {
 			log.WithError(perr).Error("failed to purge idp_session entry on logout")
@@ -57,7 +60,9 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	redirectUrl, err := hydraCli.AcceptLogoutRequest(ctx, &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
+	acceptCtx, acceptCancel := context.WithTimeout(ctx, logoutHydraTimeout)
+	redirectUrl, err := hydraCli.AcceptLogoutRequest(acceptCtx, &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
+	acceptCancel()
 	if err != nil {
 		return err
 	}

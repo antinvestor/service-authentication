@@ -57,7 +57,10 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 		return nil
 	}
 
-	ctx := r.Context()
+	// Parent budget under the edge/gateway kill; headless multi-hop is expensive
+	// but must not hang for tens of seconds.
+	ctx, cancel := context.WithTimeout(r.Context(), fedcmAssertionBudget)
+	defer cancel()
 	log := util.Log(ctx)
 
 	var body fedcmAssertionRequest
@@ -72,7 +75,9 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// Resolve RP's OAuth2 client for origin validation + scopes + secret.
-	hydraCli, err := h.defaultHydraCli.GetOAuth2Client(ctx, body.ClientID)
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, fedcmHydraClientTimeout)
+	hydraCli, err := h.defaultHydraCli.GetOAuth2Client(hydraCtx, body.ClientID)
+	hydraCancel()
 	if err != nil {
 		return writeFedCMError(w, http.StatusBadRequest, "invalid_request")
 	}
@@ -101,8 +106,10 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	}
 
 	// Resolve partition (tenancy context) via the same path the consent
-	// handler uses.
-	partition, perr := h.resolvePartitionByClientID(ctx, body.ClientID)
+	// handler uses — soft budget so tenancy blips don't own the whole request.
+	tenCtx, tenCancel := context.WithTimeout(ctx, fedcmTenancySoftTimeout)
+	partition, perr := h.resolvePartitionByClientID(tenCtx, body.ClientID)
+	tenCancel()
 	if perr != nil || partition == nil {
 		return writeFedCMError(w, http.StatusInternalServerError, "server_error")
 	}
@@ -111,7 +118,9 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 	// The webhook requires a non-empty access_id; without it the token enrichment
 	// will be rejected. We use the same method the consent handler uses so the
 	// access record is consistent across both flows.
-	accessObj, aerr := h.getOrCreateTenancyAccessByPartitionID(ctx, partition, entry.ProfileID)
+	accessCtx, accessCancel := context.WithTimeout(ctx, fedcmTenancySoftTimeout)
+	accessObj, aerr := h.getOrCreateTenancyAccessByPartitionID(accessCtx, partition, entry.ProfileID)
+	accessCancel()
 	accessID := ""
 	if aerr != nil {
 		log.WithError(aerr).Warn("fedcm: access record lookup failed; access_id will be empty")
@@ -121,8 +130,10 @@ func (h *AuthServer) FedCMIdAssertionEndpoint(w http.ResponseWriter, r *http.Req
 
 	// Fetch roles from the access record using partition default role,
 	// matching the behaviour of the normal consent handler.
+	roleCtx, roleCancel := context.WithTimeout(ctx, fedcmTenancySoftTimeout)
 	defaultRole := partitionDefaultRole(partition)
-	roles := h.fetchAccessRoleNames(ctx, accessID, defaultRole)
+	roles := h.fetchAccessRoleNames(roleCtx, accessID, defaultRole)
+	roleCancel()
 	if len(roles) == 0 {
 		roles = []string{"user"}
 	}

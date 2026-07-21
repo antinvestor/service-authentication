@@ -88,24 +88,13 @@ func (h *AuthServer) SignPrivateKeyJWTEndpoint(rw http.ResponseWriter, req *http
 		setName = defaultJWKSetName
 	}
 
-	jwks, err := h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
+	// Warm path uses process-local parsed key cache so short Hydra admin
+	// outages do not cascade into every private_key_jwt mint (and jti_known
+	// retries from reused assertions).
+	signingKey, kid, err := h.getSigningKey(ctx, setName)
 	if err != nil {
-		// If the requested set doesn't exist, fall back to the default Hydra JWK set.
-		if setName != defaultJWKSetName {
-			log.WithError(err).WithField("jwk_set", setName).Warn("JWK set not found, falling back to default")
-			setName = defaultJWKSetName
-			jwks, err = h.defaultHydraCli.GetJsonWebKeySet(ctx, setName)
-		}
-		if err != nil {
-			log.WithError(err).WithField("jwk_set", setName).Error("failed to fetch JWK set from Hydra")
-			return writeSignError(rw, http.StatusBadGateway, "failed to fetch signing keys")
-		}
-	}
-
-	signingKey, kid, err := selectSigningKey(jwks)
-	if err != nil {
-		log.WithError(err).WithField("jwk_set", setName).Error("no usable signing key in JWK set")
-		return writeSignError(rw, http.StatusInternalServerError, "no usable signing key")
+		log.WithError(err).WithField("jwk_set", setName).Error("failed to obtain signing key")
+		return writeSignError(rw, http.StatusBadGateway, "failed to fetch signing keys")
 	}
 
 	assertion, alg, expiresAt, err := buildSignedAssertion(signingKey, kid, clientID, &body)

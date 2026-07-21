@@ -110,6 +110,10 @@ type AuthServer struct {
 	// source — proxied requests are forwarded with the caller's own auth.
 	tokenFacadeClient *http.Client
 
+	// jwkSignCache holds process-local parsed Hydra private keys for
+	// private_key_jwt. Private key material stays out of Valkey.
+	jwkSignCache *jwkSigningCache
+
 	// Product analytics. Always non-nil — telemetry.New returns a noop
 	// client when POSTHOG_API_KEY is empty — so handlers can call
 	// analytics.Capture(...) unconditionally.
@@ -177,6 +181,7 @@ func NewAuthServer(ctx context.Context,
 		externalIdentityRepo: externalIdentityRepository,
 
 		defaultHydraCli: hydraCli,
+		jwkSignCache:    newJWKSigningCache(),
 
 		// Initialise rate limit config (7 per hour, cache is lazily initialised)
 		loginRateLimitConfig: DefaultLoginRateLimitConfig(),
@@ -201,6 +206,7 @@ func NewAuthServer(ctx context.Context,
 		HydraPublicURL:      hydraPublicURL(authConfig),
 		InternalCallbackURL: publicOrigin + "/_internal/fedcm-callback",
 		Now:                 time.Now,
+		HTTPTimeout:         fedcmHeadlessHTTPTimeout,
 	}
 	h.nativeVerifier = nativecredentials.NewVerifier()
 

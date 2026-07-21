@@ -46,6 +46,16 @@ Login page (app): successful renders logged **~107–135ms** server-side; client
 | Hydra admin HTTP client 30s default | Forgotten context → 30s | Transport **2s** |
 | Contact submit unbounded profile | Edge kill risk | Parent **900ms** + sub-timeouts |
 
+### Fixed in resilience train (v1.54.47+)
+
+| Issue | Impact | Fix |
+|-------|--------|-----|
+| JWKS fetch on every `private_key_jwt` mint | Hydra admin blip → all M2M fails; jti_known on retry | Process-local signing key cache (10m TTL) |
+| SA negative cache on timeout | One Hydra blip → 2s of 403 token_hook for all SAs | Negative-cache only definitive misses; 503 on transient |
+| Token facade 15s client | Edge hangs | **2s** upstream timeout |
+| FedCM id-assertion unbounded | Gateway timeout | Parent **4s**; headless HTTP **3s**; tenancy soft budgets |
+| Logout unbounded FedCM purge | Logout hang | Parent **800ms** + Hydra sub-timeouts |
+
 ### Remaining / ops (not fully closed by app budgets)
 
 | Issue | Owner | Recommendation |
@@ -53,9 +63,7 @@ Login page (app): successful renders logged **~107–135ms** server-side; client
 | Intermittent Hydra `/oauth2/auth` 504 (~15s) | Platform / Hydra | Keep Hydra 2+ ready pods; avoid crashloop rollouts; watch oauth2 DB pooler; HPA already max 10 |
 | Hydra startup probe flaky on new pods | Platform | Tune startup probe / readiness; investigate DSN/secret on new RS |
 | Profile / notification OTP delivery latency | Profile service | Keep CreateContactVerification async or fast-path; auth already times out soft |
-| FedCM headless + id-assertion | Auth follow-up | Parent budget + HTTP client timeout on headless driver |
-| Token facade 15s client | Auth follow-up | Drop discovery/proxy timeout to 1–2s |
-| Logout / workspace selector | Auth follow-up | Parent 500ms–1s soft |
+| Hydra DB pooler blips | Platform | `pooler-rw` connection errors under load; scale/pool |
 
 ## Budget map (current code)
 
@@ -93,8 +101,7 @@ kubectl logs -n identity -l app.kubernetes.io/name=service-authentication --sinc
 
 ## Follow-up PR candidates
 
-1. FedCM id-assertion + headless HTTP client timeouts  
-2. Token facade timeout reduction  
-3. In-process JWKS cache for sign webhook (avoid Hydra hop)  
-4. Hydra readiness / crashloop investigation on rollout  
-5. Distributed tracing dashboards for p50/p95/p99 per route  
+1. Hydra readiness / crashloop investigation on rollout  
+2. Distributed tracing dashboards for p50/p95/p99 per route  
+3. Optional slim LoginEvent cache payloads (if Valkey SET still races budgets)  
+

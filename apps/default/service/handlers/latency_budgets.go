@@ -58,6 +58,13 @@ const (
 	hydraAdminHTTPTimeout = 2 * time.Second
 	// Sign JWT must stay tiny — sits on every private_key_jwt token mint path.
 	signJWTBudget = 150 * time.Millisecond
+	// Process-local parsed private key cache. Survives short Hydra admin blips
+	// without putting key material in Valkey. Hydra key rotation is rare.
+	jwkSigningCacheTTL = 10 * time.Minute
+
+	// --- Token / discovery facade (public /oauth2/token proxy) ---
+	// Fail fast under the edge kill so clients retry instead of hanging 15s.
+	facadeUpstreamTimeout = 2 * time.Second
 
 	// --- Consent (GET /s/consent) ---
 	consentStrongBudget       = 900 * time.Millisecond
@@ -67,11 +74,22 @@ const (
 	// Entire ensureLoginEventTenancyAccess call tree (not per-RPC).
 	strongTenancyTotalTimeout = 500 * time.Millisecond
 
+	// --- Logout (GET /s/logout) ---
+	logoutBudget       = 800 * time.Millisecond
+	logoutHydraTimeout = 200 * time.Millisecond
+
 	// --- SA token webhook (Hydra hook) ---
 	saWebhookColdBudget   = 200 * time.Millisecond
 	saClaimsCacheTTL      = 10 * time.Minute
 	saNegativeCacheTTL    = 2 * time.Second
 	oauthClientTenancyTTL = 15 * time.Minute
+
+	// --- FedCM id-assertion (headless Hydra flow) ---
+	// Multi-hop server-side OAuth; keep under edge kill with room for Hydra.
+	fedcmAssertionBudget     = 4 * time.Second
+	fedcmHeadlessHTTPTimeout = 3 * time.Second
+	fedcmTenancySoftTimeout  = 400 * time.Millisecond
+	fedcmHydraClientTimeout  = 200 * time.Millisecond
 
 	// --- Social / OIDC provider callback ---
 	// External Google token exchange is not under our p99 SLO; internal work

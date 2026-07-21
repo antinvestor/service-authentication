@@ -41,11 +41,6 @@ import (
 const nativeTokenExchangeGrant = "urn:ietf:params:oauth:grant-type:token-exchange"
 const idTokenSubjectTokenType = "urn:ietf:params:oauth:token-type:id_token"
 
-// facadeUpstreamTimeout bounds every facade call to Hydra (discovery + token).
-// The native exchange is a session-bootstrap path, not a hot path, so a slow
-// Hydra must not hold the request open indefinitely.
-const facadeUpstreamTimeout = 15 * time.Second
-
 // facadeUpstreamClient returns the bounded-timeout client used to reach Hydra.
 // It is always set by NewAuthServer in production; the fallback only matters
 // for unit tests that construct AuthServer directly.
