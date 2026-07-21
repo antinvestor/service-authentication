@@ -50,7 +50,7 @@ Login page (app): successful renders logged **~107–135ms** server-side; client
 
 | Issue | Impact | Fix |
 |-------|--------|-----|
-| JWKS fetch on every `private_key_jwt` mint | Hydra admin blip → all M2M fails; jti_known on retry | Process-local signing key cache (10m TTL) |
+| JWKS fetch on every `private_key_jwt` mint | Hydra admin blip → all M2M fails; jti_known on retry | Process-local signing key cache (10m TTL) + startup prewarm + detached 1.5s cold fetch |
 | SA negative cache on timeout | One Hydra blip → 2s of 403 token_hook for all SAs | Negative-cache only definitive misses; 503 on transient |
 | Token facade 15s client | Edge hangs | **2s** upstream timeout |
 | FedCM id-assertion unbounded | Gateway timeout | Parent **4s**; headless HTTP **3s**; tenancy soft budgets |
