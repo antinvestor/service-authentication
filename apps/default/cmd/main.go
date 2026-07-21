@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/antinvestor/common/v2/servicecatalog"
 
@@ -70,18 +72,9 @@ func main() {
 	}
 
 	// Migration-only path: database only — no cache, no OIDC network.
-	// Must Stop the service so background Frame workers do not keep the Job alive
-	// after migrate returns (Helm waits on Job completion).
+	// Must finish and exit so Helm pre-upgrade Jobs complete (activeDeadline).
 	if cfg.DoDatabaseMigrate() {
-		migrateCtx, svc := frame.NewServiceWithContext(ctx,
-			frame.WithConfig(&cfg),
-			frame.WithDatastore())
-		defer svc.Stop(migrateCtx)
-		if handleDatabaseMigration(migrateCtx, svc.DatastoreManager(), cfg) {
-			util.Log(migrateCtx).Info("database migration finished; exiting")
-			return
-		}
-		util.Log(migrateCtx).Fatal("DO_MIGRATION set but migration did not run")
+		runDatabaseMigrationAndExit(ctx, cfg)
 		return
 	}
 
@@ -187,22 +180,71 @@ func main() {
 	}
 }
 
-// handleDatabaseMigration performs database migration if configured to do so.
-func handleDatabaseMigration(
-	ctx context.Context,
-	dbManager datastore.Manager,
-	cfg aconfig.AuthenticationConfig,
-) bool {
+// migrationBudget is the hard upper bound for Helm pre-upgrade migrate Jobs.
+// Frame advisory locks retry until ctx is cancelled; without a deadline a
+// stuck lock (or OTLP/NATS side effects during NewService) hangs the Job.
+const migrationBudget = 90 * time.Second
 
-	if cfg.DoDatabaseMigrate() {
+// prepareMigrationEnvironment strips runtime-only deps so Frame bootstrap
+// during DO_MIGRATION cannot block on NATS JetStream or OTLP exporters.
+// Runtime pods keep full EVENTS_QUEUE_URL / CACHE_URI / OTEL configuration.
+func prepareMigrationEnvironment() {
+	_ = os.Setenv("EVENTS_QUEUE_URL", "mem://frame.events.migrate")
+	_ = os.Setenv("OTEL_TRACES_EXPORTER", "none")
+	_ = os.Setenv("OTEL_METRICS_EXPORTER", "none")
+	_ = os.Setenv("OTEL_LOGS_EXPORTER", "none")
+	_ = os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	_ = os.Unsetenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	_ = os.Unsetenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+	_ = os.Unsetenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT")
+	// Avoid secondary pool open during migrate (primary is enough).
+	_ = os.Unsetenv("REPLICA_DATABASE_URL")
+}
 
-		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
-		if err != nil {
-			util.Log(ctx).WithError(err).Fatal("database migration failed")
+// runDatabaseMigrationAndExit bootstraps the minimum Frame service needed to
+// open the primary DB, applies migrations under a hard deadline, then exits
+// the process (os.Exit) so residual Frame goroutines cannot keep the Job alive.
+func runDatabaseMigrationAndExit(ctx context.Context, cfg aconfig.AuthenticationConfig) {
+	log := util.Log(ctx)
+	log.Info("migration job starting")
+
+	prepareMigrationEnvironment()
+
+	// Re-parse after env overrides so Frame's internal FromEnv (events/otel)
+	// and our cfg stay consistent for the migrate path.
+	if refreshed, err := config.FromEnv[aconfig.AuthenticationConfig](); err == nil {
+		cfg = refreshed
+		if cfg.Name() == "" {
+			cfg.ServiceName = "service_authentication"
 		}
-		return true
 	}
-	return false
+
+	deadlineCtx, cancel := context.WithTimeout(ctx, migrationBudget)
+	defer cancel()
+
+	log.Info("migration job bootstrapping datastore")
+	migrateCtx, svc := frame.NewServiceWithContext(deadlineCtx,
+		frame.WithConfig(&cfg),
+		frame.WithDatastore())
+
+	if !cfg.DoDatabaseMigrate() {
+		svc.Stop(migrateCtx)
+		log.Fatal("DO_MIGRATION set but DoDatabaseMigrate is false after env prepare")
+		return
+	}
+
+	log.Info("migration job applying schema", "path", cfg.GetDatabaseMigrationPath())
+	if err := repository.Migrate(migrateCtx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath()); err != nil {
+		svc.Stop(migrateCtx)
+		log.WithError(err).Fatal("database migration failed")
+		return
+	}
+
+	log.Info("database migration finished; exiting")
+	// Stop first (releases DB advisory locks), then os.Exit so residual Frame
+	// goroutines cannot keep the Helm Job container running.
+	svc.Stop(migrateCtx)
+	os.Exit(0)
 }
 
 func setupCache(_ context.Context, cfg aconfig.AuthenticationConfig) (cache.RawCache, error) {
