@@ -855,9 +855,14 @@ func (h *AuthServer) emitServiceAccountLoginAudit(
 	if len(grantedScopes) > 0 {
 		payload.GrantedScopes = append([]string(nil), grantedScopes...)
 	}
-	// Detach so a cancelled token-hook parent does not drop durable audit enqueue.
-	emitCtx := context.WithoutCancel(parent)
-	if err := h.eventsMan.Emit(emitCtx, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
+	// Honour parent cancellation — do not WithoutCancel. If the hook context is
+	// already done, skip enqueue; the next mint can re-emit or reconcilers catch up.
+	if parent.Err() != nil {
+		util.Log(parent).WithError(parent.Err()).WithField("client_id", clientID).
+			Debug("sa login audit not emitted — parent context already done")
+		return
+	}
+	if err := h.eventsMan.Emit(parent, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
 		util.Log(parent).WithError(err).WithFields(map[string]any{
 			"client_id":      clientID,
 			"login_event_id": sessionID,

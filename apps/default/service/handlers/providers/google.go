@@ -90,10 +90,8 @@ func (g *GoogleOIDCProvider) ensureOIDCProvider(ctx context.Context) (*oidc.Prov
 	if g.provider != nil {
 		return g.provider, nil
 	}
-	// Detach from any spent parent so startup/callback deadlines do not
-	// permanently block discovery; the IdP HTTP client still applies its timeout.
-	discoverCtx := withOAuthHTTPClient(context.WithoutCancel(ctx), g.httpClient)
-	p, err := oidc.NewProvider(discoverCtx, googleIssuer)
+	// Honour caller context; IdP HTTP client applies its own transport timeout.
+	p, err := oidc.NewProvider(withOAuthHTTPClient(ctx, g.httpClient), googleIssuer)
 	if err != nil {
 		return nil, fmt.Errorf("google: OIDC provider discovery failed: %w", err)
 	}

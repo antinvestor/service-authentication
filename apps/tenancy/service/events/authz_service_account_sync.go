@@ -307,10 +307,9 @@ func (e *AuthzServiceAccountSyncEvent) handleFailure(
 	if len(message) > 4096 {
 		message = message[:4096]
 	}
-	recordCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
+	// Honour the event/delivery context — never WithoutCancel after a budget.
 	recordErr := e.policyRepo.RecordFailure(
-		recordCtx,
+		ctx,
 		policy.ID,
 		policy.Generation,
 		code,

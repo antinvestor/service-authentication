@@ -125,9 +125,8 @@ func (h *AuthServer) prewarmSigningKey(ctx context.Context) {
 	if h == nil || h.defaultHydraCli == nil {
 		return
 	}
-	// Background so a cancelled startup parent does not skip prewarm; Hydra
-	// admin client timeout still bounds the hop.
-	if _, _, err := h.getSigningKey(context.Background(), defaultJWKSetName); err != nil {
+	// Honour startup ctx; Hydra admin HTTP client applies its transport timeout.
+	if _, _, err := h.getSigningKey(ctx, defaultJWKSetName); err != nil {
 		util.Log(ctx).WithError(err).Warn("signing key prewarm failed; first private_key_jwt may be cold")
 		return
 	}
