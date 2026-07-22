@@ -90,9 +90,6 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
-
 	clientDBID := jsonPayload.GetString("id")
 	profileID := jsonPayload.GetString("profile_id")
 

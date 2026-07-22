@@ -28,16 +28,6 @@ import (
 )
 
 const (
-	// eventExecutionTimeout is the maximum time an event handler may run
-	// once it has started real work (after any concurrency-slot wait).
-	// Keto batch writes for large SA trees can exceed 30s under load.
-	eventExecutionTimeout = 2 * time.Minute
-
-	// serviceAccountSyncTimeout covers partition_tree materialisation of
-	// multi-namespace SA policies (hundreds of granted_* tuples) without
-	// competing with short-lived partition/access sync handlers.
-	serviceAccountSyncTimeout = 5 * time.Minute
-
 	// maxKetoRetries is the number of times a transient Keto write is
 	// retried within a single handler execution before giving up.
 	maxKetoRetries = 3
@@ -47,7 +37,8 @@ const (
 
 	// ketoWriteChunkSize bounds each WriteTuples call. Frame's authorizer
 	// does a ListRelationTuples existence check per tuple before the batch
-	// insert; huge single calls blow past queue push deadlines under load.
+	// insert; chunking keeps each RPC burst modest without inventing a
+	// wall-clock budget for the whole event.
 	ketoWriteChunkSize = 32
 )
 
@@ -87,25 +78,15 @@ func isPermanentError(err error) bool {
 	return false
 }
 
-// withEventTimeout returns a child context with eventExecutionTimeout,
-// detached from the parent. Frame queue push handlers default to a ~25s
-// request deadline; without detaching, Keto schema writes fail with
-// "context deadline exceeded" long before eventExecutionTimeout elapses.
-func withEventTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.WithoutCancel(ctx), eventExecutionTimeout)
-}
-
-// withServiceAccountSyncTimeout is the SA materialisation variant of
-// withEventTimeout — longer ceiling, still detached from queue push parent.
-func withServiceAccountSyncTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.WithoutCancel(ctx), serviceAccountSyncTimeout)
-}
-
 // writeTuplesWithRetry wraps an authorizer WriteTuples call with bounded
 // retries for transient errors and immediate exit for permanent ones. Errors
 // are returned to the event manager so failed mutations are never acknowledged
 // as successful; queue retry/dead-letter policy and periodic reconciliation
 // provide bounded recovery.
+//
+// There is no wall-clock budget here: queue consumers (push or pull) run until
+// the handler returns. Outbound Keto RPCs are bounded by the authorizer's
+// transport client, not by micro-timeouts in this package.
 func writeTuplesWithRetry(ctx context.Context, eventName string, fn func(ctx context.Context) error) error {
 	logger := util.Log(ctx).WithField("event", eventName)
 

@@ -92,9 +92,6 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
-
 	partitionID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
 		"partition_id": partitionID,

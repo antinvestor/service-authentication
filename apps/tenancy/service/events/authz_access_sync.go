@@ -92,9 +92,6 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 
 	jsonPayload := data.JSONMap(*d)
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
-
 	accessID := jsonPayload.GetString("id")
 	logger := util.Log(ctx).WithFields(map[string]any{
 		"access_id": accessID,

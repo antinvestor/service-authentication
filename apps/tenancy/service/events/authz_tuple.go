@@ -107,9 +107,6 @@ func (e *TupleWriteEvent) Execute(ctx context.Context, payload any) error {
 		return fmt.Errorf("invalid payload type, expected *TuplePayload got %T", payload)
 	}
 
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
-
 	tuples := payloadToTuples(p)
 
 	util.Log(ctx).WithField("count", len(tuples)).Debug("writing authorization tuples")
@@ -151,9 +148,6 @@ func (e *TupleDeleteEvent) Execute(ctx context.Context, payload any) error {
 	if !ok {
 		return fmt.Errorf("invalid payload type, expected *TuplePayload got %T", payload)
 	}
-
-	ctx, cancel := withEventTimeout(ctx)
-	defer cancel()
 
 	tuples := payloadToTuples(p)
 

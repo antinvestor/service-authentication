@@ -168,19 +168,14 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	}
 
 	jsonPayload := data.JSONMap(*d)
-	// Acquire capacity on the parent context so a temporary backlog only waits
-	// — it must not burn the short eventExecutionTimeout and fail permanently.
+	// Acquire capacity so a temporary backlog only waits for a slot; queue
+	// delivery has no wall-clock budget (push/pull runs until the handler returns).
 	if err := e.acquire(ictx); err != nil {
 		return err
 	}
 	defer e.release()
 
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	// Detach from queue push ~25s parent; SA partition_tree materialisation
-	// needs the dedicated multi-minute ceiling.
-	ctx, cancel := withServiceAccountSyncTimeout(ctx)
-	defer cancel()
-
 	serviceAccountID := jsonPayload.GetString("id")
 	eventGeneration := authorizationPolicyGeneration(jsonPayload)
 	reason := jsonPayload.GetString("reason")
