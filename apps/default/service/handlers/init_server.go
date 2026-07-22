@@ -348,7 +348,15 @@ func (h *AuthServer) redirectToErrorPage(w http.ResponseWriter, r *http.Request,
 
 	// Determine what to show the user
 	var displayTitle, displayDescription string
-	if h.config.ExposeErrors {
+	var ufe *userFacingError
+	if errors.As(err, &ufe) && ufe != nil && ufe.message != "" {
+		// Safe, actionable copy for retriable / known user paths.
+		displayTitle = ufe.title
+		if displayTitle == "" {
+			displayTitle = "Sign-in interrupted"
+		}
+		displayDescription = ufe.message
+	} else if h.config != nil && h.config.ExposeErrors {
 		displayTitle = errorTitle
 		displayDescription = err.Error()
 	} else {

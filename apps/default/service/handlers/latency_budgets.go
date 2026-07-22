@@ -28,8 +28,14 @@ import "time"
 // remember-me need different ceilings than form render.
 const (
 	// --- Login form (GET /s/login, non-skip) ---
-	loginFormBudget         = 500 * time.Millisecond
-	loginHydraTimeout       = 120 * time.Millisecond
+	// Form paint budget is soft for tenancy; GetLoginRequest is the hard gate.
+	// Live Hydra admin p99 under load is often >120ms — a too-tight budget
+	// hard-fails the entire OAuth challenge to the generic error page.
+	loginFormBudget = 900 * time.Millisecond
+	// Critical Hydra admin hop (get/accept login). Prefer succeeding slowly
+	// over aborting OAuth; still well under the ~15s edge kill.
+	loginHydraTimeout       = 800 * time.Millisecond
+	loginHydraRetryTimeout  = 600 * time.Millisecond
 	loginSoftTenancyBudget  = 80 * time.Millisecond
 	loginHydraAdminTimeout  = 50 * time.Millisecond
 	loginTenancySoftTimeout = 40 * time.Millisecond
@@ -69,8 +75,8 @@ const (
 	facadeUpstreamTimeout = 2 * time.Second
 
 	// --- Consent (GET /s/consent) ---
-	consentStrongBudget       = 900 * time.Millisecond
-	consentHydraTimeout       = 120 * time.Millisecond
+	consentStrongBudget       = 1200 * time.Millisecond
+	consentHydraTimeout       = 800 * time.Millisecond
 	consentOAuthClientTimeout = 350 * time.Millisecond
 	consentDeviceTimeout      = 200 * time.Millisecond
 	// Entire ensureLoginEventTenancyAccess call tree (not per-RPC).
@@ -96,12 +102,12 @@ const (
 	// --- Social / OIDC provider callback ---
 	// External Google token exchange is not under our p99 SLO; internal work
 	// after Google returns is capped so the total stays under the ~15s edge kill.
-	socialCallbackBudget        = 5 * time.Second
-	socialGoogleExchangeTimeout = 2500 * time.Millisecond
+	socialCallbackBudget        = 8 * time.Second
+	socialGoogleExchangeTimeout = 5 * time.Second
 	socialProfileLookupTimeout  = 800 * time.Millisecond
 	socialProfileCreateTimeout  = 800 * time.Millisecond
 	socialStoreLoginTimeout     = 400 * time.Millisecond
-	socialHydraAcceptTimeout    = 300 * time.Millisecond
+	socialHydraAcceptTimeout    = 500 * time.Millisecond
 	socialStrongTenancyTimeout  = 500 * time.Millisecond
 )
 

@@ -107,7 +107,20 @@ func (h *AuthServer) ProviderCallbackEndpointV2(rw http.ResponseWriter, req *htt
 	exCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to complete login with external provider - token exchange or user info retrieval failed")
-		return fmt.Errorf("provider login completion failed: %w", err)
+		// Prefer a clear retry message over the opaque generic error page.
+		// Google exchange is outside our p99 SLO and can legitimately take seconds.
+		if isTransientHydraError(err) || strings.Contains(strings.ToLower(err.Error()), "deadline") {
+			return &userFacingError{
+				title:   "Sign-in with " + authState.Provider + " timed out",
+				message: "The identity provider took too long to respond. Please try again.",
+				cause:   fmt.Errorf("provider login completion failed: %w", err),
+			}
+		}
+		return &userFacingError{
+			title:   "Sign-in with " + authState.Provider + " failed",
+			message: "We could not complete sign-in with this provider. Please try again or use email/phone.",
+			cause:   fmt.Errorf("provider login completion failed: %w", err),
+		}
 	}
 
 	log.WithField("has_contact", user.Contact != "").

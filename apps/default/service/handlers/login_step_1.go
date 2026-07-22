@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
@@ -37,6 +38,81 @@ var (
 	ErrClientIDMissing        = errors.New("client_id is required for login")
 	ErrLoginEventCacheFailure = errors.New("failed to cache login event")
 )
+
+// userFacingError carries a safe title/message for the error page while
+// preserving the full cause for logs. Used when ExposeErrors is false so
+// users see actionable copy instead of the generic "Error / unexpected".
+type userFacingError struct {
+	title   string
+	message string
+	cause   error
+}
+
+func (e *userFacingError) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.cause != nil {
+		return e.cause.Error()
+	}
+	return e.message
+}
+
+func (e *userFacingError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.cause
+}
+
+// getLoginRequestWithRetry fetches the Hydra login request with one retry on
+// transient deadline/cancel errors. The challenge is the hard gate for form
+// paint — aborting on the first 120ms blip was sending users to /error.
+func (h *AuthServer) getLoginRequestWithRetry(
+	ctx context.Context,
+	hydraCli hydra.Hydra,
+	loginChallenge string,
+) (*client.OAuth2LoginRequest, error) {
+	hydraCtx, hydraCancel := context.WithTimeout(ctx, loginHydraTimeout)
+	req, err := hydraCli.GetLoginRequest(hydraCtx, loginChallenge)
+	hydraCancel()
+	if err == nil {
+		return req, nil
+	}
+	if !isTransientHydraError(err) {
+		return nil, err
+	}
+	util.Log(ctx).WithError(err).Warn("hydra GetLoginRequest timed out; retrying once")
+	retryCtx, retryCancel := context.WithTimeout(ctx, loginHydraRetryTimeout)
+	req, err = hydraCli.GetLoginRequest(retryCtx, loginChallenge)
+	retryCancel()
+	return req, err
+}
+
+func isTransientHydraError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	for _, needle := range []string{
+		"timeout",
+		"deadline exceeded",
+		"connection refused",
+		"connection reset",
+		"temporary failure",
+		"i/o timeout",
+		"unavailable",
+		"eof",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
+}
 
 // loginEventPropertyFedCMNonce holds the per-login nonce we pass into
 // navigator.credentials.get({identity: …}) on /s/login. The id_token returned
@@ -202,13 +278,17 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	}
 	log = log.WithField("login_challenge_prefix", challengePrefix)
 
-	// Step 2: Fetch login request from Hydra (hard budget)
-	hydraCtx, hydraCancel := context.WithTimeout(ctx, loginHydraTimeout)
-	getLogReq, err := hydraCli.GetLoginRequest(hydraCtx, loginChallenge)
-	hydraCancel()
+	// Step 2: Fetch login request from Hydra (hard gate for form paint).
+	// One retry on transient timeout — a single slow admin hop must not abort
+	// the OAuth challenge into the generic error page.
+	getLogReq, err := h.getLoginRequestWithRetry(ctx, hydraCli, loginChallenge)
 	if err != nil {
 		log.WithError(err).Error("hydra login request lookup failed")
-		return fmt.Errorf("failed to get login request from hydra: %w", err)
+		return &userFacingError{
+			title:   "Sign-in temporarily unavailable",
+			message: "We could not start sign-in just now. Please go back and try again.",
+			cause:   fmt.Errorf("failed to get login request from hydra: %w", err),
+		}
 	}
 
 	// Step 3: Handle session skip (already authenticated) — soft budget.
