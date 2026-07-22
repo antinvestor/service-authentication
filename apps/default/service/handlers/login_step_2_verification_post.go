@@ -145,6 +145,12 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	parent = withUserLoginTenancy(parent, loginEvent)
 	loginEvent, err = h.ensureLoginEventTenancyAccess(parent, loginEvent, loginEvent.ClientID, profileID)
 	if err != nil {
+		// Manual-approval / workspace-selection must bubble to redirectToErrorPage
+		// so the user lands on access instructions (not a generic verify error).
+		var accessRedirect *accessInstructionsRedirectError
+		if errors.As(err, &accessRedirect) {
+			return err
+		}
 		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
 			Error("failed to ensure tenancy access for login event")
 		// Prefer a retriable user-facing message over gateway stream closed.

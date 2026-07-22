@@ -39,7 +39,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Test timeout constants
@@ -389,25 +388,23 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsCreatesLogin
 		accessToken, ok := session["access_token"].(map[string]any)
 		require.True(t, ok)
 
+		// SA tokens use a stable synthetic session id (sa_sess_<client_id>), not a DB login_events row.
+		// Audit is async via events when eventsMan is configured; tests typically do not wire that.
+		const clientID = "dev_authentication_tests"
+		expectedSessionID := "sa_sess_" + clientID
 		loginEventID, _ := accessToken["login_event_id"].(string)
 		sessionID, _ := accessToken["session_id"].(string)
-		require.NotEmpty(t, loginEventID)
-		require.Equal(t, loginEventID, sessionID)
-		require.Equal(t, "dev_authentication_tests", accessToken["profile_id"])
+		require.Equal(t, expectedSessionID, loginEventID)
+		require.Equal(t, expectedSessionID, sessionID)
+		require.Equal(t, clientID, accessToken["profile_id"])
 		require.Equal(t, "c2f4j7au6s7f91uqnojg", accessToken["tenant_id"])
 		require.Equal(t, "c2f4j7au6s7f91uqnokg", accessToken["partition_id"])
 
+		// Synthetic ids are not persisted as login_events rows.
 		loginEvent, err := authServer.LoginEventRepo().GetByID(opCtx, loginEventID)
-		require.NoError(t, err)
-		require.NotNil(t, loginEvent)
-		require.Equal(t, "dev_authentication_tests", loginEvent.ClientID)
-		require.Equal(t, "dev_authentication_tests", loginEvent.ProfileID)
-
-		tracePayload, ok := loginEvent.Properties["token_webhook"]
-		require.True(t, ok)
-		traceStruct, err := structpb.NewStruct(map[string]any{"trace": tracePayload})
-		require.NoError(t, err)
-		assert.NotNil(t, traceStruct.GetFields()["trace"])
+		if err == nil {
+			require.Nil(t, loginEvent)
+		}
 	})
 }
 
