@@ -192,12 +192,12 @@ func (d *HeadlessDriver) Run(ctx context.Context, in HeadlessRequest) (*Headless
 	if err != nil {
 		return nil, fmt.Errorf("create cookie jar: %w", err)
 	}
-	// Bound each hop so a hung Hydra public endpoint cannot stall id-assertion
-	// for the full parent budget with no progress. Cookie jar is required for
-	// Hydra CSRF; CheckRedirect stays manual so we can intercept login/consent.
-	httpTimeout := 3 * time.Second
-	if d != nil && d.HTTPTimeout > 0 {
-		httpTimeout = d.HTTPTimeout
+	// Timeout comes from HeadlessDriver.HTTPTimeout (set at AuthServer init).
+	// Cookie jar is required for Hydra CSRF; CheckRedirect stays manual so we
+	// can intercept login/consent.
+	httpTimeout := d.HTTPTimeout
+	if httpTimeout <= 0 {
+		httpTimeout = 2 * time.Second
 	}
 	httpCli := &http.Client{
 		Timeout: httpTimeout,

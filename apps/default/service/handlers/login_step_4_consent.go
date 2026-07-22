@@ -65,14 +65,12 @@ func isRootAdminOrOwner(tenantID, partitionID string, roles []string) bool {
 // ShowConsentEndpoint handles the OAuth2 consent flow.
 // It retrieves consent challenge, processes device session, and grants consent.
 //
-// Bounded by consentStrongBudget so M2M token contention cannot hang consent
+// Outbound Hydra/device/tenancy hops use each client's configured timeout so
 // until the edge gateway kills the stream.
 func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	parent := req.Context()
-	ctx, cancel := context.WithTimeout(parent, consentStrongBudget)
-	defer cancel()
 	start := time.Now()
-	log := util.Log(ctx)
+	log := util.Log(parent)
 
 	hydraCli := h.defaultHydraCli
 
@@ -91,9 +89,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	log = log.WithField("consent_challenge_prefix", challengePrefix)
 
 	// Step 2: Get consent request from Hydra
-	hydraCtx, hydraCancel := context.WithTimeout(ctx, consentHydraTimeout)
-	getConseReq, err := hydraCli.GetConsentRequest(hydraCtx, consentChallenge)
-	hydraCancel()
+	getConseReq, err := hydraCli.GetConsentRequest(parent, consentChallenge)
 	if err != nil {
 		log.WithError(err).Error("hydra consent request lookup failed")
 		return fmt.Errorf("failed to get consent request: %w", err)
@@ -104,9 +100,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	// Prefer Hydra-embedded client / Valkey oauth-client tenancy map before
 	// a cold tenancy GetOAuthClient (S2S token loop).
-	oauthCtx, oauthCancel := context.WithTimeout(ctx, consentOAuthClientTimeout)
-	clientObj, err := h.getOAuthClient(oauthCtx, clientID)
-	oauthCancel()
+	clientObj, err := h.getOAuthClient(parent, clientID)
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{
 			"client_id":   clientID,
@@ -117,7 +111,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Step 3: Build token claims based on client type
-	tokenMap, err := h.buildConsentTokenClaims(ctx, rw, req, getConseReq, clientObj)
+	tokenMap, err := h.buildConsentTokenClaims(parent, rw, req, getConseReq, clientObj)
 	if err != nil {
 		return err
 	}
@@ -137,9 +131,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 		RememberDuration:  7776000, // remember for ninety days (until logout)
 	}
 
-	acceptCtx, acceptCancel := context.WithTimeout(ctx, consentHydraTimeout)
-	redirectURL, err := hydraCli.AcceptConsentRequest(acceptCtx, params)
-	acceptCancel()
+	redirectURL, err := hydraCli.AcceptConsentRequest(parent, params)
 	if err != nil {
 		log.WithError(err).Error("hydra accept consent request failed")
 		return fmt.Errorf("failed to accept consent: %w", err)
@@ -153,7 +145,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 	if subj, ok := tokenMap["sub"].(string); ok {
 		subjectAtConsent = subj
 	}
-	h.emitAnalyticsEvent(ctx, req, subjectAtConsent, evtConsentGranted, map[string]any{
+	h.emitAnalyticsEvent(parent, req, subjectAtConsent, evtConsentGranted, map[string]any{
 		"client_id": clientID,
 	})
 
@@ -167,7 +159,7 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 
 	// For regular user flows from a browser, render an interstitial page
 	if h.shouldRenderBrowserInterstitial(req, clientObj) {
-		payload := h.initTemplatePayloadWithI18n(ctx, req)
+		payload := h.initTemplatePayloadWithI18n(parent, req)
 		payload["RedirectURL"] = redirectURL
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 		return loginCompleteTmpl.Execute(rw, payload)
@@ -178,22 +170,22 @@ func (h *AuthServer) ShowConsentEndpoint(rw http.ResponseWriter, req *http.Reque
 }
 
 // buildConsentTokenClaims builds token claims based on the client type (service account or user).
-func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv2.OAuthClient) (map[string]any, error) {
+func (h *AuthServer) buildConsentTokenClaims(parent context.Context, rw http.ResponseWriter, req *http.Request, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv2.OAuthClient) (map[string]any, error) {
 	requestedScope := consentReq.GetRequestedScope()
 	subjectID := consentReq.GetSubject()
 
 	switch owner := clientObj.GetOwner().(type) {
 
 	case *tenancyv2.OAuthClient_PartitionId:
-		return h.buildUserTokenClaims(ctx, rw, req, consentReq, clientObj, subjectID)
+		return h.buildUserTokenClaims(parent, rw, req, consentReq, clientObj, subjectID)
 
 	case *tenancyv2.OAuthClient_ServiceAccountId:
-		serviceAccount, err := h.getServiceAccount(ctx, owner.ServiceAccountId)
+		serviceAccount, err := h.getServiceAccount(parent, owner.ServiceAccountId)
 		if err != nil {
 			return nil, err
 		}
 		requestedAudiences := consentReq.GetRequestedAccessTokenAudience()
-		return h.buildServiceAccountConsentClaims(ctx, consentReq, clientObj, serviceAccount, subjectID, requestedScope, requestedAudiences)
+		return h.buildServiceAccountConsentClaims(parent, consentReq, clientObj, serviceAccount, subjectID, requestedScope, requestedAudiences)
 
 	default:
 		return nil, fmt.Errorf("only partition or service account should own a client")
@@ -204,8 +196,8 @@ func (h *AuthServer) buildConsentTokenClaims(ctx context.Context, rw http.Respon
 // buildServiceAccountConsentClaims builds token claims for service account clients
 // (both system_internal and system_external).
 // Service accounts are looked up via the tenancy service API by client_id.
-func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv2.OAuthClient, sa *tenancyv2.ServiceAccount, subjectID string, requestedScope, _ []string) (map[string]any, error) {
-	log := util.Log(ctx).WithFields(map[string]any{
+func (h *AuthServer) buildServiceAccountConsentClaims(parent context.Context, consentReq *hydraclientgo.OAuth2ConsentRequest, clientObj *tenancyv2.OAuthClient, sa *tenancyv2.ServiceAccount, subjectID string, requestedScope, _ []string) (map[string]any, error) {
+	log := util.Log(parent).WithFields(map[string]any{
 		"client_id":     clientObj.GetClientId(),
 		"subject_id":    subjectID,
 		"sa_profile_id": sa.GetProfileId(),
@@ -225,14 +217,14 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 
 	// Service accounts are provisioned explicitly and are not gated by the
 	// user-facing auto-access partition policy.
-	accessObj, err := h.getTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
+	accessObj, err := h.getTenancyAccessByPartitionID(parent, sa.GetPartitionId(), subjectID)
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
 			log.WithError(err).Error("failed to resolve access for SA")
 			return nil, fmt.Errorf("failed to resolve access for service account: %w", err)
 		}
 
-		accessObj, err = h.createTenancyAccessByPartitionID(ctx, sa.GetPartitionId(), subjectID)
+		accessObj, err = h.createTenancyAccessByPartitionID(parent, sa.GetPartitionId(), subjectID)
 		if err != nil {
 			log.WithError(err).Error("failed to create access for SA")
 			return nil, fmt.Errorf("failed to create access for service account: %w", err)
@@ -240,14 +232,14 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 	}
 
 	// Fetch roles from access record, using partition default role
-	partition, partitionErr := h.getPartition(ctx, sa.GetPartitionId())
+	partition, partitionErr := h.getPartition(parent, sa.GetPartitionId())
 	if partitionErr != nil {
 		log.WithError(partitionErr).Warn("failed to resolve service account partition role defaults")
 	}
 	defaultRole := partitionDefaultRole(partition)
-	roles := h.fetchAccessRoleNames(ctx, accessObj.GetId(), defaultRole)
+	roles := h.fetchAccessRoleNames(parent, accessObj.GetId(), defaultRole)
 
-	loginRecord, err := h.getOrCreateLoginRecord(ctx, subjectID, clientObj.GetClientId(), string(models.LoginSourceServiceAccount))
+	loginRecord, err := h.getOrCreateLoginRecord(parent, subjectID, clientObj.GetClientId(), string(models.LoginSourceServiceAccount))
 	if err != nil {
 		log.WithError(err).Error("failed to resolve login record for service account consent")
 		return nil, fmt.Errorf("failed to resolve login record: %w", err)
@@ -279,7 +271,7 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 	}
 	loginEvt.ID = util.IDString()
 
-	if createErr := h.loginEventRepo.Create(ctx, loginEvt); createErr != nil {
+	if createErr := h.loginEventRepo.Create(parent, loginEvt); createErr != nil {
 		log.WithError(createErr).Error("failed to create login event for service account consent")
 		return nil, fmt.Errorf("failed to create login event: %w", createErr)
 	}
@@ -303,15 +295,13 @@ func (h *AuthServer) buildServiceAccountConsentClaims(ctx context.Context, conse
 // resolveConsentDeviceObject processes device tracking within consentDeviceTimeout.
 // Fail-open: returns an empty device on timeout/error so consent can complete.
 func (h *AuthServer) resolveConsentDeviceObject(
-	ctx context.Context,
+	parent context.Context,
 	rw http.ResponseWriter,
 	req *http.Request,
 	subjectID string,
 ) *devicev1.DeviceObject {
-	log := util.Log(ctx)
-	devCtx, devCancel := context.WithTimeout(ctx, consentDeviceTimeout)
-	deviceObj, deviceErr := h.processDeviceSession(devCtx, subjectID, req.UserAgent())
-	devCancel()
+	log := util.Log(parent)
+	deviceObj, deviceErr := h.processDeviceSession(parent, subjectID, req.UserAgent())
 	if deviceErr != nil {
 		if deviceObj == nil {
 			log.WithError(deviceErr).Warn("device session processing failed within budget; continuing with empty device_id")
@@ -323,7 +313,7 @@ func (h *AuthServer) resolveConsentDeviceObject(
 	if deviceObj == nil {
 		deviceObj = &devicev1.DeviceObject{}
 	}
-	if err := h.storeDeviceID(ctx, rw, deviceObj); err != nil {
+	if err := h.storeDeviceID(parent, rw, deviceObj); err != nil {
 		log.WithError(err).Debug("failed to store device ID cookie")
 	}
 	return deviceObj
@@ -331,14 +321,14 @@ func (h *AuthServer) resolveConsentDeviceObject(
 
 // buildUserTokenClaims builds token claims for regular user logins.
 func (h *AuthServer) buildUserTokenClaims(
-	ctx context.Context,
+	parent context.Context,
 	rw http.ResponseWriter,
 	req *http.Request,
 	consentReq *hydraclientgo.OAuth2ConsentRequest,
 	clientObj *tenancyv2.OAuthClient,
 	subjectID string,
 ) (map[string]any, error) {
-	log := util.Log(ctx)
+	log := util.Log(parent)
 	if clientObj == nil {
 		return nil, fmt.Errorf("client_id is required for user token claims")
 	}
@@ -346,7 +336,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("subject_id is required for user token claims")
 	}
 
-	deviceObj := h.resolveConsentDeviceObject(ctx, rw, req, subjectID)
+	deviceObj := h.resolveConsentDeviceObject(parent, rw, req, subjectID)
 
 	// Extract login event ID from consent context.
 	// This is required for a strict 1:1 mapping between user access tokens and login events.
@@ -355,7 +345,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("missing login_event_id in consent context")
 	}
 
-	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventIDStr)
+	loginEvent, err := h.loginEventRepo.GetByID(parent, loginEventIDStr)
 	if err != nil {
 		log.WithError(err).WithField("login_event_id", loginEventIDStr).Error("login event lookup failed")
 		return nil, fmt.Errorf("failed to get login event: %w", err)
@@ -371,9 +361,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		return nil, fmt.Errorf("login event subject mismatch")
 	}
 
-	tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
-	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(tenCtx, loginEvent, clientObj.GetClientId(), subjectID)
-	tenCancel()
+	loginEventUpdated, err := h.ensureLoginEventTenancyAccess(parent, loginEvent, clientObj.GetClientId(), subjectID)
 	if err != nil {
 		log.WithError(err).WithField("login_event_id", loginEvent.GetID()).Error("failed to ensure tenancy access for consent")
 		return nil, err
@@ -382,10 +370,10 @@ func (h *AuthServer) buildUserTokenClaims(
 
 	if loginEvent.DeviceID != deviceObj.GetId() && deviceObj.GetId() != "" {
 		loginEvent.DeviceID = deviceObj.GetId()
-		if _, err = h.loginEventRepo.Update(ctx, loginEvent, "device_id"); err != nil {
+		if _, err = h.loginEventRepo.Update(parent, loginEvent, "device_id"); err != nil {
 			log.WithError(err).Debug("failed to update login event device_id")
 		}
-		if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
+		if cacheErr := h.setLoginEventToCache(parent, loginEvent); cacheErr != nil {
 			log.WithError(cacheErr).Debug("failed to update login event cache after device update")
 		}
 	}
@@ -395,8 +383,8 @@ func (h *AuthServer) buildUserTokenClaims(
 		log.WithError(rmErr).Debug("failed to set remember-me cookie")
 	}
 
-	defaultRole := partitionDefaultRole(h.resolvePartitionForLoginEventClaims(ctx, loginEvent, clientObj))
-	roles := h.fetchAccessRoleNames(ctx, loginEvent.GetAccessID(), defaultRole)
+	defaultRole := partitionDefaultRole(h.resolvePartitionForLoginEventClaims(parent, loginEvent, clientObj))
+	roles := h.fetchAccessRoleNames(parent, loginEvent.GetAccessID(), defaultRole)
 
 	// Grant "internal" role to admin/owner users on the root tenant+partition.
 	// This enables cross-tenant impersonation via EnrichTenancyClaims headers.
@@ -419,7 +407,7 @@ func (h *AuthServer) buildUserTokenClaims(
 		loginEvent.Properties = data.JSONMap{}
 	}
 	loginEvent.Properties["roles"] = roles
-	if _, err = h.loginEventRepo.Update(ctx, loginEvent, "properties"); err != nil {
+	if _, err = h.loginEventRepo.Update(parent, loginEvent, "properties"); err != nil {
 		log.WithError(err).Debug("failed to persist roles in login event properties")
 	}
 
@@ -564,17 +552,17 @@ func inferDeviceName(userAgent string) string {
 	}
 }
 
-func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string, userAgent string) (*devicev1.DeviceObject, error) {
+func (h *AuthServer) processDeviceSession(parent context.Context, profileId string, userAgent string) (*devicev1.DeviceObject, error) {
 
-	deviceID := utils.DeviceIDFromContext(ctx)
-	deviceSessionID := utils.SessionIDFromContext(ctx)
+	deviceID := utils.DeviceIDFromContext(parent)
+	deviceSessionID := utils.SessionIDFromContext(parent)
 
 	deviceCli := h.DeviceCli()
 
 	var deviceObj *devicev1.DeviceObject
 
 	if deviceID != "" {
-		resp, err := deviceCli.GetById(ctx, connect.NewRequest(&devicev1.GetByIdRequest{Id: []string{deviceID}}))
+		resp, err := deviceCli.GetById(parent, connect.NewRequest(&devicev1.GetByIdRequest{Id: []string{deviceID}}))
 		if err == nil && len(resp.Msg.GetData()) > 0 {
 			deviceObj = resp.Msg.GetData()[0]
 		}
@@ -582,7 +570,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string,
 
 	if deviceObj == nil && deviceSessionID != "" {
 
-		session, err := deviceCli.GetBySessionId(ctx, connect.NewRequest(&devicev1.GetBySessionIdRequest{Id: deviceSessionID}))
+		session, err := deviceCli.GetBySessionId(parent, connect.NewRequest(&devicev1.GetBySessionIdRequest{Id: deviceSessionID}))
 		if err == nil {
 			deviceObj = session.Msg.GetData()
 		}
@@ -596,7 +584,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string,
 	})
 	if deviceObj == nil {
 
-		resp, err0 := deviceCli.Create(ctx, connect.NewRequest(&devicev1.CreateRequest{
+		resp, err0 := deviceCli.Create(parent, connect.NewRequest(&devicev1.CreateRequest{
 			Name:       deviceName,
 			Properties: props,
 		}))
@@ -610,7 +598,7 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string,
 		return deviceObj, nil
 	}
 
-	resp, err := deviceCli.Link(ctx, connect.NewRequest(&devicev1.LinkRequest{
+	resp, err := deviceCli.Link(parent, connect.NewRequest(&devicev1.LinkRequest{
 		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
 		Properties: props,
@@ -625,12 +613,12 @@ func (h *AuthServer) processDeviceSession(ctx context.Context, profileId string,
 
 }
 
-func (h *AuthServer) storeDeviceID(ctx context.Context, w http.ResponseWriter, deviceObj *devicev1.DeviceObject) error {
+func (h *AuthServer) storeDeviceID(parent context.Context, w http.ResponseWriter, deviceObj *devicev1.DeviceObject) error {
 	if deviceObj == nil || deviceObj.GetId() == "" {
 		return nil
 	}
 
-	deviceID := utils.DeviceIDFromContext(ctx)
+	deviceID := utils.DeviceIDFromContext(parent)
 
 	if deviceObj.GetId() == deviceID {
 		return nil

@@ -65,9 +65,18 @@ Login page (app): successful renders logged **~107–135ms** server-side; client
 | Profile / notification OTP delivery latency | Profile service | Keep CreateContactVerification async or fast-path; auth already times out soft |
 | Hydra DB pooler blips | Platform | `pooler-rw` connection errors under load; scale/pool |
 
-## Budget map (current code)
+## Timeout model (current code)
 
-See `apps/default/service/handlers/latency_budgets.go`.
+**No per-handler micro-budgets.** Deadlines are set once on outbound clients:
+
+| Client | Where | Timeout |
+|--------|--------|---------|
+| Hydra admin | `NewAuthServer` | 2s (`hydraAdminHTTPTimeout`) |
+| Hydra public / facade / FedCM headless | `NewAuthServer` | 2s (`hydraPublicHTTPTimeout`) |
+| External IdPs | `providers.SetupAuthProviders` | 5s |
+| Profile / tenancy / device S2S | `common` Connect clients | Frame/common default (30s) |
+
+Handlers pass `req.Context()` and soft-fail optional steps. See `client_timeouts.go`.
 
 ## Soft-fail policy (do not abort OAuth)
 

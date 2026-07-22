@@ -41,14 +41,12 @@ var (
 // VerificationEndpointSubmit handles the final login submission of verification results.
 // This is called after the user has verified their contact via code.
 //
-// Bounded by verifyStrongBudget so tenancy/token loops cannot hang until the
+// Outbound profile/Hydra/tenancy hops use each client's configured timeout so
 // edge gateway kills the stream (~15s).
 func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *http.Request) error {
 	parent := req.Context()
-	ctx, cancel := context.WithTimeout(parent, verifyStrongBudget)
-	defer cancel()
 	start := time.Now()
-	log := util.Log(ctx)
+	log := util.Log(parent)
 
 	// Step 1: Get loginEventID from URL path (primary) with form fallback
 	loginEventID := req.PathValue(pathValueLoginEventID)
@@ -93,7 +91,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	}).Debug("verification code received")
 
 	// Step 3: Retrieve login event from database
-	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
+	loginEvent, err := h.loginEventRepo.GetByID(parent, loginEventID)
 	if err != nil {
 		if data.ErrorIsNoRows(err) {
 			log.Warn("login event not found")
@@ -105,10 +103,10 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	}
 
 	// Step 3.5: Profile S2S uses service-bot JWT tenancy (Plane 1 service on home path).
-	ctx = serviceBotContext(ctx)
+	parent = serviceBotContext(parent)
 
 	// Step 4: Verify the login credentials
-	profileID, err := h.verifyProfileLogin(ctx, loginEvent, verificationCode)
+	profileID, err := h.verifyProfileLogin(parent, loginEvent, verificationCode)
 	if err != nil {
 		log.WithError(err).Debug("login verification failed")
 		h.showVerificationPage(rw, req, loginEventID, profileName, contactType, err.Error())
@@ -125,7 +123,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	// Step 5.1: Reject bot profiles from completing UI login (defence-in-depth).
 	profileReq := &profilev1.GetByIdRequest{}
 	profileReq.SetId(profileID)
-	profileResp, profileErr := h.profileCli.GetById(ctx, connect.NewRequest(profileReq))
+	profileResp, profileErr := h.profileCli.GetById(parent, connect.NewRequest(profileReq))
 	if profileErr == nil && profileResp.Msg.GetData() != nil &&
 		profileResp.Msg.GetData().GetType() == profilev1.ProfileType_BOT {
 		log.WithField("profile_id", profileID).Warn("bot profile attempted UI login via verification")
@@ -136,7 +134,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	// Step 5.5: Ensure login event is bound to the authenticated profile and tenancy access.
 	if loginEvent.ProfileID != profileID {
 		loginEvent.ProfileID = profileID
-		if _, err = h.loginEventRepo.Update(ctx, loginEvent, "profile_id"); err != nil {
+		if _, err = h.loginEventRepo.Update(parent, loginEvent, "profile_id"); err != nil {
 			log.WithError(err).Error("failed to update login event with profile_id")
 			return err
 		}
@@ -144,10 +142,8 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 
 	// Access provisioning targets the OAuth client's partition — restore user tenancy.
 	// Single child budget for the entire ensure* tree (not per-RPC 1s caps).
-	ctx = withUserLoginTenancy(ctx, loginEvent)
-	tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
-	loginEvent, err = h.ensureLoginEventTenancyAccess(tenCtx, loginEvent, loginEvent.ClientID, profileID)
-	tenCancel()
+	parent = withUserLoginTenancy(parent, loginEvent)
+	loginEvent, err = h.ensureLoginEventTenancyAccess(parent, loginEvent, loginEvent.ClientID, profileID)
 	if err != nil {
 		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
 			Error("failed to ensure tenancy access for login event")
@@ -159,7 +155,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 
 	// Step 6: Update profile name if provided
 	if profileName != "" {
-		_, err = h.updateProfileName(ctx, profileID, profileName)
+		_, err = h.updateProfileName(parent, profileID, profileName)
 		if err != nil {
 			log.WithError(err).Error("failed to update profile name")
 			return err
@@ -181,7 +177,7 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		"login_event_id": loginEvent.GetID(),
 	}
 
-	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(ctx, params, loginContext, "2_factor", loginEvent.ContactID)
+	redirectURL, err := h.defaultHydraCli.AcceptLoginRequest(parent, params, loginContext, "2_factor", loginEvent.ContactID)
 	if err != nil {
 		log.WithError(err).Error("hydra accept login request failed")
 		return err
@@ -192,18 +188,18 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 		"duration_ms": time.Since(start).Milliseconds(),
 	}).Info("login submission completed successfully")
 
-	h.emitLoginCompleted(ctx, req, profileID, "contact", loginEvent.ClientID)
+	h.emitLoginCompleted(parent, req, profileID, "contact", loginEvent.ClientID)
 
 	setLoginStatusLoggedIn(rw)
 	http.Redirect(rw, req, redirectURL, http.StatusSeeOther)
 	return nil
 }
 
-func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, profileName string) (*profilev1.ProfileObject, error) {
+func (h *AuthServer) updateProfileName(parent context.Context, profileID string, profileName string) (*profilev1.ProfileObject, error) {
 
 	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
 
-	response, err := h.profileCli.Update(ctx, connect.NewRequest(&profilev1.UpdateRequest{
+	response, err := h.profileCli.Update(parent, connect.NewRequest(&profilev1.UpdateRequest{
 		Id:         profileID,
 		Properties: props,
 	}))
@@ -218,14 +214,14 @@ func (h *AuthServer) updateProfileName(ctx context.Context, profileID string, pr
 
 // verifyProfileLogin verifies the login credentials and returns the profile ID.
 // For direct logins, it validates the verification code. For provider logins, it returns immediately.
-func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.LoginEvent, code string) (string, error) {
-	log := util.Log(ctx).WithFields(map[string]any{
+func (h *AuthServer) verifyProfileLogin(parent context.Context, event *models.LoginEvent, code string) (string, error) {
+	log := util.Log(parent).WithFields(map[string]any{
 		"login_event_id": event.GetID(),
 		"login_id":       event.LoginID,
 	})
 
 	// Step 1: Get login record
-	login, err := h.loginRepo.GetByID(ctx, event.LoginID)
+	login, err := h.loginRepo.GetByID(parent, event.LoginID)
 	if err != nil {
 		log.WithError(err).Error("failed to retrieve login record")
 		return "", fmt.Errorf("failed to get login: %w", err)
@@ -253,7 +249,7 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 		"partition_id":    event.PartitionID,
 	}).Debug("checking verification code with profile service")
 
-	resp, err := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
+	resp, err := h.profileCli.CheckVerification(parent, connect.NewRequest(&profilev1.CheckVerificationRequest{
 		Id:   event.VerificationID,
 		Code: code,
 	}))
@@ -294,7 +290,7 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 		log.Debug("creating profile for first-time login")
 		properties, _ := structpb.NewStruct(map[string]any{"src": "direct"})
 
-		results, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+		results, createErr := h.profileCli.Create(parent, connect.NewRequest(&profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    event.ContactID,
 			Properties: properties,
@@ -310,7 +306,7 @@ func (h *AuthServer) verifyProfileLogin(ctx context.Context, event *models.Login
 			return "", fmt.Errorf("profile creation returned invalid response")
 		}
 		login.ProfileID = createdProfile.GetId()
-		if _, updateErr := h.loginRepo.Update(ctx, login, "profile_id"); updateErr != nil {
+		if _, updateErr := h.loginRepo.Update(parent, login, "profile_id"); updateErr != nil {
 			log.WithError(updateErr).Error("failed to update login with profile_id")
 			return "", fmt.Errorf("failed to update login: %w", updateErr)
 		}

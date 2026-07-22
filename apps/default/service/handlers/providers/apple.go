@@ -17,29 +17,33 @@ package providers
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
 type AppleProvider struct {
-	provider *oidc.Provider
-	oauth2   oauth2.Config
+	provider   *oidc.Provider
+	oauth2     oauth2.Config
+	httpClient *http.Client
 }
 
 func NewAppleProvider(
 	ctx context.Context,
 	clientID, redirectURL string,
 	clientSecret string, // pre-generated JWT
+	httpClient *http.Client,
 ) (*AppleProvider, error) {
 
-	p, err := oidc.NewProvider(ctx, "https://appleid.apple.com")
+	p, err := oidc.NewProvider(withOAuthHTTPClient(ctx, httpClient), "https://appleid.apple.com")
 	if err != nil {
 		return nil, fmt.Errorf("apple: OIDC provider discovery failed: %w", err)
 	}
 
 	return &AppleProvider{
-		provider: p,
+		provider:   p,
+		httpClient: httpClient,
 		oauth2: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -81,7 +85,7 @@ func (a *AppleProvider) CompleteLogin(
 ) (*AuthenticatedUser, error) {
 
 	token, err := a.oauth2.Exchange(
-		ctx,
+		withOAuthHTTPClient(ctx, a.httpClient),
 		code,
 		oauth2.SetAuthURLParam("code_verifier", verifier),
 	)

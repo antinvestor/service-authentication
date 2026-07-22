@@ -331,14 +331,14 @@ func (suite *ProvidersTestSuite) TestSetupAuthProviders_EmptyConfig() {
 
 func (suite *ProvidersTestSuite) TestNewFacebookProvider() {
 	t := suite.T()
-	p, err := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
+	p, err := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "facebook", p.Name())
 }
 
 func (suite *ProvidersTestSuite) TestFacebookProvider_AuthCodeURL_WithoutNonce() {
 	t := suite.T()
-	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
+	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"}, nil)
 	url := p.AuthCodeURL("state-val", "challenge-val", "")
 	assert.Contains(t, url, "state=state-val")
 	assert.Contains(t, url, "code_challenge=challenge-val")
@@ -348,7 +348,7 @@ func (suite *ProvidersTestSuite) TestFacebookProvider_AuthCodeURL_WithoutNonce()
 
 func (suite *ProvidersTestSuite) TestFacebookProvider_AuthCodeURL_WithNonce() {
 	t := suite.T()
-	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"})
+	p, _ := NewFacebookProvider("client-id", "client-secret", "https://example.com/callback", []string{"email"}, nil)
 	url := p.AuthCodeURL("state-val", "challenge-val", "nonce-val")
 	assert.Contains(t, url, "nonce=nonce-val")
 }

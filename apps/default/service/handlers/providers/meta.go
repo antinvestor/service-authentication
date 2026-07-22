@@ -25,14 +25,17 @@ import (
 )
 
 type FacebookProvider struct {
-	oauth2 oauth2.Config
+	oauth2     oauth2.Config
+	httpClient *http.Client
 }
 
 func NewFacebookProvider(
 	clientID, clientSecret, redirectURL string,
 	scopes []string,
+	httpClient *http.Client,
 ) (*FacebookProvider, error) {
 	return &FacebookProvider{
+		httpClient: httpClient,
 		oauth2: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -74,6 +77,7 @@ func (f *FacebookProvider) CompleteLogin(
 	_ string,
 ) (*AuthenticatedUser, error) {
 
+	ctx = withOAuthHTTPClient(ctx, f.httpClient)
 	token, err := f.oauth2.Exchange(
 		ctx,
 		code,
@@ -94,7 +98,11 @@ func (f *FacebookProvider) CompleteLogin(
 	}
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	httpCli := f.httpClient
+	if httpCli == nil {
+		httpCli = http.DefaultClient
+	}
+	resp, err := httpCli.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("facebook: graph API request failed: %w", err)
 	}

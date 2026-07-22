@@ -25,6 +25,8 @@ import (
 func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (map[string]AuthProvider, error) {
 	log := util.Log(ctx)
 	providers := map[string]AuthProvider{}
+	// One shared timed client for all external IdP HTTP (token exchange, OIDC).
+	idpHTTP := newExternalIDPHTTPClient(ctx)
 
 	if cfg.GoogleLoginConfigured() {
 		p, err := NewGoogleOIDCProvider(
@@ -32,6 +34,7 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			cfg.AuthProviderGoogleClientID,
 			cfg.AuthProviderGoogleSecret,
 			cfg.AuthProviderGoogleCallbackURL,
+			idpHTTP,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("google provider setup failed: %w", err)
@@ -46,6 +49,7 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			cfg.AuthProviderMetaSecret,
 			cfg.AuthProviderMetaCallbackURL,
 			cfg.AuthProviderMetaScopes,
+			idpHTTP,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("facebook provider setup failed: %w", err)
@@ -60,6 +64,7 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			cfg.AuthProviderAppleClientID,
 			cfg.AuthProviderAppleCallbackURL,
 			cfg.AuthProviderAppleClientSecretJWT,
+			idpHTTP,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("apple provider setup failed: %w", err)
@@ -75,6 +80,7 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			cfg.AuthProviderMicrosoftClientID,
 			cfg.AuthProviderMicrosoftSecret,
 			cfg.AuthProviderMicrosoftCallbackURL,
+			idpHTTP,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("microsoft provider setup failed: %w", err)

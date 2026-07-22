@@ -34,24 +34,22 @@ import (
 // creates verification and sends code to user's contact.
 func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Request) error {
 	parent := req.Context()
-	ctx, cancel := context.WithTimeout(parent, loginSubmitBudget)
-	defer cancel()
 	start := time.Now()
-	log := util.Log(ctx)
+	log := util.Log(parent)
 
 	loginEventID := req.PathValue(pathValueLoginEventID)
 
 	log = log.WithField("login_event_id", loginEventID)
 
 	// Step 1: Retrieve login event from cache
-	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
+	loginEvt, err := h.getLoginEventFromCache(parent, loginEventID)
 	if err != nil {
 		log.WithError(err).Error("cache lookup failed for login event")
 		return err
 	}
 	// Profile lookups/creates run as the service bot (JWT home tenancy).
 	// User-partition tenancy is applied only when needed for verification send.
-	ctx = serviceBotContext(ctx)
+	parent = serviceBotContext(parent)
 
 	// Step 2: Handle contactDetail submission
 	contactDetail := req.FormValue("contactDetail")
@@ -71,7 +69,7 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	// Step 2.5: Check rate limits for IP
 	ipAddr := util.GetIP(req)
-	rateLimitResult := h.CheckLoginRateLimit(ctx, ipAddr)
+	rateLimitResult := h.CheckLoginRateLimit(parent, ipAddr)
 	if !rateLimitResult.Allowed {
 		log.WithFields(map[string]any{
 			"attempts_used":   rateLimitResult.AttemptsUsed,
@@ -88,9 +86,7 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	var contactID string
 	var contactType profilev1.ContactType
 
-	lookupCtx, lookupCancel := context.WithTimeout(ctx, loginSubmitProfileTimeout)
-	result, err := h.profileCli.GetByContact(lookupCtx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
-	lookupCancel()
+	result, err := h.profileCli.GetByContact(parent, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
 	if err != nil && !frame.ErrorIsNotFound(err) {
 		log.WithError(err).Error("profile lookup failed")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -120,11 +116,9 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 
 	// Step 5: Create contactDetail if not found
 	if contactID == "" {
-		createCtx, createCancel := context.WithTimeout(ctx, loginSubmitProfileTimeout)
-		contactResp, createErr := h.profileCli.CreateContact(createCtx, connect.NewRequest(&profilev1.CreateContactRequest{
+		contactResp, createErr := h.profileCli.CreateContact(parent, connect.NewRequest(&profilev1.CreateContactRequest{
 			Contact: contactDetail,
 		}))
-		createCancel()
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create contactDetail")
 			http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -142,21 +136,19 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	}
 
 	// Step 7: Create verification and send code (still service-bot Plane-1 path)
-	ctx = serviceBotContext(ctx)
-	verifyCtx, verifyCancel := context.WithTimeout(ctx, loginSubmitVerifyTimeout)
-	resp, err := h.profileCli.CreateContactVerification(verifyCtx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	parent = serviceBotContext(parent)
+	resp, err := h.profileCli.CreateContactVerification(parent, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
 	}))
-	verifyCancel()
 	if err != nil {
 		log.WithError(err).Error("failed to create contactDetail verification")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
 		return nil
 	}
 
-	loginEvent, err := h.storeLoginAttempt(ctx, loginEvt, models.LoginSourceDirect, profileID, contactID, resp.Msg.GetId(), nil)
+	loginEvent, err := h.storeLoginAttempt(parent, loginEvt, models.LoginSourceDirect, profileID, contactID, resp.Msg.GetId(), nil)
 	if err != nil {
 		log.WithError(err).Error("failed to store login attempt")
 		http.Redirect(rw, req, internalRedirectLinkToSignIn, http.StatusSeeOther)
@@ -187,7 +179,7 @@ func (h *AuthServer) LoginEndpointSubmit(rw http.ResponseWriter, req *http.Reque
 	return nil
 }
 
-func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {
+func (h *AuthServer) storeLoginAttempt(parent context.Context, loginEvt *models.LoginEvent, source models.LoginSource, profileID, contactID string, verificationID string, extra map[string]any) (*models.LoginEvent, error) {
 
 	var (
 		login *models.Login
@@ -197,7 +189,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 	// Important: do not re-use records for empty profile IDs.
 	// Re-using an "unbound" login row can couple independent login attempts.
 	if profileID != "" {
-		login, err = h.loginRepo.GetByProfileID(ctx, profileID)
+		login, err = h.loginRepo.GetByProfileID(parent, profileID)
 		if err != nil && !data.ErrorIsNoRows(err) {
 			return nil, err
 		}
@@ -209,10 +201,10 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 			ClientID:  loginEvt.ClientID,
 			Source:    string(source),
 		}
-		login.GenID(ctx)
+		login.GenID(parent)
 		login.PartitionID = loginEvt.PartitionID
 		login.TenantID = loginEvt.TenantID
-		err = h.loginRepo.Create(ctx, login)
+		err = h.loginRepo.Create(parent, login)
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +212,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 
 	loginEvt.LoginID = login.GetID()
 	loginEvt.ProfileID = profileID
-	loginEvt.DeviceID = utils.DeviceIDFromContext(ctx)
+	loginEvt.DeviceID = utils.DeviceIDFromContext(parent)
 	loginEvt.VerificationID = verificationID
 	loginEvt.ContactID = contactID
 	loginEvt.Properties = mergeLoginEventProperties(nil, extra)
@@ -229,7 +221,7 @@ func (h *AuthServer) storeLoginAttempt(ctx context.Context, loginEvt *models.Log
 	}
 	loginEvt.Properties[loginEventPropertyLoginSource] = string(source)
 
-	err = h.loginEventRepo.Create(ctx, loginEvt)
+	err = h.loginEventRepo.Create(parent, loginEvt)
 	if err != nil {
 		return nil, err
 	}

@@ -44,9 +44,7 @@ func (h *AuthServer) getCachedOAuthClientTenancy(ctx context.Context, clientID s
 	if c == nil || strings.TrimSpace(clientID) == "" {
 		return "", "", false
 	}
-	cacheCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), loginCacheTimeout)
-	defer cancel()
-	p, found, err := c.Get(cacheCtx, clientID)
+	p, found, err := c.Get(ctx, clientID)
 	if err != nil {
 		util.Log(ctx).WithError(err).WithField("client_id", clientID).Debug("oauth client tenancy cache get failed")
 		return "", "", false
@@ -62,11 +60,7 @@ func (h *AuthServer) setCachedOAuthClientTenancy(ctx context.Context, clientID, 
 	if c == nil || strings.TrimSpace(clientID) == "" || !ValidTenancyPair(tenantID, partitionID) {
 		return
 	}
-	// Detach from spent soft-tenancy budgets so Valkey SET always has a full
-	// loginCacheTimeout window.
-	cacheCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), loginCacheTimeout)
-	defer cancel()
-	if err := c.Set(cacheCtx, clientID, oauthClientTenancyPayload{
+	if err := c.Set(ctx, clientID, oauthClientTenancyPayload{
 		TenantID:    tenantID,
 		PartitionID: partitionID,
 	}, oauthClientTenancyTTL); err != nil {

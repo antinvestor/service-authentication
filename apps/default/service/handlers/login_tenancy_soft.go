@@ -26,6 +26,7 @@ import (
 // tenancySource labels for structured logs (and future metrics).
 const (
 	tenancySourceLoginRequestMeta = "login_request_meta"
+	tenancySourceCache            = "valkey_map"
 	tenancySourceHydraAdmin       = "hydra_admin"
 	tenancySourceTenancy          = "tenancy"
 	tenancySourceNone             = "none"
@@ -57,15 +58,13 @@ func applyLoginEventTenancy(loginEvt *models.LoginEvent, tenantID, partitionID s
 	loginEvt.PartitionID = partitionID
 }
 
-const tenancySourceCache = "valkey_map"
-
-// softEnrichLoginEventTenancy never fails the login page. Resolution order:
-//  1. Embedded client metadata on the login request (free optimization)
-//  2. Shared Frame cache map auth_oauth_client_tenancy_* (multi-replica)
-//  3. Hydra admin GetOAuth2Client with a short timeout (reliable primary)
-//  4. Tenancy service resolve with a short timeout (best-effort)
+// softEnrichLoginEventTenancy never fails the login page and does no outbound
+// RPC. It only uses free local data:
+//  1. Embedded client metadata on the login request
+//  2. Shared cache map auth_oauth_client_tenancy_*
 //
-// Missing tenancy is OK here — verification and consent re-resolve with strong budgets.
+// Strong tenancy (Hydra admin / tenancy service) runs later at verification
+// complete and consent, under those clients' configured timeouts.
 func (h *AuthServer) softEnrichLoginEventTenancy(
 	ctx context.Context,
 	loginEvt *models.LoginEvent,
@@ -77,15 +76,12 @@ func (h *AuthServer) softEnrichLoginEventTenancy(
 	log := util.Log(ctx).WithField("login_event_id", loginEvt.GetID())
 	start := time.Now()
 
-	budgetCtx, cancel := context.WithTimeout(ctx, loginSoftTenancyBudget)
-	defer cancel()
-
 	finish := func(tid, pid, source string) string {
 		applyLoginEventTenancy(loginEvt, tid, pid)
 		if loginEvt.ClientID != "" {
-			h.setCachedOAuthClientTenancy(budgetCtx, loginEvt.ClientID, tid, pid)
+			h.setCachedOAuthClientTenancy(ctx, loginEvt.ClientID, tid, pid)
 		}
-		_ = h.setLoginEventToCache(budgetCtx, loginEvt)
+		_ = h.setLoginEventToCache(ctx, loginEvt)
 		log.WithFields(map[string]any{
 			"tenancy_source": source,
 			"duration_ms":    time.Since(start).Milliseconds(),
@@ -101,38 +97,14 @@ func (h *AuthServer) softEnrichLoginEventTenancy(
 	}
 
 	if loginEvt.ClientID != "" {
-		if tid, pid, ok := h.getCachedOAuthClientTenancy(budgetCtx, loginEvt.ClientID); ok {
+		if tid, pid, ok := h.getCachedOAuthClientTenancy(ctx, loginEvt.ClientID); ok {
 			applyLoginEventTenancy(loginEvt, tid, pid)
-			_ = h.setLoginEventToCache(budgetCtx, loginEvt)
+			_ = h.setLoginEventToCache(ctx, loginEvt)
 			log.WithFields(map[string]any{
 				"tenancy_source": tenancySourceCache,
 				"duration_ms":    time.Since(start).Milliseconds(),
 			}).Debug("login event soft-enriched with tenancy")
 			return tenancySourceCache
-		}
-	}
-
-	if loginEvt.ClientID != "" {
-		adminCtx, adminCancel := context.WithTimeout(budgetCtx, loginHydraAdminTimeout)
-		tid, pid, err := h.tenancyIDsFromHydraClient(adminCtx, loginEvt.ClientID)
-		adminCancel()
-		if err == nil {
-			return finish(tid, pid, tenancySourceHydraAdmin)
-		}
-		if budgetCtx.Err() == nil {
-			log.WithError(err).Debug("hydra admin tenancy soft-enrich failed")
-		}
-	}
-
-	if loginEvt.ClientID != "" && budgetCtx.Err() == nil {
-		tenCtx, tenCancel := context.WithTimeout(budgetCtx, loginTenancySoftTimeout)
-		part, err := h.resolvePartitionByClientID(tenCtx, loginEvt.ClientID)
-		tenCancel()
-		if err == nil && part != nil && ValidTenancyPair(part.GetTenantId(), part.GetId()) {
-			return finish(part.GetTenantId(), part.GetId(), tenancySourceTenancy)
-		}
-		if err != nil && budgetCtx.Err() == nil {
-			log.WithError(err).Debug("tenancy service soft-enrich failed")
 		}
 	}
 

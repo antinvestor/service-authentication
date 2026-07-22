@@ -157,7 +157,7 @@ func NewAuthServer(ctx context.Context,
 	// Using the service context would cause a circular dependency: the signing
 	// webhook needs Hydra admin to fetch JWK sets, but the HTTP client would
 	// try to authenticate via the signer (itself) before making the request.
-	// Transport timeout is defence-in-depth; callers still apply context budgets.
+	// Hydra admin timeout is the single bound for all admin API hops.
 	httpOpts = append(httpOpts, client.WithHTTPTimeout(hydraAdminHTTPTimeout))
 	hydraHTTPCli := client.NewHTTPClient(context.Background(), httpOpts...)
 	hydraCli := hydra.NewDefaultHydra(hydraHTTPCli, authConfig.GetOauth2ServiceAdminURI())
@@ -206,14 +206,14 @@ func NewAuthServer(ctx context.Context,
 		HydraPublicURL:      hydraPublicURL(authConfig),
 		InternalCallbackURL: publicOrigin + "/_internal/fedcm-callback",
 		Now:                 time.Now,
-		HTTPTimeout:         fedcmHeadlessHTTPTimeout,
+		HTTPTimeout:         hydraPublicHTTPTimeout,
 	}
 	h.nativeVerifier = nativecredentials.NewVerifier()
 
 	// Bounded-timeout client for the token/discovery facades. Background
 	// context (like hydraHTTPCli above) keeps the service OAuth2 token source
 	// off proxied requests.
-	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(facadeUpstreamTimeout)}, httpOpts...)
+	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(hydraPublicHTTPTimeout)}, httpOpts...)
 	h.tokenFacadeClient = client.NewHTTPClient(context.Background(), facadeHTTPOpts...)
 
 	// Load signing key before traffic so private_key_jwt is warm after deploy.

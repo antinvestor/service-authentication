@@ -15,7 +15,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
@@ -23,9 +22,7 @@ import (
 )
 
 func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx, cancel := context.WithTimeout(req.Context(), logoutBudget)
-	defer cancel()
-	log := util.Log(ctx)
+	log := util.Log(req.Context())
 	hydraCli := h.defaultHydraCli
 
 	logoutChallenge, err := hydra.GetLogoutChallengeID(req)
@@ -34,9 +31,7 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 		return err
 	}
 
-	hydraCtx, hydraCancel := context.WithTimeout(ctx, logoutHydraTimeout)
-	logoutReq, err := hydraCli.GetLogoutRequest(hydraCtx, logoutChallenge)
-	hydraCancel()
+	logoutReq, err := hydraCli.GetLogoutRequest(req.Context(), logoutChallenge)
 	if err != nil {
 		return err
 	}
@@ -44,14 +39,14 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 	// FedCM cleanup is best-effort under remaining budget — never block Hydra
 	// accept logout on revocation/cache blips.
 	if subject := logoutReq.GetSubject(); subject != "" {
-		if perr := h.purgeIdPSessionEntry(ctx, rw, req, subject); perr != nil {
+		if perr := h.purgeIdPSessionEntry(req.Context(), rw, req, subject); perr != nil {
 			log.WithError(perr).Error("failed to purge idp_session entry on logout")
 		}
-		for _, clientID := range h.knownClientsForSubject(ctx, subject) {
+		for _, clientID := range h.knownClientsForSubject(req.Context(), subject) {
 			if h.fedcmRevocation == nil {
 				break
 			}
-			if rerr := h.fedcmRevocation.Revoke(ctx, subject, clientID); rerr != nil {
+			if rerr := h.fedcmRevocation.Revoke(req.Context(), subject, clientID); rerr != nil {
 				log.WithError(rerr).WithFields(map[string]any{
 					"profile_id": subject,
 					"client_id":  clientID,
@@ -60,9 +55,7 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	acceptCtx, acceptCancel := context.WithTimeout(ctx, logoutHydraTimeout)
-	redirectUrl, err := hydraCli.AcceptLogoutRequest(acceptCtx, &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
-	acceptCancel()
+	redirectUrl, err := hydraCli.AcceptLogoutRequest(req.Context(), &hydra.AcceptLogoutRequestParams{LogoutChallenge: logoutChallenge})
 	if err != nil {
 		return err
 	}
@@ -70,7 +63,7 @@ func (h *AuthServer) ShowLogoutEndpoint(rw http.ResponseWriter, req *http.Reques
 	h.clearRememberMeCookie(rw)
 	setLoginStatusLoggedOut(rw)
 
-	h.emitAnalyticsEvent(ctx, req, logoutReq.GetSubject(), evtLogout, nil)
+	h.emitAnalyticsEvent(req.Context(), req, logoutReq.GetSubject(), evtLogout, nil)
 
 	http.Redirect(rw, req, redirectUrl, http.StatusSeeOther)
 	return nil

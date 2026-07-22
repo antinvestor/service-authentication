@@ -605,11 +605,9 @@ func (h *AuthServer) reconstructClaimsFromLoginEvent(
 func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.Request) error {
 	parent := req.Context()
 	// Cold budget is the worst-case envelope; warm SA hits finish far sooner.
-	ctx, cancel := context.WithTimeout(parent, saWebhookColdBudget+100*time.Millisecond)
-	defer cancel()
-	log := util.Log(ctx)
+	log := util.Log(parent)
 
-	tokenObject, err := h.parseTokenWebhookRequest(ctx, req)
+	tokenObject, err := h.parseTokenWebhookRequest(parent, req)
 	if err != nil {
 		return err
 	}
@@ -633,7 +631,7 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 		return h.writeWebhookError(rw, "client_id not found")
 	}
 	log = log.WithField("client_id", clientID)
-	ctx = util.ContextWithLogger(ctx, log)
+	parent = util.ContextWithLogger(parent, log)
 
 	// Handle service account scoped tokens (system_internal or system_external).
 	// For client_credentials grants Hydra does NOT call consent — only this webhook.
@@ -641,16 +639,16 @@ func (h *AuthServer) TokenEnrichmentEndpoint(rw http.ResponseWriter, req *http.R
 	// is traceable and refreshes preserve the same event linkage.
 	grantedScopes := extractGrantedScopes(tokenObject)
 	if grantType == "client_credentials" {
-		return h.handleServiceAccountEnrichment(ctx, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
+		return h.handleServiceAccountEnrichment(parent, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
 	}
 
 	// Handle regular user tokens
-	return h.handleUserTokenEnrichment(ctx, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
+	return h.handleUserTokenEnrichment(parent, rw, tokenObject, clientID, tokenType, grantType, grantedScopes)
 }
 
 // parseTokenWebhookRequest reads and parses the webhook request body.
-func (h *AuthServer) parseTokenWebhookRequest(ctx context.Context, req *http.Request) (map[string]any, error) {
-	log := util.Log(ctx)
+func (h *AuthServer) parseTokenWebhookRequest(parent context.Context, req *http.Request) (map[string]any, error) {
+	log := util.Log(parent)
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.WithError(err).Error("could not read request body")
@@ -688,11 +686,11 @@ func (h *AuthServer) writeWebhookErrorStatus(rw http.ResponseWriter, status int,
 // Hot path: shared Frame cache (GenericCache on RawCache) → Hydra admin on miss
 // → claims with stable session_id. Durable login_events audit is emitted to the
 // Frame events queue and never blocks token issuance when claims are complete.
-func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
-	log := util.Log(ctx).WithField("client_id", clientID)
+func (h *AuthServer) handleServiceAccountEnrichment(parent context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
+	log := util.Log(parent).WithField("client_id", clientID)
 	start := time.Now()
 
-	sa, fromCache, err := h.lookupServiceAccountByClientIDCached(ctx, clientID)
+	sa, fromCache, err := h.lookupServiceAccountByClientIDCached(parent, clientID)
 	if err != nil {
 		// Permanent miss → 403 (access_denied). Transient Hydra/network → 503
 		// so Hydra does not permanently fail every M2M mint during a blip.
@@ -731,7 +729,7 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 
 	// Durable audit is off the hot path via Frame events (queue-backed).
 	// Token issuance never waits on DB INSERT.
-	h.emitServiceAccountLoginAudit(ctx, clientID, sa, sessionID, tokenType, grantType, grantedScopes)
+	h.emitServiceAccountLoginAudit(parent, clientID, sa, sessionID, tokenType, grantType, grantedScopes)
 
 	log.WithFields(map[string]any{
 		"login_event_id": sessionID,
@@ -753,31 +751,31 @@ func (h *AuthServer) handleServiceAccountEnrichment(ctx context.Context, rw http
 // lookupServiceAccountByClientIDCached uses Frame GenericCache over the shared
 // RawCache backend (memory / NATS KV / Valkey).
 func (h *AuthServer) lookupServiceAccountByClientIDCached(
-	ctx context.Context,
+	parent context.Context,
 	clientID string,
 ) (*serviceAccountAuthContext, bool, error) {
 	clientID = strings.TrimSpace(clientID)
 	if clientID == "" {
 		return nil, false, fmt.Errorf("client_id is required")
 	}
-	if sa, neg, ok := h.getCachedServiceAccount(ctx, clientID); ok {
+	if sa, neg, ok := h.getCachedServiceAccount(parent, clientID); ok {
 		if neg {
 			return nil, true, fmt.Errorf("service account not found (cached)")
 		}
 		return sa, true, nil
 	}
 
-	sa, err := h.lookupServiceAccountByClientID(ctx, clientID)
+	sa, err := h.lookupServiceAccountByClientID(parent, clientID)
 	if err != nil {
 		// Only negative-cache definitive "not found" / incomplete metadata.
 		// Timeouts and transport errors must not poison the warm path for 2s —
 		// that turns a single Hydra blip into a wave of token_hook 403s.
 		if isDefinitiveServiceAccountMiss(err) {
-			h.setCachedServiceAccountNegative(ctx, clientID, saNegativeCacheTTL)
+			h.setCachedServiceAccountNegative(parent, clientID, saNegativeCacheTTL)
 		}
 		return nil, false, fmt.Errorf("lookup service account %q: %w", clientID, err)
 	}
-	h.setCachedServiceAccount(ctx, clientID, sa, saClaimsCacheTTL)
+	h.setCachedServiceAccount(parent, clientID, sa, saClaimsCacheTTL)
 	return sa, false, nil
 }
 
@@ -825,7 +823,7 @@ func isDefinitiveServiceAccountMiss(err error) bool {
 // emitServiceAccountLoginAudit publishes durable audit work to the Frame events
 // queue. Failures are logged only — token response is not blocked.
 func (h *AuthServer) emitServiceAccountLoginAudit(
-	ctx context.Context,
+	parent context.Context,
 	clientID string,
 	sa *serviceAccountAuthContext,
 	sessionID string,
@@ -837,7 +835,7 @@ func (h *AuthServer) emitServiceAccountLoginAudit(
 		return
 	}
 	if h.eventsMan == nil {
-		util.Log(ctx).WithField("client_id", clientID).
+		util.Log(parent).WithField("client_id", clientID).
 			Debug("sa login audit not emitted — events manager not configured")
 		return
 	}
@@ -857,8 +855,8 @@ func (h *AuthServer) emitServiceAccountLoginAudit(
 	if len(grantedScopes) > 0 {
 		payload.GrantedScopes = append([]string(nil), grantedScopes...)
 	}
-	if err := h.eventsMan.Emit(ctx, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
-		util.Log(ctx).WithError(err).WithFields(map[string]any{
+	if err := h.eventsMan.Emit(parent, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
+		util.Log(parent).WithError(err).WithFields(map[string]any{
 			"client_id":      clientID,
 			"login_event_id": sessionID,
 		}).Warn("failed to emit sa login audit event")
@@ -866,14 +864,14 @@ func (h *AuthServer) emitServiceAccountLoginAudit(
 }
 
 func (h *AuthServer) lookupServiceAccountByClientID(
-	ctx context.Context,
+	parent context.Context,
 	clientID string,
 ) (*serviceAccountAuthContext, error) {
 	if strings.TrimSpace(clientID) == "" {
 		return nil, fmt.Errorf("client_id is required")
 	}
 
-	client, err := h.defaultHydraCli.GetOAuth2Client(ctx, clientID)
+	client, err := h.defaultHydraCli.GetOAuth2Client(parent, clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -936,8 +934,8 @@ func serviceAccountFromHydraClient(
 // Consent is the single authority for all token claims including roles.
 // The webhook passes through complete consent-set claims and only reconstructs
 // from the login event DB when claims are missing (edge case).
-func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
-	log := util.Log(ctx)
+func (h *AuthServer) handleUserTokenEnrichment(parent context.Context, rw http.ResponseWriter, tokenObject map[string]any, clientID, tokenType, grantType string, grantedScopes []string) error {
+	log := util.Log(parent)
 	session, sessionOk := tokenObject["session"].(map[string]any)
 	if !sessionOk {
 		log.WithFields(map[string]any{
@@ -964,7 +962,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	// Select claims from session or fall back to database lookup
 	finalClaims := selectFinalClaims(accessTokenClaims, deepNestedClaims, extClaims, extraClaims)
 	if finalClaims == nil {
-		finalClaims = h.lookupClaimsFromDB(ctx, tokenObject, idTokenWrapper, nestedIdTokenClaims, session)
+		finalClaims = h.lookupClaimsFromDB(parent, tokenObject, idTokenWrapper, nestedIdTokenClaims, session)
 	}
 
 	if len(finalClaims) == 0 {
@@ -987,7 +985,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	// Fast path: if all required claims are present from consent, pass through directly.
 	// This avoids DB and partition service calls during token refresh.
 	if missing := missingRequiredUserClaims(finalClaims); len(missing) == 0 {
-		h.traceUserTokenWebhook(ctx, tokenObject, finalClaims, tokenType, grantType, grantedScopes)
+		h.traceUserTokenWebhook(parent, tokenObject, finalClaims, tokenType, grantType, grantedScopes)
 		log.WithFields(map[string]any{
 			"client_id":      clientID,
 			"login_event_id": claimString(finalClaims, "session_id"),
@@ -998,7 +996,7 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 	}
 
 	// Slow path: claims incomplete — reconstruct from login event DB, preserving consent-set roles.
-	canonicalClaims, err := h.reconstructClaimsFromLoginEvent(ctx, tokenObject, finalClaims)
+	canonicalClaims, err := h.reconstructClaimsFromLoginEvent(parent, tokenObject, finalClaims)
 	if err != nil {
 		log.WithError(err).Warn("token enrichment rejected: login_event mapping failed")
 		return h.writeWebhookError(rw, "unable to map token to login event")
@@ -1009,19 +1007,19 @@ func (h *AuthServer) handleUserTokenEnrichment(ctx context.Context, rw http.Resp
 		return h.writeWebhookError(rw, "required user claims missing")
 	}
 
-	h.traceUserTokenWebhook(ctx, tokenObject, canonicalClaims, tokenType, grantType, grantedScopes)
+	h.traceUserTokenWebhook(parent, tokenObject, canonicalClaims, tokenType, grantType, grantedScopes)
 	log.WithField("claims_keys", getMapKeys(canonicalClaims)).Debug("enriching token with reconstructed user claims")
 	return writeTokenHookResponse(rw, canonicalClaims)
 }
 
-func (h *AuthServer) getOrCreateLoginRecord(ctx context.Context, profileID, clientID, source string) (*models.Login, error) {
+func (h *AuthServer) getOrCreateLoginRecord(parent context.Context, profileID, clientID, source string) (*models.Login, error) {
 	var (
 		login *models.Login
 		err   error
 	)
 
 	if profileID != "" {
-		login, err = h.loginRepo.GetByProfileID(ctx, profileID)
+		login, err = h.loginRepo.GetByProfileID(parent, profileID)
 		if err != nil && !data.ErrorIsNoRows(err) {
 			return nil, err
 		}
@@ -1037,8 +1035,8 @@ func (h *AuthServer) getOrCreateLoginRecord(ctx context.Context, profileID, clie
 			ClientID:  clientID,
 			Source:    source,
 		}
-		login.GenID(ctx)
-		if err = h.loginRepo.Create(ctx, login); err != nil {
+		login.GenID(parent)
+		if err = h.loginRepo.Create(parent, login); err != nil {
 			return nil, err
 		}
 	}
@@ -1047,7 +1045,7 @@ func (h *AuthServer) getOrCreateLoginRecord(ctx context.Context, profileID, clie
 }
 
 func (h *AuthServer) recordTokenWebhookTrace(
-	ctx context.Context,
+	parent context.Context,
 	loginEvent *models.LoginEvent,
 	tokenType string,
 	grantType string,
@@ -1092,14 +1090,14 @@ func (h *AuthServer) recordTokenWebhookTrace(
 
 	props["token_webhook"] = tracePayload
 	loginEvent.Properties = props
-	if _, err := h.loginEventRepo.Update(ctx, loginEvent, "properties"); err != nil {
-		util.Log(ctx).WithError(err).WithField("login_event_id", loginEvent.GetID()).
+	if _, err := h.loginEventRepo.Update(parent, loginEvent, "properties"); err != nil {
+		util.Log(parent).WithError(err).WithField("login_event_id", loginEvent.GetID()).
 			Warn("failed to persist token webhook trace on login event")
 	}
 }
 
 func (h *AuthServer) traceUserTokenWebhook(
-	ctx context.Context,
+	parent context.Context,
 	tokenObject map[string]any,
 	claims map[string]any,
 	tokenType string,
@@ -1111,16 +1109,16 @@ func (h *AuthServer) traceUserTokenWebhook(
 		loginEventID = extractLoginEventIDFromWebhook(tokenObject)
 	}
 	if loginEventID == "" {
-		util.Log(ctx).WithFields(map[string]any{
+		util.Log(parent).WithFields(map[string]any{
 			"token_type": tokenType,
 			"grant_type": grantType,
 		}).Warn("token webhook did not contain a login_event reference for user tracing")
 		return
 	}
 
-	loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID)
+	loginEvent, err := h.loginEventRepo.GetByID(parent, loginEventID)
 	if err != nil {
-		util.Log(ctx).WithError(err).WithField("login_event_id", loginEventID).
+		util.Log(parent).WithError(err).WithField("login_event_id", loginEventID).
 			Warn("failed to look up login event while tracing token webhook")
 		return
 	}
@@ -1128,8 +1126,8 @@ func (h *AuthServer) traceUserTokenWebhook(
 		return
 	}
 
-	h.recordTokenWebhookTrace(ctx, loginEvent, tokenType, grantType, "user", grantedScopes)
-	util.Log(ctx).WithFields(map[string]any{
+	h.recordTokenWebhookTrace(parent, loginEvent, tokenType, grantType, "user", grantedScopes)
+	util.Log(parent).WithFields(map[string]any{
 		"login_event_id": loginEvent.GetID(),
 		"profile_id":     loginEvent.ProfileID,
 		"partition_id":   loginEvent.PartitionID,
@@ -1142,14 +1140,14 @@ func (h *AuthServer) traceUserTokenWebhook(
 // lookupClaimsFromDB attempts to look up claims from the database using login event ID or OAuth2 session ID.
 // This is a fallback path when no session claims exist at all. Roles default to ["user"] since
 // consent-set roles are unavailable in this edge case.
-func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idTokenWrapper, nestedIdTokenClaims, session map[string]any) map[string]any {
-	log := util.Log(ctx)
+func (h *AuthServer) lookupClaimsFromDB(parent context.Context, tokenObject, idTokenWrapper, nestedIdTokenClaims, session map[string]any) map[string]any {
+	log := util.Log(parent)
 	subject := extractSubjectFromSession(idTokenWrapper, nestedIdTokenClaims)
 
 	// Try login event ID first (most direct)
 	if loginEventID := extractLoginEventIDFromWebhook(tokenObject); loginEventID != "" {
 		log.WithField("login_event_id", loginEventID).Debug("attempting login event lookup by ID from claims")
-		if loginEvent, err := h.loginEventRepo.GetByID(ctx, loginEventID); err == nil && loginEvent != nil {
+		if loginEvent, err := h.loginEventRepo.GetByID(parent, loginEventID); err == nil && loginEvent != nil {
 			if subject == "" {
 				subject = loginEvent.ProfileID
 			}
@@ -1179,7 +1177,7 @@ func (h *AuthServer) lookupClaimsFromDB(ctx context.Context, tokenObject, idToke
 	// Fallback: try OAuth2 session ID lookup
 	if oauth2SessionID := extractOAuth2SessionID(tokenObject); oauth2SessionID != "" {
 		log.WithField("oauth2_session_id", oauth2SessionID).Debug("attempting login event lookup by Hydra session ID")
-		if loginEvent, err := h.loginEventRepo.GetByOauth2SessionID(ctx, oauth2SessionID); err == nil && loginEvent != nil {
+		if loginEvent, err := h.loginEventRepo.GetByOauth2SessionID(parent, oauth2SessionID); err == nil && loginEvent != nil {
 			if subject == "" {
 				subject = loginEvent.ProfileID
 			}

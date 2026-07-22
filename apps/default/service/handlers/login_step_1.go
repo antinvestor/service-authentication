@@ -65,31 +65,10 @@ func (e *userFacingError) Unwrap() error {
 	return e.cause
 }
 
-// getLoginRequestWithRetry fetches the Hydra login request with one retry on
-// transient deadline/cancel errors. The challenge is the hard gate for form
-// paint — aborting on the first 120ms blip was sending users to /error.
-func (h *AuthServer) getLoginRequestWithRetry(
-	ctx context.Context,
-	hydraCli hydra.Hydra,
-	loginChallenge string,
-) (*client.OAuth2LoginRequest, error) {
-	hydraCtx, hydraCancel := context.WithTimeout(ctx, loginHydraTimeout)
-	req, err := hydraCli.GetLoginRequest(hydraCtx, loginChallenge)
-	hydraCancel()
-	if err == nil {
-		return req, nil
-	}
-	if !isTransientHydraError(err) {
-		return nil, err
-	}
-	util.Log(ctx).WithError(err).Warn("hydra GetLoginRequest timed out; retrying once")
-	retryCtx, retryCancel := context.WithTimeout(ctx, loginHydraRetryTimeout)
-	req, err = hydraCli.GetLoginRequest(retryCtx, loginChallenge)
-	retryCancel()
-	return req, err
-}
-
-func isTransientHydraError(err error) bool {
+// isTransientNetworkError reports timeouts / connectivity failures so handlers
+// can map them to actionable user-facing copy. Deadlines come from the
+// outbound HTTP client, not per-call context budgets.
+func isTransientNetworkError(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -131,7 +110,7 @@ const SessionKeyLoginEventID = "login-event-id"
 // info. Used by paths that already have a login_event_id (e.g. Google FedCM
 // completion) and can tolerate soft failure. For the initial GET /s/login form
 // render use softEnrichLoginEventTenancy with the Hydra login request instead —
-// that path is budgeted and never blocks page render on tenancy RPC hangs.
+// that path stays local (metadata/cache) and never blocks page render on RPCs.
 //
 // Resolution order (when not soft-enriching from the login request):
 //  1. Tenancy service GetOAuthClient → partition
@@ -141,10 +120,8 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 	start := time.Now()
 
 	// Soft budget so callers (FedCM) cannot hang for Frame's 30s default.
-	budgetCtx, cancel := context.WithTimeout(ctx, loginSoftTenancyBudget)
-	defer cancel()
 
-	loginEvt, err := h.getLoginEventFromCache(budgetCtx, loginEventID)
+	loginEvt, err := h.getLoginEventFromCache(ctx, loginEventID)
 	if err != nil {
 		log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
 			Error("cache lookup failed for login event")
@@ -158,16 +135,12 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 
 	// Prefer Hydra admin first (no self-token loop), then tenancy best-effort.
 	source := tenancySourceHydraAdmin
-	adminCtx, adminCancel := context.WithTimeout(budgetCtx, loginHydraAdminTimeout)
-	tenantID, partitionID, metaErr := h.tenancyIDsFromHydraClient(adminCtx, loginEvt.ClientID)
-	adminCancel()
+	tenantID, partitionID, metaErr := h.tenancyIDsFromHydraClient(ctx, loginEvt.ClientID)
 	if metaErr == nil {
 		loginEvt.TenantID = tenantID
 		loginEvt.PartitionID = partitionID
 	} else {
-		tenCtx, tenCancel := context.WithTimeout(budgetCtx, loginTenancySoftTimeout)
-		partitionObj, partErr := h.resolvePartitionByClientID(tenCtx, loginEvt.ClientID)
-		tenCancel()
+		partitionObj, partErr := h.resolvePartitionByClientID(ctx, loginEvt.ClientID)
 		if partErr != nil || partitionObj == nil {
 			log.WithError(metaErr).WithField("client_id", loginEvt.ClientID).
 				Warn("login event tenancy enrichment failed within soft budget")
@@ -187,7 +160,7 @@ func (h *AuthServer) updateTenancyForLoginEvent(ctx context.Context, loginEventI
 		return
 	}
 
-	if err = h.setLoginEventToCache(budgetCtx, loginEvt); err != nil {
+	if err = h.setLoginEventToCache(ctx, loginEvt); err != nil {
 		log.WithError(err).Error("failed to update login event cache with partition info")
 		return
 	}
@@ -254,8 +227,8 @@ func (h *AuthServer) createLoginEvent(ctx context.Context, req *http.Request, lo
 // LoginEndpointShow displays the login page for OAuth2 authorization flow.
 // It validates the login challenge, checks for session skip, and renders the login form.
 //
-// Latency: per-branch budgets (see latency_budgets.go). Form render soft-enriches
-// tenancy and always paints the form within loginFormBudget when Hydra is healthy.
+// Soft-enriches tenancy from login-request metadata / shared cache only;
+// Hydra GetLoginRequest is bounded by the admin HTTP client timeout.
 func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request) error {
 	ctx := req.Context()
 	start := time.Now()
@@ -278,10 +251,8 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	}
 	log = log.WithField("login_challenge_prefix", challengePrefix)
 
-	// Step 2: Fetch login request from Hydra (hard gate for form paint).
-	// One retry on transient timeout — a single slow admin hop must not abort
-	// the OAuth challenge into the generic error page.
-	getLogReq, err := h.getLoginRequestWithRetry(ctx, hydraCli, loginChallenge)
+	// Step 2: Fetch login request from Hydra (client timeout + Frame retries).
+	getLogReq, err := hydraCli.GetLoginRequest(ctx, loginChallenge)
 	if err != nil {
 		log.WithError(err).Error("hydra login request lookup failed")
 		return &userFacingError{
@@ -304,8 +275,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			"oauth2_session_id": oauth2SessionID,
 		}).Debug("skipping login - session already exists")
 
-		skipCtx, skipCancel := context.WithTimeout(ctx, skipLoginBudget)
-		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(skipCtx, req, getLogReq, loginChallenge, subjectID)
+		skipLoginEvent, skipErr := h.ensureLoginEventForSkippedLogin(ctx, req, getLogReq, loginChallenge, subjectID)
 		if skipErr == nil && skipLoginEvent != nil {
 			params := &hydra.AcceptLoginRequestParams{
 				LoginChallenge:   loginChallenge,
@@ -318,10 +288,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			loginCtx := map[string]any{
 				"login_event_id": skipLoginEvent.GetID(),
 			}
-			acceptCtx, acceptCancel := context.WithTimeout(skipCtx, loginHydraTimeout)
-			redirectURL, acceptErr := hydraCli.AcceptLoginRequest(acceptCtx, params, loginCtx, "session_refresh")
-			acceptCancel()
-			skipCancel()
+			redirectURL, acceptErr := hydraCli.AcceptLoginRequest(ctx, params, loginCtx, "session_refresh")
 			if acceptErr == nil {
 				log.WithFields(map[string]any{
 					"subject_id":     subjectID,
@@ -334,7 +301,6 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 			}
 			log.WithError(acceptErr).Warn("session skip accept failed - showing login form")
 		} else {
-			skipCancel()
 			if skipErr != nil {
 				log.WithError(skipErr).Warn("session skip event resolve failed - showing login form")
 			}
@@ -344,9 +310,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	// Step 3.5: Attempt remember-me auto-login (soft budget — fall through to form)
 	rememberMeLoginEventID := h.getRememberMeLoginEventID(req)
 	if rememberMeLoginEventID != "" {
-		remCtx, remCancel := context.WithTimeout(ctx, rememberMeSoftBudget)
-		redirectURL, rememberErr := h.attemptRememberMeLogin(remCtx, req, loginChallenge, getLogReq, rememberMeLoginEventID)
-		remCancel()
+		redirectURL, rememberErr := h.attemptRememberMeLogin(ctx, req, loginChallenge, getLogReq, rememberMeLoginEventID)
 		if rememberErr == nil {
 			log.WithField("old_login_event_id", rememberMeLoginEventID).
 				Info("remember-me auto-login successful")
@@ -360,18 +324,16 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 	// Step 4–7: New authentication form path (form budget).
 	// Use parent ctx for template i18n; only short steps use formCtx so a
 	// spent form budget cannot block HTML render after event creation.
-	formCtx, formCancel := context.WithTimeout(ctx, loginFormBudget)
 
-	loginEvent, err := h.createLoginEvent(formCtx, req, getLogReq, loginChallenge)
+	loginEvent, err := h.createLoginEvent(ctx, req, getLogReq, loginChallenge)
 	if err != nil {
-		formCancel()
 		log.WithError(err).Error("failed to create login event")
 		return err
 	}
 
 	// Soft tenancy: never block form render on tenancy/token loops.
 	// Strong tenancy is enforced at verification complete and consent.
-	tenancySource := h.softEnrichLoginEventTenancy(formCtx, loginEvent, getLogReq)
+	tenancySource := h.softEnrichLoginEventTenancy(ctx, loginEvent, getLogReq)
 
 	// FedCM nonce: same value is rendered into the page and stored on the LoginEvent.
 	fedcmNonce := util.IDString()
@@ -379,11 +341,10 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 		loginEvent.Properties = map[string]any{}
 	}
 	loginEvent.Properties[loginEventPropertyFedCMNonce] = fedcmNonce
-	// Always detach cache write from formCtx so Valkey SET gets full loginCacheTimeout.
+	// Best-effort cache write for FedCM nonce; failure still renders the form.
 	if cacheErr := h.setLoginEventToCache(ctx, loginEvent); cacheErr != nil {
 		log.WithError(cacheErr).Debug("failed to re-cache login event with FedCM nonce")
 	}
-	formCancel()
 
 	payload := h.initTemplatePayloadWithI18n(ctx, req)
 	payload[pathValueLoginEventID] = loginEvent.GetID()
@@ -409,7 +370,7 @@ func (h *AuthServer) LoginEndpointShow(rw http.ResponseWriter, req *http.Request
 // ensureLoginEventForSkippedLogin guarantees that Hydra skip flows still carry a
 // login_event identity Hydra can put in the session. Prefer cache + soft
 // tenancy; durable DB write and strong tenancy are best-effort so a slow
-// device/profile/DB path cannot burn skipLoginBudget and abort OAuth.
+// device/profile/DB path cannot abort OAuth — soft-fail into the form.
 func (h *AuthServer) ensureLoginEventForSkippedLogin(
 	ctx context.Context,
 	req *http.Request,
@@ -443,9 +404,7 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 
 	// Device S2S is soft — never let processDeviceSession own the skip budget.
 	userAgent := req.UserAgent()
-	deviceCtx, deviceCancel := context.WithTimeout(ctx, skipDeviceSoftTimeout)
-	deviceID := h.resolveSkippedLoginDeviceID(deviceCtx, subjectID, userAgent, existingLoginEvent)
-	deviceCancel()
+	deviceID := h.resolveSkippedLoginDeviceID(ctx, subjectID, userAgent, existingLoginEvent)
 
 	newLoginEvent := newSkippedLoginEvent(req, loginChallenge, clientID, subjectID, oauth2SessionID, userAgent, deviceID, loginRecord, existingLoginEvent)
 	newLoginEvent.ID = util.IDString()
@@ -460,22 +419,18 @@ func (h *AuthServer) ensureLoginEventForSkippedLogin(
 
 	// Best-effort durable write under remaining budget; failure is non-fatal
 	// for skip accept (consent re-resolves tenancy under strong budgets).
-	dbCtx, dbCancel := context.WithTimeout(ctx, skipLoginDBTimeout)
-	if createErr := h.loginEventRepo.Create(dbCtx, newLoginEvent); createErr != nil {
+	if createErr := h.loginEventRepo.Create(ctx, newLoginEvent); createErr != nil {
 		util.Log(ctx).WithError(createErr).Warn("skipped-login event DB create failed; continuing with cache-only event")
 	}
-	dbCancel()
 
 	// Strong tenancy only if soft left us incomplete and budget remains.
 	if !ValidTenancyPair(newLoginEvent.TenantID, newLoginEvent.PartitionID) && ctx.Err() == nil {
-		tenCtx, tenCancel := context.WithTimeout(ctx, strongTenancyTotalTimeout)
-		if enriched, tenErr := h.ensureLoginEventTenancyAccess(tenCtx, newLoginEvent, clientID, subjectID); tenErr != nil {
+		if enriched, tenErr := h.ensureLoginEventTenancyAccess(ctx, newLoginEvent, clientID, subjectID); tenErr != nil {
 			util.Log(ctx).WithError(tenErr).Warn("skipped-login strong tenancy failed; continuing with soft/cached tenancy")
 		} else {
 			newLoginEvent = enriched
 			_ = h.setLoginEventToCache(ctx, newLoginEvent)
 		}
-		tenCancel()
 	}
 
 	return newLoginEvent, nil
@@ -758,11 +713,9 @@ func (h *AuthServer) setLoginEventToCache(ctx context.Context, loginEvent *model
 	// Detach from a nearly-spent parent budget (soft tenancy is 80ms total).
 	// A spent parent was causing "context deadline exceeded" on Valkey SET
 	// even when the value was already resolved in memory.
-	cacheCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), loginCacheTimeout)
-	defer cancel()
 
 	cacheKey := loginEventCachePrefix + loginEvent.GetID()
-	if err := eventCache.Set(cacheCtx, cacheKey, *loginEvent, time.Hour); err != nil {
+	if err := eventCache.Set(ctx, cacheKey, *loginEvent, time.Hour); err != nil {
 		util.Log(ctx).WithError(err).Error("failed to update login event cache with partition info")
 		return err
 	}

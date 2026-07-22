@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
+	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -32,22 +33,25 @@ func subtleStringCompare(a, b string) int {
 }
 
 type GoogleOIDCProvider struct {
-	provider *oidc.Provider
-	oauth2   oauth2.Config
+	provider   *oidc.Provider
+	oauth2     oauth2.Config
+	httpClient *http.Client
 }
 
 func NewGoogleOIDCProvider(
 	ctx context.Context,
 	clientID, clientSecret, redirectURL string,
+	httpClient *http.Client,
 ) (*GoogleOIDCProvider, error) {
 
-	p, err := oidc.NewProvider(ctx, "https://accounts.google.com")
+	p, err := oidc.NewProvider(withOAuthHTTPClient(ctx, httpClient), "https://accounts.google.com")
 	if err != nil {
 		return nil, fmt.Errorf("google: OIDC provider discovery failed: %w", err)
 	}
 
 	return &GoogleOIDCProvider{
-		provider: p,
+		provider:   p,
+		httpClient: httpClient,
 		oauth2: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -186,7 +190,7 @@ func (g *GoogleOIDCProvider) CompleteLogin(
 ) (*AuthenticatedUser, error) {
 
 	token, err := g.oauth2.Exchange(
-		ctx,
+		withOAuthHTTPClient(ctx, g.httpClient),
 		code,
 		oauth2.SetAuthURLParam("code_verifier", verifier),
 	)

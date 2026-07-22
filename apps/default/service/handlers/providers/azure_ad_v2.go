@@ -17,19 +17,22 @@ package providers
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
 type MicrosoftProvider struct {
-	provider *oidc.Provider
-	oauth2   oauth2.Config
+	provider   *oidc.Provider
+	oauth2     oauth2.Config
+	httpClient *http.Client
 }
 
 func NewMicrosoftProvider(
 	ctx context.Context,
 	tenant, clientID, clientSecret, redirectURL string,
+	httpClient *http.Client,
 ) (*MicrosoftProvider, error) {
 
 	issuer := fmt.Sprintf(
@@ -37,13 +40,14 @@ func NewMicrosoftProvider(
 		tenant, // "common", "organisations", or tenant ID
 	)
 
-	p, err := oidc.NewProvider(ctx, issuer)
+	p, err := oidc.NewProvider(withOAuthHTTPClient(ctx, httpClient), issuer)
 	if err != nil {
 		return nil, fmt.Errorf("microsoft: OIDC provider discovery failed for tenant %s: %w", tenant, err)
 	}
 
 	return &MicrosoftProvider{
-		provider: p,
+		provider:   p,
+		httpClient: httpClient,
 		oauth2: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -83,7 +87,7 @@ func (m *MicrosoftProvider) CompleteLogin(
 ) (*AuthenticatedUser, error) {
 
 	token, err := m.oauth2.Exchange(
-		ctx,
+		withOAuthHTTPClient(ctx, m.httpClient),
 		code,
 		oauth2.SetAuthURLParam("code_verifier", verifier),
 	)
