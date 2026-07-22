@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -122,4 +124,31 @@ func TestWithEventTimeout(t *testing.T) {
 	deadline, ok := tctx.Deadline()
 	assert.True(t, ok, "should have a deadline")
 	assert.False(t, deadline.IsZero())
+}
+
+func TestWithEventTimeout_DetachesFromShortParent(t *testing.T) {
+	// Queue push defaults ~25s; event work must not inherit that ceiling.
+	parent, parentCancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer parentCancel()
+	time.Sleep(30 * time.Millisecond) // parent already expired
+	assert.ErrorIs(t, parent.Err(), context.DeadlineExceeded)
+
+	tctx, cancel := withEventTimeout(parent)
+	defer cancel()
+	assert.NoError(t, tctx.Err(), "detached event context must still be live")
+	deadline, ok := tctx.Deadline()
+	assert.True(t, ok)
+	assert.True(t, time.Until(deadline) > time.Minute, "should receive full eventExecutionTimeout")
+}
+
+func TestWriteTupleChunks(t *testing.T) {
+	ctx := context.Background()
+	var sizes []int
+	tuples := make([]security.RelationTuple, ketoWriteChunkSize+5)
+	err := writeTupleChunks(ctx, "test.chunks", tuples, func(_ context.Context, chunk []security.RelationTuple) error {
+		sizes = append(sizes, len(chunk))
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []int{ketoWriteChunkSize, 5}, sizes)
 }

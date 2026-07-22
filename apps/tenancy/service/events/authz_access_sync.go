@@ -157,7 +157,5 @@ func (e *AuthzAccessSyncEvent) Execute(ictx context.Context, payload any) error 
 		tuples = append(tuples, authz.BuildServiceAccessTuple(tenancyPath, profileID))
 	}
 
-	return writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
-		return e.authorizer.WriteTuples(ctx, tuples)
-	})
+	return writeTupleChunks(ctx, e.Name(), tuples, e.authorizer.WriteTuples)
 }

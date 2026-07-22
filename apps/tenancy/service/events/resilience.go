@@ -19,6 +19,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
 	"google.golang.org/grpc/codes"
@@ -43,6 +44,11 @@ const (
 
 	// ketoRetryBaseDelay is the initial backoff between Keto retries.
 	ketoRetryBaseDelay = 500 * time.Millisecond
+
+	// ketoWriteChunkSize bounds each WriteTuples call. Frame's authorizer
+	// does a ListRelationTuples existence check per tuple before the batch
+	// insert; huge single calls blow past queue push deadlines under load.
+	ketoWriteChunkSize = 32
 )
 
 // isPermanentError returns true for errors that should not be retried inside
@@ -81,9 +87,18 @@ func isPermanentError(err error) bool {
 	return false
 }
 
-// withEventTimeout returns a child context with eventExecutionTimeout.
+// withEventTimeout returns a child context with eventExecutionTimeout,
+// detached from the parent. Frame queue push handlers default to a ~25s
+// request deadline; without detaching, Keto schema writes fail with
+// "context deadline exceeded" long before eventExecutionTimeout elapses.
 func withEventTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(ctx, eventExecutionTimeout)
+	return context.WithTimeout(context.WithoutCancel(ctx), eventExecutionTimeout)
+}
+
+// withServiceAccountSyncTimeout is the SA materialisation variant of
+// withEventTimeout — longer ceiling, still detached from queue push parent.
+func withServiceAccountSyncTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), serviceAccountSyncTimeout)
 }
 
 // writeTuplesWithRetry wraps an authorizer WriteTuples call with bounded
@@ -127,4 +142,36 @@ func writeTuplesWithRetry(ctx context.Context, eventName string, fn func(ctx con
 	logger.WithError(lastErr).WithField("max_retries", maxKetoRetries).
 		Error("authorization mutation failed after bounded retries")
 	return lastErr
+}
+
+// writeTupleChunks writes relation tuples in fixed-size chunks so each
+// authorizer.WriteTuples call stays short (existence-check + insert).
+// Chunks are independently retried; completed chunks are not re-written
+// on a later chunk failure (WriteTuples is idempotent).
+func writeTupleChunks(
+	ctx context.Context,
+	eventName string,
+	tuples []security.RelationTuple,
+	write func(ctx context.Context, chunk []security.RelationTuple) error,
+) error {
+	if len(tuples) == 0 {
+		return nil
+	}
+	for i := 0; i < len(tuples); i += ketoWriteChunkSize {
+		end := i + ketoWriteChunkSize
+		if end > len(tuples) {
+			end = len(tuples)
+		}
+		chunk := tuples[i:end]
+		chunkName := eventName
+		if len(tuples) > ketoWriteChunkSize {
+			chunkName = eventName + ".chunk"
+		}
+		if err := writeTuplesWithRetry(ctx, chunkName, func(ctx context.Context) error {
+			return write(ctx, chunk)
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

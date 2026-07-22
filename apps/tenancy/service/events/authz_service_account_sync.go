@@ -176,10 +176,9 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	defer e.release()
 
 	ctx := security.SkipTenancyChecksOnClaims(ictx)
-	// SA policies fan out granted_* tuples across partition trees; under
-	// concurrent registration/sync this routinely exceeds the default event
-	// budget. Use a dedicated longer timeout rather than ad-hoc retries.
-	ctx, cancel := context.WithTimeout(ctx, serviceAccountSyncTimeout)
+	// Detach from queue push ~25s parent; SA partition_tree materialisation
+	// needs the dedicated multi-minute ceiling.
+	ctx, cancel := withServiceAccountSyncTimeout(ctx)
 	defer cancel()
 
 	serviceAccountID := jsonPayload.GetString("id")
@@ -235,16 +234,12 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 
 	deletes, writes := diffAuthorizationTuples(applied, desired)
 	if len(deletes) > 0 {
-		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
-			return e.authorizer.DeleteTuples(ctx, deletes)
-		}); err != nil {
+		if err = writeTupleChunks(ctx, e.Name()+".delete", deletes, e.authorizer.DeleteTuples); err != nil {
 			return e.handleFailure(ctx, policyState.Policy, reason, err)
 		}
 	}
 	if len(writes) > 0 {
-		if err = writeTuplesWithRetry(ctx, e.Name(), func(ctx context.Context) error {
-			return e.authorizer.WriteTuples(ctx, writes)
-		}); err != nil {
+		if err = writeTupleChunks(ctx, e.Name()+".write", writes, e.authorizer.WriteTuples); err != nil {
 			return e.handleFailure(ctx, policyState.Policy, reason, err)
 		}
 	}

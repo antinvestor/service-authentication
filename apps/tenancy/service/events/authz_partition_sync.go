@@ -162,9 +162,7 @@ func (e *AuthzPartitionSyncEvent) Execute(ictx context.Context, payload any) err
 	}
 	if len(schemaTuples) > 0 {
 		authz.SortRelationTuples(schemaTuples)
-		if writeErr := writeTuplesWithRetry(ctx, e.Name()+".schema", func(ctx context.Context) error {
-			return e.authorizer.WriteTuples(ctx, schemaTuples)
-		}); writeErr != nil {
+		if writeErr := writeTupleChunks(ctx, e.Name()+".schema", schemaTuples, e.authorizer.WriteTuples); writeErr != nil {
 			return fmt.Errorf("failed to write schema-validated partition tuples: %w", writeErr)
 		}
 	}
