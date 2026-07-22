@@ -16,12 +16,16 @@ package providers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/pitabwire/util"
 )
 
+// SetupAuthProviders registers configured social login providers.
+//
+// Per-provider failures are logged and skipped so one broken IdP (e.g. Google
+// discovery timeout at cold start) cannot disable every other provider for the
+// lifetime of the process.
 func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (map[string]AuthProvider, error) {
 	log := util.Log(ctx)
 	providers := map[string]AuthProvider{}
@@ -37,10 +41,11 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			idpHTTP,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("google provider setup failed: %w", err)
+			log.WithError(err).Error("google provider setup failed — google login unavailable until restart")
+		} else {
+			providers[p.Name()] = p
+			log.WithField("callback_url", cfg.AuthProviderGoogleCallbackURL).Info("Google OIDC provider registered")
 		}
-		providers[p.Name()] = p
-		log.WithField("callback_url", cfg.AuthProviderGoogleCallbackURL).Debug("Google OIDC provider initialised")
 	}
 
 	if cfg.AuthProviderMetaClientID != "" {
@@ -52,10 +57,11 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			idpHTTP,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("facebook provider setup failed: %w", err)
+			log.WithError(err).Error("facebook provider setup failed — facebook login unavailable until restart")
+		} else {
+			providers[p.Name()] = p
+			log.WithField("callback_url", cfg.AuthProviderMetaCallbackURL).Info("Facebook provider registered")
 		}
-		providers[p.Name()] = p
-		log.WithField("callback_url", cfg.AuthProviderMetaCallbackURL).Debug("Facebook provider initialised")
 	}
 
 	if cfg.AuthProviderAppleClientID != "" {
@@ -67,10 +73,11 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			idpHTTP,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("apple provider setup failed: %w", err)
+			log.WithError(err).Error("apple provider setup failed — apple login unavailable until restart")
+		} else {
+			providers[p.Name()] = p
+			log.WithField("callback_url", cfg.AuthProviderAppleCallbackURL).Info("Apple provider registered")
 		}
-		providers[p.Name()] = p
-		log.WithField("callback_url", cfg.AuthProviderAppleCallbackURL).Debug("Apple provider initialised")
 	}
 
 	if cfg.AuthProviderMicrosoftClientID != "" {
@@ -83,10 +90,11 @@ func SetupAuthProviders(ctx context.Context, cfg *config.AuthenticationConfig) (
 			idpHTTP,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("microsoft provider setup failed: %w", err)
+			log.WithError(err).Error("microsoft provider setup failed — microsoft login unavailable until restart")
+		} else {
+			providers[p.Name()] = p
+			log.WithField("callback_url", cfg.AuthProviderMicrosoftCallbackURL).Info("Microsoft provider registered")
 		}
-		providers[p.Name()] = p
-		log.WithField("callback_url", cfg.AuthProviderMicrosoftCallbackURL).Debug("Microsoft provider initialised")
 	}
 
 	log.WithField("provider_count", len(providers)).Info("auth provider setup complete")

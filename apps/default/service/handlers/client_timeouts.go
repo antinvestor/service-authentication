@@ -26,8 +26,11 @@ import "time"
 const (
 	// Hydra admin API (login/consent accept, clients, JWKS).
 	hydraAdminHTTPTimeout = 2 * time.Second
-	// Hydra public + token facade proxy + FedCM headless hops.
+	// Hydra public used by FedCM headless multi-hop auth.
 	hydraPublicHTTPTimeout = 2 * time.Second
+	// Token facade proxies /oauth2/token which runs Hydra + enrich webhooks.
+	// That path is multi-hop by design; 2s was aborting healthy mints under load.
+	hydraTokenHTTPTimeout = 10 * time.Second
 
 	// Process-local JWKS private-key cache (not an I/O budget).
 	jwkSigningCacheTTL = 10 * time.Minute

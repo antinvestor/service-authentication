@@ -19,9 +19,11 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 // subtleStringCompare is a tiny shim so the verifier code reads naturally.
@@ -32,32 +34,39 @@ func subtleStringCompare(a, b string) int {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b))
 }
 
+const googleIssuer = "https://accounts.google.com"
+
+// GoogleOIDCProvider implements Google login. OIDC discovery is lazy so a
+// transient network blip at process start cannot permanently disable Google
+// login until the next pod restart.
 type GoogleOIDCProvider struct {
-	provider   *oidc.Provider
-	oauth2     oauth2.Config
 	httpClient *http.Client
+	oauth2     oauth2.Config
+
+	mu       sync.Mutex
+	provider *oidc.Provider
 }
 
+// NewGoogleOIDCProvider builds a Google provider without requiring live
+// discovery. Auth/token endpoints use Google's well-known OAuth2 endpoints;
+// JWKS discovery runs on first token verification.
 func NewGoogleOIDCProvider(
-	ctx context.Context,
+	_ context.Context,
 	clientID, clientSecret, redirectURL string,
 	httpClient *http.Client,
 ) (*GoogleOIDCProvider, error) {
-
-	p, err := oidc.NewProvider(withOAuthHTTPClient(ctx, httpClient), "https://accounts.google.com")
-	if err != nil {
-		return nil, fmt.Errorf("google: OIDC provider discovery failed: %w", err)
+	if clientID == "" || clientSecret == "" || redirectURL == "" {
+		return nil, fmt.Errorf("google: client_id, client_secret, and redirect_url are required")
 	}
-
 	return &GoogleOIDCProvider{
-		provider:   p,
 		httpClient: httpClient,
 		oauth2: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			RedirectURL:  redirectURL,
-			Endpoint:     p.Endpoint(),
-			Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+			// Static endpoints: AuthCodeURL and Exchange work without discovery.
+			Endpoint: google.Endpoint,
+			Scopes:   []string{oidc.ScopeOpenID, "profile", "email"},
 		},
 	}, nil
 }
@@ -71,6 +80,25 @@ func (g *GoogleOIDCProvider) Name() string {
 // navigator.credentials.get from the browser.
 func (g *GoogleOIDCProvider) ClientID() string {
 	return g.oauth2.ClientID
+}
+
+// ensureOIDCProvider discovers Google's OIDC metadata (incl. JWKS URI) on
+// first use. Retries on later calls if discovery previously failed.
+func (g *GoogleOIDCProvider) ensureOIDCProvider(ctx context.Context) (*oidc.Provider, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.provider != nil {
+		return g.provider, nil
+	}
+	// Detach from any spent parent so startup/callback deadlines do not
+	// permanently block discovery; the IdP HTTP client still applies its timeout.
+	discoverCtx := withOAuthHTTPClient(context.WithoutCancel(ctx), g.httpClient)
+	p, err := oidc.NewProvider(discoverCtx, googleIssuer)
+	if err != nil {
+		return nil, fmt.Errorf("google: OIDC provider discovery failed: %w", err)
+	}
+	g.provider = p
+	return p, nil
 }
 
 func (g *GoogleOIDCProvider) AuthCodeURL(state, challenge, nonce string) string {
@@ -113,11 +141,16 @@ func (g *GoogleOIDCProvider) VerifyIDToken(
 		return nil, fmt.Errorf("google: id_token is empty")
 	}
 
-	verifierOIDC := g.provider.Verifier(&oidc.Config{
+	p, err := g.ensureOIDCProvider(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	verifierOIDC := p.Verifier(&oidc.Config{
 		ClientID: g.oauth2.ClientID,
 	})
 
-	idToken, err := verifierOIDC.Verify(ctx, rawIDToken)
+	idToken, err := verifierOIDC.Verify(withOAuthHTTPClient(ctx, g.httpClient), rawIDToken)
 	if err != nil {
 		return nil, fmt.Errorf("google: id_token verification failed: %w", err)
 	}

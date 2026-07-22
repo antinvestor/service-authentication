@@ -48,7 +48,7 @@ func (h *AuthServer) facadeUpstreamClient() *http.Client {
 	if h.tokenFacadeClient != nil {
 		return h.tokenFacadeClient
 	}
-	return client.NewHTTPClient(context.Background(), client.WithHTTPTimeout(hydraPublicHTTPTimeout))
+	return client.NewHTTPClient(context.Background(), client.WithHTTPTimeout(hydraTokenHTTPTimeout))
 }
 
 // hydraUpstreamBase resolves the Hydra public base URL the facade proxies to.

@@ -694,19 +694,23 @@ func (suite *ProvidersTestSuite) TestSetupAuthProviders_GooglePartialConfigSkipp
 	assert.Empty(t, result)
 }
 
-func (suite *ProvidersTestSuite) TestSetupAuthProviders_GoogleDiscoveryError() {
+func (suite *ProvidersTestSuite) TestSetupAuthProviders_GoogleRegistersWithoutLiveDiscovery() {
 	t := suite.T()
 	cfg := &config.AuthenticationConfig{
 		AuthProviderGoogleClientID:    "google-client",
 		AuthProviderGoogleSecret:      "google-secret",
 		AuthProviderGoogleCallbackURL: "https://example.com/callback/google",
 	}
-	// Use an already-cancelled context so OIDC discovery fails immediately
+	// Cancelled context must not prevent registration: discovery is lazy.
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	_, err := SetupAuthProviders(ctx, cfg)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "google")
+	result, err := SetupAuthProviders(ctx, cfg)
+	require.NoError(t, err)
+	require.Contains(t, result, "google")
+	assert.Equal(t, "google", result["google"].Name())
+	// Auth URL uses static Google endpoints (no discovery).
+	url := result["google"].AuthCodeURL("state", "challenge", "nonce")
+	assert.Contains(t, url, "accounts.google.com")
 }
 
 // --- SetupAuthProviders Multiple providers (Facebook only works without network) ---

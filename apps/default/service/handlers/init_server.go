@@ -210,10 +210,10 @@ func NewAuthServer(ctx context.Context,
 	}
 	h.nativeVerifier = nativecredentials.NewVerifier()
 
-	// Bounded-timeout client for the token/discovery facades. Background
-	// context (like hydraHTTPCli above) keeps the service OAuth2 token source
-	// off proxied requests.
-	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(hydraPublicHTTPTimeout)}, httpOpts...)
+	// Token facade proxies Hydra /oauth2/token (includes enrich hooks). Use the
+	// token-path client timeout, not the short FedCM hop timeout. Background
+	// context keeps the service OAuth2 token source off proxied requests.
+	facadeHTTPOpts := append([]client.HTTPOption{client.WithHTTPTimeout(hydraTokenHTTPTimeout)}, httpOpts...)
 	h.tokenFacadeClient = client.NewHTTPClient(context.Background(), facadeHTTPOpts...)
 
 	// Load signing key before traffic so private_key_jwt is warm after deploy.

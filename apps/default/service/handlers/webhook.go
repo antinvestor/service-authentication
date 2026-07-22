@@ -855,7 +855,9 @@ func (h *AuthServer) emitServiceAccountLoginAudit(
 	if len(grantedScopes) > 0 {
 		payload.GrantedScopes = append([]string(nil), grantedScopes...)
 	}
-	if err := h.eventsMan.Emit(parent, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
+	// Detach so a cancelled token-hook parent does not drop durable audit enqueue.
+	emitCtx := context.WithoutCancel(parent)
+	if err := h.eventsMan.Emit(emitCtx, events.EventKeyServiceAccountLoginAudit, payload); err != nil {
 		util.Log(parent).WithError(err).WithFields(map[string]any{
 			"client_id":      clientID,
 			"login_event_id": sessionID,
