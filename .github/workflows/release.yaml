@@ -1,14 +1,29 @@
 name: Release
+
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing image tag to ship (e.g. v1.54.56). Empty = build from ref.
+        required: false
+        default: ""
+      skip_migrate:
+        description: Skip migrate jobs (emergency image-only)
+        type: boolean
+        default: false
+
 jobs:
   docker:
+    if: github.event_name == 'push' || inputs.tag == ''
     permissions:
       contents: read
       packages: write
     uses: antinvestor/common/.github/workflows/docker-release.yml@main
+
   buf-push-tenancy:
+    if: github.event_name == 'push'
     permissions:
       contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
@@ -16,7 +31,9 @@ jobs:
       proto_dir: proto/tenancy
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
+
   buf-push-authentication:
+    if: github.event_name == 'push'
     permissions:
       contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
@@ -24,7 +41,9 @@ jobs:
       proto_dir: proto/authentication
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
+
   buf-push-audit:
+    if: github.event_name == 'push'
     permissions:
       contents: read
     uses: antinvestor/common/.github/workflows/buf-push.yaml@main
@@ -32,3 +51,38 @@ jobs:
       proto_dir: proto/audit
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
+
+  # Two Cloud Run apps from this monorepo (default + tenancy images).
+  ship-authentication:
+    needs: [docker]
+    if: always() && (needs.docker.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
+    permissions:
+      contents: read
+      id-token: write
+    uses: antinvestor/common/.github/workflows/cloudrun-ship.yml@main
+    with:
+      image: ghcr.io/antinvestor/service-authentication:${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+      service: identity-authentication
+      migrate_job: identity-authentication-migrate
+      project_id: stawi-identity
+      region: europe-west9
+      ship_service_account: cloudrun-ship@stawi-identity.iam.gserviceaccount.com
+      workload_identity_provider: projects/721554040672/locations/global/workloadIdentityPools/github/providers/github-ship
+      skip_migrate: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_migrate == true }}
+
+  ship-tenancy:
+    needs: [docker]
+    if: always() && (needs.docker.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
+    permissions:
+      contents: read
+      id-token: write
+    uses: antinvestor/common/.github/workflows/cloudrun-ship.yml@main
+    with:
+      image: ghcr.io/antinvestor/service-authentication-tenancy:${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+      service: identity-tenancy
+      migrate_job: identity-tenancy-migrate
+      project_id: stawi-identity
+      region: europe-west9
+      ship_service_account: cloudrun-ship@stawi-identity.iam.gserviceaccount.com
+      workload_identity_provider: projects/721554040672/locations/global/workloadIdentityPools/github/providers/github-ship
+      skip_migrate: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_migrate == true }}
