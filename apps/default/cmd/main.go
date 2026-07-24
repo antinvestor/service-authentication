@@ -15,10 +15,14 @@
 package main
 
 import (
+	// Register GCP Pub/Sub driver so EVENTS_QUEUE_URL=gcppubsub://… works.
+	// Frame only blank-imports mem + NATS by default.
 	"context"
 	"net/http"
 	"os"
 	"time"
+
+	_ "gocloud.dev/pubsub/gcppubsub"
 
 	"github.com/antinvestor/common/v2/servicecatalog"
 
