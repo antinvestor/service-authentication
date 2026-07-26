@@ -43,6 +43,7 @@ import (
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
 	securityhttp "github.com/pitabwire/frame/v2/security/interceptors/httptor"
+	"github.com/pitabwire/frame/v2/setup"
 	"github.com/pitabwire/util"
 )
 
@@ -61,21 +62,6 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 
-	isMigration := cfg.DoDatabaseMigrate()
-
-	// Handle database migration if requested
-	if isMigration {
-		if migErr := repository.Migrate(
-			ctx,
-			svc.DatastoreManager(),
-			cfg.GetDatabaseMigrationPath(),
-		); migErr != nil {
-			util.Log(ctx).WithError(migErr).Fatal("database migration failed")
-		}
-	}
-
-	sm := svc.SecurityManager()
-
 	// Hydra admin: no service OAuth2 (bootstrap circularity). On Cloud Run the
 	// admin surface is IAM-authenticated HTTPS — hydraadmin attaches a Google
 	// ID token for roles/run.invoker. Cluster http:// URIs stay plain.
@@ -90,6 +76,7 @@ func main() {
 		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
 	}
 
+	sm := svc.SecurityManager()
 	auth := sm.GetAuthorizer(ctx)
 	partSrv := handlers.NewTenancyServer(ctx, svc, profileCli)
 	authContractSrv, err := handlers.NewAuthContractServer(partSrv, cfg.GetOauth2AudienceBaseURL())
@@ -106,11 +93,12 @@ func main() {
 		auth,
 	)
 
-	// Migration path only: seed root super-user tuples + plane-1 bot access.
-	// Runtime pods must not run bulk reconcile/bootstrap in ad-hoc goroutines —
-	// permission registration + /_internal/sync/clients (cron) are the plug-
-	// and-play recovery paths and scale with the number of services.
-	if isMigration {
+	// Setup plan steps (migrate + root/bot bootstrap). Permissions step is
+	// registered via WithPermissionRegistration — never on runtime PreStart.
+	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
+		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
+	})
+	svc.Setup().RegisterFunc(setup.NameBootstrap, func(ctx context.Context) error {
 		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
 			AccessRepo:           partSrv.AccessRepo,
 			AccessRoleRepo:       partSrv.AccessRoleRepo,
@@ -118,29 +106,33 @@ func main() {
 			ServiceNamespaceRepo: partSrv.ServiceNamespaceRepo,
 			Authorizer:           auth,
 		}); bootstrapErr != nil {
-			util.Log(ctx).WithError(bootstrapErr).Fatal("root authorization bootstrap failed")
+			return bootstrapErr
 		}
-		if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
+		return business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
 			ServiceAccountRepo: partSrv.ServiceAccountRepo,
 			PartitionRepo:      partSrv.PartitionRepo,
 			Authorizer:         auth,
-		}); botErr != nil {
-			util.Log(ctx).WithError(botErr).Fatal("service bot tenancy access bootstrap failed")
+		})
+	})
+
+	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
+
+	if frame.ShouldRunSetup(&cfg) {
+		// Tenancy is the permission registration *target* — skip self-registration
+		// unless PERMISSIONS_REGISTRATION_URL is explicitly set to another host.
+		svc.Init(ctx)
+		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
+			util.Log(ctx).WithError(setupErr).Fatal("setup plan failed")
 		}
-		util.Log(ctx).Info("migration and root authorization bootstrap complete — exiting")
+		util.Log(ctx).Info("setup plan complete — exiting")
 		return
 	}
 
-	// Setup Connect server
+	// Runtime: fast start — no permission POST on PreStart.
 	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
-
-	// Register permission manifest for the tenancy service so the UI can
-	// discover available permissions for assignment.
-	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
-
-	// Setup HTTP handlers
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
+		// Register permissions step for setup jobs sharing this image; unused at runtime.
 		frame.WithPermissionRegistration(sd),
 		frame.WithRegisterEvents(
 			events.NewClientSynchronizationEventHandler(
@@ -168,8 +160,6 @@ func main() {
 
 	svc.Init(ctx, serviceOptions...)
 
-	// Event workers + Frame permission registration handle the steady state.
-	// Bulk repair is intentionally left to /_internal/sync/clients (cron).
 	err = svc.Run(ctx, "")
 	if err != nil {
 		log := util.Log(ctx).WithError(err)
@@ -194,10 +184,8 @@ func setupConnectServer(
 	auth := sm.GetAuthorizer(ctx)
 	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(auth, authz.NamespaceTenancyAccess)
 
-	// Connect: tenancy access interceptor runs after authentication to verify data access.
 	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
 
-	// Layer 2: FunctionAccessInterceptor enforces per-RPC permissions from proto annotations.
 	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
 	procMap := permissions.BuildProcedureMap(sd)
 	svcPerms := permissions.ForService(sd)
@@ -232,7 +220,6 @@ func setupConnectServer(
 		connect.WithInterceptors(v2Interceptors...),
 	)
 
-	// HTTP: auth middleware (outer) populates claims → tenancy access (inner) verifies data access → handler.
 	publicRestHandler := securityhttp.AuthenticationMiddleware(
 		securityhttp.TenancyAccessMiddleware(implementation.NewSecureRouterV1(), tenancyAccessChecker),
 		authenticator)
@@ -242,8 +229,6 @@ func setupConnectServer(
 	mux.Handle("/", serverHandler)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
-	// Client bootstrap remains cluster-internal. Permission registration also
-	// requires a verified service-account token and binds namespaces to it.
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())
 	mux.Handle(
 		"/_internal/register/permissions",
