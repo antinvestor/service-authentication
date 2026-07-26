@@ -57,9 +57,10 @@ func (d *dependency) migrateContainer(
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":    "debug",
-			"DO_MIGRATION": "true",
-			"DATABASE_URL": databaseURL,
+			"LOG_LEVEL":          "debug",
+			"AUTHORIZATION_MODE": "disabled",
+			"DO_MIGRATION":       "true",
+			"DATABASE_URL":       databaseURL,
 		},
 
 		WaitingFor: wait.ForExit(),
@@ -145,8 +146,10 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":             "debug",
-			"RUN_SERVICE_SECURELY":  "false",
+			"LOG_LEVEL":            "debug",
+			"RUN_SERVICE_SECURELY": "false",
+			// No Keto in this test stack — Frame ≥2.0.13 fail-closes when mode is enforced without a read URI.
+			"AUTHORIZATION_MODE":    "disabled",
 			"TRACE_REQUESTS":        "true",
 			"DATABASE_LOG_QUERIES":  "true",
 			"OPENTELEMETRY_DISABLE": "true",

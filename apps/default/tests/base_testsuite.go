@@ -256,6 +256,8 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.TraceRequests = true
 	cfg.DatabaseMigrate = true
 	cfg.DatabaseTraceQueries = true
+	// Tests do not run Keto; Frame ≥2.0.13 fail-closes when mode is enforced without a read URI.
+	cfg.AuthorizationMode = "disabled"
 	// cfg.RunServiceSecurely = false
 	if bs.handler == nil {
 		cfg.HTTPServerPort = bs.FreeAuthPort

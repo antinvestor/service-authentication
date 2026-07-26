@@ -132,6 +132,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 		Env: map[string]string{
 			"LOG_LEVEL":             "debug",
 			"RUN_SERVICE_SECURELY":  "false",
+			"AUTHORIZATION_MODE":    "disabled",
 			"TRACE_REQUESTS":        "true",
 			"DATABASE_LOG_QUERIES":  "true",
 			"OPENTELEMETRY_DISABLE": "true",

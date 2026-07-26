@@ -56,9 +56,10 @@ func (d *authenticationDependency) migrateContainer(
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":    "debug",
-			"DO_MIGRATION": "true",
-			"DATABASE_URL": databaseURL,
+			"LOG_LEVEL":          "debug",
+			"AUTHORIZATION_MODE": "disabled",
+			"DO_MIGRATION":       "true",
+			"DATABASE_URL":       databaseURL,
 		},
 
 		WaitingFor: wait.ForExit(),
@@ -118,6 +119,7 @@ func (d *authenticationDependency) Setup(ctx context.Context, ntwk *testcontaine
 		Image: d.Name(),
 		Env: map[string]string{
 			"LOG_LEVEL":            "debug",
+			"AUTHORIZATION_MODE":   "disabled",
 			"TRACE_REQUESTS":       "true",
 			"DATABASE_LOG_QUERIES": "true",
 			"HTTP_PORT":            strings.Replace(d.Opts().Ports[0], "/tcp", "", 1),

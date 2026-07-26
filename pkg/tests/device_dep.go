@@ -56,9 +56,10 @@ func (d *deviceDependency) migrateContainer(
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
-			"LOG_LEVEL":    "debug",
-			"DO_MIGRATION": "true",
-			"DATABASE_URL": databaseURL,
+			"LOG_LEVEL":          "debug",
+			"AUTHORIZATION_MODE": "disabled",
+			"DO_MIGRATION":       "true",
+			"DATABASE_URL":       databaseURL,
 		},
 
 		WaitingFor: wait.ForExit(),
@@ -133,6 +134,7 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 		Env: map[string]string{
 			"LOG_LEVEL":                         "debug",
 			"RUN_SERVICE_SECURELY":              "false",
+			"AUTHORIZATION_MODE":                "disabled",
 			"TRACE_REQUESTS":                    "true",
 			"DATABASE_LOG_QUERIES":              "true",
 			"OPENTELEMETRY_DISABLE":             "true",
