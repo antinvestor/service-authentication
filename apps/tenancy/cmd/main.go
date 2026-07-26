@@ -50,7 +50,10 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := config.LoadWithOIDC[aconfig.TenancyConfig](ctx)
+	// Migration/setup jobs must not depend on OIDC discovery or peer service
+	// clients (profile requires a token endpoint). Load env-only first; full
+	// OIDC is loaded below for the runtime path.
+	cfg, err := config.FromEnv[aconfig.TenancyConfig]()
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("could not process configs")
 		return
@@ -61,6 +64,47 @@ func main() {
 	}
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
+	sm := svc.SecurityManager()
+	auth := sm.GetAuthorizer(ctx)
+
+	// Setup plan (migrate + bootstrap) must run without profile/Hydra clients.
+	// NewTenancyServer accepts a nil profile client for repo/bootstrap wiring.
+	setupPartSrv := handlers.NewTenancyServer(ctx, svc, nil)
+	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
+		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
+	})
+	svc.Setup().RegisterFunc(setup.NameBootstrap, func(ctx context.Context) error {
+		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
+			AccessRepo:           setupPartSrv.AccessRepo,
+			AccessRoleRepo:       setupPartSrv.AccessRoleRepo,
+			PartitionRoleRepo:    setupPartSrv.PartitionRoleRepo,
+			ServiceNamespaceRepo: setupPartSrv.ServiceNamespaceRepo,
+			Authorizer:           auth,
+		}); bootstrapErr != nil {
+			return bootstrapErr
+		}
+		return business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
+			ServiceAccountRepo: setupPartSrv.ServiceAccountRepo,
+			PartitionRepo:      setupPartSrv.PartitionRepo,
+			Authorizer:         auth,
+		})
+	})
+
+	if frame.ShouldRunSetup(&cfg) {
+		// Tenancy is the permission registration *target* — skip self-registration
+		// unless PERMISSIONS_REGISTRATION_URL is explicitly set to another host.
+		svc.Init(ctx)
+		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
+			util.Log(ctx).WithError(setupErr).Fatal("setup plan failed")
+		}
+		util.Log(ctx).Info("setup plan complete — exiting")
+		return
+	}
+
+	if err = cfg.LoadOauth2Config(ctx); err != nil {
+		util.Log(ctx).WithError(err).Fatal("could not load oauth2/oidc config")
+		return
+	}
 
 	// Hydra admin: no service OAuth2 (bootstrap circularity). On Cloud Run the
 	// admin surface is IAM-authenticated HTTPS — hydraadmin attaches a Google
@@ -76,8 +120,6 @@ func main() {
 		util.Log(ctx).WithError(err).Fatal("could not setup profile service client")
 	}
 
-	sm := svc.SecurityManager()
-	auth := sm.GetAuthorizer(ctx)
 	partSrv := handlers.NewTenancyServer(ctx, svc, profileCli)
 	authContractSrv, err := handlers.NewAuthContractServer(partSrv, cfg.GetOauth2AudienceBaseURL())
 	if err != nil {
@@ -93,40 +135,7 @@ func main() {
 		auth,
 	)
 
-	// Setup plan steps (migrate + root/bot bootstrap). Permissions step is
-	// registered via WithPermissionRegistration — never on runtime PreStart.
-	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
-		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
-	})
-	svc.Setup().RegisterFunc(setup.NameBootstrap, func(ctx context.Context) error {
-		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
-			AccessRepo:           partSrv.AccessRepo,
-			AccessRoleRepo:       partSrv.AccessRoleRepo,
-			PartitionRoleRepo:    partSrv.PartitionRoleRepo,
-			ServiceNamespaceRepo: partSrv.ServiceNamespaceRepo,
-			Authorizer:           auth,
-		}); bootstrapErr != nil {
-			return bootstrapErr
-		}
-		return business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
-			ServiceAccountRepo: partSrv.ServiceAccountRepo,
-			PartitionRepo:      partSrv.PartitionRepo,
-			Authorizer:         auth,
-		})
-	})
-
 	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
-
-	if frame.ShouldRunSetup(&cfg) {
-		// Tenancy is the permission registration *target* — skip self-registration
-		// unless PERMISSIONS_REGISTRATION_URL is explicitly set to another host.
-		svc.Init(ctx)
-		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
-			util.Log(ctx).WithError(setupErr).Fatal("setup plan failed")
-		}
-		util.Log(ctx).Info("setup plan complete — exiting")
-		return
-	}
 
 	// Runtime: fast start — no permission POST on PreStart.
 	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
