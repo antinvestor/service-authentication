@@ -35,6 +35,7 @@ import (
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
+	"github.com/pitabwire/frame/v2/setup"
 	"github.com/pitabwire/util"
 )
 
@@ -56,8 +57,19 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 
-	// Handle database migration if requested
-	if handleDatabaseMigration(ctx, &cfg, svc.DatastoreManager()) {
+	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
+
+	// Setup plan: migrate (+ permissions when URL is set). No runtime PreStart.
+	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
+		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
+	})
+
+	if frame.ShouldRunSetup(&cfg) {
+		svc.Init(ctx, frame.WithPermissionRegistration(sd))
+		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
+			util.Log(ctx).WithError(setupErr).Fatal("setup plan failed")
+		}
+		util.Log(ctx).Info("setup plan complete — exiting")
 		return
 	}
 
@@ -79,9 +91,6 @@ func main() {
 	// Setup Connect RPC server with full interceptor chain
 	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditSrv)
 
-	// Register permission manifest for the audit service
-	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
-
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
 		frame.WithPermissionRegistration(sd),
@@ -99,22 +108,6 @@ func main() {
 			log.Fatal("server stopping with error")
 		}
 	}
-}
-
-// handleDatabaseMigration performs database migration if configured to do so.
-func handleDatabaseMigration(
-	ctx context.Context,
-	cfg config.ConfigurationDatabase,
-	dbManager datastore.Manager,
-) bool {
-	if cfg.DoDatabaseMigrate() {
-		err := repository.Migrate(ctx, dbManager, cfg.GetDatabaseMigrationPath())
-		if err != nil {
-			util.Log(ctx).WithError(err).Fatal("database migration failed")
-		}
-		return true
-	}
-	return false
 }
 
 // loadOrGenerateSigner loads an Ed25519 signing key from config or generates one.

@@ -71,9 +71,10 @@ func main() {
 		cfg.ServiceName = "service_authentication"
 	}
 
-	// Migration-only path: database only — no cache, no OIDC network.
+	// Legacy migrate-only job: database only — no cache, no OIDC network.
 	// Must finish and exit so Helm pre-upgrade Jobs complete (activeDeadline).
-	if cfg.DoDatabaseMigrate() {
+	// Full setup (including permissions) uses argv `setup …` with OIDC below.
+	if cfg.DoDatabaseMigrate() && !frame.IsSetupMode(&cfg) {
 		runDatabaseMigrationAndExit(ctx, cfg)
 		return
 	}
@@ -162,7 +163,7 @@ func main() {
 	defaultServer := frame.WithHTTPHandler(authMux)
 	serviceOptions = append(serviceOptions, defaultServer)
 
-	// Register permission manifest for the authentication service
+	// Permissions step for setup jobs (no runtime PreStart — fast cold start).
 	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
 	serviceOptions = append(serviceOptions, frame.WithPermissionRegistration(sd))
 
@@ -173,6 +174,15 @@ func main() {
 	))
 
 	svc.Init(ctx, serviceOptions...)
+
+	// setup argv (e.g. setup permissions): publish manifests with full OIDC.
+	if frame.IsSetupMode(&cfg) {
+		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
+			log.WithError(setupErr).Fatal("setup plan failed")
+		}
+		log.Info("setup plan complete — exiting")
+		return
+	}
 
 	err = svc.Run(ctx, "")
 	if err != nil {
