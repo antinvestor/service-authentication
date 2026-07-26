@@ -36,8 +36,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
+	"github.com/antinvestor/service-authentication/pkg/hydraadmin"
 	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/client"
 	"github.com/pitabwire/frame/v2/config"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
@@ -76,11 +76,10 @@ func main() {
 
 	sm := svc.SecurityManager()
 
-	// Unauthenticated HTTP client for Hydra admin API calls.
-	// Hydra admin is cluster-internal and doesn't require OAuth2 tokens.
-	// Using the authenticated client causes bootstrap failures when the
-	// service's own OAuth2 client isn't yet registered in Hydra.
-	hydraClient := client.NewManager(context.Background())
+	// Hydra admin: no service OAuth2 (bootstrap circularity). On Cloud Run the
+	// admin surface is IAM-authenticated HTTPS — hydraadmin attaches a Google
+	// ID token for roles/run.invoker. Cluster http:// URIs stay plain.
+	hydraClient := hydraadmin.NewManager(ctx, cfg.GetOauth2ServiceAdminURI())
 
 	profileCli, err := connection.NewServiceClient(ctx, &cfg, common.ServiceTarget{
 		Endpoint:              cfg.ProfileServiceURI,

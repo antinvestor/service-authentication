@@ -42,6 +42,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
+	"github.com/antinvestor/service-authentication/pkg/hydraadmin"
 	"github.com/pitabwire/frame/v2/cache"
 	"github.com/pitabwire/frame/v2/client"
 	fevents "github.com/pitabwire/frame/v2/events"
@@ -152,15 +153,14 @@ func NewAuthServer(ctx context.Context,
 		httpOpts = append(httpOpts, client.WithHTTPTraceRequests(), client.WithHTTPTraceRequestHeaders())
 	}
 
-	// Use context.Background() to avoid inheriting the service's OAuth2 token
-	// source. The Hydra admin API is internal and does not require OAuth2 auth.
-	// Using the service context would cause a circular dependency: the signing
-	// webhook needs Hydra admin to fetch JWK sets, but the HTTP client would
-	// try to authenticate via the signer (itself) before making the request.
+	// Hydra admin must not inherit service OAuth2 (private_key_jwt circularity
+	// via the signing webhook). hydraadmin still attaches a Google ID token
+	// when admin is HTTPS Cloud Run (roles/run.invoker); cluster http:// stays plain.
 	// Hydra admin timeout is the single bound for all admin API hops.
 	httpOpts = append(httpOpts, client.WithHTTPTimeout(hydraAdminHTTPTimeout))
-	hydraHTTPCli := client.NewHTTPClient(context.Background(), httpOpts...)
-	hydraCli := hydra.NewDefaultHydra(hydraHTTPCli, authConfig.GetOauth2ServiceAdminURI())
+	adminURI := authConfig.GetOauth2ServiceAdminURI()
+	hydraHTTPCli := hydraadmin.NewHTTPClient(ctx, adminURI, httpOpts...)
+	hydraCli := hydra.NewDefaultHydra(hydraHTTPCli, adminURI)
 
 	h := &AuthServer{
 
