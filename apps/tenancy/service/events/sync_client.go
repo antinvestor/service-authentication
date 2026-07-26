@@ -191,6 +191,16 @@ func SyncClientOnHydra(
 	if err != nil {
 		return err
 	}
+
+	// Concurrent syncs can race GET→POST: Hydra returns 409 once the client
+	// exists. Fall through to PUT so the payload still lands.
+	if resp.StatusCode == http.StatusConflict && httpMethod == http.MethodPost {
+		util.CloseAndLogOnError(ctx, resp)
+		resp, err = cli.Invoke(ctx, http.MethodPut, hydraIDURL, payload, nil)
+		if err != nil {
+			return err
+		}
+	}
 	defer util.CloseAndLogOnError(ctx, resp)
 
 	result, err := resp.ToContent(ctx)

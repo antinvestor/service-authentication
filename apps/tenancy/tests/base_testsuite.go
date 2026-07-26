@@ -323,9 +323,8 @@ func (bs *BaseTestSuite) createServiceInternal(
 	auth := svc.SecurityManager().GetAuthorizer(ctx)
 	implementation := handlers.NewTenancyServer(ctx, svc, nil)
 
-	// Use a plain HTTP client for Hydra admin API calls (no OAuth2 transport).
-	// This matches production (cmd/main.go) where hydraClient is unauthenticated
-	// because Hydra admin is cluster-internal and doesn't require OAuth2 tokens.
+	// Test Hydra is http:// (cluster-style). hydraadmin only attaches a Google
+	// ID token for https admin URIs, so NewManager here stays unauthenticated.
 	hydraClient := client.NewManager(context.Background())
 
 	serviceOptions := []frame.Option{frame.WithRegisterEvents(
