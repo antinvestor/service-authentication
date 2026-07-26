@@ -74,8 +74,13 @@ func main() {
 	}
 
 	// Register hypertables (no-op WARN if timescaledb extension is absent).
+	// Datastore must be connected; skip when pool/DB is missing (misconfig / no DATABASE_URL).
 	auditDBPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
-	if tsErr := timescale.Ensure(ctx, auditDBPool.DB(ctx, false), models.Hypertables); tsErr != nil {
+	if auditDBPool == nil {
+		util.Log(ctx).Warn("timescale hypertable setup skipped — datastore pool not ready")
+	} else if db := auditDBPool.DB(ctx, false); db == nil {
+		util.Log(ctx).Warn("timescale hypertable setup skipped — datastore DB not connected")
+	} else if tsErr := timescale.Ensure(ctx, db, models.Hypertables); tsErr != nil {
 		util.Log(ctx).WithError(tsErr).Warn("timescale hypertable setup skipped — will retry after cluster migration")
 	}
 
