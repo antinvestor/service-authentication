@@ -132,19 +132,19 @@ func (s *BusinessTestSuite) TestCreateOAuthClientV2PersistsRecipientsSeparately(
 		Configuration: &tenancyv2.OAuthClientConfiguration{
 			GrantTypes:              []string{"authorization_code", "refresh_token"},
 			ResponseTypes:           []string{"code"},
-			RedirectUris:            []string{"https://app.example.test/callback"},
-			ResourceRecipients:      []string{"https://profile.example.test"},
+			RedirectUris:            []string{"https://api.example.test/app/callback"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
 			TokenEndpointAuthMethod: "none",
 		},
 	})
 
 	s.Require().NoError(err)
 	s.Empty(result.GetClientSecret())
-	s.Equal([]string{"https://profile.example.test"}, result.GetData().GetConfiguration().GetResourceRecipients())
+	s.Equal([]string{"https://api.example.test/profile"}, result.GetData().GetConfiguration().GetResourceRecipients())
 	recipients, err := deps.OAuthRecipientRepo.ListByClientRef(ctx, result.GetData().GetId())
 	s.Require().NoError(err)
 	s.Require().Len(recipients, 1)
-	s.Equal("https://profile.example.test", recipients[0].ResourceAudience)
+	s.Equal("https://api.example.test/profile", recipients[0].ResourceAudience)
 }
 
 func (s *BusinessTestSuite) TestCreateOAuthClientV2RejectsUnauthenticatedConfidentialClient() {
@@ -160,8 +160,8 @@ func (s *BusinessTestSuite) TestCreateOAuthClientV2RejectsUnauthenticatedConfide
 		Configuration: &tenancyv2.OAuthClientConfiguration{
 			GrantTypes:              []string{"authorization_code"},
 			ResponseTypes:           []string{"code"},
-			RedirectUris:            []string{"https://app.example.test/callback"},
-			ResourceRecipients:      []string{"https://profile.example.test"},
+			RedirectUris:            []string{"https://api.example.test/app/callback"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
 			TokenEndpointAuthMethod: "none",
 		},
 	})
@@ -182,7 +182,7 @@ func (s *BusinessTestSuite) TestCreateServiceAccountV2SeparatesRecipientsAndGran
 		Type:        "internal",
 		OauthClient: &tenancyv2.OAuthClientConfiguration{
 			GrantTypes:              []string{"client_credentials"},
-			ResourceRecipients:      []string{"https://profile.example.test"},
+			ResourceRecipients:      []string{"https://api.example.test/profile"},
 			TokenEndpointAuthMethod: "client_secret_post",
 		},
 		AuthorizationPolicy: &tenancyv2.ServiceAuthorizationPolicyInput{
@@ -199,7 +199,7 @@ func (s *BusinessTestSuite) TestCreateServiceAccountV2SeparatesRecipientsAndGran
 	s.NotEmpty(result.GetClientSecret())
 	s.Equal(partition.TenantID, result.GetData().GetTenantId())
 	s.Equal(partition.GetID(), result.GetData().GetPartitionId())
-	s.Equal([]string{"https://profile.example.test"}, result.GetData().GetOauthClient().GetConfiguration().GetResourceRecipients())
+	s.Equal([]string{"https://api.example.test/profile"}, result.GetData().GetOauthClient().GetConfiguration().GetResourceRecipients())
 	policy, err := deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, result.GetData().GetId())
 	s.Require().NoError(err)
 	s.Require().Len(policy.Grants, 1)
@@ -221,7 +221,7 @@ func (s *BusinessTestSuite) TestCreateServiceAccountV2_RequiresIdentityFields() 
 			Type:        "internal",
 			OauthClient: &tenancyv2.OAuthClientConfiguration{
 				GrantTypes:              []string{"client_credentials"},
-				ResourceRecipients:      []string{"https://profile.example.test"},
+				ResourceRecipients:      []string{"https://api.example.test/profile"},
 				TokenEndpointAuthMethod: "client_secret_post",
 			},
 			AuthorizationPolicy: &tenancyv2.ServiceAuthorizationPolicyInput{

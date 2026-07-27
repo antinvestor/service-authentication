@@ -175,7 +175,7 @@ func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
 				ResponseTypes:           []string{"code"},
 				RedirectUris:            []string{server.URL + "/oauth2/callback"},
 				Scopes:                  "openid offline_access profile",
-				ResourceRecipients:      []string{"https://authentication.example.test"},
+				ResourceRecipients:      []string{"https://api.example.test/authentication"},
 				TokenEndpointAuthMethod: "none",
 			},
 		}))

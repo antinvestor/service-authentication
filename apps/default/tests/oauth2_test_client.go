@@ -224,11 +224,11 @@ func (c *OAuth2TestClient) createPartitionOAuth2Client(
 			RedirectUris:  redirectURIs,
 			Scopes:        scopes,
 			ResourceRecipients: []string{
-				"https://devices.example.test",
-				"https://profile.example.test",
-				"https://tenancy.example.test",
-				"https://files.example.test",
-				"https://authentication.example.test",
+				"https://api.example.test/devices",
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/files",
+				"https://api.example.test/authentication",
 			},
 			TokenEndpointAuthMethod: "none",
 		},
@@ -251,7 +251,7 @@ func (c *OAuth2TestClient) createPartitionOAuth2Client(
 		ClientSecret: response.Msg.GetClientSecret(),
 		RedirectURIs: redirectURIs,
 		Scope:        scopes,
-		Audience:     []string{"https://authentication.example.test"},
+		Audience:     []string{"https://api.example.test/authentication"},
 	}, nil
 }
 
