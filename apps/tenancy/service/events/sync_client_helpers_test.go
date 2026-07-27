@@ -51,25 +51,36 @@ func (s *SyncClientHelpersTestSuite) TestGetStringSlice_SingleString() {
 
 func (s *SyncClientHelpersTestSuite) TestEnsureTenancyAudience_AppendsWhenMissing() {
 	got := ensureTenancyAudience(
-		[]string{"https://api.example.test/profile"},
-		"https://api.example.test",
+		[]string{"https://profile.stawi.example.test"},
+		"https://stawi.example.test",
 	)
 	s.Equal([]string{
-		"https://api.example.test/profile",
-		"https://api.example.test/tenancy",
+		"https://profile.stawi.example.test",
+		"https://tenancy.stawi.example.test",
 	}, got)
 }
 
 func (s *SyncClientHelpersTestSuite) TestEnsureTenancyAudience_Idempotent() {
 	in := []string{
-		"https://api.example.test/tenancy",
-		"https://api.example.test/profile",
+		"https://tenancy.stawi.example.test",
+		"https://profile.stawi.example.test",
 	}
-	s.Equal(in, ensureTenancyAudience(in, "https://api.example.test/"))
+	s.Equal(in, ensureTenancyAudience(in, "https://stawi.example.test/"))
+}
+
+func (s *SyncClientHelpersTestSuite) TestEnsureTenancyAudience_LegacyPathBase() {
+	got := ensureTenancyAudience(
+		[]string{"https://api.example.test/profile"},
+		"https://api.example.test/platform",
+	)
+	s.Equal([]string{
+		"https://api.example.test/profile",
+		"https://api.example.test/platform/tenancy",
+	}, got)
 }
 
 func (s *SyncClientHelpersTestSuite) TestEnsureTenancyAudience_EmptyBase() {
-	in := []string{"https://api.example.test/profile"}
+	in := []string{"https://profile.stawi.example.test"}
 	s.Equal(in, ensureTenancyAudience(in, "  "))
 }
 

@@ -57,40 +57,50 @@ func TestValidateAuthorizationPolicyRequiresExplicitRegisteredPermissions(t *tes
 func TestValidateResourceRecipientsAllowsUncataloguedPlatformServices(t *testing.T) {
 	t.Parallel()
 
-	baseURL, err := normalizeAudienceBaseURL("https://API.example.test/platform/")
+	// Subdomain model: base is the platform apex; services are first-label hosts.
+	baseURL, err := normalizeAudienceBaseURL("https://STAWI.EXAMPLE.TEST/")
 	require.NoError(t, err)
-	require.Equal(t, "https://api.example.test/platform", baseURL)
+	require.Equal(t, "https://stawi.example.test", baseURL)
 
 	recipients, err := validateResourceRecipients(baseURL, []string{
-		" https://api.example.test/platform/new-service ",
-		"https://api.example.test/platform/profile",
+		" https://new-service.stawi.example.test ",
+		"https://profile.stawi.example.test",
 	})
 	require.NoError(t, err)
 	require.Equal(t, []string{
-		"https://api.example.test/platform/new-service",
-		"https://api.example.test/platform/profile",
+		"https://new-service.stawi.example.test",
+		"https://profile.stawi.example.test",
 	}, recipients)
+
+	// Legacy path model still accepted for transitional bases.
+	legacyBase, err := normalizeAudienceBaseURL("https://API.example.test/platform/")
+	require.NoError(t, err)
+	legacyRecipients, err := validateResourceRecipients(legacyBase, []string{
+		"https://api.example.test/platform/profile",
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"https://api.example.test/platform/profile"}, legacyRecipients)
 }
 
 func TestValidateResourceRecipientsRejectsUnsafeAudiences(t *testing.T) {
 	t.Parallel()
 
-	baseURL, err := normalizeAudienceBaseURL("https://api.example.test/platform")
+	baseURL, err := normalizeAudienceBaseURL("https://stawi.example.test")
 	require.NoError(t, err)
 
 	tests := []struct {
 		name      string
 		audiences []string
 	}{
-		{name: "foreign origin", audiences: []string{"https://other.example.test/platform/profile"}},
-		{name: "base itself", audiences: []string{"https://api.example.test/platform"}},
-		{name: "sibling prefix", audiences: []string{"https://api.example.test/platform-other/profile"}},
-		{name: "path traversal", audiences: []string{"https://api.example.test/platform/../admin"}},
-		{name: "encoded path", audiences: []string{"https://api.example.test/platform/new%2Dservice"}},
-		{name: "query", audiences: []string{"https://api.example.test/platform/profile?tenant=1"}},
+		{name: "foreign origin", audiences: []string{"https://profile.other.example.test"}},
+		{name: "base itself", audiences: []string{"https://stawi.example.test"}},
+		{name: "nested subdomain", audiences: []string{"https://a.b.stawi.example.test"}},
+		{name: "path on subdomain", audiences: []string{"https://profile.stawi.example.test/extra"}},
+		{name: "query", audiences: []string{"https://profile.stawi.example.test?tenant=1"}},
+		{name: "encoded host", audiences: []string{"https://new%2Dservice.stawi.example.test"}},
 		{name: "duplicate after normalisation", audiences: []string{
-			"https://api.example.test/platform/profile",
-			" https://api.example.test/platform/profile ",
+			"https://profile.stawi.example.test",
+			" https://profile.stawi.example.test ",
 		}},
 	}
 	for _, test := range tests {

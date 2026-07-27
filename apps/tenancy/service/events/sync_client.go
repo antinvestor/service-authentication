@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -303,21 +304,40 @@ func oauth2AudienceBaseURL(cfg config.ConfigurationOAUTH2) string {
 	return ""
 }
 
-// ensureTenancyAudience appends {base}/tenancy when missing so internal bots
-// can register permission manifests against tenancy without each service
-// authoring a custom oauth recipient row.
+// ensureTenancyAudience appends the platform tenancy resource audience when
+// missing so internal bots can register permission manifests without each
+// service authoring a custom oauth recipient row.
+//
+// With subdomain audiences (OAUTH2_AUDIENCE_BASE_URL=https://stawi.org) this
+// yields https://tenancy.stawi.org. Legacy path bases still yield {base}/tenancy.
 func ensureTenancyAudience(audiences []string, audienceBaseURL string) []string {
-	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
-	if base == "" {
+	tenancyAudience := tenancyResourceAudience(audienceBaseURL)
+	if tenancyAudience == "" {
 		return audiences
 	}
-	tenancyAudience := base + "/tenancy"
 	for _, audience := range audiences {
 		if strings.EqualFold(strings.TrimSpace(audience), tenancyAudience) {
 			return audiences
 		}
 	}
 	return append(audiences, tenancyAudience)
+}
+
+// tenancyResourceAudience builds the canonical tenancy audience from the
+// platform audience base URL.
+func tenancyResourceAudience(audienceBaseURL string) string {
+	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
+	if base == "" {
+		return ""
+	}
+	// Subdomain model: https://stawi.org → https://tenancy.stawi.org
+	// (base host has no "api." gateway prefix path segment).
+	if u, err := url.Parse(base); err == nil && u.Scheme == "https" && u.Host != "" &&
+		(u.Path == "" || u.Path == "/") {
+		return "https://tenancy." + strings.ToLower(u.Hostname())
+	}
+	// Legacy path model: https://api.stawi.org → https://api.stawi.org/tenancy
+	return base + "/tenancy"
 }
 
 func getStringSlice(m data.JSONMap, key string) []string {
