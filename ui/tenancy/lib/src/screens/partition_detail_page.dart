@@ -1598,7 +1598,7 @@ class _ServiceAccountsTab extends ConsumerWidget {
         DialogField(
           key: 'recipients',
           label: 'Resource recipients (comma-separated)',
-          hint: 'e.g. https://profile.stawi.org',
+          hint: 'e.g. https://api.stawi.org/profile',
         ),
         DialogField(
           key: 'namespace',
@@ -2332,7 +2332,7 @@ class _CreateClientDialogState extends State<_CreateClientDialog> {
                   controller: _resourceRecipientsCtl,
                   decoration: const InputDecoration(
                     labelText: 'Resource Recipients *',
-                    hintText: 'e.g. https://profile.stawi.org',
+                    hintText: 'e.g. https://api.stawi.org/profile',
                     helperText: 'Comma-separated canonical HTTPS URLs',
                   ),
                   validator: validateResourceRecipients,

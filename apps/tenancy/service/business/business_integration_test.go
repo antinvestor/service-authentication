@@ -132,7 +132,7 @@ func (s *BusinessTestSuite) TestCreateOAuthClientV2PersistsRecipientsSeparately(
 		Configuration: &tenancyv2.OAuthClientConfiguration{
 			GrantTypes:              []string{"authorization_code", "refresh_token"},
 			ResponseTypes:           []string{"code"},
-			RedirectUris:            []string{"https://api.example.test/app/callback"},
+			RedirectUris:            []string{"https://app.example.test/callback"},
 			ResourceRecipients:      []string{"https://api.example.test/profile"},
 			TokenEndpointAuthMethod: "none",
 		},
@@ -160,7 +160,7 @@ func (s *BusinessTestSuite) TestCreateOAuthClientV2RejectsUnauthenticatedConfide
 		Configuration: &tenancyv2.OAuthClientConfiguration{
 			GrantTypes:              []string{"authorization_code"},
 			ResponseTypes:           []string{"code"},
-			RedirectUris:            []string{"https://api.example.test/app/callback"},
+			RedirectUris:            []string{"https://app.example.test/callback"},
 			ResourceRecipients:      []string{"https://api.example.test/profile"},
 			TokenEndpointAuthMethod: "none",
 		},

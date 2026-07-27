@@ -589,17 +589,11 @@ func validateResourceRecipients(audienceBaseURL string, values []string) ([]stri
 		}
 		parsed.Host = strings.ToLower(parsed.Hostname())
 		parsed.RawPath = ""
-		// Prefer empty path for subdomain audiences (https://profile.stawi.org).
-		if parsed.Path == "/" {
-			parsed.Path = ""
-		}
-		if path.Clean(parsed.Path) != parsed.Path && parsed.Path != "" {
+		if parsed.Host != base.Host || path.Clean(parsed.Path) != parsed.Path ||
+			!isAudiencePathBelowBase(base.Path, parsed.Path) {
 			return nil, fmt.Errorf("resource audience %q is outside the configured platform audience base", value)
 		}
-		if !isPlatformResourceAudience(base, parsed) {
-			return nil, fmt.Errorf("resource audience %q is outside the configured platform audience base", value)
-		}
-		normalised = append(normalised, strings.TrimSuffix(parsed.String(), "/"))
+		normalised = append(normalised, parsed.String())
 	}
 	slices.Sort(normalised)
 	if len(slices.Compact(slices.Clone(normalised))) != len(normalised) {
@@ -624,54 +618,7 @@ func normalizeAudienceBaseURL(value string) (string, error) {
 	}
 	parsed.Host = strings.ToLower(parsed.Hostname())
 	parsed.RawPath = ""
-	if parsed.Path == "/" {
-		parsed.Path = ""
-	}
 	return strings.TrimSuffix(parsed.String(), "/"), nil
-}
-
-// isPlatformResourceAudience accepts either:
-//   - subdomain form: base https://stawi.org + audience https://profile.stawi.org
-//   - legacy path form: base https://api.stawi.org + audience https://api.stawi.org/profile
-func isPlatformResourceAudience(base, audience *url.URL) bool {
-	basePath := strings.TrimSuffix(base.Path, "/")
-	audiencePath := audience.Path
-	if audiencePath == "/" {
-		audiencePath = ""
-	}
-
-	// Subdomain model: base is an apex (or registrable) host with no path.
-	// Audience must be a single label under that host with an empty path.
-	if basePath == "" && audiencePath == "" && audience.Host != base.Host {
-		suffix := "." + base.Host
-		if !strings.HasSuffix(audience.Host, suffix) {
-			return false
-		}
-		label := strings.TrimSuffix(audience.Host, suffix)
-		if label == "" || strings.Contains(label, ".") {
-			return false
-		}
-		return isAudienceServiceLabel(label)
-	}
-
-	// Legacy path model: same host, path strictly under base.
-	if audience.Host != base.Host {
-		return false
-	}
-	return isAudiencePathBelowBase(basePath, audiencePath)
-}
-
-func isAudienceServiceLabel(label string) bool {
-	if label == "" || strings.HasPrefix(label, "-") || strings.HasSuffix(label, "-") {
-		return false
-	}
-	for _, r := range label {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func isAudiencePathBelowBase(basePath, audiencePath string) bool {

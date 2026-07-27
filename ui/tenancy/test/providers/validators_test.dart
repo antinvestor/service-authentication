@@ -3,16 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('v2 OAuth contract validation', () {
-    test('accepts subdomain HTTPS resource recipients', () {
-      expect(
-        validateResourceRecipients(
-          'https://profile.stawi.org, https://tenancy.stawi.org',
-        ),
-        isNull,
-      );
-    });
-
-    test('accepts legacy path HTTPS resource recipients', () {
+    test('accepts canonical HTTPS resource recipients', () {
       expect(
         validateResourceRecipients(
           'https://api.stawi.org/profile, https://api.stawi.org/tenancy',
@@ -27,10 +18,8 @@ void main() {
     });
 
     for (final recipient in [
-      'http://profile.stawi.org',
-      'https://profile.stawi.org/',
-      'https://profile.stawi.org:443',
-      'https://profile.stawi.org?tenant=1',
+      'http://api.stawi.org/profile',
+      'https://api.stawi.org',
       'https://api.stawi.org/profile/',
       'https://api.stawi.org:443/profile',
       'https://api.stawi.org/profile?tenant=1',
