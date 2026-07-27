@@ -68,21 +68,13 @@ Service-account access-token extras (token webhook) **must** include:
 | `tenant_id` / `partition_id` | Tenancy path (usually root) |
 | `aud` | Must include tenancy resource URL when calling registration |
 
-Colony injects the tenancy resource audience into `OAUTH2_REQUESTED_AUDIENCES`
-when `permissionsRegistrationUrl` is set so services do not list it by hand.
-
-Canonical audiences use the **subdomain** form under the platform apex
-(`OAUTH2_AUDIENCE_BASE_URL=https://stawi.org`):
-
-| Role | Example |
-|------|---------|
-| Resource audience | `https://profile.stawi.org` |
-| Requested tenancy | `https://tenancy.stawi.org` |
+Colony injects `/tenancy` into `OAUTH2_REQUESTED_AUDIENCES` when
+`permissionsRegistrationUrl` is set so services do not list it by hand.
 
 On Hydra client sync, **internal** OAuth clients automatically get
-`https://tenancy.<apex>` whitelisted even if the auth-contract recipient row
-was omitted — so registration is plug-and-play without per-service recipient
-edits.
+`{OAUTH2_AUDIENCE_BASE_URL}/tenancy` whitelisted even if the auth-contract
+recipient row was omitted — so registration is plug-and-play without
+per-service recipient edits.
 
 Hydra must allow top-level claim mirroring for `service_account_id` (see
 `oauth2.allowed_top_level_claims` / `mirror_top_level_claims` on the Hydra

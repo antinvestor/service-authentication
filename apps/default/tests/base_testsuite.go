@@ -242,8 +242,8 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
-	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://authentication.example.test")
-	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://example.test")
+	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://api.example.test/authentication")
+	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://api.example.test")
 	t.Setenv("SERVICE_NAME", "authentication_tests")
 
 	cfg, err := config.LoadWithOIDC[aconfig.AuthenticationConfig](ctx)
@@ -274,14 +274,14 @@ func (bs *BaseTestSuite) CreateService(
 	cfg.NotificationServiceURI = notificationDR.GetDS(ctx).String()
 	cfg.Oauth2ServiceURI = oauth2ServiceURI.String()
 	cfg.Oauth2ServiceAdminURI = hydraDR.GetDS(ctx).String()
-	cfg.Oauth2AudienceBaseURL = "https://example.test"
+	cfg.Oauth2AudienceBaseURL = "https://api.example.test"
 	cfg.Oauth2RequestedAudiences = []string{
-		"https://profile.example.test",
-		"https://tenancy.example.test",
-		"https://notification.example.test",
-		"https://devices.example.test",
+		"https://api.example.test/profile",
+		"https://api.example.test/tenancy",
+		"https://api.example.test/notification",
+		"https://api.example.test/devices",
 	}
-	cfg.Oauth2ResourceAudience = "https://authentication.example.test"
+	cfg.Oauth2ResourceAudience = "https://api.example.test/authentication"
 	cfg.Oauth2JwtVerifyIssuer = oauth2ServiceURI.String()
 
 	err = ensureHydraServiceClients(ctx, cfg.Oauth2ServiceAdminURI)
@@ -355,10 +355,10 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-authentication_tests",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
 			Audience: []string{
-				"https://profile.example.test",
-				"https://tenancy.example.test",
-				"https://notification.example.test",
-				"https://devices.example.test",
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
 			},
 			ProfileID: "dev_authentication_tests",
 		},
@@ -367,10 +367,10 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-service_authentication",
 			Secret:     "vkGiJroO9dAS5eFnuaGy",
 			Audience: []string{
-				"https://profile.example.test",
-				"https://tenancy.example.test",
-				"https://notification.example.test",
-				"https://devices.example.test",
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/notification",
+				"https://api.example.test/devices",
 			},
 			ProfileID: "dev_service_authentication",
 		},
@@ -379,8 +379,8 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-service_profile",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
 			Audience: []string{
-				"https://notification.example.test",
-				"https://tenancy.example.test",
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
 				"service_notification",
 				"service_tenancy",
 			},
@@ -391,9 +391,9 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-service_tenancy",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
 			Audience: []string{
-				"https://notification.example.test",
-				"https://profile.example.test",
-				"https://authentication.example.test",
+				"https://api.example.test/notification",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
 			},
 			ProfileID: "dev_service_tenancy",
 		},
@@ -402,9 +402,9 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-service_notification",
 			Secret:     "hkGiJroO9cDS5eFnuaAV",
 			Audience: []string{
-				"https://profile.example.test",
-				"https://tenancy.example.test",
-				"https://devices.example.test",
+				"https://api.example.test/profile",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/devices",
 				"service_profile",
 				"service_tenancy",
 				"service_device",
@@ -416,10 +416,10 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			ClientName: "sa-service_device",
 			Secret:     "hkBaJroO9cDGleFnuaAZ",
 			Audience: []string{
-				"https://notification.example.test",
-				"https://tenancy.example.test",
-				"https://profile.example.test",
-				"https://authentication.example.test",
+				"https://api.example.test/notification",
+				"https://api.example.test/tenancy",
+				"https://api.example.test/profile",
+				"https://api.example.test/authentication",
 			},
 			ProfileID: "dev_service_device",
 		},

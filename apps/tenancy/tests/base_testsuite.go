@@ -254,8 +254,8 @@ func (bs *BaseTestSuite) createServiceInternal(
 	require.NoError(t, err)
 	t.Setenv("OAUTH2_WELL_KNOWN_JWK_DATA", jwksData)
 	t.Setenv("OAUTH2_SERVICE_URI", oauth2ServiceURI.String())
-	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://tenancy.example.test")
-	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://example.test")
+	t.Setenv("OAUTH2_RESOURCE_AUDIENCE", "https://api.example.test/tenancy")
+	t.Setenv("OAUTH2_AUDIENCE_BASE_URL", "https://api.example.test")
 
 	cfg, err := config.LoadWithOIDC[aconfig.TenancyConfig](ctx)
 	require.NoError(t, err)
