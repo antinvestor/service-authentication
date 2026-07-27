@@ -86,9 +86,6 @@ String? validateScopes(String? value) {
 }
 
 /// Validates canonical HTTPS OAuth resource recipients.
-///
-/// Accepts subdomain form (`https://profile.stawi.org`) and legacy path form
-/// (`https://api.stawi.org/profile`).
 String? validateResourceRecipients(String? value) {
   if (value == null || value.trim().isEmpty) {
     return 'At least one resource recipient is required';
@@ -98,28 +95,20 @@ String? validateResourceRecipients(String? value) {
     final recipient = raw.trim();
     final uri = Uri.tryParse(recipient);
     if (uri == null ||
+        !RegExp(r'^https://[^/:?#]+/[^?#]+$').hasMatch(recipient) ||
         uri.scheme != 'https' ||
         uri.host.isEmpty ||
         uri.hasPort ||
+        uri.path.isEmpty ||
+        uri.path == '/' ||
+        uri.path.endsWith('/') ||
         uri.hasQuery ||
         uri.hasFragment ||
-        uri.userInfo.isNotEmpty ||
-        recipient.contains('%') ||
-        !_isCanonicalResourceAudience(uri)) {
+        uri.userInfo.isNotEmpty) {
       return 'Invalid canonical resource recipient: "$recipient"';
     }
   }
   return null;
-}
-
-bool _isCanonicalResourceAudience(Uri uri) {
-  final path = uri.path;
-  // Subdomain form: https://profile.stawi.org (empty or root path only).
-  if (path.isEmpty || path == '/') {
-    return uri.host.contains('.');
-  }
-  // Legacy path form: https://api.stawi.org/profile (non-root, no trailing slash).
-  return !path.endsWith('/');
 }
 
 /// Splits a comma-separated string into a trimmed, non-empty list.

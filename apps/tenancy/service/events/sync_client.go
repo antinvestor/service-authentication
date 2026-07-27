@@ -330,22 +330,14 @@ func tenancyResourceAudience(audienceBaseURL string) string {
 	if base == "" {
 		return ""
 	}
-	u, err := url.Parse(base)
-	if err != nil || u.Scheme != "https" || u.Host == "" {
-		return base + "/tenancy"
+	// Subdomain model: https://stawi.org → https://tenancy.stawi.org
+	// (base host has no "api." gateway prefix path segment).
+	if u, err := url.Parse(base); err == nil && u.Scheme == "https" && u.Host != "" &&
+		(u.Path == "" || u.Path == "/") {
+		return "https://tenancy." + strings.ToLower(u.Hostname())
 	}
-	host := strings.ToLower(u.Hostname())
-	path := strings.TrimSuffix(u.Path, "/")
-
-	// Legacy path model: base host is a gateway (api.*) or already has a path.
-	// https://api.stawi.org → https://api.stawi.org/tenancy
-	// https://api.example.test/platform → https://api.example.test/platform/tenancy
-	if path != "" || strings.HasPrefix(host, "api.") {
-		return base + "/tenancy"
-	}
-
-	// Subdomain model: apex base https://stawi.org → https://tenancy.stawi.org
-	return "https://tenancy." + host
+	// Legacy path model: https://api.stawi.org → https://api.stawi.org/tenancy
+	return base + "/tenancy"
 }
 
 func getStringSlice(m data.JSONMap, key string) []string {
