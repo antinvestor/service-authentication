@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -303,21 +304,48 @@ func oauth2AudienceBaseURL(cfg config.ConfigurationOAUTH2) string {
 	return ""
 }
 
-// ensureTenancyAudience appends {base}/tenancy when missing so internal bots
-// can register permission manifests against tenancy without each service
-// authoring a custom oauth recipient row.
+// ensureTenancyAudience appends the platform tenancy resource audience when
+// missing so internal bots can register permission manifests without each
+// service authoring a custom oauth recipient row.
+//
+// With subdomain audiences (OAUTH2_AUDIENCE_BASE_URL=https://stawi.org) this
+// yields https://tenancy.stawi.org. Legacy path bases still yield {base}/tenancy.
 func ensureTenancyAudience(audiences []string, audienceBaseURL string) []string {
-	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
-	if base == "" {
+	tenancyAudience := tenancyResourceAudience(audienceBaseURL)
+	if tenancyAudience == "" {
 		return audiences
 	}
-	tenancyAudience := base + "/tenancy"
 	for _, audience := range audiences {
 		if strings.EqualFold(strings.TrimSpace(audience), tenancyAudience) {
 			return audiences
 		}
 	}
 	return append(audiences, tenancyAudience)
+}
+
+// tenancyResourceAudience builds the canonical tenancy audience from the
+// platform audience base URL.
+func tenancyResourceAudience(audienceBaseURL string) string {
+	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
+	if base == "" {
+		return ""
+	}
+	u, err := url.Parse(base)
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return base + "/tenancy"
+	}
+	host := strings.ToLower(u.Hostname())
+	path := strings.TrimSuffix(u.Path, "/")
+
+	// Legacy path model: base host is a gateway (api.*) or already has a path.
+	// https://api.stawi.org → https://api.stawi.org/tenancy
+	// https://api.example.test/platform → https://api.example.test/platform/tenancy
+	if path != "" || strings.HasPrefix(host, "api.") {
+		return base + "/tenancy"
+	}
+
+	// Subdomain model: apex base https://stawi.org → https://tenancy.stawi.org
+	return "https://tenancy." + host
 }
 
 func getStringSlice(m data.JSONMap, key string) []string {

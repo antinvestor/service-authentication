@@ -11,7 +11,7 @@ void main() {
       oauthClient: OAuthClientConfiguration(
         grantTypes: ['client_credentials'],
         scopes: 'system_int openid',
-        resourceRecipients: ['https://api.stawi.org/profile'],
+        resourceRecipients: ['https://profile.stawi.org'],
         tokenEndpointAuthMethod: 'private_key_jwt',
       ),
       authorizationPolicy: ServiceAuthorizationPolicyInput(
@@ -27,7 +27,7 @@ void main() {
     );
 
     expect(request.oauthClient.resourceRecipients, [
-      'https://api.stawi.org/profile',
+      'https://profile.stawi.org',
     ]);
     expect(
         request.authorizationPolicy.grants.single.namespace, 'service_profile');
