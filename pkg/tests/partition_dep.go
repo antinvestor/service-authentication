@@ -78,9 +78,11 @@ func (d *partitionDependancy) migrateContainer(
 			},
 		},
 		Env: map[string]string{
-			"LOG_LEVEL":    "debug",
-			"DO_MIGRATION": "true",
-			"DATABASE_URL": databaseURL,
+			"LOG_LEVEL":             "debug",
+			"DO_MIGRATION":          "true",
+			"DATABASE_URL":          databaseURL,
+			"AUTHORIZATION_MODE":    "disabled",
+			"OPENTELEMETRY_DISABLE": "true",
 		},
 
 		WaitingFor: wait.ForExit(),
