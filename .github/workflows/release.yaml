@@ -65,7 +65,7 @@ jobs:
       service: identity-authentication
       migrate_job: identity-authentication-migrate
       project_id: stawi-identity
-      region: europe-west9
+      region: europe-west1
       ship_service_account: cloudrun-ship@stawi-identity.iam.gserviceaccount.com
       workload_identity_provider: projects/721554040672/locations/global/workloadIdentityPools/github/providers/github-ship
       skip_migrate: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_migrate == true }}
@@ -82,7 +82,7 @@ jobs:
       service: identity-tenancy
       migrate_job: identity-tenancy-migrate
       project_id: stawi-identity
-      region: europe-west9
+      region: europe-west1
       ship_service_account: cloudrun-ship@stawi-identity.iam.gserviceaccount.com
       workload_identity_provider: projects/721554040672/locations/global/workloadIdentityPools/github/providers/github-ship
       skip_migrate: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_migrate == true }}
