@@ -36,12 +36,12 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
 
 		for table, expected := range map[string]int64{
-			"clients":                                   56,
-			"oauth_client_recipients":                   256,
-			"service_accounts":                          45,
-			"service_account_authorization_policies":    45,
-			"service_account_authorization_grants":      177,
-			"service_account_authorization_permissions": 1845,
+			"clients":                                   57,  // +service-chat-agent
+			"oauth_client_recipients":                   260, // +chat-agent,profile,tenancy,notification
+			"service_accounts":                          46,  // +service_chat_agent
+			"service_account_authorization_policies":    46,
+			"service_account_authorization_grants":      178,  // +service_chat_agent namespace
+			"service_account_authorization_permissions": 1848, // +chat_agent_view/manage/turn
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
