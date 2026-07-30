@@ -84,8 +84,19 @@ func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDe
 		return nil
 	}
 
-	if writeErr := deps.Authorizer.WriteTuples(ctx, tuples); writeErr != nil {
-		return fmt.Errorf("service bot bootstrap: write %d tuples: %w", len(tuples), writeErr)
+	// Chunk writes: Frame's authorizer existence-checks each tuple before the
+	// batch insert. A single 500+ tuple RPC saturates Keto/Neon and fails with
+	// broken-pipe under Cloud Run cold paths (observed with 47 SAs × 11 partitions).
+	const chunkSize = 32
+	for i := 0; i < len(tuples); i += chunkSize {
+		end := i + chunkSize
+		if end > len(tuples) {
+			end = len(tuples)
+		}
+		if writeErr := deps.Authorizer.WriteTuples(ctx, tuples[i:end]); writeErr != nil {
+			return fmt.Errorf("service bot bootstrap: write %d tuples (chunk %d-%d): %w",
+				len(tuples), i, end, writeErr)
+		}
 	}
 
 	logger.WithFields(map[string]any{
@@ -93,6 +104,7 @@ func EnsureServiceBotTenancyAccess(ctx context.Context, deps ServiceBotTenancyDe
 		"bot_profiles":     len(profiles),
 		"partition_paths":  len(paths),
 		"tuples_written":   len(tuples),
+		"chunk_size":       chunkSize,
 	}).Info("service bot tenancy access bootstrap complete")
 	return nil
 }
