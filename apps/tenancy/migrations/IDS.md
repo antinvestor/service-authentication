@@ -94,6 +94,7 @@ configuration.
 | d8as62bvfo145u8bon3g | service-fort | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d8le7qspf2t8u08dff3g | service-payment-pawapay | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d8lt2gkpf2t1ql3csd1g | service-payment-checkout | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
+| d9lemh4pf2t9nfnavkag | service-chat-agent | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -143,6 +144,7 @@ configuration.
 | d86tt34pf2tddudk9q60 | d86tt34pf2tddudk9q6g | d86tt34pf2tddudk9q5g | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d86tt34pf2tddudk9q7g | d86tt34pf2tddudk9q80 | d86tt34pf2tddudk9q70 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d8as62fieol45uar4okg | d8as6297jdi45ufqlh70 | d8as62bvfo145u8bon3g | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
+| d9lemh4pf2t9nfnavkbg | d9lemh4pf2t9nfnavkcg | d9lemh4pf2t9nfnavkag | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
 
 ## Referenced profile IDs
 | xid | what | file |
@@ -184,3 +186,19 @@ configuration.
 | d7j42dspf2tfev9jfh50 | member | d7j42dspf2tfev9jfh40 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d7j42dspf2tfev9jfh5g | admin  | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d7j42dspf2tfev9jfh60 | member | 9bsv0s0hijjb83qksr20 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
+
+## Service chat-agent seed extras
+| xid | what | file |
+|-----|------|------|
+| d9lemh4pf2t9nfnavkag | client row id | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemh4pf2t9nfnavkbg | service account | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemh4pf2t9nfnavkcg | profile placeholder | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemh4pf2t9nfnavkc0 | authorization policy | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr00 | oauth recipient chat-agent | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr0g | oauth recipient profile | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr10 | oauth recipient tenancy | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr1g | oauth recipient notification | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr20 | auth grant service_chat_agent | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr2g | perm chat_agent_view | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr30 | perm chat_agent_manage | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9lemn4pf2t9a621dr3g | perm chat_agent_turn | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
