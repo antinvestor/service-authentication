@@ -96,9 +96,9 @@ func main() {
 	// Setup Connect RPC server with full interceptor chain
 	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditSrv)
 
+	// Runtime only — permission manifests publish on the setup Job path above.
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
-		frame.WithPermissionRegistration(sd),
 	}
 
 	svc.Init(ctx, serviceOptions...)

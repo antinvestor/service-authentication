@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/antinvestor/common/v2/servicecatalog"
@@ -73,6 +74,9 @@ func main() {
 	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
 		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
 	})
+	// Setup Job only (migrate → bootstrap → …). Never on runtime cold start.
+	// Bootstrap: root tuples, service-bot Plane-1 access, then materialise any
+	// SA authorization policies whose namespaces are already registered.
 	svc.Setup().RegisterFunc(setup.NameBootstrap, func(ctx context.Context) error {
 		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
 			AccessRepo:           setupPartSrv.AccessRepo,
@@ -83,11 +87,29 @@ func main() {
 		}); bootstrapErr != nil {
 			return bootstrapErr
 		}
-		return business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
+		if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
 			ServiceAccountRepo: setupPartSrv.ServiceAccountRepo,
 			PartitionRepo:      setupPartSrv.PartitionRepo,
 			Authorizer:         auth,
-		})
+		}); botErr != nil {
+			return botErr
+		}
+		// Materialise pending SA policies (Plane-2 granted_*) for namespaces that
+		// are already registered. Policies whose namespaces are still missing stay
+		// pending until files/profile/etc. setup Jobs re-register and requeue them.
+		reconciler := events.NewAuthzServiceAccountSyncEventHandler(
+			setupPartSrv.ServiceAccountRepo,
+			setupPartSrv.PartitionRepo,
+			setupPartSrv.AuthorizationPolicyRepo,
+			setupPartSrv.ServiceNamespaceRepo,
+			setupPartSrv.AuthContractRepo,
+			svc.EventsManager(),
+			auth,
+		)
+		if recErr := reconciler.ReconcilePending(ctx); recErr != nil {
+			return fmt.Errorf("setup bootstrap: reconcile pending SA policies: %w", recErr)
+		}
+		return nil
 	})
 
 	if frame.ShouldRunSetup(&cfg) {
@@ -135,14 +157,10 @@ func main() {
 		auth,
 	)
 
-	sd := tenancyv1.File_tenancy_v1_tenancy_proto.Services().ByName("TenancyService")
-
-	// Runtime: fast start — no permission POST on PreStart.
+	// Runtime: fast start — no setup steps, no permission registration.
 	connectHandler := setupConnectServer(ctx, sm, partSrv, authContractSrv)
 	serviceOptions := []frame.Option{
 		frame.WithHTTPHandler(connectHandler),
-		// Register permissions step for setup jobs sharing this image; unused at runtime.
-		frame.WithPermissionRegistration(sd),
 		frame.WithRegisterEvents(
 			events.NewClientSynchronizationEventHandler(
 				ctx,
@@ -167,6 +185,8 @@ func main() {
 		),
 	}
 
+	// Runtime: serve traffic only. Bot bootstrap + SA policy reconcile run in the
+	// setup Job (NameBootstrap), not on every cold start.
 	svc.Init(ctx, serviceOptions...)
 
 	err = svc.Run(ctx, "")

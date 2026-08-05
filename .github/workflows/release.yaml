@@ -52,6 +52,15 @@ jobs:
     secrets:
       buf_token: ${{ secrets.BUF_TOKEN }}
 
+  # Merge opl/**/*.opl.ts into identity-authorization-keto namespaces.ts.
+  opl-push:
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+    uses: antinvestor/common/.github/workflows/opl-push.yml@main
+    secrets:
+      deploy_token: ${{ secrets.DEPLOY_REPO_TOKEN }}
+
   # Two Cloud Run apps from this monorepo (default + tenancy images).
   ship-authentication:
     needs: [docker]

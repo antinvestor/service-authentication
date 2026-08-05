@@ -29,7 +29,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/ory/hydra-client-go/v25 v25.4.0
-	github.com/pitabwire/frame/v2 v2.1.3
+	github.com/pitabwire/frame/v2 v2.1.4
 	github.com/pitabwire/util v0.9.1
 	github.com/posthog/posthog-go v1.22.0
 	github.com/rs/xid v1.6.0

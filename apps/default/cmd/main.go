@@ -95,6 +95,19 @@ func main() {
 
 	log := util.Log(ctx)
 
+	// Setup Job (argv setup / DO_SETUP): publish permission manifest only.
+	// Full OIDC is already loaded above so the Job can authenticate to tenancy.
+	// Do not wire HTTP routes, peer clients, or hypertables on this path.
+	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
+	if frame.IsSetupMode(&cfg) || frame.ShouldRunSetup(&cfg) {
+		svc.Init(ctx, frame.WithPermissionRegistration(sd))
+		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
+			log.WithError(setupErr).Fatal("setup plan failed")
+		}
+		log.Info("setup plan complete — exiting")
+		return
+	}
+
 	sm := svc.SecurityManager()
 	dbManager := svc.DatastoreManager()
 	cacheManager := svc.CacheManager()
@@ -163,26 +176,13 @@ func main() {
 	defaultServer := frame.WithHTTPHandler(authMux)
 	serviceOptions = append(serviceOptions, defaultServer)
 
-	// Permissions step for setup jobs (no runtime PreStart — fast cold start).
-	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
-	serviceOptions = append(serviceOptions, frame.WithPermissionRegistration(sd))
-
-	// Register async event consumers (queue-backed — scales with replicas).
+	// Runtime only — permission manifests publish on the setup Job path above.
 	serviceOptions = append(serviceOptions, frame.WithRegisterEvents(
 		events.NewProfileAvatarSyncEventHandler(profileCli, filesCli),
 		events.NewServiceAccountLoginAuditEventHandler(loginRepo, loginEventRepo),
 	))
 
 	svc.Init(ctx, serviceOptions...)
-
-	// setup argv (e.g. setup permissions): publish manifests with full OIDC.
-	if frame.IsSetupMode(&cfg) {
-		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
-			log.WithError(setupErr).Fatal("setup plan failed")
-		}
-		log.Info("setup plan complete — exiting")
-		return
-	}
 
 	err = svc.Run(ctx, "")
 	if err != nil {
