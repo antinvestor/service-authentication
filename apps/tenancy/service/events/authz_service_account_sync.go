@@ -31,6 +31,7 @@ import (
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/util"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -79,9 +80,13 @@ func NewAuthzServiceAccountSyncEventHandler(
 }
 
 // ReconcilePending synchronously materialises every policy whose desired
-// generation has not been applied. Startup calls this before serving traffic,
-// so missing Keto schema or stale derived state fails closed and self-heals on
-// the next restart after the dependency is corrected.
+// generation has not been applied. Setup Jobs call this after migrate.
+//
+// Policies stay pending (and setup continues) when:
+//   - a granted namespace is not yet registered in tenancy's catalog, or
+//   - Keto OPL does not yet define that namespace (schema_not_ready / NotFound).
+//
+// Hard failures (DB, invalid grants, non-schema authz errors) still fail setup.
 func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) error {
 	namespaces, err := e.serviceNamespaceRepo.ListAll(ctx)
 	if err != nil {
@@ -117,10 +122,38 @@ func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) err
 			"reason":     "startup_reconciliation",
 		}
 		if err = e.Execute(ctx, &payload); err != nil {
+			if isAuthorizationSchemaNotReady(err) {
+				util.Log(ctx).WithError(err).WithFields(map[string]any{
+					"service_account_id": policy.ServiceAccountID,
+					"generation":         policy.Generation,
+				}).Warn("authorization policy remains pending until Keto OPL defines the namespace")
+				continue
+			}
 			failures = append(failures, fmt.Errorf("reconcile service account %s policy: %w", policy.ServiceAccountID, err))
 		}
 	}
 	return errors.Join(failures...)
+}
+
+// isAuthorizationSchemaNotReady reports Keto/OPL schema gaps that should leave
+// SA policies pending rather than fail the whole tenancy setup Job.
+func isAuthorizationSchemaNotReady(err error) bool {
+	var serviceErr *authorizer.AuthzServiceError
+	if errors.As(err, &serviceErr) {
+		if serviceErr.SchemaReadiness {
+			return true
+		}
+		// ListRelationTuples on an unknown OPL class surfaces as NotFound on
+		// read_exact_tuple before write_tuples can mark SchemaReadiness.
+		if serviceErr.Operation == "read_exact_tuple" && serviceErr.Code == codes.NotFound {
+			return true
+		}
+		if serviceErr.Operation == "write_tuples" &&
+			(serviceErr.Code == codes.NotFound || serviceErr.Code == codes.FailedPrecondition) {
+			return true
+		}
+	}
+	return false
 }
 
 func missingPolicyNamespaces(
