@@ -77,6 +77,18 @@ Do not “fix” this by keying Keto on `client_id`.
 | `EnsureServiceBotTenancyAccess` | `sa.ProfileID` |
 | User access / roles | user `profile_id` |
 
+## Product S2S peers vs user access
+
+Do not confuse **human** access to a product with **service-account** rights to
+call platform peers (chat-agent, checkout, …).
+
+- **Users:** SPA audiences + partition membership + roles. No SA grant rows per customer.
+- **Product bots:** `oauth_client_recipients` + SA policy grants on the **platform**
+  product SA (root). One peer contract covers all tenants (`partition_tree`).
+
+Full rules, checklists, and forbidden patterns:
+[adr/0002-product-peer-mesh-not-per-tenant-grants.md](adr/0002-product-peer-mesh-not-per-tenant-grants.md).
+
 ## Debugging checklist
 
 1. Error subject looks like a **client_id** (`service-authentication`)?  

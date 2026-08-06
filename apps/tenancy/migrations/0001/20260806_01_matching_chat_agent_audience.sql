@@ -1,12 +1,21 @@
 -- Copyright 2023-2026 Ant Investor Ltd
--- Allow opportunities-matching to call platform chat-agent (S2S).
+--
+-- LIVE-CLUSTER REPAIR ONLY — not a per-customer / per-tenant template.
+-- Canonical model: docs/adr/0002-product-peer-mesh-not-per-tenant-grants.md
+--
+-- Fixes incomplete PLATFORM product SA peer contract for client_id
+-- opportunities-matching (root bot). Deploy already requested /chat-agent and
+-- /checkout; Hydra whitelist + SA ReBAC grants were missing.
+--
 -- Without oauth_client_recipients for https://api.stawi.org/chat-agent, Hydra
 -- rejects client_credentials with:
 --   Requested audience 'https://api.stawi.org/chat-agent' has not been whitelisted
--- Also grant service_chat_agent functional permissions so Turn/CreateSession
--- pass ReBAC after the token is issued. Add checkout audience already
--- requested by matching env.
-
+-- Gate 3: service_chat_agent permissions so CreateSession/Turn/UpsertContext pass.
+--
+-- DO NOT copy this pattern "for each customer". Once this platform SA is fixed,
+-- every logged-in user with matching access gets chat via BFF (user JWT → matching
+-- → SA JWT → chat-agent). New tenants need partition access only — not this SQL.
+--
 -- Resolve opportunities-matching client + policy via stable client_id (not hardcoded seed xids).
 -- New row xids for this migration (registered in IDS.md):
 --   d9mchat1matchaud0001, d9mchat1matchaud0002 (recipients)
