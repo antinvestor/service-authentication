@@ -52,7 +52,7 @@ jobs:
       # setup-dart with OIDC populates ~/.config/dart/pub-credentials.json
       # using the GitHub Actions OIDC token; flutter pub publish reads
       # that file automatically.
-      - uses: dart-lang/setup-dart@v1.7.2
+      - uses: dart-lang/setup-dart@v1.8.0
 
       - uses: subosito/flutter-action@v2
         with:
