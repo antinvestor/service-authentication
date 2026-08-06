@@ -9,6 +9,17 @@
 #
 # For Thesa-bound SAs, use the root tenant/partition xids.
 # For stawi-jobs-bound SAs, use the stawi-jobs tenant/partition xids.
+#
+# IMPORTANT — this scaffolds ONLY the NEW service account (owner + its outbound
+# recipients and grants). It does NOT reverse-wire existing product consumers.
+#
+# When product P will call this new service S:
+#   1. Seed S with this tool (S owns its namespace grant).
+#   2. Separately update P's SA auth contract: oauth_client_recipients for
+#      https://api.stawi.org/<path> + SA grant on S's namespace + least-privilege
+#      permissions (deploy requested_audience_paths alone is NOT enough).
+#   3. Never write per-tenant / per-customer S2S grants.
+# See docs/adr/0002-product-peer-mesh-not-per-tenant-grants.md
 
 set -euo pipefail
 

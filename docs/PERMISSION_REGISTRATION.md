@@ -56,6 +56,46 @@ That is the entire service-side contract. Everything else is platform plumbing.
 
 Auth already **declares** `service_device:device_manage` and `service_file:content_upload` in its SA policy. Those grants stay **pending** until the owning service registers the namespace.
 
+## Product peer mesh (S2S consumers) — required reading
+
+**Canonical ADR:** [adr/0002-product-peer-mesh-not-per-tenant-grants.md](adr/0002-product-peer-mesh-not-per-tenant-grants.md).
+
+Permission registration (this document) covers **owner** namespace schema.
+It does **not** auto-wire **consumers** of a new service. A product bot that
+calls peer `S` needs **three gates** on the **consumer** SA (platform root),
+not grants on each tenant or logged-in user:
+
+| Gate | Where |
+|------|--------|
+| 1. Request `aud` | Deploy `requested_audience_paths` → `OAUTH2_REQUESTED_AUDIENCES` |
+| 2. Hydra whitelist | Consumer `oauth_client_recipients` for that audience URL |
+| 3. ReBAC | Consumer SA policy grant on peer namespace + explicit permissions |
+
+### End users vs product bots
+
+| Actor | Needs audience on **their** OAuth client? | Needs peer `granted_*`? |
+|-------|-------------------------------------------|-------------------------|
+| Logged-in user (SPA) — **platform self-service** | **Automatic baseline** on public clients: profile, devices, geolocation, chat-agent, files (`ensurePublicPlatformAudiences`). **Settings and notification are setup-only** (explicit SPA recipients). | `ROLE_MEMBER` via access grant + OPL — **not** SA grant tables |
+| Logged-in user (SPA) — **product APIs** | Explicit product paths (`/matching`, `/jobs`, …) | Product service `ROLE_MEMBER` / roles |
+| Product SA (BFF → peer) | **Yes** for each peer it calls | **Yes** — explicit perms for RPCs it invokes |
+
+**Default for user-tied platform APIs:** user JWT direct (mode U in ADR 0002).  
+**Optional BFF** when the product owns multi-step domain logic: browser → product JWT; product → peer SA JWT; `subject_id` in body.
+
+### Forbidden
+
+- Migrations or admin grants “for customer / tenant X” to unlock S2S peers  
+- Adding only deploy `requested_audience_paths` without consumer recipients + SA grants  
+- Auto-granting every internal SA a new peer  
+- Hand-written Keto tuples in app startup to “unblock” chat / consent  
+
+### Allowed repair
+
+A **dated** tenancy migration that updates a **named platform product SA**
+(`client_id = opportunities-matching`, etc.) is live-cluster repair of an
+incomplete peer contract — never a per-customer template. Fold the same rows
+into greenfield / SA contract for wipe-reseed.
+
 ## Token claims required for registration
 
 Service-account access-token extras (token webhook) **must** include:

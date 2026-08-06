@@ -202,3 +202,13 @@ configuration.
 | d9lemn4pf2t9a621dr2g | perm chat_agent_view | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
 | d9lemn4pf2t9a621dr30 | perm chat_agent_manage | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
 | d9lemn4pf2t9a621dr3g | perm chat_agent_turn | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+
+## Matching chat-agent audience (2026-08-06)
+| xid | what | file |
+|-----|------|------|
+| d9mchat1matchaud0001 | oauth recipient matching→chat-agent | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+| d9mchat1matchaud0002 | oauth recipient matching→checkout | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+| d9mchat1matchgrant001 | auth grant matching service_chat_agent | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+| d9mchat1matchperm0001 | perm chat_agent_view (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+| d9mchat1matchperm0002 | perm chat_agent_manage (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+| d9mchat1matchperm0003 | perm chat_agent_turn (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |

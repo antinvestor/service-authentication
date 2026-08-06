@@ -295,10 +295,14 @@ func (s *BusinessTestSuite) TestAuthorizationSchemaFailureRemainsPendingAndFails
 	s.Equal("schema_not_ready", failed.Policy.LastErrorCode)
 	s.NotNil(failed.Policy.NextAttemptAt)
 
+	// Schema-not-ready (missing Keto OPL) must not fail the whole setup reconcile;
+	// policies stay non-applied and can be retried after OPL lands.
 	err = reconciler.ReconcilePending(ctx)
-	s.Require().Error(err)
+	s.Require().NoError(err)
 	failed, err = deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
 	s.Require().NoError(err)
+	s.Equal(models.AuthorizationPolicyFailed, failed.Policy.Status)
+	s.Equal("schema_not_ready", failed.Policy.LastErrorCode)
 	s.Equal(int32(2), failed.Policy.RetryCount)
 }
 

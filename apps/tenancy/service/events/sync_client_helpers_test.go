@@ -73,6 +73,29 @@ func (s *SyncClientHelpersTestSuite) TestEnsureTenancyAudience_EmptyBase() {
 	s.Equal(in, ensureTenancyAudience(in, "  "))
 }
 
+func (s *SyncClientHelpersTestSuite) TestEnsurePublicPlatformAudiences_AddsBaseline() {
+	got := ensurePublicPlatformAudiences(
+		[]string{"https://api.example.test/matching"},
+		"https://api.example.test",
+	)
+	s.Contains(got, "https://api.example.test/matching")
+	for _, path := range publicPlatformAudiencePaths {
+		s.Contains(got, "https://api.example.test"+path)
+	}
+}
+
+func (s *SyncClientHelpersTestSuite) TestEnsurePublicPlatformAudiences_Idempotent() {
+	base := "https://api.example.test"
+	first := ensurePublicPlatformAudiences(nil, base)
+	second := ensurePublicPlatformAudiences(first, base)
+	s.Equal(first, second)
+}
+
+func (s *SyncClientHelpersTestSuite) TestEnsurePublicPlatformAudiences_EmptyBase() {
+	in := []string{"https://api.example.test/profile"}
+	s.Equal(in, ensurePublicPlatformAudiences(in, ""))
+}
+
 func (s *SyncClientHelpersTestSuite) TestGetStringSlice_EmptyString() {
 	m := data.JSONMap{"types": ""}
 	s.Nil(getStringSlice(m, "types"))
