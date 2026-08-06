@@ -37,11 +37,11 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 
 		for table, expected := range map[string]int64{
 			"clients":                                   57,  // +service-chat-agent
-			"oauth_client_recipients":                   260, // +chat-agent,profile,tenancy,notification
+			"oauth_client_recipients":                   262, // +matching→chat-agent,checkout
 			"service_accounts":                          46,  // +service_chat_agent
 			"service_account_authorization_policies":    46,
-			"service_account_authorization_grants":      178,  // +service_chat_agent namespace
-			"service_account_authorization_permissions": 1848, // +chat_agent_view/manage/turn
+			"service_account_authorization_grants":      179,  // +matching service_chat_agent grant
+			"service_account_authorization_permissions": 1851, // +matching chat_agent_view/manage/turn
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
