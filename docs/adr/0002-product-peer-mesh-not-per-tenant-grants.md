@@ -45,23 +45,23 @@ planes, and will be reinvented incorrectly every time a product adds a peer.
 
 After login, a partition **member** can call user-tied platform services with **their own JWT**:
 
-| Audience path | Namespace | Member may (examples) |
-|---------------|-----------|------------------------|
-| `/profile` | `service_profile` | view/update own profile, contacts, addresses |
-| `/devices` | `service_device` | register/link device, keys, presence, logs |
-| `/geolocation` | `service_geolocation` | **ingest location**, view tracks/nearby |
-| `/chat-agent` | `service_chat_agent` | create session / turn (own `subject_id`) |
-| `/settings` | `service_setting` | view/manage own settings |
-| `/files` | `service_file` | upload/view content |
-| `/notification` | `service_notification` | search/status view |
+| Audience path | Namespace | Member may (examples) | On public clients |
+|---------------|-----------|------------------------|-------------------|
+| `/profile` | `service_profile` | view/update own profile, contacts, addresses | **Auto** baseline |
+| `/devices` | `service_device` | register/link device, keys, presence, logs | **Auto** baseline |
+| `/geolocation` | `service_geolocation` | **ingest location**, view tracks/nearby | **Auto** baseline |
+| `/chat-agent` | `service_chat_agent` | create session / turn (own `subject_id`) | **Auto** baseline |
+| `/files` | `service_file` | upload/view content | **Auto** baseline |
+| `/settings` | `service_setting` | view/manage settings | **Setup only** — explicit SPA recipient |
+| `/notification` | `service_notification` | search/status (or send via product) | **Setup only** — explicit SPA recipient |
 
 **How this stays low-config:**
 
-1. **OAuth:** Hydra client sync injects baseline audiences for every `type=public` client (`ensurePublicPlatformAudiences`) — same idea as `ensureTenancyAudience` for internal bots. Product APIs (`/matching`, `/jobs`, …) remain explicit.
+1. **OAuth:** Hydra client sync injects **baseline** audiences for every `type=public` client (`ensurePublicPlatformAudiences`) — same idea as `ensureTenancyAudience` for internal bots. Product APIs (`/matching`, `/jobs`, …) and **settings / notification** remain explicit recipients at product setup.
 2. **ReBAC:** Access grant → default partition role `member` → `BuildRoleTuples` writes `#member` on every registered namespace that declares `ROLE_MEMBER` → OPL permits resolve permissions. **No per-user permission rows.**
-3. **Proto:** Each platform service’s `ROLE_MEMBER` binding must include self-service write perms (e.g. `location_ingest`, `device_manage`, `chat_agent_turn`). Keep admin-only actions on owner/admin.
+3. **Proto:** Baseline platform services’ `ROLE_MEMBER` bindings include self-service write perms (e.g. `location_ingest`, `device_manage`, `chat_agent_turn`). Keep admin-only actions on owner/admin.
 
-Users call these services **directly** when the SPA has the audience (auto for baseline) and the API is personal. Optional BFF is fine, but not required for mode U.
+Users call baseline services **directly** when the SPA has the audience (auto) and the API is personal. Settings and notifications require the product to opt in via `oauth_client_recipients` (or equivalent SPA setup).
 
 ### Mode B — BFF when the product owns the flow
 

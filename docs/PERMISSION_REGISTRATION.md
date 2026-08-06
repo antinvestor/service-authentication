@@ -75,7 +75,7 @@ not grants on each tenant or logged-in user:
 
 | Actor | Needs audience on **their** OAuth client? | Needs peer `granted_*`? |
 |-------|-------------------------------------------|-------------------------|
-| Logged-in user (SPA) — **platform self-service** | **Automatic baseline** on public clients: profile, devices, geolocation, chat-agent, settings, files, notification (`ensurePublicPlatformAudiences`) | `ROLE_MEMBER` via access grant + OPL — **not** SA grant tables |
+| Logged-in user (SPA) — **platform self-service** | **Automatic baseline** on public clients: profile, devices, geolocation, chat-agent, files (`ensurePublicPlatformAudiences`). **Settings and notification are setup-only** (explicit SPA recipients). | `ROLE_MEMBER` via access grant + OPL — **not** SA grant tables |
 | Logged-in user (SPA) — **product APIs** | Explicit product paths (`/matching`, `/jobs`, …) | Product service `ROLE_MEMBER` / roles |
 | Product SA (BFF → peer) | **Yes** for each peer it calls | **Yes** — explicit perms for RPCs it invokes |
 

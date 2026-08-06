@@ -323,6 +323,10 @@ func ensureTenancyAudience(audiences []string, audienceBaseURL string) []string 
 // logged-in partition member may call with their own JWT (ROLE_MEMBER +
 // partition access). Kept small and personal — not product-domain APIs.
 //
+// Not in this list (product must add oauth_client_recipients explicitly):
+//
+//	/settings, /notification — opt-in at SPA/product setup only.
+//
 // Paths must stay in sync with docs/adr/0002 and ROLE_MEMBER bindings on
 // each service's proto service_permissions.
 var publicPlatformAudiencePaths = []string{ //nolint:gochecknoglobals // stable platform baseline
@@ -330,9 +334,7 @@ var publicPlatformAudiencePaths = []string{ //nolint:gochecknoglobals // stable 
 	"/devices",
 	"/geolocation",
 	"/chat-agent",
-	"/settings",
 	"/files",
-	"/notification",
 }
 
 // ensurePublicPlatformAudiences appends baseline user-platform audiences so
