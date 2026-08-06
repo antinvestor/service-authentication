@@ -73,13 +73,14 @@ not grants on each tenant or logged-in user:
 
 ### End users vs product bots
 
-| Actor | Needs peer audience on **their** OAuth client? | Needs peer `granted_*`? |
-|-------|-----------------------------------------------|-------------------------|
-| Logged-in user (SPA) | Only for product edge APIs (e.g. `/matching`) | Human roles on product namespaces; **not** SA grant tables for platform peers |
+| Actor | Needs audience on **their** OAuth client? | Needs peer `granted_*`? |
+|-------|-------------------------------------------|-------------------------|
+| Logged-in user (SPA) — **platform self-service** | **Automatic baseline** on public clients: profile, devices, geolocation, chat-agent, settings, files, notification (`ensurePublicPlatformAudiences`) | `ROLE_MEMBER` via access grant + OPL — **not** SA grant tables |
+| Logged-in user (SPA) — **product APIs** | Explicit product paths (`/matching`, `/jobs`, …) | Product service `ROLE_MEMBER` / roles |
 | Product SA (BFF → peer) | **Yes** for each peer it calls | **Yes** — explicit perms for RPCs it invokes |
 
-Default product pattern for shared services (chat-agent, etc.): **BFF**.
-Browser → product with user JWT; product → peer with SA JWT; `subject_id` in body.
+**Default for user-tied platform APIs:** user JWT direct (mode U in ADR 0002).  
+**Optional BFF** when the product owns multi-step domain logic: browser → product JWT; product → peer SA JWT; `subject_id` in body.
 
 ### Forbidden
 

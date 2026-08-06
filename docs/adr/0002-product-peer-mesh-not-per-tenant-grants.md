@@ -29,29 +29,43 @@ planes, and will be reinvented incorrectly every time a product adds a peer.
 
 ## Decision
 
-### Two planes — never mix them
+### Three access modes — pick the lightest that fits
 
-| Plane | Principal | What “access” means | How it is provisioned |
-|-------|-----------|---------------------|------------------------|
-| **A. End-user product access** | Human `profile_id` (JWT `sub`) | May call product APIs (e.g. matching) for their partition | SPA OAuth client audiences + partition `tenancy_access#member` + human roles / OPL |
-| **B. Product peer mesh (S2S)** | Platform **service account** bot `profile_id` (root partition) | Product bot may mint token for peer audience and hold `granted_*` on peer namespace | **Consumer SA auth contract**: `oauth_client_recipients` + SA policy grants/permissions; scope typically `partition_tree` |
+| Mode | Principal | When to use | Config required |
+|------|-----------|-------------|-----------------|
+| **U. User-scoped platform self-service** | Human JWT (`sub` = profile) | Location, devices, own profile, personal LLM chat, settings, files — **tied to the user** | Login + partition membership + `ROLE_MEMBER` (default on access) + public client baseline audiences (**automatic**) |
+| **A. Product edge (SPA → product API)** | Human JWT | Product domain (matching, jobs, checkout) | Explicit product audiences on SPA (`/matching`, …) + partition access |
+| **B. Product peer mesh (S2S BFF)** | Product SA bot | Product server must call a peer on behalf of many subjects or own domain secrets | Consumer **platform SA** recipients + SA grants (once for the product bot — never per tenant) |
 
-**Logged-in users must never require a tenancy migration or SA grant row to use
-a product feature that is implemented as BFF → platform peer.**
+**Logged-in users must not need tenancy migrations or SA grant rows for mode U.**
 
-If the product is wired correctly at plane B, **every** user who already has
-plane A access to the product edge gets the feature automatically.
+**Logged-in users must not need per-tenant grants for mode B either** — only the product SA is wired once; all members of the product inherit via the BFF.
 
-### BFF pattern for platform shared services (chat-agent, etc.)
+### Mode U — user-scoped platform baseline (default for personal APIs)
 
-For product-agnostic platform services such as chat-agent:
+After login, a partition **member** can call user-tied platform services with **their own JWT**:
 
-1. Browser / SPA authenticates to the **product edge** only (matching, etc.).
-2. Product service calls the peer with **its own** `client_credentials` token.
-3. End-user identity is passed as **request data** (`subject_id`), not as the
-   peer’s Bearer principal.
-4. SPA OAuth clients **do not** need the peer audience (`/chat-agent`) unless the
-   product deliberately exposes a direct browser→peer API (default: no).
+| Audience path | Namespace | Member may (examples) |
+|---------------|-----------|------------------------|
+| `/profile` | `service_profile` | view/update own profile, contacts, addresses |
+| `/devices` | `service_device` | register/link device, keys, presence, logs |
+| `/geolocation` | `service_geolocation` | **ingest location**, view tracks/nearby |
+| `/chat-agent` | `service_chat_agent` | create session / turn (own `subject_id`) |
+| `/settings` | `service_setting` | view/manage own settings |
+| `/files` | `service_file` | upload/view content |
+| `/notification` | `service_notification` | search/status view |
+
+**How this stays low-config:**
+
+1. **OAuth:** Hydra client sync injects baseline audiences for every `type=public` client (`ensurePublicPlatformAudiences`) — same idea as `ensureTenancyAudience` for internal bots. Product APIs (`/matching`, `/jobs`, …) remain explicit.
+2. **ReBAC:** Access grant → default partition role `member` → `BuildRoleTuples` writes `#member` on every registered namespace that declares `ROLE_MEMBER` → OPL permits resolve permissions. **No per-user permission rows.**
+3. **Proto:** Each platform service’s `ROLE_MEMBER` binding must include self-service write perms (e.g. `location_ingest`, `device_manage`, `chat_agent_turn`). Keep admin-only actions on owner/admin.
+
+Users call these services **directly** when the SPA has the audience (auto for baseline) and the API is personal. Optional BFF is fine, but not required for mode U.
+
+### Mode B — BFF when the product owns the flow
+
+Use S2S when the product edge must orchestrate domain logic (placement rebuild, paywalled listing context, multi-step intake owned by matching):
 
 ```text
 User JWT ──► product (matching) ── SA JWT ──► peer (chat-agent)
@@ -59,6 +73,11 @@ User JWT ──► product (matching) ── SA JWT ──► peer (chat-agent)
                  │                      └── ReBAC: matching bot profile_id
                  └── subject_id = user profile_id (body)
 ```
+
+Either path is valid for chat-agent:
+
+- **Direct (U):** SPA → `/chat-agent` with user JWT; member has `chat_agent_turn`.
+- **BFF (B):** SPA → `/matching`; matching SA has peer contract (recipients + grants).
 
 ### Three gates for every S2S peer edge (all required)
 
@@ -122,9 +141,10 @@ Shipping **S** alone is not enough:
 
 | Event | Required work | Not required |
 |-------|---------------|--------------|
-| New tenant / partition | Partition seed, SPA client audiences for **product** APIs, access grants for humans | Chat-agent audience or `chat_agent_*` for each user |
-| New candidate logs in | Login + partition membership | Any SA grant row |
-| Product enables chat-agent | **One** update to product SA peer contract (platform root) | Migration per tenant |
+| New tenant / partition | Partition seed, SPA client (+ optional **product** audiences), access grants for humans | Per-user `chat_agent_*` / location / device grants |
+| New user logs in as member | Login + partition membership | Any SA grant row; any extra OAuth migration for platform baseline |
+| User sends location / registers device / personal LLM chat | Already covered by mode **U** | Admin role or product SA |
+| Product BFF enables chat-agent for domain orchestration | **One** update to product SA peer contract (mode **B**) | Migration per tenant |
 
 Platform SAs use plane-1 service access and `partition_tree` grants so **one**
 bot policy covers all partitions the product operates in.

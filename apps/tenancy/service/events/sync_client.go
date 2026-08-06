@@ -180,8 +180,17 @@ func SyncClientOnHydra(
 	// Colony injects the matching OAUTH2_REQUESTED_AUDIENCES entry; Hydra must
 	// whitelist it on the client or token requests fail with "not been
 	// whitelisted by the OAuth 2.0 Client".
+	baseURL := oauth2AudienceBaseURL(cfg)
 	if cl.Type == "internal" {
-		audiences = ensureTenancyAudience(audiences, oauth2AudienceBaseURL(cfg))
+		audiences = ensureTenancyAudience(audiences, baseURL)
+	}
+	// Public (user) clients get baseline platform self-service audiences so a
+	// logged-in member can call profile/devices/geo/chat-agent/etc. with their
+	// JWT without per-product oauth_client_recipients rows for every SPA.
+	// Product-specific APIs (matching, jobs, payment, …) stay explicit.
+	// See docs/adr/0002-product-peer-mesh-not-per-tenant-grants.md § user baseline.
+	if cl.Type == "public" {
+		audiences = ensurePublicPlatformAudiences(audiences, baseURL)
 	}
 
 	// Build payload
@@ -307,17 +316,60 @@ func oauth2AudienceBaseURL(cfg config.ConfigurationOAUTH2) string {
 // can register permission manifests against tenancy without each service
 // authoring a custom oauth recipient row.
 func ensureTenancyAudience(audiences []string, audienceBaseURL string) []string {
+	return ensureAudiencePaths(audiences, audienceBaseURL, "/tenancy")
+}
+
+// publicPlatformAudiencePaths are user-scoped platform services that any
+// logged-in partition member may call with their own JWT (ROLE_MEMBER +
+// partition access). Kept small and personal — not product-domain APIs.
+//
+// Paths must stay in sync with docs/adr/0002 and ROLE_MEMBER bindings on
+// each service's proto service_permissions.
+var publicPlatformAudiencePaths = []string{ //nolint:gochecknoglobals // stable platform baseline
+	"/profile",
+	"/devices",
+	"/geolocation",
+	"/chat-agent",
+	"/settings",
+	"/files",
+	"/notification",
+}
+
+// ensurePublicPlatformAudiences appends baseline user-platform audiences so
+// public OAuth clients can obtain tokens for self-service RPCs without
+// hand-maintaining oauth_client_recipients for every SPA.
+func ensurePublicPlatformAudiences(audiences []string, audienceBaseURL string) []string {
+	return ensureAudiencePaths(audiences, audienceBaseURL, publicPlatformAudiencePaths...)
+}
+
+// ensureAudiencePaths appends each {base}{path} that is not already present.
+func ensureAudiencePaths(audiences []string, audienceBaseURL string, paths ...string) []string {
 	base := strings.TrimSuffix(strings.TrimSpace(audienceBaseURL), "/")
-	if base == "" {
+	if base == "" || len(paths) == 0 {
 		return audiences
 	}
-	tenancyAudience := base + "/tenancy"
-	for _, audience := range audiences {
-		if strings.EqualFold(strings.TrimSpace(audience), tenancyAudience) {
-			return audiences
+	out := audiences
+	for _, path := range paths {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+		want := base + path
+		found := false
+		for _, audience := range out {
+			if strings.EqualFold(strings.TrimSpace(audience), want) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			out = append(out, want)
 		}
 	}
-	return append(audiences, tenancyAudience)
+	return out
 }
 
 func getStringSlice(m data.JSONMap, key string) []string {
