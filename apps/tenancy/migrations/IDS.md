@@ -212,3 +212,60 @@ configuration.
 | d9mchat1matchperm0001 | perm chat_agent_view (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
 | d9mchat1matchperm0002 | perm chat_agent_manage (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
 | d9mchat1matchperm0003 | perm chat_agent_turn (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+
+## Service payment-flutterwave seed (2026-08-07)
+| xid | what | file |
+|-----|------|------|
+| c2f4j7au6s7f91uqnojg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| c2f4j7au6s7f91uqnokg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3qtg | client row id | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3qu0 | service account | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3qug | authorization policy | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3qv0 | oauth recipient notification | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3qvg | oauth recipient payment | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r00 | oauth recipient profile | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r0g | oauth recipient tenancy | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r10 | auth grant service_notification | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r1g | auth grant service_payment | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r20 | auth grant service_profile | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r2g | auth grant service_tenancy | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r30 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r3g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r40 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r4g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r50 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r5g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r60 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r6g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r70 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r7g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r80 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r8g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r90 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3r9g | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3ra0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rag | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rb0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rbg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rc0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rcg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rd0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rdg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3re0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3reg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rf0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rfg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rg0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rgg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rh0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rhg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3ri0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rig | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rj0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rjg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rk0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rkg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rl0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rlg | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3e64pf2t8o8sm3rm0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
+| d9r3ek4pf2t8vfqg5pn0 | auth permission/grant row | apps/tenancy/migrations/0001/20260807_01_service_payment_flutterwave.sql |
