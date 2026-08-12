@@ -6,20 +6,20 @@ toolchain go1.26.1
 
 require (
 	buf.build/gen/go/antinvestor/audit/connectrpc/go v1.20.0-20260709203043-d15c1412493f.1
-	buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.11-20260709203043-d15c1412493f.1
+	buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-20260709203043-d15c1412493f.1
 	buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.20.0-20260709203040-b52f8587a1fc.1
-	buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.11-20260709203040-b52f8587a1fc.1
-	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.11-20260509050709-3f270876dbf3.1
+	buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.12-20260709203040-b52f8587a1fc.1
+	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.12-20260509050709-3f270876dbf3.1
 	buf.build/gen/go/antinvestor/device/connectrpc/go v1.20.0-20260709214326-f1dfa8561306.1
-	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.11-20260709214326-f1dfa8561306.1
+	buf.build/gen/go/antinvestor/device/protocolbuffers/go v1.36.12-20260709214326-f1dfa8561306.1
 	buf.build/gen/go/antinvestor/files/connectrpc/go v1.20.0-20260805203521-5b67b91e6685.1
-	buf.build/gen/go/antinvestor/files/protocolbuffers/go v1.36.11-20260805203521-5b67b91e6685.1
+	buf.build/gen/go/antinvestor/files/protocolbuffers/go v1.36.12-20260805203521-5b67b91e6685.1
 	buf.build/gen/go/antinvestor/notification/connectrpc/go v1.20.0-20260709214330-626c8192b906.1
-	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.11-20260709214330-626c8192b906.1
+	buf.build/gen/go/antinvestor/notification/protocolbuffers/go v1.36.12-20260709214330-626c8192b906.1
 	buf.build/gen/go/antinvestor/profile/connectrpc/go v1.20.0-20260808183321-0adca9497d3a.1
-	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.11-20260808183321-0adca9497d3a.1
+	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.12-20260808183321-0adca9497d3a.1
 	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260709203041-c02aadb0111f.1
-	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.11-20260709203041-c02aadb0111f.1
+	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.12-20260709203041-c02aadb0111f.1
 	connectrpc.com/connect v1.20.0
 	github.com/antinvestor/common/v2 v2.0.4
 	github.com/coreos/go-oidc/v3 v3.20.0
@@ -40,14 +40,14 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.292.0
 	google.golang.org/grpc v1.83.0
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 	gorm.io/gorm v1.31.2
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1 // indirect
-	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.11-20230414000709-087bc8072ce4.1 // indirect
-	buf.build/go/protovalidate v1.2.0 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260709200747-435963d16310.1 // indirect
+	buf.build/gen/go/gnostic/gnostic/protocolbuffers/go v1.36.12-20230414000709-087bc8072ce4.1 // indirect
+	buf.build/go/protovalidate v1.3.0 // indirect
 	cel.dev/expr v0.25.2 // indirect
 	cloud.google.com/go/auth v0.23.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
