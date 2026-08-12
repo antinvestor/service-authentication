@@ -95,6 +95,8 @@ configuration.
 | d8le7qspf2t8u08dff3g | service-payment-pawapay | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d8lt2gkpf2t1ql3csd1g | service-payment-checkout | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d9lemh4pf2t9nfnavkag | service-chat-agent | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9ubvfcpf2tcpcf6c8jg | service-calendar | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8r0 | service-ats | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
@@ -145,6 +147,8 @@ configuration.
 | d86tt34pf2tddudk9q7g | d86tt34pf2tddudk9q80 | d86tt34pf2tddudk9q70 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d8as62fieol45uar4okg | d8as6297jdi45ufqlh70 | d8as62bvfo145u8bon3g | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d9lemh4pf2t9nfnavkbg | d9lemh4pf2t9nfnavkcg | d9lemh4pf2t9nfnavkag | apps/tenancy/migrations/0001/20260730_01_service_chat_agent.sql |
+| d9ubvfcpf2tcpcf6c8k0 | d9ubvfcpf2tcpcf6c8kg | d9ubvfcpf2tcpcf6c8jg | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8rg | d9ubvfcpf2tcpcf6c8s0 | d9ubvfcpf2tcpcf6c8r0 | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 
 ## Referenced profile IDs
 | xid | what | file |
@@ -212,3 +216,54 @@ configuration.
 | d9mchat1matchperm0001 | perm chat_agent_view (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
 | d9mchat1matchperm0002 | perm chat_agent_manage (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
 | d9mchat1matchperm0003 | perm chat_agent_turn (matching) | apps/tenancy/migrations/0001/20260806_01_matching_chat_agent_audience.sql |
+
+## Service calendar + ATS (2026-08-12)
+| xid | what | file |
+|-----|------|------|
+| d9ubvfcpf2tcpcf6c8jg | client service-calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8k0 | SA service_calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8kg | profile placeholder calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8l0 | policy calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8lg | recipient /calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8m0 | recipient /profile | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8mg | recipient /tenancy | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8n0 | grant service_calendar | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8ng | perm calendar_resource_view | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8o0 | perm calendar_resource_manage | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8og | perm calendar_availability_manage | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8p0 | perm calendar_slot_view | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8pg | perm calendar_booking_view | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8q0 | perm calendar_booking_manage | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8qg | perm calendar_sync_manage | apps/tenancy/migrations/0001/20260812_01_service_calendar.sql |
+| d9ubvfcpf2tcpcf6c8r0 | client service-ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8rg | SA service_ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8s0 | profile placeholder ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8sg | policy ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8t0 | recipient ATS /ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8tg | recipient ATS /calendar | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8u0 | recipient ATS /profile | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8ug | recipient ATS /tenancy | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8v0 | recipient ATS /notification | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c8vg | grant service_ats | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c900 | grant ATS→service_calendar | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c90g | perm ats_dashboard_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c910 | perm ats_job_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c91g | perm ats_job_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c920 | perm ats_application_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c92g | perm ats_application_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c930 | perm ats_interview_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c93g | perm ats_interview_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c940 | perm ats_talent_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c94g | perm ats_talent_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c950 | perm ats_availability_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c95g | perm ats_ai_use | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c960 | perm ats_hire | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvfcpf2tcpcf6c96g | perm ats_publish | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8moomg | perm ATS calendar_resource_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8moon0 | perm ATS calendar_resource_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8moong | perm ATS calendar_availability_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8mooo0 | perm ATS calendar_slot_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8mooog | perm ATS calendar_booking_view | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8moop0 | perm ATS calendar_booking_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8moopg | SPA prod /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| d9ubvjcpf2tcrc8mooq0 | SPA dev /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
