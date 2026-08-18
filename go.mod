@@ -31,7 +31,7 @@ require (
 	github.com/ory/hydra-client-go/v25 v25.4.0
 	github.com/pitabwire/frame/v2 v2.1.4
 	github.com/pitabwire/util v0.9.1
-	github.com/posthog/posthog-go v1.23.0
+	github.com/posthog/posthog-go v1.23.1
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.12.0
 	github.com/testcontainers/testcontainers-go v0.44.0
@@ -129,7 +129,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/nats v0.44.0 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
-	github.com/valkey-io/valkey-go v1.0.76 // indirect
+	github.com/valkey-io/valkey-go v1.0.77 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelslog v0.20.0 // indirect
