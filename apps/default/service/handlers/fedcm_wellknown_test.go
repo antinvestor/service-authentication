@@ -48,3 +48,40 @@ func TestFedCMConfig_ReturnsAllRequiredEndpoints(t *testing.T) {
 	require.True(t, ok, "branding.icons must be an array")
 	require.Len(t, icons, 1)
 }
+
+// Relying parties on other origins (e.g. stawi.trade) probe the discovery
+// documents with a plain cross-origin fetch, so they must carry permissive
+// CORS headers; the credentialed FedCM endpoints are covered elsewhere.
+func TestFedCMDiscovery_AllowsCrossOriginReads(t *testing.T) {
+	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com", "", "")
+
+	for name, call := range map[string]func(http.ResponseWriter, *http.Request) error{
+		"web-identity": h.WellKnownWebIdentity,
+		"config.json":  h.FedCMConfig,
+	} {
+		t.Run(name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set("Origin", "https://stawi.trade")
+			require.NoError(t, call(rec, req))
+			require.Equal(t, http.StatusOK, rec.Code)
+			require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+			require.Empty(t, rec.Header().Get("Access-Control-Allow-Credentials"), "public documents must not be credentialed")
+		})
+	}
+}
+
+func TestFedCMDiscovery_Preflight(t *testing.T) {
+	h := handlers.NewFedCMWellKnownHandler("https://auth.example.com", "", "")
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodOptions, "/fedcm/config.json", nil)
+	req.Header.Set("Origin", "https://stawi.trade")
+	req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	require.NoError(t, h.DiscoveryPreflight(rec, req))
+
+	require.Equal(t, http.StatusNoContent, rec.Code)
+	require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+	require.Contains(t, rec.Header().Get("Access-Control-Allow-Methods"), http.MethodGet)
+	require.NotEmpty(t, rec.Header().Get("Access-Control-Max-Age"))
+}
