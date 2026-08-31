@@ -298,8 +298,12 @@ func (bs *BaseTestSuite) CreateService(
 		frame.WithTenancyProvider(rlsProv),
 		frame.WithDatastore(), frame.WithCache(cfg.CacheName, cache.NewInMemoryCache())}
 
+	// Per-test services never serve HTTP; the suite-level service is the real
+	// listener Hydra calls back into, bound on the pre-allocated FreeAuthPort.
 	if bs.handler != nil {
 		opts = append(opts, frametests.WithNoopDriver())
+	} else {
+		opts = append(opts, internaltests.WithHTTPTestDriver())
 	}
 
 	ctx, svc := frame.NewServiceWithContext(t.Context(), opts...)
@@ -329,17 +333,9 @@ func (bs *BaseTestSuite) CreateService(
 	require.NoError(t, rlstest.GrantAll(ctx, testDS.String()))
 	rlsProv.Enable()
 
-	// Suite-level service (handler == nil) is the real HTTP listener Hydra
-	// redirects to, so it uses the production driver and Run blocks until
-	// Stop — start it in a goroutine. Per-test services use WithNoopDriver,
-	// which returns from Run after startups (frame v2.0.3+ test-driver contract).
-	if bs.handler == nil {
-		go func() {
-			_ = svc.Run(ctx, "")
-		}()
-	} else {
-		require.NoError(t, svc.Run(ctx, ""))
-	}
+	// Both drivers return from Run once startups complete (frame v2.0.3+
+	// test-driver contract), so startup errors fail the suite right here.
+	require.NoError(t, svc.Run(ctx, ""))
 	return security.SkipTenancyChecksOnClaims(ctx), authServer, depsBuilder
 }
 

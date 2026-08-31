@@ -36,8 +36,8 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
 
 		for table, expected := range map[string]int64{
-			"clients":                                   60,  // +service_imports (#854)
-			"oauth_client_recipients":                   275, // +service_imports recipients (#854)
+			"clients":                                   62,  // #856 (60) + stawi-imports-web prod/dev clients
+			"oauth_client_recipients":                   279, // #856 (275) + stawi-imports-web prod(2)/dev(2)
 			"service_accounts":                          49,  // +service_imports (#854)
 			"service_account_authorization_policies":    49,
 			"service_account_authorization_grants":      184,  // +service_imports grants (#854)

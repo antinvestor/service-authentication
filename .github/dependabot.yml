@@ -21,6 +21,16 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    # pitabwire/frame builds its OTel resource with a pinned semconv version;
+    # an otel/sdk minor ahead of frame (different semconv schema URL) fails
+    # every service start with "conflicting Schema URL". OTel (and
+    # grpc-gateway, which drags it) must move together with frame bumps —
+    # `go get frame@vX` raises them as needed; patches still flow here.
+    ignore:
+      - dependency-name: "go.opentelemetry.io/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "github.com/grpc-ecosystem/grpc-gateway/v2"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
     # Group updates to reduce PR noise
     groups:
       production-dependencies:
