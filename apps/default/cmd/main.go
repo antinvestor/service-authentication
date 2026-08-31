@@ -34,12 +34,10 @@ import (
 	"github.com/antinvestor/common/v2"
 	"github.com/antinvestor/common/v2/connection"
 	"github.com/antinvestor/common/v2/permissions"
-	"github.com/antinvestor/common/v2/timescale"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
-	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/pitabwire/frame/v2"
 	"github.com/pitabwire/frame/v2/cache"
@@ -97,7 +95,7 @@ func main() {
 
 	// Setup Job (argv setup / DO_SETUP): publish permission manifest only.
 	// Full OIDC is already loaded above so the Job can authenticate to tenancy.
-	// Do not wire HTTP routes, peer clients, or hypertables on this path.
+	// Do not wire HTTP routes or peer clients on this path.
 	sd := authv1.File_authentication_v1_authentication_proto.Services().ByName("AuthenticationService")
 	if frame.IsSetupMode(&cfg) || frame.ShouldRunSetup(&cfg) {
 		svc.Init(ctx, frame.WithPermissionRegistration(sd))
@@ -114,11 +112,6 @@ func main() {
 
 	workManager := svc.WorkManager()
 	dbPool := dbManager.GetPool(ctx, datastore.DefaultPoolName)
-
-	// Register hypertables (no-op WARN if timescaledb extension is absent).
-	if tsErr := timescale.Ensure(ctx, dbPool.DB(ctx, false), models.Hypertables); tsErr != nil {
-		log.WithError(tsErr).Warn("timescale hypertable setup skipped — will retry after cluster migration")
-	}
 
 	partitionCli, err := setupPartitionClient(ctx, cfg)
 	if err != nil {

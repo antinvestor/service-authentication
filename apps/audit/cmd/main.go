@@ -23,15 +23,12 @@ import (
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
 	"connectrpc.com/connect"
 	"github.com/antinvestor/common/v2/permissions"
-	"github.com/antinvestor/common/v2/timescale"
 	aconfig "github.com/antinvestor/service-authentication/apps/audit/config"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
-	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/pitabwire/frame/v2"
 	"github.com/pitabwire/frame/v2/config"
-	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
@@ -71,17 +68,6 @@ func main() {
 		}
 		util.Log(ctx).Info("setup plan complete — exiting")
 		return
-	}
-
-	// Register hypertables (no-op WARN if timescaledb extension is absent).
-	// Datastore must be connected; skip when pool/DB is missing (misconfig / no DATABASE_URL).
-	auditDBPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
-	if auditDBPool == nil {
-		util.Log(ctx).Warn("timescale hypertable setup skipped — datastore pool not ready")
-	} else if db := auditDBPool.DB(ctx, false); db == nil {
-		util.Log(ctx).Warn("timescale hypertable setup skipped — datastore DB not connected")
-	} else if tsErr := timescale.Ensure(ctx, db, models.Hypertables); tsErr != nil {
-		util.Log(ctx).WithError(tsErr).Warn("timescale hypertable setup skipped — will retry after cluster migration")
 	}
 
 	// Load or generate the Ed25519 signing key
