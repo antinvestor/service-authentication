@@ -323,16 +323,19 @@ func (h *AuthServer) completeProviderLogin(
 
 	// Access provisioning may need the OAuth client partition; hydrate secondary
 	// tenancy only for this step (Plane-1 still falls back via Hydra metadata).
-	loginEvent, err = h.ensureLoginEventTenancyAccess(withUserLoginTenancy(ctx, loginEvent), loginEvent, loginEvt.ClientID, profileID)
-	if err != nil {
+	// ensureLoginEventTenancyAccess returns nil on failure — keep the original
+	// loginEvent so the soft-fail path below never dereferences a nil event.
+	enrichedEvent, ensureErr := h.ensureLoginEventTenancyAccess(withUserLoginTenancy(ctx, loginEvent), loginEvent, loginEvt.ClientID, profileID)
+	switch {
+	case ensureErr == nil:
+		loginEvent = enrichedEvent
+	case ValidTenancyPair(loginEvent.GetTenantID(), loginEvent.GetPartitionID()):
 		// Soft-fail when we already have a tenancy pair from soft enrich —
 		// consent re-resolves under its own budget.
-		if ValidTenancyPair(loginEvent.GetTenantID(), loginEvent.GetPartitionID()) {
-			log.WithError(err).Warn("provider login tenancy access failed; continuing with soft tenancy pair")
-		} else {
-			log.WithError(err).Error("failed to ensure tenancy access for provider login")
-			return "", fmt.Errorf("provider login tenancy access failed: %w", err)
-		}
+		log.WithError(ensureErr).Warn("provider login tenancy access failed; continuing with soft tenancy pair")
+	default:
+		log.WithError(ensureErr).Error("failed to ensure tenancy access for provider login")
+		return "", fmt.Errorf("provider login tenancy access failed: %w", ensureErr)
 	}
 
 	// Step 6: Accept the Hydra login request to complete the OAuth2 flow

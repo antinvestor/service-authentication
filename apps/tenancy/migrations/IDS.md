@@ -267,3 +267,15 @@ configuration.
 | d9ubvjcpf2tcrc8moop0 | perm ATS calendar_booking_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 | d9ubvjcpf2tcrc8moopg | SPA prod /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 | d9ubvjcpf2tcrc8mooq0 | SPA dev /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+| daa7eagthrqitmq00000 | tenant Stawi Imports (prod) | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq0000g | partition Stawi Imports (prod) | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq00010 | client row Stawi Imports Web (prod) | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq0001g | client_id Stawi Imports Web (prod) | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq00040 | SPA prod /imports audience | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq0004g | SPA prod /profile audience | apps/tenancy/migrations/0001/20260830_01_stawi_imports_web_production.sql |
+| daa7eagthrqitmq00020 | tenant Stawi Imports Development | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+| daa7eagthrqitmq0002g | partition Stawi Imports Development | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+| daa7eagthrqitmq00030 | client row Stawi Imports Development | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+| daa7eagthrqitmq0003g | client_id Stawi Imports Development | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+| daa7eagthrqitmq00050 | SPA dev /imports audience | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+| daa7eagthrqitmq0005g | SPA dev /profile audience | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |

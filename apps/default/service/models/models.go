@@ -69,31 +69,55 @@ type ExternalIdentity struct {
 	Properties      data.JSONMap `gorm:"type:jsonb"`
 }
 
-func (l LoginEvent) GetTenantID() string {
+// Getters use pointer receivers with nil guards: login handlers thread
+// *LoginEvent through error paths that can legitimately carry nil.
+
+func (l *LoginEvent) GetTenantID() string {
+	if l == nil {
+		return ""
+	}
 	return l.TenantID
 }
 
-func (l LoginEvent) GetPartitionID() string {
+func (l *LoginEvent) GetPartitionID() string {
+	if l == nil {
+		return ""
+	}
 	return l.PartitionID
 }
 
-func (l LoginEvent) GetProfileID() string {
+func (l *LoginEvent) GetProfileID() string {
+	if l == nil {
+		return ""
+	}
 	return l.ProfileID
 }
 
-func (l LoginEvent) GetAccessID() string {
+func (l *LoginEvent) GetAccessID() string {
+	if l == nil {
+		return ""
+	}
 	return l.AccessID
 }
 
-func (l LoginEvent) GetContactID() string {
+func (l *LoginEvent) GetContactID() string {
+	if l == nil {
+		return ""
+	}
 	return l.ContactID
 }
 
-func (l LoginEvent) GetSessionID() string {
+func (l *LoginEvent) GetSessionID() string {
+	if l == nil {
+		return ""
+	}
 	return l.SessionID
 }
 
-func (l LoginEvent) GetDeviceID() string {
+func (l *LoginEvent) GetDeviceID() string {
+	if l == nil {
+		return ""
+	}
 	return l.DeviceID
 }
 

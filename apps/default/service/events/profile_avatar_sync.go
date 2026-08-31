@@ -216,6 +216,9 @@ func (e *ProfileAvatarSyncEvent) uploadAvatar(
 		Metadata: &filesv1.UploadMetadata{
 			ContentType: contentType,
 			Filename:    filename,
+			// Files service requires at least one accessor; the owning
+			// profile is the avatar's accessor.
+			AccessorId: []string{profileID},
 		},
 	}
 	if err := stream.Send(&filesv1.UploadContentRequest{Data: meta}); err != nil {
