@@ -270,11 +270,11 @@ configuration.
 | d9ubvjcpf2tcrc8moopg | SPA prod /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 | d9ubvjcpf2tcrc8mooq0 | SPA dev /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 
-## Service imports (2026-08-31)
+## Service imports (service_imports SA) (2026-08-31)
 | xid | what | file |
 |-----|------|------|
 | daaltq4pf2tb6me3uap0 | client imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
-| daaltq4pf2tb6me3uaq0 | SA imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb6me3uaq0 | SA service_imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daalssspf2tbp6p7ekrg | profile placeholder imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb6me3uaqg | policy imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb7p83vshg | recipient /profile | apps/tenancy/migrations/0001/20260831_service_imports.sql |

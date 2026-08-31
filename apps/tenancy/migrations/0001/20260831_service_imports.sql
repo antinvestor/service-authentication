@@ -1,5 +1,5 @@
 -- Copyright 2023-2026 Ant Investor Ltd
--- Service account: imports
+-- Service account: service_imports
 -- Stawi Imports API (stawi-importation-sales Cloud Run imports); owns permission namespace service_imports; calls tenancy (permission registration) and profile.
 
 INSERT INTO clients (
@@ -10,7 +10,7 @@ INSERT INTO clients (
     'daaltq4pf2tb6me3uap0',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'sa-imports',
+    'sa-service_imports',
     'imports',
     '',
     'internal',
@@ -28,7 +28,7 @@ INSERT INTO service_accounts (
     'daaltq4pf2tb6me3uaq0',
     'c2f4j7au6s7f91uqnojg',
     'c2f4j7au6s7f91uqnokg',
-    'imports',
+    'service_imports',
     'daalssspf2tbp6p7ekrg',
     'imports',
     'daaltq4pf2tb6me3uap0',
