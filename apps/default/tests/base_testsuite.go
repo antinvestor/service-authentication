@@ -303,7 +303,8 @@ func (bs *BaseTestSuite) CreateService(
 	if bs.handler != nil {
 		opts = append(opts, frametests.WithNoopDriver())
 	} else {
-		opts = append(opts, internaltests.WithHTTPTestDriver())
+		boundDriver, _ := frametests.WithBoundHTTPTestDriver()
+		opts = append(opts, boundDriver)
 	}
 
 	ctx, svc := frame.NewServiceWithContext(t.Context(), opts...)
