@@ -33,6 +33,7 @@ func NewFedCMWellKnownHandler(publicOrigin, backgroundColor, iconURL string) *Fe
 // /.well-known/web-identity. The browser sends Sec-Fetch-Dest: webidentity on
 // FedCM fetches; we accept any value here since some test tooling omits it.
 func (h *FedCMWellKnownHandler) WellKnownWebIdentity(w http.ResponseWriter, _ *http.Request) error {
+	setFedCMDiscoveryCORSHeaders(w)
 	return writeFedCMJSON(w, map[string]any{
 		"provider_urls": []string{h.publicOrigin + "/fedcm/config.json"},
 	})
@@ -42,6 +43,7 @@ func (h *FedCMWellKnownHandler) WellKnownWebIdentity(w http.ResponseWriter, _ *h
 // uses the US-spelled keys (background_colour, colour, icons[]) required by the
 // FedCM spec; any other names are silently ignored by the browser.
 func (h *FedCMWellKnownHandler) FedCMConfig(w http.ResponseWriter, _ *http.Request) error {
+	setFedCMDiscoveryCORSHeaders(w)
 	branding := map[string]any{}
 	if h.backgroundColor != "" {
 		branding["background_colour"] = h.backgroundColor
@@ -63,6 +65,28 @@ func (h *FedCMWellKnownHandler) FedCMConfig(w http.ResponseWriter, _ *http.Reque
 		body["branding"] = branding
 	}
 	return writeFedCMJSON(w, body)
+}
+
+// DiscoveryPreflight answers CORS preflight (OPTIONS) requests for the public
+// discovery documents so relying parties on other origins can fetch them.
+func (h *FedCMWellKnownHandler) DiscoveryPreflight(w http.ResponseWriter, _ *http.Request) error {
+	setFedCMDiscoveryCORSHeaders(w)
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+// setFedCMDiscoveryCORSHeaders marks the discovery documents
+// (/.well-known/web-identity and /fedcm/config.json) as readable from any
+// origin. They are public, static metadata with no credentials involved, and
+// relying-party runtimes probe config.json with a plain cross-origin fetch
+// before calling navigator.credentials.get — without these headers that probe
+// is blocked by the browser and FedCM silently falls back to a redirect.
+// Credentialed FedCM endpoints keep the per-origin echo in setFedCMCORSHeaders.
+func setFedCMDiscoveryCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type")
+	w.Header().Set("Access-Control-Max-Age", "86400")
 }
 
 func writeFedCMJSON(w http.ResponseWriter, v any) error {
