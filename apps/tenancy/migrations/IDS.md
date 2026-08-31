@@ -280,6 +280,10 @@ configuration.
 | daaltq4pf2tb7p83vshg | recipient /profile | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb7p83vsi0 | recipient /tenancy | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb7p83vsig | grant service_imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daan2nkpf2t03l5g386g | recipient /trustage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g3870 | grant service_trustage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g387g | perm workflow_manage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g3880 | perm workflow_view | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
 | daaltq4pf2tb7p83vsj0 | perm acquisition_authorize | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb7p83vsjg | perm analytics_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | daaltq4pf2tb7p83vsk0 | perm orders_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
