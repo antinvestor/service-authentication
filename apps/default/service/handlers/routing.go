@@ -182,6 +182,12 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 			h.redirectToErrorPage(w, r, err, "FedCMConfig")
 		}
 	})
+	// CORS preflight for the discovery documents (cross-origin RP probes).
+	for _, path := range []string{"/.well-known/web-identity", "/fedcm/config.json"} {
+		router.HandleFunc("OPTIONS "+path, func(w http.ResponseWriter, r *http.Request) {
+			_ = h.fedcmWellKnown.DiscoveryPreflight(w, r)
+		})
+	}
 
 	// FedCM — session-backed JSON endpoints. No CSRF (Sec-Fetch-Dest + cookie
 	// validation gate them). Errors are returned as JSON by the handler; this
