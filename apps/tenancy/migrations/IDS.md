@@ -53,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| daaltq4pf2tb6me3uap0 | imports | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | d8gueekpf2tfslum7lp0 | d8gueekpf2tfslum7lpg | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | c2f4j7au6s7f91uqnom0 | c2f4j7au6s7f91uqnomg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | d7b4qekpf2tshigkrv80 | d7b4qekpf2tshigkrv8g | d7b4qekpf2tshigkrv60 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -101,6 +102,7 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| daaltq4pf2tb6me3uaq0 | daalssspf2tbp6p7ekrg | daaltq4pf2tb6me3uap0 | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | c2f4j7au6s7f91uqnolg | d75qclkpf2t1uum8ij40 | c2f4j7au6s7f91uqnoog | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | c2f4j7au6s7f91uqnoqg | d75qclkpf2t1uum8ij4g | c2f4j7au6s7f91uqnopg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | c2f4j7au6s7f91uqnosg | d75qclkpf2t1uum8ij50 | c2f4j7au6s7f91uqnorg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -267,3 +269,36 @@ configuration.
 | d9ubvjcpf2tcrc8moop0 | perm ATS calendar_booking_manage | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 | d9ubvjcpf2tcrc8moopg | SPA prod /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
 | d9ubvjcpf2tcrc8mooq0 | SPA dev /ats audience | apps/tenancy/migrations/0001/20260812_02_service_ats.sql |
+
+## Service imports (service_imports SA) (2026-08-31)
+| xid | what | file |
+|-----|------|------|
+| daaltq4pf2tb6me3uap0 | client imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb6me3uaq0 | SA service_imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daalssspf2tbp6p7ekrg | profile placeholder imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb6me3uaqg | policy imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vshg | recipient /profile | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsi0 | recipient /tenancy | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsig | grant service_imports | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daan2nkpf2t03l5g386g | recipient /trustage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g3870 | grant service_trustage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g387g | perm workflow_manage | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daan2nkpf2t03l5g3880 | perm workflow_view | apps/tenancy/migrations/0001/20260831_02_service_imports_trustage.sql |
+| daaltq4pf2tb7p83vsj0 | perm acquisition_authorize | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsjg | perm analytics_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsk0 | perm orders_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vskg | perm orders_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsl0 | perm payments_create | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vslg | perm payments_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsm0 | perm payments_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsmg | perm quotes_create | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsn0 | perm quotes_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsng | perm quotes_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vso0 | perm requests_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsog | perm requests_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsp0 | perm transactions_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vspg | perm transactions_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsq0 | perm vehicles_create | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsqg | perm vehicles_delete | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsr0 | perm vehicles_update | apps/tenancy/migrations/0001/20260831_service_imports.sql |
+| daaltq4pf2tb7p83vsrg | perm vehicles_view | apps/tenancy/migrations/0001/20260831_service_imports.sql |
