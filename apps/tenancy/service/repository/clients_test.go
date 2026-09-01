@@ -37,11 +37,11 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 
 		for table, expected := range map[string]int64{
 			"clients":                                   62,  // #856 (60) + stawi-imports-web prod/dev clients
-			"oauth_client_recipients":                   279, // #856 (275) + stawi-imports-web prod(2)/dev(2)
+			"oauth_client_recipients":                   284, // #856 (275) + stawi-imports-web prod(2)/dev(2) + identity/tenancy audiences prod(2)/dev(2) + service_imports identity(1)
 			"service_accounts":                          49,  // +service_imports (#854)
 			"service_account_authorization_policies":    49,
-			"service_account_authorization_grants":      184,  // +service_imports grants (#854)
-			"service_account_authorization_permissions": 1897, // +service_imports permissions (#854)
+			"service_account_authorization_grants":      185,  // +service_imports grants (#854) + identity view grant (#866)
+			"service_account_authorization_permissions": 1900, // +service_imports permissions (#854) + identity view permits (#866)
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
