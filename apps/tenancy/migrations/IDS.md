@@ -318,3 +318,16 @@ configuration.
 | daa7eagthrqitmq0003g | client_id Stawi Imports Development | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
 | daa7eagthrqitmq00050 | SPA dev /imports audience | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
 | daa7eagthrqitmq0005g | SPA dev /profile audience | apps/tenancy/migrations/0001/20260830_02_stawi_imports_web_development.sql |
+
+## Stawi Imports identity & tenancy access (2026-09-01)
+| xid | what | file |
+|-----|------|------|
+| daa7eagthrqitmq00060 | SPA prod /identity audience | apps/tenancy/migrations/0001/20260901_01_stawi_imports_identity_audience.sql |
+| daa7eagthrqitmq0006g | SPA dev /identity audience | apps/tenancy/migrations/0001/20260901_01_stawi_imports_identity_audience.sql |
+| daa7eagthrqitmq00070 | SPA prod /tenancy audience | apps/tenancy/migrations/0001/20260901_02_stawi_imports_tenancy_audience.sql |
+| daa7eagthrqitmq0007g | SPA dev /tenancy audience | apps/tenancy/migrations/0001/20260901_02_stawi_imports_tenancy_audience.sql |
+| daaour1f39n0ifkgrv31 | service_imports SA /identity audience | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
+| daaomolp4gr0qukc6sbi | service_imports SA grant service_identity partition_tree | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
+| daaod4dssiicthalhbah | service_imports SA permit workforce_member_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
+| daaolf7gln59nje4cd1b | service_imports SA permit team_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
+| daao7mg15br87bq1h5ia | service_imports SA permit team_membership_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
