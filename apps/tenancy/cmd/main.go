@@ -66,7 +66,10 @@ func main() {
 
 	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
 	sm := svc.SecurityManager()
-	auth := sm.GetAuthorizer(ctx)
+	// Tuple mutations must be serialised across every tenancy process — Keto
+	// has no uniqueness constraint and Frame's read-then-insert WriteTuples
+	// duplicates tuples under concurrent writers. See authz.SerialisedAuthorizer.
+	auth := authz.SerialisedAuthorizer(ctx, svc)
 
 	// Setup plan (migrate + bootstrap) must run without profile/Hydra clients.
 	// NewTenancyServer accepts a nil profile client for repo/bootstrap wiring.
