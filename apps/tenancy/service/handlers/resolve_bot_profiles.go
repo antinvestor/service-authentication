@@ -45,6 +45,7 @@ var staticServiceProfiles = map[string]string{
 	"trustage":               "d75qclkpf2t1uum8ijbg",
 	"service-notification-integration-africastalking": "d75qclkpf2t1uum8ijc0",
 	"service-notification-integration-emailsmtp":      "d75qclkpf2t1uum8ijcg",
+	"service-notification-integration-whatsapp":       "daenc7kpf2t8pa1q04hg",
 }
 
 type botProfileResolution struct {
