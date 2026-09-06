@@ -16,11 +16,14 @@ package business
 
 import (
 	"context"
+	"errors"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v2/data"
 	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/util"
+	"gorm.io/gorm"
 )
 
 func ReQueueClientsForHydraSync(
@@ -71,6 +74,14 @@ func ReQueueServiceAccountPolicies(
 		for _, serviceAccount := range result.Item() {
 			policy, policyErr := policyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
 			if policyErr != nil {
+				// A service account without a normalised policy has nothing to
+				// reconcile; skipping it keeps one stray row from aborting the
+				// repair of every other account.
+				if errors.Is(policyErr, gorm.ErrRecordNotFound) {
+					util.Log(ctx).WithField("service_account_id", serviceAccount.GetID()).
+						Warn("service account has no authorization policy — skipping reconciliation")
+					continue
+				}
 				return policyErr
 			}
 			if emitErr := eventsMan.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{

@@ -25,6 +25,7 @@ import (
 	fevents "github.com/pitabwire/frame/v2/events"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/util"
+	"gorm.io/gorm"
 )
 
 const EventKeyAuthzPartitionSync = "authorization.partition.sync"
@@ -194,6 +195,9 @@ func (e *AuthzPartitionSyncEvent) requeueAncestorServiceAccountPolicies(
 		for _, serviceAccount := range serviceAccounts {
 			policyState, policyErr := e.policyRepo.GetByServiceAccountID(ctx, serviceAccount.GetID())
 			if policyErr != nil {
+				if errors.Is(policyErr, gorm.ErrRecordNotFound) {
+					continue // no policy, nothing to re-queue
+				}
 				return fmt.Errorf("load policy for service account %s: %w", serviceAccount.GetID(), policyErr)
 			}
 			usesPartitionTree := false
