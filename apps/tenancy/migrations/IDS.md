@@ -331,3 +331,75 @@ configuration.
 | daaod4dssiicthalhbah | service_imports SA permit workforce_member_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
 | daaolf7gln59nje4cd1b | service_imports SA permit team_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
 | daao7mg15br87bq1h5ia | service_imports SA permit team_membership_view | apps/tenancy/migrations/0001/20260901_03_service_imports_identity.sql |
+
+## service_commerce, service_procurement, trustage commerce access (2026-09-06)
+| xid | name | file |
+|-----|------|------|
+| daeltdcpf2t6p29e33f0 | service_commerce service account | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33fg | service_commerce SA placeholder profile | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33eg | service_commerce SA placeholder profile | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33g0 | service_commerce SA authorization policy | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33k0 | service_commerce SA grant service_commerce partition_tree | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33kg | service_commerce SA grant service_checkout partition_tree | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33l0 | service_commerce SA grant service_ledger partition_tree | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33lg | service_commerce SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33m0 | service_commerce SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33mg | service_commerce SA permit shop_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33n0 | service_commerce SA permit shops_list | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33ng | service_commerce SA permit product_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33o0 | service_commerce SA permit order_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33og | service_commerce SA permit order_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33p0 | service_commerce SA permit ledger_post | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33pg | service_commerce SA permit checkout_session_create | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33q0 | service_commerce SA permit checkout_session_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33qg | service_commerce SA permit ledger_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33r0 | service_commerce SA permit ledger_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33rg | service_commerce SA permit account_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33s0 | service_commerce SA permit account_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33sg | service_commerce SA permit transaction_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33t0 | service_commerce SA permit transaction_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33tg | service_commerce SA permit book_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33u0 | service_commerce SA permit book_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33ug | service_commerce SA permit notification_send | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33v0 | service_commerce SA permit template_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33vg | service_commerce SA permit template_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e3400 | service_commerce SA permit workflow_view | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e340g | service_commerce SA permit workflow_manage | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e341g | service_procurement service account | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3420 | service_procurement SA placeholder profile | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3410 | service_procurement SA placeholder profile | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e342g | service_procurement SA authorization policy | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e344g | service_procurement SA grant service_procurement partition_tree | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3450 | service_procurement SA permit supplier_view | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e345g | service_procurement SA permit supplier_manage | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3460 | service_procurement SA permit purchase_order_view | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e346g | service_procurement SA permit purchase_order_create | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3470 | service_procurement SA permit purchase_order_submit | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e347g | service_procurement SA permit purchase_order_cancel | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3480 | service_procurement SA permit goods_receipt_view | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e348g | service_procurement SA permit goods_receipt_create | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3490 | trustage SA grant service_commerce partition_tree | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
+| daeltdcpf2t6p29e34a0 | trustage SA permit ledger_post | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
+| daeltdcpf2t6p29e34ag | trustage SA permit shops_list | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
+| dadbslspf2t8u24o8r1g | service_imports SA /files audience | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbslspf2t8u24o8r20 | service_imports SA grant service_file partition_tree | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbslspf2t8u24o8r2g | service_imports SA permit content_upload | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbslspf2t8u24o8r30 | service_imports SA permit content_view | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbslspf2t8u24o8r3g | service_imports SA permit content_manage | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbslspf2t8u24o8r40 | service_imports SA permit content_delete | apps/tenancy/migrations/0001/20260904_02_service_imports_files.sql |
+| dadbol4pf2t2qn50nh0g | service_imports SA /notification audience | apps/tenancy/migrations/0001/20260904_service_imports_notification.sql |
+| dadbol4pf2t2qn50nh10 | service_imports SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20260904_service_imports_notification.sql |
+| dadbol4pf2t2qn50nh1g | service_imports SA permit template_manage | apps/tenancy/migrations/0001/20260904_service_imports_notification.sql |
+| dadbol4pf2t2qn50nh20 | service_imports SA permit notification_send | apps/tenancy/migrations/0001/20260904_service_imports_notification.sql |
+| daeltdcpf2t6p29e33gg | service_commerce SA /commerce audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33h0 | service_commerce SA /tenancy audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33hg | service_commerce SA /profile audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33i0 | service_commerce SA /checkout audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33ig | service_commerce SA /ledger audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33j0 | service_commerce SA /notification audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e33jg | service_commerce SA /trustage audience | apps/tenancy/migrations/0001/20260906_01_service_commerce.sql |
+| daeltdcpf2t6p29e3430 | service_procurement SA /procurement audience | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e343g | service_procurement SA /tenancy audience | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e3440 | service_procurement SA /profile audience | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
+| daeltdcpf2t6p29e349g | trustage SA /commerce audience | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
+| d94lkmcpf2t39vdkp1f0 | trustage SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |

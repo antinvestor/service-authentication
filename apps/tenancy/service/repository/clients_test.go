@@ -36,12 +36,12 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
 
 		for table, expected := range map[string]int64{
-			"clients":                                   62,  // #856 (60) + stawi-imports-web prod/dev clients
-			"oauth_client_recipients":                   284, // #856 (275) + stawi-imports-web prod(2)/dev(2) + identity/tenancy audiences prod(2)/dev(2) + service_imports identity(1)
-			"service_accounts":                          49,  // +service_imports (#854)
-			"service_account_authorization_policies":    49,
-			"service_account_authorization_grants":      185,  // +service_imports grants (#854) + identity view grant (#866)
-			"service_account_authorization_permissions": 1900, // +service_imports permissions (#854) + identity view permits (#866)
+			"clients":                                   64,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement
+			"oauth_client_recipients":                   297, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1)
+			"service_accounts":                          51,  // + service_commerce + service_procurement
+			"service_account_authorization_policies":    51,
+			"service_account_authorization_grants":      194,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1)
+			"service_account_authorization_permissions": 1937, // + service_imports content/notification permits, service_commerce (21), service_procurement (8), trustage ledger_post/shops_list (2)
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
