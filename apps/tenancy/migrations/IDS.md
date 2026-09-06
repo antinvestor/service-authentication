@@ -53,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| daend44pf2t8c15rs7vg | service-notification-integration-whatsapp | (SA: service_notification_whatsapp) | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uap0 | imports | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | d8gueekpf2tfslum7lp0 | d8gueekpf2tfslum7lpg | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | c2f4j7au6s7f91uqnom0 | c2f4j7au6s7f91uqnomg | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -102,6 +103,7 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| daend44pf2t8c15rs80g | daenc7kpf2t8pa1q04hg | daend44pf2t8c15rs7vg | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uaq0 | daalssspf2tbp6p7ekrg | daaltq4pf2tb6me3uap0 | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | c2f4j7au6s7f91uqnolg | d75qclkpf2t1uum8ij40 | c2f4j7au6s7f91uqnoog | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
 | c2f4j7au6s7f91uqnoqg | d75qclkpf2t1uum8ij4g | c2f4j7au6s7f91uqnopg | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -403,3 +405,49 @@ configuration.
 | daeltdcpf2t6p29e3440 | service_procurement SA /profile audience | apps/tenancy/migrations/0001/20260906_02_service_procurement.sql |
 | daeltdcpf2t6p29e349g | trustage SA /commerce audience | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
 | d94lkmcpf2t39vdkp1f0 | trustage SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20260906_03_trustage_commerce.sql |
+
+## service_notification_whatsapp integration SA (2026-09-06)
+| xid | name | file |
+|-----|------|------|
+| daend4kpf2t8cmavmue0 | service_notification_whatsapp SA audience https://api.stawi.org/notification | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmueg | service_notification_whatsapp SA audience https://api.stawi.org/profile | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuf0 | service_notification_whatsapp SA audience https://api.stawi.org/settings | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmufg | service_notification_whatsapp SA audience https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend44pf2t8c15rs810 | service_notification_whatsapp SA authorization policy | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmug0 | service_notification_whatsapp SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmugg | service_notification_whatsapp SA permit notification_release | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuh0 | service_notification_whatsapp SA permit notification_search | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuhg | service_notification_whatsapp SA permit notification_send | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmui0 | service_notification_whatsapp SA permit notification_status_update | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuig | service_notification_whatsapp SA permit notification_status_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuj0 | service_notification_whatsapp SA permit template_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmujg | service_notification_whatsapp SA permit template_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuk0 | service_notification_whatsapp SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmukg | service_notification_whatsapp SA permit address_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmul0 | service_notification_whatsapp SA permit contact_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmulg | service_notification_whatsapp SA permit profile_create | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmum0 | service_notification_whatsapp SA permit profile_merge | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmumg | service_notification_whatsapp SA permit profile_update | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmun0 | service_notification_whatsapp SA permit profile_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmung | service_notification_whatsapp SA permit relationship_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuo0 | service_notification_whatsapp SA permit relationship_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuog | service_notification_whatsapp SA permit roster_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmup0 | service_notification_whatsapp SA permit roster_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmupg | service_notification_whatsapp SA grant service_setting partition_tree | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuq0 | service_notification_whatsapp SA permit setting_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuqg | service_notification_whatsapp SA permit setting_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmur0 | service_notification_whatsapp SA grant service_tenancy partition_tree | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmurg | service_notification_whatsapp SA permit access_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmus0 | service_notification_whatsapp SA permit access_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmusg | service_notification_whatsapp SA permit client_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmut0 | service_notification_whatsapp SA permit client_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmutg | service_notification_whatsapp SA permit page_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuu0 | service_notification_whatsapp SA permit page_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuug | service_notification_whatsapp SA permit partition_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuv0 | service_notification_whatsapp SA permit partition_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmuvg | service_notification_whatsapp SA permit permission_grant | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmv00 | service_notification_whatsapp SA permit role_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmv0g | service_notification_whatsapp SA permit service_account_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmv10 | service_notification_whatsapp SA permit service_account_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmv1g | service_notification_whatsapp SA permit tenant_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+| daend4kpf2t8cmavmv20 | service_notification_whatsapp SA permit tenant_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
