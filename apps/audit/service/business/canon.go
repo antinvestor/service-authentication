@@ -51,8 +51,10 @@ func CanonicalV2(e *models.AuditEntry) []byte {
 		buf.Write(tmp[:n])
 		buf.WriteString(s)
 	}
-	relations, _ := CanonicalJSON(e.Relations)
-	details, _ := CanonicalJSON(e.Details)
+	// nil and empty maps encode identically: the database returns NULL
+	// jsonb as an empty map, and the pre-image must not depend on that.
+	relations, _ := CanonicalJSON(nonNilMap(e.Relations))
+	details, _ := CanonicalJSON(nonNilMap(e.Details))
 
 	w(strconv.Itoa(int(e.CanonVersion)))
 	w(e.TenantID)
@@ -89,6 +91,13 @@ func CanonicalV2(e *models.AuditEntry) []byte {
 	w(string(relations))
 	w(string(details))
 	return buf.Bytes()
+}
+
+func nonNilMap(m data.JSONMap) map[string]any {
+	if m == nil {
+		return map[string]any{}
+	}
+	return map[string]any(m)
 }
 
 func canonTime(t time.Time) string {

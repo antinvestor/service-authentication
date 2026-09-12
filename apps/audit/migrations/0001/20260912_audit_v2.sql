@@ -36,11 +36,17 @@ FROM audit_entries
 ORDER BY tenant_id, seq DESC
 ON CONFLICT (id) DO NOTHING;
 
--- 3. Storage-level fork guard and chain-walk index.
+-- 3. Hash columns must never be blank-padded (char(n) pads, breaking the
+--    signed pre-image); enforce varchar regardless of how they were created.
+ALTER TABLE audit_entries ALTER COLUMN payload_hash TYPE varchar(64);
+ALTER TABLE audit_entries ALTER COLUMN authorization_hash TYPE varchar(64);
+ALTER TABLE audit_entries ALTER COLUMN policy_hash TYPE varchar(64);
+
+-- 4. Storage-level fork guard and chain-walk index.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_entries_tenant_seq
     ON audit_entries (tenant_id, seq);
 
--- 4. Partial indexes for the evidence join keys.
+-- 5. Partial indexes for the evidence join keys.
 CREATE INDEX IF NOT EXISTS idx_audit_entries_intent
     ON audit_entries (intent_id) WHERE intent_id IS NOT NULL AND intent_id <> '';
 CREATE INDEX IF NOT EXISTS idx_audit_entries_correlation
@@ -48,14 +54,18 @@ CREATE INDEX IF NOT EXISTS idx_audit_entries_correlation
 CREATE INDEX IF NOT EXISTS idx_audit_entries_event
     ON audit_entries (event_id) WHERE event_id IS NOT NULL AND event_id <> '';
 
--- 5. Intake drain scan.
+-- 6. Intake: idempotency key and drain scan. Checkpoints: one per position.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_intake_dedupe
+    ON audit_intake (tenant_id, service, entry_id);
 CREATE INDEX IF NOT EXISTS idx_audit_intake_accepted
     ON audit_intake (tenant_id, received_at, id) WHERE state = 'ACCEPTED';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_checkpoints_tenant_seq
+    ON audit_checkpoints (tenant_id, seq);
 
--- 6. The legacy chain-walk index is superseded by seq.
+-- 7. The legacy chain-walk index is superseded by seq.
 DROP INDEX IF EXISTS idx_audit_entries_chain;
 
--- 7. Immutability. Migration and runtime share one database role in the
+-- 8. Immutability. Migration and runtime share one database role in the
 --    deployment, so a role-level REVOKE cannot distinguish them; triggers
 --    enforce append-only semantics regardless of role. Soft deletes
 --    (UPDATE deleted_at) are blocked as well.

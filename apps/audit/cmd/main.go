@@ -29,6 +29,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/pitabwire/frame/v2"
 	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/security/authorizer"
 	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
@@ -47,18 +48,24 @@ func main() {
 		util.Log(ctx).WithError(err).Fatal("could not process configs")
 		return
 	}
-
 	if cfg.Name() == "" {
 		cfg.ServiceName = namespaceAudit
 	}
 
-	ctx, svc := frame.NewServiceWithContext(ctx, frame.WithConfig(&cfg), frame.WithDatastore())
+	ctx, svc := frame.NewServiceWithContext(ctx,
+		frame.WithConfig(&cfg),
+		frame.WithDatastore(),
+		frame.WithSystemPrincipalAllowGlobal(namespaceAudit),
+	)
 
 	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
 
-	// Setup plan: migrate (+ permissions when URL is set). No runtime PreStart.
+	// Setup plan: migrate → seed signing key → permissions. No runtime PreStart.
 	svc.Setup().RegisterFunc(setup.NameMigrate, func(ctx context.Context) error {
-		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
+		if mErr := repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath()); mErr != nil {
+			return mErr
+		}
+		return seedSigningKey(ctx, svc, &cfg)
 	})
 
 	if frame.ShouldRunSetup(&cfg) {
@@ -70,29 +77,32 @@ func main() {
 		return
 	}
 
-	// Load or generate the Ed25519 signing key
-	signer, err := loadOrGenerateSigner(ctx, cfg.LegacySigningKey)
+	// Runtime: the process refuses to start without a usable signing key.
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
+	keys, err := business.NewKeyProvider(ctx, &cfg, repository.NewSigningKeyRepository(ctx, dbPool))
 	if err != nil {
-		util.Log(ctx).WithError(err).Fatal("failed to initialise audit signing key")
+		util.Log(ctx).WithError(err).Fatal("audit signing key is not usable")
+		return
+	}
+	if _, err = keys.Active(); err != nil {
+		util.Log(ctx).WithError(err).Fatal("audit signing key is not usable")
 		return
 	}
 
-	auditSrv := handlers.NewAuditServer(ctx, svc, signer)
+	deps := handlers.BuildDeps(ctx, &cfg, namespaceAudit, dbPool, keys)
+	mux := setupConnectServer(ctx, svc.SecurityManager(), deps)
 
-	// Setup Connect RPC server with full interceptor chain
-	connectHandler := setupConnectServer(ctx, svc.SecurityManager(), auditSrv)
+	svc.AddHealthCheck(deps.Writer.ReadinessChecker())
+	svc.AddLivenessCheck(deps.Writer.LivenessChecker())
 
-	// Runtime only — permission manifests publish on the setup Job path above.
-	serviceOptions := []frame.Option{
-		frame.WithHTTPHandler(connectHandler),
-	}
-
-	svc.Init(ctx, serviceOptions...)
+	svc.Init(ctx,
+		frame.WithHTTPHandler(mux),
+		frame.WithBackgroundConsumer(deps.Writer.Run),
+	)
 
 	err = svc.Run(ctx, "")
 	if err != nil {
 		log := util.Log(ctx).WithError(err)
-
 		if errors.Is(err, context.Canceled) {
 			log.Error("server stopping")
 		} else {
@@ -101,52 +111,42 @@ func main() {
 	}
 }
 
-// loadOrGenerateSigner loads an Ed25519 signing key from config or generates one.
-func loadOrGenerateSigner(ctx context.Context, hexKey string) (*business.Signer, error) {
-	if hexKey != "" {
-		priv, err := business.ParsePrivateKey([]byte(hexKey))
-		if err != nil {
-			return nil, err
-		}
-		return business.NewSigner("k1", priv)
+// seedSigningKey registers the configured key's public half when absent.
+func seedSigningKey(ctx context.Context, svc *frame.Service, cfg *aconfig.AuditConfig) error {
+	dbPool := svc.DatastoreManager().GetPool(ctx, datastore.DefaultMigrationPoolName)
+	keys, err := business.NewKeyProvider(ctx, cfg, repository.NewSigningKeyRepository(ctx, dbPool))
+	if err != nil {
+		return err
 	}
-
-	util.Log(ctx).Warn("AUDIT_SIGNING_KEY not set — generating ephemeral key. Set AUDIT_SIGNING_KEY in production.")
-	return business.GenerateSigner("k1")
+	return keys.Seed(ctx)
 }
 
-// setupConnectServer creates the Connect RPC handler with the full interceptor chain:
-// Auth → TenancyAccess → FunctionAccess → TenancyTx.
-func setupConnectServer(
-	ctx context.Context,
-	sm security.Manager,
-	implementation *handlers.AuditServer,
-) http.Handler {
+// setupConnectServer builds the Connect handler with the interceptor chain
+// Auth → TenancyAccess → FunctionAccess, plus the unauthenticated
+// well-known keys document outside the Connect handler.
+func setupConnectServer(ctx context.Context, sm security.Manager, deps *handlers.Deps) http.Handler {
 	authenticator := sm.GetAuthenticator(ctx)
 	auth := sm.GetAuthorizer(ctx)
 
-	// Layer 1: TenancyAccess — verifies data access to partition
 	tenancyAccessChecker := authorizer.NewTenancyAccessChecker(auth, namespaceTenancyAccess)
 	tenancyAccessInterceptor := connectInterceptors.NewTenancyAccessInterceptor(tenancyAccessChecker)
 
-	// Layer 2: FunctionAccess — enforces per-RPC permissions from proto annotations
 	sd := auditv1.File_audit_v1_audit_proto.Services().ByName("AuditService")
 	procMap := permissions.BuildProcedureMap(sd)
 	svcPerms := permissions.ForService(sd)
 	functionChecker := authorizer.NewFunctionChecker(auth, svcPerms.Namespace)
 	functionAccessInterceptor := connectInterceptors.NewFunctionAccessInterceptor(functionChecker, procMap)
 
-	defaultInterceptorList, err := connectInterceptors.DefaultList(ctx, authenticator,
-		tenancyAccessInterceptor, functionAccessInterceptor)
+	interceptors, err := connectInterceptors.DefaultList(ctx, authenticator, tenancyAccessInterceptor, functionAccessInterceptor)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors")
 	}
 
-	_, serverHandler := auditv1connect.NewAuditServiceHandler(
-		implementation, connect.WithInterceptors(defaultInterceptorList...))
+	implementation := handlers.NewAuditServer(deps, functionChecker)
+	_, serverHandler := auditv1connect.NewAuditServiceHandler(implementation, connect.WithInterceptors(interceptors...))
 
 	mux := http.NewServeMux()
+	mux.Handle(handlers.WellKnownKeysPath, handlers.WellKnownKeysHandler(deps.Keys, namespaceAudit))
 	mux.Handle("/", serverHandler)
-
 	return mux
 }

@@ -83,9 +83,9 @@ type AuditEntry struct {
 	EventID           string       `gorm:"type:varchar(64)"`
 	IntentID          string       `gorm:"type:varchar(64)"`
 	InstanceID        string       `gorm:"type:varchar(64)"`
-	PayloadHash       string       `gorm:"type:char(64)"`
-	AuthorizationHash string       `gorm:"type:char(64)"`
-	PolicyHash        string       `gorm:"type:char(64)"`
+	PayloadHash       string       `gorm:"type:varchar(64)"`
+	AuthorizationHash string       `gorm:"type:varchar(64)"`
+	PolicyHash        string       `gorm:"type:varchar(64)"`
 	DeviceKeyID       string       `gorm:"type:varchar(64)"`
 	StateFrom         string       `gorm:"type:varchar(64)"`
 	StateTo           string       `gorm:"type:varchar(64)"`
@@ -99,8 +99,10 @@ func (AuditEntry) TableName() string { return "audit_entries" }
 // yet been sequenced into the chain. The RPC returns once this row exists.
 type AuditIntake struct {
 	data.BaseModel
-	Service      string       `gorm:"type:varchar(100);not null;index:idx_audit_intake_dedupe,unique,composite:dedupe"`
-	EntryID      string       `gorm:"type:varchar(64);not null;index:idx_audit_intake_dedupe,unique,composite:dedupe"`
+	// (tenant_id, service, entry_id) is unique; the index is created in SQL
+	// because tenant_id lives in the embedded BaseModel.
+	Service      string       `gorm:"type:varchar(100);not null"`
+	EntryID      string       `gorm:"type:varchar(64);not null"`
 	Payload      data.JSONMap `gorm:"type:jsonb;not null"`
 	ReceivedAt   time.Time    `gorm:"type:timestamptz;not null;index"`
 	State        string       `gorm:"type:varchar(16);not null;index"`
@@ -125,7 +127,8 @@ func (AuditChainHead) TableName() string { return "audit_chain_heads" }
 // AuditCheckpoint is a signed anchor of the chain at Seq. Append-only.
 type AuditCheckpoint struct {
 	data.BaseModel
-	Seq       int64  `gorm:"not null;index:idx_audit_checkpoints_tenant_seq,unique,composite:tseq"`
+	// (tenant_id, seq) is unique; index created in SQL (see intake note).
+	Seq       int64  `gorm:"not null"`
 	EntryHash string `gorm:"type:varchar(64);not null"`
 	KeyID     string `gorm:"type:varchar(32);not null"`
 	Signature string `gorm:"type:text;not null"`
@@ -154,7 +157,7 @@ type AuditManifest struct {
 	tenancy.UnscopedMarker
 	Service      string       `gorm:"type:varchar(100);not null;index:idx_audit_manifests_service_version,unique,composite:sv"`
 	ManifestVer  int32        `gorm:"column:manifest_version;not null;index:idx_audit_manifests_service_version,unique,composite:sv"`
-	ContentHash  string       `gorm:"type:char(64);not null"`
+	ContentHash  string       `gorm:"type:varchar(64);not null"`
 	Content      data.JSONMap `gorm:"type:jsonb;not null"`
 	RegisteredBy string       `gorm:"type:varchar(50)"`
 }

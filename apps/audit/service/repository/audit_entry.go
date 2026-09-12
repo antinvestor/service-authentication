@@ -16,7 +16,7 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
@@ -27,35 +27,13 @@ import (
 const defaultLimit = 50
 const maxLimit = 500
 
-// createBatchSize is the GORM CreateInBatches chunk size. Large enough to
-// amortise round-trips, small enough to stay under Postgres parameter limits
-// (~65k) for AuditEntry's column count.
-const createBatchSize = 100
-
 type auditEntryRepository struct {
 	pool pool.Pool
 }
 
+// NewAuditEntryRepository creates the read-side entry repository.
 func NewAuditEntryRepository(dbPool pool.Pool) AuditEntryRepository {
 	return &auditEntryRepository{pool: dbPool}
-}
-
-func (r *auditEntryRepository) Create(ctx context.Context, entry *models.AuditEntry) error {
-	return r.pool.DB(ctx, false).Create(entry).Error
-}
-
-// CreateBatch persists entries with multi-row INSERT (CreateInBatches) inside
-// a single transaction. Prefer this over N× Create for BatchCreateAuditEntries.
-// Callers must pre-sign entries and pre-materialise BaseModel IDs/timestamps
-// so hash chains stay consistent with stored rows.
-func (r *auditEntryRepository) CreateBatch(ctx context.Context, entries []*models.AuditEntry) error {
-	if len(entries) == 0 {
-		return nil
-	}
-	return r.pool.DB(ctx, false).Transaction(func(tx *gorm.DB) error {
-		// CreateInBatches issues multi-value INSERTs (not N single-row Creates).
-		return tx.CreateInBatches(entries, createBatchSize).Error
-	})
 }
 
 func (r *auditEntryRepository) GetByID(ctx context.Context, id string) (*models.AuditEntry, error) {
@@ -67,27 +45,43 @@ func (r *auditEntryRepository) GetByID(ctx context.Context, id string) (*models.
 	return entry, nil
 }
 
+func (r *auditEntryRepository) GetBySeq(ctx context.Context, tenantID string, seq int64) (*models.AuditEntry, error) {
+	entry := &models.AuditEntry{}
+	err := r.pool.DB(tenantScope(ctx, tenantID), true).Where("tenant_id = ? AND seq = ?", tenantID, seq).First(entry).Error
+	if err != nil {
+		return nil, err
+	}
+	return entry, nil
+}
+
 func (r *auditEntryRepository) List(ctx context.Context, filter *AuditFilter) ([]*models.AuditEntry, error) {
 	db := r.pool.DB(ctx, true).Model(&models.AuditEntry{})
 	db = applyFilter(db, filter)
-
 	limit := normalizeLimit(filter.Limit)
 
+	var entries []*models.AuditEntry
+	if filter.BySeq() {
+		if filter.Cursor != "" {
+			db = db.Where("seq > (SELECT seq FROM audit_entries WHERE id = ? LIMIT 1)", filter.Cursor)
+		}
+		err := db.Order("seq ASC").Limit(limit).Find(&entries).Error
+		return entries, err
+	}
 	if filter.Cursor != "" {
 		db = applyPageCursor(db, filter.Cursor)
 	}
-
-	var entries []*models.AuditEntry
 	err := latestFirst(db).Limit(limit).Find(&entries).Error
 	return entries, err
 }
 
+// Search matches a prefix on the indexed action, resource_type, resource_id
+// and service columns. Callers bound the time window (see handler).
 func (r *auditEntryRepository) Search(ctx context.Context, query string, startDate, endDate *time.Time, limit int, cursor string) ([]*models.AuditEntry, error) {
 	db := r.pool.DB(ctx, true).Model(&models.AuditEntry{})
 
-	searchPattern := "%" + query + "%"
+	pattern := query + "%"
 	db = db.Where("action ILIKE ? OR resource_type ILIKE ? OR resource_id ILIKE ? OR service ILIKE ?",
-		searchPattern, searchPattern, searchPattern, searchPattern)
+		pattern, pattern, pattern, pattern)
 
 	if startDate != nil {
 		db = db.Where("created_at >= ?", *startDate)
@@ -104,63 +98,59 @@ func (r *auditEntryRepository) Search(ctx context.Context, query string, startDa
 	return entries, err
 }
 
-func (r *auditEntryRepository) GetLatestHash(ctx context.Context, tenantID string) (string, error) {
-	entry := &models.AuditEntry{}
-	// Write path: chain tip must not lag a read replica or concurrent batch inserts
-	// will fork the hash chain.
-	err := r.pool.DB(ctx, false).
-		Where("tenant_id = ?", tenantID).
-		Order("created_at DESC, id DESC").
-		First(entry).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return "", nil
-		}
-		return "", fmt.Errorf("failed to get latest hash: %w", err)
+func (r *auditEntryRepository) ListChainBySeq(ctx context.Context, tenantID string, fromSeq, toSeq int64, limit int) ([]*models.AuditEntry, error) {
+	db := r.pool.DB(tenantScope(ctx, tenantID), true).Model(&models.AuditEntry{}).
+		Where("tenant_id = ? AND seq >= ?", tenantID, fromSeq)
+	if toSeq > 0 {
+		db = db.Where("seq <= ?", toSeq)
 	}
-	return entry.EntryHash, nil
-}
-
-func (r *auditEntryRepository) ListChain(ctx context.Context, tenantID string, startDate, endDate *time.Time, limit, offset int) ([]*models.AuditEntry, error) {
-	db := r.pool.DB(ctx, true).Model(&models.AuditEntry{}).
-		Where("tenant_id = ?", tenantID)
-
-	if startDate != nil {
-		db = db.Where("created_at >= ?", *startDate)
+	if limit <= 0 || limit > 1000 {
+		limit = 1000
 	}
-	if endDate != nil {
-		db = db.Where("created_at <= ?", *endDate)
-	}
-
 	var entries []*models.AuditEntry
-	err := db.Order("created_at ASC, id ASC").
-		Limit(normalizeLimit(limit)).
-		Offset(offset).
-		Find(&entries).Error
+	err := db.Order("seq ASC").Limit(limit).Find(&entries).Error
 	return entries, err
 }
 
+func (r *auditEntryRepository) SeqAtOrAfter(ctx context.Context, tenantID string, t time.Time) (int64, error) {
+	return r.seqBoundary(ctx, tenantID, "created_at >= ?", "seq ASC", t)
+}
+
+func (r *auditEntryRepository) SeqAtOrBefore(ctx context.Context, tenantID string, t time.Time) (int64, error) {
+	return r.seqBoundary(ctx, tenantID, "created_at <= ?", "seq DESC", t)
+}
+
+func (r *auditEntryRepository) seqBoundary(ctx context.Context, tenantID, cond, order string, t time.Time) (int64, error) {
+	var row models.AuditEntry
+	err := r.pool.DB(tenantScope(ctx, tenantID), true).Select("seq").Where("tenant_id = ?", tenantID).Where(cond, t).
+		Order(order).Limit(1).Take(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return row.Seq, nil
+}
+
 func applyFilter(db *gorm.DB, filter *AuditFilter) *gorm.DB {
-	if filter.ProfileID != "" {
-		db = db.Where("profile_id = ?", filter.ProfileID)
+	eq := map[string]string{
+		"profile_id": filter.ProfileID, "action": filter.Action, "resource_type": filter.ResourceType,
+		"resource_id": filter.ResourceID, "service": filter.Service, "target_profile_id": filter.TargetProfileID,
+		"device_id": filter.DeviceID, "intent_id": filter.IntentID, "event_id": filter.EventID,
+		"correlation_id": filter.CorrelationID, "on_behalf_of": filter.OnBehalfOf,
 	}
-	if filter.Action != "" {
-		db = db.Where("action = ?", filter.Action)
+	for _, col := range []string{"profile_id", "action", "resource_type", "resource_id", "service",
+		"target_profile_id", "device_id", "intent_id", "event_id", "correlation_id", "on_behalf_of"} {
+		if v := eq[col]; v != "" {
+			db = db.Where(col+" = ?", v)
+		}
 	}
-	if filter.ResourceType != "" {
-		db = db.Where("resource_type = ?", filter.ResourceType)
+	if filter.SeqFrom > 0 {
+		db = db.Where("seq >= ?", filter.SeqFrom)
 	}
-	if filter.ResourceID != "" {
-		db = db.Where("resource_id = ?", filter.ResourceID)
-	}
-	if filter.Service != "" {
-		db = db.Where("service = ?", filter.Service)
-	}
-	if filter.TargetProfileID != "" {
-		db = db.Where("target_profile_id = ?", filter.TargetProfileID)
-	}
-	if filter.DeviceID != "" {
-		db = db.Where("device_id = ?", filter.DeviceID)
+	if filter.SeqTo > 0 {
+		db = db.Where("seq <= ?", filter.SeqTo)
 	}
 	if filter.StartDate != nil {
 		db = db.Where("created_at >= ?", *filter.StartDate)
