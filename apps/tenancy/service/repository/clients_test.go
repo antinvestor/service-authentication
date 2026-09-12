@@ -36,12 +36,12 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
 
 		for table, expected := range map[string]int64{
-			"clients":                                   65,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement + service_notification_whatsapp
-			"oauth_client_recipients":                   301, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4)
-			"service_accounts":                          52,  // + service_commerce + service_procurement + service_notification_whatsapp
-			"service_account_authorization_policies":    52,
-			"service_account_authorization_grants":      198,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1), service_notification_whatsapp (4)
-			"service_account_authorization_permissions": 1970, // + service_imports content/notification permits, service_commerce (21), service_procurement (8), trustage ledger_post/shops_list (2), service_notification_whatsapp (33)
+			"clients":                                   66,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing
+			"oauth_client_recipients":                   303, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4)
+			"service_accounts":                          53,  // + service_commerce + service_procurement + service_notification_whatsapp
+			"service_account_authorization_policies":    53,
+			"service_account_authorization_grants":      199,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1), service_notification_whatsapp (4)
+			"service_account_authorization_permissions": 2009, // + service_imports content/notification permits, service_commerce (21), service_procurement (8), trustage ledger_post/shops_list (2), service_notification_whatsapp (33)
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
