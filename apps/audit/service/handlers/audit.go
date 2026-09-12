@@ -17,6 +17,7 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"time"
 
 	"buf.build/gen/go/antinvestor/audit/connectrpc/go/audit/v1/auditv1connect"
@@ -392,7 +393,7 @@ func entryToProto(e *models.AuditEntry) *auditv1.AuditEntryObject {
 	obj.SetResourceId(e.ResourceID)
 	obj.SetService(e.Service)
 	if e.Details != nil {
-		if details, err := structpb.NewStruct(e.Details); err == nil {
+		if details, err := structpb.NewStruct(structCompatible(e.Details)); err == nil {
 			obj.SetDetails(details)
 		}
 	}
@@ -435,6 +436,37 @@ func entryToProto(e *models.AuditEntry) *auditv1.AuditEntryObject {
 	obj.SetUnmanifested(e.Unmanifested)
 	obj.SetState(auditv1.IntakeState_INTAKE_STATE_COMMITTED)
 	return obj
+}
+
+// structCompatible converts database-decoded JSON (json.Number values) into
+// the float64/map/slice shapes structpb.NewStruct accepts.
+func structCompatible(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = structValue(v)
+	}
+	return out
+}
+
+func structValue(v any) any {
+	switch x := v.(type) {
+	case json.Number:
+		f, err := x.Float64()
+		if err != nil {
+			return x.String()
+		}
+		return f
+	case map[string]any:
+		return structCompatible(x)
+	case []any:
+		out := make([]any, len(x))
+		for i, item := range x {
+			out[i] = structValue(item)
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 func relationsToProto(rels map[string]any) []*auditv1.AuditRelation {

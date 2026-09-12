@@ -132,7 +132,13 @@ func writeCanonical(buf *bytes.Buffer, v any) error {
 	case string:
 		return writeJSONString(buf, x)
 	case json.Number:
-		buf.WriteString(x.String())
+		// Numbers are canonicalised through float64 on every side (service,
+		// verifier, protobuf Struct), so precision beyond 2^53 is lost equally.
+		f, err := x.Float64()
+		if err != nil {
+			return fmt.Errorf("canonical json: bad number %q", x)
+		}
+		return writeFloat(buf, f)
 	case float64:
 		return writeFloat(buf, x)
 	case float32:

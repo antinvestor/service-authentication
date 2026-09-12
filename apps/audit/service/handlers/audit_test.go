@@ -16,6 +16,8 @@ package handlers_test
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -27,11 +29,13 @@ import (
 	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
+	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/antinvestor/service-authentication/apps/audit/tests"
 	"github.com/pitabwire/frame/v2/security"
 	"github.com/pitabwire/frame/v2/tenancy"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type HandlerSuite struct {
@@ -290,7 +294,11 @@ func (s *HandlerSuite) TestManifest_RegisterGetAndVerifyExport() {
 	batch := &auditv1.BatchCreateAuditEntriesRequest{}
 	items := make([]*auditv1.CreateAuditEntryRequest, 0, 5)
 	for i := range 5 {
-		items = append(items, createReq("m-"+string(rune('a'+i))).Msg)
+		item := createReq("m-" + string(rune('a'+i))).Msg
+		details, derr := structpb.NewStruct(map[string]any{"amount": 1.5, "count": float64(i), "note": "ok", "nested": map[string]any{"flag": true}})
+		s.Require().NoError(derr)
+		item.SetDetails(details)
+		items = append(items, item)
 	}
 	batch.SetEntries(items)
 	bresp, err := e.client.BatchCreateAuditEntries(ctx, asUser(connect.NewRequest(batch), "t-m", "person-1", "service_loans"))
@@ -312,15 +320,26 @@ func (s *HandlerSuite) TestManifest_RegisterGetAndVerifyExport() {
 	s.Require().NoError(err)
 	var seqs []int64
 	var headerSeen bool
+	var pub ed25519.PublicKey
 	for stream.Receive() {
 		msg := stream.Msg()
 		if h := msg.GetHeader(); h != nil {
 			headerSeen = true
 			s.Require().Equal("t-m", h.GetTenantId())
 			s.Require().Len(h.GetKeys(), 1)
+			raw, herr := hex.DecodeString(h.GetKeys()[0].GetPublicKey())
+			s.Require().NoError(herr)
+			pub = ed25519.PublicKey(raw)
 			continue
 		}
-		seqs = append(seqs, msg.GetEntry().GetSeq())
+		entry := msg.GetEntry()
+		seqs = append(seqs, entry.GetSeq())
+		// The exported wire form carries everything an offline verifier
+		// needs: rebuilding the model from it reproduces the stored hash.
+		s.Require().Equal(1.5, entry.GetDetails().AsMap()["amount"])
+		rebuilt := modelFromProto(entry)
+		s.Require().Equal(entry.GetEntryHash(), business.EntryHashV2(rebuilt, entry.GetPreviousHash()))
+		s.Require().True(business.VerifyHash(pub, entry.GetEntryHash(), entry.GetSignature(), int16(entry.GetCanonVersion())))
 	}
 	s.Require().NoError(stream.Err())
 	s.Require().True(headerSeen)
@@ -379,6 +398,34 @@ func (s *HandlerSuite) TestOperations_RetireKeyAndWellKnownKeys() {
 	s.Require().Equal(int64(1), self)
 
 	s.Require().Error(e.deps.Writer.ReadinessChecker().CheckHealth(), "retired active key fails readiness")
+}
+
+// modelFromProto mirrors what common/auditverify does with an exported entry.
+func modelFromProto(o *auditv1.AuditEntryObject) *models.AuditEntry {
+	e := &models.AuditEntry{
+		ProfileID: o.GetProfileId(), Action: o.GetAction(), ResourceType: o.GetResourceType(), ResourceID: o.GetResourceId(),
+		Service: o.GetService(), IPAddress: o.GetIpAddress(), UserAgent: o.GetUserAgent(), DeviceID: o.GetDeviceId(),
+		TargetProfileID: o.GetTargetProfileId(), TraceID: o.GetTraceId(), Seq: o.GetSeq(), CanonVersion: int16(o.GetCanonVersion()),
+		EntryID: o.GetEntryId(), ActorServiceAccountID: o.GetActorServiceAccountId(), OnBehalfOf: o.GetOnBehalfOf(),
+		OccurredAt: o.GetOccurredAt().AsTime(), ReceivedAt: o.GetReceivedAt().AsTime(), ManifestVersion: o.GetManifestVersion(),
+		CorrelationID: o.GetCorrelationId(), EventID: o.GetEventId(), IntentID: o.GetIntentId(), InstanceID: o.GetInstanceId(),
+		PayloadHash: o.GetPayloadHash(), AuthorizationHash: o.GetAuthorizationHash(), PolicyHash: o.GetPolicyHash(),
+		DeviceKeyID: o.GetDeviceKeyId(), StateFrom: o.GetStateFrom(), StateTo: o.GetStateTo(), ResourceVersion: o.GetResourceVersion(),
+	}
+	e.TenantID, e.PartitionID = o.GetTenantId(), o.GetPartitionId()
+	e.CreatedAt = o.GetCreatedAt().AsTime()
+	if o.GetDetails() != nil {
+		e.Details = o.GetDetails().AsMap()
+	}
+	if rels := o.GetRelations(); len(rels) > 0 {
+		items := make([]any, 0, len(rels))
+		for _, r := range rels {
+			items = append(items, map[string]any{"parent_type": r.GetParentType(), "parent_id": r.GetParentId(),
+				"child_type": r.GetChildType(), "child_id": r.GetChildId(), "action": r.GetAction()})
+		}
+		e.Relations = map[string]any{"items": items}
+	}
+	return e
 }
 
 func (s *HandlerSuite) TestSearch_RequiresWindow() {
