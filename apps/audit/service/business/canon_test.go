@@ -38,7 +38,9 @@ func fixtureEntry() *models.AuditEntry {
 		IPAddress: "10.0.0.1", UserAgent: "ua", DeviceID: "dev", TargetProfileID: "t", TraceID: "tr",
 		Seq: 7, CanonVersion: models.CanonVersionV2, EntryID: "e-1", OnBehalfOf: "obo", ActorServiceAccountID: "sa",
 		OccurredAt: at, ReceivedAt: at.Add(time.Second), IntentID: "intent", PayloadHash: "ab",
-		Relations: data.JSONMap{"items": []any{map[string]any{"parent_type": "profile", "child_type": "contact"}}},
+		Relations: data.JSONMap{"items": []any{map[string]any{
+			"parent_type": "profile", "parent_id": "p1", "child_type": "contact", "child_id": "c1", "action": "added",
+		}}},
 	}
 	e.TenantID = "tenant"
 	e.PartitionID = "part"
