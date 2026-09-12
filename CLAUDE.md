@@ -162,6 +162,18 @@ Service accounts are managed by the **tenancy service** (`apps/tenancy`). They p
 3. **Token Enrichment**: The webhook enriches the token with `tenant_id`, `partition_id`, `profile_id`, and the appropriate role
 4. **Authorization**: Keto ReBAC tuples grant the service account permissions per audience namespace
 
+## Audit Service (`apps/audit`)
+
+Tamper-evident audit chain, designed in `docs/superpowers/specs/2026-09-12-audit-service-v2-design.md`. Non-obvious rules:
+
+- **Human actions only.** The `common/audit` interceptor audits user tokens (root admins included) and skips service accounts unless the handler calls `WithOnBehalfOf`. The `internal` role never exempts anyone.
+- **Ingest is validated and durable; chaining is asynchronous.** `CreateAuditEntry` writes to `audit_intake`; the writer (Frame background consumer) assigns `seq` per tenant under `pg_advisory_xact_lock` and a CAS on `audit_chain_heads`. Never insert into `audit_entries` outside `ChainRepository.CommitBatch`.
+- **Canonical encoding is shared.** `service/business/canon.go` and `common/auditverify/canon.go` must stay byte-identical; both run the golden vector in `testdata/canon_v2/fixture.json`. Any change is a new `canon_version`, never an edit.
+- **Storage gotchas that break hashes:** `jsonb` NULL scans as an empty map, `char(n)` pads, Postgres keeps microseconds. Normalise before signing.
+- **GORM updates with `Model(&Empty{})` add a bogus id predicate** because `BaseModel.BeforeSave` generates an id; use `Table(name)` for map updates.
+- **Keys:** `AUDIT_SIGNING_KEY_REF` + `AUDIT_SIGNING_KEY_ID` (file or projected Vault secret); the setup Job seeds the public key; the runtime refuses to start without a matching, unretired key.
+- Tests: `go test ./apps/audit/... -race` (Postgres testcontainer with RLS enforced via `apps/audit/tests`).
+
 ## Key Configuration
 
 Environment variables (see `apps/default/config/config.go`):
