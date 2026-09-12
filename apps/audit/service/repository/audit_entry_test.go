@@ -117,7 +117,8 @@ func newAuditRepositoryTestPool(t *testing.T) pool.Pool {
 	require.NoError(t, err)
 
 	dbPool := pool.NewPool(ctx, pool.WithTenancyProvider(nil))
-	require.NoError(t, dbPool.AddConnection(ctx, pool.WithConnection(dsn, false)))
+	require.NoError(t, dbPool.AddConnection(ctx, pool.WithConnection(dsn, false),
+		pool.WithPreferSimpleProtocol(true), pool.WithPreparedStatements(false)))
 	t.Cleanup(func() {
 		dbPool.Close(context.Background())
 	})

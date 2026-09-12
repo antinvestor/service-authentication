@@ -30,5 +30,11 @@ func Migrate(ctx context.Context, dbManager datastore.Manager, migrationPath str
 	// value models silently skip RLS policy installation.
 	return dbManager.Migrate(ctx, pool, migrationPath,
 		&models.AuditEntry{},
+		&models.AuditIntake{},
+		&models.AuditChainHead{},
+		&models.AuditCheckpoint{},
+		&models.AuditSigningKey{},
+		&models.AuditManifest{},
+		&models.AuditRejection{},
 	)
 }

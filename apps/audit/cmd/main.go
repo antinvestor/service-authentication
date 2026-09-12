@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Load or generate the Ed25519 signing key
-	signer, err := loadOrGenerateSigner(ctx, cfg.AuditSigningKey)
+	signer, err := loadOrGenerateSigner(ctx, cfg.LegacySigningKey)
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to initialise audit signing key")
 		return

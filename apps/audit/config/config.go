@@ -14,13 +14,66 @@
 
 package config
 
-import "github.com/pitabwire/frame/v2/config"
+import (
+	"strings"
+	"time"
+
+	"github.com/pitabwire/frame/v2/config"
+)
 
 // AuditConfig holds configuration for the audit service.
+// See docs/superpowers/specs/2026-09-12-audit-service-v2-design.md §16.
 type AuditConfig struct {
 	config.ConfigurationDefault
 
-	// Ed25519 private key for signing audit entries (hex-encoded, 128 hex chars = 64 bytes).
-	// MUST be overridden in production. If empty, a random key is generated at startup.
-	AuditSigningKey string `envDefault:"" env:"AUDIT_SIGNING_KEY"`
+	// SigningKeyRef locates the active Ed25519 private key:
+	//   file:///path/to/key      — raw 64-byte seed+public or 32-byte seed, hex or binary
+	//   vault://<path>#<prop>    — resolved to the mounted secret file
+	//                              SigningKeyMountDir/<SigningKeyID>
+	// Required at runtime; the process refuses to start without it.
+	SigningKeyRef string `env:"AUDIT_SIGNING_KEY_REF"`
+
+	// SigningKeyID names the active key. Must exist in audit_signing_keys
+	// (seeded by the setup Job) and not be retired.
+	SigningKeyID string `env:"AUDIT_SIGNING_KEY_ID"`
+
+	// SigningKeyMountDir is where vault:// references are projected.
+	SigningKeyMountDir string `env:"AUDIT_SIGNING_KEY_MOUNT_DIR" envDefault:"/var/run/secrets/audit"`
+
+	KeyReloadInterval time.Duration `env:"AUDIT_KEY_RELOAD_INTERVAL" envDefault:"5m"`
+
+	WriterTick       time.Duration `env:"AUDIT_WRITER_TICK"        envDefault:"100ms"`
+	WriterIdleTick   time.Duration `env:"AUDIT_WRITER_IDLE_TICK"   envDefault:"1s"`
+	WriterBatch      int           `env:"AUDIT_WRITER_BATCH"       envDefault:"500"`
+	IntakeMaxBacklog int           `env:"AUDIT_INTAKE_MAX_BACKLOG" envDefault:"50000"`
+	HeadMaxAge       time.Duration `env:"AUDIT_HEAD_MAX_AGE"       envDefault:"60s"`
+
+	CheckpointInterval time.Duration `env:"AUDIT_CHECKPOINT_INTERVAL" envDefault:"1h"`
+	CheckpointEveryN   int64         `env:"AUDIT_CHECKPOINT_EVERY_N"  envDefault:"10000"`
+
+	// FrozenTenants is a comma-separated list of tenant ids the writer must
+	// not advance (incident response).
+	FrozenTenants string `env:"AUDIT_FROZEN_TENANTS"`
+
+	RequireManifest bool `env:"AUDIT_REQUIRE_MANIFEST" envDefault:"false"`
+
+	IntakeCommittedRetention time.Duration `env:"AUDIT_INTAKE_COMMITTED_RETENTION" envDefault:"168h"`
+	RejectionsRetention      time.Duration `env:"AUDIT_REJECTIONS_RETENTION"       envDefault:"2160h"`
+
+	VerifyMaxEntries int64 `env:"AUDIT_VERIFY_MAX_ENTRIES" envDefault:"1000000"`
+
+	// LegacySigningKey (AUDIT_SIGNING_KEY) is refused at startup so a stale manifest
+	// cannot silently run the pre-v2 key path.
+	LegacySigningKey string `env:"AUDIT_SIGNING_KEY"`
+}
+
+// FrozenTenantSet returns the frozen tenant ids as a lookup set.
+func (c *AuditConfig) FrozenTenantSet() map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, t := range strings.Split(c.FrozenTenants, ",") {
+		if t = strings.TrimSpace(t); t != "" {
+			out[t] = struct{}{}
+		}
+	}
+	return out
 }
