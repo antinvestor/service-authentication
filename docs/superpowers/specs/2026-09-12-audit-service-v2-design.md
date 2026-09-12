@@ -244,7 +244,7 @@ audit_intake (§6.4)
 audit_rejections (id, tenant_id, service, reason varchar(64), entry_id, received_at; index (service, received_at))
 ```
 
-Existing single-column indexes and the `(x, created_at DESC, id DESC)` family stay for list queries. `idx_audit_entries_chain (tenant_id, created_at, id)` is dropped after backfill; the chain walks by `seq`.
+Existing single-column indexes and the `(x, created_at DESC, id DESC)` family stay for list queries. `idx_audit_entries_chain (tenant_id, created_at, id)` is dropped; the chain walks by `seq`.
 
 `UPDATE` and `DELETE` on `audit_entries` and `audit_checkpoints` are blocked by a `BEFORE UPDATE OR DELETE` trigger, and `audit_signing_keys` by a trigger that permits only setting `retired_at` once. Triggers rather than a role-level `REVOKE` because the deployment runs migration and runtime under one database role; the backfill runs before the triggers are installed in the same migration file. `audit_chain_heads` and `audit_intake` are the only mutable chain-related tables. Frame's tenancy provider installs `FORCE ROW LEVEL SECURITY` and `app_tenancy_isolation` on every model that embeds `data.BaseModel`; `audit_signing_keys` and `audit_manifests` embed `tenancy.UnscopedMarker` so they stay global. The chain head, checkpoints and the seq-ordered chain walk are tenant-level structures that span every partition of a tenant, so the repositories read them under a tenant-scoped `SystemPrincipal` derived from the caller's tenant; browsing (`List`, `Search`, `GetAuditEntry`) stays scoped to the caller's partition.
 
@@ -345,7 +345,7 @@ The `internal` role plays no part in the decision; root admins and owners are au
 
 ## 10. Runtime shape (`apps/audit/cmd/main.go`)
 
-**Setup Job** (`frame.ShouldRunSetup`): migrate (GORM auto-migrate + SQL files, tenancy RLS install by Frame) → seed `audit_signing_keys` from `AUDIT_SIGNING_KEY_REF`/`AUDIT_SIGNING_KEY_ID` if absent → backfill (§18, idempotent, chunked) → register permissions (`frame.WithPermissionRegistration(sd)`). Exit.
+**Setup Job** (`frame.ShouldRunSetup`): migrate (GORM auto-migrate + SQL files, tenancy RLS install by Frame) → seed `audit_signing_keys` from `AUDIT_SIGNING_KEY_REF`/`AUDIT_SIGNING_KEY_ID` if absent → register permissions (`frame.WithPermissionRegistration(sd)`). Exit.
 
 **Runtime**:
 
