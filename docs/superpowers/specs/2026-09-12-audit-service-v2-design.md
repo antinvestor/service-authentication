@@ -151,6 +151,10 @@ Frame registers exactly one background consumer function. The writer and checkpo
 
 ---
 
+## 5a. Degraded mode and request/outcome linking
+
+Producers classify RPCs as `AUDIT_REQUIRED`, `AUDIT_BEST_EFFORT` or `AUDIT_NOT_APPLICABLE`. `AUDIT_REQUIRED` producers fail closed when `CreateAuditEntry` does not return `ACCEPTED`, so this service runs as a highly available tier: at least three replicas across zones and a database with a synchronous replica. A platform emergency authority may declare `AUDIT_DEGRADED` (recorded as a signed entry on the chain when service returns); while declared, producers write `AUDIT_REQUIRED` entries to a local durable outbox and continue, then drain them in order per tenant into `BatchCreateAuditEntries` with `allow_backdating` under their manifest. Entries carry `phase ∈ {REQUESTED, COMPLETED, FAILED}` and `outcome_of_entry_id`; a producer records `REQUESTED` before its own transaction and a linked outcome after it, so an unlinked `REQUESTED` reads as "asked, not done". The service never infers completion.
+
 ## 6. Ingestion
 
 ### 6.1 RPC boundary

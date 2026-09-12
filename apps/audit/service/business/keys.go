@@ -86,11 +86,17 @@ type keyState struct {
 // is tolerated so the setup Job can call Seed; the runtime calls Reload
 // after seeding is guaranteed.
 func NewKeyProvider(ctx context.Context, cfg *aconfig.AuditConfig, repo repository.SigningKeyRepository) (KeyProvider, error) {
-	if strings.TrimSpace(cfg.LegacySigningKey) != "" {
-		return nil, ErrLegacyKeyEnvSet
-	}
 	if cfg.SigningKeyRef == "" || cfg.SigningKeyID == "" {
+		if strings.TrimSpace(cfg.LegacySigningKey) != "" {
+			return nil, ErrLegacyKeyEnvSet
+		}
 		return nil, ErrKeyRefMissing
+	}
+	if strings.TrimSpace(cfg.LegacySigningKey) != "" {
+		// Rollout overlap: manifests may still carry the old variable while
+		// the reference is configured. The reference wins; warn so it gets
+		// removed, and never read the legacy value.
+		util.Log(ctx).Warn("AUDIT_SIGNING_KEY is set but ignored; remove it now that AUDIT_SIGNING_KEY_REF is configured")
 	}
 	kp := &keyProvider{cfg: cfg, repo: repo, cache: map[string]ed25519.PublicKey{}}
 	priv, err := LoadPrivateKeyRef(cfg.SigningKeyRef, cfg.SigningKeyID, cfg.SigningKeyMountDir)

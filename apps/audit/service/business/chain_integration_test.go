@@ -520,10 +520,17 @@ func (s *ChainSuite) TestKeyProvider_RefusesBadConfiguration() {
 	_, err := business.NewKeyProvider(ctx, &missing, st.keyRepo)
 	s.Require().Error(err)
 
+	// Legacy variable alone is refused; alongside a reference it is ignored
+	// (rollout overlap while manifests still carry it).
 	legacy := base
 	legacy.LegacySigningKey = "deadbeef"
+	legacy.SigningKeyRef = ""
 	_, err = business.NewKeyProvider(ctx, &legacy, st.keyRepo)
 	s.Require().ErrorIs(err, business.ErrLegacyKeyEnvSet)
+	overlap := base
+	overlap.LegacySigningKey = "deadbeef"
+	_, err = business.NewKeyProvider(tests.GlobalContext(ctx), &overlap, st.keyRepo)
+	s.Require().NoError(err)
 
 	noID := base
 	noID.SigningKeyID = ""
