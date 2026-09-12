@@ -102,13 +102,17 @@ func main() {
 }
 
 // loadOrGenerateSigner loads an Ed25519 signing key from config or generates one.
-func loadOrGenerateSigner(ctx context.Context, hexKey string) (*business.ChainSigner, error) {
+func loadOrGenerateSigner(ctx context.Context, hexKey string) (*business.Signer, error) {
 	if hexKey != "" {
-		return business.LoadPrivateKey(hexKey)
+		priv, err := business.ParsePrivateKey([]byte(hexKey))
+		if err != nil {
+			return nil, err
+		}
+		return business.NewSigner("k1", priv)
 	}
 
 	util.Log(ctx).Warn("AUDIT_SIGNING_KEY not set — generating ephemeral key. Set AUDIT_SIGNING_KEY in production.")
-	return business.GenerateChainSigner()
+	return business.GenerateSigner("k1")
 }
 
 // setupConnectServer creates the Connect RPC handler with the full interceptor chain:

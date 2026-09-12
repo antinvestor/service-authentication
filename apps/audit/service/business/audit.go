@@ -63,7 +63,7 @@ type IntegrityResult struct {
 
 type auditBusiness struct {
 	repo   repository.AuditEntryRepository
-	signer *ChainSigner
+	signer *Signer
 
 	// mu serialises hash chain operations per tenant to prevent race conditions
 	// where two concurrent creates could read the same previous hash.
@@ -71,7 +71,7 @@ type auditBusiness struct {
 }
 
 // NewAuditBusiness creates a new audit business layer.
-func NewAuditBusiness(repo repository.AuditEntryRepository, signer *ChainSigner) AuditBusiness {
+func NewAuditBusiness(repo repository.AuditEntryRepository, signer *Signer) AuditBusiness {
 	return &auditBusiness{
 		repo:   repo,
 		signer: signer,
@@ -199,7 +199,7 @@ func (ab *auditBusiness) VerifyIntegrity(ctx context.Context, startDate, endDate
 			}
 
 			// Recompute the hash and verify
-			expectedHash := ab.signer.ComputeHash(entry, previousHash)
+			expectedHash, _ := EntryHash(entry, previousHash)
 			if entry.EntryHash != expectedHash {
 				return &IntegrityResult{
 					Valid:               false,
@@ -210,7 +210,7 @@ func (ab *auditBusiness) VerifyIntegrity(ctx context.Context, startDate, endDate
 			}
 
 			// Verify the digital signature
-			if !ab.signer.VerifySignature(entry.EntryHash, entry.Signature) {
+			if !VerifyHash(ab.signer.Public(), entry.EntryHash, entry.Signature, entry.CanonVersion) {
 				return &IntegrityResult{
 					Valid:               false,
 					EntriesVerified:     totalVerified,

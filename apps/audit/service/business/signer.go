@@ -17,113 +17,138 @@ package business
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 )
 
-// ChainSigner manages hash chaining and Ed25519 signing for audit entries.
-// The private key signs each entry hash, and the public key allows verification
-// without access to the signing key.
-type ChainSigner struct {
-	privateKey ed25519.PrivateKey
-	publicKey  ed25519.PublicKey
+// Signer signs entry and checkpoint hashes with one identified Ed25519 key.
+// The private key is never exposed after construction.
+type Signer struct {
+	keyID string
+	priv  ed25519.PrivateKey
+	pub   ed25519.PublicKey
 }
 
-// NewChainSigner creates a signer from an existing Ed25519 private key.
-// The key must be exactly ed25519.PrivateKeySize bytes (64).
-func NewChainSigner(privateKey ed25519.PrivateKey) *ChainSigner {
-	return &ChainSigner{
-		privateKey: privateKey,
-		publicKey:  privateKey.Public().(ed25519.PublicKey),
+// NewSigner wraps a private key under keyID.
+func NewSigner(keyID string, priv ed25519.PrivateKey) (*Signer, error) {
+	if keyID == "" {
+		return nil, errors.New("signer: key id is required")
 	}
+	if len(priv) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("signer: invalid private key size %d", len(priv))
+	}
+	pub, ok := priv.Public().(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New("signer: private key has no ed25519 public key")
+	}
+	return &Signer{keyID: keyID, priv: priv, pub: pub}, nil
 }
 
-// GenerateChainSigner creates a new signer with a freshly generated Ed25519 key pair.
-// Use this for development/testing. In production, load the key from secure storage.
-func GenerateChainSigner() (*ChainSigner, error) {
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+// GenerateSigner creates a signer with a fresh key. Tests only.
+func GenerateSigner(keyID string) (*Signer, error) {
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate Ed25519 key pair: %w", err)
+		return nil, fmt.Errorf("signer: generate key: %w", err)
 	}
-	return &ChainSigner{
-		privateKey: priv,
-		publicKey:  pub,
-	}, nil
+	return NewSigner(keyID, priv)
 }
 
-// SignEntry computes the hash chain and digital signature for an audit entry.
-// It sets PreviousHash, EntryHash, and Signature on the entry.
-func (cs *ChainSigner) SignEntry(entry *models.AuditEntry, previousHash string) error {
-	entry.PreviousHash = previousHash
-	entry.EntryHash = cs.ComputeHash(entry, previousHash)
+// KeyID returns the identifier recorded on everything this signer signs.
+func (s *Signer) KeyID() string { return s.keyID }
 
-	sig := ed25519.Sign(cs.privateKey, []byte(entry.EntryHash))
-	entry.Signature = hex.EncodeToString(sig)
+// Public returns the verifying key.
+func (s *Signer) Public() ed25519.PublicKey { return s.pub }
 
-	return nil
-}
+// PublicKeyHex returns the hex-encoded public key for publication.
+func (s *Signer) PublicKeyHex() string { return hex.EncodeToString(s.pub) }
 
-// ComputeHash computes the SHA-256 hash of an entry's content concatenated
-// with the previous entry's hash. The hash covers all auditable fields to
-// ensure any modification is detectable.
-func (cs *ChainSigner) ComputeHash(entry *models.AuditEntry, previousHash string) string {
-	detailsJSON, _ := json.Marshal(entry.Details)
-	createdAt := ""
-	if !entry.CreatedAt.IsZero() {
-		createdAt = entry.CreatedAt.UTC().Format("2006-01-02T15:04:05.000000Z")
+// SignHash signs an entry or checkpoint hash under the given canon version
+// and returns the hex signature. Version 1 signed the hex string bytes;
+// version 2 signs the raw 32-byte digest.
+func (s *Signer) SignHash(hashHex string, canonVersion int16) (string, error) {
+	msg, err := signingMessage(hashHex, canonVersion)
+	if err != nil {
+		return "", err
 	}
-
-	payload := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-		entry.ProfileID,
-		entry.Action,
-		entry.ResourceType,
-		entry.ResourceID,
-		entry.Service,
-		string(detailsJSON),
-		entry.IPAddress,
-		entry.UserAgent,
-		entry.DeviceID,
-		entry.TargetProfileID,
-		entry.TraceID,
-		createdAt,
-		previousHash,
-	)
-
-	hash := sha256.Sum256([]byte(payload))
-	return hex.EncodeToString(hash[:])
+	return hex.EncodeToString(ed25519.Sign(s.priv, msg)), nil
 }
 
-// VerifySignature checks that the given signature is valid for the entry hash.
-func (cs *ChainSigner) VerifySignature(entryHash, signatureHex string) bool {
-	sig, err := hex.DecodeString(signatureHex)
+// VerifyHash checks sigHex over hashHex with pub under canonVersion rules.
+func VerifyHash(pub ed25519.PublicKey, hashHex, sigHex string, canonVersion int16) bool {
+	if len(pub) != ed25519.PublicKeySize {
+		return false
+	}
+	msg, err := signingMessage(hashHex, canonVersion)
 	if err != nil {
 		return false
 	}
-	return ed25519.Verify(cs.publicKey, []byte(entryHash), sig)
-}
-
-// PublicKeyHex returns the hex-encoded public key for external verification.
-func (cs *ChainSigner) PublicKeyHex() string {
-	return hex.EncodeToString(cs.publicKey)
-}
-
-// PrivateKeyHex returns the hex-encoded private key for secure storage.
-func (cs *ChainSigner) PrivateKeyHex() string {
-	return hex.EncodeToString(cs.privateKey)
-}
-
-// LoadPrivateKey creates a ChainSigner from a hex-encoded Ed25519 private key.
-func LoadPrivateKey(hexKey string) (*ChainSigner, error) {
-	keyBytes, err := hex.DecodeString(hexKey)
+	sig, err := hex.DecodeString(sigHex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode private key: %w", err)
+		return false
 	}
-	if len(keyBytes) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("invalid private key size: expected %d bytes, got %d", ed25519.PrivateKeySize, len(keyBytes))
+	return ed25519.Verify(pub, msg, sig)
+}
+
+func signingMessage(hashHex string, canonVersion int16) ([]byte, error) {
+	switch canonVersion {
+	case models.CanonVersionLegacy:
+		return []byte(hashHex), nil
+	case models.CanonVersionV2:
+		raw, err := hex.DecodeString(hashHex)
+		if err != nil || len(raw) != 32 {
+			return nil, fmt.Errorf("signer: hash %q is not 32-byte hex", hashHex)
+		}
+		return raw, nil
+	default:
+		return nil, fmt.Errorf("signer: unsupported canon_version %d", canonVersion)
 	}
-	return NewChainSigner(ed25519.PrivateKey(keyBytes)), nil
+}
+
+// SignEntry computes PreviousHash, EntryHash, KeyID and Signature for a v2
+// entry. The entry must already carry Seq and all typed fields.
+func (s *Signer) SignEntry(e *models.AuditEntry, previousHash string) error {
+	e.CanonVersion = models.CanonVersionV2
+	e.PreviousHash = previousHash
+	e.KeyID = s.keyID
+	e.EntryHash = EntryHashV2(e, previousHash)
+	sig, err := s.SignHash(e.EntryHash, models.CanonVersionV2)
+	if err != nil {
+		return err
+	}
+	e.Signature = sig
+	return nil
+}
+
+// SignCheckpoint fills Signature and KeyID for a checkpoint whose hash is
+// computed from its tenant, seq, entry hash and creation time.
+func (s *Signer) SignCheckpoint(c *models.AuditCheckpoint) error {
+	sig, err := s.SignHash(CheckpointHash(c.TenantID, c.Seq, c.EntryHash, c.CreatedAt), models.CanonVersionV2)
+	if err != nil {
+		return err
+	}
+	c.KeyID = s.keyID
+	c.Signature = sig
+	return nil
+}
+
+// ParsePrivateKey accepts a 64-byte Ed25519 private key or a 32-byte seed,
+// either raw or hex-encoded (surrounding whitespace ignored).
+func ParsePrivateKey(raw []byte) (ed25519.PrivateKey, error) {
+	trimmed := strings.TrimSpace(string(raw))
+	if decoded, err := hex.DecodeString(trimmed); err == nil {
+		raw = decoded
+	}
+	switch len(raw) {
+	case ed25519.PrivateKeySize:
+		return ed25519.PrivateKey(raw), nil
+	case ed25519.SeedSize:
+		return ed25519.NewKeyFromSeed(raw), nil
+	default:
+		return nil, fmt.Errorf("signer: key must be %d or %d bytes (raw or hex), got %d",
+			ed25519.PrivateKeySize, ed25519.SeedSize, len(raw))
+	}
 }

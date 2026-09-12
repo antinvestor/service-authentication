@@ -42,7 +42,7 @@ type AuditServer struct {
 }
 
 // NewAuditServer creates a new AuditServer with injected dependencies.
-func NewAuditServer(ctx context.Context, service *frame.Service, signer *business.ChainSigner) *AuditServer {
+func NewAuditServer(ctx context.Context, service *frame.Service, signer *business.Signer) *AuditServer {
 	dbPool := service.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName)
 	repo := repository.NewAuditEntryRepository(dbPool)
 	auditBiz := business.NewAuditBusiness(repo, signer)
@@ -54,7 +54,7 @@ func NewAuditServer(ctx context.Context, service *frame.Service, signer *busines
 }
 
 // NewAuditServerWithPool creates a new AuditServer with an explicit DB pool.
-func NewAuditServerWithPool(service *frame.Service, dbPool pool.Pool, signer *business.ChainSigner) *AuditServer {
+func NewAuditServerWithPool(service *frame.Service, dbPool pool.Pool, signer *business.Signer) *AuditServer {
 	repo := repository.NewAuditEntryRepository(dbPool)
 	auditBiz := business.NewAuditBusiness(repo, signer)
 
@@ -88,7 +88,7 @@ func (as *AuditServer) CreateAuditEntry(
 	}
 
 	return connect.NewResponse(&auditv1.CreateAuditEntryResponse{
-		Data: entryToProto(entry),
+		Data: entryToProto(entry), //nolint:staticcheck // replaced by intake receipts in v2 handlers
 	}), nil
 }
 
@@ -113,7 +113,7 @@ func (as *AuditServer) BatchCreateAuditEntries(
 	}
 
 	return connect.NewResponse(&auditv1.BatchCreateAuditEntriesResponse{
-		Data: result,
+		Data: result, //nolint:staticcheck // replaced by intake receipts in v2 handlers
 	}), nil
 }
 
