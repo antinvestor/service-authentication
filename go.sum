@@ -1,7 +1,7 @@
-buf.build/gen/go/antinvestor/audit/connectrpc/go v1.20.0-20260831112827-a96e87701817.1 h1:2W0lAJST5wyBPvy3CMOGEzaQTp2FrkNTXjeGaoA025M=
-buf.build/gen/go/antinvestor/audit/connectrpc/go v1.20.0-20260831112827-a96e87701817.1/go.mod h1:YPE1dUJT3MT86NGC3tvL69+GIQomw8Tv4RGyPAMPWGI=
-buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-20260831112827-a96e87701817.2 h1:qNTA/hM0yfJ8/N1ph7KGUrnOOovfQQYxZdPLTXgYolg=
-buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-20260831112827-a96e87701817.2/go.mod h1:2M48o5NSbpBfSLoYKEq1ClTK5BNYBI294fRWfPGq7vI=
+buf.build/gen/go/antinvestor/audit/connectrpc/go v1.21.0-00000000000000-2d2c6497b768.1 h1:MXypz4JBC0Nnc/0uhq4dWOe9bionPaWwVfRViZftxiQ=
+buf.build/gen/go/antinvestor/audit/connectrpc/go v1.21.0-00000000000000-2d2c6497b768.1/go.mod h1:YFTP5QtjtBlVxOiTl6ckXikmWLfTOPu5Gt/HuziQKzI=
+buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-00000000000000-2d2c6497b768.2 h1:asin0zMyfVHlYsssrElCQ4p6c4e/GJ+sKe21ItFMibM=
+buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-00000000000000-2d2c6497b768.2/go.mod h1:AUaEI7CAaobs6C1wbWwB8EgxW9IjT+Ptwt8Y10fWIJQ=
 buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.20.0-20260831112828-1f2d928dac44.1 h1:mHUAmjk/HGiGgHWxcSCk7SRjR5cJ/QtVM5m0XQqAzgY=
 buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.20.0-20260831112828-1f2d928dac44.1/go.mod h1:2avVY58NZiV/oiBziIjAb39zz4wzGzCg5kidqIrcq/8=
 buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.12-20260831112828-1f2d928dac44.2 h1:vWHiWm2N0AvzgRgK85HT+Cr6adck/2WZFFmFS5KJu6o=
@@ -52,8 +52,8 @@ cloud.google.com/go/pubsub v1.51.1 h1:R3G1wCOxBO7jRpL8x2pdZMv1GAJDF6ax/m2zPOtvTN
 cloud.google.com/go/pubsub v1.51.1/go.mod h1:y2T0IKtW1iWwVvazYaRpqOAFO4gy2+O7dTDt9TWY/5U=
 cloud.google.com/go/pubsub/v2 v2.7.0 h1:MFrBTZZa6PDWZzCi4NJRsHKMm2w0a4oAaYNqwjgbQTE=
 cloud.google.com/go/pubsub/v2 v2.7.0/go.mod h1:JaFvWNVRk3Knoil/4M1ECeLOaI9D8drbmJWypQlK5aM=
-connectrpc.com/connect v1.20.0 h1:6TNDAB+WeNd2uolWNlYczB5E0KNNaVMNUEx8JEUsPmQ=
-connectrpc.com/connect v1.20.0/go.mod h1:A2ygJrukXwWy32vkCAAHNVguZrqZ+jeZ9rGRnGR4dN4=
+connectrpc.com/connect v1.21.0 h1:LhqSJt7jHf5NJBo9Jq/t/9FjcYAideif0mg+qe2jCUs=
+connectrpc.com/connect v1.21.0/go.mod h1:A2ygJrukXwWy32vkCAAHNVguZrqZ+jeZ9rGRnGR4dN4=
 connectrpc.com/otelconnect v0.9.0 h1:NggB3pzRC3pukQWaYbRHJulxuXvmCKCKkQ9hbrHAWoA=
 connectrpc.com/otelconnect v0.9.0/go.mod h1:AEkVLjCPXra+ObGFCOClcJkNjS7zPaQSqvO0lCyjfZc=
 dario.cat/mergo v1.0.2 h1:85+piFYR1tMbRrLcDwR18y4UKJ3aH1Tbzi24VRW1TK8=

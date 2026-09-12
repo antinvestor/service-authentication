@@ -5,8 +5,8 @@ go 1.26.0
 toolchain go1.26.1
 
 require (
-	buf.build/gen/go/antinvestor/audit/connectrpc/go v1.20.0-20260831112827-a96e87701817.1
-	buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-20260831112827-a96e87701817.2
+	buf.build/gen/go/antinvestor/audit/connectrpc/go v1.21.0-00000000000000-2d2c6497b768.1
+	buf.build/gen/go/antinvestor/audit/protocolbuffers/go v1.36.12-00000000000000-2d2c6497b768.2
 	buf.build/gen/go/antinvestor/authentication/connectrpc/go v1.20.0-20260831112828-1f2d928dac44.1
 	buf.build/gen/go/antinvestor/authentication/protocolbuffers/go v1.36.12-20260831112828-1f2d928dac44.2
 	buf.build/gen/go/antinvestor/common/protocolbuffers/go v1.36.12-20260509050709-3f270876dbf3.2
@@ -20,7 +20,7 @@ require (
 	buf.build/gen/go/antinvestor/profile/protocolbuffers/go v1.36.12-20260831194050-82ad359a5ea0.2
 	buf.build/gen/go/antinvestor/tenancy/connectrpc/go v1.20.0-20260831112830-2b2240b00a45.1
 	buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go v1.36.12-20260831112830-2b2240b00a45.2
-	connectrpc.com/connect v1.20.0
+	connectrpc.com/connect v1.21.0
 	github.com/antinvestor/common/v2 v2.0.7
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/go-jose/go-jose/v4 v4.1.5

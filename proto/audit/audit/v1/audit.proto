@@ -126,6 +126,94 @@ message AuditEntryObject {
 
   // Ed25519 digital signature of the entry hash.
   string signature = 18;
+
+  // Position of this entry in the tenant's chain (1-based, gap-free).
+  int64 seq = 19;
+
+  // Identifier of the signing key used for this entry.
+  string key_id = 20;
+
+  // Canonical encoding version used to compute entry_hash (1 = legacy, 2 = length-prefixed).
+  int32 canon_version = 21;
+
+  // Producer-supplied idempotency key, unique per (tenant, service).
+  string entry_id = 22;
+
+  // Service account that submitted the entry (from caller claims).
+  string actor_service_account_id = 23;
+
+  // Person on whose behalf an operator or administrator acted.
+  string on_behalf_of = 24;
+
+  // When the action happened at the producer.
+  google.protobuf.Timestamp occurred_at = 25;
+
+  // When the audit service accepted the entry.
+  google.protobuf.Timestamp received_at = 26;
+
+  // Correlation identifier across services.
+  string correlation_id = 27;
+
+  // Domain event identifier this action produced or relates to.
+  string event_id = 28;
+
+  // Financial intent identifier this action relates to.
+  string intent_id = 29;
+
+  // Workflow instance identifier this action relates to.
+  string instance_id = 30;
+
+  // SHA-256 hex of the request payload the person signed.
+  string payload_hash = 31;
+
+  // SHA-256 hex of the authorization evidence record.
+  string authorization_hash = 32;
+
+  // SHA-256 hex of the policy in force.
+  string policy_hash = 33;
+
+  // Device key that signed the request, if any.
+  string device_key_id = 34;
+
+  // State transition on the resource.
+  string state_from = 35;
+  string state_to = 36;
+
+  // Version of the resource after the action.
+  int64 resource_version = 37;
+
+  // Relationships created, modified or removed by this action.
+  repeated AuditRelation relations = 38;
+
+  // Version of the producer's audit manifest the entry was validated against (0 = none).
+  int32 manifest_version = 39;
+
+  // True when the producing service had no registered manifest at acceptance.
+  bool unmanifested = 40;
+
+  // Intake state of the entry.
+  IntakeState state = 41;
+}
+
+// AuditRelation is a link between two entities affected by an action.
+message AuditRelation {
+  string parent_type = 1;
+  string parent_id = 2;
+  string child_type = 3;
+  string child_id = 4;
+  // "added", "removed" or "modified".
+  string action = 5;
+}
+
+// IntakeState is the lifecycle of an accepted entry.
+enum IntakeState {
+  INTAKE_STATE_UNSPECIFIED = 0;
+  // Durably accepted; not yet in the chain.
+  INTAKE_STATE_ACCEPTED = 1;
+  // Sequenced, hashed and signed in the chain.
+  INTAKE_STATE_COMMITTED = 2;
+  // Could not be chained; needs operator action.
+  INTAKE_STATE_FAILED = 3;
 }
 
 // -----------------------------------------------------
@@ -167,10 +255,45 @@ message CreateAuditEntryRequest {
 
   // OpenTelemetry trace ID for correlation (optional).
   string trace_id = 11;
+
+  // Idempotency key unique per (tenant, service). Generated server-side when empty.
+  string entry_id = 12 [(buf.validate.field).string.max_len = 64];
+
+  // Person on whose behalf an operator or administrator acts (optional).
+  string on_behalf_of = 13 [(buf.validate.field).string.max_len = 50];
+
+  // When the action happened at the producer. Defaults to receipt time.
+  google.protobuf.Timestamp occurred_at = 14;
+
+  string correlation_id = 15 [(buf.validate.field).string.max_len = 64];
+  string event_id = 16 [(buf.validate.field).string.max_len = 64];
+  string intent_id = 17 [(buf.validate.field).string.max_len = 64];
+  string instance_id = 18 [(buf.validate.field).string.max_len = 64];
+
+  // 32-byte lowercase hex digests (optional).
+  string payload_hash = 19 [(buf.validate.field).string = {pattern: "^([0-9a-f]{64})?$"}];
+  string authorization_hash = 20 [(buf.validate.field).string = {pattern: "^([0-9a-f]{64})?$"}];
+  string policy_hash = 21 [(buf.validate.field).string = {pattern: "^([0-9a-f]{64})?$"}];
+
+  string device_key_id = 22 [(buf.validate.field).string.max_len = 64];
+  string state_from = 23 [(buf.validate.field).string.max_len = 64];
+  string state_to = 24 [(buf.validate.field).string.max_len = 64];
+  int64 resource_version = 25;
+  repeated AuditRelation relations = 26 [(buf.validate.field).repeated.max_items = 50];
 }
 
 message CreateAuditEntryResponse {
-  AuditEntryObject data = 1;
+  // Deprecated: v2 returns the intake receipt; the chained entry is available via GetAuditEntry.
+  AuditEntryObject data = 1 [deprecated = true];
+
+  // Identifier of the intake row holding the accepted entry.
+  string intake_id = 2;
+
+  // Idempotency key (echoed or generated).
+  string entry_id = 3;
+
+  // Always INTAKE_STATE_ACCEPTED on success, or the existing state for a duplicate.
+  IntakeState state = 4;
 }
 
 // BatchCreateAuditEntriesRequest creates multiple audit entries atomically.
@@ -182,7 +305,11 @@ message BatchCreateAuditEntriesRequest {
 }
 
 message BatchCreateAuditEntriesResponse {
-  repeated AuditEntryObject data = 1;
+  // Deprecated: see CreateAuditEntryResponse.data.
+  repeated AuditEntryObject data = 1 [deprecated = true];
+
+  // One receipt per request entry, in request order.
+  repeated CreateAuditEntryResponse receipts = 2;
 }
 
 // GetAuditEntryRequest retrieves a single audit entry by ID.
@@ -228,6 +355,15 @@ message ListAuditEntriesRequest {
 
   // Pagination cursor (ID of the last entry from previous page).
   string page = 11;
+
+  string intent_id = 12;
+  string event_id = 13;
+  string correlation_id = 14;
+  string on_behalf_of = 15;
+
+  // Sequence range filters. When either is set, results are ordered by seq ascending.
+  int64 seq_from = 16;
+  int64 seq_to = 17;
 }
 
 message ListAuditEntriesResponse {
@@ -256,13 +392,20 @@ message SearchAuditEntriesResponse {
   repeated AuditEntryObject data = 1;
 }
 
-// VerifyIntegrityRequest verifies the hash chain integrity over a time range.
+// VerifyIntegrityRequest verifies the hash chain integrity over a sequence range.
+// A date range is accepted as a convenience and resolved to sequence numbers.
 message VerifyIntegrityRequest {
-  // Start of the time range to verify.
+  // Start of the time range to verify (resolved to start_seq when start_seq is 0).
   google.protobuf.Timestamp start_date = 1;
 
-  // End of the time range to verify.
+  // End of the time range to verify (resolved to end_seq when end_seq is 0).
   google.protobuf.Timestamp end_date = 2;
+
+  // First sequence number to verify (1 = genesis).
+  int64 start_seq = 3;
+
+  // Last sequence number to verify (0 = chain head).
+  int64 end_seq = 4;
 }
 
 // VerifyIntegrityResponse reports the result of integrity verification.
@@ -278,6 +421,145 @@ message VerifyIntegrityResponse {
 
   // Human-readable description of the verification result.
   string message = 4;
+
+  // Sequence of the checkpoint verification started from (0 = genesis).
+  int64 start_checkpoint_seq = 5;
+
+  // Last sequence number verified.
+  int64 end_seq = 6;
+
+  // Entry hash at end_seq.
+  string end_hash = 7;
+
+  // Signing keys encountered in the range.
+  repeated string key_ids_used = 8;
+
+  // True when the range exceeded the per-call cap; continue from end_seq + 1.
+  bool partial = 9;
+
+  // Sequence of the first entry that failed verification (0 if valid).
+  int64 first_invalid_seq = 10;
+}
+
+// -----------------------------------------------------
+// v2: checkpoints, keys, export, manifests, operations
+// -----------------------------------------------------
+
+message AuditCheckpoint {
+  string tenant_id = 1;
+  int64 seq = 2;
+  string entry_hash = 3;
+  string key_id = 4;
+  string signature = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message SigningKey {
+  string key_id = 1;
+  string algorithm = 2;
+  // Hex-encoded public key.
+  string public_key = 3;
+  google.protobuf.Timestamp valid_from = 4;
+  google.protobuf.Timestamp retired_at = 5;
+}
+
+message ListCheckpointsRequest {
+  int64 seq_from = 1;
+  int64 seq_to = 2;
+  // Default 50, max 500.
+  int32 count = 3;
+}
+
+message ListCheckpointsResponse {
+  repeated AuditCheckpoint data = 1;
+}
+
+message GetSigningKeysRequest {}
+
+message GetSigningKeysResponse {
+  repeated SigningKey data = 1;
+}
+
+// ExportAuditEntriesRequest streams a verifiable bundle for a sequence range.
+message ExportAuditEntriesRequest {
+  int64 start_seq = 1 [(buf.validate.field).int64.gte = 0];
+  int64 end_seq = 2 [(buf.validate.field).int64.gte = 0];
+}
+
+// ExportAuditEntriesResponse: the first message carries the bounding
+// checkpoints and keys; subsequent messages carry entries in seq order.
+message ExportAuditEntriesResponse {
+  message Header {
+    string tenant_id = 1;
+    int64 start_seq = 2;
+    int64 end_seq = 3;
+    // Checkpoint at or before start_seq (absent when starting from genesis).
+    AuditCheckpoint start_checkpoint = 4;
+    // Checkpoint at or after end_seq, if any.
+    AuditCheckpoint end_checkpoint = 5;
+    repeated SigningKey keys = 6;
+  }
+  oneof payload {
+    Header header = 1;
+    AuditEntryObject entry = 2;
+  }
+}
+
+// AuditManifest declares a producing service's audit vocabulary.
+message AuditManifest {
+  string service = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 100
+  }];
+  repeated string actions = 2 [(buf.validate.field).repeated.max_items = 500];
+  repeated string resource_types = 3 [(buf.validate.field).repeated.max_items = 500];
+  // Accept any (action, resource_type) pair.
+  bool open_vocabulary = 4;
+  // Allow occurred_at older than the standard window (outbox replays).
+  bool allow_backdating = 5;
+  // Additional forbidden detail keys (case-insensitive substrings).
+  repeated string extra_forbidden_keys = 6 [(buf.validate.field).repeated.max_items = 100];
+}
+
+message RegisterAuditManifestRequest {
+  AuditManifest manifest = 1 [(buf.validate.field).required = true];
+}
+
+message RegisterAuditManifestResponse {
+  string service = 1;
+  int32 version = 2;
+  // True when the content matched the latest version and nothing was written.
+  bool unchanged = 3;
+}
+
+message GetAuditManifestRequest {
+  string service = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetAuditManifestResponse {
+  AuditManifest manifest = 1;
+  int32 version = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+// RequeueIntakeRequest moves FAILED intake rows back to ACCEPTED.
+message RequeueIntakeRequest {
+  repeated string intake_ids = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 500
+  }];
+}
+
+message RequeueIntakeResponse {
+  int64 requeued = 1;
+}
+
+message RetireSigningKeyRequest {
+  string key_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message RetireSigningKeyResponse {
+  SigningKey key = 1;
 }
 
 // -----------------------------------------------------
@@ -292,7 +574,11 @@ service AuditService {
     permissions: [
       "audit_view",
       "audit_create",
-      "audit_verify"
+      "audit_verify",
+      "audit_export",
+      "audit_manifest_manage",
+      "audit_create_any",
+      "audit_operate"
     ]
     role_bindings: [
       {
@@ -300,14 +586,17 @@ service AuditService {
         permissions: [
           "audit_view",
           "audit_create",
-          "audit_verify"
+          "audit_verify",
+          "audit_export",
+          "audit_operate"
         ]
       },
       {
         role: ROLE_ADMIN
         permissions: [
           "audit_view",
-          "audit_verify"
+          "audit_verify",
+          "audit_export"
         ]
       },
       {
@@ -327,7 +616,8 @@ service AuditService {
         permissions: [
           "audit_view",
           "audit_create",
-          "audit_verify"
+          "audit_verify",
+          "audit_manifest_manage"
         ]
       }
     ]
@@ -401,7 +691,7 @@ service AuditService {
     };
   }
 
-  // VerifyIntegrity verifies the hash chain integrity over a time range.
+  // VerifyIntegrity verifies the hash chain integrity over a sequence range.
   rpc VerifyIntegrity(VerifyIntegrityRequest) returns (VerifyIntegrityResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
     option (common.v1.method_permissions) = {
@@ -410,7 +700,102 @@ service AuditService {
     option (gnostic.openapi.v3.operation) = {
       operation_id: "verifyIntegrity"
       summary: "Verify audit integrity"
-      description: "Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected."
+      description: "Verifies the hash chain and digital signatures of audit entries over a sequence range, starting from the nearest checkpoint. Returns the first invalid entry if tampering is detected."
+      tags: "Audit"
+    };
+  }
+
+  // ExportAuditEntries streams entries with bounding checkpoints and keys for offline verification.
+  rpc ExportAuditEntries(ExportAuditEntriesRequest) returns (stream ExportAuditEntriesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_export"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "exportAuditEntries"
+      summary: "Export audit entries"
+      description: "Streams a verifiable bundle: bounding checkpoints, public keys, then entries in sequence order."
+      tags: "Audit"
+    };
+  }
+
+  // ListCheckpoints lists signed checkpoints for the caller's tenant.
+  rpc ListCheckpoints(ListCheckpointsRequest) returns (ListCheckpointsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "listCheckpoints"
+      summary: "List checkpoints"
+      description: "Lists signed chain checkpoints, the unit external systems anchor."
+      tags: "Audit"
+    };
+  }
+
+  // GetSigningKeys returns all signing public keys, including retired ones.
+  rpc GetSigningKeys(GetSigningKeysRequest) returns (GetSigningKeysResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getSigningKeys"
+      summary: "Get signing keys"
+      description: "Returns public signing keys with validity windows so any entry can be verified under its key_id."
+      tags: "Audit"
+    };
+  }
+
+  // RegisterAuditManifest registers or updates a producing service's audit vocabulary.
+  rpc RegisterAuditManifest(RegisterAuditManifestRequest) returns (RegisterAuditManifestResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_manifest_manage"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "registerAuditManifest"
+      summary: "Register audit manifest"
+      description: "Registers a versioned vocabulary manifest for the calling service. Unchanged content is a no-op."
+      tags: "Audit"
+    };
+  }
+
+  // GetAuditManifest returns the latest manifest for a service.
+  rpc GetAuditManifest(GetAuditManifestRequest) returns (GetAuditManifestResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_view"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "getAuditManifest"
+      summary: "Get audit manifest"
+      description: "Returns the latest registered audit manifest for a service."
+      tags: "Audit"
+    };
+  }
+
+  // RequeueIntake returns FAILED intake rows to ACCEPTED after operator remediation.
+  rpc RequeueIntake(RequeueIntakeRequest) returns (RequeueIntakeResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_operate"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "requeueIntake"
+      summary: "Requeue failed intake"
+      description: "Moves failed intake rows back to accepted so the chain writer retries them. The operation is itself audited."
+      tags: "Audit"
+    };
+  }
+
+  // RetireSigningKey marks a signing key retired; it keeps verifying but can no longer sign.
+  rpc RetireSigningKey(RetireSigningKeyRequest) returns (RetireSigningKeyResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["audit_operate"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "retireSigningKey"
+      summary: "Retire signing key"
+      description: "Retires a signing key. Existing entries stay verifiable; the writer refuses to sign with a retired key."
       tags: "Audit"
     };
   }
