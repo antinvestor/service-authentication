@@ -15,7 +15,6 @@
 package repository
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -25,63 +24,55 @@ import (
 
 const migrationPath = "../../migrations/0001"
 
-// TestMigrate_BackfillsSeqAndHeadsForLegacyRows applies the full migration
-// set on a database that already holds pre-v2 rows (no seq, no entry_id)
-// and asserts the backfill assigns dense per-tenant sequences, writes one
-// head per tenant, and installs the immutability trigger.
-func TestMigrate_BackfillsSeqAndHeadsForLegacyRows(t *testing.T) {
+func allModels() []any {
+	return []any{
+		&models.AuditEntry{}, &models.AuditIntake{}, &models.AuditChainHead{}, &models.AuditCheckpoint{},
+		&models.AuditSigningKey{}, &models.AuditManifest{}, &models.AuditRejection{},
+	}
+}
+
+// TestMigrate_StartsGreenfieldAndInstallsGuards applies the migration set on
+// a database that still holds pre-v2 rows and asserts they are discarded
+// (the chain is greenfield), the unique chain position index exists, the
+// migration is re-runnable, and the append-only triggers hold.
+func TestMigrate_StartsGreenfieldAndInstallsGuards(t *testing.T) {
 	ctx := t.Context()
 	dbPool := newAuditRepositoryTestPool(t)
 
-	// Legacy schema: only the v1 model.
+	// Pre-v2 schema with a row that carries no chain position.
 	require.NoError(t, dbPool.DB(ctx, false).AutoMigrate(&legacyAuditEntry{}))
-	base := time.Date(2026, 9, 1, 8, 0, 0, 0, time.UTC)
-	for tenant, n := range map[string]int{"tenant-a": 3, "tenant-b": 2} {
-		for i := range n {
-			row := &legacyAuditEntry{
-				ID: fmt.Sprintf("%s-%02d", tenant, i), TenantID: tenant, PartitionID: "p",
-				CreatedAt: base.Add(time.Duration(i) * time.Minute), ModifiedAt: base, Version: 1,
-				ProfileID: "profile", Action: "create", ResourceType: "thing", Service: "svc",
-				PreviousHash: "", EntryHash: fmt.Sprintf("hash-%s-%02d", tenant, i), Signature: "sig",
-			}
-			require.NoError(t, dbPool.DB(ctx, false).Table("audit_entries").Create(row).Error)
-		}
-	}
+	now := time.Now().UTC()
+	require.NoError(t, dbPool.DB(ctx, false).Table("audit_entries").Create(&legacyAuditEntry{
+		ID: "old-1", TenantID: "tenant-a", CreatedAt: now, ModifiedAt: now, Version: 1,
+		ProfileID: "profile", Action: "create", ResourceType: "thing", Service: "svc", EntryHash: "h", Signature: "s",
+	}).Error)
 
-	require.NoError(t, dbPool.Migrate(ctx, migrationPath,
-		&models.AuditEntry{}, &models.AuditIntake{}, &models.AuditChainHead{},
-		&models.AuditCheckpoint{}, &models.AuditSigningKey{}, &models.AuditManifest{}, &models.AuditRejection{}))
+	require.NoError(t, dbPool.Migrate(ctx, migrationPath, allModels()...))
 
-	var entries []models.AuditEntry
-	require.NoError(t, dbPool.DB(ctx, true).Where("tenant_id = ?", "tenant-a").Order("seq").Find(&entries).Error)
-	require.Len(t, entries, 3)
-	for i, e := range entries {
-		require.Equal(t, int64(i+1), e.Seq, "seq must be dense in created_at order")
-		require.Equal(t, e.ID, e.EntryID, "legacy entry_id defaults to id")
-		require.Equal(t, "k1", e.KeyID)
-		require.Equal(t, int16(models.CanonVersionLegacy), e.CanonVersion)
-		require.Equal(t, e.CreatedAt.UTC(), e.OccurredAt.UTC())
-	}
-
-	var heads []models.AuditChainHead
-	require.NoError(t, dbPool.DB(ctx, true).Order("id").Find(&heads).Error)
-	require.Len(t, heads, 2)
-	require.Equal(t, "tenant-a", heads[0].ID)
-	require.Equal(t, int64(3), heads[0].Seq)
-	require.Equal(t, "hash-tenant-a-02", heads[0].EntryHash)
-	require.Equal(t, int64(2), heads[1].Seq)
-
-	// Re-running is a no-op for already sequenced rows.
-	require.NoError(t, dbPool.Migrate(ctx, migrationPath, &models.AuditEntry{}))
 	var count int64
-	require.NoError(t, dbPool.DB(ctx, true).Model(&models.AuditEntry{}).Where("seq = 0").Count(&count).Error)
-	require.Zero(t, count)
+	require.NoError(t, dbPool.DB(ctx, true).Model(&models.AuditEntry{}).Count(&count).Error)
+	require.Zero(t, count, "pre-v2 rows are not part of the chain and are discarded")
+
+	// Re-running is a no-op and keeps v2 rows.
+	require.NoError(t, dbPool.Migrate(ctx, migrationPath, allModels()...))
+
+	e := newAuditEntry("v2-1", now, "profile", "create", "hash-1")
+	e.Seq = 1
+	require.NoError(t, dbPool.DB(ctx, false).Create(e).Error)
+	dup := newAuditEntry("v2-2", now, "profile", "create", "hash-2")
+	dup.Seq = 1
+	require.ErrorContains(t, dbPool.DB(ctx, false).Create(dup).Error, "idx_audit_entries_tenant_seq")
 
 	// Immutability trigger blocks UPDATE and DELETE.
-	err := dbPool.DB(ctx, false).Exec("UPDATE audit_entries SET action = 'x' WHERE id = 'tenant-a-00'").Error
-	require.ErrorContains(t, err, "append-only")
-	err = dbPool.DB(ctx, false).Exec("DELETE FROM audit_entries WHERE id = 'tenant-a-00'").Error
-	require.ErrorContains(t, err, "append-only")
+	require.ErrorContains(t, dbPool.DB(ctx, false).Exec("UPDATE audit_entries SET action = 'x' WHERE id = 'v2-1'").Error, "append-only")
+	require.ErrorContains(t, dbPool.DB(ctx, false).Exec("DELETE FROM audit_entries WHERE id = 'v2-1'").Error, "append-only")
+
+	// Signing keys: retire once, never delete.
+	key := &models.AuditSigningKey{KeyID: "k1", Algorithm: "ed25519", PublicKey: []byte("0123456789abcdef0123456789abcdef"), ValidFrom: now}
+	require.NoError(t, dbPool.DB(ctx, false).Create(key).Error)
+	require.NoError(t, dbPool.DB(ctx, false).Exec("UPDATE audit_signing_keys SET retired_at = now() WHERE key_id = 'k1'").Error)
+	require.ErrorContains(t, dbPool.DB(ctx, false).Exec("UPDATE audit_signing_keys SET retired_at = NULL WHERE key_id = 'k1'").Error, "retired_at")
+	require.ErrorContains(t, dbPool.DB(ctx, false).Exec("DELETE FROM audit_signing_keys WHERE key_id = 'k1'").Error, "not permitted")
 }
 
 // legacyAuditEntry mirrors the pre-v2 audit_entries columns.

@@ -263,32 +263,12 @@ func EntryHashV2(e *models.AuditEntry, previousHash string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// EntryHashV1 reproduces the pre-v2 pipe-delimited pre-image. It is used only
-// to verify entries with CanonVersion == 1 and must never change.
-func EntryHashV1(e *models.AuditEntry, previousHash string) string {
-	detailsJSON, _ := json.Marshal(e.Details)
-	createdAt := ""
-	if !e.CreatedAt.IsZero() {
-		createdAt = e.CreatedAt.UTC().Format(canonTimeLayout)
-	}
-	payload := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-		e.ProfileID, e.Action, e.ResourceType, e.ResourceID, e.Service,
-		string(detailsJSON), e.IPAddress, e.UserAgent, e.DeviceID,
-		e.TargetProfileID, e.TraceID, createdAt, previousHash)
-	sum := sha256.Sum256([]byte(payload))
-	return hex.EncodeToString(sum[:])
-}
-
 // EntryHash dispatches on the entry's CanonVersion.
 func EntryHash(e *models.AuditEntry, previousHash string) (string, error) {
-	switch e.CanonVersion {
-	case models.CanonVersionLegacy:
-		return EntryHashV1(e, previousHash), nil
-	case models.CanonVersionV2:
-		return EntryHashV2(e, previousHash), nil
-	default:
+	if e.CanonVersion != models.CanonVersionV2 {
 		return "", fmt.Errorf("unsupported canon_version %d", e.CanonVersion)
 	}
+	return EntryHashV2(e, previousHash), nil
 }
 
 // CheckpointHash is hex(SHA-256("chk" ‖ tenant ‖ seq ‖ entry_hash ‖ created_at))

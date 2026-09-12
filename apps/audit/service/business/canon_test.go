@@ -18,7 +18,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -83,11 +82,10 @@ func TestCanonicalV2_GoldenVectors(t *testing.T) {
 func TestCanonicalV2_PipeInFieldsIsUnambiguous(t *testing.T) {
 	a := fixtureEntry()
 	b := fixtureEntry()
-	// Move the '|' boundary between adjacent fields; the legacy encoding
-	// could not tell these apart, canon_v2 must.
+	// Move the '|' boundary between adjacent fields; a delimiter-based
+	// encoding could not tell these apart, canon_v2 must.
 	a.ProfileID, a.Action = "prof", "|create"
 	b.ProfileID, b.Action = "prof|", "create"
-	require.Equal(t, business.EntryHashV1(a, ""), business.EntryHashV1(b, ""), "legacy encoding collides by design")
 	require.NotEqual(t, business.EntryHashV2(a, ""), business.EntryHashV2(b, ""))
 }
 
@@ -117,20 +115,11 @@ func TestCanonicalJSON_IsKeyOrderIndependentAndCompact(t *testing.T) {
 	require.Error(t, err, "non-finite numbers are rejected")
 }
 
-func TestEntryHashV1_MatchesLegacyPreImage(t *testing.T) {
+func TestEntryHash_RejectsUnknownCanonVersion(t *testing.T) {
 	e := fixtureEntry()
-	e.CanonVersion = models.CanonVersionLegacy
-	detailsJSON, _ := json.Marshal(e.Details)
-	pre := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-		e.ProfileID, e.Action, e.ResourceType, e.ResourceID, e.Service, string(detailsJSON),
-		e.IPAddress, e.UserAgent, e.DeviceID, e.TargetProfileID, e.TraceID,
-		e.CreatedAt.UTC().Format("2006-01-02T15:04:05.000000Z"), "prev")
-	sum := sha256.Sum256([]byte(pre))
-	require.Equal(t, hex.EncodeToString(sum[:]), business.EntryHashV1(e, "prev"))
-
 	got, err := business.EntryHash(e, "prev")
 	require.NoError(t, err)
-	require.Equal(t, business.EntryHashV1(e, "prev"), got)
+	require.Equal(t, business.EntryHashV2(e, "prev"), got)
 	e.CanonVersion = 9
 	_, err = business.EntryHash(e, "prev")
 	require.Error(t, err)
@@ -154,14 +143,11 @@ func TestSigner_SignAndVerifyByCanonVersion(t *testing.T) {
 	require.Equal(t, "k-test", e.KeyID)
 	require.Equal(t, int16(models.CanonVersionV2), e.CanonVersion)
 	require.True(t, business.VerifyHash(s.Public(), e.EntryHash, e.Signature, models.CanonVersionV2))
-	require.False(t, business.VerifyHash(s.Public(), e.EntryHash, e.Signature, models.CanonVersionLegacy), "message differs per version")
+	require.False(t, business.VerifyHash(s.Public(), e.EntryHash, e.Signature, 1), "unknown versions never verify")
 	require.False(t, business.VerifyHash(s.Public(), business.EntryHashV2(e, "x"), e.Signature, models.CanonVersionV2))
 	require.False(t, business.VerifyHash(s.Public(), e.EntryHash, "zz", models.CanonVersionV2))
-
-	// Legacy signatures were over the hex string bytes.
-	legacySig, err := s.SignHash(e.EntryHash, models.CanonVersionLegacy)
-	require.NoError(t, err)
-	require.True(t, business.VerifyHash(s.Public(), e.EntryHash, legacySig, models.CanonVersionLegacy))
+	_, err = s.SignHash(e.EntryHash, 1)
+	require.Error(t, err)
 
 	c := &models.AuditCheckpoint{Seq: 7, EntryHash: e.EntryHash}
 	c.TenantID = "tenant"

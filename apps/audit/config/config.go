@@ -61,11 +61,6 @@ type AuditConfig struct {
 	RejectionsRetention      time.Duration `env:"AUDIT_REJECTIONS_RETENTION"       envDefault:"2160h"`
 
 	VerifyMaxEntries int64 `env:"AUDIT_VERIFY_MAX_ENTRIES" envDefault:"1000000"`
-
-	// LegacySigningKey (AUDIT_SIGNING_KEY) is never read. It is refused when no
-	// reference is configured, and ignored with a warning during the rollout
-	// overlap when both are set.
-	LegacySigningKey string `env:"AUDIT_SIGNING_KEY"`
 }
 
 // FrozenTenantSet returns the frozen tenant ids as a lookup set.

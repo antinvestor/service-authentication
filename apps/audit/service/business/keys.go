@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,7 +38,6 @@ import (
 // Errors surfaced by the key provider.
 var (
 	ErrKeyRefMissing     = errors.New("AUDIT_SIGNING_KEY_REF and AUDIT_SIGNING_KEY_ID are required")
-	ErrLegacyKeyEnvSet   = errors.New("AUDIT_SIGNING_KEY is no longer supported; use AUDIT_SIGNING_KEY_REF")
 	ErrActiveKeyRetired  = errors.New("active signing key is retired")
 	ErrPublicKeyMismatch = errors.New("loaded private key does not match the stored public key")
 	ErrKeyNotFound       = errors.New("signing key not found")
@@ -81,22 +79,13 @@ type keyState struct {
 }
 
 // NewKeyProvider loads the configured key and validates it against the key
-// registry. It fails when the reference is unresolvable, when the legacy
-// env var is set, or when the stored public key differs. A missing key row
+// registry. It fails when the reference is unresolvable or when the stored
+// public key differs. A missing key row
 // is tolerated so the setup Job can call Seed; the runtime calls Reload
 // after seeding is guaranteed.
 func NewKeyProvider(ctx context.Context, cfg *aconfig.AuditConfig, repo repository.SigningKeyRepository) (KeyProvider, error) {
 	if cfg.SigningKeyRef == "" || cfg.SigningKeyID == "" {
-		if strings.TrimSpace(cfg.LegacySigningKey) != "" {
-			return nil, ErrLegacyKeyEnvSet
-		}
 		return nil, ErrKeyRefMissing
-	}
-	if strings.TrimSpace(cfg.LegacySigningKey) != "" {
-		// Rollout overlap: manifests may still carry the old variable while
-		// the reference is configured. The reference wins; warn so it gets
-		// removed, and never read the legacy value.
-		util.Log(ctx).Warn("AUDIT_SIGNING_KEY is set but ignored; remove it now that AUDIT_SIGNING_KEY_REF is configured")
 	}
 	kp := &keyProvider{cfg: cfg, repo: repo, cache: map[string]ed25519.PublicKey{}}
 	priv, err := LoadPrivateKeyRef(cfg.SigningKeyRef, cfg.SigningKeyID, cfg.SigningKeyMountDir)

@@ -28,11 +28,9 @@ const (
 	IntakeStateFailed    = "FAILED"
 )
 
-// Canonical encoding versions recorded on AuditEntry.CanonVersion.
-const (
-	CanonVersionLegacy = 1
-	CanonVersionV2     = 2
-)
+// CanonVersionV2 is the canonical encoding recorded on AuditEntry.CanonVersion.
+// Any change to the encoding is a new version, never an edit.
+const CanonVersionV2 = 2
 
 // AlgorithmEd25519 is the only signing algorithm currently supported.
 const AlgorithmEd25519 = "ed25519"
@@ -45,8 +43,7 @@ const AlgorithmEd25519 = "ed25519"
 //   - No UPDATE or DELETE is permitted on this table (database trigger).
 //   - (TenantID, Seq) is unique and gap-free; Seq is assigned by the chain
 //     writer under a per-tenant advisory lock.
-//   - EntryHash = SHA-256(canonical(entry) ‖ PreviousHash) where canonical is
-//     selected by CanonVersion (see business/canon.go).
+//   - EntryHash = SHA-256(canon_v2(entry) ‖ PreviousHash) (see business/canon.go).
 type AuditEntry struct {
 	data.BaseModel
 	ProfileID       string       `gorm:"type:varchar(50);index;not null"`

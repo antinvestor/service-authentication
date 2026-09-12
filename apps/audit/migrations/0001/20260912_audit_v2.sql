@@ -4,49 +4,25 @@
 
 -- Audit v2: per-tenant sequence, chain heads, immutability triggers.
 -- Columns and new tables are created by GORM auto-migration, which runs
--- before this file. This file backfills legacy rows and adds the
--- constraints auto-migration cannot express.
+-- before this file. This file adds the constraints auto-migration cannot
+-- express.
 
--- 1. Backfill seq for legacy rows (seq = 0) per tenant in (created_at, id)
---    order, continuing after any seq already assigned. Re-runnable: rows
---    with seq > 0 are never touched.
-WITH ordered AS (
-    SELECT e.id,
-           e.created_at,
-           row_number() OVER (PARTITION BY e.tenant_id ORDER BY e.created_at, e.id)
-               + COALESCE((SELECT MAX(m.seq) FROM audit_entries m WHERE m.tenant_id = e.tenant_id AND m.seq > 0), 0)
-               AS new_seq
-    FROM audit_entries e
-    WHERE e.seq = 0
-)
-UPDATE audit_entries e
-SET seq           = o.new_seq,
-    key_id        = CASE WHEN e.key_id = '' THEN 'k1' ELSE e.key_id END,
-    canon_version = 1,
-    entry_id      = CASE WHEN e.entry_id = '' THEN e.id ELSE e.entry_id END,
-    occurred_at   = COALESCE(e.occurred_at, e.created_at),
-    received_at   = COALESCE(e.received_at, e.created_at)
-FROM ordered o
-WHERE e.id = o.id AND e.created_at = o.created_at;
+-- 1. Greenfield: rows written by the pre-v2 service carry no seq, key id
+--    or canonical hash and are not part of the chain. They are discarded;
+--    the chain starts at seq 1 for every tenant.
+TRUNCATE TABLE audit_entries;
 
--- 2. Chain heads from the last entry per tenant. ID = tenant_id.
-INSERT INTO audit_chain_heads (id, tenant_id, partition_id, seq, entry_hash, created_at, modified_at, version)
-SELECT DISTINCT ON (tenant_id) tenant_id, tenant_id, partition_id, seq, entry_hash, now(), now(), 1
-FROM audit_entries
-ORDER BY tenant_id, seq DESC
-ON CONFLICT (id) DO NOTHING;
-
--- 3. Hash columns must never be blank-padded (char(n) pads, breaking the
+-- 2. Hash columns must never be blank-padded (char(n) pads, breaking the
 --    signed pre-image); enforce varchar regardless of how they were created.
 ALTER TABLE audit_entries ALTER COLUMN payload_hash TYPE varchar(64);
 ALTER TABLE audit_entries ALTER COLUMN authorization_hash TYPE varchar(64);
 ALTER TABLE audit_entries ALTER COLUMN policy_hash TYPE varchar(64);
 
--- 4. Storage-level fork guard and chain-walk index.
+-- 3. Storage-level fork guard and chain-walk index.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_entries_tenant_seq
     ON audit_entries (tenant_id, seq);
 
--- 5. Partial indexes for the evidence join keys.
+-- 4. Partial indexes for the evidence join keys.
 CREATE INDEX IF NOT EXISTS idx_audit_entries_intent
     ON audit_entries (intent_id) WHERE intent_id IS NOT NULL AND intent_id <> '';
 CREATE INDEX IF NOT EXISTS idx_audit_entries_correlation
@@ -54,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_entries_correlation
 CREATE INDEX IF NOT EXISTS idx_audit_entries_event
     ON audit_entries (event_id) WHERE event_id IS NOT NULL AND event_id <> '';
 
--- 6. Intake: idempotency key and drain scan. Checkpoints: one per position.
+-- 5. Intake: idempotency key and drain scan. Checkpoints: one per position.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_intake_dedupe
     ON audit_intake (tenant_id, service, entry_id);
 CREATE INDEX IF NOT EXISTS idx_audit_intake_accepted
@@ -62,10 +38,10 @@ CREATE INDEX IF NOT EXISTS idx_audit_intake_accepted
 CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_checkpoints_tenant_seq
     ON audit_checkpoints (tenant_id, seq);
 
--- 7. The legacy chain-walk index is superseded by seq.
+-- 6. The legacy chain-walk index is superseded by seq.
 DROP INDEX IF EXISTS idx_audit_entries_chain;
 
--- 8. Immutability. Migration and runtime share one database role in the
+-- 7. Immutability. Migration and runtime share one database role in the
 --    deployment, so a role-level REVOKE cannot distinguish them; triggers
 --    enforce append-only semantics regardless of role. Soft deletes
 --    (UPDATE deleted_at) are blocked as well.

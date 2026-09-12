@@ -67,8 +67,7 @@ func (s *Signer) Public() ed25519.PublicKey { return s.pub }
 func (s *Signer) PublicKeyHex() string { return hex.EncodeToString(s.pub) }
 
 // SignHash signs an entry or checkpoint hash under the given canon version
-// and returns the hex signature. Version 1 signed the hex string bytes;
-// version 2 signs the raw 32-byte digest.
+// and returns the hex signature. Version 2 signs the raw 32-byte digest.
 func (s *Signer) SignHash(hashHex string, canonVersion int16) (string, error) {
 	msg, err := signingMessage(hashHex, canonVersion)
 	if err != nil {
@@ -94,18 +93,14 @@ func VerifyHash(pub ed25519.PublicKey, hashHex, sigHex string, canonVersion int1
 }
 
 func signingMessage(hashHex string, canonVersion int16) ([]byte, error) {
-	switch canonVersion {
-	case models.CanonVersionLegacy:
-		return []byte(hashHex), nil
-	case models.CanonVersionV2:
-		raw, err := hex.DecodeString(hashHex)
-		if err != nil || len(raw) != 32 {
-			return nil, fmt.Errorf("signer: hash %q is not 32-byte hex", hashHex)
-		}
-		return raw, nil
-	default:
+	if canonVersion != models.CanonVersionV2 {
 		return nil, fmt.Errorf("signer: unsupported canon_version %d", canonVersion)
 	}
+	raw, err := hex.DecodeString(hashHex)
+	if err != nil || len(raw) != 32 {
+		return nil, fmt.Errorf("signer: hash %q is not 32-byte hex", hashHex)
+	}
+	return raw, nil
 }
 
 // SignEntry computes PreviousHash, EntryHash, KeyID and Signature for a v2

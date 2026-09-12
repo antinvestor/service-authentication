@@ -422,34 +422,10 @@ func (s *ChainSuite) TestVerify_DetectsTamperingAndStartsFromCheckpoint() {
 	s.Require().Equal(int64(50), partial.EndSeq)
 }
 
-func (s *ChainSuite) TestVerify_AcrossKeyRotationAndLegacyBoundary() {
+func (s *ChainSuite) TestVerify_AcrossKeyRotation() {
 	st := s.newStack(nil)
 	ctx := tests.TenantContext(st.svc.Ctx, "t-rot")
 	global := tests.GlobalContext(st.svc.Ctx)
-
-	// Legacy history: two canon v1 rows inserted the way the pre-v2 service
-	// and the backfill would have left them, signed by k1 over the hex hash.
-	k1, err := st.keys.Active()
-	s.Require().NoError(err)
-	prev := ""
-	base := time.Now().UTC().Add(-time.Hour)
-	for i := 1; i <= 2; i++ {
-		e := &models.AuditEntry{ProfileID: "legacy", Action: "login", ResourceType: "session", Service: "service_authentication",
-			Seq: int64(i), KeyID: "k1", CanonVersion: models.CanonVersionLegacy, EntryID: fmt.Sprintf("legacy-%d", i)}
-		e.ID = fmt.Sprintf("legacy-%d", i)
-		e.TenantID, e.PartitionID = "t-rot", "p-t-rot"
-		e.CreatedAt, e.ModifiedAt, e.Version = base.Add(time.Duration(i)*time.Second), base, 1
-		e.OccurredAt, e.ReceivedAt = e.CreatedAt, e.CreatedAt
-		e.PreviousHash = prev
-		e.EntryHash = business.EntryHashV1(e, prev)
-		e.Signature, err = k1.SignHash(e.EntryHash, models.CanonVersionLegacy)
-		s.Require().NoError(err)
-		s.Require().NoError(st.svc.Pool.DB(global, false).Create(e).Error)
-		prev = e.EntryHash
-	}
-	s.Require().NoError(st.svc.Pool.DB(global, false).Exec(
-		`INSERT INTO audit_chain_heads (id, tenant_id, partition_id, seq, entry_hash, created_at, modified_at, version)
-		 VALUES ('t-rot', 't-rot', 'p-t-rot', 2, ?, now(), now(), 1)`, prev).Error)
 
 	// v2 rows under k1.
 	s.ingestN(st, "t-rot", 5, "r1")
@@ -488,15 +464,14 @@ func (s *ChainSuite) TestVerify_AcrossKeyRotationAndLegacyBoundary() {
 	s.Require().ErrorIs(err, business.ErrActiveKeyRetired)
 
 	entries := s.chain(st, "t-rot")
-	s.Require().Len(entries, 12)
-	s.Require().Equal(int16(models.CanonVersionLegacy), entries[1].CanonVersion)
-	s.Require().Equal("k1", entries[6].KeyID)
-	s.Require().Equal("k2", entries[7].KeyID)
+	s.Require().Len(entries, 10)
+	s.Require().Equal("k1", entries[4].KeyID)
+	s.Require().Equal("k2", entries[5].KeyID)
 
-	res, err := st.verify.VerifyIntegrity(ctx, "t-rot", 1, 12)
+	res, err := st.verify.VerifyIntegrity(ctx, "t-rot", 1, 10)
 	s.Require().NoError(err)
 	s.Require().True(res.Valid, res.Message)
-	s.Require().Equal(int64(12), res.EntriesVerified)
+	s.Require().Equal(int64(10), res.EntriesVerified)
 	s.Require().ElementsMatch([]string{"k1", "k2"}, res.KeyIDsUsed)
 
 	keys, err := st.keys.List(global)
@@ -520,17 +495,10 @@ func (s *ChainSuite) TestKeyProvider_RefusesBadConfiguration() {
 	_, err := business.NewKeyProvider(ctx, &missing, st.keyRepo)
 	s.Require().Error(err)
 
-	// Legacy variable alone is refused; alongside a reference it is ignored
-	// (rollout overlap while manifests still carry it).
-	legacy := base
-	legacy.LegacySigningKey = "deadbeef"
-	legacy.SigningKeyRef = ""
-	_, err = business.NewKeyProvider(ctx, &legacy, st.keyRepo)
-	s.Require().ErrorIs(err, business.ErrLegacyKeyEnvSet)
-	overlap := base
-	overlap.LegacySigningKey = "deadbeef"
-	_, err = business.NewKeyProvider(tests.GlobalContext(ctx), &overlap, st.keyRepo)
-	s.Require().NoError(err)
+	noRef := base
+	noRef.SigningKeyRef = ""
+	_, err = business.NewKeyProvider(ctx, &noRef, st.keyRepo)
+	s.Require().ErrorIs(err, business.ErrKeyRefMissing)
 
 	noID := base
 	noID.SigningKeyID = ""
