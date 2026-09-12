@@ -53,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| daid3uspf2t8dfvkjnl0 | service-manufacturing | (SA: service_manufacturing) | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs7vg | service-notification-integration-whatsapp | (SA: service_notification_whatsapp) | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uap0 | imports | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | d8gueekpf2tfslum7lp0 | d8gueekpf2tfslum7lpg | d8gueekpf2tfslum7ln0 | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -103,6 +104,7 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| daid3uspf2t8dfvkjnm0 | daid38spf2t72pqigk80 | daid3uspf2t8dfvkjnl0 | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs80g | daenc7kpf2t8pa1q04hg | daend44pf2t8c15rs7vg | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uaq0 | daalssspf2tbp6p7ekrg | daaltq4pf2tb6me3uap0 | apps/tenancy/migrations/0001/20260831_service_imports.sql |
 | c2f4j7au6s7f91uqnolg | d75qclkpf2t1uum8ij40 | c2f4j7au6s7f91uqnoog | apps/tenancy/migrations/0001/20260704_01_greenfield_seed.sql |
@@ -451,3 +453,50 @@ configuration.
 | daend4kpf2t8cmavmv10 | service_notification_whatsapp SA permit service_account_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daend4kpf2t8cmavmv1g | service_notification_whatsapp SA permit tenant_manage | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daend4kpf2t8cmavmv20 | service_notification_whatsapp SA permit tenant_view | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
+
+## service_manufacturing SA (2026-09-12)
+| xid | purpose | file |
+|-----|---------|------|
+| daid3v4pf2t8dv11qcd0 | service_manufacturing SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcdg | service_manufacturing SA recipient https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3uspf2t8dfvkjnmg | service_manufacturing SA authorization policy | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qce0 | service_manufacturing SA grant service_manufacturing partition_tree | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qceg | service_manufacturing SA permission batch_complete | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcf0 | service_manufacturing SA permission batch_operate | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcfg | service_manufacturing SA permission batch_override | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcg0 | service_manufacturing SA permission batch_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcgg | service_manufacturing SA permission cleaning_perform | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qch0 | service_manufacturing SA permission cleaning_verify | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qchg | service_manufacturing SA permission costing_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qci0 | service_manufacturing SA permission costing_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcig | service_manufacturing SA permission demand_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcj0 | service_manufacturing SA permission demand_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcjg | service_manufacturing SA permission environment_alarm_acknowledge | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qck0 | service_manufacturing SA permission environment_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qckg | service_manufacturing SA permission environment_record | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcl0 | service_manufacturing SA permission environment_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qclg | service_manufacturing SA permission equipment_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcm0 | service_manufacturing SA permission equipment_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcmg | service_manufacturing SA permission inspection_override | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcn0 | service_manufacturing SA permission inspection_perform | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcng | service_manufacturing SA permission inspection_template_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qco0 | service_manufacturing SA permission inspection_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcog | service_manufacturing SA permission inventory_adjust | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcp0 | service_manufacturing SA permission inventory_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcpg | service_manufacturing SA permission inventory_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcq0 | service_manufacturing SA permission label_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcqg | service_manufacturing SA permission maintenance_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcr0 | service_manufacturing SA permission plan_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcrg | service_manufacturing SA permission plan_validate | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcs0 | service_manufacturing SA permission plan_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcsg | service_manufacturing SA permission recall_initiate | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qct0 | service_manufacturing SA permission recall_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qctg | service_manufacturing SA permission recall_resolve | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcu0 | service_manufacturing SA permission recipe_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcug | service_manufacturing SA permission recipe_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcv0 | service_manufacturing SA permission shelf_life_manage | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qcvg | service_manufacturing SA permission shelf_life_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qd00 | service_manufacturing SA permission trace_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qd0g | service_manufacturing SA permission waste_dispose | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qd10 | service_manufacturing SA permission waste_record | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+| daid3v4pf2t8dv11qd1g | service_manufacturing SA permission waste_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
