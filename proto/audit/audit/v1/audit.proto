@@ -193,6 +193,19 @@ message AuditEntryObject {
 
   // Intake state of the entry.
   IntakeState state = 41;
+
+  // Phase of the command this entry records (GFOS §10.4, K11).
+  AuditPhase phase = 42;
+
+  // entry_id of the REQUESTED entry this entry is the outcome of.
+  string outcome_of_entry_id = 43;
+
+  // Producer audit class in force for the RPC ("AUDIT_REQUIRED", ...).
+  string audit_class = 44;
+
+  // True when the producer wrote this entry while AUDIT_DEGRADED was
+  // declared and drained it from its local outbox afterwards.
+  bool written_during_degradation = 45;
 }
 
 // AuditRelation is a link between two entities affected by an action.
@@ -203,6 +216,20 @@ message AuditRelation {
   string child_id = 4;
   // "added", "removed" or "modified".
   string action = 5;
+}
+
+// AuditPhase links a human command to its outcome (GFOS §10.4, K11).
+// A producer records REQUESTED before its own transaction and a linked
+// COMPLETED or FAILED afterwards, so a REQUESTED entry with no outcome
+// reads as "asked, not done". The service never infers completion.
+enum AuditPhase {
+  AUDIT_PHASE_UNSPECIFIED = 0;
+  // The human command was asked for; the producer transaction had not committed.
+  AUDIT_PHASE_REQUESTED = 1;
+  // The command succeeded; outcome_of_entry_id names the request.
+  AUDIT_PHASE_COMPLETED = 2;
+  // The command failed; outcome_of_entry_id names the request.
+  AUDIT_PHASE_FAILED = 3;
 }
 
 // IntakeState is the lifecycle of an accepted entry.
@@ -280,6 +307,24 @@ message CreateAuditEntryRequest {
   string state_to = 24 [(buf.validate.field).string.max_len = 64];
   int64 resource_version = 25;
   repeated AuditRelation relations = 26 [(buf.validate.field).repeated.max_items = 50];
+
+  // Phase of the command (GFOS §10.4, K11). When unset the service falls
+  // back to details["phase"] so a producer on the pre-K11 client still
+  // records the phase it already sends.
+  AuditPhase phase = 27;
+
+  // entry_id of the REQUESTED entry this entry is the outcome of. Required
+  // for a COMPLETED or FAILED outcome of an AUDIT_REQUIRED command; must be
+  // empty on a REQUESTED entry. Falls back to details["linked_entry_id"].
+  string outcome_of_entry_id = 28 [(buf.validate.field).string.max_len = 64];
+
+  // Producer audit class of the RPC. Falls back to details["class"].
+  string audit_class = 29 [(buf.validate.field).string.max_len = 32];
+
+  // True when the producer is draining an entry it parked locally while
+  // AUDIT_DEGRADED was declared. The entry keeps its original occurred_at
+  // and is recorded as written during degradation.
+  bool written_during_degradation = 30;
 }
 
 message CreateAuditEntryResponse {
@@ -364,6 +409,16 @@ message ListAuditEntriesRequest {
   // Sequence range filters. When either is set, results are ordered by seq ascending.
   int64 seq_from = 16;
   int64 seq_to = 17;
+
+  // Filter by phase (GFOS §10.4, K11).
+  AuditPhase phase = 18;
+
+  // Return only REQUESTED entries that carry no linked outcome, i.e. the
+  // commands that read as "asked, not done".
+  bool without_outcome = 19;
+
+  // Filter by entries written while AUDIT_DEGRADED was declared.
+  bool written_during_degradation_only = 20;
 }
 
 message ListAuditEntriesResponse {

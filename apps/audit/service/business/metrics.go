@@ -27,6 +27,7 @@ const meterName = "service_audit"
 type Metrics struct {
 	IntakeAccepted       telemetry.Counter
 	IntakeRejected       telemetry.Counter
+	IntakeDegraded       telemetry.Counter
 	IntakeBacklog        telemetry.Gauge
 	IntakeOldestAge      telemetry.FloatGauge
 	IntakeFailed         telemetry.Gauge
@@ -47,6 +48,7 @@ func NewMetrics() *Metrics {
 	return &Metrics{
 		IntakeAccepted:       bm.Counter("audit_intake_accepted_total", "Entries accepted into intake"),
 		IntakeRejected:       bm.Counter("audit_intake_rejected_total", "Entries rejected by the validator"),
+		IntakeDegraded:       bm.Counter("audit_intake_degraded_total", "Entries accepted that a producer wrote while AUDIT_DEGRADED was declared"),
 		IntakeBacklog:        bm.Gauge("audit_intake_backlog", "Accepted entries not yet chained, per tenant"),
 		IntakeOldestAge:      bm.FloatGauge("audit_intake_oldest_age_seconds", "Age of the oldest accepted entry"),
 		IntakeFailed:         bm.Gauge("audit_intake_failed", "Intake rows in FAILED state"),

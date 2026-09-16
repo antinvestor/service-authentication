@@ -79,6 +79,36 @@ func TestCanonicalV2_GoldenVectors(t *testing.T) {
 	require.Equal(t, want, got, "canon_v2 bytes changed; this is a new canon version, not an edit")
 }
 
+// TestCanonicalV2_BindsK11Details proves the K11 request/outcome fields are
+// inside the signed pre-image. They are mirrored into details by the
+// validator rather than appended to the encoding, so canon_v2 stays
+// byte-identical to common/auditverify's while a phase, a link or the
+// degradation marking still cannot be changed after the fact.
+func TestCanonicalV2_BindsK11Details(t *testing.T) {
+	base := fixtureEntry()
+	base.Details = data.JSONMap{
+		business.DetailKeyPhase: models.PhaseRequested, business.DetailKeyClass: business.ClassRequired,
+	}
+	baseline := business.EntryHashV2(base, "")
+
+	mutations := map[string]func(d data.JSONMap){
+		"phase":    func(d data.JSONMap) { d[business.DetailKeyPhase] = models.PhaseCompleted },
+		"link":     func(d data.JSONMap) { d[business.DetailKeyLinked] = "req-1" },
+		"class":    func(d data.JSONMap) { d[business.DetailKeyClass] = "AUDIT_BEST_EFFORT" },
+		"degraded": func(d data.JSONMap) { d[business.DetailKeyDegraded] = true },
+	}
+	for name, mutate := range mutations {
+		t.Run(name, func(t *testing.T) {
+			e := fixtureEntry()
+			e.Details = data.JSONMap{
+				business.DetailKeyPhase: models.PhaseRequested, business.DetailKeyClass: business.ClassRequired,
+			}
+			mutate(e.Details)
+			require.NotEqual(t, baseline, business.EntryHashV2(e, ""))
+		})
+	}
+}
+
 func TestCanonicalV2_PipeInFieldsIsUnambiguous(t *testing.T) {
 	a := fixtureEntry()
 	b := fixtureEntry()

@@ -266,6 +266,8 @@ func (h *AuthServer) SetupRouterV1(ctx context.Context) *http.ServeMux {
 		})
 	}
 
+	h.registerGenesisSessionProofRoutes(router)
+
 	// Webhook routes (PSK auth when HYDRA_WEBHOOK_API_PSK is configured)
 	webhookAuthenticatedHandler(h.TokenEnrichmentEndpoint, "/webhook/enrich/{tokenType}", "WebhookTokenEnrichmentEndpoint", "POST")
 	webhookAuthenticatedHandler(h.SignPrivateKeyJWTEndpoint, "/webhook/sign/private-key-jwt", "WebhookSignPrivateKeyJWT", "POST")

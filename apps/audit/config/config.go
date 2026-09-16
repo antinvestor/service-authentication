@@ -57,6 +57,11 @@ type AuditConfig struct {
 
 	RequireManifest bool `env:"AUDIT_REQUIRE_MANIFEST" envDefault:"false"`
 
+	// DegradedBackdatingWindow bounds occurred_at on an entry a producer
+	// drained from its outbox after AUDIT_DEGRADED was declared (GFOS §10.4,
+	// K11). Entries older than this are rejected like any other stale entry.
+	DegradedBackdatingWindow time.Duration `env:"AUDIT_DEGRADED_BACKDATING_WINDOW" envDefault:"168h"`
+
 	IntakeCommittedRetention time.Duration `env:"AUDIT_INTAKE_COMMITTED_RETENTION" envDefault:"168h"`
 	RejectionsRetention      time.Duration `env:"AUDIT_REJECTIONS_RETENTION"       envDefault:"2160h"`
 

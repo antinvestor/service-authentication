@@ -55,12 +55,72 @@ abstract final class AuditService {
     idempotency: connect.Idempotency.noSideEffects,
   );
 
-  /// VerifyIntegrity verifies the hash chain integrity over a time range.
+  /// VerifyIntegrity verifies the hash chain integrity over a sequence range.
   static const verifyIntegrity = connect.Spec(
     '/$name/VerifyIntegrity',
     connect.StreamType.unary,
     auditv1audit.VerifyIntegrityRequest.new,
     auditv1audit.VerifyIntegrityResponse.new,
     idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// ExportAuditEntries streams entries with bounding checkpoints and keys for offline verification.
+  static const exportAuditEntries = connect.Spec(
+    '/$name/ExportAuditEntries',
+    connect.StreamType.server,
+    auditv1audit.ExportAuditEntriesRequest.new,
+    auditv1audit.ExportAuditEntriesResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// ListCheckpoints lists signed checkpoints for the caller's tenant.
+  static const listCheckpoints = connect.Spec(
+    '/$name/ListCheckpoints',
+    connect.StreamType.unary,
+    auditv1audit.ListCheckpointsRequest.new,
+    auditv1audit.ListCheckpointsResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// GetSigningKeys returns all signing public keys, including retired ones.
+  static const getSigningKeys = connect.Spec(
+    '/$name/GetSigningKeys',
+    connect.StreamType.unary,
+    auditv1audit.GetSigningKeysRequest.new,
+    auditv1audit.GetSigningKeysResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// RegisterAuditManifest registers or updates a producing service's audit vocabulary.
+  static const registerAuditManifest = connect.Spec(
+    '/$name/RegisterAuditManifest',
+    connect.StreamType.unary,
+    auditv1audit.RegisterAuditManifestRequest.new,
+    auditv1audit.RegisterAuditManifestResponse.new,
+  );
+
+  /// GetAuditManifest returns the latest manifest for a service.
+  static const getAuditManifest = connect.Spec(
+    '/$name/GetAuditManifest',
+    connect.StreamType.unary,
+    auditv1audit.GetAuditManifestRequest.new,
+    auditv1audit.GetAuditManifestResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// RequeueIntake returns FAILED intake rows to ACCEPTED after operator remediation.
+  static const requeueIntake = connect.Spec(
+    '/$name/RequeueIntake',
+    connect.StreamType.unary,
+    auditv1audit.RequeueIntakeRequest.new,
+    auditv1audit.RequeueIntakeResponse.new,
+  );
+
+  /// RetireSigningKey marks a signing key retired; it keeps verifying but can no longer sign.
+  static const retireSigningKey = connect.Spec(
+    '/$name/RetireSigningKey',
+    connect.StreamType.unary,
+    auditv1audit.RetireSigningKeyRequest.new,
+    auditv1audit.RetireSigningKeyResponse.new,
   );
 }

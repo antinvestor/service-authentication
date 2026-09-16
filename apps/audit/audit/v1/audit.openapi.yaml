@@ -22,13 +22,17 @@ paths:
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
       requestBody:
         content:
           application/json:
@@ -59,13 +63,17 @@ paths:
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
       requestBody:
         content:
           application/json:
@@ -85,6 +93,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/audit.v1.CreateAuditEntryResponse'
+  /audit.v1.AuditService/ExportAuditEntries: {}
   /audit.v1.AuditService/GetAuditEntry:
     get:
       tags:
@@ -96,36 +105,49 @@ paths:
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
         - name: message
           in: query
+          description: The URL-encoded message query parameter contains the JSON or binary serialized request message
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/audit.v1.GetAuditEntryRequest'
         - name: encoding
           in: query
+          description: Define which encoding or 'Message-Codec' to use
           required: true
           schema:
             $ref: '#/components/schemas/encoding'
+          example: json
         - name: base64
           in: query
+          description: Specifies if the message query param is base64 encoded, which may be required for binary data
           schema:
             $ref: '#/components/schemas/base64'
+          example: false
         - name: compression
           in: query
+          description: Which compression algorithm to use for this request
           schema:
             $ref: '#/components/schemas/compression'
+          example: gzip
         - name: connect
           in: query
+          description: Define the version of the Connect protocol
           schema:
             $ref: '#/components/schemas/connect'
+          example: v1
       responses:
         default:
           description: Error
@@ -145,17 +167,21 @@ paths:
         - audit.v1.AuditService
       summary: Get audit entry
       description: Retrieves a single audit entry by its unique identifier.
-      operationId: getAuditEntry
+      operationId: getAuditEntry2
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
       requestBody:
         content:
           application/json:
@@ -175,7 +201,451 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/audit.v1.GetAuditEntryResponse'
+  /audit.v1.AuditService/GetAuditManifest:
+    get:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get audit manifest
+      description: Returns the latest registered audit manifest for a service.
+      operationId: getAuditManifest
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+        - name: message
+          in: query
+          description: The URL-encoded message query parameter contains the JSON or binary serialized request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditManifestRequest'
+        - name: encoding
+          in: query
+          description: Define which encoding or 'Message-Codec' to use
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+          example: json
+        - name: base64
+          in: query
+          description: Specifies if the message query param is base64 encoded, which may be required for binary data
+          schema:
+            $ref: '#/components/schemas/base64'
+          example: false
+        - name: compression
+          in: query
+          description: Which compression algorithm to use for this request
+          schema:
+            $ref: '#/components/schemas/compression'
+          example: gzip
+        - name: connect
+          in: query
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect'
+          example: v1
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditManifestResponse'
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get audit manifest
+      description: Returns the latest registered audit manifest for a service.
+      operationId: getAuditManifest2
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.GetAuditManifestRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetAuditManifestResponse'
+  /audit.v1.AuditService/GetSigningKeys:
+    get:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get signing keys
+      description: Returns public signing keys with validity windows so any entry can be verified under its key_id.
+      operationId: getSigningKeys
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+        - name: message
+          in: query
+          description: The URL-encoded message query parameter contains the JSON or binary serialized request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetSigningKeysRequest'
+        - name: encoding
+          in: query
+          description: Define which encoding or 'Message-Codec' to use
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+          example: json
+        - name: base64
+          in: query
+          description: Specifies if the message query param is base64 encoded, which may be required for binary data
+          schema:
+            $ref: '#/components/schemas/base64'
+          example: false
+        - name: compression
+          in: query
+          description: Which compression algorithm to use for this request
+          schema:
+            $ref: '#/components/schemas/compression'
+          example: gzip
+        - name: connect
+          in: query
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect'
+          example: v1
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetSigningKeysResponse'
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Get signing keys
+      description: Returns public signing keys with validity windows so any entry can be verified under its key_id.
+      operationId: getSigningKeys2
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.GetSigningKeysRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.GetSigningKeysResponse'
   /audit.v1.AuditService/ListAuditEntries: {}
+  /audit.v1.AuditService/ListCheckpoints:
+    get:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: List checkpoints
+      description: Lists signed chain checkpoints, the unit external systems anchor.
+      operationId: listCheckpoints
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+        - name: message
+          in: query
+          description: The URL-encoded message query parameter contains the JSON or binary serialized request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.ListCheckpointsRequest'
+        - name: encoding
+          in: query
+          description: Define which encoding or 'Message-Codec' to use
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+          example: json
+        - name: base64
+          in: query
+          description: Specifies if the message query param is base64 encoded, which may be required for binary data
+          schema:
+            $ref: '#/components/schemas/base64'
+          example: false
+        - name: compression
+          in: query
+          description: Which compression algorithm to use for this request
+          schema:
+            $ref: '#/components/schemas/compression'
+          example: gzip
+        - name: connect
+          in: query
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect'
+          example: v1
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.ListCheckpointsResponse'
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: List checkpoints
+      description: Lists signed chain checkpoints, the unit external systems anchor.
+      operationId: listCheckpoints2
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.ListCheckpointsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.ListCheckpointsResponse'
+  /audit.v1.AuditService/RegisterAuditManifest:
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Register audit manifest
+      description: Registers a versioned vocabulary manifest for the calling service. Unchanged content is a no-op.
+      operationId: registerAuditManifest
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.RegisterAuditManifestRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.RegisterAuditManifestResponse'
+  /audit.v1.AuditService/RequeueIntake:
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Requeue failed intake
+      description: Moves failed intake rows back to accepted so the chain writer retries them. The operation is itself audited.
+      operationId: requeueIntake
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.RequeueIntakeRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.RequeueIntakeResponse'
+  /audit.v1.AuditService/RetireSigningKey:
+    post:
+      tags:
+        - Audit
+        - audit.v1.AuditService
+      summary: Retire signing key
+      description: Retires a signing key. Existing entries stay verifiable; the writer refuses to sign with a retired key.
+      operationId: retireSigningKey
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/audit.v1.RetireSigningKeyRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit.v1.RetireSigningKeyResponse'
   /audit.v1.AuditService/SearchAuditEntries: {}
   /audit.v1.AuditService/VerifyIntegrity:
     get:
@@ -183,41 +653,54 @@ paths:
         - Audit
         - audit.v1.AuditService
       summary: Verify audit integrity
-      description: Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected.
+      description: Verifies the hash chain and digital signatures of audit entries over a sequence range, starting from the nearest checkpoint. Returns the first invalid entry if tampering is detected.
       operationId: verifyIntegrity
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
         - name: message
           in: query
+          description: The URL-encoded message query parameter contains the JSON or binary serialized request message
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/audit.v1.VerifyIntegrityRequest'
         - name: encoding
           in: query
+          description: Define which encoding or 'Message-Codec' to use
           required: true
           schema:
             $ref: '#/components/schemas/encoding'
+          example: json
         - name: base64
           in: query
+          description: Specifies if the message query param is base64 encoded, which may be required for binary data
           schema:
             $ref: '#/components/schemas/base64'
+          example: false
         - name: compression
           in: query
+          description: Which compression algorithm to use for this request
           schema:
             $ref: '#/components/schemas/compression'
+          example: gzip
         - name: connect
           in: query
+          description: Define the version of the Connect protocol
           schema:
             $ref: '#/components/schemas/connect'
+          example: v1
       responses:
         default:
           description: Error
@@ -236,18 +719,22 @@ paths:
         - Audit
         - audit.v1.AuditService
       summary: Verify audit integrity
-      description: Verifies the hash chain and digital signatures of audit entries over a time range. Returns the first invalid entry if tampering is detected.
-      operationId: verifyIntegrity
+      description: Verifies the hash chain and digital signatures of audit entries over a sequence range, starting from the nearest checkpoint. Returns the first invalid entry if tampering is detected.
+      operationId: verifyIntegrity2
       parameters:
         - name: Connect-Protocol-Version
           in: header
+          description: Define the version of the Connect protocol
           required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
         - name: Connect-Timeout-Ms
           in: header
+          description: Define the timeout, in ms
           schema:
             $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
       requestBody:
         content:
           application/json:
@@ -269,6 +756,31 @@ paths:
                 $ref: '#/components/schemas/audit.v1.VerifyIntegrityResponse'
 components:
   schemas:
+    audit.v1.AuditCheckpoint:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          title: tenant_id
+        seq:
+          type: string
+          title: seq
+          format: int64
+        entryHash:
+          type: string
+          title: entry_hash
+        keyId:
+          type: string
+          title: key_id
+        signature:
+          type: string
+          title: signature
+        createdAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: created_at
+      title: AuditCheckpoint
+      additionalProperties: false
     audit.v1.AuditEntryObject:
       type: object
       properties:
@@ -305,9 +817,10 @@ components:
           title: service
           description: Originating service name (e.g., "service_tenancy", "service_profile").
         details:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Struct'
           title: details
           description: Arbitrary details about the action as structured data.
-          $ref: '#/components/schemas/google.protobuf.Struct'
         ipAddress:
           type: string
           title: ip_address
@@ -329,9 +842,10 @@ components:
           title: trace_id
           description: OpenTelemetry trace ID for request correlation.
         createdAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: created_at
           description: Timestamp when the action occurred.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         previousHash:
           type: string
           title: previous_hash
@@ -344,11 +858,203 @@ components:
           type: string
           title: signature
           description: Ed25519 digital signature of the entry hash.
+        seq:
+          type: string
+          title: seq
+          format: int64
+          description: Position of this entry in the tenant's chain (1-based, gap-free).
+        keyId:
+          type: string
+          title: key_id
+          description: Identifier of the signing key used for this entry.
+        canonVersion:
+          type: integer
+          title: canon_version
+          format: int32
+          description: Canonical encoding version used to compute entry_hash (1 = legacy, 2 = length-prefixed).
+        entryId:
+          type: string
+          title: entry_id
+          description: Producer-supplied idempotency key, unique per (tenant, service).
+        actorServiceAccountId:
+          type: string
+          title: actor_service_account_id
+          description: Service account that submitted the entry (from caller claims).
+        onBehalfOf:
+          type: string
+          title: on_behalf_of
+          description: Person on whose behalf an operator or administrator acted.
+        occurredAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: occurred_at
+          description: When the action happened at the producer.
+        receivedAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: received_at
+          description: When the audit service accepted the entry.
+        correlationId:
+          type: string
+          title: correlation_id
+          description: Correlation identifier across services.
+        eventId:
+          type: string
+          title: event_id
+          description: Domain event identifier this action produced or relates to.
+        intentId:
+          type: string
+          title: intent_id
+          description: Financial intent identifier this action relates to.
+        instanceId:
+          type: string
+          title: instance_id
+          description: Workflow instance identifier this action relates to.
+        payloadHash:
+          type: string
+          title: payload_hash
+          description: SHA-256 hex of the request payload the person signed.
+        authorizationHash:
+          type: string
+          title: authorization_hash
+          description: SHA-256 hex of the authorization evidence record.
+        policyHash:
+          type: string
+          title: policy_hash
+          description: SHA-256 hex of the policy in force.
+        deviceKeyId:
+          type: string
+          title: device_key_id
+          description: Device key that signed the request, if any.
+        stateFrom:
+          type: string
+          title: state_from
+          description: State transition on the resource.
+        stateTo:
+          type: string
+          title: state_to
+        resourceVersion:
+          type: string
+          title: resource_version
+          format: int64
+          description: Version of the resource after the action.
+        relations:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditRelation'
+          title: relations
+          description: Relationships created, modified or removed by this action.
+        manifestVersion:
+          type: integer
+          title: manifest_version
+          format: int32
+          description: Version of the producer's audit manifest the entry was validated against (0 = none).
+        unmanifested:
+          type: boolean
+          title: unmanifested
+          description: True when the producing service had no registered manifest at acceptance.
+        state:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.IntakeState'
+          title: state
+          description: Intake state of the entry.
+        phase:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditPhase'
+          title: phase
+          description: Phase of the command this entry records (GFOS §10.4, K11).
+        outcomeOfEntryId:
+          type: string
+          title: outcome_of_entry_id
+          description: entry_id of the REQUESTED entry this entry is the outcome of.
+        auditClass:
+          type: string
+          title: audit_class
+          description: Producer audit class in force for the RPC ("AUDIT_REQUIRED", ...).
+        writtenDuringDegradation:
+          type: boolean
+          title: written_during_degradation
+          description: |-
+            True when the producer wrote this entry while AUDIT_DEGRADED was
+             declared and drained it from its local outbox afterwards.
       title: AuditEntryObject
       additionalProperties: false
       description: |-
         AuditEntryObject represents a single audit trail entry.
          Entries are append-only and tamper-proof via hash chaining and digital signatures.
+    audit.v1.AuditManifest:
+      type: object
+      properties:
+        service:
+          type: string
+          title: service
+          maxLength: 100
+          minLength: 1
+        actions:
+          type: array
+          items:
+            type: string
+          title: actions
+          maxItems: 500
+        resourceTypes:
+          type: array
+          items:
+            type: string
+          title: resource_types
+          maxItems: 500
+        openVocabulary:
+          type: boolean
+          title: open_vocabulary
+          description: Accept any (action, resource_type) pair.
+        allowBackdating:
+          type: boolean
+          title: allow_backdating
+          description: Allow occurred_at older than the standard window (outbox replays).
+        extraForbiddenKeys:
+          type: array
+          items:
+            type: string
+          title: extra_forbidden_keys
+          maxItems: 100
+          description: Additional forbidden detail keys (case-insensitive substrings).
+      title: AuditManifest
+      additionalProperties: false
+      description: AuditManifest declares a producing service's audit vocabulary.
+    audit.v1.AuditPhase:
+      type: string
+      title: AuditPhase
+      enum:
+        - AUDIT_PHASE_UNSPECIFIED
+        - AUDIT_PHASE_REQUESTED
+        - AUDIT_PHASE_COMPLETED
+        - AUDIT_PHASE_FAILED
+      description: |-
+        AuditPhase links a human command to its outcome (GFOS §10.4, K11).
+         A producer records REQUESTED before its own transaction and a linked
+         COMPLETED or FAILED afterwards, so a REQUESTED entry with no outcome
+         reads as "asked, not done". The service never infers completion.
+    audit.v1.AuditRelation:
+      type: object
+      properties:
+        parentType:
+          type: string
+          title: parent_type
+        parentId:
+          type: string
+          title: parent_id
+        childType:
+          type: string
+          title: child_type
+        childId:
+          type: string
+          title: child_id
+        action:
+          type: string
+          title: action
+          description: '"added", "removed" or "modified".'
+      title: AuditRelation
+      additionalProperties: false
+      description: AuditRelation is a link between two entities affected by an action.
     audit.v1.BatchCreateAuditEntriesRequest:
       type: object
       properties:
@@ -370,6 +1076,14 @@ components:
           items:
             $ref: '#/components/schemas/audit.v1.AuditEntryObject'
           title: data
+          description: 'Deprecated: see CreateAuditEntryResponse.data.'
+          deprecated: true
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.CreateAuditEntryResponse'
+          title: receipts
+          description: One receipt per request entry, in request order.
       title: BatchCreateAuditEntriesResponse
       additionalProperties: false
     audit.v1.CreateAuditEntryRequest:
@@ -400,9 +1114,10 @@ components:
           minLength: 1
           description: Originating service name. Required.
         details:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Struct'
           title: details
           description: Arbitrary details about the action.
-          $ref: '#/components/schemas/google.protobuf.Struct'
         ipAddress:
           type: string
           title: ip_address
@@ -423,6 +1138,100 @@ components:
           type: string
           title: trace_id
           description: OpenTelemetry trace ID for correlation (optional).
+        entryId:
+          type: string
+          title: entry_id
+          maxLength: 64
+          description: Idempotency key unique per (tenant, service). Generated server-side when empty.
+        onBehalfOf:
+          type: string
+          title: on_behalf_of
+          maxLength: 50
+          description: Person on whose behalf an operator or administrator acts (optional).
+        occurredAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: occurred_at
+          description: When the action happened at the producer. Defaults to receipt time.
+        correlationId:
+          type: string
+          title: correlation_id
+          maxLength: 64
+        eventId:
+          type: string
+          title: event_id
+          maxLength: 64
+        intentId:
+          type: string
+          title: intent_id
+          maxLength: 64
+        instanceId:
+          type: string
+          title: instance_id
+          maxLength: 64
+        payloadHash:
+          type: string
+          title: payload_hash
+          pattern: ^([0-9a-f]{64})?$
+          description: 32-byte lowercase hex digests (optional).
+        authorizationHash:
+          type: string
+          title: authorization_hash
+          pattern: ^([0-9a-f]{64})?$
+        policyHash:
+          type: string
+          title: policy_hash
+          pattern: ^([0-9a-f]{64})?$
+        deviceKeyId:
+          type: string
+          title: device_key_id
+          maxLength: 64
+        stateFrom:
+          type: string
+          title: state_from
+          maxLength: 64
+        stateTo:
+          type: string
+          title: state_to
+          maxLength: 64
+        resourceVersion:
+          type: string
+          title: resource_version
+          format: int64
+        relations:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditRelation'
+          title: relations
+          maxItems: 50
+        phase:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditPhase'
+          title: phase
+          description: |-
+            Phase of the command (GFOS §10.4, K11). When unset the service falls
+             back to details["phase"] so a producer on the pre-K11 client still
+             records the phase it already sends.
+        outcomeOfEntryId:
+          type: string
+          title: outcome_of_entry_id
+          maxLength: 64
+          description: |-
+            entry_id of the REQUESTED entry this entry is the outcome of. Required
+             for a COMPLETED or FAILED outcome of an AUDIT_REQUIRED command; must be
+             empty on a REQUESTED entry. Falls back to details["linked_entry_id"].
+        auditClass:
+          type: string
+          title: audit_class
+          maxLength: 32
+          description: Producer audit class of the RPC. Falls back to details["class"].
+        writtenDuringDegradation:
+          type: boolean
+          title: written_during_degradation
+          description: |-
+            True when the producer is draining an entry it parked locally while
+             AUDIT_DEGRADED was declared. The entry keeps its original occurred_at
+             and is recorded as written during degradation.
       title: CreateAuditEntryRequest
       additionalProperties: false
       description: |-
@@ -432,9 +1241,107 @@ components:
       type: object
       properties:
         data:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditEntryObject'
           title: data
-          $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+          description: 'Deprecated: v2 returns the intake receipt; the chained entry is available via GetAuditEntry.'
+          deprecated: true
+        intakeId:
+          type: string
+          title: intake_id
+          description: Identifier of the intake row holding the accepted entry.
+        entryId:
+          type: string
+          title: entry_id
+          description: Idempotency key (echoed or generated).
+        state:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.IntakeState'
+          title: state
+          description: Always INTAKE_STATE_ACCEPTED on success, or the existing state for a duplicate.
       title: CreateAuditEntryResponse
+      additionalProperties: false
+    audit.v1.ExportAuditEntriesRequest:
+      type: object
+      properties:
+        startSeq:
+          type: string
+          title: start_seq
+          minimum: 0
+          format: int64
+        endSeq:
+          type: string
+          title: end_seq
+          minimum: 0
+          format: int64
+      title: ExportAuditEntriesRequest
+      additionalProperties: false
+      description: ExportAuditEntriesRequest streams a verifiable bundle for a sequence range.
+    audit.v1.ExportAuditEntriesResponse:
+      type: object
+      anyOf:
+        - type: object
+          properties:
+            entry:
+              allOf:
+                - $ref: '#/components/schemas/audit.v1.AuditEntryObject'
+              title: entry
+          title: entry
+        - type: object
+          properties:
+            header:
+              allOf:
+                - $ref: '#/components/schemas/audit.v1.ExportAuditEntriesResponse.Header'
+              title: header
+          title: header
+      unevaluatedProperties: false
+      not:
+        allOf:
+          - anyOf:
+              - required:
+                  - entry
+              - required:
+                  - header
+          - not:
+              oneOf:
+                - required:
+                    - entry
+                - required:
+                    - header
+      title: ExportAuditEntriesResponse
+      description: |-
+        ExportAuditEntriesResponse: the first message carries the bounding
+         checkpoints and keys; subsequent messages carry entries in seq order.
+    audit.v1.ExportAuditEntriesResponse.Header:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          title: tenant_id
+        startSeq:
+          type: string
+          title: start_seq
+          format: int64
+        endSeq:
+          type: string
+          title: end_seq
+          format: int64
+        startCheckpoint:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditCheckpoint'
+          title: start_checkpoint
+          description: Checkpoint at or before start_seq (absent when starting from genesis).
+        endCheckpoint:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditCheckpoint'
+          title: end_checkpoint
+          description: Checkpoint at or after end_seq, if any.
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.SigningKey'
+          title: keys
+      title: Header
       additionalProperties: false
     audit.v1.GetAuditEntryRequest:
       type: object
@@ -450,10 +1357,60 @@ components:
       type: object
       properties:
         data:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditEntryObject'
           title: data
-          $ref: '#/components/schemas/audit.v1.AuditEntryObject'
       title: GetAuditEntryResponse
       additionalProperties: false
+    audit.v1.GetAuditManifestRequest:
+      type: object
+      properties:
+        service:
+          type: string
+          title: service
+          minLength: 1
+      title: GetAuditManifestRequest
+      additionalProperties: false
+    audit.v1.GetAuditManifestResponse:
+      type: object
+      properties:
+        manifest:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditManifest'
+          title: manifest
+        version:
+          type: integer
+          title: version
+          format: int32
+        createdAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: created_at
+      title: GetAuditManifestResponse
+      additionalProperties: false
+    audit.v1.GetSigningKeysRequest:
+      type: object
+      title: GetSigningKeysRequest
+      additionalProperties: false
+    audit.v1.GetSigningKeysResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.SigningKey'
+          title: data
+      title: GetSigningKeysResponse
+      additionalProperties: false
+    audit.v1.IntakeState:
+      type: string
+      title: IntakeState
+      enum:
+        - INTAKE_STATE_UNSPECIFIED
+        - INTAKE_STATE_ACCEPTED
+        - INTAKE_STATE_COMMITTED
+        - INTAKE_STATE_FAILED
+      description: IntakeState is the lifecycle of an accepted entry.
     audit.v1.ListAuditEntriesRequest:
       type: object
       properties:
@@ -486,13 +1443,15 @@ components:
           title: device_id
           description: Filter by device ID.
         startDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: start_date
           description: Filter entries created after this timestamp.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         endDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: end_date
           description: Filter entries created before this timestamp.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         count:
           type: integer
           title: count
@@ -502,6 +1461,42 @@ components:
           type: string
           title: page
           description: Pagination cursor (ID of the last entry from previous page).
+        intentId:
+          type: string
+          title: intent_id
+        eventId:
+          type: string
+          title: event_id
+        correlationId:
+          type: string
+          title: correlation_id
+        onBehalfOf:
+          type: string
+          title: on_behalf_of
+        seqFrom:
+          type: string
+          title: seq_from
+          format: int64
+          description: Sequence range filters. When either is set, results are ordered by seq ascending.
+        seqTo:
+          type: string
+          title: seq_to
+          format: int64
+        phase:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditPhase'
+          title: phase
+          description: Filter by phase (GFOS §10.4, K11).
+        withoutOutcome:
+          type: boolean
+          title: without_outcome
+          description: |-
+            Return only REQUESTED entries that carry no linked outcome, i.e. the
+             commands that read as "asked, not done".
+        writtenDuringDegradationOnly:
+          type: boolean
+          title: written_during_degradation_only
+          description: Filter by entries written while AUDIT_DEGRADED was declared.
       title: ListAuditEntriesRequest
       additionalProperties: false
       description: ListAuditEntriesRequest lists audit entries with filtering and pagination.
@@ -515,6 +1510,101 @@ components:
           title: data
       title: ListAuditEntriesResponse
       additionalProperties: false
+    audit.v1.ListCheckpointsRequest:
+      type: object
+      properties:
+        seqFrom:
+          type: string
+          title: seq_from
+          format: int64
+        seqTo:
+          type: string
+          title: seq_to
+          format: int64
+        count:
+          type: integer
+          title: count
+          format: int32
+          description: Default 50, max 500.
+      title: ListCheckpointsRequest
+      additionalProperties: false
+    audit.v1.ListCheckpointsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit.v1.AuditCheckpoint'
+          title: data
+      title: ListCheckpointsResponse
+      additionalProperties: false
+    audit.v1.RegisterAuditManifestRequest:
+      type: object
+      properties:
+        manifest:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.AuditManifest'
+          title: manifest
+      title: RegisterAuditManifestRequest
+      required:
+        - manifest
+      additionalProperties: false
+    audit.v1.RegisterAuditManifestResponse:
+      type: object
+      properties:
+        service:
+          type: string
+          title: service
+        version:
+          type: integer
+          title: version
+          format: int32
+        unchanged:
+          type: boolean
+          title: unchanged
+          description: True when the content matched the latest version and nothing was written.
+      title: RegisterAuditManifestResponse
+      additionalProperties: false
+    audit.v1.RequeueIntakeRequest:
+      type: object
+      properties:
+        intakeIds:
+          type: array
+          items:
+            type: string
+          title: intake_ids
+          maxItems: 500
+          minItems: 1
+      title: RequeueIntakeRequest
+      additionalProperties: false
+      description: RequeueIntakeRequest moves FAILED intake rows back to ACCEPTED.
+    audit.v1.RequeueIntakeResponse:
+      type: object
+      properties:
+        requeued:
+          type: string
+          title: requeued
+          format: int64
+      title: RequeueIntakeResponse
+      additionalProperties: false
+    audit.v1.RetireSigningKeyRequest:
+      type: object
+      properties:
+        keyId:
+          type: string
+          title: key_id
+          minLength: 1
+      title: RetireSigningKeyRequest
+      additionalProperties: false
+    audit.v1.RetireSigningKeyResponse:
+      type: object
+      properties:
+        key:
+          allOf:
+            - $ref: '#/components/schemas/audit.v1.SigningKey'
+          title: key
+      title: RetireSigningKeyResponse
+      additionalProperties: false
     audit.v1.SearchAuditEntriesRequest:
       type: object
       properties:
@@ -524,13 +1614,15 @@ components:
           minLength: 1
           description: Free-text search query matching action, resource_type, resource_id, or details.
         startDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: start_date
           description: Filter entries created after this timestamp.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         endDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: end_date
           description: Filter entries created before this timestamp.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         count:
           type: integer
           title: count
@@ -553,20 +1645,57 @@ components:
           title: data
       title: SearchAuditEntriesResponse
       additionalProperties: false
+    audit.v1.SigningKey:
+      type: object
+      properties:
+        keyId:
+          type: string
+          title: key_id
+        algorithm:
+          type: string
+          title: algorithm
+        publicKey:
+          type: string
+          title: public_key
+          description: Hex-encoded public key.
+        validFrom:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: valid_from
+        retiredAt:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: retired_at
+      title: SigningKey
+      additionalProperties: false
     audit.v1.VerifyIntegrityRequest:
       type: object
       properties:
         startDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: start_date
-          description: Start of the time range to verify.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
+          description: Start of the time range to verify (resolved to start_seq when start_seq is 0).
         endDate:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: end_date
-          description: End of the time range to verify.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
+          description: End of the time range to verify (resolved to end_seq when end_seq is 0).
+        startSeq:
+          type: string
+          title: start_seq
+          format: int64
+          description: First sequence number to verify (1 = genesis).
+        endSeq:
+          type: string
+          title: end_seq
+          format: int64
+          description: Last sequence number to verify (0 = chain head).
       title: VerifyIntegrityRequest
       additionalProperties: false
-      description: VerifyIntegrityRequest verifies the hash chain integrity over a time range.
+      description: |-
+        VerifyIntegrityRequest verifies the hash chain integrity over a sequence range.
+         A date range is accepted as a convenience and resolved to sequence numbers.
     audit.v1.VerifyIntegrityResponse:
       type: object
       properties:
@@ -575,9 +1704,7 @@ components:
           title: valid
           description: Whether the hash chain is intact.
         entriesVerified:
-          type:
-            - integer
-            - string
+          type: string
           title: entries_verified
           format: int64
           description: Total number of entries verified.
@@ -589,14 +1716,47 @@ components:
           type: string
           title: message
           description: Human-readable description of the verification result.
+        startCheckpointSeq:
+          type: string
+          title: start_checkpoint_seq
+          format: int64
+          description: Sequence of the checkpoint verification started from (0 = genesis).
+        endSeq:
+          type: string
+          title: end_seq
+          format: int64
+          description: Last sequence number verified.
+        endHash:
+          type: string
+          title: end_hash
+          description: Entry hash at end_seq.
+        keyIdsUsed:
+          type: array
+          items:
+            type: string
+          title: key_ids_used
+          description: Signing keys encountered in the range.
+        partial:
+          type: boolean
+          title: partial
+          description: True when the range exceeded the per-call cap; continue from end_seq + 1.
+        firstInvalidSeq:
+          type: string
+          title: first_invalid_seq
+          format: int64
+          description: Sequence of the first entry that failed verification (0 if valid).
       title: VerifyIntegrityResponse
       additionalProperties: false
       description: VerifyIntegrityResponse reports the result of integrity verification.
     base64:
       type: boolean
+      examples:
+        - false
       title: base64
       description: Specifies if the message query param is base64 encoded, which may be required for binary data
     compression:
+      examples:
+        - gzip
       title: compression
       enum:
         - identity
@@ -604,19 +1764,23 @@ components:
         - br
       description: Which compression algorithm to use for this request
     connect:
+      examples:
+        - v1
       title: connect
       enum:
         - v1
       description: Define the version of the Connect protocol
     connect-protocol-version:
       type: number
-      title: Connect-Protocol-Version
-      enum:
+      examples:
         - 1
+      title: Connect-Protocol-Version
       description: Define the version of the Connect protocol
       const: 1
     connect-timeout-header:
       type: number
+      examples:
+        - 1000
       title: Connect-Timeout-Ms
       description: Define the timeout, in ms
     connect.error:
@@ -660,44 +1824,31 @@ components:
       properties:
         type:
           type: string
-          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.'
+          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`.'
         value:
           type: string
           format: binary
           description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
         debug:
-          oneOf:
-            - type: object
-              title: Any
-              additionalProperties: true
-              description: Detailed error information.
-          discriminator:
-            propertyName: type
+          type: object
           title: Debug
+          additionalProperties: true
           description: Deserialized error detail payload. The 'type' field indicates the schema. This field is for easier debugging and should not be relied upon for application logic.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.
     encoding:
+      examples:
+        - json
       title: encoding
       enum:
         - proto
         - json
       description: Define which encoding or 'Message-Codec' to use
     google.protobuf.ListValue:
-      type: object
-      properties:
-        values:
-          type: array
-          items:
-            $ref: '#/components/schemas/google.protobuf.Value'
-          title: values
-          description: Repeated field of dynamically typed values.
-      title: ListValue
-      additionalProperties: false
-      description: |-
-        `ListValue` is a wrapper around a repeated field of values.
-
-         The JSON representation for `ListValue` is JSON array.
+      type: array
+      items:
+        $ref: '#/components/schemas/google.protobuf.Value'
+      description: A JSON array whose elements may be any JSON value.
     google.protobuf.NullValue:
       type: string
       title: NullValue
@@ -712,122 +1863,14 @@ components:
       type: object
       additionalProperties:
         $ref: '#/components/schemas/google.protobuf.Value'
-      description: |-
-        `Struct` represents a structured data value, consisting of fields
-         which map to dynamically typed values. In some languages, `Struct`
-         might be supported by a native representation. For example, in
-         scripting languages like JS a struct is represented as an
-         object. The details of that representation are described together
-         with the proto support for the language.
-
-         The JSON representation for `Struct` is JSON object.
-    google.protobuf.Struct.FieldsEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          title: value
-          $ref: '#/components/schemas/google.protobuf.Value'
-      title: FieldsEntry
-      additionalProperties: false
+      description: A JSON object whose property values may be any JSON value.
     google.protobuf.Timestamp:
       type: string
       examples:
         - "2023-01-15T01:30:15.01Z"
         - "2024-12-25T12:00:00Z"
       format: date-time
-      description: |-
-        A Timestamp represents a point in time independent of any time zone or local
-         calendar, encoded as a count of seconds and fractions of seconds at
-         nanosecond resolution. The count is relative to an epoch at UTC midnight on
-         January 1, 1970, in the proleptic Gregorian calendar which extends the
-         Gregorian calendar backwards to year one.
-
-         All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-         second table is needed for interpretation, using a [24-hour linear
-         smear](https://developers.google.com/time/smear).
-
-         The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-         restricting to that range, we ensure that we can convert to and from [RFC
-         3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-
-         # Examples
-
-         Example 1: Compute Timestamp from POSIX `time()`.
-
-             Timestamp timestamp;
-             timestamp.set_seconds(time(NULL));
-             timestamp.set_nanos(0);
-
-         Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-
-             struct timeval tv;
-             gettimeofday(&tv, NULL);
-
-             Timestamp timestamp;
-             timestamp.set_seconds(tv.tv_sec);
-             timestamp.set_nanos(tv.tv_usec * 1000);
-
-         Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-
-             FILETIME ft;
-             GetSystemTimeAsFileTime(&ft);
-             UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-
-             // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-             // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-             Timestamp timestamp;
-             timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-             timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-
-         Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-
-             long millis = System.currentTimeMillis();
-
-             Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-                 .setNanos((int) ((millis % 1000) * 1000000)).build();
-
-         Example 5: Compute Timestamp from Java `Instant.now()`.
-
-             Instant now = Instant.now();
-
-             Timestamp timestamp =
-                 Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-                     .setNanos(now.getNano()).build();
-
-         Example 6: Compute Timestamp from current time in Python.
-
-             timestamp = Timestamp()
-             timestamp.GetCurrentTime()
-
-         # JSON Mapping
-
-         In JSON format, the Timestamp type is encoded as a string in the
-         [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-         format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-         where {year} is always expressed using four digits while {month}, {day},
-         {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-         seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-         are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-         is required. A proto3 JSON serializer should always use UTC (as indicated by
-         "Z") when printing the Timestamp type and a proto3 JSON parser should be
-         able to accept both UTC and other timezones (as indicated by an offset).
-
-         For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-         01:30 UTC on January 15, 2017.
-
-         In JavaScript, one can convert a Date object to this format using the
-         standard
-         [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-         method. In Python, a standard `datetime.datetime` object can be converted
-         to this format using
-         [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-         the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-         the Joda Time's [`ISODateTimeFormat.dateTime()`](
-         http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-         ) to obtain a formatter capable of generating timestamps in this format.
+      description: A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
     google.protobuf.Value:
       oneOf:
         - type: "null"
@@ -837,13 +1880,7 @@ components:
         - type: array
         - type: object
           additionalProperties: true
-      description: |-
-        `Value` represents a dynamically typed value which can be either
-         null, a number, a string, a boolean, a recursive struct value, or a
-         list of values. A producer of value is expected to set one of these
-         variants. Absence of any variant indicates an error.
-
-         The JSON representation for `Value` is JSON value.
+      description: 'Any JSON value: `null`, number, string, boolean, array, or object.'
   securitySchemes:
     BearerAuth:
       type: http

@@ -53,10 +53,17 @@ type AuditFilter struct {
 	OnBehalfOf      string
 	SeqFrom         int64
 	SeqTo           int64
-	StartDate       *time.Time
-	EndDate         *time.Time
-	Limit           int
-	Cursor          string // ID of the last entry from the previous page
+	// Phase filters on the K11 request/outcome phase (GFOS §10.4).
+	Phase string
+	// WithoutOutcome keeps only entries no linked outcome references, i.e.
+	// the commands that read as "asked, not done".
+	WithoutOutcome bool
+	// DegradedOnly keeps only entries written while AUDIT_DEGRADED was declared.
+	DegradedOnly bool
+	StartDate    *time.Time
+	EndDate      *time.Time
+	Limit        int
+	Cursor       string // ID of the last entry from the previous page
 }
 
 // BySeq reports whether the filter orders by sequence.

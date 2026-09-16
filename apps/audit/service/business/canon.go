@@ -42,7 +42,20 @@ import (
 
 const canonTimeLayout = "2006-01-02T15:04:05.000000Z"
 
+// Canonical returns the canonical bytes for the entry's recorded version.
+func Canonical(e *models.AuditEntry) ([]byte, error) {
+	if e.CanonVersion != models.CanonVersionV2 {
+		return nil, fmt.Errorf("unsupported canon_version %d", e.CanonVersion)
+	}
+	return CanonicalV2(e), nil
+}
+
 // CanonicalV2 returns the canon_v2 bytes of an entry (previous hash excluded).
+//
+// The K11 request/outcome fields (phase, outcome_of_entry_id, audit_class,
+// written_during_degradation) are not appended here: the validator mirrors
+// them into the signed details map, so they are inside this pre-image
+// already and canon_v2 stays byte-identical to common/auditverify's.
 func CanonicalV2(e *models.AuditEntry) []byte {
 	var buf bytes.Buffer
 	w := func(s string) {
@@ -253,8 +266,12 @@ func writeJSONString(buf *bytes.Buffer, s string) error {
 // previous_hash_bytes is the raw 32-byte decode of the previous hex hash, or
 // empty for genesis.
 func EntryHashV2(e *models.AuditEntry, previousHash string) string {
+	return entryHash(CanonicalV2(e), previousHash)
+}
+
+func entryHash(canon []byte, previousHash string) string {
 	h := sha256.New()
-	h.Write(CanonicalV2(e))
+	h.Write(canon)
 	if prev, err := hex.DecodeString(previousHash); err == nil {
 		h.Write(prev)
 	} else {
@@ -263,12 +280,14 @@ func EntryHashV2(e *models.AuditEntry, previousHash string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// EntryHash dispatches on the entry's CanonVersion.
+// EntryHash dispatches on the entry's CanonVersion so entries signed under an
+// older encoding keep verifying after a new version ships.
 func EntryHash(e *models.AuditEntry, previousHash string) (string, error) {
-	if e.CanonVersion != models.CanonVersionV2 {
-		return "", fmt.Errorf("unsupported canon_version %d", e.CanonVersion)
+	canon, err := Canonical(e)
+	if err != nil {
+		return "", err
 	}
-	return EntryHashV2(e, previousHash), nil
+	return entryHash(canon, previousHash), nil
 }
 
 // CheckpointHash is hex(SHA-256("chk" ‖ tenant ‖ seq ‖ entry_hash ‖ created_at))

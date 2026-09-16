@@ -40,6 +40,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/nativecredentials"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
+	"github.com/antinvestor/service-authentication/apps/default/service/sessionproof"
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/antinvestor/service-authentication/pkg/hydraadmin"
@@ -104,6 +105,17 @@ type AuthServer struct {
 	fedcmWellKnown  *FedCMWellKnownHandler
 
 	nativeVerifier *nativecredentials.Verifier
+
+	// Genesis session proof (GFOS §8.2, P26; platform change K9). All three
+	// are nil/empty when no signing key is configured, and the endpoints then
+	// refuse to serve rather than issue an unverifiable proof.
+	sessionProofIssuer   *sessionproof.Issuer
+	sessionProofVerifier *sessionproof.Verifier
+	sessionProofKeys     sessionproof.KeySet
+	proofNonceCache      cache.Cache[string, string]
+	// sessionLookup overrides the login-event read used by the liveness
+	// check; production leaves it nil and the repository is used.
+	sessionLookup sessionLookup
 
 	// tokenFacadeClient reaches Hydra for the public /oauth2/token and
 	// discovery facades. It carries a bounded timeout and is built with a
@@ -193,6 +205,12 @@ func NewAuthServer(ctx context.Context,
 	err := h.setupSecureCookies(ctx, authConfig)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to setup secure cookies")
+	}
+
+	if serr := h.setupGenesisSessionProof(authConfig); serr != nil {
+		// Misconfiguration must stop the process: an operator who set a key
+		// reference expects proofs to be signed with it.
+		log.WithError(serr).Fatal("Failed to setup the genesis session proof signer")
 	}
 
 	h.fedcmSession = fedcm.NewSessionCodec(h.cookiesCodec, authConfig.FedCMIdPSessionCookieKey)

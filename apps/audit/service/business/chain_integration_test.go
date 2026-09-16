@@ -30,6 +30,8 @@ import (
 	"github.com/antinvestor/service-authentication/apps/audit/tests"
 	"github.com/pitabwire/frame/v2/data"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ChainSuite struct {
@@ -77,7 +79,7 @@ func (s *ChainSuite) newStack(mutate func(cfg *aconfig.AuditConfig)) *stack {
 	rejections := repository.NewRejectionRepository(ctx, svc.Pool)
 	manifestRepo := repository.NewManifestRepository(ctx, svc.Pool)
 	st.manifest = business.NewManifestBusiness(manifestRepo)
-	validator := business.NewValidator(st.manifest.Lookup, svc.Cfg.RequireManifest)
+	validator := business.NewValidator(st.manifest.Lookup, svc.Cfg.RequireManifest, svc.Cfg.DegradedBackdatingWindow)
 	st.ingest = business.NewIngestBusiness(svc.Cfg, validator, st.intake, rejections, st.metrics)
 	st.writer = business.NewWriter(svc.Cfg, tests.NamespaceAudit, business.WriterRepos{
 		Chain: repository.NewChainRepository(svc.Pool), Intake: st.intake, Rejections: rejections, Checkpoints: st.cps,
@@ -600,7 +602,9 @@ func (s *ChainSuite) TestExport_StreamsHeaderThenOrderedEntries() {
 	prev := cp.EntryHash
 	for _, e := range sink2.entries {
 		s.Require().Equal(prev, e.PreviousHash)
-		s.Require().Equal(business.EntryHashV2(e, prev), e.EntryHash)
+		recomputed, herr := business.EntryHash(e, prev)
+		s.Require().NoError(herr)
+		s.Require().Equal(recomputed, e.EntryHash)
 		s.Require().True(business.VerifyHash(pub, e.EntryHash, e.Signature, e.CanonVersion))
 		prev = e.EntryHash
 	}
@@ -629,4 +633,214 @@ func (s *ChainSuite) TestRead_SearchRequiresBoundedWindow() {
 	start = time.Now().Add(-time.Hour)
 	_, err = st.read.SearchEntries(ctx, "cre", &start, &end, 10, "")
 	s.Require().NoError(err)
+}
+
+// ---------------------------------------------------------------------------
+// K7: a forged or out-of-order entry is refused.
+
+// TestChain_ForgedOrOutOfOrderEntryIsRefused covers the three ways a writer
+// bug or a hostile insert could break the chain: reusing a position, skipping
+// one, and rewriting a committed row. The storage guards hold even when the
+// business layer is bypassed entirely, and verification names the break.
+func (s *ChainSuite) TestChain_ForgedOrOutOfOrderEntryIsRefused() {
+	st := s.newStack(nil)
+	s.ingestN(st, "t-forge", 10, "g")
+	s.drain(st)
+	ctx := tests.TenantContext(st.svc.Ctx, "t-forge")
+	db := st.svc.Pool.DB(ctx, false)
+
+	forged := func(seq int64, entryID string) *models.AuditEntry {
+		e := &models.AuditEntry{
+			ProfileID: "person-1", Action: "create", ResourceType: "loan", Service: "service_loans",
+			Seq: seq, EntryID: entryID, KeyID: "k1", CanonVersion: models.CanonVersionCurrent,
+			PreviousHash: "", EntryHash: fmt.Sprintf("%064x", seq), Signature: "00",
+			OccurredAt: time.Now().UTC(), ReceivedAt: time.Now().UTC(),
+		}
+		e.TenantID, e.PartitionID = "t-forge", "p-t-forge"
+		e.GenID(ctx)
+		return e
+	}
+
+	// 1. A second entry at an occupied position is refused by the storage-level
+	//    fork guard, so two writers can never produce two chains.
+	err := db.Create(forged(5, "forged-5")).Error
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "idx_audit_entries_tenant_seq")
+
+	// 2. An entry inserted out of order (past the head, leaving a gap) does not
+	//    move the head, so verification still stops at the real tip and the
+	//    chain never reports the forged row as part of it.
+	s.Require().NoError(db.Create(forged(99, "forged-99")).Error)
+	head, err := st.heads.Get(ctx, "t-forge")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(10), head.Seq, "an insert that bypasses the writer cannot advance the head")
+	res, err := st.verify.VerifyIntegrity(ctx, "t-forge", 1, 99)
+	s.Require().NoError(err)
+	s.Require().False(res.Valid)
+	s.Require().Equal(int64(99), res.FirstInvalidSeq)
+
+	// 3. Rewriting a committed entry is refused by the append-only trigger.
+	err = db.Exec(`UPDATE audit_entries SET action = 'delete' WHERE tenant_id = 't-forge' AND seq = 3`).Error
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "append-only")
+	err = db.Exec(`DELETE FROM audit_entries WHERE tenant_id = 't-forge' AND seq = 3`).Error
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "append-only")
+}
+
+// ---------------------------------------------------------------------------
+// K11: degraded mode and request/outcome linking (GFOS §10.4).
+
+func k11Req(entryID, phase, outcomeOf string, degraded bool, occurredAt time.Time) *auditv1.CreateAuditEntryRequest {
+	req := entryReq(entryID, phase)
+	req.SetResourceType("rpc")
+	req.SetResourceId("/stawi.v1.FinanceService/DeployAccount")
+	switch phase {
+	case models.PhaseRequested:
+		req.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_REQUESTED)
+		req.SetAuditClass(business.ClassRequired)
+	case models.PhaseCompleted:
+		req.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_COMPLETED)
+		req.SetAuditClass(business.ClassRequired)
+	case models.PhaseFailed:
+		req.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_FAILED)
+		req.SetAuditClass(business.ClassRequired)
+	}
+	req.SetOutcomeOfEntryId(outcomeOf)
+	req.SetWrittenDuringDegradation(degraded)
+	if !occurredAt.IsZero() {
+		req.SetOccurredAt(timestamppb.New(occurredAt))
+	}
+	return req
+}
+
+// TestK11_DegradedDrainKeepsTenantOrderAndMarksEntries drains a producer
+// backlog the way pkg/auditclass does — one entry at a time, in insertion
+// order per tenant, each carrying the time the human acted — and asserts the
+// service accepts it, records it as written during degradation, and chains it
+// in the order it was drained.
+func (s *ChainSuite) TestK11_DegradedDrainKeepsTenantOrderAndMarksEntries() {
+	st := s.newStack(nil)
+	ctx := tests.UserContext(st.svc.Ctx, "t-deg", "p-t-deg", "person-1")
+	caller := personCaller("t-deg")
+	parkedAt := time.Now().UTC().Add(-6 * time.Hour)
+
+	// Without the degraded marker the same backdated entry is refused: the
+	// service does not quietly accept a stale time.
+	_, err := st.ingest.Create(ctx, caller, k11Req("d-stale", models.PhaseRequested, "", false, parkedAt))
+	var verr *business.ValidationError
+	s.Require().ErrorAs(err, &verr)
+	s.Require().Equal(business.ReasonTime, verr.Reason)
+
+	for i := range 5 {
+		req := k11Req(fmt.Sprintf("d-%02d", i), models.PhaseRequested, "", true, parkedAt.Add(time.Duration(i)*time.Minute))
+		_, cerr := st.ingest.Create(ctx, caller, req)
+		s.Require().NoError(cerr)
+	}
+	s.drain(st)
+
+	entries := s.chain(st, "t-deg")
+	s.Require().Len(entries, 5)
+	for i, e := range entries {
+		s.Require().Equal(int64(i+1), e.Seq)
+		s.Require().Equal(fmt.Sprintf("d-%02d", i), e.EntryID, "drain order is chain order for the tenant")
+		s.Require().True(e.WrittenDuringDegradation)
+		s.Require().Equal(models.PhaseRequested, e.Phase)
+		s.Require().True(parkedAt.Add(time.Duration(i)*time.Minute).Truncate(time.Microsecond).Equal(e.OccurredAt),
+			"the drained entry keeps the time the human acted")
+	}
+
+	// The degradation marking is inside the signed pre-image (it is mirrored
+	// into the hashed details), so a bundle cannot be presented later with
+	// the marking stripped.
+	res, err := st.verify.VerifyIntegrity(tests.TenantContext(st.svc.Ctx, "t-deg"), "t-deg", 1, 5)
+	s.Require().NoError(err)
+	s.Require().True(res.Valid, res.Message)
+	s.Require().Equal(true, entries[0].Details[business.DetailKeyDegraded])
+	tampered := *entries[0]
+	tampered.Details = data.JSONMap{business.DetailKeyPhase: models.PhaseRequested}
+	rehashed, herr := business.EntryHash(&tampered, tampered.PreviousHash)
+	s.Require().NoError(herr)
+	s.Require().NotEqual(entries[0].EntryHash, rehashed)
+}
+
+// TestK11_RequestWithoutOutcomeReadsAsAskedNotDone records a REQUESTED entry
+// and its linked outcome the way the pkg/auditclass interceptor does, and
+// asserts that a request with no outcome is visible as incomplete.
+func (s *ChainSuite) TestK11_RequestWithoutOutcomeReadsAsAskedNotDone() {
+	st := s.newStack(nil)
+	ctx := tests.UserContext(st.svc.Ctx, "t-link", "p-t-link", "person-1")
+	caller := personCaller("t-link")
+
+	_, err := st.ingest.Create(ctx, caller, k11Req("req-done", models.PhaseRequested, "", false, time.Time{}))
+	s.Require().NoError(err)
+	_, err = st.ingest.Create(ctx, caller, k11Req("out-done", models.PhaseCompleted, "req-done", false, time.Time{}))
+	s.Require().NoError(err)
+	// Asked, never answered.
+	_, err = st.ingest.Create(ctx, caller, k11Req("req-open", models.PhaseRequested, "", false, time.Time{}))
+	s.Require().NoError(err)
+	s.drain(st)
+
+	readCtx := tests.TenantContext(st.svc.Ctx, "t-link")
+	open, err := st.read.ListEntries(readCtx, &repository.AuditFilter{WithoutOutcome: true, Limit: 50})
+	s.Require().NoError(err)
+	s.Require().Len(open, 1)
+	s.Require().Equal("req-open", open[0].EntryID)
+	s.Require().Equal(models.PhaseRequested, open[0].Phase)
+
+	outcomes, err := st.read.ListEntries(readCtx, &repository.AuditFilter{Phase: models.PhaseCompleted, Limit: 50})
+	s.Require().NoError(err)
+	s.Require().Len(outcomes, 1)
+	s.Require().Equal("req-done", outcomes[0].OutcomeOfEntryID)
+
+	// An outcome of an AUDIT_REQUIRED command that names no request is refused:
+	// the service never infers which request an outcome belongs to.
+	_, err = st.ingest.Create(ctx, caller, k11Req("out-orphan", models.PhaseCompleted, "", false, time.Time{}))
+	var verr *business.ValidationError
+	s.Require().ErrorAs(err, &verr)
+	s.Require().Equal(business.ReasonLinking, verr.Reason)
+}
+
+// TestK11_PreK11ClientDetailsAreHonoured pins the compatibility bridge with
+// the GFOS pkg/auditclass recorder as it is today: entry_id, phase, link,
+// class and occurred_at travel in details only.
+func (s *ChainSuite) TestK11_PreK11ClientDetailsAreHonoured() {
+	st := s.newStack(nil)
+	ctx := tests.UserContext(st.svc.Ctx, "t-bridge", "p-t-bridge", "person-1")
+	caller := personCaller("t-bridge")
+
+	clientRequest := func(entryID, phase, linked string) *auditv1.CreateAuditEntryRequest {
+		req := &auditv1.CreateAuditEntryRequest{}
+		req.SetProfileId("person-1")
+		req.SetAction(phase)
+		req.SetResourceType("rpc")
+		req.SetResourceId("/stawi.v1.FinanceService/AuthorizeIntent")
+		req.SetService("service_loans")
+		details, err := structpb.NewStruct(map[string]any{
+			"entry_id": entryID, "linked_entry_id": linked, "phase": phase, "class": business.ClassRequired,
+			"correlation_id": "corr-1", "error": "", "occurred_at": time.Now().UTC().Format(time.RFC3339Nano),
+		})
+		s.Require().NoError(err)
+		req.SetDetails(details)
+		return req
+	}
+
+	receipt, err := st.ingest.Create(ctx, caller, clientRequest("bridge-req", models.PhaseRequested, ""))
+	s.Require().NoError(err)
+	s.Require().Equal("bridge-req", receipt.EntryID, "details.entry_id is the idempotency key")
+	// A redelivered park is the same entry, not a second one.
+	again, err := st.ingest.Create(ctx, caller, clientRequest("bridge-req", models.PhaseRequested, ""))
+	s.Require().NoError(err)
+	s.Require().Equal(receipt.IntakeID, again.IntakeID)
+
+	_, err = st.ingest.Create(ctx, caller, clientRequest("bridge-out", models.PhaseFailed, "bridge-req"))
+	s.Require().NoError(err)
+	s.drain(st)
+
+	entries := s.chain(st, "t-bridge")
+	s.Require().Len(entries, 2)
+	s.Require().Equal(models.PhaseRequested, entries[0].Phase)
+	s.Require().Equal(business.ClassRequired, entries[0].AuditClass)
+	s.Require().Equal(models.PhaseFailed, entries[1].Phase)
+	s.Require().Equal("bridge-req", entries[1].OutcomeOfEntryID)
 }

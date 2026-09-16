@@ -16,6 +16,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/pitabwire/frame/v2/config"
 )
@@ -51,6 +52,19 @@ type AuthenticationConfig struct {
 	FilesServiceWorkloadAPITargetPath        string `envDefault:"/ns/files/sa/service-files" env:"FILES_SERVICE_WORKLOAD_API_TARGET_PATH"`
 
 	HydraWebhookAPIToken string `envDefault:"" env:"HYDRA_WEBHOOK_API_PSK"`
+
+	// Genesis session proof (GFOS §8.2, P26; platform change K9). Without a
+	// resolvable signing key the endpoints refuse to serve: a proof nobody
+	// can verify is worse than no proof.
+	//   GENESIS_PROOF_SIGNING_KEY_REF   file:///path or vault://<path>#<prop>
+	//   GENESIS_PROOF_SIGNING_KEY_ID    active key id, published with the key
+	//   GENESIS_PROOF_RETIRED_KEYS      "kid:hex,kid2:hex" — verify, never sign
+	GenesisProofSigningKeyRef      string        `envDefault:"" env:"GENESIS_PROOF_SIGNING_KEY_REF"`
+	GenesisProofSigningKeyID       string        `envDefault:"" env:"GENESIS_PROOF_SIGNING_KEY_ID"`
+	GenesisProofSigningKeyMountDir string        `envDefault:"/var/run/secrets/genesis-proof" env:"GENESIS_PROOF_SIGNING_KEY_MOUNT_DIR"`
+	GenesisProofRetiredKeys        string        `envDefault:"" env:"GENESIS_PROOF_RETIRED_KEYS"`
+	GenesisProofTTL                time.Duration `envDefault:"5m" env:"GENESIS_PROOF_TTL"`
+	GenesisProofAudience           string        `envDefault:"stawi-genesis" env:"GENESIS_PROOF_AUDIENCE"`
 
 	SecureCookieHashKey  string `envDefault:"d1f4f1a3b8d84f79e6d4b8b5c3f04725a8a7d6b4c2f9a987d5e4f3a2b1c086d1" env:"SECURE_COOKIE_HASH_KEY"`
 	SecureCookieBlockKey string `envDefault:"a7e7b4f8d2e5a3c1f0b6d9d4f3a5c20798d1c1e7c4f6a3e4b0e5c2f4a7d6b301" env:"SECURE_COOKIE_BLOCK_KEY"`
