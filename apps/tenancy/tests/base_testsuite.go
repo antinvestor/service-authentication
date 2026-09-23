@@ -320,7 +320,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 		frame.WithConfig(&cfg), frame.WithTenancyProvider(rlsProv),
 		frame.WithDatastore(), frametests.WithNoopDriver())
 
-	auth := svc.SecurityManager().GetAuthorizer(ctx)
+	auth := authz.SerialisedAuthorizer(ctx, svc)
 	implementation := handlers.NewTenancyServer(ctx, svc, nil)
 
 	// Test Hydra is http:// (cluster-style). hydraadmin only attaches a Google
