@@ -61,7 +61,7 @@ func BuildDeps(ctx context.Context, cfg *aconfig.AuditConfig, serviceName string
 
 	metrics := business.NewMetrics()
 	manifests := business.NewManifestBusiness(manifestRepo)
-	validator := business.NewValidator(manifests.Lookup, cfg.RequireManifest)
+	validator := business.NewValidator(manifests.Lookup, cfg.RequireManifest, cfg.DegradedBackdatingWindow)
 	writer := business.NewWriter(cfg, serviceName, business.WriterRepos{
 		Chain: chain, Intake: intake, Rejections: rejections, Checkpoints: checkpoints,
 	}, keys, metrics)
@@ -141,7 +141,9 @@ func (as *AuditServer) ListAuditEntries(ctx context.Context, req *connect.Reques
 		DeviceID: req.Msg.GetDeviceId(), IntentID: req.Msg.GetIntentId(), EventID: req.Msg.GetEventId(),
 		CorrelationID: req.Msg.GetCorrelationId(), OnBehalfOf: req.Msg.GetOnBehalfOf(),
 		SeqFrom: req.Msg.GetSeqFrom(), SeqTo: req.Msg.GetSeqTo(),
-		Limit: int(req.Msg.GetCount()), Cursor: req.Msg.GetPage(),
+		Phase: phaseFromProto(req.Msg.GetPhase()), WithoutOutcome: req.Msg.GetWithoutOutcome(),
+		DegradedOnly: req.Msg.GetWrittenDuringDegradationOnly(),
+		Limit:        int(req.Msg.GetCount()), Cursor: req.Msg.GetPage(),
 	}
 	if req.Msg.GetStartDate() != nil {
 		t := req.Msg.GetStartDate().AsTime()
@@ -435,7 +437,40 @@ func entryToProto(e *models.AuditEntry) *auditv1.AuditEntryObject {
 	obj.SetManifestVersion(e.ManifestVersion)
 	obj.SetUnmanifested(e.Unmanifested)
 	obj.SetState(auditv1.IntakeState_INTAKE_STATE_COMMITTED)
+	obj.SetPhase(phaseToProto(e.Phase))
+	obj.SetOutcomeOfEntryId(e.OutcomeOfEntryID)
+	obj.SetAuditClass(e.AuditClass)
+	obj.SetWrittenDuringDegradation(e.WrittenDuringDegradation)
 	return obj
+}
+
+func phaseToProto(phase string) auditv1.AuditPhase {
+	switch phase {
+	case models.PhaseRequested:
+		return auditv1.AuditPhase_AUDIT_PHASE_REQUESTED
+	case models.PhaseCompleted:
+		return auditv1.AuditPhase_AUDIT_PHASE_COMPLETED
+	case models.PhaseFailed:
+		return auditv1.AuditPhase_AUDIT_PHASE_FAILED
+	default:
+		return auditv1.AuditPhase_AUDIT_PHASE_UNSPECIFIED
+	}
+}
+
+// phaseFromProto is the inverse used by the list filters.
+func phaseFromProto(p auditv1.AuditPhase) string {
+	switch p {
+	case auditv1.AuditPhase_AUDIT_PHASE_REQUESTED:
+		return models.PhaseRequested
+	case auditv1.AuditPhase_AUDIT_PHASE_COMPLETED:
+		return models.PhaseCompleted
+	case auditv1.AuditPhase_AUDIT_PHASE_FAILED:
+		return models.PhaseFailed
+	case auditv1.AuditPhase_AUDIT_PHASE_UNSPECIFIED:
+		return ""
+	default:
+		return ""
+	}
 }
 
 // structCompatible converts database-decoded JSON (json.Number values) into

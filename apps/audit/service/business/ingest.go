@@ -131,6 +131,9 @@ func (ib *ingestBusiness) accept(ctx context.Context, e *models.AuditEntry) (*In
 	err := ib.intake.Create(ctx, row)
 	if err == nil {
 		ib.metrics.IntakeAccepted.Add(ctx, 1, attrService.String(e.Service))
+		if e.WrittenDuringDegradation {
+			ib.metrics.IntakeDegraded.Add(ctx, 1, attrService.String(e.Service))
+		}
 		return &IntakeReceipt{IntakeID: row.ID, EntryID: e.EntryID, State: models.IntakeStateAccepted}, nil
 	}
 	if !isUniqueViolation(err) {
@@ -192,7 +195,9 @@ func EntryToPayload(e *models.AuditEntry) data.JSONMap {
 		"payload_hash": e.PayloadHash, "authorization_hash": e.AuthorizationHash, "policy_hash": e.PolicyHash,
 		"device_key_id": e.DeviceKeyID, "state_from": e.StateFrom, "state_to": e.StateTo,
 		"resource_version": float64(e.ResourceVersion),
-		"tenant_id":        e.TenantID, "partition_id": e.PartitionID, "access_id": e.AccessID,
+		"phase":            e.Phase, "outcome_of_entry_id": e.OutcomeOfEntryID, "audit_class": e.AuditClass,
+		"written_during_degradation": e.WrittenDuringDegradation,
+		"tenant_id":                  e.TenantID, "partition_id": e.PartitionID, "access_id": e.AccessID,
 	}
 	if e.Details != nil {
 		p["details"] = map[string]any(e.Details)
@@ -245,9 +250,11 @@ func EntryFromPayload(row *models.AuditIntake) (*models.AuditEntry, error) {
 		CorrelationID: str("correlation_id"), EventID: str("event_id"), IntentID: str("intent_id"), InstanceID: str("instance_id"),
 		PayloadHash: str("payload_hash"), AuthorizationHash: str("authorization_hash"), PolicyHash: str("policy_hash"),
 		DeviceKeyID: str("device_key_id"), StateFrom: str("state_from"), StateTo: str("state_to"),
-		ResourceVersion: num("resource_version"), CanonVersion: models.CanonVersionV2,
+		ResourceVersion: num("resource_version"), CanonVersion: models.CanonVersionCurrent,
+		Phase: str("phase"), OutcomeOfEntryID: str("outcome_of_entry_id"), AuditClass: str("audit_class"),
 	}
 	e.Unmanifested, _ = p["unmanifested"].(bool)
+	e.WrittenDuringDegradation, _ = p["written_during_degradation"].(bool)
 	e.TenantID, e.PartitionID, e.AccessID = row.TenantID, row.PartitionID, row.AccessID
 	if d, ok := p["details"].(map[string]any); ok {
 		e.Details = data.JSONMap(d)

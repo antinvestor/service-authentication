@@ -338,7 +338,9 @@ func (s *HandlerSuite) TestManifest_RegisterGetAndVerifyExport() {
 		// needs: rebuilding the model from it reproduces the stored hash.
 		s.Require().Equal(1.5, entry.GetDetails().AsMap()["amount"])
 		rebuilt := modelFromProto(entry)
-		s.Require().Equal(entry.GetEntryHash(), business.EntryHashV2(rebuilt, entry.GetPreviousHash()))
+		recomputed, herr := business.EntryHash(rebuilt, entry.GetPreviousHash())
+		s.Require().NoError(herr)
+		s.Require().Equal(entry.GetEntryHash(), recomputed)
 		s.Require().True(business.VerifyHash(pub, entry.GetEntryHash(), entry.GetSignature(), int16(entry.GetCanonVersion())))
 	}
 	s.Require().NoError(stream.Err())
@@ -411,6 +413,17 @@ func modelFromProto(o *auditv1.AuditEntryObject) *models.AuditEntry {
 		CorrelationID: o.GetCorrelationId(), EventID: o.GetEventId(), IntentID: o.GetIntentId(), InstanceID: o.GetInstanceId(),
 		PayloadHash: o.GetPayloadHash(), AuthorizationHash: o.GetAuthorizationHash(), PolicyHash: o.GetPolicyHash(),
 		DeviceKeyID: o.GetDeviceKeyId(), StateFrom: o.GetStateFrom(), StateTo: o.GetStateTo(), ResourceVersion: o.GetResourceVersion(),
+		OutcomeOfEntryID: o.GetOutcomeOfEntryId(), AuditClass: o.GetAuditClass(),
+		WrittenDuringDegradation: o.GetWrittenDuringDegradation(),
+	}
+	switch o.GetPhase() {
+	case auditv1.AuditPhase_AUDIT_PHASE_REQUESTED:
+		e.Phase = models.PhaseRequested
+	case auditv1.AuditPhase_AUDIT_PHASE_COMPLETED:
+		e.Phase = models.PhaseCompleted
+	case auditv1.AuditPhase_AUDIT_PHASE_FAILED:
+		e.Phase = models.PhaseFailed
+	case auditv1.AuditPhase_AUDIT_PHASE_UNSPECIFIED:
 	}
 	e.TenantID, e.PartitionID = o.GetTenantId(), o.GetPartitionId()
 	e.CreatedAt = o.GetCreatedAt().AsTime()

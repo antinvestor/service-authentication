@@ -151,9 +151,24 @@ Frame registers exactly one background consumer function. The writer and checkpo
 
 ---
 
-## 5a. Degraded mode and request/outcome linking
+## 5a. Degraded mode and request/outcome linking (K11)
 
-Producers classify RPCs as `AUDIT_REQUIRED`, `AUDIT_BEST_EFFORT` or `AUDIT_NOT_APPLICABLE`. `AUDIT_REQUIRED` producers fail closed when `CreateAuditEntry` does not return `ACCEPTED`, so this service runs as a highly available tier: at least three replicas across zones and a database with a synchronous replica. A platform emergency authority may declare `AUDIT_DEGRADED` (recorded as a signed entry on the chain when service returns); while declared, producers write `AUDIT_REQUIRED` entries to a local durable outbox and continue, then drain them in order per tenant into `BatchCreateAuditEntries` with `allow_backdating` under their manifest. Entries carry `phase ∈ {REQUESTED, COMPLETED, FAILED}` and `outcome_of_entry_id`; a producer records `REQUESTED` before its own transaction and a linked outcome after it, so an unlinked `REQUESTED` reads as "asked, not done". The service never infers completion.
+Producers classify RPCs as `AUDIT_REQUIRED`, `AUDIT_BEST_EFFORT` or `AUDIT_NOT_APPLICABLE`. `AUDIT_REQUIRED` producers fail closed when `CreateAuditEntry` does not return `ACCEPTED`, so this service runs as a highly available tier: at least three replicas across zones and a database with a synchronous replica. A platform emergency authority may declare `AUDIT_DEGRADED` (recorded as a signed entry on the chain when service returns); while declared, producers write `AUDIT_REQUIRED` entries to a local durable outbox and continue, then drain them in order per tenant. The service never infers completion.
+
+Entries carry:
+
+| Field | Request | Entry | Meaning |
+|-------|---------|-------|---------|
+| `phase` | `CreateAuditEntryRequest.phase` (`AuditPhase`) or `details["phase"]` | `audit_entries.phase` | `REQUESTED`, `COMPLETED` or `FAILED` |
+| `outcome_of_entry_id` | `.outcome_of_entry_id` or `details["linked_entry_id"]` | `audit_entries.outcome_of_entry_id` | the `entry_id` of the request this outcome belongs to |
+| `audit_class` | `.audit_class` or `details["class"]` | `audit_entries.audit_class` | the producer's class for the RPC |
+| `written_during_degradation` | `.written_during_degradation` or `details["written_during_degradation"]` | `audit_entries.written_during_degradation` | the producer parked this entry while `AUDIT_DEGRADED` was declared and drained it afterwards |
+
+Rules at the boundary (§6.2, reason `linking`): a `REQUESTED` entry never names an outcome; an outcome of an `AUDIT_REQUIRED` command must name its request; an entry is never its own outcome; an entry marked as written during degradation must carry its phase. `ListAuditEntries` gains `phase`, `without_outcome` and `written_during_degradation_only`, so "asked, not done" is a query (`phase = REQUESTED` with no entry linking back), not an inference.
+
+**Degraded time rule.** A drained entry keeps the time the human acted. `occurred_at` outside the ±5 minute window is accepted only when the entry is marked as written during degradation (bounded by `AUDIT_DEGRADED_BACKDATING_WINDOW`, default 168 h) or the producer's manifest allows backdating; otherwise it is rejected with reason `time`, visible to the producer. Per-tenant order is preserved because the intake commits in receipt order and a producer drains its outbox in insertion order per tenant.
+
+**Compatibility with the shared client.** `stawi/pkg/auditclass` and `common/audit` carry `entry_id`, `phase`, `linked_entry_id`, `class` and `occurred_at` in `details`. The validator promotes those keys when the typed fields are absent, and mirrors the typed fields back into `details` when they are present, so the canonical pre-image (which covers `details`) binds the phase, the link and the degradation marking. **The canonical encoding therefore stays `canon_v2`, byte-identical to `common/auditverify`**; the typed columns are a query surface derived from signed content, never a second source of truth.
 
 ## 6. Ingestion
 
@@ -230,7 +245,9 @@ audit_entries (existing, pk (id, created_at)) + columns:
   correlation_id varchar(64), event_id varchar(64), intent_id varchar(64), instance_id varchar(64),
   payload_hash char(64), authorization_hash char(64), policy_hash char(64), device_key_id varchar(64),
   state_from varchar(64), state_to varchar(64), resource_version bigint,
-  relations jsonb                                             -- moved out of details
+  relations jsonb,                                            -- moved out of details
+  phase varchar(16), outcome_of_entry_id varchar(64),         -- K11 (§5a)
+  audit_class varchar(32), written_during_degradation bool not null default false
   unique (tenant_id, seq)                                     -- chain walk + fork guard at the storage level
   index (intent_id) where intent_id is not null
   index (correlation_id) where correlation_id is not null
@@ -266,7 +283,7 @@ entry_hash = hex(SHA-256(canon_v2(entry) ‖ previous_hash_bytes))
 signature  = hex(Ed25519(key_id).sign(SHA-256 digest bytes))
 ```
 
-Integers are encoded as decimal ASCII; absent optional fields encode as length 0. `details` and `relations` use a deterministic JSON form (sorted keys, no whitespace, numbers through float64, nil and empty maps identical) so any language reproduces the bytes. The encoder lives once in `service/business/canon.go` and is copied verbatim (golden vectors in `testdata/canon_v2/fixture.json` shared with `common/auditverify`). `canon_version` is always `2`; any change to the encoding is a new version.
+Integers are encoded as decimal ASCII; absent optional fields encode as length 0. `details` and `relations` use a deterministic JSON form (sorted keys, no whitespace, numbers through float64, nil and empty maps identical) so any language reproduces the bytes. The encoder lives once in `service/business/canon.go` and is copied verbatim (golden vectors in `testdata/canon_v2/fixture.json` shared with `common/auditverify`). `canon_version` is always `2`; any change to the encoding is a new version. The K11 request/outcome fields are **not** appended to this list: the validator mirrors them into `details`, which is already hashed, so they are bound without a new canonical version and a v2 verifier such as `common/auditverify` keeps working unchanged.
 
 Checkpoint pre-image: `"chk" ‖ tenant_id ‖ seq ‖ entry_hash ‖ created_at`, same length-prefix rule.
 
@@ -295,9 +312,9 @@ All changes are additive to `audit.v1`; field numbers are appended and no existi
 
 | RPC | Change |
 |-----|--------|
-| `CreateAuditEntry`, `BatchCreateAuditEntries` | Request gains `entry_id`, `on_behalf_of`, `occurred_at`, `correlation_id`, `event_id`, `intent_id`, `instance_id`, `payload_hash`, `authorization_hash`, `policy_hash`, `device_key_id`, `state_from`, `state_to`, `resource_version`, `relations[]`. `profile_id` stays required (it is the person). `actor_service_account_id` is response-only, filled from claims. Response returns `intake_id`, `entry_id` and `state`; the chained entry is available through `GetAuditEntry` once `COMMITTED`. `data` in the response is deprecated and empty |
-| `GetAuditEntry` | Returns `seq`, `key_id`, `canon_version`, `state`, and the typed columns |
-| `ListAuditEntries` | Adds filters `intent_id`, `event_id`, `correlation_id`, `on_behalf_of`, `seq_from`, `seq_to`; ordering by `seq` when a seq filter is present, otherwise `(created_at, id)` as today; streams pages of ≤ 500 until the count is met instead of a single send |
+| `CreateAuditEntry`, `BatchCreateAuditEntries` | Request gains `phase`, `outcome_of_entry_id`, `audit_class`, `written_during_degradation` (K11, §5a), `entry_id`, `on_behalf_of`, `occurred_at`, `correlation_id`, `event_id`, `intent_id`, `instance_id`, `payload_hash`, `authorization_hash`, `policy_hash`, `device_key_id`, `state_from`, `state_to`, `resource_version`, `relations[]`. `profile_id` stays required (it is the person). `actor_service_account_id` is response-only, filled from claims. Response returns `intake_id`, `entry_id` and `state`; the chained entry is available through `GetAuditEntry` once `COMMITTED`. `data` in the response is deprecated and empty |
+| `GetAuditEntry` | Returns `seq`, `key_id`, `canon_version`, `state`, the K11 fields (`phase`, `outcome_of_entry_id`, `audit_class`, `written_during_degradation`) and the typed columns |
+| `ListAuditEntries` | Adds filters `phase`, `without_outcome`, `written_during_degradation_only` (K11), `intent_id`, `event_id`, `correlation_id`, `on_behalf_of`, `seq_from`, `seq_to`; ordering by `seq` when a seq filter is present, otherwise `(created_at, id)` as today; streams pages of ≤ 500 until the count is met instead of a single send |
 | `SearchAuditEntries` | Requires `start_date` and `end_date` spanning ≤ 31 days; queries only indexed columns with prefix match (`ILIKE 'q%'`); `details` is not searched (W11) |
 | `VerifyIntegrity` | Request `{start_seq, end_seq}` (date range kept as a convenience that resolves to seqs); response adds `start_checkpoint_seq`, `end_seq`, `end_hash`, `key_ids_used[]`, `partial` |
 | `ExportAuditEntries` | New, server-streaming: `{start_seq, end_seq}` → first message carries bounding checkpoints and the public keys used, then entries in `seq` order in pages of 500; permission `audit_export` |
@@ -473,6 +490,7 @@ Spans: `audit.ingest.validate`, `audit.ingest.persist`, `audit.writer.tick`, `au
 | `AUDIT_CHECKPOINT_EVERY_N` | `10000` | Count-based checkpoint |
 | `AUDIT_FROZEN_TENANTS` | `` | Comma-separated tenant ids the writer must not advance (incident response) |
 | `AUDIT_REQUIRE_MANIFEST` | `false` | Reject unmanifested producers instead of flagging |
+| `AUDIT_DEGRADED_BACKDATING_WINDOW` | `168h` | How far back an entry marked as written during `AUDIT_DEGRADED` may be backdated (§5a) |
 | `AUDIT_INTAKE_COMMITTED_RETENTION` | `168h` | Delete committed intake rows older than this |
 | `AUDIT_REJECTIONS_RETENTION` | `2160h` | 90 days |
 | `AUDIT_VERIFY_MAX_ENTRIES` | `1000000` | Per-call verification cap |
@@ -518,7 +536,9 @@ Per `testing-go`: real Postgres via testcontainers, `BaseTestSuite`, no goroutin
 | Level | Cases |
 |-------|-------|
 | Unit (`business/canon_test.go`) | Golden vectors for `canon_v2` (empty fields, unicode, `|` in fields, nested `details`, key order); the same vectors run against `common/auditverify.Canonical` in its own module |
-| Unit (`business/validator_test.go`) | Table-driven: every rule in §6.2 with accept/reject pairs; forbidden key case-insensitivity; MSISDN and Luhn positives/negatives; time window edges; batch limits |
+| Unit (`business/validator_test.go`) | Table-driven: every rule in §6.2 with accept/reject pairs; forbidden key case-insensitivity; MSISDN and Luhn positives/negatives; time window edges; batch limits; the K11 linking rules and the degraded backdating window |
+| Integration (K11) | A drained backlog is accepted in per-tenant order and marked; the same entry without the marking is refused on time; a request with no outcome is listed as "asked, not done"; an unlinked `AUDIT_REQUIRED` outcome is refused; the pre-K11 client's details-only entry id, phase, link and class are honoured |
+| Integration (chain guards) | A forged entry at an occupied `seq` is refused by the unique index, one past the head never moves the head and fails verification, and `UPDATE`/`DELETE` on a committed entry is refused by the trigger |
 | Unit (`common/audit`) | Actor rule matrix: user token, SA token, SA + `WithOnBehalfOf`, root admin with `internal` role (must be audited), nil claims |
 | Integration (`business/writer_test.go`) | Single tenant 10 000 entries commit contiguous `seq`; two writer instances against one DB with 8 tenants produce no gaps, no duplicates, `cas_conflicts == 0`; kill (cancel ctx) mid-batch then resume; poison row marked `FAILED` while batch commits; frozen tenant does not advance |
 | Integration (`business/verify_test.go`) | Verify from genesis, from a checkpoint, across a key rotation; mutate one row past the trigger and assert `first_invalid_seq` |

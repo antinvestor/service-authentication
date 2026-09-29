@@ -22,6 +22,7 @@ import (
 
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
+	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -117,7 +118,7 @@ func TestValidator_Rules(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			v := business.NewValidator(fixedLookup(tc.manifest), tc.require)
+			v := business.NewValidator(fixedLookup(tc.manifest), tc.require, business.DefaultDegradedWindow)
 			req := validRequest()
 			if tc.mutate != nil {
 				tc.mutate(req)
@@ -147,7 +148,7 @@ func TestValidator_Rules(t *testing.T) {
 
 func TestValidator_PreservesProducerFields(t *testing.T) {
 	now := time.Now().UTC()
-	v := business.NewValidator(nil, false)
+	v := business.NewValidator(nil, false, business.DefaultDegradedWindow)
 	req := validRequest()
 	req.SetEntryId("e-42")
 	req.SetIntentId("intent-1")
@@ -178,4 +179,161 @@ func TestValidator_PreservesProducerFields(t *testing.T) {
 	items := e.Relations["items"].([]any)
 	require.Len(t, items, 1)
 	require.Equal(t, "contact", items[0].(map[string]any)["child_type"])
+}
+
+// TestValidator_K11LinkingRules covers the request/outcome contract of
+// GFOS §10.4: a request is never an outcome, an outcome of an AUDIT_REQUIRED
+// command always names its request, and the phase may arrive either as the
+// typed field or in the details the pre-K11 client sends.
+func TestValidator_K11LinkingRules(t *testing.T) {
+	now := time.Now().UTC()
+	v := business.NewValidator(nil, false, business.DefaultDegradedWindow)
+
+	cases := []struct {
+		name       string
+		build      func(*auditv1.CreateAuditEntryRequest)
+		wantReason string
+		wantField  string
+		assert     func(*testing.T, *business.NormalisedEntry)
+	}{
+		{
+			name: "typed requested",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_REQUESTED)
+				r.SetAuditClass(business.ClassRequired)
+			},
+			assert: func(t *testing.T, n *business.NormalisedEntry) {
+				t.Helper()
+				require.Equal(t, models.PhaseRequested, n.Entry.Phase)
+				require.Equal(t, business.ClassRequired, n.Entry.AuditClass)
+				require.Equal(t, int16(models.CanonVersionV2), n.Entry.CanonVersion)
+				// The phase is mirrored into the details the chain hashes.
+				require.Equal(t, models.PhaseRequested, n.Entry.Details[business.DetailKeyPhase])
+			},
+		},
+		{
+			name: "phase and link from details",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				withDetails(r, map[string]any{"phase": "COMPLETED", "linked_entry_id": "req-1", "class": business.ClassRequired})
+			},
+			assert: func(t *testing.T, n *business.NormalisedEntry) {
+				t.Helper()
+				require.Equal(t, models.PhaseCompleted, n.Entry.Phase)
+				require.Equal(t, "req-1", n.Entry.OutcomeOfEntryID)
+				require.Equal(t, "req-1", n.Entry.Details[business.DetailKeyLinked])
+			},
+		},
+		{
+			name: "entry id from details",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				withDetails(r, map[string]any{"entry_id": "from-details", "phase": "REQUESTED", "class": business.ClassRequired})
+			},
+			assert: func(t *testing.T, n *business.NormalisedEntry) {
+				t.Helper()
+				require.Equal(t, "from-details", n.Entry.EntryID)
+			},
+		},
+		{
+			name: "best effort outcome needs no link",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_COMPLETED)
+				r.SetAuditClass("AUDIT_BEST_EFFORT")
+			},
+			assert: func(t *testing.T, n *business.NormalisedEntry) {
+				t.Helper()
+				require.Empty(t, n.Entry.OutcomeOfEntryID)
+			},
+		},
+		{
+			name: "required outcome without link",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_FAILED)
+				r.SetAuditClass(business.ClassRequired)
+			},
+			wantReason: business.ReasonLinking, wantField: "outcome_of_entry_id",
+		},
+		{
+			name: "request that names an outcome",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_REQUESTED)
+				r.SetOutcomeOfEntryId("req-1")
+			},
+			wantReason: business.ReasonLinking, wantField: "outcome_of_entry_id",
+		},
+		{
+			name: "entry linked to itself",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetEntryId("e-1")
+				r.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_COMPLETED)
+				r.SetAuditClass(business.ClassRequired)
+				r.SetOutcomeOfEntryId("e-1")
+			},
+			wantReason: business.ReasonLinking, wantField: "outcome_of_entry_id",
+		},
+		{
+			name: "unknown phase in details",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				withDetails(r, map[string]any{"phase": "MAYBE"})
+			},
+			wantReason: business.ReasonLinking, wantField: "phase",
+		},
+		{
+			name: "degraded without phase",
+			build: func(r *auditv1.CreateAuditEntryRequest) {
+				r.SetWrittenDuringDegradation(true)
+			},
+			wantReason: business.ReasonLinking, wantField: "phase",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := validRequest()
+			tc.build(req)
+			got, verr := v.Validate(context.Background(), userCaller(), req, now)
+			if tc.wantReason != "" {
+				require.NotNil(t, verr)
+				require.Equal(t, tc.wantReason, verr.Reason)
+				require.Equal(t, tc.wantField, verr.Field)
+				return
+			}
+			require.Nil(t, verr)
+			tc.assert(t, got)
+		})
+	}
+}
+
+// TestValidator_K11DegradedBackdating pins the degraded-mode time rule: an
+// entry a producer parked while AUDIT_DEGRADED was declared keeps the time
+// the human acted, within a bounded window, and a stale entry that claims no
+// degradation is still refused.
+func TestValidator_K11DegradedBackdating(t *testing.T) {
+	now := time.Now().UTC()
+	v := business.NewValidator(nil, false, 24*time.Hour)
+
+	parked := validRequest()
+	parked.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_REQUESTED)
+	parked.SetWrittenDuringDegradation(true)
+	parked.SetOccurredAt(timestamppb.New(now.Add(-6 * time.Hour)))
+	got, verr := v.Validate(context.Background(), userCaller(), parked, now)
+	require.Nil(t, verr)
+	require.True(t, got.Entry.WrittenDuringDegradation)
+	require.Equal(t, now.Add(-6*time.Hour).Truncate(time.Microsecond), got.Entry.OccurredAt)
+
+	// Beyond the configured window even a degraded entry is refused.
+	tooOld := validRequest()
+	tooOld.SetPhase(auditv1.AuditPhase_AUDIT_PHASE_REQUESTED)
+	tooOld.SetWrittenDuringDegradation(true)
+	tooOld.SetOccurredAt(timestamppb.New(now.Add(-48 * time.Hour)))
+	_, verr = v.Validate(context.Background(), userCaller(), tooOld, now)
+	require.NotNil(t, verr)
+	require.Equal(t, business.ReasonTime, verr.Reason)
+
+	// The pre-K11 client sends occurred_at in details only; the same rules apply.
+	stale := validRequest()
+	withDetails(stale, map[string]any{"occurred_at": now.Add(-time.Hour).Format(time.RFC3339Nano)})
+	_, verr = v.Validate(context.Background(), userCaller(), stale, now)
+	require.NotNil(t, verr)
+	require.Equal(t, business.ReasonTime, verr.Reason)
+	require.Equal(t, "details.occurred_at", verr.Field)
 }

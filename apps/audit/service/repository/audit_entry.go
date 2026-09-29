@@ -146,6 +146,20 @@ func applyFilter(db *gorm.DB, filter *AuditFilter) *gorm.DB {
 			db = db.Where(col+" = ?", v)
 		}
 	}
+	if filter.Phase != "" {
+		db = db.Where("phase = ?", filter.Phase)
+	}
+	if filter.DegradedOnly {
+		db = db.Where("written_during_degradation = ?", true)
+	}
+	if filter.WithoutOutcome {
+		// "Asked, not done": a request nothing links back to. The service
+		// never infers completion, so absence of an outcome is the signal.
+		db = db.Where("phase = ?", models.PhaseRequested).
+			Where(`NOT EXISTS (SELECT 1 FROM audit_entries o
+                WHERE o.tenant_id = audit_entries.tenant_id
+                  AND o.outcome_of_entry_id = audit_entries.entry_id)`)
+	}
 	if filter.SeqFrom > 0 {
 		db = db.Where("seq >= ?", filter.SeqFrom)
 	}

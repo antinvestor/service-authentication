@@ -103,14 +103,23 @@ func signingMessage(hashHex string, canonVersion int16) ([]byte, error) {
 	return raw, nil
 }
 
-// SignEntry computes PreviousHash, EntryHash, KeyID and Signature for a v2
-// entry. The entry must already carry Seq and all typed fields.
+// SignEntry computes PreviousHash, EntryHash, KeyID and Signature. New
+// entries are signed under the current canonical version; an entry that
+// already names an older, still supported version keeps it so a replay of a
+// stored entry reproduces its hash. The entry must already carry Seq and all
+// typed fields.
 func (s *Signer) SignEntry(e *models.AuditEntry, previousHash string) error {
-	e.CanonVersion = models.CanonVersionV2
+	if e.CanonVersion != models.CanonVersionV2 {
+		e.CanonVersion = models.CanonVersionCurrent
+	}
 	e.PreviousHash = previousHash
 	e.KeyID = s.keyID
-	e.EntryHash = EntryHashV2(e, previousHash)
-	sig, err := s.SignHash(e.EntryHash, models.CanonVersionV2)
+	hash, err := EntryHash(e, previousHash)
+	if err != nil {
+		return err
+	}
+	e.EntryHash = hash
+	sig, err := s.SignHash(e.EntryHash, e.CanonVersion)
 	if err != nil {
 		return err
 	}
@@ -121,6 +130,8 @@ func (s *Signer) SignEntry(e *models.AuditEntry, previousHash string) error {
 // SignCheckpoint fills Signature and KeyID for a checkpoint whose hash is
 // computed from its tenant, seq, entry hash and creation time.
 func (s *Signer) SignCheckpoint(c *models.AuditCheckpoint) error {
+	// The checkpoint pre-image is independent of the entry canonical version,
+	// so it keeps the encoding it has always had.
 	sig, err := s.SignHash(CheckpointHash(c.TenantID, c.Seq, c.EntryHash, c.CreatedAt), models.CanonVersionV2)
 	if err != nil {
 		return err

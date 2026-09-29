@@ -28,9 +28,24 @@ const (
 	IntakeStateFailed    = "FAILED"
 )
 
-// CanonVersionV2 is the canonical encoding recorded on AuditEntry.CanonVersion.
-// Any change to the encoding is a new version, never an edit.
-const CanonVersionV2 = 2
+// Canonical encoding versions recorded on AuditEntry.CanonVersion. Any change
+// to the encoding is a new version, never an edit: a verifier dispatches on
+// the recorded version so history stays verifiable.
+const (
+	// CanonVersionV2 is the length-prefixed encoding of the v2 design, shared
+	// byte-for-byte with common/auditverify.
+	CanonVersionV2 = 2
+	// CanonVersionCurrent is what the writer signs new entries with.
+	CanonVersionCurrent = CanonVersionV2
+)
+
+// Phases of a human command (GFOS §10.4). An entry recorded as PhaseRequested
+// with no linked outcome reads as "asked, not done".
+const (
+	PhaseRequested = "REQUESTED"
+	PhaseCompleted = "COMPLETED"
+	PhaseFailed    = "FAILED"
+)
 
 // AlgorithmEd25519 is the only signing algorithm currently supported.
 const AlgorithmEd25519 = "ed25519"
@@ -88,6 +103,14 @@ type AuditEntry struct {
 	StateTo           string       `gorm:"type:varchar(64)"`
 	ResourceVersion   int64        `gorm:"not null;default:0"`
 	Relations         data.JSONMap `gorm:"type:jsonb"`
+
+	// K11 request/outcome linking and degraded-mode marking (GFOS §10.4).
+	// Phase is "", REQUESTED, COMPLETED or FAILED; OutcomeOfEntryID names the
+	// REQUESTED entry an outcome belongs to.
+	Phase                    string `gorm:"type:varchar(16);index"`
+	OutcomeOfEntryID         string `gorm:"type:varchar(64);index"`
+	AuditClass               string `gorm:"type:varchar(32)"`
+	WrittenDuringDegradation bool   `gorm:"not null;default:false"`
 }
 
 func (AuditEntry) TableName() string { return "audit_entries" }

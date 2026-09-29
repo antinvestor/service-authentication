@@ -39,6 +39,8 @@ const (
 	ReasonForbiddenContent = "forbidden_content"
 	ReasonTime             = "time"
 	ReasonHash             = "hash"
+	// ReasonLinking covers the K11 request/outcome rules (GFOS §10.4).
+	ReasonLinking = "linking"
 )
 
 // Validation limits (spec §6.2).
@@ -51,6 +53,24 @@ const (
 	FutureSkew        = 30 * time.Second
 	// BackdatingWindow bounds occurred_at for manifests that allow replay.
 	BackdatingWindow = 400 * 24 * time.Hour
+)
+
+// ClassRequired is the producer audit class whose outcomes must link back to
+// their REQUESTED entry (GFOS §10.4).
+const ClassRequired = "AUDIT_REQUIRED"
+
+// Detail keys the K11 fields travel under. They are the keys the shared
+// common/audit client already writes (class.go) plus the degradation marker,
+// and the validator mirrors the typed request fields into them so the
+// canonical pre-image — which covers details — binds the phase, the link and
+// the marking without a new canonical version.
+const (
+	DetailKeyPhase    = "phase"
+	DetailKeyLinked   = "linked_entry_id"
+	DetailKeyClass    = "class"
+	DetailKeyEntryID  = "entry_id"
+	DetailKeyOccurred = "occurred_at"
+	DetailKeyDegraded = "written_during_degradation"
 )
 
 // PermissionCreateAny lets the audit operator role log under any service.
@@ -124,12 +144,21 @@ type NormalisedEntry struct {
 type Validator struct {
 	lookup          ManifestLookup
 	requireManifest bool
+	degradedWindow  time.Duration
 }
 
-// NewValidator creates a validator over the manifest registry.
-func NewValidator(lookup ManifestLookup, requireManifest bool) *Validator {
-	return &Validator{lookup: lookup, requireManifest: requireManifest}
+// NewValidator creates a validator over the manifest registry. degradedWindow
+// bounds how far back an entry marked as written during AUDIT_DEGRADED may be
+// backdated when it is drained from a producer outbox (GFOS §10.4, K11).
+func NewValidator(lookup ManifestLookup, requireManifest bool, degradedWindow time.Duration) *Validator {
+	if degradedWindow <= 0 {
+		degradedWindow = DefaultDegradedWindow
+	}
+	return &Validator{lookup: lookup, requireManifest: requireManifest, degradedWindow: degradedWindow}
 }
+
+// DefaultDegradedWindow is used when configuration leaves it unset.
+const DefaultDegradedWindow = 168 * time.Hour
 
 var (
 	forbiddenKeyPattern = regexp.MustCompile(`(?i)(password|secret|token|authorization|cookie|private_key|otp|\bpin\b|^pin$|_pin$|^pin_)`)
@@ -161,27 +190,9 @@ func (v *Validator) Validate(ctx context.Context, caller Caller, req *auditv1.Cr
 		return nil, serr
 	}
 
-	// Manifest and vocabulary.
-	var manifest *Manifest
-	unmanifested := true
-	if v.lookup != nil {
-		m, ok, err := v.lookup(ctx, service)
-		if err != nil {
-			util.Log(ctx).WithError(err).WithField("service", service).Warn("manifest lookup failed; treating as unmanifested")
-		} else if ok {
-			manifest, unmanifested = m, false
-		}
-	}
-	if unmanifested && v.requireManifest {
-		return nil, &ValidationError{Reason: ReasonVocabulary, Field: "service", Detail: "no audit manifest registered"}
-	}
-	if manifest != nil && !manifest.OpenVocabulary {
-		if _, ok := manifest.Actions[req.GetAction()]; !ok {
-			return nil, &ValidationError{Reason: ReasonVocabulary, Field: "action", Detail: "unknown action " + req.GetAction()}
-		}
-		if _, ok := manifest.ResourceTypes[req.GetResourceType()]; !ok {
-			return nil, &ValidationError{Reason: ReasonVocabulary, Field: "resource_type", Detail: "unknown resource_type " + req.GetResourceType()}
-		}
+	manifest, unmanifested, verr := v.checkVocabulary(ctx, service, req)
+	if verr != nil {
+		return nil, verr
 	}
 
 	// Forbidden content.
@@ -197,7 +208,12 @@ func (v *Validator) Validate(ctx context.Context, caller Caller, req *auditv1.Cr
 		return nil, ferr
 	}
 
-	occurredAt, verr := checkTime(req, manifest, now)
+	link, verr := resolveLinking(req, details)
+	if verr != nil {
+		return nil, verr
+	}
+
+	occurredAt, verr := v.checkTime(req, details, manifest, link.Degraded, now)
 	if verr != nil {
 		return nil, verr
 	}
@@ -205,7 +221,18 @@ func (v *Validator) Validate(ctx context.Context, caller Caller, req *auditv1.Cr
 		return nil, verr
 	}
 
+	details = mirrorLinking(details, link)
+
 	entryID := strings.TrimSpace(req.GetEntryId())
+	if entryID == "" {
+		// Compatibility bridge: the GFOS pkg/auditclass recorder carries its
+		// idempotency key in details["entry_id"] only. Promoting it makes a
+		// drained outbox replay idempotent instead of duplicating the entry.
+		entryID = detailString(details, DetailKeyEntryID)
+	}
+	if len(entryID) > MaxStringBytes {
+		return nil, &ValidationError{Reason: ReasonSize, Field: "entry_id", Detail: fmt.Sprintf("exceeds %d bytes", MaxStringBytes)}
+	}
 	if entryID == "" {
 		entryID = util.IDString()
 	}
@@ -219,7 +246,9 @@ func (v *Validator) Validate(ctx context.Context, caller Caller, req *auditv1.Cr
 		CorrelationID: req.GetCorrelationId(), EventID: req.GetEventId(), IntentID: req.GetIntentId(), InstanceID: req.GetInstanceId(),
 		PayloadHash: req.GetPayloadHash(), AuthorizationHash: req.GetAuthorizationHash(), PolicyHash: req.GetPolicyHash(),
 		DeviceKeyID: req.GetDeviceKeyId(), StateFrom: req.GetStateFrom(), StateTo: req.GetStateTo(),
-		ResourceVersion: req.GetResourceVersion(), CanonVersion: models.CanonVersionV2,
+		ResourceVersion: req.GetResourceVersion(), CanonVersion: models.CanonVersionCurrent,
+		Phase: link.Phase, OutcomeOfEntryID: link.OutcomeOf, AuditClass: link.Class,
+		WrittenDuringDegradation: link.Degraded,
 	}
 	e.TenantID, e.PartitionID, e.AccessID = caller.TenantID, caller.PartitionID, caller.AccessID
 	if manifest != nil {
@@ -236,6 +265,36 @@ func (v *Validator) Validate(ctx context.Context, caller Caller, req *auditv1.Cr
 		e.Relations = data.JSONMap{"items": items}
 	}
 	return &NormalisedEntry{Entry: e}, nil
+}
+
+// checkVocabulary resolves the producer's manifest and holds the entry to
+// the vocabulary it registered. A service with no manifest is accepted and
+// flagged unmanifested until AUDIT_REQUIRE_MANIFEST is on.
+func (v *Validator) checkVocabulary(ctx context.Context, service string,
+	req *auditv1.CreateAuditEntryRequest) (*Manifest, bool, *ValidationError) {
+	var manifest *Manifest
+	unmanifested := true
+	if v.lookup != nil {
+		m, ok, err := v.lookup(ctx, service)
+		if err != nil {
+			util.Log(ctx).WithError(err).WithField("service", service).Warn("manifest lookup failed; treating as unmanifested")
+		} else if ok {
+			manifest, unmanifested = m, false
+		}
+	}
+	if unmanifested && v.requireManifest {
+		return nil, true, &ValidationError{Reason: ReasonVocabulary, Field: "service", Detail: "no audit manifest registered"}
+	}
+	if manifest != nil && !manifest.OpenVocabulary {
+		if _, ok := manifest.Actions[req.GetAction()]; !ok {
+			return nil, unmanifested, &ValidationError{Reason: ReasonVocabulary, Field: "action", Detail: "unknown action " + req.GetAction()}
+		}
+		if _, ok := manifest.ResourceTypes[req.GetResourceType()]; !ok {
+			return nil, unmanifested, &ValidationError{Reason: ReasonVocabulary, Field: "resource_type",
+				Detail: "unknown resource_type " + req.GetResourceType()}
+		}
+	}
+	return manifest, unmanifested, nil
 }
 
 // checkIdentity applies the actor rule and the service binding.
@@ -259,20 +318,152 @@ func (v *Validator) checkIdentity(caller Caller, req *auditv1.CreateAuditEntryRe
 	return profileID, onBehalfOf, service, nil
 }
 
-func checkTime(req *auditv1.CreateAuditEntryRequest, manifest *Manifest, now time.Time) (time.Time, *ValidationError) {
-	if req.GetOccurredAt() == nil {
+// linking is the resolved K11 request/outcome state of one request.
+type linking struct {
+	Phase     string
+	OutcomeOf string
+	Class     string
+	Degraded  bool
+}
+
+// resolveLinking reads the K11 fields, falling back to the detail keys the
+// GFOS pkg/auditclass recorder sends today ("phase", "linked_entry_id",
+// "class"), and applies the §10.4 rules: a REQUESTED entry never names an
+// outcome, and an outcome of an AUDIT_REQUIRED command must name its request.
+func resolveLinking(req *auditv1.CreateAuditEntryRequest, details data.JSONMap) (linking, *ValidationError) {
+	l := linking{
+		Phase:     phaseName(req.GetPhase()),
+		OutcomeOf: strings.TrimSpace(req.GetOutcomeOfEntryId()),
+		Class:     strings.TrimSpace(req.GetAuditClass()),
+		Degraded:  req.GetWrittenDuringDegradation(),
+	}
+	if l.Phase == "" {
+		l.Phase = normalisePhase(detailString(details, DetailKeyPhase))
+	}
+	if l.OutcomeOf == "" {
+		l.OutcomeOf = detailString(details, DetailKeyLinked)
+	}
+	if l.Class == "" {
+		l.Class = detailString(details, DetailKeyClass)
+	}
+	if !l.Degraded {
+		l.Degraded, _ = details[DetailKeyDegraded].(bool)
+	}
+	if l.Phase != "" && l.Phase != models.PhaseRequested && l.Phase != models.PhaseCompleted && l.Phase != models.PhaseFailed {
+		return linking{}, &ValidationError{Reason: ReasonLinking, Field: "phase", Detail: "unknown phase " + l.Phase}
+	}
+	if len(l.OutcomeOf) > MaxStringBytes {
+		return linking{}, &ValidationError{Reason: ReasonSize, Field: "outcome_of_entry_id", Detail: fmt.Sprintf("exceeds %d bytes", MaxStringBytes)}
+	}
+	if l.Phase == models.PhaseRequested && l.OutcomeOf != "" {
+		return linking{}, &ValidationError{Reason: ReasonLinking, Field: "outcome_of_entry_id",
+			Detail: "a REQUESTED entry is the request, not an outcome"}
+	}
+	isOutcome := l.Phase == models.PhaseCompleted || l.Phase == models.PhaseFailed
+	if isOutcome && l.Class == ClassRequired && l.OutcomeOf == "" {
+		return linking{}, &ValidationError{Reason: ReasonLinking, Field: "outcome_of_entry_id",
+			Detail: "an outcome of an AUDIT_REQUIRED command must reference its REQUESTED entry"}
+	}
+	if l.OutcomeOf != "" && l.OutcomeOf == strings.TrimSpace(req.GetEntryId()) {
+		return linking{}, &ValidationError{Reason: ReasonLinking, Field: "outcome_of_entry_id",
+			Detail: "an entry cannot be its own outcome"}
+	}
+	if l.Degraded && l.Phase == "" {
+		return linking{}, &ValidationError{Reason: ReasonLinking, Field: "phase",
+			Detail: "an entry written during degradation must carry its phase"}
+	}
+	return l, nil
+}
+
+// mirrorLinking writes the resolved K11 fields back into details so the
+// signed pre-image covers them. A producer that already sent them in details
+// sees no change; a producer that used the typed fields gets them recorded in
+// the one place the canonical encoding hashes.
+func mirrorLinking(details data.JSONMap, l linking) data.JSONMap {
+	if l.Phase == "" && l.OutcomeOf == "" && l.Class == "" && !l.Degraded {
+		return details
+	}
+	if details == nil {
+		details = data.JSONMap{}
+	}
+	if l.Phase != "" {
+		details[DetailKeyPhase] = l.Phase
+	}
+	if l.OutcomeOf != "" {
+		details[DetailKeyLinked] = l.OutcomeOf
+	}
+	if l.Class != "" {
+		details[DetailKeyClass] = l.Class
+	}
+	if l.Degraded {
+		details[DetailKeyDegraded] = true
+	}
+	return details
+}
+
+func phaseName(p auditv1.AuditPhase) string {
+	switch p {
+	case auditv1.AuditPhase_AUDIT_PHASE_REQUESTED:
+		return models.PhaseRequested
+	case auditv1.AuditPhase_AUDIT_PHASE_COMPLETED:
+		return models.PhaseCompleted
+	case auditv1.AuditPhase_AUDIT_PHASE_FAILED:
+		return models.PhaseFailed
+	case auditv1.AuditPhase_AUDIT_PHASE_UNSPECIFIED:
+		return ""
+	default:
+		return ""
+	}
+}
+
+func normalisePhase(s string) string { return strings.ToUpper(strings.TrimSpace(s)) }
+
+func detailString(details data.JSONMap, key string) string {
+	if details == nil {
+		return ""
+	}
+	s, _ := details[key].(string)
+	return strings.TrimSpace(s)
+}
+
+// checkTime bounds occurred_at. The producer may send it as the typed field
+// or, on the pre-K11 client, only as details["occurred_at"]; both are subject
+// to the same rules. An entry marked as written during AUDIT_DEGRADED, or a
+// producer whose manifest allows backdating, may carry an older time so a
+// drained outbox keeps the time the human acted.
+func (v *Validator) checkTime(req *auditv1.CreateAuditEntryRequest, details data.JSONMap, manifest *Manifest,
+	degraded bool, now time.Time) (time.Time, *ValidationError) {
+	occurredAt := time.Time{}
+	field := "occurred_at"
+	switch {
+	case req.GetOccurredAt() != nil:
+		occurredAt = req.GetOccurredAt().AsTime()
+	default:
+		if raw := detailString(details, DetailKeyOccurred); raw != "" {
+			field = "details.occurred_at"
+			parsed, err := time.Parse(time.RFC3339Nano, raw)
+			if err != nil {
+				return time.Time{}, &ValidationError{Reason: ReasonTime, Field: field, Detail: "not RFC 3339"}
+			}
+			occurredAt = parsed
+		}
+	}
+	if occurredAt.IsZero() {
 		return now, nil
 	}
-	occurredAt := req.GetOccurredAt().AsTime().UTC().Truncate(time.Microsecond)
+	occurredAt = occurredAt.UTC().Truncate(time.Microsecond)
 	if occurredAt.After(now.Add(FutureSkew)) {
-		return time.Time{}, &ValidationError{Reason: ReasonTime, Field: "occurred_at", Detail: "in the future"}
+		return time.Time{}, &ValidationError{Reason: ReasonTime, Field: field, Detail: "in the future"}
 	}
 	window := TimeWindow
-	if manifest != nil && manifest.AllowBackdating {
+	if degraded {
+		window = v.degradedWindow
+	}
+	if manifest != nil && manifest.AllowBackdating && BackdatingWindow > window {
 		window = BackdatingWindow
 	}
 	if occurredAt.Before(now.Add(-window)) {
-		return time.Time{}, &ValidationError{Reason: ReasonTime, Field: "occurred_at", Detail: "older than the accepted window"}
+		return time.Time{}, &ValidationError{Reason: ReasonTime, Field: field, Detail: "older than the accepted window"}
 	}
 	return occurredAt, nil
 }
