@@ -36,12 +36,12 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 		db := svc.DatastoreManager().GetPool(ctx, datastore.DefaultPoolName).DB(ctx, true)
 
 		for table, expected := range map[string]int64{
-			"clients":                                   66,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing
-			"oauth_client_recipients":                   303, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4)
-			"service_accounts":                          53,  // + service_commerce + service_procurement + service_notification_whatsapp
-			"service_account_authorization_policies":    53,
-			"service_account_authorization_grants":      199,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1), service_notification_whatsapp (4)
-			"service_account_authorization_permissions": 2009, // + service_imports content/notification permits, service_commerce (21), service_procurement (8), trustage ledger_post/shops_list (2), service_notification_whatsapp (33)
+			"clients":                                   67,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing + service_payment_flutterwave
+			"oauth_client_recipients":                   307, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4), service_manufacturing (2), service_payment_flutterwave (4)
+			"service_accounts":                          54,  // + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing + service_payment_flutterwave
+			"service_account_authorization_policies":    54,
+			"service_account_authorization_grants":      203,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1), service_notification_whatsapp (4), service_manufacturing (1), service_payment_flutterwave (4)
+			"service_account_authorization_permissions": 2049, // + service_imports content/notification permits, service_commerce (21), service_procurement (8), trustage ledger_post/shops_list (2), service_notification_whatsapp (33), service_manufacturing (39), service_payment_flutterwave (40)
 		} {
 			var count int64
 			s.Require().NoError(db.Table(table).Count(&count).Error)
