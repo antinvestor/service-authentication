@@ -110,6 +110,23 @@ func (s *ModelsTestSuite) TestSession_Fields() {
 	s.True(session.ExpiresAt.After(now))
 }
 
+// Login handlers pass *LoginEvent through error paths that may carry nil
+// (e.g. ensureLoginEventTenancyAccess returns nil on failure); tenancy
+// getters must not panic when that happens.
+func (s *ModelsTestSuite) TestLoginEventGettersNilSafe() {
+	var evt *LoginEvent
+
+	s.NotPanics(func() {
+		s.Empty(evt.GetTenantID())
+		s.Empty(evt.GetPartitionID())
+		s.Empty(evt.GetProfileID())
+		s.Empty(evt.GetAccessID())
+		s.Empty(evt.GetContactID())
+		s.Empty(evt.GetSessionID())
+		s.Empty(evt.GetDeviceID())
+	})
+}
+
 func TestModels(t *testing.T) {
 	suite.Run(t, new(ModelsTestSuite))
 }
