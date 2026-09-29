@@ -104,7 +104,7 @@ func (prtSrv *TenancyServer) registerPermissionManifest(rw http.ResponseWriter, 
 		AccessRoleRepo:       prtSrv.AccessRoleRepo,
 		PartitionRoleRepo:    prtSrv.PartitionRoleRepo,
 		EventsManager:        prtSrv.eventsMan,
-		Authorizer:           prtSrv.svc.SecurityManager().GetAuthorizer(ctx),
+		Authorizer:           authz.SerialisedAuthorizer(ctx, prtSrv.svc),
 	}, ownerServiceAccountID, business.PermissionManifest{
 		Namespace:    manifest.Namespace,
 		Domain:       manifest.Domain,
