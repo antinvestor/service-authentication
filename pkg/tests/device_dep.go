@@ -129,6 +129,10 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 
 	issuer := oauth2ServiceURI
 
+	if err = assignHostModeHTTPPort(ctx, d.DefaultImpl); err != nil {
+		return err
+	}
+
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
@@ -151,7 +155,7 @@ func (d *deviceDependency) Setup(ctx context.Context, ntwk *testcontainers.Docke
 			"OAUTH2_JWT_VERIFY_ISSUER":          issuer,
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,
 		},
-		WaitingFor: wait.ForLog("Initiating server operations"),
+		WaitingFor: wait.ForLog(serviceListeningLog),
 	}
 	d.Configure(ctx, ntwk, &containerRequest)
 

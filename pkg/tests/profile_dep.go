@@ -143,6 +143,10 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 
 	issuer := oauth2ServiceURI
 
+	if err = assignHostModeHTTPPort(ctx, d.DefaultImpl); err != nil {
+		return err
+	}
+
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
@@ -178,7 +182,7 @@ func (d *dependency) Setup(ctx context.Context, ntwk *testcontainers.DockerNetwo
 			"TENANCY_SERVICE_URI":               partitionService,
 		},
 
-		WaitingFor: wait.ForLog("Initiating server operations"),
+		WaitingFor: wait.ForLog(serviceListeningLog),
 	}
 
 	d.Configure(ctx, ntwk, &containerRequest)
