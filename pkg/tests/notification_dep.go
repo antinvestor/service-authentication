@@ -127,6 +127,10 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 
 	issuer := oauth2ServiceURI
 
+	if err = assignHostModeHTTPPort(ctx, d.DefaultImpl); err != nil {
+		return err
+	}
+
 	containerRequest := testcontainers.ContainerRequest{
 		Image: d.Name(),
 		Env: map[string]string{
@@ -159,7 +163,7 @@ func (d *notificationDependancy) Setup(ctx context.Context, ntwk *testcontainers
 			"OAUTH2_WELL_KNOWN_JWK_DATA":        jwksData,
 		},
 
-		WaitingFor: wait.ForLog("Initiating server operations"),
+		WaitingFor: wait.ForLog(serviceListeningLog),
 	}
 
 	d.Configure(ctx, ntwk, &containerRequest)
