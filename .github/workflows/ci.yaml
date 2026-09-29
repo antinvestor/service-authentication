@@ -11,6 +11,8 @@ jobs:
       contents: read
       packages: read
     uses: antinvestor/common/.github/workflows/go-test.yml@main
+    with:
+      race: true
   lint:
     permissions:
       contents: read
