@@ -22,7 +22,6 @@ import (
 	"github.com/pitabwire/frame/v2/datastore"
 	"github.com/pitabwire/frame/v2/datastore/pool"
 	"github.com/pitabwire/frame/v2/security"
-	"gorm.io/gorm"
 )
 
 // Cross-process Postgres advisory lock identifying "Keto relation-tuple
@@ -49,6 +48,14 @@ const (
 	ketoTupleMutationLockClass int32 = 0x7e9a
 	ketoTupleMutationLockKey   int32 = 0x0001
 )
+
+// localTupleMutationSlot serialises tuple mutations within this process
+// before any database connection is taken. Without it every concurrent
+// writer would pin a pooled connection while blocked on the advisory lock,
+// exhausting the pool and starving the rest of the service (and deadlocking
+// GORM's prepared-statement cache, which needs a free connection to prepare).
+// With it, each process holds at most one connection for the lock.
+var localTupleMutationSlot = make(chan struct{}, 1) //nolint:gochecknoglobals // process-wide by design
 
 // serialisedTupleAuthorizer decorates a security.Authorizer so tuple
 // mutations run under the shared advisory lock. Read paths (Check,
@@ -108,9 +115,10 @@ func (a *serialisedTupleAuthorizer) DeleteTuples(ctx context.Context, tuples []s
 
 // withTupleMutationLock runs fn while holding the advisory lock inside a
 // database transaction. The transaction exists only to scope the lock; fn
-// performs Keto RPCs, not database work, so no queries join it. Chunked
-// callers acquire the lock once per chunk, which keeps other writers from
-// starving during large bootstraps.
+// performs Keto RPCs, not database work, so no queries join it. The lock is
+// taken on a raw *sql.Tx so GORM's prepared-statement cache is never
+// involved. Chunked callers acquire the lock once per chunk, which keeps
+// other writers from starving during large bootstraps.
 func (a *serialisedTupleAuthorizer) withTupleMutationLock(
 	ctx context.Context,
 	op string,
@@ -123,13 +131,32 @@ func (a *serialisedTupleAuthorizer) withTupleMutationLock(
 	if db == nil {
 		return fmt.Errorf("authz %s: writable database connection is required to serialise keto tuple mutations", op)
 	}
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec(
-			"SELECT pg_advisory_xact_lock(?, ?)",
-			ketoTupleMutationLockClass, ketoTupleMutationLockKey,
-		).Error; err != nil {
-			return fmt.Errorf("authz %s: acquire keto tuple mutation lock: %w", op, err)
-		}
-		return fn(ctx)
-	})
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("authz %s: resolve database handle: %w", op, err)
+	}
+
+	select {
+	case localTupleMutationSlot <- struct{}{}:
+	case <-ctx.Done():
+		return fmt.Errorf("authz %s: wait for keto tuple mutation slot: %w", op, ctx.Err())
+	}
+	defer func() { <-localTupleMutationSlot }()
+
+	tx, err := sqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("authz %s: begin keto tuple mutation lock transaction: %w", op, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err = tx.ExecContext(
+		ctx, "SELECT pg_advisory_xact_lock($1, $2)",
+		ketoTupleMutationLockClass, ketoTupleMutationLockKey,
+	); err != nil {
+		return fmt.Errorf("authz %s: acquire keto tuple mutation lock: %w", op, err)
+	}
+	if err = fn(ctx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
