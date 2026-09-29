@@ -53,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| datmso4pf2t98sc6rov0 | service-payment-flutterwave | (SA: service_payment_flutterwave) | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | daid3uspf2t8dfvkjnl0 | service-manufacturing | (SA: service_manufacturing) | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs7vg | service-notification-integration-whatsapp | (SA: service_notification_whatsapp) | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uap0 | imports | c2f4j7au6s7f91uqnokg | apps/tenancy/migrations/0001/20260831_service_imports.sql |
@@ -104,6 +105,7 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| datmso4pf2t98sc6rovg | d9flwbotprof00000001 | datmso4pf2t98sc6rov0 | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | daid3uspf2t8dfvkjnm0 | daid38spf2t72pqigk80 | daid3uspf2t8dfvkjnl0 | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs80g | daenc7kpf2t8pa1q04hg | daend44pf2t8c15rs7vg | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
 | daaltq4pf2tb6me3uaq0 | daalssspf2tbp6p7ekrg | daaltq4pf2tb6me3uap0 | apps/tenancy/migrations/0001/20260831_service_imports.sql |
@@ -159,6 +161,7 @@ configuration.
 ## Referenced profile IDs
 | xid | what | file |
 |-----|------|------|
+| d9flwbotprof00000001 | service_payment_flutterwave bot profile (pre-existing in profile service; hand-assigned, not an rs/xid) | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 
 ## Partition roles
 | xid | role | partition | file |
@@ -500,3 +503,56 @@ configuration.
 | daid3v4pf2t8dv11qd0g | service_manufacturing SA permission waste_dispose | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daid3v4pf2t8dv11qd10 | service_manufacturing SA permission waste_record | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daid3v4pf2t8dv11qd1g | service_manufacturing SA permission waste_view | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
+
+## service_payment_flutterwave integration SA (2026-09-29)
+| xid | purpose | file |
+|-----|---------|------|
+| datmso4pf2t98sc6rp0g | service_payment_flutterwave SA recipient https://api.stawi.org/notification | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp10 | service_payment_flutterwave SA recipient https://api.stawi.org/payment | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp1g | service_payment_flutterwave SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp20 | service_payment_flutterwave SA recipient https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp00 | service_payment_flutterwave SA authorization policy | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp2g | service_payment_flutterwave SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp4g | service_payment_flutterwave SA permission service_notification.notification_release | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp50 | service_payment_flutterwave SA permission service_notification.notification_search | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp5g | service_payment_flutterwave SA permission service_notification.notification_send | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp60 | service_payment_flutterwave SA permission service_notification.notification_status_update | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp6g | service_payment_flutterwave SA permission service_notification.notification_status_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp70 | service_payment_flutterwave SA permission service_notification.template_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp7g | service_payment_flutterwave SA permission service_notification.template_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp30 | service_payment_flutterwave SA grant service_payment partition_tree | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp80 | service_payment_flutterwave SA permission service_payment.payment_link_create | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp8g | service_payment_flutterwave SA permission service_payment.payment_receive | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp90 | service_payment_flutterwave SA permission service_payment.payment_release | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp9g | service_payment_flutterwave SA permission service_payment.payment_search | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpa0 | service_payment_flutterwave SA permission service_payment.payment_send | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpag | service_payment_flutterwave SA permission service_payment.payment_status_update | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpb0 | service_payment_flutterwave SA permission service_payment.payment_status_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpbg | service_payment_flutterwave SA permission service_payment.prompt_initiate | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpc0 | service_payment_flutterwave SA permission service_payment.reconcile | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp3g | service_payment_flutterwave SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpcg | service_payment_flutterwave SA permission service_profile.address_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpd0 | service_payment_flutterwave SA permission service_profile.contact_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpdg | service_payment_flutterwave SA permission service_profile.profile_create | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpe0 | service_payment_flutterwave SA permission service_profile.profile_merge | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpeg | service_payment_flutterwave SA permission service_profile.profile_update | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpf0 | service_payment_flutterwave SA permission service_profile.profile_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpfg | service_payment_flutterwave SA permission service_profile.relationship_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpg0 | service_payment_flutterwave SA permission service_profile.relationship_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpgg | service_payment_flutterwave SA permission service_profile.roster_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rph0 | service_payment_flutterwave SA permission service_profile.roster_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rp40 | service_payment_flutterwave SA grant service_tenancy partition_tree | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rphg | service_payment_flutterwave SA permission service_tenancy.access_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpi0 | service_payment_flutterwave SA permission service_tenancy.access_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpig | service_payment_flutterwave SA permission service_tenancy.client_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpj0 | service_payment_flutterwave SA permission service_tenancy.client_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpjg | service_payment_flutterwave SA permission service_tenancy.page_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpk0 | service_payment_flutterwave SA permission service_tenancy.page_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpkg | service_payment_flutterwave SA permission service_tenancy.partition_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpl0 | service_payment_flutterwave SA permission service_tenancy.partition_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rplg | service_payment_flutterwave SA permission service_tenancy.permission_grant | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpm0 | service_payment_flutterwave SA permission service_tenancy.role_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpmg | service_payment_flutterwave SA permission service_tenancy.service_account_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpn0 | service_payment_flutterwave SA permission service_tenancy.service_account_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpng | service_payment_flutterwave SA permission service_tenancy.tenant_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+| datmso4pf2t98sc6rpo0 | service_payment_flutterwave SA permission service_tenancy.tenant_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
