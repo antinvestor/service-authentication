@@ -201,8 +201,11 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 	}
 
 	jsonPayload := data.JSONMap(*d)
-	// Acquire capacity so a temporary backlog only waits for a slot; queue
-	// delivery has no wall-clock budget (push/pull runs until the handler returns).
+	// Acquire capacity so a temporary backlog only waits for a slot. Frame sets
+	// no handler deadline, but a Pub/Sub push delivery ends at the subscription
+	// ack deadline (tenancy: 300s, Cloud Run's request timeout). A delivery that
+	// ends first returns the cancellation, which Frame answers with a retryable
+	// status so Pub/Sub redelivers it — it is never acked and lost.
 	if err := e.acquire(ictx); err != nil {
 		return err
 	}
