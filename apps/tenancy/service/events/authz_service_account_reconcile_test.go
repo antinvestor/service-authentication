@@ -3,11 +3,13 @@ package events
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v2/queue/push"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,6 +62,31 @@ func TestAuthorizationReconciliationConcurrencyIsBounded(t *testing.T) {
 	for range maxConcurrentAuthorizationReconciliations {
 		reconciler.release()
 	}
+}
+
+// A reconcile whose push delivery ends while it waits for capacity must fail
+// with a retryable error so Pub/Sub redelivers it (service-authentication#855):
+// an ack here would silently drop the policy until the hourly re-queue.
+func TestCancelledDeliveryWaitingForCapacityIsRedelivered(t *testing.T) {
+	t.Parallel()
+
+	reconciler := NewAuthzServiceAccountSyncEventHandler(nil, nil, nil, nil, nil, nil, nil)
+	for range maxConcurrentAuthorizationReconciliations {
+		require.NoError(t, reconciler.acquire(t.Context()))
+	}
+	t.Cleanup(func() {
+		for range maxConcurrentAuthorizationReconciliations {
+			reconciler.release()
+		}
+	})
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	payload := &map[string]any{"id": "sa-id", "generation": int64(1)}
+	err := reconciler.Execute(ctx, payload)
+
+	require.ErrorIs(t, err, context.Canceled)
+	require.Equal(t, http.StatusServiceUnavailable, push.HTTPStatusFor(err))
 }
 
 func TestMissingPolicyNamespacesAreDeferredUntilRegistration(t *testing.T) {
