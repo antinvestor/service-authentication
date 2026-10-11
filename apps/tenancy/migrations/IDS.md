@@ -704,3 +704,17 @@ configuration.
 | db5li0kpf2t2i2o15i5g | service_settlement SA grant service_authentication partition_tree | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |
 | db5li0kpf2t2i2o15i60 | service_settlement SA permission service_authentication auth_genesis_verify | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |
 | db5iu14pf2t15n40lj3g | service_settlement SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |
+
+## service_chat namespace owner + Stawi finance/settlement grants (2026-10-11)
+| xid | purpose | file |
+|-----|---------|------|
+| c2f4j7au6s7f91uqnpeg | chat drone SA renamed service_chat_drone → service_chat (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5luv4pf2t0o1dkvss0 | service_finance SA grant service_chat partition_tree | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5luv4pf2t0o1dkvssg | service_finance SA permission service_chat event_send | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5luv4pf2t0o1dkvst0 | service_finance SA permission service_chat stawi_card_post | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5luv4pf2t0o1dkvstg | service_settlement SA grant service_finance partition_tree | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5luv4pf2t0o1dkvsu0 | service_settlement SA permission service_finance genesis_policy_view | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5mcvkpf2t12shm7gug | service_settlement SA recipient https://api.stawi.org/authentication | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5iu14pf2t15n40lj2g | service_settlement client (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5itnspf2tft2pp30f0 | service_finance SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+| db5iu14pf2t15n40lj3g | service_settlement SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
