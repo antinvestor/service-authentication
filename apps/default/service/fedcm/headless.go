@@ -43,6 +43,10 @@ type AuthorizeURLInput struct {
 	Nonce          string
 	State          string
 	CodeChallenge  string
+	// Audiences are the resource audiences requested for the access token.
+	// Hydra only grants an audience that was requested on the authorize call
+	// and that the client is allowed; an empty list yields a token with no aud.
+	Audiences []string
 }
 
 // BuildAuthorizeURL constructs the Hydra /oauth2/auth URL used in the headless
@@ -71,6 +75,9 @@ func BuildAuthorizeURL(in AuthorizeURLInput) (string, error) {
 	q.Set("code_challenge_method", "S256")
 	if in.Nonce != "" {
 		q.Set("nonce", in.Nonce)
+	}
+	if len(in.Audiences) > 0 {
+		q.Set("audience", strings.Join(in.Audiences, " "))
 	}
 	base.RawQuery = q.Encode()
 	return base.String(), nil
@@ -135,6 +142,8 @@ type HeadlessRequest struct {
 	ACR          string
 	AMR          []string
 	DeviceID     string
+	// Audiences are the resource audiences to request for the access token.
+	Audiences []string
 }
 
 // HeadlessResult is what the driver returns when successful.
@@ -180,6 +189,7 @@ func (d *HeadlessDriver) Run(ctx context.Context, in HeadlessRequest) (*Headless
 		Nonce:          in.Nonce,
 		State:          state,
 		CodeChallenge:  challenge,
+		Audiences:      in.Audiences,
 	})
 	if err != nil {
 		return nil, err
