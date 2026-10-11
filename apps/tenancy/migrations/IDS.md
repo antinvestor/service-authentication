@@ -649,6 +649,7 @@ configuration.
 | db5iu1kpf2t17kq31rdg | service_settlement SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5iu1kpf2t17kq31reg | service_settlement SA recipient https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5iu1kpf2t17kq31rf0 | service_settlement SA recipient https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5kaq6u32d61l578m30 | service_settlement SA recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5iu14pf2t15n40lj3g | service_settlement SA authorization policy | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5iu1kpf2t17kq31rfg | service_settlement SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5iu1kpf2t17kq31rgg | service_settlement SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |

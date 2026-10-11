@@ -44,6 +44,8 @@ INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, re
 INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, resource_audience) VALUES ('db5iu1kpf2t17kq31reg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'db5iu14pf2t15n40lj2g', 'https://api.stawi.org/tenancy') ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, resource_audience) VALUES ('db5iu1kpf2t17kq31rf0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'db5iu14pf2t15n40lj2g', 'https://api.stawi.org/trustage') ON CONFLICT (id) DO NOTHING;
+-- finance's ComplianceService.GetGenesisAccountPolicy; the genesis_policy_view grant follows once finance registers it.
+INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, resource_audience) VALUES ('db5kaq6u32d61l578m30', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'db5iu14pf2t15n40lj2g', 'https://api.stawi.org/stawi-finance') ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO service_account_authorization_policies (id, tenant_id, partition_id, service_account_id, schema_version, generation, applied_generation, status, retry_count) VALUES ('db5iu14pf2t15n40lj3g', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'db5iu14pf2t15n40lj30', 1, 1, 0, 'pending', 0) ON CONFLICT (id) DO NOTHING;
 

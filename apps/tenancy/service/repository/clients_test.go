@@ -37,7 +37,7 @@ func (s *ClientRepositoryTestSuite) TestGreenfieldSeedUsesOnlyNormalizedAuthCont
 
 		for table, expected := range map[string]int64{
 			"clients":                                   69,  // #856 (60) + stawi-imports-web prod/dev + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing + service_payment_flutterwave + finance + settlement
-			"oauth_client_recipients":                   322, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4), service_manufacturing (2), service_payment_flutterwave (4), service_finance (8), service_settlement (4), trustage stawi (2), chat drone /stawi-settlement (1)
+			"oauth_client_recipients":                   323, // + service_imports files/notification, service_commerce (7), service_procurement (3), trustage /commerce (1), service_notification_whatsapp (4), service_manufacturing (2), service_payment_flutterwave (4), service_finance (8), service_settlement (5), trustage stawi (2), chat drone /stawi-settlement (1)
 			"service_accounts":                          56,  // + service_commerce + service_procurement + service_notification_whatsapp + service_manufacturing + service_payment_flutterwave + service_finance + service_settlement
 			"service_account_authorization_policies":    56,
 			"service_account_authorization_grants":      217,  // + service_imports files/notification grants, service_commerce (5), service_procurement (1), trustage service_commerce (1), service_notification_whatsapp (4), service_manufacturing (1), service_payment_flutterwave (4), service_finance (7), service_settlement (4), trustage stawi (2), chat drone service_settlement (1)
