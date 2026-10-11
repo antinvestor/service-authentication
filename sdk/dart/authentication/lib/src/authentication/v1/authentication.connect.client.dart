@@ -70,6 +70,9 @@ extension type AuthenticationServiceClient (connect.Transport _transport) {
 
   /// VerifyGenesisSessionProof checks a proof and, with consume set, spends
   /// its nonce so it cannot be presented again.
+  /// Restricted to auth_genesis_verify, which no role carries: it is granted
+  /// only to the consumer that acts on a proof (settlement's service account),
+  /// because consume burns the person's proof.
   Future<authenticationv1authentication.VerifyGenesisSessionProofResponse> verifyGenesisSessionProof(
     authenticationv1authentication.VerifyGenesisSessionProofRequest input, {
     connect.Headers? headers,

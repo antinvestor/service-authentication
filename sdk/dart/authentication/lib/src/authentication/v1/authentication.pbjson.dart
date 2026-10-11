@@ -300,15 +300,16 @@ final $typed_data.Uint8List authenticationServiceDescriptor = $convert.base64Dec
     'NHZW5lc2lzU2Vzc2lvblByb29mEhtJc3N1ZSBnZW5lc2lzIHNlc3Npb24gcHJvb2YabU1pbnRz'
     'IGEgZ2VuZXNpcyBzZXNzaW9uIHByb29mIGJvdW5kIHRvIHRoZSBjYWxsZXIncyBsaXZlIHNlc3'
     'Npb24sIGRldmljZSBhbmQgdGhlIGRldmljZSBrZXkgYmVpbmcgcmVnaXN0ZXJlZC4qGGlzc3Vl'
-    'R2VuZXNpc1Nlc3Npb25Qcm9vZhLKAgoZVmVyaWZ5R2VuZXNpc1Nlc3Npb25Qcm9vZhIzLmF1dG'
+    'R2VuZXNpc1Nlc3Npb25Qcm9vZhLjAgoZVmVyaWZ5R2VuZXNpc1Nlc3Npb25Qcm9vZhIzLmF1dG'
     'hlbnRpY2F0aW9uLnYxLlZlcmlmeUdlbmVzaXNTZXNzaW9uUHJvb2ZSZXF1ZXN0GjQuYXV0aGVu'
-    'dGljYXRpb24udjEuVmVyaWZ5R2VuZXNpc1Nlc3Npb25Qcm9vZlJlc3BvbnNlIsEBuke9AQoTR2'
+    'dGljYXRpb24udjEuVmVyaWZ5R2VuZXNpc1Nlc3Npb25Qcm9vZlJlc3BvbnNlItoBuke9AQoTR2'
     'VuZXNpc1Nlc3Npb25Qcm9vZhIcVmVyaWZ5IGdlbmVzaXMgc2Vzc2lvbiBwcm9vZhptVmVyaWZp'
     'ZXMgYSBnZW5lc2lzIHNlc3Npb24gcHJvb2YgYWdhaW5zdCB0aGUgZXhwZWN0ZWQgcHJvZmlsZS'
     'wgZGV2aWNlIGFuZCBrZXksIG9wdGlvbmFsbHkgc3BlbmRpbmcgaXRzIG5vbmNlLioZdmVyaWZ5'
-    'R2VuZXNpc1Nlc3Npb25Qcm9vZhraAYK1GNUBChZzZXJ2aWNlX2F1dGhlbnRpY2F0aW9uEg1hdX'
-    'RoX3ZpZXdfb3duEg1hdXRoX3ZpZXdfYWxsGiAIARINYXV0aF92aWV3X293bhINYXV0aF92aWV3'
-    'X2FsbBogCAISDWF1dGhfdmlld19vd24SDWF1dGhfdmlld19hbGwaEQgDEg1hdXRoX3ZpZXdfb3'
-    'duGhEIBBINYXV0aF92aWV3X293bhoRCAUSDWF1dGhfdmlld19vd24aIAgGEg1hdXRoX3ZpZXdf'
-    'b3duEg1hdXRoX3ZpZXdfYWxs');
+    'R2VuZXNpc1Nlc3Npb25Qcm9vZoK1GBUKE2F1dGhfZ2VuZXNpc192ZXJpZnka7wGCtRjqAQoWc2'
+    'VydmljZV9hdXRoZW50aWNhdGlvbhINYXV0aF92aWV3X293bhINYXV0aF92aWV3X2FsbBITYXV0'
+    'aF9nZW5lc2lzX3ZlcmlmeRogCAESDWF1dGhfdmlld19vd24SDWF1dGhfdmlld19hbGwaIAgCEg'
+    '1hdXRoX3ZpZXdfb3duEg1hdXRoX3ZpZXdfYWxsGhEIAxINYXV0aF92aWV3X293bhoRCAQSDWF1'
+    'dGhfdmlld19vd24aEQgFEg1hdXRoX3ZpZXdfb3duGiAIBhINYXV0aF92aWV3X293bhINYXV0aF'
+    '92aWV3X2FsbA==');
 

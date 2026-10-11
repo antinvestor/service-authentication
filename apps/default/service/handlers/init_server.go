@@ -112,7 +112,7 @@ type AuthServer struct {
 	sessionProofIssuer   *sessionproof.Issuer
 	sessionProofVerifier *sessionproof.Verifier
 	sessionProofKeys     sessionproof.KeySet
-	proofNonceCache      cache.Cache[string, string]
+	proofNonceCache      cache.RawCache
 	// sessionLookup overrides the login-event read used by the liveness
 	// check; production leaves it nil and the repository is used.
 	sessionLookup sessionLookup

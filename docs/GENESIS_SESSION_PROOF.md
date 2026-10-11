@@ -90,6 +90,12 @@ Both share one implementation with the REST endpoints. Refusals map to Connect c
 bad `pubkey_hash` is `invalid_argument`, no caller is `unauthenticated`, a session that does not
 qualify is `permission_denied`, and an unconfigured signer is `unavailable`. The REST endpoints stay.
 
+Verifying (REST or RPC) requires `auth_genesis_verify` in namespace `service_authentication`. No role
+carries it; it is granted only to settlement's service account (tenancy migration
+`20261011_02_settlement_genesis_verify.sql`), because a consuming verify burns the person's proof. Any
+other caller, the person included, is refused (`403` / `permission_denied`). Spending a nonce is an
+atomic increment in the shared cache, so of concurrent consuming verifications exactly one succeeds.
+
 Issuance refuses, with no proof minted, when: the caller is a service account (a machine holds no
 session on a device); the token carries no profile, device or session; the named login event is
 missing, belongs to another profile or to another device; `pubkey_hash` is not a 32-byte lowercase hex

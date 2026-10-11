@@ -79,7 +79,14 @@ func TestGenesisSessionProofRPC_IssueThenVerifyAndSpend(t *testing.T) {
 	digest := sessionproof.BindingHash(claims)
 	require.Equal(t, hex.EncodeToString(digest[:]), msg.GetBindingHash())
 
-	verified, err := client.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+	// The person who holds the proof may not verify (and so burn) it.
+	_, err = client.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+		Token: msg.GetToken(), Consume: true,
+	}))
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), err)
+
+	settlement := genesisProofClient(t, srv, handlers.SettlementContextForTest(t))
+	verified, err := settlement.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
 		Token: msg.GetToken(), ProfileId: "profile-1", DeviceId: "device-1",
 		PubkeyHash: strings.ToLower(pubkeyHash), DeviceKeyId: "devkey-1", Consume: true,
 	}))
@@ -90,7 +97,7 @@ func TestGenesisSessionProofRPC_IssueThenVerifyAndSpend(t *testing.T) {
 	require.Equal(t, "devkey-1", verified.Msg.GetClaims().GetDeviceKeyId())
 	require.Equal(t, msg.GetNonce(), verified.Msg.GetClaims().GetNonce())
 
-	replay, err := client.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+	replay, err := settlement.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
 		Token: msg.GetToken(), Consume: true,
 	}))
 	require.NoError(t, err)

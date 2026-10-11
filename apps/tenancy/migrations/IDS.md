@@ -697,3 +697,10 @@ configuration.
 | db5koukpf2t892ghj1v0 | Stawi chat app (prod) recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
 | db5koukpf2t892ghj1vg | Stawi chat app (dev) recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
 | db5koukpf2t892ghj200 | Stawi chat app (dev) recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
+
+## service_settlement → genesis session proof verify (2026-10-11)
+| xid | purpose | file |
+|-----|---------|------|
+| db5li0kpf2t2i2o15i5g | service_settlement SA grant service_authentication partition_tree | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |
+| db5li0kpf2t2i2o15i60 | service_settlement SA permission service_authentication auth_genesis_verify | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |
+| db5iu14pf2t15n40lj3g | service_settlement SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_02_settlement_genesis_verify.sql |

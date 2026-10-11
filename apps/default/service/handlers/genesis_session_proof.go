@@ -29,6 +29,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/sessionproof"
 	"github.com/pitabwire/frame/v2/cache"
 	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v2/security/authorizer"
 	"github.com/pitabwire/frame/v2/security/interceptors/httptor"
 	"github.com/pitabwire/util"
 )
@@ -186,6 +187,9 @@ func (h *AuthServer) VerifyGenesisSessionProof(ctx context.Context, in GenesisPr
 	if security.ClaimsFromContext(ctx) == nil {
 		return nil, proofRefusal(http.StatusUnauthorized, "an authenticated caller is required")
 	}
+	if err := h.assertMayVerifyGenesisProof(ctx); err != nil {
+		return nil, err
+	}
 
 	claims, err := h.sessionProofVerifier.Verify(in.Token, sessionproof.Expectation{
 		ProfileID: strings.TrimSpace(in.ProfileID), DeviceID: strings.TrimSpace(in.DeviceID),
@@ -297,7 +301,9 @@ func (h *AuthServer) assertLiveSession(ctx context.Context, sessionID, profileID
 	return nil
 }
 
-// consumeProofNonce records the nonce and reports whether it was fresh.
+// consumeProofNonce spends the nonce and reports whether this call was the
+// one that spent it. Increment is atomic in the shared cache, so of any number
+// of concurrent spends of one nonce exactly one sees 1 and wins.
 func (h *AuthServer) consumeProofNonce(ctx context.Context, claims *sessionproof.Claims) (bool, error) {
 	kv := h.sessionProofNonces()
 	if kv == nil {
@@ -305,23 +311,27 @@ func (h *AuthServer) consumeProofNonce(ctx context.Context, claims *sessionproof
 		return false, errors.New("nonce store is unavailable")
 	}
 	key := "genesis_session_proof:nonce:" + claims.Nonce
-	if _, found, err := kv.Get(ctx, key); err != nil {
+	count, err := kv.Increment(ctx, key, 1)
+	if err != nil {
 		return false, err
-	} else if found {
+	}
+	if count != 1 {
 		return false, nil
 	}
 	ttl := nonceTTLMargin
-	if expiresAt, err := time.Parse(sessionproof.TimeLayout, claims.ExpiresAt); err == nil {
+	if expiresAt, perr := time.Parse(sessionproof.TimeLayout, claims.ExpiresAt); perr == nil {
 		ttl = time.Until(expiresAt) + nonceTTLMargin
 	}
-	if err := kv.Set(ctx, key, claims.ProfileID, ttl); err != nil {
-		return false, err
+	if err = kv.Expire(ctx, key, ttl); err != nil {
+		// Keep the spent record (a lost TTL only costs space); never report
+		// the nonce as fresh to anyone else.
+		util.Log(ctx).WithError(err).Warn("genesis session proof nonce spent without expiry")
 	}
 	return true, nil
 }
 
-// sessionProofNonces lazily resolves the shared cache used for spent nonces.
-func (h *AuthServer) sessionProofNonces() cache.Cache[string, string] {
+// sessionProofNonces resolves the shared cache used for spent nonces.
+func (h *AuthServer) sessionProofNonces() cache.RawCache {
 	if h.proofNonceCache != nil {
 		return h.proofNonceCache
 	}
@@ -332,8 +342,30 @@ func (h *AuthServer) sessionProofNonces() cache.Cache[string, string] {
 	if !ok {
 		return nil
 	}
-	h.proofNonceCache = cache.NewGenericCache[string, string](raw, func(key string) string { return key })
+	h.proofNonceCache = raw
 	return h.proofNonceCache
+}
+
+// genesisVerifyPermission is the only grant that may verify (and so spend) a
+// proof. Verify with consume burns a person's proof, so it is limited to the
+// consumer that acts on it (settlement's service account), not to anyone
+// holding a token.
+const (
+	genesisVerifyNamespace  = "service_authentication"
+	genesisVerifyPermission = "auth_genesis_verify"
+)
+
+// assertMayVerifyGenesisProof checks the caller holds auth_genesis_verify.
+func (h *AuthServer) assertMayVerifyGenesisProof(ctx context.Context) error {
+	if h.authorizer == nil {
+		return proofRefusal(http.StatusServiceUnavailable, "authorization is unavailable")
+	}
+	checker := authorizer.NewFunctionChecker(h.authorizer, genesisVerifyNamespace)
+	if err := checker.Check(ctx, genesisVerifyPermission); err != nil {
+		util.Log(ctx).WithError(err).Warn("genesis session proof verify refused: caller lacks " + genesisVerifyPermission)
+		return proofRefusal(http.StatusForbidden, "caller may not verify genesis session proofs")
+	}
+	return nil
 }
 
 func decodeProofBody(req *http.Request, out any) error {

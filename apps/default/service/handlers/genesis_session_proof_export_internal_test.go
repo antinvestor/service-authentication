@@ -34,3 +34,10 @@ func PersonContextForTest(t *testing.T) context.Context {
 	t.Helper()
 	return personContext(t, "login-event-1")
 }
+
+// SettlementContextForTest is settlement's service account, the holder of
+// auth_genesis_verify.
+func SettlementContextForTest(t *testing.T) context.Context {
+	t.Helper()
+	return settlementContext(t)
+}
