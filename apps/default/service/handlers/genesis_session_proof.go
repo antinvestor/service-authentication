@@ -88,58 +88,137 @@ type genesisProofVerifyResponse struct {
 	BindingHash string               `json:"binding_hash,omitempty"`
 }
 
-// GenesisSessionProofIssueEndpoint mints a session proof for the caller's own
-// live session on the caller's own device (P26). Every bound identity comes
-// from the verified token and the login event behind it; the body carries
-// only the device key being registered.
-func (h *AuthServer) GenesisSessionProofIssueEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
-	if h.sessionProofIssuer == nil {
-		return writeProofError(rw, http.StatusServiceUnavailable, "genesis session proofs are not configured")
-	}
+// GenesisProofError is a refusal the caller can act on. Status is the HTTP
+// status the REST endpoint answers with; the Connect RPC maps it to a code.
+type GenesisProofError struct {
+	Status int
+	Reason string
+}
 
-	var body genesisProofIssueRequest
-	if err := decodeProofBody(req, &body); err != nil {
-		return writeProofError(rw, http.StatusBadRequest, err.Error())
+func (e *GenesisProofError) Error() string { return e.Reason }
+
+func proofRefusal(status int, reason string) error {
+	return &GenesisProofError{Status: status, Reason: reason}
+}
+
+// GenesisProofIssueInput is what a caller supplies; every bound identity
+// comes from the verified token instead.
+type GenesisProofIssueInput struct {
+	PubkeyHash  string
+	DeviceKeyID string
+	DeviceID    string
+}
+
+// GenesisProofVerifyInput is a proof and what the consumer expects of it.
+type GenesisProofVerifyInput struct {
+	Token       string
+	ProfileID   string
+	DeviceID    string
+	PubkeyHash  string
+	DeviceKeyID string
+	Consume     bool
+}
+
+// GenesisProofVerdict is the outcome of a verification. A proof that fails
+// verification is a verdict, not an error.
+type GenesisProofVerdict struct {
+	Valid       bool
+	Reason      string
+	Claims      *sessionproof.Claims
+	BindingHash string
+}
+
+// IssueGenesisSessionProof mints a session proof for the caller's own live
+// session on the caller's own device (P26). Every bound identity comes from
+// the verified token and the login event behind it; the input carries only
+// the device key being registered. Refusals are *GenesisProofError.
+func (h *AuthServer) IssueGenesisSessionProof(ctx context.Context, in GenesisProofIssueInput) (*sessionproof.Issued, error) {
+	if h.sessionProofIssuer == nil {
+		return nil, proofRefusal(http.StatusServiceUnavailable, "genesis session proofs are not configured")
 	}
-	body.PubkeyHash = strings.ToLower(strings.TrimSpace(body.PubkeyHash))
-	if !pubkeyHashPattern.MatchString(body.PubkeyHash) {
-		return writeProofError(rw, http.StatusBadRequest, "pubkey_hash must be a 32-byte lowercase hex digest")
+	pubkeyHash := strings.ToLower(strings.TrimSpace(in.PubkeyHash))
+	if !pubkeyHashPattern.MatchString(pubkeyHash) {
+		return nil, proofRefusal(http.StatusBadRequest, "pubkey_hash must be a 32-byte lowercase hex digest")
 	}
 
 	claims := security.ClaimsFromContext(ctx)
 	if claims == nil {
-		return writeProofError(rw, http.StatusUnauthorized, "an authenticated session is required")
+		return nil, proofRefusal(http.StatusUnauthorized, "an authenticated session is required")
 	}
 	if saID, _ := claims.Ext["service_account_id"].(string); strings.TrimSpace(saID) != "" {
 		// A machine never holds a session on a device; P26 is about a person.
-		return writeProofError(rw, http.StatusForbidden, "a service account cannot hold a genesis session")
+		return nil, proofRefusal(http.StatusForbidden, "a service account cannot hold a genesis session")
 	}
 	profileID, deviceID, sessionID := claims.GetProfileID(), claims.GetDeviceID(), claims.GetSessionID()
 	if profileID == "" || deviceID == "" || sessionID == "" {
-		return writeProofError(rw, http.StatusForbidden, "the session must identify a profile, a device and a login event")
+		return nil, proofRefusal(http.StatusForbidden, "the session must identify a profile, a device and a login event")
 	}
-	if want := strings.TrimSpace(body.DeviceID); want != "" && want != deviceID {
-		return writeProofError(rw, http.StatusForbidden, "device_id does not match the session device")
+	if want := strings.TrimSpace(in.DeviceID); want != "" && want != deviceID {
+		return nil, proofRefusal(http.StatusForbidden, "device_id does not match the session device")
 	}
 	if err := h.assertLiveSession(ctx, sessionID, profileID, deviceID); err != nil {
 		util.Log(ctx).WithError(err).WithField("session_id", sessionID).
 			Warn("genesis session proof refused: no live session on this device")
-		return writeProofError(rw, http.StatusForbidden, "no live authenticated session for this profile on this device")
+		return nil, proofRefusal(http.StatusForbidden, "no live authenticated session for this profile on this device")
 	}
 
 	issued, err := h.sessionProofIssuer.Issue(sessionproof.IssueRequest{
-		ProfileID: profileID, DeviceID: deviceID, PubkeyHash: body.PubkeyHash,
-		DeviceKeyID: strings.TrimSpace(body.DeviceKeyID), SessionID: sessionID,
+		ProfileID: profileID, DeviceID: deviceID, PubkeyHash: pubkeyHash,
+		DeviceKeyID: strings.TrimSpace(in.DeviceKeyID), SessionID: sessionID,
 		TenantID: claims.GetTenantID(), PartitionID: claims.GetPartitionID(),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	util.Log(ctx).WithFields(map[string]any{
 		"profile_id": profileID, "device_id": deviceID, "key_id": issued.Claims.KeyID,
 	}).Info("issued genesis session proof")
+	return issued, nil
+}
 
+// VerifyGenesisSessionProof checks a proof for a consumer that would rather
+// not carry a verifier, and spends its nonce when asked. Verification itself
+// needs nothing from this service: the published keys are enough.
+func (h *AuthServer) VerifyGenesisSessionProof(ctx context.Context, in GenesisProofVerifyInput) (*GenesisProofVerdict, error) {
+	if h.sessionProofVerifier == nil {
+		return nil, proofRefusal(http.StatusServiceUnavailable, "genesis session proofs are not configured")
+	}
+	if security.ClaimsFromContext(ctx) == nil {
+		return nil, proofRefusal(http.StatusUnauthorized, "an authenticated caller is required")
+	}
+
+	claims, err := h.sessionProofVerifier.Verify(in.Token, sessionproof.Expectation{
+		ProfileID: strings.TrimSpace(in.ProfileID), DeviceID: strings.TrimSpace(in.DeviceID),
+		PubkeyHash: strings.TrimSpace(in.PubkeyHash), DeviceKeyID: strings.TrimSpace(in.DeviceKeyID),
+	})
+	if err != nil {
+		return &GenesisProofVerdict{Valid: false, Reason: err.Error()}, nil
+	}
+	if in.Consume {
+		fresh, cerr := h.consumeProofNonce(ctx, claims)
+		if cerr != nil {
+			return nil, cerr
+		}
+		if !fresh {
+			return &GenesisProofVerdict{Valid: false, Reason: sessionproof.ErrReplay.Error()}, nil
+		}
+	}
+	digest := sessionproof.BindingHash(claims)
+	return &GenesisProofVerdict{Valid: true, Claims: claims, BindingHash: hex.EncodeToString(digest[:])}, nil
+}
+
+// GenesisSessionProofIssueEndpoint is the REST form of IssueGenesisSessionProof.
+func (h *AuthServer) GenesisSessionProofIssueEndpoint(rw http.ResponseWriter, req *http.Request) error {
+	var body genesisProofIssueRequest
+	if err := decodeProofBody(req, &body); err != nil {
+		return writeProofError(rw, http.StatusBadRequest, err.Error())
+	}
+	issued, err := h.IssueGenesisSessionProof(req.Context(), GenesisProofIssueInput(body))
+	if refusal := (*GenesisProofError)(nil); errors.As(err, &refusal) {
+		return writeProofError(rw, refusal.Status, refusal.Reason)
+	} else if err != nil {
+		return err
+	}
 	return writeProofJSON(rw, http.StatusOK, genesisProofIssueResponse{
 		Token: issued.Token, KeyID: issued.Claims.KeyID, Algorithm: issued.Claims.Algorithm,
 		Nonce: issued.Claims.Nonce, IssuedAt: issued.Claims.IssuedAt, ExpiresAt: issued.Claims.ExpiresAt,
@@ -147,11 +226,8 @@ func (h *AuthServer) GenesisSessionProofIssueEndpoint(rw http.ResponseWriter, re
 	})
 }
 
-// GenesisSessionProofVerifyEndpoint checks a proof for a consumer that would
-// rather not carry a verifier, and spends its nonce when asked. Verification
-// itself needs nothing from this service: the published keys are enough.
+// GenesisSessionProofVerifyEndpoint is the REST form of VerifyGenesisSessionProof.
 func (h *AuthServer) GenesisSessionProofVerifyEndpoint(rw http.ResponseWriter, req *http.Request) error {
-	ctx := req.Context()
 	if h.sessionProofVerifier == nil {
 		return writeProofError(rw, http.StatusServiceUnavailable, "genesis session proofs are not configured")
 	}
@@ -159,31 +235,14 @@ func (h *AuthServer) GenesisSessionProofVerifyEndpoint(rw http.ResponseWriter, r
 	if err := decodeProofBody(req, &body); err != nil {
 		return writeProofError(rw, http.StatusBadRequest, err.Error())
 	}
-	if security.ClaimsFromContext(ctx) == nil {
-		return writeProofError(rw, http.StatusUnauthorized, "an authenticated caller is required")
+	verdict, err := h.VerifyGenesisSessionProof(req.Context(), GenesisProofVerifyInput(body))
+	if refusal := (*GenesisProofError)(nil); errors.As(err, &refusal) {
+		return writeProofError(rw, refusal.Status, refusal.Reason)
+	} else if err != nil {
+		return err
 	}
-
-	claims, err := h.sessionProofVerifier.Verify(body.Token, sessionproof.Expectation{
-		ProfileID: strings.TrimSpace(body.ProfileID), DeviceID: strings.TrimSpace(body.DeviceID),
-		PubkeyHash: strings.TrimSpace(body.PubkeyHash), DeviceKeyID: strings.TrimSpace(body.DeviceKeyID),
-	})
-	if err != nil {
-		return writeProofJSON(rw, http.StatusOK, genesisProofVerifyResponse{Valid: false, Reason: err.Error()})
-	}
-	if body.Consume {
-		fresh, cerr := h.consumeProofNonce(ctx, claims)
-		if cerr != nil {
-			return cerr
-		}
-		if !fresh {
-			return writeProofJSON(rw, http.StatusOK, genesisProofVerifyResponse{
-				Valid: false, Reason: sessionproof.ErrReplay.Error(),
-			})
-		}
-	}
-	digest := sessionproof.BindingHash(claims)
 	return writeProofJSON(rw, http.StatusOK, genesisProofVerifyResponse{
-		Valid: true, Claims: claims, BindingHash: hex.EncodeToString(digest[:]),
+		Valid: verdict.Valid, Reason: verdict.Reason, Claims: verdict.Claims, BindingHash: verdict.BindingHash,
 	})
 }
 

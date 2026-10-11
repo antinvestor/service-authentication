@@ -1,6 +1,6 @@
 name: antinvestor_api_authentication
 description: Dart client library for Ant Investor Authentication Service - Login history and session information
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
