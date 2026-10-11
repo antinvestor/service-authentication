@@ -53,6 +53,8 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| db5iu14pf2t15n40lj2g | settlement | (SA: service_settlement) | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5itnspf2tft2pp30e0 | finance | (SA: service_finance) | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
 | datmso4pf2t98sc6rov0 | service-payment-flutterwave | (SA: service_payment_flutterwave) | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | daid3uspf2t8dfvkjnl0 | service-manufacturing | (SA: service_manufacturing) | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs7vg | service-notification-integration-whatsapp | (SA: service_notification_whatsapp) | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
@@ -105,6 +107,8 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| db5iu14pf2t15n40lj30 | db5iu14pf2t15n40lj40 | db5iu14pf2t15n40lj2g | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5itnspf2tft2pp30eg | db5itnspf2tft2pp30fg | db5itnspf2tft2pp30e0 | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
 | datmso4pf2t98sc6rovg | d9flwbotprof00000001 | datmso4pf2t98sc6rov0 | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | daid3uspf2t8dfvkjnm0 | daid38spf2t72pqigk80 | daid3uspf2t8dfvkjnl0 | apps/tenancy/migrations/0001/20260912_01_service_manufacturing.sql |
 | daend44pf2t8c15rs80g | daenc7kpf2t8pa1q04hg | daend44pf2t8c15rs7vg | apps/tenancy/migrations/0001/20260906_05_service_notification_whatsapp.sql |
@@ -556,3 +560,131 @@ configuration.
 | datmso4pf2t98sc6rpn0 | service_payment_flutterwave SA permission service_tenancy.service_account_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | datmso4pf2t98sc6rpng | service_payment_flutterwave SA permission service_tenancy.tenant_manage | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
 | datmso4pf2t98sc6rpo0 | service_payment_flutterwave SA permission service_tenancy.tenant_view | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
+
+## service_finance SA (2026-10-10)
+| xid | purpose | file |
+|-----|---------|------|
+| db5iu0spf2t14odh5ad0 | service_finance SA recipient https://api.stawi.org/audit | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5adg | service_finance SA recipient https://api.stawi.org/chat-drone | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ae0 | service_finance SA recipient https://api.stawi.org/ledger | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aeg | service_finance SA recipient https://api.stawi.org/notification | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5af0 | service_finance SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5afg | service_finance SA recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ag0 | service_finance SA recipient https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5agg | service_finance SA recipient https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5itnspf2tft2pp30f0 | service_finance SA authorization policy | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ah0 | service_finance SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ai0 | service_finance SA grant service_finance partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b7g | service_finance SA grant service_ledger partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bcg | service_finance SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5beg | service_finance SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bg0 | service_finance SA grant service_settlement partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bh0 | service_finance SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ahg | service_finance SA permission service_audit audit_create | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aig | service_finance SA permission service_finance bucket_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aj0 | service_finance SA permission service_finance capability_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ajg | service_finance SA permission service_finance capability_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ak0 | service_finance SA permission service_finance check_run | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5akg | service_finance SA permission service_finance check_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5al0 | service_finance SA permission service_finance contribution_create | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5alg | service_finance SA permission service_finance contribution_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5am0 | service_finance SA permission service_finance country_policy_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5amg | service_finance SA permission service_finance country_policy_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5an0 | service_finance SA permission service_finance dispute_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ang | service_finance SA permission service_finance dispute_open | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ao0 | service_finance SA permission service_finance dispute_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aog | service_finance SA permission service_finance distribution_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ap0 | service_finance SA permission service_finance distribution_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5apg | service_finance SA permission service_finance escalation_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aq0 | service_finance SA permission service_finance evidence_export | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aqg | service_finance SA permission service_finance finance_operate | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ar0 | service_finance SA permission service_finance guarantee_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5arg | service_finance SA permission service_finance intent_authorize | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5as0 | service_finance SA permission service_finance intent_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5asg | service_finance SA permission service_finance ledger_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5at0 | service_finance SA permission service_finance limit_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5atg | service_finance SA permission service_finance limit_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5au0 | service_finance SA permission service_finance loan_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5aug | service_finance SA permission service_finance loan_submit | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5av0 | service_finance SA permission service_finance loan_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5avg | service_finance SA permission service_finance member_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b00 | service_finance SA permission service_finance period_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b0g | service_finance SA permission service_finance plan_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b10 | service_finance SA permission service_finance plan_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b1g | service_finance SA permission service_finance policy_propose | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b20 | service_finance SA permission service_finance policy_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b2g | service_finance SA permission service_finance proposal_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b30 | service_finance SA permission service_finance proposal_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b3g | service_finance SA permission service_finance reconciliation_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b40 | service_finance SA permission service_finance reconciliation_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b4g | service_finance SA permission service_finance repayment_create | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b50 | service_finance SA permission service_finance room_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b5g | service_finance SA permission service_finance room_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b60 | service_finance SA permission service_finance statement_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b6g | service_finance SA permission service_finance transfer_request | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b70 | service_finance SA permission service_finance vote_cast | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b80 | service_finance SA permission service_ledger account_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b8g | service_finance SA permission service_ledger account_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b90 | service_finance SA permission service_ledger book_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5b9g | service_finance SA permission service_ledger book_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5ba0 | service_finance SA permission service_ledger ledger_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bag | service_finance SA permission service_ledger ledger_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bb0 | service_finance SA permission service_ledger report_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bbg | service_finance SA permission service_ledger transaction_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bc0 | service_finance SA permission service_ledger transaction_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bd0 | service_finance SA permission service_notification notification_send | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bdg | service_finance SA permission service_notification template_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5be0 | service_finance SA permission service_notification template_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bf0 | service_finance SA permission service_profile account_resolve | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bfg | service_finance SA permission service_profile profile_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bgg | service_finance SA permission service_settlement account_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bhg | service_finance SA permission service_trustage event_ingest | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5bi0 | service_finance SA permission service_trustage workflow_manage | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+| db5iu0spf2t14odh5big | service_finance SA permission service_trustage workflow_view | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
+
+## service_settlement SA (2026-10-10)
+| xid | purpose | file |
+|-----|---------|------|
+| db5iu1kpf2t17kq31rd0 | service_settlement SA recipient https://api.stawi.org/audit | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rdg | service_settlement SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31reg | service_settlement SA recipient https://api.stawi.org/tenancy | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rf0 | service_settlement SA recipient https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu14pf2t15n40lj3g | service_settlement SA authorization policy | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rfg | service_settlement SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rgg | service_settlement SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31ri0 | service_settlement SA grant service_settlement partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rn0 | service_settlement SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rg0 | service_settlement SA permission service_audit audit_create | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rh0 | service_settlement SA permission service_profile account_resolve | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rhg | service_settlement SA permission service_profile profile_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rig | service_settlement SA permission service_settlement account_manage | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rj0 | service_settlement SA permission service_settlement account_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rjg | service_settlement SA permission service_settlement anchor_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rk0 | service_settlement SA permission service_settlement intent_submit | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rkg | service_settlement SA permission service_settlement intent_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rl0 | service_settlement SA permission service_settlement observation_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rlg | service_settlement SA permission service_settlement process_execute | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rm0 | service_settlement SA permission service_settlement room_manage | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rmg | service_settlement SA permission service_settlement room_view | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+| db5iu1kpf2t17kq31rng | service_settlement SA permission service_trustage event_ingest | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
+
+## trustage → Stawi finance/settlement (2026-10-10)
+| xid | purpose | file |
+|-----|---------|------|
+| db5iu7cpf2t21sa27qdg | trustage SA recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+| db5iu7cpf2t21sa27qe0 | trustage SA recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+| db5iu7cpf2t21sa27qeg | trustage SA grant service_finance partition_tree | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+| db5iu7cpf2t21sa27qfg | trustage SA grant service_settlement partition_tree | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+| db5iu7cpf2t21sa27qf0 | trustage SA permission service_finance workflow_execute | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+| db5iu7cpf2t21sa27qg0 | trustage SA permission service_settlement process_execute | apps/tenancy/migrations/0001/20261010_03_trustage_stawi.sql |
+
+## service_chat_drone → Stawi rooms (2026-10-10)
+| xid | purpose | file |
+|-----|---------|------|
+| db5iu7cpf2t21sa27qgg | service_chat_drone SA recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| db5iu7cpf2t21sa27qhg | service_chat_drone SA grant service_settlement partition_tree | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| db5iu7cpf2t21sa27qh0 | service_chat_drone SA permission service_profile account_resolve | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| db5iu7cpf2t21sa27qi0 | service_chat_drone SA permission service_settlement room_manage | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| db5iu7cpf2t225dtlbsg | service_chat_drone SA permission service_settlement room_view | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| d94lkmcpf2t39vdkp050 | service_chat_drone SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+| d94lkmcpf2t39vdkp0d0 | service_chat_drone SA grant service_profile (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
