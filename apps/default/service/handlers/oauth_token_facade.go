@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	"connectrpc.com/connect"
@@ -272,19 +273,11 @@ func (h *AuthServer) handleNativeTokenExchange(ctx context.Context, r *http.Requ
 	if form.Get("subject_token_type") != idTokenSubjectTokenType {
 		return nil, oauthErr(http.StatusBadRequest, "invalid_request", "subject_token_type must be id_token")
 	}
-	clientID := strings.TrimSpace(form.Get("client_id"))
-	if clientID == "" {
-		return nil, oauthErr(http.StatusBadRequest, "invalid_request", "client_id is required")
+	clientCfg, hydraClient, tokenAudiences, clientErr := h.resolveNativeExchangeClient(ctx, form)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-
-	clientCfg, hydraClient, err := h.resolveNativeClientConfig(ctx, clientID)
-	if err != nil {
-		return nil, oauthErr(http.StatusBadRequest, "invalid_client", err.Error())
-	}
-	clientID = clientCfg.ClientID
-	if !clientCfg.Enabled {
-		return nil, oauthErr(http.StatusBadRequest, "invalid_grant", "native auth is not enabled for this client")
-	}
+	clientID := clientCfg.ClientID
 
 	issuer := strings.TrimSpace(form.Get("subject_issuer"))
 	audience := clientCfg.audienceForIssuer(issuer)
@@ -374,6 +367,7 @@ func (h *AuthServer) handleNativeTokenExchange(ctx context.Context, r *http.Requ
 		ACR:          "native",
 		AMR:          []string{identity.Provider},
 		DeviceID:     deviceID,
+		Audiences:    tokenAudiences,
 	})
 	if err != nil {
 		util.Log(ctx).WithError(err).WithField("client_id", clientID).Error("native headless hydra flow failed")
@@ -409,6 +403,27 @@ func (c nativeClientConfig) audienceForIssuer(issuer string) string {
 	default:
 		return ""
 	}
+}
+
+// resolveNativeExchangeClient resolves the exchange's client, checks native
+// auth is enabled for it, and resolves the token audiences it requests.
+func (h *AuthServer) resolveNativeExchangeClient(ctx context.Context, form url.Values) (*nativeClientConfig, anyHydraClient, []string, *nativeExchangeError) {
+	clientID := strings.TrimSpace(form.Get("client_id"))
+	if clientID == "" {
+		return nil, nil, nil, oauthErr(http.StatusBadRequest, "invalid_request", "client_id is required")
+	}
+	clientCfg, hydraClient, err := h.resolveNativeClientConfig(ctx, clientID)
+	if err != nil {
+		return nil, nil, nil, oauthErr(http.StatusBadRequest, "invalid_client", err.Error())
+	}
+	if !clientCfg.Enabled {
+		return nil, nil, nil, oauthErr(http.StatusBadRequest, "invalid_grant", "native auth is not enabled for this client")
+	}
+	audiences, audErr := nativeTokenAudiences(form, hydraClient.GetAudience())
+	if audErr != nil {
+		return nil, nil, nil, audErr
+	}
+	return clientCfg, hydraClient, audiences, nil
 }
 
 func (h *AuthServer) resolveNativeClientConfig(ctx context.Context, clientID string) (*nativeClientConfig, anyHydraClient, error) {
@@ -460,6 +475,39 @@ func (h *AuthServer) nativeClientConfigFromProperties(clientID string, props map
 type anyHydraClient interface {
 	GetClientSecret() string
 	GetScope() string
+	GetAudience() []string
+}
+
+// nativeTokenAudiences resolves the resource audiences the native exchange
+// requests for the access token. The `audience` form values (RFC 8693; the
+// auth runtime sends them comma-joined, space and repeated values are also
+// accepted) must each be allowed for the client, else invalid_target. With
+// none requested, the client's full allowed audience is used, matching the
+// browser consent, which grants the client's audience list.
+func nativeTokenAudiences(form url.Values, allowed []string) ([]string, *nativeExchangeError) {
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, aud := range allowed {
+		allowedSet[aud] = struct{}{}
+	}
+
+	var requested []string
+	seen := map[string]struct{}{}
+	for _, raw := range form["audience"] {
+		for _, aud := range strings.FieldsFunc(raw, func(r rune) bool { return r == ',' || unicode.IsSpace(r) }) {
+			if _, dup := seen[aud]; dup {
+				continue
+			}
+			seen[aud] = struct{}{}
+			if _, ok := allowedSet[aud]; !ok {
+				return nil, oauthErr(http.StatusBadRequest, "invalid_target", fmt.Sprintf("audience %q is not allowed for this client", aud))
+			}
+			requested = append(requested, aud)
+		}
+	}
+	if len(requested) > 0 {
+		return requested, nil
+	}
+	return append([]string(nil), allowed...), nil
 }
 
 func boolProperty(props map[string]any, key string) bool {

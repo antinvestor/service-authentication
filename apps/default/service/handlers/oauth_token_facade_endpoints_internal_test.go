@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -274,4 +275,54 @@ func TestOAuthTokenFacadeRejectsNonPost(t *testing.T) {
 	rec := httptest.NewRecorder()
 	require.NoError(t, h.OAuthTokenFacadeEndpoint(rec, req))
 	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+}
+
+func TestNativeTokenAudiences(t *testing.T) {
+	allowed := []string{
+		"https://api.stawi.org/profile",
+		"https://api.stawi.org/stawi-settlement",
+		"https://api.stawi.org/stawi-finance",
+	}
+	cases := []struct {
+		name    string
+		form    url.Values
+		allowed []string
+		want    []string
+		errCode string
+	}{
+		{name: "none requested grants the client audience", allowed: allowed, form: url.Values{}, want: allowed},
+		{
+			name: "comma joined as the auth runtime sends it", allowed: allowed,
+			form: url.Values{"audience": {"https://api.stawi.org/stawi-settlement,https://api.stawi.org/stawi-finance"}},
+			want: []string{"https://api.stawi.org/stawi-settlement", "https://api.stawi.org/stawi-finance"},
+		},
+		{
+			name: "space joined and repeated, duplicates dropped", allowed: allowed,
+			form: url.Values{"audience": {"https://api.stawi.org/profile https://api.stawi.org/stawi-finance", "https://api.stawi.org/profile"}},
+			want: []string{"https://api.stawi.org/profile", "https://api.stawi.org/stawi-finance"},
+		},
+		{
+			name: "audience the client is not allowed", allowed: allowed,
+			form:    url.Values{"audience": {"https://api.stawi.org/stawi-finance,https://api.stawi.org/ledger"}},
+			errCode: "invalid_target",
+		},
+		{
+			name:    "client with no allowed audience refuses a request",
+			form:    url.Values{"audience": {"https://api.stawi.org/profile"}},
+			errCode: "invalid_target",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := nativeTokenAudiences(tc.form, tc.allowed)
+			if tc.errCode != "" {
+				require.NotNil(t, err)
+				require.Equal(t, tc.errCode, err.code)
+				require.Equal(t, http.StatusBadRequest, err.status)
+				return
+			}
+			require.Nil(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
 }

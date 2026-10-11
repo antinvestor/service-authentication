@@ -33,6 +33,33 @@ func TestBuildAuthorizeURL_IncludesAllRequiredParams(t *testing.T) {
 	require.Equal(t, "S256", q.Get("code_challenge_method"))
 }
 
+func TestBuildAuthorizeURL_Audiences(t *testing.T) {
+	in := fedcm.AuthorizeURLInput{
+		HydraPublicURL: "https://hydra.example.com",
+		ClientID:       "client_A",
+		RedirectURI:    "https://auth.example.com/_internal/fedcm-callback",
+		Scopes:         []string{"openid"},
+		State:          "state_abc",
+		CodeChallenge:  "cc_xyz",
+	}
+
+	u, err := fedcm.BuildAuthorizeURL(in)
+	require.NoError(t, err)
+	parsed, err := url.Parse(u)
+	require.NoError(t, err)
+	_, present := parsed.Query()["audience"]
+	require.False(t, present, "no audience requested means no audience parameter")
+
+	in.Audiences = []string{"https://api.stawi.org/stawi-settlement", "https://api.stawi.org/stawi-finance"}
+	u, err = fedcm.BuildAuthorizeURL(in)
+	require.NoError(t, err)
+	parsed, err = url.Parse(u)
+	require.NoError(t, err)
+	require.Equal(t,
+		"https://api.stawi.org/stawi-settlement https://api.stawi.org/stawi-finance",
+		parsed.Query().Get("audience"))
+}
+
 func TestGeneratePKCEPair_ProducesS256CompatibleValues(t *testing.T) {
 	v, c, err := fedcm.GeneratePKCEPair()
 	require.NoError(t, err)

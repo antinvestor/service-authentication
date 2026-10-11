@@ -689,3 +689,11 @@ configuration.
 | db5iu7cpf2t225dtlbsg | service_chat_drone SA permission service_settlement room_view | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
 | d94lkmcpf2t39vdkp050 | service_chat_drone SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
 | d94lkmcpf2t39vdkp0d0 | service_chat_drone SA grant service_profile (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261010_04_chat_drone_stawi_rooms.sql |
+
+## Stawi chat app → settlement/finance audiences (2026-10-11)
+| xid | purpose | file |
+|-----|---------|------|
+| db5koukpf2t892ghj1ug | Stawi chat app (prod) recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
+| db5koukpf2t892ghj1v0 | Stawi chat app (prod) recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
+| db5koukpf2t892ghj1vg | Stawi chat app (dev) recipient https://api.stawi.org/stawi-settlement | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
+| db5koukpf2t892ghj200 | Stawi chat app (dev) recipient https://api.stawi.org/stawi-finance | apps/tenancy/migrations/0001/20261011_01_chat_app_stawi_audiences.sql |
