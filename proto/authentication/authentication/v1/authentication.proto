@@ -166,6 +166,88 @@ message ListLoginEventsResponse {
 }
 
 // -----------------------------------------------------
+// Genesis Session Proof (GFOS §8.2, P26)
+// -----------------------------------------------------
+
+// GenesisSessionProofClaims is the signed payload of a genesis session proof.
+// The time fields are the exact claim text (RFC 3339 UTC with microseconds)
+// because they are part of the signed binding pre-image.
+message GenesisSessionProofClaims {
+  // Format version ("GSP1").
+  string version = 1;
+  // Signing key id in /.well-known/genesis-session-proof-keys.json.
+  string key_id = 2;
+  // Always "ed25519" for GSP1.
+  string algorithm = 3;
+  // The person the proof is about (JWT sub === profile_id).
+  string profile_id = 4;
+  // The device the live session ran on.
+  string device_id = 5;
+  // Lowercase hex hash of the device public key being registered.
+  string pubkey_hash = 6;
+  // Devices-service identifier of that key, when known.
+  string device_key_id = 7;
+  // Single-use nonce.
+  string nonce = 8;
+  string issued_at = 9;
+  string expires_at = 10;
+  // The login event the proof was issued inside.
+  string session_id = 11;
+  string tenant_id = 12;
+  string partition_id = 13;
+  // The consumer the proof is meant for.
+  string audience = 14;
+}
+
+// IssueGenesisSessionProofRequest asks for a proof bound to the caller's own
+// live session and device. Profile, device and session come from the verified
+// bearer token, never from the request.
+message IssueGenesisSessionProofRequest {
+  // 32-byte hex digest of the device public key being registered (on EVM,
+  // keccak256 of the device address). Normalised to lowercase.
+  string pubkey_hash = 1 [(buf.validate.field).string.pattern = "^[0-9a-fA-F]{64}$"];
+  // Devices-service identifier of the key, when known.
+  string device_key_id = 2 [(buf.validate.field).string.max_len = 255];
+  // Optional; when set it must equal the session's device.
+  string device_id = 3 [(buf.validate.field).string.max_len = 255];
+}
+
+message IssueGenesisSessionProofResponse {
+  // The proof to present to the consumer (for example settlement's
+  // DeployAccount session_proof, as its UTF-8 bytes).
+  string token = 1;
+  string key_id = 2;
+  string algorithm = 3;
+  string nonce = 4;
+  string issued_at = 5;
+  string expires_at = 6;
+  // Lowercase hex SHA-256 of the binding pre-image.
+  string binding_hash = 7;
+  string audience = 8;
+}
+
+// VerifyGenesisSessionProofRequest checks a proof against what the consumer
+// expects, and optionally spends its nonce. Empty expectations are not checked.
+message VerifyGenesisSessionProofRequest {
+  string token = 1 [(buf.validate.field).string.min_len = 1];
+  string profile_id = 2;
+  string device_id = 3;
+  string pubkey_hash = 4;
+  string device_key_id = 5;
+  // Spend the nonce. A consumer about to act on the proof sets it.
+  bool consume = 6;
+}
+
+message VerifyGenesisSessionProofResponse {
+  bool valid = 1;
+  // Why the proof was refused, when it was.
+  string reason = 2;
+  GenesisSessionProofClaims claims = 3;
+  // Lowercase hex SHA-256 of the binding pre-image.
+  string binding_hash = 4;
+}
+
+// -----------------------------------------------------
 // Authentication Service
 // -----------------------------------------------------
 
@@ -176,7 +258,8 @@ service AuthenticationService {
     namespace: "service_authentication"
     permissions: [
       "auth_view_own",
-      "auth_view_all"
+      "auth_view_all",
+      "auth_genesis_verify"
     ]
     role_bindings: [
       {
@@ -240,6 +323,37 @@ service AuthenticationService {
       summary: "List login events"
       description: "Lists login events with filtering by profile, client, source, device, and time range. Users can only list their own events unless they have admin permissions."
       tags: "Authentication"
+    };
+  }
+
+  // IssueGenesisSessionProof mints a short-lived, single-use proof that the
+  // caller holds a live authenticated session on this device (P26). It is
+  // refused for service accounts and for sessions whose login event is not
+  // this profile on this device. The verifying keys are published at
+  // /.well-known/genesis-session-proof-keys.json.
+  rpc IssueGenesisSessionProof(IssueGenesisSessionProofRequest) returns (IssueGenesisSessionProofResponse) {
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "issueGenesisSessionProof"
+      summary: "Issue genesis session proof"
+      description: "Mints a genesis session proof bound to the caller's live session, device and the device key being registered."
+      tags: "GenesisSessionProof"
+    };
+  }
+
+  // VerifyGenesisSessionProof checks a proof and, with consume set, spends
+  // its nonce so it cannot be presented again.
+  // Restricted to auth_genesis_verify, which no role carries: it is granted
+  // only to the consumer that acts on a proof (settlement's service account),
+  // because consume burns the person's proof.
+  rpc VerifyGenesisSessionProof(VerifyGenesisSessionProofRequest) returns (VerifyGenesisSessionProofResponse) {
+    option (common.v1.method_permissions) = {
+      permissions: ["auth_genesis_verify"]
+    };
+    option (gnostic.openapi.v3.operation) = {
+      operation_id: "verifyGenesisSessionProof"
+      summary: "Verify genesis session proof"
+      description: "Verifies a genesis session proof against the expected profile, device and key, optionally spending its nonce."
+      tags: "GenesisSessionProof"
     };
   }
 }

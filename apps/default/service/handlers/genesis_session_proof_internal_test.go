@@ -23,6 +23,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -64,10 +66,40 @@ func proofServer(t *testing.T, sessions sessionLookup) *AuthServer {
 		GenesisProofTTL:           5 * time.Minute,
 		GenesisProofAudience:      "stawi-genesis",
 	}
-	h := &AuthServer{config: cfg, sessionLookup: sessions}
+	h := &AuthServer{config: cfg, sessionLookup: sessions, authorizer: verifyGrants{allowed: map[string]bool{settlementProfileID: true}}}
 	require.NoError(t, h.setupGenesisSessionProof(cfg))
-	h.proofNonceCache = cache.NewGenericCache[string, string](cache.NewInMemoryCache(), func(key string) string { return key })
+	h.proofNonceCache = cache.NewInMemoryCache()
 	return h
+}
+
+// settlementProfileID is the profile behind the settlement service account,
+// the one principal holding auth_genesis_verify.
+const settlementProfileID = "settlement-profile"
+
+// verifyGrants is a Keto stand-in: it allows auth_genesis_verify in
+// service_authentication to the listed profiles and nothing else. Only Check
+// is used by the function checker.
+type verifyGrants struct {
+	security.Authorizer
+	allowed map[string]bool
+}
+
+func (g verifyGrants) Check(_ context.Context, req security.CheckRequest) (security.CheckResult, error) {
+	allowed := req.Object.Namespace == "service_authentication" &&
+		req.Permission == "auth_genesis_verify" &&
+		req.Object.ID == "tenant-1/partition-1" &&
+		g.allowed[req.Subject.ID]
+	return security.CheckResult{Allowed: allowed}, nil
+}
+
+// settlementContext is settlement's service account calling in.
+func settlementContext(t *testing.T) context.Context {
+	t.Helper()
+	claims := &security.AuthenticationClaims{
+		TenantID: "tenant-1", PartitionID: "partition-1", ProfileID: settlementProfileID,
+		Ext: map[string]any{"service_account_id": "sa-settlement"},
+	}
+	return claims.ClaimsToContext(t.Context())
 }
 
 func personContext(t *testing.T, sessionID string) context.Context {
@@ -193,7 +225,8 @@ func TestGenesisSessionProof_VerifyRefusesReplayAndWrongDevice(t *testing.T) {
 	require.Equal(t, http.StatusOK, status)
 	token := issued["token"].(string)
 
-	status, body := postProof(t, ctx, GenesisSessionProofVerifyPath,
+	settlement := settlementContext(t)
+	status, body := postProof(t, settlement, GenesisSessionProofVerifyPath,
 		genesisProofVerifyRequest{Token: token, ProfileID: "profile-1", DeviceID: "device-1",
 			PubkeyHash: pubkeyHash, DeviceKeyID: "devkey-1", Consume: true},
 		h.GenesisSessionProofVerifyEndpoint)
@@ -202,7 +235,7 @@ func TestGenesisSessionProof_VerifyRefusesReplayAndWrongDevice(t *testing.T) {
 	require.Equal(t, issued["binding_hash"], body["binding_hash"])
 
 	// Second use of the same nonce is a replay.
-	_, replay := postProof(t, ctx, GenesisSessionProofVerifyPath,
+	_, replay := postProof(t, settlement, GenesisSessionProofVerifyPath,
 		genesisProofVerifyRequest{Token: token, Consume: true}, h.GenesisSessionProofVerifyEndpoint)
 	require.Equal(t, false, replay["valid"])
 	require.Contains(t, replay["reason"], "nonce")
@@ -210,7 +243,7 @@ func TestGenesisSessionProof_VerifyRefusesReplayAndWrongDevice(t *testing.T) {
 	// Wrong device, fresh nonce.
 	_, second := postProof(t, ctx, GenesisSessionProofPath,
 		genesisProofIssueRequest{PubkeyHash: pubkeyHash}, h.GenesisSessionProofIssueEndpoint)
-	_, wrongDevice := postProof(t, ctx, GenesisSessionProofVerifyPath,
+	_, wrongDevice := postProof(t, settlement, GenesisSessionProofVerifyPath,
 		genesisProofVerifyRequest{Token: second["token"].(string), DeviceID: "device-2"},
 		h.GenesisSessionProofVerifyEndpoint)
 	require.Equal(t, false, wrongDevice["valid"])
@@ -241,4 +274,63 @@ func TestGenesisSessionProof_KeysArePublished(t *testing.T) {
 	claims, err := offline.Verify(issued["token"].(string), sessionproof.Expectation{ProfileID: "profile-1"})
 	require.NoError(t, err)
 	require.Equal(t, "device-1", claims.DeviceID)
+}
+
+// TestGenesisSessionProof_VerifyNeedsTheGrant: only a holder of
+// auth_genesis_verify may verify, so nobody else can burn a person's proof,
+// not even the person it was issued to.
+func TestGenesisSessionProof_VerifyNeedsTheGrant(t *testing.T) {
+	h := proofServer(t, stubSessions{event: liveEvent()})
+	person := personContext(t, "login-event-1")
+	pubkeyHash := strings.Repeat("ab", 32)
+	_, issued := postProof(t, person, GenesisSessionProofPath,
+		genesisProofIssueRequest{PubkeyHash: pubkeyHash}, h.GenesisSessionProofIssueEndpoint)
+	token := issued["token"].(string)
+
+	status, body := postProof(t, person, GenesisSessionProofVerifyPath,
+		genesisProofVerifyRequest{Token: token, Consume: true}, h.GenesisSessionProofVerifyEndpoint)
+	require.Equal(t, http.StatusForbidden, status, body)
+
+	// The refused attempt spent nothing: settlement still gets the proof.
+	status, body = postProof(t, settlementContext(t), GenesisSessionProofVerifyPath,
+		genesisProofVerifyRequest{Token: token, Consume: true}, h.GenesisSessionProofVerifyEndpoint)
+	require.Equal(t, http.StatusOK, status)
+	require.Equal(t, true, body["valid"], body["reason"])
+}
+
+// TestGenesisSessionProof_ConcurrentSpendHasOneWinner: of many simultaneous
+// consuming verifications of one proof, exactly one is valid.
+func TestGenesisSessionProof_ConcurrentSpendHasOneWinner(t *testing.T) {
+	h := proofServer(t, stubSessions{event: liveEvent()})
+	issued, err := h.IssueGenesisSessionProof(personContext(t, "login-event-1"),
+		GenesisProofIssueInput{PubkeyHash: strings.Repeat("ab", 32)})
+	require.NoError(t, err)
+
+	const callers = 32
+	settlement := settlementContext(t)
+	var (
+		wg      sync.WaitGroup
+		start   = make(chan struct{})
+		winners atomic.Int32
+		replays atomic.Int32
+	)
+	for range callers {
+		wg.Go(func() {
+			<-start
+			verdict, verr := h.VerifyGenesisSessionProof(settlement,
+				GenesisProofVerifyInput{Token: issued.Token, Consume: true})
+			if verr != nil {
+				return
+			}
+			if verdict.Valid {
+				winners.Add(1)
+			} else if strings.Contains(verdict.Reason, "nonce") {
+				replays.Add(1)
+			}
+		})
+	}
+	close(start)
+	wg.Wait()
+	require.Equal(t, int32(1), winners.Load())
+	require.Equal(t, int32(callers-1), replays.Load())
 }

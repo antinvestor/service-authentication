@@ -77,6 +77,25 @@ BindingHash = f842718e6dbe316a9ada27602589845de9c2a287dec14f399b7875671ec562bd
 | `POST /s/genesis/session-proof/verify` | Bearer JWT | Convenience for a consumer that would rather not carry a verifier. Body `{"token", "profile_id", "device_id", "pubkey_hash", "device_key_id", "consume"}`; empty expectations are not checked. Returns `{valid, reason?, claims?, binding_hash?}`. `consume: true` spends the nonce, so the second call reports `valid: false` with the replay reason |
 | `GET /.well-known/genesis-session-proof-keys.json` | public | `{"keys":[{key_id, algorithm, public_key_hex, valid_from, retired_at?}]}`, `Cache-Control: max-age=300` — the same shape the audit service publishes, so a consumer reuses its key-set loader |
 
+The same two operations are Connect RPCs on `authentication.v1.AuthenticationService`, so clients use
+the generated SDKs (Go `buf.build/gen/go/antinvestor/authentication`, Dart
+`antinvestor_api_authentication` >= 0.2.0) instead of hand-written HTTP:
+
+| RPC | Equivalent REST endpoint |
+|-----|--------------------------|
+| `IssueGenesisSessionProof` | `POST /s/genesis/session-proof` |
+| `VerifyGenesisSessionProof` | `POST /s/genesis/session-proof/verify` |
+
+Both share one implementation with the REST endpoints. Refusals map to Connect codes:
+bad `pubkey_hash` is `invalid_argument`, no caller is `unauthenticated`, a session that does not
+qualify is `permission_denied`, and an unconfigured signer is `unavailable`. The REST endpoints stay.
+
+Verifying (REST or RPC) requires `auth_genesis_verify` in namespace `service_authentication`. No role
+carries it; it is granted only to settlement's service account (tenancy migration
+`20261011_02_settlement_genesis_verify.sql`), because a consuming verify burns the person's proof. Any
+other caller, the person included, is refused (`403` / `permission_denied`). Spending a nonce is an
+atomic increment in the shared cache, so of concurrent consuming verifications exactly one succeeds.
+
 Issuance refuses, with no proof minted, when: the caller is a service account (a machine holds no
 session on a device); the token carries no profile, device or session; the named login event is
 missing, belongs to another profile or to another device; `pubkey_hash` is not a 32-byte lowercase hex

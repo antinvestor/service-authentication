@@ -23,11 +23,15 @@ export 'authentication.pb.dart';
 abstract class AuthenticationServiceBase extends $pb.GeneratedService {
   $async.Future<$7.GetLoginEventResponse> getLoginEvent($pb.ServerContext ctx, $7.GetLoginEventRequest request);
   $async.Future<$7.ListLoginEventsResponse> listLoginEvents($pb.ServerContext ctx, $7.ListLoginEventsRequest request);
+  $async.Future<$7.IssueGenesisSessionProofResponse> issueGenesisSessionProof($pb.ServerContext ctx, $7.IssueGenesisSessionProofRequest request);
+  $async.Future<$7.VerifyGenesisSessionProofResponse> verifyGenesisSessionProof($pb.ServerContext ctx, $7.VerifyGenesisSessionProofRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
       case 'GetLoginEvent': return $7.GetLoginEventRequest();
       case 'ListLoginEvents': return $7.ListLoginEventsRequest();
+      case 'IssueGenesisSessionProof': return $7.IssueGenesisSessionProofRequest();
+      case 'VerifyGenesisSessionProof': return $7.VerifyGenesisSessionProofRequest();
       default: throw $core.ArgumentError('Unknown method: $methodName');
     }
   }
@@ -36,6 +40,8 @@ abstract class AuthenticationServiceBase extends $pb.GeneratedService {
     switch (methodName) {
       case 'GetLoginEvent': return this.getLoginEvent(ctx, request as $7.GetLoginEventRequest);
       case 'ListLoginEvents': return this.listLoginEvents(ctx, request as $7.ListLoginEventsRequest);
+      case 'IssueGenesisSessionProof': return this.issueGenesisSessionProof(ctx, request as $7.IssueGenesisSessionProofRequest);
+      case 'VerifyGenesisSessionProof': return this.verifyGenesisSessionProof(ctx, request as $7.VerifyGenesisSessionProofRequest);
       default: throw $core.ArgumentError('Unknown method: $methodName');
     }
   }

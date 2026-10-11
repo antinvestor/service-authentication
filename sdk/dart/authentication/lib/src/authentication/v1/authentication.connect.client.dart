@@ -45,4 +45,48 @@ extension type AuthenticationServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// IssueGenesisSessionProof mints a short-lived, single-use proof that the
+  /// caller holds a live authenticated session on this device (P26). It is
+  /// refused for service accounts and for sessions whose login event is not
+  /// this profile on this device. The verifying keys are published at
+  /// /.well-known/genesis-session-proof-keys.json.
+  Future<authenticationv1authentication.IssueGenesisSessionProofResponse> issueGenesisSessionProof(
+    authenticationv1authentication.IssueGenesisSessionProofRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.AuthenticationService.issueGenesisSessionProof,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// VerifyGenesisSessionProof checks a proof and, with consume set, spends
+  /// its nonce so it cannot be presented again.
+  /// Restricted to auth_genesis_verify, which no role carries: it is granted
+  /// only to the consumer that acts on a proof (settlement's service account),
+  /// because consume burns the person's proof.
+  Future<authenticationv1authentication.VerifyGenesisSessionProofResponse> verifyGenesisSessionProof(
+    authenticationv1authentication.VerifyGenesisSessionProofRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.AuthenticationService.verifyGenesisSessionProof,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

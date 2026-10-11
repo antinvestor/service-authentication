@@ -33,6 +33,7 @@ import (
 type LoginHistoryServer struct {
 	loginEventRepo repository.LoginEventRepository
 	loginRepo      repository.LoginRepository
+	genesisProofs  GenesisProofs
 	authenticationv1connect.UnimplementedAuthenticationServiceHandler
 }
 

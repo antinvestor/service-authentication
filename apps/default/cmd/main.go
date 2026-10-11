@@ -157,7 +157,7 @@ func main() {
 	srv.SetEventsManager(svc.EventsManager())
 
 	// Setup Connect RPC handler for login history API
-	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo)
+	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo).WithGenesisProofs(srv)
 	connectPath, connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
 
 	// Combine auth routes and Connect RPC into a single handler.
