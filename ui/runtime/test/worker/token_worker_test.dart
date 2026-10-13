@@ -355,10 +355,7 @@ void main() {
       );
       await w.init();
       final req = await w.prepareAuth();
-      expect(
-        req.url,
-        contains('audience=svc-a&audience=svc-b&audience=svc-c'),
-      );
+      expect(req.url, contains('audience=svc-a&audience=svc-b&audience=svc-c'));
       final uri = Uri.parse(req.url);
       expect(uri.queryParametersAll['audience'], ['svc-a', 'svc-b', 'svc-c']);
       await w.destroy();

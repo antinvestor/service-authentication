@@ -17,16 +17,15 @@ package handlers
 import (
 	"context"
 
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/datastore"
-	"github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/datastore"
+	"github.com/pitabwire/frame/v3/events"
 )
 
 type TenancyServer struct {
@@ -98,9 +97,9 @@ func NewTenancyServer(ctx context.Context, service *frame.Service, profileCli pr
 
 func (prtSrv *TenancyServer) ListPartition(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.ListPartitionRequest],
-	stream *connect.ServerStream[tenancyv1.ListPartitionResponse]) error {
-	partitions, err := prtSrv.PartitionBusiness.ListPartition(ctx, req.Msg)
+	req *tenancyv1.ListPartitionRequest,
+	stream tenancyv1connect.TenancyServiceListPartitionServerStream) error {
+	partitions, err := prtSrv.PartitionBusiness.ListPartition(ctx, req)
 	if err != nil {
 		return prtSrv.toAPIError(err)
 	}
@@ -109,59 +108,59 @@ func (prtSrv *TenancyServer) ListPartition(
 
 func (prtSrv *TenancyServer) CreatePartition(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.CreatePartitionRequest]) (*connect.Response[tenancyv1.CreatePartitionResponse], error) {
-	partition, err := prtSrv.PartitionBusiness.CreatePartition(ctx, req.Msg)
+	req *tenancyv1.CreatePartitionRequest) (*tenancyv1.CreatePartitionResponse, error) {
+	partition, err := prtSrv.PartitionBusiness.CreatePartition(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.CreatePartitionResponse{Data: partition}), nil
+	return &tenancyv1.CreatePartitionResponse{Data: partition}, nil
 }
 
 func (prtSrv *TenancyServer) GetPartition(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.GetPartitionRequest]) (*connect.Response[tenancyv1.GetPartitionResponse], error) {
-	partition, err := prtSrv.PartitionBusiness.GetPartition(ctx, req.Msg)
+	req *tenancyv1.GetPartitionRequest) (*tenancyv1.GetPartitionResponse, error) {
+	partition, err := prtSrv.PartitionBusiness.GetPartition(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.GetPartitionResponse{Data: partition}), nil
+	return &tenancyv1.GetPartitionResponse{Data: partition}, nil
 }
 
 func (prtSrv *TenancyServer) GetPartitionParents(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.GetPartitionParentsRequest]) (*connect.Response[tenancyv1.GetPartitionParentsResponse], error) {
-	partition, err := prtSrv.PartitionBusiness.GetPartitionParents(ctx, req.Msg)
+	req *tenancyv1.GetPartitionParentsRequest) (*tenancyv1.GetPartitionParentsResponse, error) {
+	partition, err := prtSrv.PartitionBusiness.GetPartitionParents(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.GetPartitionParentsResponse{Data: partition}), nil
+	return &tenancyv1.GetPartitionParentsResponse{Data: partition}, nil
 }
 
 func (prtSrv *TenancyServer) UpdatePartition(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.UpdatePartitionRequest]) (*connect.Response[tenancyv1.UpdatePartitionResponse], error) {
-	partition, err := prtSrv.PartitionBusiness.UpdatePartition(ctx, req.Msg)
+	req *tenancyv1.UpdatePartitionRequest) (*tenancyv1.UpdatePartitionResponse, error) {
+	partition, err := prtSrv.PartitionBusiness.UpdatePartition(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.UpdatePartitionResponse{Data: partition}), nil
+	return &tenancyv1.UpdatePartitionResponse{Data: partition}, nil
 }
 
 func (prtSrv *TenancyServer) CreatePartitionRole(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.CreatePartitionRoleRequest]) (*connect.Response[tenancyv1.CreatePartitionRoleResponse], error) {
-	partition, err := prtSrv.PartitionBusiness.CreatePartitionRole(ctx, req.Msg)
+	req *tenancyv1.CreatePartitionRoleRequest) (*tenancyv1.CreatePartitionRoleResponse, error) {
+	partition, err := prtSrv.PartitionBusiness.CreatePartitionRole(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.CreatePartitionRoleResponse{Data: partition}), nil
+	return &tenancyv1.CreatePartitionRoleResponse{Data: partition}, nil
 }
 
 func (prtSrv *TenancyServer) ListPartitionRole(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.ListPartitionRoleRequest],
-	stream *connect.ServerStream[tenancyv1.ListPartitionRoleResponse]) error {
-	resp, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req.Msg)
+	req *tenancyv1.ListPartitionRoleRequest,
+	stream tenancyv1connect.TenancyServiceListPartitionRoleServerStream) error {
+	resp, err := prtSrv.PartitionBusiness.ListPartitionRoles(ctx, req)
 	if err != nil {
 		return prtSrv.toAPIError(err)
 	}
@@ -170,32 +169,32 @@ func (prtSrv *TenancyServer) ListPartitionRole(
 
 func (prtSrv *TenancyServer) UpdatePartitionRole(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.UpdatePartitionRoleRequest]) (*connect.Response[tenancyv1.UpdatePartitionRoleResponse], error) {
-	role, err := prtSrv.PartitionBusiness.UpdatePartitionRole(ctx, req.Msg)
+	req *tenancyv1.UpdatePartitionRoleRequest) (*tenancyv1.UpdatePartitionRoleResponse, error) {
+	role, err := prtSrv.PartitionBusiness.UpdatePartitionRole(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.UpdatePartitionRoleResponse{Data: role}), nil
+	return &tenancyv1.UpdatePartitionRoleResponse{Data: role}, nil
 }
 
 func (prtSrv *TenancyServer) RemovePartition(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.RemovePartitionRequest]) (*connect.Response[tenancyv1.RemovePartitionResponse], error) {
-	err := prtSrv.PartitionBusiness.RemovePartition(ctx, req.Msg.GetId())
+	req *tenancyv1.RemovePartitionRequest) (*tenancyv1.RemovePartitionResponse, error) {
+	err := prtSrv.PartitionBusiness.RemovePartition(ctx, req.GetId())
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.RemovePartitionResponse{Succeeded: true}), nil
+	return &tenancyv1.RemovePartitionResponse{Succeeded: true}, nil
 }
 
 func (prtSrv *TenancyServer) RemovePartitionRole(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.RemovePartitionRoleRequest]) (*connect.Response[tenancyv1.RemovePartitionRoleResponse], error) {
-	err := prtSrv.PartitionBusiness.RemovePartitionRole(ctx, req.Msg)
+	req *tenancyv1.RemovePartitionRoleRequest) (*tenancyv1.RemovePartitionRoleResponse, error) {
+	err := prtSrv.PartitionBusiness.RemovePartitionRole(ctx, req)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv1.RemovePartitionRoleResponse{
+	return &tenancyv1.RemovePartitionRoleResponse{
 		Succeeded: true,
-	}), nil
+	}, nil
 }

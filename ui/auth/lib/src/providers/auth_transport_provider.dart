@@ -13,8 +13,7 @@ final authTransportProvider = Provider<Transport>((ref) {
   return createTransport(tokenProvider, baseUrl: _authUrl);
 });
 
-final authServiceClientProvider =
-    Provider<AuthenticationServiceClient>((ref) {
+final authServiceClientProvider = Provider<AuthenticationServiceClient>((ref) {
   final transport = ref.watch(authTransportProvider);
   return AuthenticationServiceClient(transport);
 });

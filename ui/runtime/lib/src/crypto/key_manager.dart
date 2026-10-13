@@ -20,10 +20,7 @@ class WrapKey {
 /// `ciphertext` includes the AES-GCM authentication tag appended per the
 /// `package:cryptography` convention.
 class WrappedBlob {
-  const WrappedBlob({
-    required this.iv,
-    required this.ciphertext,
-  });
+  const WrappedBlob({required this.iv, required this.ciphertext});
 
   final Uint8List iv;
   final Uint8List ciphertext;

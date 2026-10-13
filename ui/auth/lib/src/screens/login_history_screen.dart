@@ -24,8 +24,7 @@ class LoginHistoryScreen extends ConsumerStatefulWidget {
   const LoginHistoryScreen({super.key});
 
   @override
-  ConsumerState<LoginHistoryScreen> createState() =>
-      _LoginHistoryScreenState();
+  ConsumerState<LoginHistoryScreen> createState() => _LoginHistoryScreenState();
 }
 
 class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
@@ -37,13 +36,13 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
   final _dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
 
   LoginEventListParams get _params => LoginEventListParams(
-        profileId: _filterProfileId,
-        source: _filterSource,
-        deviceId: _filterDeviceId,
-        startDate: _dateRange?.start,
-        endDate: _dateRange?.end,
-        count: 100,
-      );
+    profileId: _filterProfileId,
+    source: _filterSource,
+    deviceId: _filterDeviceId,
+    startDate: _dateRange?.start,
+    endDate: _dateRange?.end,
+    count: 100,
+  );
 
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
@@ -80,9 +79,11 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   const SizedBox(height: 16),
                   Text('Failed to load login events: $error'),
                   const SizedBox(height: 12),
@@ -124,8 +125,7 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
                 isDense: true,
                 prefixIcon: Icon(Icons.person_outline, size: 18),
               ),
-              onChanged: (v) =>
-                  setState(() => _filterProfileId = v.trim()),
+              onChanged: (v) => setState(() => _filterProfileId = v.trim()),
             ),
           ),
           SizedBox(
@@ -138,15 +138,18 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
                 isDense: true,
               ),
               items: _sourceOptions
-                  .map((s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(s.isEmpty
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(
+                        s.isEmpty
                             ? 'All sources'
-                            : LoginEventTile.labelForSource(s)),
-                      ))
+                            : LoginEventTile.labelForSource(s),
+                      ),
+                    ),
+                  )
                   .toList(),
-              onChanged: (v) =>
-                  setState(() => _filterSource = v ?? ''),
+              onChanged: (v) => setState(() => _filterSource = v ?? ''),
             ),
           ),
           SizedBox(
@@ -157,8 +160,7 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
                 isDense: true,
                 prefixIcon: Icon(Icons.devices_outlined, size: 18),
               ),
-              onChanged: (v) =>
-                  setState(() => _filterDeviceId = v.trim()),
+              onChanged: (v) => setState(() => _filterDeviceId = v.trim()),
             ),
           ),
           OutlinedButton.icon(
@@ -199,29 +201,36 @@ class _LoginHistoryScreenState extends ConsumerState<LoginHistoryScreen> {
         selected: selected,
         onSelectChanged: (_) => onSelect(),
         cells: [
-          DataCell(Text(
-            _formatTimestamp(event.createdAt),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          )),
-          DataCell(Text(
-            event.profileId.isNotEmpty
-                ? '${event.profileId.substring(0, event.profileId.length.clamp(0, 8))}...'
-                : '-',
-          )),
+          DataCell(
+            Text(
+              _formatTimestamp(event.createdAt),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+          DataCell(
+            Text(
+              event.profileId.isNotEmpty
+                  ? '${event.profileId.substring(0, event.profileId.length.clamp(0, 8))}...'
+                  : '-',
+            ),
+          ),
           DataCell(_SourceChip(source: event.source)),
-          DataCell(Text(
-              event.ipAddress.isNotEmpty ? event.ipAddress : '-')),
-          DataCell(Text(
-            _truncateUserAgent(event.userAgent),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          )),
-          DataCell(Text(
-            event.deviceId.isNotEmpty
-                ? '${event.deviceId.substring(0, event.deviceId.length.clamp(0, 8))}...'
-                : '-',
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          )),
+          DataCell(Text(event.ipAddress.isNotEmpty ? event.ipAddress : '-')),
+          DataCell(
+            Text(
+              _truncateUserAgent(event.userAgent),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          DataCell(
+            Text(
+              event.deviceId.isNotEmpty
+                  ? '${event.deviceId.substring(0, event.deviceId.length.clamp(0, 8))}...'
+                  : '-',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
           DataCell(_StatusBadge(status: event.status)),
         ],
       ),

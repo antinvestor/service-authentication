@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 )

@@ -41,10 +41,7 @@ class AuthGate extends ConsumerWidget {
       error: (err, _) {
         final authErr = err is AuthError
             ? err
-            : AuthError(
-                AuthErrorCode.networkError,
-                err.toString(),
-              );
+            : AuthError(AuthErrorCode.networkError, err.toString());
         return (errorBuilder ?? _defaultError)(context, authErr);
       },
       data: (state) {
@@ -60,9 +57,7 @@ class AuthGate extends ConsumerWidget {
               AuthError(AuthErrorCode.networkError, 'authentication error'),
             );
           case AuthState.unauthenticated:
-            return (unauthenticatedBuilder ?? _defaultUnauthenticated)(
-              context,
-            );
+            return (unauthenticatedBuilder ?? _defaultUnauthenticated)(context);
         }
       },
     );

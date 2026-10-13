@@ -18,7 +18,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v3/cache"
 	"github.com/pitabwire/util"
 )
 

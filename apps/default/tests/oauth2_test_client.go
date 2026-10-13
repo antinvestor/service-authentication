@@ -34,13 +34,12 @@ import (
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/frametests"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/frametests"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -214,7 +213,7 @@ func (c *OAuth2TestClient) createPartitionOAuth2Client(
 		return nil, fmt.Errorf("create OAuth partition: %w", err)
 	}
 
-	response, err := c.AuthContractCli.CreateOAuthClient(ctx, connect.NewRequest(&tenancyv2.CreateOAuthClientRequest{
+	response, err := c.AuthContractCli.CreateOAuthClient(ctx, &tenancyv2.CreateOAuthClientRequest{
 		PartitionId: partition.GetId(),
 		Name:        testName,
 		Type:        "public",
@@ -232,11 +231,11 @@ func (c *OAuth2TestClient) createPartitionOAuth2Client(
 			},
 			TokenEndpointAuthMethod: "none",
 		},
-	}))
+	})
 	if err != nil {
 		return nil, fmt.Errorf("create OAuth client: %w", err)
 	}
-	client := response.Msg.GetData()
+	client := response.GetData()
 	if client == nil || client.GetClientId() == "" {
 		return nil, errors.New("create OAuth client returned no client id")
 	}
@@ -248,7 +247,7 @@ func (c *OAuth2TestClient) createPartitionOAuth2Client(
 
 	return &OAuth2Client{
 		ClientID:     client.GetClientId(),
-		ClientSecret: response.Msg.GetClientSecret(),
+		ClientSecret: response.GetClientSecret(),
 		RedirectURIs: redirectURIs,
 		Scope:        scopes,
 		Audience:     []string{"https://api.example.test/authentication"},
@@ -1004,18 +1003,18 @@ func (c *OAuth2TestClient) CleanupOAuth2Client(ctx context.Context, clientID str
 		return errors.New("tenancy auth contract client is unavailable")
 	}
 
-	lookup, err := c.AuthContractCli.GetOAuthClient(ctx, connect.NewRequest(&tenancyv2.GetOAuthClientRequest{
+	lookup, err := c.AuthContractCli.GetOAuthClient(ctx, &tenancyv2.GetOAuthClientRequest{
 		Selector: &tenancyv2.GetOAuthClientRequest_ClientId{ClientId: clientID},
-	}))
+	})
 	if err != nil {
 		return err
 	}
-	if lookup.Msg.GetData() == nil {
+	if lookup.GetData() == nil {
 		return errors.New("OAuth client lookup returned no data")
 	}
-	_, err = c.AuthContractCli.RemoveOAuthClient(ctx, connect.NewRequest(&tenancyv2.RemoveOAuthClientRequest{
-		Id: lookup.Msg.GetData().GetId(),
-	}))
+	_, err = c.AuthContractCli.RemoveOAuthClient(ctx, &tenancyv2.RemoveOAuthClientRequest{
+		Id: lookup.GetData().GetId(),
+	})
 	return err
 }
 
@@ -1046,25 +1045,27 @@ func (c *OAuth2TestClient) GetVerificationCodeByLoginEventID(ctx context.Context
 
 		extras, _ := structpb.NewStruct(map[string]any{"template_id": "9bsv0s23l8og00vgjq90"})
 
-		resp, err0 := notifCli.Search(ctx, connect.NewRequest(&commonv1.SearchRequest{
+		resp, err0 := notifCli.Search(ctx, &commonv1.SearchRequest{
 			Cursor: &commonv1.PageCursor{
 				Limit: 10,
 				Page:  "",
 			},
 			Extras: extras,
-		}))
+		})
 		if err0 != nil {
 			return nil, err0
 		}
 
-		for resp.Receive() {
-			err1 := resp.Err()
-			if err1 != nil {
-				return nil, err1
+		for {
+			msg, recvErr := resp.Receive()
+			if recvErr != nil {
+				if errors.Is(recvErr, io.EOF) {
+					break
+				}
+				return nil, recvErr
 			}
 
-			nmsg := resp.Msg()
-			for _, n := range nmsg.GetData() {
+			for _, n := range msg.GetData() {
 				payload := n.GetPayload()
 				if payload == nil {
 					continue

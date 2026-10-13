@@ -26,13 +26,12 @@ import (
 	"strings"
 	"time"
 
-	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
+	"buf.build/gen/go/antinvestor/device/connectrpc/go/v2/device/v1/devicev1connect"
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
-	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
-	"connectrpc.com/connect"
+	"buf.build/gen/go/antinvestor/notification/connectrpc/go/v2/notification/v1/notificationv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
@@ -44,11 +43,11 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/telemetry"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/antinvestor/service-authentication/pkg/hydraadmin"
-	"github.com/pitabwire/frame/v2/cache"
-	"github.com/pitabwire/frame/v2/client"
-	fevents "github.com/pitabwire/frame/v2/events"
-	"github.com/pitabwire/frame/v2/localization"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3/cache"
+	"github.com/pitabwire/frame/v3/client"
+	fevents "github.com/pitabwire/frame/v3/events"
+	"github.com/pitabwire/frame/v3/localization"
+	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -536,7 +535,7 @@ func (h *AuthServer) deviceIDMiddleware(next http.Handler) http.Handler {
 			req.DeviceId = deviceID
 		}
 
-		_, err := h.DeviceCli().Log(ctx, connect.NewRequest(&req))
+		_, err := h.DeviceCli().Log(ctx, &req)
 		if err != nil {
 			util.Log(ctx).WithError(err).WithFields(map[string]any{
 				"device_id":  deviceID,

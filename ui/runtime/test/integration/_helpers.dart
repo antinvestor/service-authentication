@@ -137,13 +137,15 @@ Future<IntegrationHarness> buildHarness({
   final sKv = sessionKv ?? InMemoryKeyValueStore();
   final rKv = rootKv ?? InMemoryKeyValueStore();
 
-  final cfg = resolveConfig(AuthConfig(
-    clientId: 'antinvestor-mobile',
-    idpBaseUrl: base,
-    apiBaseUrl: base, // Authenticated API calls land on the mock too.
-    redirectScheme: 'com.antinvestor.test',
-    scopes: const <String>['openid', 'profile', 'email', 'offline_access'],
-  ));
+  final cfg = resolveConfig(
+    AuthConfig(
+      clientId: 'antinvestor-mobile',
+      idpBaseUrl: base,
+      apiBaseUrl: base, // Authenticated API calls land on the mock too.
+      redirectScheme: 'com.antinvestor.test',
+      scopes: const <String>['openid', 'profile', 'email', 'offline_access'],
+    ),
+  );
 
   // Clear the module-level discovery cache so each test starts fresh.
   clearDiscoveryCache();

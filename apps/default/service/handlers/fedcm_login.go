@@ -40,10 +40,9 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
-	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v3"
 	"github.com/pitabwire/util"
 )
 
@@ -101,11 +100,11 @@ func (h *AuthServer) FedCMLoginSubmit(rw http.ResponseWriter, req *http.Request)
 	}
 
 	// Send verification code.
-	verResp, verErr := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	verResp, verErr := h.profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		Id:               util.IDString(),
 		ContactId:        contactID,
 		DurationToExpire: "15m",
-	}))
+	})
 	if verErr != nil {
 		log.WithError(verErr).Error("fedcm login: failed to create verification")
 		return renderError("Something went wrong. Please try again.")
@@ -114,7 +113,7 @@ func (h *AuthServer) FedCMLoginSubmit(rw http.ResponseWriter, req *http.Request)
 	// Create a standalone LoginEvent (no Hydra challenge, ClientID="").
 	loginEvt := &models.LoginEvent{
 		ClientID:       "", // FedCM cold-start sentinel — no OAuth2 client
-		VerificationID: verResp.Msg.GetId(),
+		VerificationID: verResp.GetId(),
 		ContactID:      contactID,
 		ProfileID:      profileID,
 		IP:             util.GetIP(req),
@@ -138,7 +137,7 @@ func (h *AuthServer) FedCMLoginSubmit(rw http.ResponseWriter, req *http.Request)
 	log.WithFields(map[string]any{
 		"login_event_id":  loginEvt.GetID(),
 		"contact_type":    contactType.String(),
-		"verification_id": verResp.Msg.GetId(),
+		"verification_id": verResp.GetId(),
 	}).Info("fedcm cold-start: verification code sent")
 
 	// Redirect to FedCM-specific verify page.
@@ -249,15 +248,15 @@ func (h *AuthServer) FedCMLoginComplete(
 // fedcmResolveContact looks up or creates the profile contact for the given
 // contact detail string. Returns contactID, profileID, profileName, error.
 func (h *AuthServer) fedcmResolveContact(ctx context.Context, contact string) (contactID, profileID, profileName string, err error) {
-	result, lookupErr := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{
+	result, lookupErr := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{
 		Contact: contact,
-	}))
+	})
 	if lookupErr != nil && !frame.ErrorIsNotFound(lookupErr) {
 		return "", "", "", lookupErr
 	}
 
-	if result != nil && result.Msg.GetData() != nil {
-		existing := result.Msg.GetData()
+	if result != nil && result.GetData() != nil {
+		existing := result.GetData()
 		profileID = existing.GetId()
 		for _, c := range existing.GetContacts() {
 			if strings.EqualFold(contact, c.GetDetail()) {
@@ -275,13 +274,13 @@ func (h *AuthServer) fedcmResolveContact(ctx context.Context, contact string) (c
 	}
 
 	if contactID == "" {
-		resp, createErr := h.profileCli.CreateContact(ctx, connect.NewRequest(&profilev1.CreateContactRequest{
+		resp, createErr := h.profileCli.CreateContact(ctx, &profilev1.CreateContactRequest{
 			Contact: contact,
-		}))
+		})
 		if createErr != nil {
 			return "", "", "", createErr
 		}
-		contactID = resp.Msg.GetData().GetId()
+		contactID = resp.GetData().GetId()
 	}
 
 	return contactID, profileID, profileName, nil
@@ -317,17 +316,17 @@ func (h *AuthServer) fedcmCheckCode(ctx context.Context, loginEvent *models.Logi
 		maxAttempts = 3
 	}
 
-	verResp, verErr := h.profileCli.CheckVerification(ctx, connect.NewRequest(&profilev1.CheckVerificationRequest{
+	verResp, verErr := h.profileCli.CheckVerification(ctx, &profilev1.CheckVerificationRequest{
 		Id:   loginEvent.VerificationID,
 		Code: code,
-	}))
+	})
 	if verErr != nil {
 		return "", fmt.Errorf("verification failed, please try again")
 	}
-	if int(verResp.Msg.GetCheckAttempts()) > maxAttempts {
+	if int(verResp.GetCheckAttempts()) > maxAttempts {
 		return "", fmt.Errorf("too many incorrect attempts, please start again")
 	}
-	if !verResp.Msg.GetSuccess() {
+	if !verResp.GetSuccess() {
 		return "", fmt.Errorf("incorrect code, please try again")
 	}
 
@@ -337,14 +336,14 @@ func (h *AuthServer) fedcmCheckCode(ctx context.Context, loginEvent *models.Logi
 	}
 
 	// First-time login — create a profile.
-	createResp, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+	createResp, createErr := h.profileCli.Create(ctx, &profilev1.CreateRequest{
 		Type:    profilev1.ProfileType_PERSON,
 		Contact: loginEvent.ContactID,
-	}))
+	})
 	if createErr != nil {
 		return "", fmt.Errorf("profile creation failed")
 	}
-	created := createResp.Msg.GetData()
+	created := createResp.GetData()
 	if created == nil || created.GetId() == "" {
 		return "", fmt.Errorf("profile creation returned empty profile")
 	}
@@ -366,12 +365,12 @@ func (h *AuthServer) fedcmEnrichFromProfile(ctx context.Context, loginEvent *mod
 
 	getByIDReq := &profilev1.GetByIdRequest{}
 	getByIDReq.SetId(profileID)
-	profileResp, profileErr := h.profileCli.GetById(ctx, connect.NewRequest(getByIDReq))
-	if profileErr != nil || profileResp.Msg.GetData() == nil {
+	profileResp, profileErr := h.profileCli.GetById(ctx, getByIDReq)
+	if profileErr != nil || profileResp.GetData() == nil {
 		return "", contactTypeStr, name
 	}
 
-	prof := profileResp.Msg.GetData()
+	prof := profileResp.GetData()
 	for _, c := range prof.GetContacts() {
 		if c.GetId() == loginEvent.ContactID {
 			contactDetail = c.GetDetail()

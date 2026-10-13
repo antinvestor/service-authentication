@@ -17,11 +17,12 @@ class OAuthResult {
 
 /// Function that drives the system-browser leg. Defaults to
 /// [FlutterWebAuth2.authenticate]; tests inject a fake.
-typedef WebAuthFn = Future<String> Function({
-  required String url,
-  required String callbackUrlScheme,
-  FlutterWebAuth2Options options,
-});
+typedef WebAuthFn =
+    Future<String> Function({
+      required String url,
+      required String callbackUrlScheme,
+      FlutterWebAuth2Options options,
+    });
 
 /// Drives the OAuth browser leg cross-platform.
 ///
@@ -37,7 +38,7 @@ typedef WebAuthFn = Future<String> Function({
 /// this client just opens the URL and is FedCM-transparent.
 class OAuthFlow {
   OAuthFlow({WebAuthFn? webAuth})
-      : _webAuth = webAuth ?? FlutterWebAuth2.authenticate;
+    : _webAuth = webAuth ?? FlutterWebAuth2.authenticate;
 
   final WebAuthFn _webAuth;
 
@@ -106,10 +107,7 @@ class OAuthFlow {
     final code = params['code'];
     final state = params['state'];
     if (code == null || code.isEmpty) {
-      throw AuthError(
-        AuthErrorCode.oauthFailed,
-        'OAuth callback missing code',
-      );
+      throw AuthError(AuthErrorCode.oauthFailed, 'OAuth callback missing code');
     }
     if (state == null || state.isEmpty) {
       throw AuthError(

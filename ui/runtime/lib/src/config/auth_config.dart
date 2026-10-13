@@ -45,17 +45,17 @@ class AuthConfig extends Equatable {
 
   @override
   List<Object?> get props => [
-        clientId,
-        idpBaseUrl,
-        apiBaseUrl,
-        redirectScheme,
-        scopes,
-        audiences,
-        redirectUri,
-        installationId,
-        discoveryTimeout,
-        tokenTimeout,
-        apiTimeout,
-        uploadTimeout,
-      ];
+    clientId,
+    idpBaseUrl,
+    apiBaseUrl,
+    redirectScheme,
+    scopes,
+    audiences,
+    redirectUri,
+    installationId,
+    discoveryTimeout,
+    tokenTimeout,
+    apiTimeout,
+    uploadTimeout,
+  ];
 }

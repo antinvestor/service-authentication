@@ -11,8 +11,7 @@ void main() {
     await h.dispose();
   });
 
-  test(
-      'invalid_dpop_proof with future Date header triggers client-side '
+  test('invalid_dpop_proof with future Date header triggers client-side '
       'offset and retry', () async {
     final mock = MockIdp()..enableClockSkewChallenge();
     h = await buildHarness(mock: mock);

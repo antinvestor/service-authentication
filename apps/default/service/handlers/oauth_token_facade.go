@@ -28,13 +28,12 @@ import (
 	"unicode"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/fedcm"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/nativecredentials"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/client"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/client"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -584,12 +583,12 @@ func (h *AuthServer) resolveNativeProfile(ctx context.Context, identity *nativec
 		return "", "", fmt.Errorf("%s email is not verified", identity.Provider)
 	}
 
-	result, lookupErr := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: identity.Email}))
+	result, lookupErr := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: identity.Email})
 	if lookupErr != nil && !frame.ErrorIsNotFound(lookupErr) {
 		return "", "", fmt.Errorf("profile lookup failed: %w", lookupErr)
 	}
-	if lookupErr == nil && result != nil && result.Msg.GetData() != nil {
-		profile := result.Msg.GetData()
+	if lookupErr == nil && result != nil && result.GetData() != nil {
+		profile := result.GetData()
 		if profile.GetType() == profilev1.ProfileType_BOT {
 			return "", "", fmt.Errorf("bot accounts cannot log in through native credentials")
 		}
@@ -604,15 +603,15 @@ func (h *AuthServer) resolveNativeProfile(ctx context.Context, identity *nativec
 		KeyProfileName: displayName,
 		"src":          identity.Provider,
 	})
-	createResult, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+	createResult, createErr := h.profileCli.Create(ctx, &profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    identity.Email,
 		Properties: properties,
-	}))
+	})
 	if createErr != nil {
 		return "", "", fmt.Errorf("profile creation failed: %w", createErr)
 	}
-	profile := createResult.Msg.GetData()
+	profile := createResult.GetData()
 	if profile == nil || profile.GetId() == "" {
 		return "", "", fmt.Errorf("profile creation returned invalid response")
 	}
@@ -622,11 +621,11 @@ func (h *AuthServer) resolveNativeProfile(ctx context.Context, identity *nativec
 func (h *AuthServer) findContactIDForProfile(ctx context.Context, profileID, contact string) (string, error) {
 	req := &profilev1.GetByIdRequest{}
 	req.SetId(profileID)
-	resp, err := h.profileCli.GetById(ctx, connect.NewRequest(req))
+	resp, err := h.profileCli.GetById(ctx, req)
 	if err != nil {
 		return "", err
 	}
-	profile := resp.Msg.GetData()
+	profile := resp.GetData()
 	if profile == nil {
 		return "", fmt.Errorf("linked profile is missing")
 	}

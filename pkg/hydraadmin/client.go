@@ -30,7 +30,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v3/client"
 	"github.com/pitabwire/util"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"

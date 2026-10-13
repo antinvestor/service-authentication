@@ -6,22 +6,22 @@ import 'package:antinvestor_auth_runtime/src/storage/token_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 WrappedBlob _blob(int seed) => WrappedBlob(
-      iv: Uint8List.fromList(List<int>.generate(12, (i) => (seed + i) & 0xff)),
-      ciphertext: Uint8List.fromList(
-        List<int>.generate(48, (i) => (seed * 7 + i) & 0xff),
-      ),
-    );
+  iv: Uint8List.fromList(List<int>.generate(12, (i) => (seed + i) & 0xff)),
+  ciphertext: Uint8List.fromList(
+    List<int>.generate(48, (i) => (seed * 7 + i) & 0xff),
+  ),
+);
 
 StoredSession _session({String? idToken, DateTime? at}) => StoredSession(
-      wrapKeyCiphertext: _blob(1),
-      dpopPrivateKeyCiphertext: _blob(2),
-      refreshTokenCiphertext: _blob(3),
-      accessToken: 'at-abc',
-      accessTokenExpiresAt: DateTime.utc(2026, 4, 19, 23, 0, 0),
-      tokenType: 'Bearer',
-      idToken: idToken,
-      updatedAt: at ?? DateTime.utc(2026, 4, 19, 22, 35, 0),
-    );
+  wrapKeyCiphertext: _blob(1),
+  dpopPrivateKeyCiphertext: _blob(2),
+  refreshTokenCiphertext: _blob(3),
+  accessToken: 'at-abc',
+  accessTokenExpiresAt: DateTime.utc(2026, 4, 19, 23, 0, 0),
+  tokenType: 'Bearer',
+  idToken: idToken,
+  updatedAt: at ?? DateTime.utc(2026, 4, 19, 22, 35, 0),
+);
 
 void main() {
   late InMemoryKeyValueStore kv;
@@ -40,11 +40,15 @@ void main() {
     expect(loaded!.wrapKeyCiphertext.iv, s.wrapKeyCiphertext.iv);
     expect(loaded.wrapKeyCiphertext.ciphertext, s.wrapKeyCiphertext.ciphertext);
     expect(loaded.dpopPrivateKeyCiphertext.iv, s.dpopPrivateKeyCiphertext.iv);
-    expect(loaded.dpopPrivateKeyCiphertext.ciphertext,
-        s.dpopPrivateKeyCiphertext.ciphertext);
+    expect(
+      loaded.dpopPrivateKeyCiphertext.ciphertext,
+      s.dpopPrivateKeyCiphertext.ciphertext,
+    );
     expect(loaded.refreshTokenCiphertext.iv, s.refreshTokenCiphertext.iv);
-    expect(loaded.refreshTokenCiphertext.ciphertext,
-        s.refreshTokenCiphertext.ciphertext);
+    expect(
+      loaded.refreshTokenCiphertext.ciphertext,
+      s.refreshTokenCiphertext.ciphertext,
+    );
     expect(loaded.accessToken, 'at-abc');
     expect(loaded.accessTokenExpiresAt, s.accessTokenExpiresAt);
     expect(loaded.tokenType, 'Bearer');

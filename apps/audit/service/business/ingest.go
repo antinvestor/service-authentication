@@ -25,7 +25,7 @@ import (
 	aconfig "github.com/antinvestor/service-authentication/apps/audit/config"
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 	"gorm.io/gorm"
 )

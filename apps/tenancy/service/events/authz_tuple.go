@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pitabwire/frame/v2/events"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3/events"
+	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 )
 

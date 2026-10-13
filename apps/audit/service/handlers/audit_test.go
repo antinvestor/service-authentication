@@ -19,21 +19,24 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"buf.build/gen/go/antinvestor/audit/connectrpc/go/audit/v1/auditv1connect"
+	"buf.build/gen/go/antinvestor/audit/connectrpc/go/v2/audit/v1/auditv1connect"
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
 	"github.com/antinvestor/service-authentication/apps/audit/tests"
-	"github.com/pitabwire/frame/v2/security"
-	"github.com/pitabwire/frame/v2/tenancy"
+	"github.com/pitabwire/frame/v3/security"
+	"github.com/pitabwire/frame/v3/tenancy"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -61,7 +64,7 @@ const (
 // as in production.
 type claimsInjector struct{}
 
-func (claimsInjector) inject(ctx context.Context, h http.Header) context.Context {
+func (claimsInjector) inject(ctx context.Context, h *connect.Header) context.Context {
 	if h.Get(hdrTenant) == "" {
 		return ctx
 	}
@@ -80,19 +83,14 @@ func (claimsInjector) inject(ctx context.Context, h http.Header) context.Context
 	return claims.ClaimsToContext(ctx)
 }
 
-func (c claimsInjector) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		return next(c.inject(ctx, req.Header()), req)
-	}
-}
-
-func (claimsInjector) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return next
-}
-
-func (c claimsInjector) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		return next(c.inject(ctx, conn.RequestHeader()), conn)
+func (c claimsInjector) interceptor() connect.ServerInterceptor {
+	return func(next connect.ServerFunc) connect.ServerFunc {
+		return func(ctx context.Context, spec connect.Spec, stream connect.ServerStream) error {
+			if info, ok := connect.CallInfoForServerContext(ctx); ok {
+				ctx = c.inject(ctx, info.RequestHeader())
+			}
+			return next(ctx, spec, stream)
+		}
 	}
 }
 
@@ -106,7 +104,7 @@ func (createAnyResolver) Check(ctx context.Context, permission string) error {
 			return nil
 		}
 	}
-	return connect.NewError(connect.CodePermissionDenied, nil)
+	return connect.NewError(connect.CodePermissionDenied, "")
 }
 
 type env struct {
@@ -125,31 +123,40 @@ func (s *HandlerSuite) newEnv() *env {
 	deps := handlers.BuildDeps(svc.Ctx, svc.Cfg, tests.NamespaceAudit, svc.Pool, keys)
 
 	impl := handlers.NewAuditServer(deps, createAnyResolver{})
-	_, h := auditv1connect.NewAuditServiceHandler(impl, connect.WithInterceptors(claimsInjector{}, tenancy.NewClaimsInterceptor()))
+	rpc := connect.NewServer(claimsInjector{}.interceptor(), tenancy.NewClaimsInterceptor())
+	auditv1connect.RegisterAuditServiceHandler(rpc, impl)
 	mux := http.NewServeMux()
 	mux.Handle(handlers.WellKnownKeysPath, handlers.WellKnownKeysHandler(keys, tests.NamespaceAudit))
-	mux.Handle("/", h)
+	connecthttp.Mount(mux, rpc)
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
 	return &env{svc: svc, deps: deps, server: server,
-		client: auditv1connect.NewAuditServiceClient(server.Client(), server.URL)}
+		client: auditv1connect.NewAuditServiceClient(connect.NewClient(connecthttp.NewTransport(server.Client(), server.URL)))}
 }
 
-func asUser[T any](req *connect.Request[T], tenant, profile, service string) *connect.Request[T] {
-	req.Header().Set(hdrTenant, tenant)
-	req.Header().Set(hdrProfile, profile)
-	req.Header().Set(hdrService, service)
-	return req
+// callAs returns a client context carrying the test identity headers, and
+// the call info for adding more headers or reading response metadata.
+func callAs(ctx context.Context, tenant, profile, service string) (context.Context, *connect.CallInfo) {
+	ctx, info := connect.NewClientContext(ctx)
+	info.RequestHeader().Set(hdrTenant, tenant)
+	info.RequestHeader().Set(hdrProfile, profile)
+	info.RequestHeader().Set(hdrService, service)
+	return ctx, info
 }
 
-func asServiceAccount[T any](req *connect.Request[T], tenant, saProfile, saID, service string) *connect.Request[T] {
-	asUser(req, tenant, saProfile, service)
-	req.Header().Set(hdrSA, saID)
-	return req
+func asUser(ctx context.Context, tenant, profile, service string) context.Context {
+	ctx, _ = callAs(ctx, tenant, profile, service)
+	return ctx
 }
 
-func createReq(entryID string) *connect.Request[auditv1.CreateAuditEntryRequest] {
+func asServiceAccount(ctx context.Context, tenant, saProfile, saID, service string) context.Context {
+	ctx, info := callAs(ctx, tenant, saProfile, service)
+	info.RequestHeader().Set(hdrSA, saID)
+	return ctx
+}
+
+func createReq(entryID string) *auditv1.CreateAuditEntryRequest {
 	m := &auditv1.CreateAuditEntryRequest{}
 	m.SetProfileId("person-1")
 	m.SetAction("create")
@@ -157,7 +164,7 @@ func createReq(entryID string) *connect.Request[auditv1.CreateAuditEntryRequest]
 	m.SetResourceId("loan-1")
 	m.SetService("service_loans")
 	m.SetEntryId(entryID)
-	return connect.NewRequest(m)
+	return m
 }
 
 func (s *HandlerSuite) drain(e *env) {
@@ -175,90 +182,100 @@ func (s *HandlerSuite) TestCreate_AcceptsPersonAndIsIdempotent() {
 	e := s.newEnv()
 	ctx := s.T().Context()
 
-	resp, err := e.client.CreateAuditEntry(ctx, asUser(createReq("h-1"), "t-h", "person-1", "service_loans"))
+	resp, err := e.client.CreateAuditEntry(asUser(ctx, "t-h", "person-1", "service_loans"), createReq("h-1"))
 	s.Require().NoError(err)
-	s.Require().Equal(auditv1.IntakeState_INTAKE_STATE_ACCEPTED, resp.Msg.GetState())
-	s.Require().NotEmpty(resp.Msg.GetIntakeId())
+	s.Require().Equal(auditv1.IntakeState_INTAKE_STATE_ACCEPTED, resp.GetState())
+	s.Require().NotEmpty(resp.GetIntakeId())
 
-	again, err := e.client.CreateAuditEntry(ctx, asUser(createReq("h-1"), "t-h", "person-1", "service_loans"))
+	again, err := e.client.CreateAuditEntry(asUser(ctx, "t-h", "person-1", "service_loans"), createReq("h-1"))
 	s.Require().NoError(err)
-	s.Require().Equal(resp.Msg.GetIntakeId(), again.Msg.GetIntakeId())
+	s.Require().Equal(resp.GetIntakeId(), again.GetIntakeId())
 
 	s.drain(e)
 
-	after, err := e.client.CreateAuditEntry(ctx, asUser(createReq("h-1"), "t-h", "person-1", "service_loans"))
+	after, err := e.client.CreateAuditEntry(asUser(ctx, "t-h", "person-1", "service_loans"), createReq("h-1"))
 	s.Require().NoError(err)
-	s.Require().Equal(auditv1.IntakeState_INTAKE_STATE_COMMITTED, after.Msg.GetState(), "duplicate after commit reports the committed state")
+	s.Require().Equal(auditv1.IntakeState_INTAKE_STATE_COMMITTED, after.GetState(), "duplicate after commit reports the committed state")
 
-	list, err := e.client.ListAuditEntries(ctx, asUser(connect.NewRequest(func() *auditv1.ListAuditEntriesRequest {
+	list, err := e.client.ListAuditEntries(asUser(ctx, "t-h", "person-1", "service_loans"), func() *auditv1.ListAuditEntriesRequest {
 		r := &auditv1.ListAuditEntriesRequest{}
 		r.SetSeqFrom(1)
 		return r
-	}()), "t-h", "person-1", "service_loans"))
+	}())
 	s.Require().NoError(err)
-	s.Require().True(list.Receive())
-	entries := list.Msg().GetData()
+	first, err := list.Receive()
+	s.Require().NoError(err)
+	entries := first.GetData()
 	s.Require().Len(entries, 1)
 	s.Require().Equal(int64(1), entries[0].GetSeq())
 	s.Require().Equal("k1", entries[0].GetKeyId())
 	s.Require().Equal(auditv1.IntakeState_INTAKE_STATE_COMMITTED, entries[0].GetState())
 
-	got, err := e.client.GetAuditEntry(ctx, asUser(connect.NewRequest(func() *auditv1.GetAuditEntryRequest {
+	got, err := e.client.GetAuditEntry(asUser(ctx, "t-h", "person-1", "service_loans"), func() *auditv1.GetAuditEntryRequest {
 		r := &auditv1.GetAuditEntryRequest{}
 		r.SetId(entries[0].GetId())
 		return r
-	}()), "t-h", "person-1", "service_loans"))
+	}())
 	s.Require().NoError(err)
-	s.Require().Equal("h-1", got.Msg.GetData().GetEntryId())
+	s.Require().Equal("h-1", got.GetData().GetEntryId())
 }
 
 func (s *HandlerSuite) TestCreate_RejectionsMapToConnectCodes() {
 	e := s.newEnv()
 	ctx := s.T().Context()
 
+	asSA := func(ctx context.Context) (context.Context, *connect.CallInfo) {
+		ctx, info := callAs(ctx, "t-r", "sa-profile", "service_loans")
+		info.RequestHeader().Set(hdrSA, "sa-1")
+		return ctx, info
+	}
 	cases := []struct {
 		name     string
-		req      *connect.Request[auditv1.CreateAuditEntryRequest]
+		req      *auditv1.CreateAuditEntryRequest
+		as       func(context.Context) (context.Context, *connect.CallInfo)
 		wantCode connect.Code
 		reason   string
 	}{
-		{"service binding", asUser(createReq("r-1"), "t-r", "person-1", "service_other"), connect.CodePermissionDenied, business.ReasonServiceBinding},
-		{"service account without on_behalf_of", func() *connect.Request[auditv1.CreateAuditEntryRequest] {
+		{"service binding", createReq("r-1"), func(ctx context.Context) (context.Context, *connect.CallInfo) {
+			return callAs(ctx, "t-r", "person-1", "service_other")
+		}, connect.CodePermissionDenied, business.ReasonServiceBinding},
+		{"service account without on_behalf_of", func() *auditv1.CreateAuditEntryRequest {
 			r := createReq("r-2")
-			r.Msg.SetProfileId("sa-profile")
-			return asServiceAccount(r, "t-r", "sa-profile", "sa-1", "service_loans")
-		}(), connect.CodeInvalidArgument, business.ReasonActor},
-		{"unauthenticated", createReq("r-3"), connect.CodeInvalidArgument, business.ReasonActor},
-		{"forbidden content", func() *connect.Request[auditv1.CreateAuditEntryRequest] {
+			r.SetProfileId("sa-profile")
+			return r
+		}(), asSA, connect.CodeInvalidArgument, business.ReasonActor},
+		{"unauthenticated", createReq("r-3"), connect.NewClientContext, connect.CodeInvalidArgument, business.ReasonActor},
+		{"forbidden content", func() *auditv1.CreateAuditEntryRequest {
 			r := createReq("r-4")
-			r.Msg.SetPayloadHash("zz")
-			return asUser(r, "t-r", "person-1", "service_loans")
-		}(), connect.CodeInvalidArgument, business.ReasonHash},
+			r.SetPayloadHash("zz")
+			return r
+		}(), func(ctx context.Context) (context.Context, *connect.CallInfo) {
+			return callAs(ctx, "t-r", "person-1", "service_loans")
+		}, connect.CodeInvalidArgument, business.ReasonHash},
 	}
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			_, err := e.client.CreateAuditEntry(ctx, tc.req)
+			callCtx, info := tc.as(ctx)
+			_, err := e.client.CreateAuditEntry(callCtx, tc.req)
 			s.Require().Error(err)
 			s.Require().Equal(tc.wantCode, connect.CodeOf(err))
-			var cerr *connect.Error
-			s.Require().ErrorAs(err, &cerr)
-			s.Require().Equal(tc.reason, cerr.Meta().Get("Audit-Reject-Reason"))
+			s.Require().Equal(tc.reason, info.ResponseHeader().Get("Audit-Reject-Reason"))
 		})
 	}
 
 	// create_any lets the audit operator log under another service, and a
 	// service account acting for a person is accepted.
 	r := createReq("r-5")
-	r.Msg.SetService("service_other")
-	req := asUser(r, "t-r", "operator", "service_audit")
-	req.Header().Set(hdrAny, "1")
-	_, err := e.client.CreateAuditEntry(ctx, req)
+	r.SetService("service_other")
+	anyCtx, anyInfo := callAs(ctx, "t-r", "operator", "service_audit")
+	anyInfo.RequestHeader().Set(hdrAny, "1")
+	_, err := e.client.CreateAuditEntry(anyCtx, r)
 	s.Require().NoError(err)
 
 	obo := createReq("r-6")
-	obo.Msg.SetProfileId("person-2")
-	obo.Msg.SetOnBehalfOf("person-2")
-	_, err = e.client.CreateAuditEntry(ctx, asServiceAccount(obo, "t-r", "sa-profile", "sa-1", "service_loans"))
+	obo.SetProfileId("person-2")
+	obo.SetOnBehalfOf("person-2")
+	_, err = e.client.CreateAuditEntry(asServiceAccount(ctx, "t-r", "sa-profile", "sa-1", "service_loans"), obo)
 	s.Require().NoError(err)
 }
 
@@ -272,57 +289,62 @@ func (s *HandlerSuite) TestManifest_RegisterGetAndVerifyExport() {
 	m.SetResourceTypes([]string{"loan"})
 	reg := &auditv1.RegisterAuditManifestRequest{}
 	reg.SetManifest(m)
-	res, err := e.client.RegisterAuditManifest(ctx, asServiceAccount(connect.NewRequest(reg), "t-m", "sa-loans", "sa-1", "service_loans"))
+	res, err := e.client.RegisterAuditManifest(asServiceAccount(ctx, "t-m", "sa-loans", "sa-1", "service_loans"), reg)
 	s.Require().NoError(err)
-	s.Require().Equal(int32(1), res.Msg.GetVersion())
+	s.Require().Equal(int32(1), res.GetVersion())
 
-	_, err = e.client.RegisterAuditManifest(ctx, asServiceAccount(connect.NewRequest(reg), "t-m", "sa-other", "sa-2", "service_other"))
+	_, err = e.client.RegisterAuditManifest(asServiceAccount(ctx, "t-m", "sa-other", "sa-2", "service_other"), reg)
 	s.Require().Equal(connect.CodePermissionDenied, connect.CodeOf(err))
 
 	get := &auditv1.GetAuditManifestRequest{}
 	get.SetService("service_loans")
-	got, err := e.client.GetAuditManifest(ctx, asUser(connect.NewRequest(get), "t-m", "person-1", "service_loans"))
+	got, err := e.client.GetAuditManifest(asUser(ctx, "t-m", "person-1", "service_loans"), get)
 	s.Require().NoError(err)
-	s.Require().Equal([]string{"create"}, got.Msg.GetManifest().GetActions())
+	s.Require().Equal([]string{"create"}, got.GetManifest().GetActions())
 
 	// Vocabulary is enforced through the RPC.
 	bad := createReq("m-bad")
-	bad.Msg.SetAction("approve")
-	_, err = e.client.CreateAuditEntry(ctx, asUser(bad, "t-m", "person-1", "service_loans"))
+	bad.SetAction("approve")
+	_, err = e.client.CreateAuditEntry(asUser(ctx, "t-m", "person-1", "service_loans"), bad)
 	s.Require().Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	batch := &auditv1.BatchCreateAuditEntriesRequest{}
 	items := make([]*auditv1.CreateAuditEntryRequest, 0, 5)
 	for i := range 5 {
-		item := createReq("m-" + string(rune('a'+i))).Msg
+		item := createReq("m-" + string(rune('a'+i)))
 		details, derr := structpb.NewStruct(map[string]any{"amount": 1.5, "count": float64(i), "note": "ok", "nested": map[string]any{"flag": true}})
 		s.Require().NoError(derr)
 		item.SetDetails(details)
 		items = append(items, item)
 	}
 	batch.SetEntries(items)
-	bresp, err := e.client.BatchCreateAuditEntries(ctx, asUser(connect.NewRequest(batch), "t-m", "person-1", "service_loans"))
+	bresp, err := e.client.BatchCreateAuditEntries(asUser(ctx, "t-m", "person-1", "service_loans"), batch)
 	s.Require().NoError(err)
-	s.Require().Len(bresp.Msg.GetReceipts(), 5)
+	s.Require().Len(bresp.GetReceipts(), 5)
 	s.drain(e)
 
 	verify := &auditv1.VerifyIntegrityRequest{}
-	vresp, err := e.client.VerifyIntegrity(ctx, asUser(connect.NewRequest(verify), "t-m", "person-1", "service_loans"))
+	vresp, err := e.client.VerifyIntegrity(asUser(ctx, "t-m", "person-1", "service_loans"), verify)
 	s.Require().NoError(err)
-	s.Require().True(vresp.Msg.GetValid(), vresp.Msg.GetMessage())
-	s.Require().Equal(int64(5), vresp.Msg.GetEntriesVerified())
-	s.Require().Equal([]string{"k1"}, vresp.Msg.GetKeyIdsUsed())
+	s.Require().True(vresp.GetValid(), vresp.GetMessage())
+	s.Require().Equal(int64(5), vresp.GetEntriesVerified())
+	s.Require().Equal([]string{"k1"}, vresp.GetKeyIdsUsed())
 
 	exp := &auditv1.ExportAuditEntriesRequest{}
 	exp.SetStartSeq(2)
 	exp.SetEndSeq(4)
-	stream, err := e.client.ExportAuditEntries(ctx, asUser(connect.NewRequest(exp), "t-m", "person-1", "service_loans"))
+	stream, err := e.client.ExportAuditEntries(asUser(ctx, "t-m", "person-1", "service_loans"), exp)
 	s.Require().NoError(err)
 	var seqs []int64
 	var headerSeen bool
 	var pub ed25519.PublicKey
-	for stream.Receive() {
-		msg := stream.Msg()
+	var streamErr error
+	for {
+		msg, recvErr := stream.Receive()
+		if recvErr != nil {
+			streamErr = recvErr
+			break
+		}
 		if h := msg.GetHeader(); h != nil {
 			headerSeen = true
 			s.Require().Equal("t-m", h.GetTenantId())
@@ -343,19 +365,22 @@ func (s *HandlerSuite) TestManifest_RegisterGetAndVerifyExport() {
 		s.Require().Equal(entry.GetEntryHash(), recomputed)
 		s.Require().True(business.VerifyHash(pub, entry.GetEntryHash(), entry.GetSignature(), int16(entry.GetCanonVersion())))
 	}
-	s.Require().NoError(stream.Err())
+	if errors.Is(streamErr, io.EOF) {
+		streamErr = nil
+	}
+	s.Require().NoError(streamErr)
 	s.Require().True(headerSeen)
 	s.Require().Equal([]int64{2, 3, 4}, seqs)
 
 	// Tenant isolation: another tenant sees an empty chain.
-	other, err := e.client.VerifyIntegrity(ctx, asUser(connect.NewRequest(&auditv1.VerifyIntegrityRequest{}), "t-x", "person-9", "service_loans"))
+	other, err := e.client.VerifyIntegrity(asUser(ctx, "t-x", "person-9", "service_loans"), &auditv1.VerifyIntegrityRequest{})
 	s.Require().NoError(err)
-	s.Require().Zero(other.Msg.GetEntriesVerified())
+	s.Require().Zero(other.GetEntriesVerified())
 
-	cps, err := e.client.ListCheckpoints(ctx, asUser(connect.NewRequest(&auditv1.ListCheckpointsRequest{}), "t-m", "person-1", "service_loans"))
+	cps, err := e.client.ListCheckpoints(asUser(ctx, "t-m", "person-1", "service_loans"), &auditv1.ListCheckpointsRequest{})
 	s.Require().NoError(err)
-	s.Require().Len(cps.Msg.GetData(), 1, "first batch always checkpoints (interval rule)")
-	s.Require().Equal(int64(5), cps.Msg.GetData()[0].GetSeq())
+	s.Require().Len(cps.GetData(), 1, "first batch always checkpoints (interval rule)")
+	s.Require().Equal(int64(5), cps.GetData()[0].GetSeq())
 }
 
 func (s *HandlerSuite) TestOperations_RetireKeyAndWellKnownKeys() {
@@ -380,17 +405,17 @@ func (s *HandlerSuite) TestOperations_RetireKeyAndWellKnownKeys() {
 	s.Require().Len(doc.Keys[0].PublicKey, 64)
 	s.Require().Nil(doc.Keys[0].RetiredAt)
 
-	keysResp, err := e.client.GetSigningKeys(ctx, asUser(connect.NewRequest(&auditv1.GetSigningKeysRequest{}), "t-o", "person-1", "service_loans"))
+	keysResp, err := e.client.GetSigningKeys(asUser(ctx, "t-o", "person-1", "service_loans"), &auditv1.GetSigningKeysRequest{})
 	s.Require().NoError(err)
-	s.Require().Len(keysResp.Msg.GetData(), 1)
+	s.Require().Len(keysResp.GetData(), 1)
 
 	retire := &auditv1.RetireSigningKeyRequest{}
 	retire.SetKeyId("k1")
-	rresp, err := e.client.RetireSigningKey(ctx, asUser(connect.NewRequest(retire), "t-o", "operator", "service_audit"))
+	rresp, err := e.client.RetireSigningKey(asUser(ctx, "t-o", "operator", "service_audit"), retire)
 	s.Require().NoError(err)
-	s.Require().NotNil(rresp.Msg.GetKey().GetRetiredAt())
+	s.Require().NotNil(rresp.GetKey().GetRetiredAt())
 
-	_, err = e.client.RetireSigningKey(ctx, asUser(connect.NewRequest(retire), "t-o", "operator", "service_audit"))
+	_, err = e.client.RetireSigningKey(asUser(ctx, "t-o", "operator", "service_audit"), retire)
 	s.Require().Equal(connect.CodeNotFound, connect.CodeOf(err))
 
 	// The operator action was itself queued for the chain under service_audit.
@@ -446,8 +471,8 @@ func (s *HandlerSuite) TestSearch_RequiresWindow() {
 	ctx := s.T().Context()
 	q := &auditv1.SearchAuditEntriesRequest{}
 	q.SetQuery("cre")
-	stream, err := e.client.SearchAuditEntries(ctx, asUser(connect.NewRequest(q), "t-s", "person-1", "service_loans"))
+	stream, err := e.client.SearchAuditEntries(asUser(ctx, "t-s", "person-1", "service_loans"), q)
 	s.Require().NoError(err)
-	s.Require().False(stream.Receive())
-	s.Require().Equal(connect.CodeInvalidArgument, connect.CodeOf(stream.Err()))
+	_, err = stream.Receive()
+	s.Require().Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 }

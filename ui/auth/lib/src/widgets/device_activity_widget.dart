@@ -53,20 +53,23 @@ class DeviceActivityWidget extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
             child: Row(
               children: [
-                Icon(Icons.devices_outlined,
-                    size: 18, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.devices_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
                   tooltip: 'Refresh',
-                  onPressed: () =>
-                      ref.invalidate(loginEventsProvider(params)),
+                  onPressed: () => ref.invalidate(loginEventsProvider(params)),
                 ),
               ],
             ),
@@ -92,7 +95,8 @@ class DeviceActivityWidget extends ConsumerWidget {
                     child: Text(
                       'No sign-in activity from this device',
                       style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
@@ -106,8 +110,7 @@ class DeviceActivityWidget extends ConsumerWidget {
                       event: event,
                       dense: true,
                       showDevice: false,
-                      onTap: () =>
-                          context.go('/services/auth/${event.id}'),
+                      onTap: () => context.go('/services/auth/${event.id}'),
                     ),
                 ],
               );

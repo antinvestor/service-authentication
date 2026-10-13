@@ -18,7 +18,8 @@ import 'package:pointycastle/export.dart' as pc;
 /// - **AES-GCM wrap**: backed by `package:cryptography`'s `AesGcm` —
 ///   fully implemented in pure Dart and what the plan asked for.
 class DefaultKeyManager implements KeyManager {
-  DefaultKeyManager({AesGcm? aesGcm}) : _aesGcm = aesGcm ?? AesGcm.with256bits();
+  DefaultKeyManager({AesGcm? aesGcm})
+    : _aesGcm = aesGcm ?? AesGcm.with256bits();
 
   final AesGcm _aesGcm;
 
@@ -34,10 +35,7 @@ class DefaultKeyManager implements KeyManager {
     final signer = pc.ECDSASigner(
       pc.SHA256Digest(),
       pc.HMac.withDigest(pc.SHA256Digest()),
-    )..init(
-        true,
-        pc.PrivateKeyParameter<pc.ECPrivateKey>(key.privateKey),
-      );
+    )..init(true, pc.PrivateKeyParameter<pc.ECPrivateKey>(key.privateKey));
     final sig =
         signer.generateSignature(Uint8List.fromList(utf8.encode(signingInput)))
             as pc.ECSignature;
@@ -142,12 +140,12 @@ class DefaultKeyManager implements KeyManager {
     final macBytes = box.mac.bytes;
     final combined = Uint8List(cipherText.length + macBytes.length)
       ..setRange(0, cipherText.length, cipherText)
-      ..setRange(cipherText.length, cipherText.length + macBytes.length,
-          macBytes);
-    return WrappedBlob(
-      iv: Uint8List.fromList(box.nonce),
-      ciphertext: combined,
-    );
+      ..setRange(
+        cipherText.length,
+        cipherText.length + macBytes.length,
+        macBytes,
+      );
+    return WrappedBlob(iv: Uint8List.fromList(box.nonce), ciphertext: combined);
   }
 
   @override
@@ -162,11 +160,7 @@ class DefaultKeyManager implements KeyManager {
     final cipherEnd = blob.ciphertext.length - macLen;
     final cipherText = blob.ciphertext.sublist(0, cipherEnd);
     final macBytes = blob.ciphertext.sublist(cipherEnd);
-    final box = SecretBox(
-      cipherText,
-      nonce: blob.iv,
-      mac: Mac(macBytes),
-    );
+    final box = SecretBox(cipherText, nonce: blob.iv, mac: Mac(macBytes));
     try {
       final plain = await _aesGcm.decrypt(box, secretKey: key.secretKey);
       return Uint8List.fromList(plain);

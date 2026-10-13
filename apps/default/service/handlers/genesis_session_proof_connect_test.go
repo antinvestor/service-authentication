@@ -22,9 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/authentication/v1/authenticationv1connect"
+	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/v2/authentication/v1/authenticationv1connect"
 	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/sessionproof"
@@ -40,14 +41,15 @@ func genesisProofClient(t *testing.T, srv *handlers.AuthServer, caller context.C
 	if srv != nil {
 		impl = impl.WithGenesisProofs(srv)
 	}
-	path, handler := authenticationv1connect.NewAuthenticationServiceHandler(impl)
+	rpc := connect.NewServer()
+	authenticationv1connect.RegisterAuthenticationServiceHandler(rpc, impl)
 	mux := http.NewServeMux()
-	mux.Handle(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler.ServeHTTP(w, r.WithContext(caller))
+	connecthttp.Mount(mux, rpc)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mux.ServeHTTP(w, r.WithContext(caller))
 	}))
-	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
-	return authenticationv1connect.NewAuthenticationServiceClient(server.Client(), server.URL)
+	return authenticationv1connect.NewAuthenticationServiceClient(connect.NewClient(connecthttp.NewTransport(server.Client(), server.URL)))
 }
 
 func TestGenesisSessionProofRPC_IssueThenVerifyAndSpend(t *testing.T) {
@@ -57,11 +59,10 @@ func TestGenesisSessionProofRPC_IssueThenVerifyAndSpend(t *testing.T) {
 	ctx := t.Context()
 	pubkeyHash := strings.Repeat("AB", 32) // upper case is normalised
 
-	issued, err := client.IssueGenesisSessionProof(ctx, connect.NewRequest(&authv1.IssueGenesisSessionProofRequest{
+	msg, err := client.IssueGenesisSessionProof(ctx, &authv1.IssueGenesisSessionProofRequest{
 		PubkeyHash: pubkeyHash, DeviceKeyId: "devkey-1",
-	}))
+	})
 	require.NoError(t, err)
-	msg := issued.Msg
 	require.NotEmpty(t, msg.GetToken())
 	require.Equal(t, "gsp-k1", msg.GetKeyId())
 	require.Equal(t, "ed25519", msg.GetAlgorithm())
@@ -80,30 +81,30 @@ func TestGenesisSessionProofRPC_IssueThenVerifyAndSpend(t *testing.T) {
 	require.Equal(t, hex.EncodeToString(digest[:]), msg.GetBindingHash())
 
 	// The person who holds the proof may not verify (and so burn) it.
-	_, err = client.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+	_, err = client.VerifyGenesisSessionProof(ctx, &authv1.VerifyGenesisSessionProofRequest{
 		Token: msg.GetToken(), Consume: true,
-	}))
+	})
 	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), err)
 
 	settlement := genesisProofClient(t, srv, handlers.SettlementContextForTest(t))
-	verified, err := settlement.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+	verified, err := settlement.VerifyGenesisSessionProof(ctx, &authv1.VerifyGenesisSessionProofRequest{
 		Token: msg.GetToken(), ProfileId: "profile-1", DeviceId: "device-1",
 		PubkeyHash: strings.ToLower(pubkeyHash), DeviceKeyId: "devkey-1", Consume: true,
-	}))
+	})
 	require.NoError(t, err)
-	require.True(t, verified.Msg.GetValid(), verified.Msg.GetReason())
-	require.Equal(t, msg.GetBindingHash(), verified.Msg.GetBindingHash())
-	require.Equal(t, "profile-1", verified.Msg.GetClaims().GetProfileId())
-	require.Equal(t, "devkey-1", verified.Msg.GetClaims().GetDeviceKeyId())
-	require.Equal(t, msg.GetNonce(), verified.Msg.GetClaims().GetNonce())
+	require.True(t, verified.GetValid(), verified.GetReason())
+	require.Equal(t, msg.GetBindingHash(), verified.GetBindingHash())
+	require.Equal(t, "profile-1", verified.GetClaims().GetProfileId())
+	require.Equal(t, "devkey-1", verified.GetClaims().GetDeviceKeyId())
+	require.Equal(t, msg.GetNonce(), verified.GetClaims().GetNonce())
 
-	replay, err := settlement.VerifyGenesisSessionProof(ctx, connect.NewRequest(&authv1.VerifyGenesisSessionProofRequest{
+	replay, err := settlement.VerifyGenesisSessionProof(ctx, &authv1.VerifyGenesisSessionProofRequest{
 		Token: msg.GetToken(), Consume: true,
-	}))
+	})
 	require.NoError(t, err)
-	require.False(t, replay.Msg.GetValid())
-	require.Contains(t, replay.Msg.GetReason(), "nonce")
-	require.Nil(t, replay.Msg.GetClaims())
+	require.False(t, replay.GetValid())
+	require.Contains(t, replay.GetReason(), "nonce")
+	require.Nil(t, replay.GetClaims())
 }
 
 func TestGenesisSessionProofRPC_RefusalsMapToConnectCodes(t *testing.T) {
@@ -130,9 +131,9 @@ func TestGenesisSessionProofRPC_RefusalsMapToConnectCodes(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			client := genesisProofClient(t, tc.srv(t), tc.caller(t))
-			_, err := client.IssueGenesisSessionProof(t.Context(), connect.NewRequest(&authv1.IssueGenesisSessionProofRequest{
+			_, err := client.IssueGenesisSessionProof(t.Context(), &authv1.IssueGenesisSessionProofRequest{
 				PubkeyHash: tc.hash, DeviceId: tc.deviceID,
-			}))
+			})
 			require.Error(t, err)
 			require.Equal(t, tc.want, connect.CodeOf(err), err.Error())
 		})

@@ -16,13 +16,15 @@ package loginhistory
 
 import (
 	"context"
+	"errors"
 
-	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/authentication/v1/authenticationv1connect"
+	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/v2/authentication/v1/authenticationv1connect"
 	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/security/authorizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -51,44 +53,44 @@ func NewLoginHistoryServer(
 // GetLoginEvent retrieves a single login event by ID.
 func (s *LoginHistoryServer) GetLoginEvent(
 	ctx context.Context,
-	req *connect.Request[authv1.GetLoginEventRequest],
-) (*connect.Response[authv1.GetLoginEventResponse], error) {
-	event, err := s.loginEventRepo.GetByID(ctx, req.Msg.GetId())
+	req *authv1.GetLoginEventRequest,
+) (*authv1.GetLoginEventResponse, error) {
+	event, err := s.loginEventRepo.GetByID(ctx, req.GetId())
 	if err != nil {
 		return nil, toAPIError(err)
 	}
 	if event == nil {
-		return nil, status.Error(codes.NotFound, "login event not found")
+		return nil, connect.NewError(connect.CodeNotFound, "login event not found")
 	}
 
 	login, _ := s.loginRepo.GetByProfileID(ctx, event.ProfileID)
 
-	return connect.NewResponse(&authv1.GetLoginEventResponse{
+	return &authv1.GetLoginEventResponse{
 		Data: loginEventToProto(event, login),
-	}), nil
+	}, nil
 }
 
 // ListLoginEvents queries login events with filtering and pagination.
 func (s *LoginHistoryServer) ListLoginEvents(
 	ctx context.Context,
-	req *connect.Request[authv1.ListLoginEventsRequest],
-	stream *connect.ServerStream[authv1.ListLoginEventsResponse],
+	req *authv1.ListLoginEventsRequest,
+	stream authenticationv1connect.AuthenticationServiceListLoginEventsServerStream,
 ) error {
 	filter := &LoginEventFilter{
-		ProfileID: req.Msg.GetProfileId(),
-		ClientID:  req.Msg.GetClientId(),
-		Source:    req.Msg.GetSource(),
-		DeviceID:  req.Msg.GetDeviceId(),
-		Limit:     int(req.Msg.GetCount()),
-		Cursor:    req.Msg.GetPage(),
+		ProfileID: req.GetProfileId(),
+		ClientID:  req.GetClientId(),
+		Source:    req.GetSource(),
+		DeviceID:  req.GetDeviceId(),
+		Limit:     int(req.GetCount()),
+		Cursor:    req.GetPage(),
 	}
 
-	if req.Msg.GetStartDate() != nil {
-		t := req.Msg.GetStartDate().AsTime()
+	if req.GetStartDate() != nil {
+		t := req.GetStartDate().AsTime()
 		filter.StartDate = &t
 	}
-	if req.Msg.GetEndDate() != nil {
-		t := req.Msg.GetEndDate().AsTime()
+	if req.GetEndDate() != nil {
+		t := req.GetEndDate().AsTime()
 		filter.EndDate = &t
 	}
 
@@ -107,15 +109,29 @@ func (s *LoginHistoryServer) ListLoginEvents(
 	})
 }
 
+// toAPIError maps authorization and storage errors to Connect errors.
+// connect v2 sends only a *connect.Error's message to the client.
 func toAPIError(err error) error {
-	grpcError, ok := status.FromError(err)
-	if ok {
-		return grpcError.Err()
+	if err == nil {
+		return nil
+	}
+	if cerr := (*connect.Error)(nil); errors.As(err, &cerr) {
+		return cerr
+	}
+	var permErr *authorizer.PermissionDeniedError
+	if errors.As(err, &permErr) ||
+		errors.Is(err, authorizer.ErrInvalidSubject) || errors.Is(err, authorizer.ErrInvalidObject) {
+		return authorizer.ToConnectError(err)
 	}
 	if data.ErrorIsNoRows(err) {
-		return status.Error(codes.NotFound, err.Error())
+		return connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 	}
-	return grpcError.Err()
+	// Downstream gRPC failures (Keto, for one) keep their code; gRPC and
+	// Connect share the numbering.
+	if st, ok := status.FromError(err); ok && st.Code() != codes.Unknown {
+		return connect.NewError(connect.Code(st.Code()), err.Error()).WithCause(err)
+	}
+	return data.ErrorConvertToAPI(err)
 }
 
 func loginEventToProto(event *models.LoginEvent, login *models.Login) *authv1.LoginEventObject {

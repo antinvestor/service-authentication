@@ -28,13 +28,12 @@ import (
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
 	handlers2 "github.com/gorilla/handlers"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -166,7 +165,7 @@ func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
 			partitionpolicy.PropertyAllowAutoAccess: false,
 		})
 		require.NoError(t, err)
-		oauthClientResponse, err := authServer.AuthContractCli().CreateOAuthClient(opCtx, connect.NewRequest(&tenancyv2.CreateOAuthClientRequest{
+		oauthClientResponse, err := authServer.AuthContractCli().CreateOAuthClient(opCtx, &tenancyv2.CreateOAuthClientRequest{
 			PartitionId: parentPartition.GetId(),
 			Name:        "Workspace Parent",
 			Type:        "public",
@@ -178,37 +177,37 @@ func (suite *HandlersTestSuite) TestWorkspaceSelectorEndpoint() {
 				ResourceRecipients:      []string{"https://api.example.test/authentication"},
 				TokenEndpointAuthMethod: "none",
 			},
-		}))
+		})
 		require.NoError(t, err)
-		require.NotNil(t, oauthClientResponse.Msg.GetData())
+		require.NotNil(t, oauthClientResponse.GetData())
 
-		childResp, err := authServer.PartitionCli().CreatePartition(opCtx, connect.NewRequest(&tenancyv1.CreatePartitionRequest{
+		childResp, err := authServer.PartitionCli().CreatePartition(opCtx, &tenancyv1.CreatePartitionRequest{
 			TenantId:    parentPartition.GetTenantId(),
 			ParentId:    parentPartition.GetId(),
 			Name:        "Workspace Child",
 			Description: "Child partition",
-		}))
+		})
 		require.NoError(t, err)
-		childPartition := childResp.Msg.GetData()
+		childPartition := childResp.GetData()
 		require.NotNil(t, childPartition)
 
-		profileResp, err := authServer.ProfileCli().Create(opCtx, connect.NewRequest(&profilev1.CreateRequest{
+		profileResp, err := authServer.ProfileCli().Create(opCtx, &profilev1.CreateRequest{
 			Type:    profilev1.ProfileType_PERSON,
 			Contact: "workspace-selector@example.com",
-		}))
+		})
 		require.NoError(t, err)
-		profile := profileResp.Msg.GetData()
+		profile := profileResp.GetData()
 		require.NotNil(t, profile)
 
 		createAccessReq := &tenancyv1.CreateAccessRequest{}
 		createAccessReq.SetPartitionId(childPartition.GetId())
 		createAccessReq.SetProfileId(profile.GetId())
 
-		_, err = authServer.PartitionCli().CreateAccess(opCtx, connect.NewRequest(createAccessReq))
+		_, err = authServer.PartitionCli().CreateAccess(opCtx, createAccessReq)
 		require.NoError(t, err)
 
 		loginEvent := &models.LoginEvent{
-			ClientID:         oauthClientResponse.Msg.GetData().GetClientId(),
+			ClientID:         oauthClientResponse.GetData().GetClientId(),
 			ProfileID:        profile.GetId(),
 			LoginChallengeID: "workspace-challenge",
 		}

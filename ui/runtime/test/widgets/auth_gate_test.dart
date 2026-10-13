@@ -17,12 +17,9 @@ void main() {
     final fake = FakeAuthRuntime(initialState: AuthState.initializing);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(
-        child: Text('protected'),
-      ),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const AuthGate(child: Text('protected'))),
+    );
     // Pre-first-event: stream is loading → default spinner shows.
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('protected'), findsNothing);
@@ -32,25 +29,22 @@ void main() {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(child: Text('protected')),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const AuthGate(child: Text('protected'))),
+    );
     fake.emitState(AuthState.authenticated);
     await tester.pump();
     expect(find.text('protected'), findsOneWidget);
   });
 
-  testWidgets(
-      'default unauthenticatedBuilder renders an ElevatedButton with '
+  testWidgets('default unauthenticatedBuilder renders an ElevatedButton with '
       '"Sign in"', (tester) async {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(child: Text('protected')),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const AuthGate(child: Text('protected'))),
+    );
     fake.emitState(AuthState.unauthenticated);
     await tester.pump();
     expect(find.text('Sign in'), findsOneWidget);
@@ -58,35 +52,37 @@ void main() {
   });
 
   testWidgets(
-      'tapping the default Sign in button invokes ensureAuthenticated',
-      (tester) async {
-    final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
-    addTearDown(fake.dispose);
+    'tapping the default Sign in button invokes ensureAuthenticated',
+    (tester) async {
+      final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
+      addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(child: Text('protected')),
-    ));
-    fake.emitState(AuthState.unauthenticated);
-    await tester.pump();
-    await tester.tap(find.byType(ElevatedButton));
-    await tester.pumpAndSettle();
-    expect(fake.ensureAuthenticatedCalls, 1);
-    // ensureAuthenticated drives the state to authenticated.
-    expect(find.text('protected'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        _wrap(fake, child: const AuthGate(child: Text('protected'))),
+      );
+      fake.emitState(AuthState.unauthenticated);
+      await tester.pump();
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pumpAndSettle();
+      expect(fake.ensureAuthenticatedCalls, 1);
+      // ensureAuthenticated drives the state to authenticated.
+      expect(find.text('protected'), findsOneWidget);
+    },
+  );
 
   testWidgets('custom unauthenticatedBuilder is honoured', (tester) async {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: AuthGate(
-        unauthenticatedBuilder: (_) => const Text('custom-login'),
-        child: const Text('protected'),
+    await tester.pumpWidget(
+      _wrap(
+        fake,
+        child: AuthGate(
+          unauthenticatedBuilder: (_) => const Text('custom-login'),
+          child: const Text('protected'),
+        ),
       ),
-    ));
+    );
     fake.emitState(AuthState.unauthenticated);
     await tester.pump();
     expect(find.text('custom-login'), findsOneWidget);
@@ -97,13 +93,15 @@ void main() {
     final fake = FakeAuthRuntime(initialState: AuthState.initializing);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: AuthGate(
-        loadingBuilder: (_) => const Text('booting…'),
-        child: const Text('protected'),
+    await tester.pumpWidget(
+      _wrap(
+        fake,
+        child: AuthGate(
+          loadingBuilder: (_) => const Text('booting…'),
+          child: const Text('protected'),
+        ),
       ),
-    ));
+    );
     expect(find.text('booting…'), findsOneWidget);
   });
 
@@ -111,10 +109,9 @@ void main() {
     final fake = FakeAuthRuntime(initialState: AuthState.authenticated);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(child: Text('protected')),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const AuthGate(child: Text('protected'))),
+    );
     fake.emitState(AuthState.authenticated);
     await tester.pump();
     expect(find.text('protected'), findsOneWidget);
@@ -125,15 +122,15 @@ void main() {
     expect(find.text('protected'), findsNothing);
   });
 
-  testWidgets('error state renders the default error UI with retry',
-      (tester) async {
+  testWidgets('error state renders the default error UI with retry', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(initialState: AuthState.error);
     addTearDown(fake.dispose);
 
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const AuthGate(child: Text('protected')),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const AuthGate(child: Text('protected'))),
+    );
     fake.emitState(AuthState.error);
     await tester.pump();
     expect(find.text('Retry'), findsOneWidget);

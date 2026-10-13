@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 )
 
 // Canonical encoding version 2.

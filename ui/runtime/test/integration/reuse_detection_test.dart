@@ -17,8 +17,7 @@ void main() {
     await h.dispose();
   });
 
-  test(
-      'submitting a consumed RT triggers reuse detection, wipes session, '
+  test('submitting a consumed RT triggers reuse detection, wipes session, '
       'emits RefreshReuseDetected', () async {
     final mock = MockIdp(tokenLifetime: const Duration(seconds: 30));
     h = await buildHarness(mock: mock);
@@ -31,11 +30,11 @@ void main() {
     // Drive one rotation so the mock has consumed rt-1 and issued rt-2.
     try {
       await h.runtime.fetch('/ping');
-    } catch (_) {/* 404 ok */}
+    } catch (_) {
+      /* 404 ok */
+    }
     expect(
-      h.mock.tokenRequests
-          .where((r) => r.grantType == 'refresh_token')
-          .length,
+      h.mock.tokenRequests.where((r) => r.grantType == 'refresh_token').length,
       1,
     );
 

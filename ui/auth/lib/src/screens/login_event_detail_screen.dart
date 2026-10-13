@@ -36,14 +36,16 @@ class LoginEventDetailScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: Theme.of(context).colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text('Failed to load login event: $error'),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () =>
-                  ref.invalidate(loginEventByIdProvider(eventId)),
+              onPressed: () => ref.invalidate(loginEventByIdProvider(eventId)),
               child: const Text('Retry'),
             ),
           ],
@@ -70,7 +72,7 @@ class LoginEventDetailScreen extends ConsumerWidget {
               'Services',
               'Authentication',
               'History',
-              'Detail'
+              'Detail',
             ],
             actions: [
               OutlinedButton.icon(
@@ -107,9 +109,7 @@ class LoginEventDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  isSuccess
-                      ? 'Successful Sign-in'
-                      : 'Failed Sign-in Attempt',
+                  isSuccess ? 'Successful Sign-in' : 'Failed Sign-in Attempt',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: isSuccess
                         ? Colors.green.shade700
@@ -143,9 +143,12 @@ class LoginEventDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Authentication Details',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Authentication Details',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 MetadataRow(label: 'Event ID', value: event.id, copiable: true),
                 MetadataRow(
@@ -153,21 +156,25 @@ class LoginEventDetailScreen extends ConsumerWidget {
                   value: LoginEventTile.labelForSource(event.source),
                 ),
                 MetadataRow(
-                    label: 'Profile ID',
-                    value: event.profileId,
-                    copiable: true),
+                  label: 'Profile ID',
+                  value: event.profileId,
+                  copiable: true,
+                ),
                 MetadataRow(
-                    label: 'Client ID',
-                    value: event.clientId,
-                    copiable: true),
+                  label: 'Client ID',
+                  value: event.clientId,
+                  copiable: true,
+                ),
                 if (event.contactId.isNotEmpty)
                   MetadataRow(
-                      label: 'Contact ID',
-                      value: event.contactId,
-                      copiable: true),
+                    label: 'Contact ID',
+                    value: event.contactId,
+                    copiable: true,
+                  ),
                 MetadataRow(
-                    label: 'Timestamp',
-                    value: _formatTimestamp(event.createdAt)),
+                  label: 'Timestamp',
+                  value: _formatTimestamp(event.createdAt),
+                ),
               ],
             ),
           ),
@@ -184,19 +191,24 @@ class LoginEventDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Client & Device',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Client & Device',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 MetadataRow(
-                    label: 'IP Address',
-                    value: event.ipAddress,
-                    copiable: true),
+                  label: 'IP Address',
+                  value: event.ipAddress,
+                  copiable: true,
+                ),
                 MetadataRow(label: 'User Agent', value: event.userAgent),
                 MetadataRow(
-                    label: 'Device ID',
-                    value: event.deviceId,
-                    copiable: true),
+                  label: 'Device ID',
+                  value: event.deviceId,
+                  copiable: true,
+                ),
               ],
             ),
           ),
@@ -213,18 +225,23 @@ class LoginEventDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tenancy Context',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Tenancy Context',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 MetadataRow(
-                    label: 'Tenant ID',
-                    value: event.tenantId,
-                    copiable: true),
+                  label: 'Tenant ID',
+                  value: event.tenantId,
+                  copiable: true,
+                ),
                 MetadataRow(
-                    label: 'Partition ID',
-                    value: event.partitionId,
-                    copiable: true),
+                  label: 'Partition ID',
+                  value: event.partitionId,
+                  copiable: true,
+                ),
               ],
             ),
           ),
@@ -242,9 +259,12 @@ class LoginEventDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Additional Properties',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Additional Properties',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ...event.properties.fields.entries.map((e) {
                     final value = _formatStructValue(e.value);
@@ -265,10 +285,7 @@ class LoginEventDetailScreen extends ConsumerWidget {
     if (value.hasBoolValue()) return value.boolValue.toString();
     if (value.hasNullValue()) return 'null';
     if (value.hasListValue()) {
-      return value.listValue.values
-          .map(_formatStructValue)
-          .toList()
-          .toString();
+      return value.listValue.values.map(_formatStructValue).toList().toString();
     }
     if (value.hasStructValue()) {
       return value.structValue.fields.entries

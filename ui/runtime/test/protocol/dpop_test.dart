@@ -63,11 +63,7 @@ void main() {
 
   test('htm is uppercased in payload', () async {
     final ctx = makeDpopContext(kp);
-    final token = await buildProof(
-      ctx,
-      htm: 'post',
-      htu: 'https://i/token',
-    );
+    final token = await buildProof(ctx, htm: 'post', htu: 'https://i/token');
     final payload = _decodeJson(token.split('.')[1]);
     expect(payload['htm'], 'POST');
   });
@@ -76,7 +72,8 @@ void main() {
     final ctx = makeDpopContext(kp);
     const accessToken = 'some-access-token';
     final expectedAth = _b64urlNoPad(
-        crypto.sha256.convert(utf8.encode(accessToken)).bytes);
+      crypto.sha256.convert(utf8.encode(accessToken)).bytes,
+    );
     final token = await buildProof(
       ctx,
       htm: 'GET',
@@ -90,22 +87,14 @@ void main() {
   test('rememberNonce round-trips into proof payload', () async {
     final ctx = makeDpopContext(kp);
     rememberNonce(ctx, 'https://i/token', {'DPoP-Nonce': 'n-1234'});
-    final token = await buildProof(
-      ctx,
-      htm: 'POST',
-      htu: 'https://i/token',
-    );
+    final token = await buildProof(ctx, htm: 'POST', htu: 'https://i/token');
     final payload = _decodeJson(token.split('.')[1]);
     expect(payload['nonce'], 'n-1234');
 
     // Case-insensitive lookup.
     final ctx2 = makeDpopContext(kp);
     rememberNonce(ctx2, 'https://i/token', {'dpop-nonce': 'n-lower'});
-    final token2 = await buildProof(
-      ctx2,
-      htm: 'POST',
-      htu: 'https://i/token',
-    );
+    final token2 = await buildProof(ctx2, htm: 'POST', htu: 'https://i/token');
     expect(_decodeJson(token2.split('.')[1])['nonce'], 'n-lower');
   });
 
@@ -113,10 +102,16 @@ void main() {
     final ctx = makeDpopContext(kp);
     rememberNonce(ctx, 'https://a.example.com/token', {'DPoP-Nonce': 'a'});
     rememberNonce(ctx, 'https://b.example.com/token', {'DPoP-Nonce': 'b'});
-    final proofA = await buildProof(ctx,
-        htm: 'POST', htu: 'https://a.example.com/token');
-    final proofB = await buildProof(ctx,
-        htm: 'POST', htu: 'https://b.example.com/token');
+    final proofA = await buildProof(
+      ctx,
+      htm: 'POST',
+      htu: 'https://a.example.com/token',
+    );
+    final proofB = await buildProof(
+      ctx,
+      htm: 'POST',
+      htu: 'https://b.example.com/token',
+    );
     expect(_decodeJson(proofA.split('.')[1])['nonce'], 'a');
     expect(_decodeJson(proofB.split('.')[1])['nonce'], 'b');
   });
@@ -125,9 +120,7 @@ void main() {
     final ctx = makeDpopContext(kp);
     // Pick a far-future server date so the delta is unmistakable.
     final serverTime = DateTime.utc(2099, 1, 1, 0, 0, 0);
-    rememberClockOffset(ctx, {
-      'Date': 'Thu, 01 Jan 2099 00:00:00 GMT',
-    });
+    rememberClockOffset(ctx, {'Date': 'Thu, 01 Jan 2099 00:00:00 GMT'});
     expect(ctx.clockOffsetMs, greaterThan(0));
 
     final token = await buildProof(ctx, htm: 'POST', htu: 'https://i/token');
@@ -137,31 +130,31 @@ void main() {
     expect(iat, closeTo(serverTime.millisecondsSinceEpoch ~/ 1000, 5));
   });
 
-  test('rememberClockOffset ignores missing or malformed Date header',
-      () async {
-    final ctx = makeDpopContext(kp);
-    rememberClockOffset(ctx, const {});
-    expect(ctx.clockOffsetMs, 0);
-    rememberClockOffset(ctx, {'Date': 'not-a-date'});
-    expect(ctx.clockOffsetMs, 0);
-  });
+  test(
+    'rememberClockOffset ignores missing or malformed Date header',
+    () async {
+      final ctx = makeDpopContext(kp);
+      rememberClockOffset(ctx, const {});
+      expect(ctx.clockOffsetMs, 0);
+      rememberClockOffset(ctx, {'Date': 'not-a-date'});
+      expect(ctx.clockOffsetMs, 0);
+    },
+  );
 
-  test('buildProof signature verifies against the embedded public key',
-      () async {
-    final ctx = makeDpopContext(kp);
-    final token = await buildProof(
-      ctx,
-      htm: 'POST',
-      htu: 'https://i/token',
-    );
-    final parts = token.split('.');
-    final signingInput = '${parts[0]}.${parts[1]}';
-    final sigBytes = _decodeBytes(parts[2]);
-    final ok = verifyEcdsaRaw(
-      kp.publicKey,
-      Uint8List.fromList(utf8.encode(signingInput)),
-      sigBytes,
-    );
-    expect(ok, isTrue);
-  });
+  test(
+    'buildProof signature verifies against the embedded public key',
+    () async {
+      final ctx = makeDpopContext(kp);
+      final token = await buildProof(ctx, htm: 'POST', htu: 'https://i/token');
+      final parts = token.split('.');
+      final signingInput = '${parts[0]}.${parts[1]}';
+      final sigBytes = _decodeBytes(parts[2]);
+      final ok = verifyEcdsaRaw(
+        kp.publicKey,
+        Uint8List.fromList(utf8.encode(signingInput)),
+        sigBytes,
+      );
+      expect(ok, isTrue);
+    },
+  );
 }

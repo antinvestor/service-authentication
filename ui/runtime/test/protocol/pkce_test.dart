@@ -14,9 +14,7 @@ void main() {
   });
 
   test('generateVerifier produces distinct values (entropy)', () {
-    final seen = <String>{
-      for (var i = 0; i < 32; i++) generateVerifier(),
-    };
+    final seen = <String>{for (var i = 0; i < 32; i++) generateVerifier()};
     // Collisions with 64 random bytes are astronomically unlikely; if
     // we ever collide it likely means we're not using Random.secure().
     expect(seen.length, 32);
@@ -34,8 +32,9 @@ void main() {
     // Appendix B example:
     // verifier = dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
     // challenge = E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
-    final challenge =
-        await computeChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk');
+    final challenge = await computeChallenge(
+      'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+    );
     expect(challenge, 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
   });
 }

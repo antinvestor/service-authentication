@@ -32,8 +32,7 @@ class _RealSignInWithAppleAdapter extends SignInWithAppleAdapter {
   Future<AuthorizationCredentialAppleID> getAppleIDCredential({
     required List<AppleIDAuthorizationScopes> scopes,
     String? nonce,
-  }) =>
-      SignInWithApple.getAppleIDCredential(scopes: scopes, nonce: nonce);
+  }) => SignInWithApple.getAppleIDCredential(scopes: scopes, nonce: nonce);
 }
 
 /// [NativeCredentialProvider] implementation backed by Sign in with Apple.
@@ -49,7 +48,7 @@ class _RealSignInWithAppleAdapter extends SignInWithAppleAdapter {
 /// raw runtime-generated nonce.
 class AppleCredentialProvider implements NativeCredentialProvider {
   AppleCredentialProvider({SignInWithAppleAdapter? adapter})
-      : _adapter = adapter ?? const SignInWithAppleAdapter.defaultAdapter();
+    : _adapter = adapter ?? const SignInWithAppleAdapter.defaultAdapter();
 
   final SignInWithAppleAdapter _adapter;
 

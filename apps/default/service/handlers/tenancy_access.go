@@ -18,16 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 )
 
@@ -224,14 +224,14 @@ func (h *AuthServer) getPartition(ctx context.Context, partitionID string) (*ten
 	if h.partitionCli == nil {
 		return nil, errors.New("tenancy partition client is unavailable")
 	}
-	response, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{Id: partitionID}))
+	response, err := h.partitionCli.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: partitionID})
 	if err != nil {
 		return nil, fmt.Errorf("get partition %q: %w", partitionID, err)
 	}
-	if response.Msg.GetData() == nil {
+	if response.GetData() == nil {
 		return nil, fmt.Errorf("get partition %q: response data is missing", partitionID)
 	}
-	return response.Msg.GetData(), nil
+	return response.GetData(), nil
 }
 
 func (h *AuthServer) isSameOrDescendantPartition(ctx context.Context, ancestorPartitionID, partitionID string) (bool, error) {
@@ -244,12 +244,12 @@ func (h *AuthServer) isSameOrDescendantPartition(ctx context.Context, ancestorPa
 	}
 
 	parentReq := &tenancyv1.GetPartitionParentsRequest{Id: partitionID}
-	parentResp, err := h.partitionCli.GetPartitionParents(ctx, connect.NewRequest(parentReq))
+	parentResp, err := h.partitionCli.GetPartitionParents(ctx, parentReq)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch partition parents for %s: %w", partitionID, err)
 	}
 
-	for _, parent := range parentResp.Msg.GetData() {
+	for _, parent := range parentResp.GetData() {
 		if parent.GetId() == ancestorPartitionID {
 			return true, nil
 		}
@@ -309,7 +309,7 @@ func (h *AuthServer) resolveEffectivePartitionForLoginEvent(
 		return h.resolvePartitionByClientID(ctx, clientID)
 	}
 
-	selectedPartitionResp, err := h.partitionCli.GetPartition(ctx, connect.NewRequest(&tenancyv1.GetPartitionRequest{Id: selectedPartitionID}))
+	selectedPartitionResp, err := h.partitionCli.GetPartition(ctx, &tenancyv1.GetPartitionRequest{Id: selectedPartitionID})
 	if err != nil {
 		util.Log(ctx).WithError(err).WithFields(map[string]any{
 			"login_event_id": loginEvent.GetID(),
@@ -318,7 +318,7 @@ func (h *AuthServer) resolveEffectivePartitionForLoginEvent(
 		return h.resolvePartitionByClientID(ctx, clientID)
 	}
 
-	selectedPartition := selectedPartitionResp.Msg.GetData()
+	selectedPartition := selectedPartitionResp.GetData()
 	if selectedPartition == nil || selectedPartition.GetId() == "" {
 		return h.resolvePartitionByClientID(ctx, clientID)
 	}
@@ -399,25 +399,29 @@ func (h *AuthServer) fetchAccessRoleNames(ctx context.Context, accessID string, 
 		return roles
 	}
 
-	stream, err := h.partitionCli.ListAccessRole(ctx, connect.NewRequest(
-		&tenancyv1.ListAccessRoleRequest{AccessId: accessID}))
+	stream, err := h.partitionCli.ListAccessRole(ctx, &tenancyv1.ListAccessRoleRequest{AccessId: accessID})
 	if err != nil {
 		util.Log(ctx).WithError(err).Warn("failed to list access roles")
 		return roles
 	}
 
 	seen := map[string]bool{defaultRole: true}
-	for stream.Receive() {
-		for _, ar := range stream.Msg().GetData() {
+	for {
+		msg, err := stream.Receive()
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				util.Log(ctx).WithError(err).Warn("error reading access role stream")
+			}
+			break
+		}
+		for _, ar := range msg.GetData() {
 			if r := ar.GetRole(); r != nil && r.GetName() != "" && !seen[r.GetName()] {
 				seen[r.GetName()] = true
 				roles = append(roles, r.GetName())
 			}
 		}
 	}
-	if err := stream.Err(); err != nil {
-		util.Log(ctx).WithError(err).Warn("error reading access role stream")
-	}
+
 	return roles
 }
 
@@ -450,9 +454,9 @@ func (h *AuthServer) getTenancyAccessByPartitionID(ctx context.Context, partitio
 		ProfileId:   profileID,
 	}
 
-	getResp, err := h.partitionCli.GetAccess(ctx, connect.NewRequest(getReq))
+	getResp, err := h.partitionCli.GetAccess(ctx, getReq)
 	if err == nil {
-		return accessFromResponse(getResp.Msg.GetData())
+		return accessFromResponse(getResp.GetData())
 	}
 
 	return nil, err
@@ -470,12 +474,12 @@ func (h *AuthServer) createTenancyAccessByPartitionID(ctx context.Context, parti
 		PartitionId: partitionID,
 		ProfileId:   profileID,
 	}
-	createResp, createErr := h.partitionCli.CreateAccess(ctx, connect.NewRequest(createReq))
+	createResp, createErr := h.partitionCli.CreateAccess(ctx, createReq)
 	if createErr != nil {
 		return nil, fmt.Errorf("failed to create access in partition service: %w", createErr)
 	}
 
-	return accessFromResponse(createResp.Msg.GetData())
+	return accessFromResponse(createResp.GetData())
 }
 
 // listTenancyAccessByProfileID returns all partitions a user has access to.
@@ -487,17 +491,21 @@ func (h *AuthServer) listTenancyAccessByProfileID(ctx context.Context, profileID
 
 	listReq := &tenancyv1.ListAccessRequest{}
 	listReq.SetProfileId(profileID)
-	stream, err := h.partitionCli.ListAccess(ctx, connect.NewRequest(listReq))
+	stream, err := h.partitionCli.ListAccess(ctx, listReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list access from partition service: %w", err)
 	}
 
 	var result []*tenancyv1.AccessObject
-	for stream.Receive() {
-		result = append(result, stream.Msg().GetData()...)
-	}
-	if stream.Err() != nil {
-		return nil, stream.Err()
+	for {
+		msg, err := stream.Receive()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		result = append(result, msg.GetData()...)
 	}
 
 	return result, nil

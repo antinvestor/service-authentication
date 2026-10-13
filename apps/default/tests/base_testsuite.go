@@ -22,32 +22,31 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/antinvestor/common/v2/servicecatalog"
+	"github.com/antinvestor/common/v3/servicecatalog"
 
-	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
-	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
+	"buf.build/gen/go/antinvestor/device/connectrpc/go/v2/device/v1/devicev1connect"
+	"buf.build/gen/go/antinvestor/notification/connectrpc/go/v2/notification/v1/notificationv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
-	"connectrpc.com/connect"
-	"github.com/antinvestor/common/v2"
-	commonconnection "github.com/antinvestor/common/v2/connection"
+	"github.com/antinvestor/common/v3"
+	commonconnection "github.com/antinvestor/common/v3/connection"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	internaltests "github.com/antinvestor/service-authentication/pkg/tests"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/cache"
-	"github.com/pitabwire/frame/v2/config"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/datastore"
-	"github.com/pitabwire/frame/v2/frametests"
-	"github.com/pitabwire/frame/v2/frametests/definition"
-	"github.com/pitabwire/frame/v2/frametests/deps/testpostgres"
-	"github.com/pitabwire/frame/v2/frametests/rlstest"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/cache"
+	"github.com/pitabwire/frame/v3/config"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/datastore"
+	"github.com/pitabwire/frame/v3/frametests"
+	"github.com/pitabwire/frame/v3/frametests/definition"
+	"github.com/pitabwire/frame/v3/frametests/deps/testpostgres"
+	"github.com/pitabwire/frame/v3/frametests/rlstest"
+	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -561,17 +560,17 @@ func NewPartitionForOAuthClient(ctx context.Context, partitionCli tenancyv1conne
 		propsStruct = properties.ToProtoStruct()
 	}
 
-	result, err := partitionCli.CreatePartition(ctx, connect.NewRequest(&tenancyv1.CreatePartitionRequest{
+	result, err := partitionCli.CreatePartition(ctx, &tenancyv1.CreatePartitionRequest{
 		TenantId:    "c2f4j7au6s7f91uqnojg",
 		ParentId:    "c2f4j7au6s7f91uqnokg",
 		Name:        name,
 		Description: description,
 		Properties:  propsStruct,
-	}))
+	})
 	if err != nil {
 		util.Log(ctx).WithError(err).Error("failed to create partition")
 		return nil, err
 	}
 
-	return result.Msg.GetData(), nil
+	return result.GetData(), nil
 }

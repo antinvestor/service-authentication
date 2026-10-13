@@ -28,12 +28,11 @@ import (
 	"strings"
 	"time"
 
-	"buf.build/gen/go/antinvestor/files/connectrpc/go/files/v1/filesv1connect"
+	"buf.build/gen/go/antinvestor/files/connectrpc/go/v2/files/v1/filesv1connect"
 	filesv1 "buf.build/gen/go/antinvestor/files/protocolbuffers/go/files/v1"
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
-	fevents "github.com/pitabwire/frame/v2/events"
+	fevents "github.com/pitabwire/frame/v3/events"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -128,12 +127,12 @@ func (e *ProfileAvatarSyncEvent) Execute(ctx context.Context, payload any) error
 	})
 
 	// Fetch current profile to check for an existing avatar.
-	getResp, err := e.profileCli.GetById(ctx, connect.NewRequest(&profilev1.GetByIdRequest{Id: p.ProfileID}))
+	getResp, err := e.profileCli.GetById(ctx, &profilev1.GetByIdRequest{Id: p.ProfileID})
 	if err != nil {
 		log.WithError(err).Warn("avatar sync: profile lookup failed")
 		return fmt.Errorf("get profile: %w", err)
 	}
-	profile := getResp.Msg.GetData()
+	profile := getResp.GetData()
 	if profile == nil {
 		return fmt.Errorf("profile %s not found", p.ProfileID)
 	}
@@ -208,7 +207,10 @@ func (e *ProfileAvatarSyncEvent) uploadAvatar(
 	uploadCtx, cancel := context.WithTimeout(ctx, avatarUploadTimeout)
 	defer cancel()
 
-	stream := e.filesCli.UploadContent(uploadCtx)
+	stream, err := e.filesCli.UploadContent(uploadCtx)
+	if err != nil {
+		return "", fmt.Errorf("open upload stream: %w", err)
+	}
 	ext := allowedAvatarContentTypes[contentType]
 	filename := "avatar-" + sanitiseProvider(provider) + "-" + profileID + ext
 
@@ -221,17 +223,17 @@ func (e *ProfileAvatarSyncEvent) uploadAvatar(
 			AccessorId: []string{profileID},
 		},
 	}
-	if err := stream.Send(&filesv1.UploadContentRequest{Data: meta}); err != nil {
+	if err = stream.Send(&filesv1.UploadContentRequest{Data: meta}); err != nil {
 		return "", fmt.Errorf("send metadata: %w", err)
 	}
-	if err := stream.Send(&filesv1.UploadContentRequest{Data: &filesv1.UploadContentRequest_Chunk{Chunk: body}}); err != nil {
+	if err = stream.Send(&filesv1.UploadContentRequest{Data: &filesv1.UploadContentRequest_Chunk{Chunk: body}}); err != nil {
 		return "", fmt.Errorf("send chunk: %w", err)
 	}
 	resp, err := stream.CloseAndReceive()
 	if err != nil {
 		return "", fmt.Errorf("close upload stream: %w", err)
 	}
-	mediaID := resp.Msg.GetMediaId()
+	mediaID := resp.GetMediaId()
 	if mediaID == "" {
 		return "", errors.New("files service returned empty media_id")
 	}
@@ -255,10 +257,10 @@ func (e *ProfileAvatarSyncEvent) setProfileAvatar(
 	if err != nil {
 		return fmt.Errorf("build properties struct: %w", err)
 	}
-	_, err = e.profileCli.Update(ctx, connect.NewRequest(&profilev1.UpdateRequest{
+	_, err = e.profileCli.Update(ctx, &profilev1.UpdateRequest{
 		Id:         profileID,
 		Properties: props,
-	}))
+	})
 	return err
 }
 

@@ -14,11 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// events as a side-effect. Place it high in the widget tree — typically
 /// under [MaterialApp] but inside the [ProviderScope].
 class AuthEventListener extends ConsumerStatefulWidget {
-  const AuthEventListener({
-    required this.child,
-    this.builder,
-    super.key,
-  });
+  const AuthEventListener({required this.child, this.builder, super.key});
 
   final Widget child;
 
@@ -32,22 +28,19 @@ class AuthEventListener extends ConsumerStatefulWidget {
     BuildContext context,
     SecurityEvent event,
     Widget defaultSnackBarChild,
-  )? builder;
+  )?
+  builder;
 
   @override
-  ConsumerState<AuthEventListener> createState() =>
-      _AuthEventListenerState();
+  ConsumerState<AuthEventListener> createState() => _AuthEventListenerState();
 }
 
 class _AuthEventListenerState extends ConsumerState<AuthEventListener> {
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<SecurityEvent>>(
-      securityEventsProvider,
-      (prev, next) {
-        next.whenData((event) => _onEvent(context, event));
-      },
-    );
+    ref.listen<AsyncValue<SecurityEvent>>(securityEventsProvider, (prev, next) {
+      next.whenData((event) => _onEvent(context, event));
+    });
     return widget.child;
   }
 
@@ -83,7 +76,6 @@ String _messageFor(SecurityEvent event) {
       'Your saved session could not be read; please sign in again.',
     BindingInvalidated() =>
       'Your device credentials expired; please sign in again.',
-    LoggedOutElsewhere() =>
-      'You were signed out on another device.',
+    LoggedOutElsewhere() => 'You were signed out on another device.',
   };
 }

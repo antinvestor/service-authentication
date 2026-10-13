@@ -56,20 +56,23 @@ class ActorActivityWidget extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
             child: Row(
               children: [
-                Icon(Icons.person_outline,
-                    size: 18, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
                   tooltip: 'Refresh',
-                  onPressed: () =>
-                      ref.invalidate(auditEntriesProvider(params)),
+                  onPressed: () => ref.invalidate(auditEntriesProvider(params)),
                 ),
               ],
             ),
@@ -95,7 +98,8 @@ class ActorActivityWidget extends ConsumerWidget {
                     child: Text(
                       'No activity recorded for this user',
                       style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
@@ -109,8 +113,7 @@ class ActorActivityWidget extends ConsumerWidget {
                       entry: entry,
                       dense: true,
                       showService: true,
-                      onTap: () =>
-                          context.go('/services/audit/${entry.id}'),
+                      onTap: () => context.go('/services/audit/${entry.id}'),
                     ),
                 ],
               );
