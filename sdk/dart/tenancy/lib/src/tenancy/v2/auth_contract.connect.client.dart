@@ -7,7 +7,7 @@ import "package:connectrpc/connect.dart" as connect;
 import "auth_contract.pb.dart" as tenancyv2auth_contract;
 import "auth_contract.connect.spec.dart" as specs;
 
-extension type AuthContractServiceClient(connect.Transport _transport) {
+extension type AuthContractServiceClient (connect.Transport _transport) {
   Future<tenancyv2auth_contract.CreateOAuthClientResponse> createOAuthClient(
     tenancyv2auth_contract.CreateOAuthClientRequest input, {
     connect.Headers? headers,
@@ -93,8 +93,7 @@ extension type AuthContractServiceClient(connect.Transport _transport) {
     );
   }
 
-  Future<tenancyv2auth_contract.CreateServiceAccountResponse>
-      createServiceAccount(
+  Future<tenancyv2auth_contract.CreateServiceAccountResponse> createServiceAccount(
     tenancyv2auth_contract.CreateServiceAccountRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -128,8 +127,7 @@ extension type AuthContractServiceClient(connect.Transport _transport) {
     );
   }
 
-  Future<tenancyv2auth_contract.ListServiceAccountsResponse>
-      listServiceAccounts(
+  Future<tenancyv2auth_contract.ListServiceAccountsResponse> listServiceAccounts(
     tenancyv2auth_contract.ListServiceAccountsRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -146,8 +144,7 @@ extension type AuthContractServiceClient(connect.Transport _transport) {
     );
   }
 
-  Future<tenancyv2auth_contract.UpdateServiceAccountResponse>
-      updateServiceAccount(
+  Future<tenancyv2auth_contract.UpdateServiceAccountResponse> updateServiceAccount(
     tenancyv2auth_contract.UpdateServiceAccountRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -164,8 +161,7 @@ extension type AuthContractServiceClient(connect.Transport _transport) {
     );
   }
 
-  Future<tenancyv2auth_contract.RemoveServiceAccountResponse>
-      removeServiceAccount(
+  Future<tenancyv2auth_contract.RemoveServiceAccountResponse> removeServiceAccount(
     tenancyv2auth_contract.RemoveServiceAccountRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -182,8 +178,7 @@ extension type AuthContractServiceClient(connect.Transport _transport) {
     );
   }
 
-  Future<tenancyv2auth_contract.ReconcileServiceAccountAuthorizationResponse>
-      reconcileServiceAccountAuthorization(
+  Future<tenancyv2auth_contract.ReconcileServiceAccountAuthorizationResponse> reconcileServiceAccountAuthorization(
     tenancyv2auth_contract.ReconcileServiceAccountAuthorizationRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,

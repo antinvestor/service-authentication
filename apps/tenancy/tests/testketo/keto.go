@@ -20,8 +20,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pitabwire/frame/v2/frametests/definition"
-	"github.com/pitabwire/frame/v2/frametests/deps/testoryketo"
+	"github.com/pitabwire/frame/v3/frametests/definition"
+	"github.com/pitabwire/frame/v3/frametests/deps/testoryketo"
 )
 
 // ImageName is the Ory Keto image used for test containers.

@@ -51,35 +51,27 @@ class TenantsPage extends ConsumerWidget {
             return null;
           }),
           cells: [
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: theme.colorScheme.primary,
-                    child: Text(
-                      tenant.name.isNotEmpty
-                          ? tenant.name.substring(0, 1)
-                          : '?',
-                      style: const TextStyle(
+            DataCell(Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: theme.colorScheme.primary,
+                  child: Text(
+                    tenant.name.isNotEmpty ? tenant.name.substring(0, 1) : '?',
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                        fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(width: 10),
-                  Text(tenant.name),
-                ],
-              ),
-            ),
-            DataCell(
-              Text(
-                tenant.id,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
+                ),
+                const SizedBox(width: 10),
+                Text(tenant.name),
+              ],
+            )),
+            DataCell(Text(tenant.id,
+                style:
+                    const TextStyle(fontFamily: 'monospace', fontSize: 12))),
             DataCell(TenancyStateBadge(tenant.state)),
             DataCell(Text(createdAt)),
           ],
@@ -121,15 +113,14 @@ class TenantsPage extends ConsumerWidget {
           );
           ref.invalidate(tenantsProvider);
           if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Tenant created')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Tenant created')),
+            );
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('Error: $e')));
           }
         }
       },

@@ -1,21 +1,26 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: tenancy/v1/tenancy.proto
-//
-// @dart = 2.12
+// Generated from tenancy/v1/tenancy.proto.
+
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
-import '../../common/v1/common.pbjson.dart' as $7;
-import '../../google/protobuf/struct.pbjson.dart' as $6;
-import '../../google/protobuf/timestamp.pbjson.dart' as $2;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pbjson.dart'
+    as $0;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pbjson.dart'
+    as $1;
+
+import '../../common/v1/common.pbjson.dart' as $2;
 
 @$core.Deprecated('Use tenantEnvironmentDescriptor instead')
 const TenantEnvironment$json = {
@@ -40,10 +45,39 @@ const TenantObject$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'properties', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'state', '3': 6, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'environment', '3': 7, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {
+      '1': 'properties',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'created_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'state',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'environment',
+      '3': 7,
+      '4': 1,
+      '5': 14,
+      '6': '.tenancy.v1.TenantEnvironment',
+      '8': {},
+      '10': 'environment'
+    },
   ],
 };
 
@@ -66,9 +100,30 @@ const PartitionObject$json = {
     {'1': 'tenant_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'tenantId'},
     {'1': 'parent_id', '3': 4, '4': 1, '5': 9, '8': {}, '10': 'parentId'},
     {'1': 'description', '3': 5, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'state', '3': 6, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'properties', '3': 7, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'created_at', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'state',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'properties',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'created_at',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
     {'1': 'domain', '3': 9, '4': 1, '5': 9, '8': {}, '10': 'domain'},
   ],
 };
@@ -92,9 +147,30 @@ const PartitionRoleObject$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'partition_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
     {'1': 'name', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'properties', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'state', '3': 6, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
+    {
+      '1': 'properties',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'created_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'state',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
   ],
 };
 
@@ -114,9 +190,30 @@ const PageObject$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'html', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'html'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'properties', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'created_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'properties',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
     {'1': 'partition_id', '3': 7, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
   ],
 };
@@ -137,9 +234,30 @@ const AccessObject$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'profile_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
-    {'1': 'partition', '3': 3, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'partition'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'partition',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'partition'
+    },
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'created_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
   ],
 };
 
@@ -158,7 +276,14 @@ const AccessRoleObject$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'access_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'accessId'},
-    {'1': 'role', '3': 3, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'role'},
+    {
+      '1': 'role',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionRoleObject',
+      '10': 'role'
+    },
   ],
 };
 
@@ -186,7 +311,14 @@ final $typed_data.Uint8List getTenantRequestDescriptor = $convert.base64Decode(
 const GetTenantResponse$json = {
   '1': 'GetTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.TenantObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -200,12 +332,34 @@ const ListTenantRequest$json = {
   '1': 'ListTenantRequest',
   '2': [
     {'1': 'query', '3': 1, '4': 1, '5': 9, '10': 'query'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'cursor',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
     {'1': 'start_date', '3': 4, '4': 1, '5': 9, '10': 'startDate'},
     {'1': 'end_date', '3': 5, '4': 1, '5': 9, '10': 'endDate'},
     {'1': 'properties', '3': 6, '4': 3, '5': 9, '10': 'properties'},
-    {'1': 'extras', '3': 7, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'extras'},
-    {'1': 'environment', '3': 8, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {
+      '1': 'extras',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'extras'
+    },
+    {
+      '1': 'environment',
+      '3': 8,
+      '4': 1,
+      '5': 14,
+      '6': '.tenancy.v1.TenantEnvironment',
+      '8': {},
+      '10': 'environment'
+    },
   ],
 };
 
@@ -222,7 +376,14 @@ final $typed_data.Uint8List listTenantRequestDescriptor = $convert.base64Decode(
 const ListTenantResponse$json = {
   '1': 'ListTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.TenantObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -237,8 +398,23 @@ const CreateTenantRequest$json = {
   '2': [
     {'1': 'name', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'properties', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'environment', '3': 4, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {
+      '1': 'properties',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'environment',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.tenancy.v1.TenantEnvironment',
+      '8': {},
+      '10': 'environment'
+    },
   ],
 };
 
@@ -254,7 +430,14 @@ final $typed_data.Uint8List createTenantRequestDescriptor = $convert.base64Decod
 const CreateTenantResponse$json = {
   '1': 'CreateTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.TenantObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -270,9 +453,31 @@ const UpdateTenantRequest$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'environment', '3': 6, '4': 1, '5': 14, '6': '.tenancy.v1.TenantEnvironment', '8': {}, '10': 'environment'},
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'properties',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'environment',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.tenancy.v1.TenantEnvironment',
+      '8': {},
+      '10': 'environment'
+    },
   ],
 };
 
@@ -289,7 +494,14 @@ final $typed_data.Uint8List updateTenantRequestDescriptor = $convert.base64Decod
 const UpdateTenantResponse$json = {
   '1': 'UpdateTenantResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.TenantObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.TenantObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -341,7 +553,14 @@ final $typed_data.Uint8List getPartitionRequestDescriptor = $convert.base64Decod
 const GetPartitionResponse$json = {
   '1': 'GetPartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -359,33 +578,56 @@ const GetPartitionParentsRequest$json = {
 };
 
 /// Descriptor for `GetPartitionParentsRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getPartitionParentsRequestDescriptor = $convert.base64Decode(
-    'ChpHZXRQYXJ0aXRpb25QYXJlbnRzUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC'
-    '05YS16Xy1dezMsNDB9UgJpZA==');
+final $typed_data.Uint8List getPartitionParentsRequestDescriptor =
+    $convert.base64Decode(
+        'ChpHZXRQYXJ0aXRpb25QYXJlbnRzUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC'
+        '05YS16Xy1dezMsNDB9UgJpZA==');
 
 @$core.Deprecated('Use getPartitionParentsResponseDescriptor instead')
 const GetPartitionParentsResponse$json = {
   '1': 'GetPartitionParentsResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `GetPartitionParentsResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getPartitionParentsResponseDescriptor = $convert.base64Decode(
-    'ChtHZXRQYXJ0aXRpb25QYXJlbnRzUmVzcG9uc2USLwoEZGF0YRgBIAMoCzIbLnRlbmFuY3kudj'
-    'EuUGFydGl0aW9uT2JqZWN0UgRkYXRh');
+final $typed_data.Uint8List getPartitionParentsResponseDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRQYXJ0aXRpb25QYXJlbnRzUmVzcG9uc2USLwoEZGF0YRgBIAMoCzIbLnRlbmFuY3kudj'
+        'EuUGFydGl0aW9uT2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use listPartitionRequestDescriptor instead')
 const ListPartitionRequest$json = {
   '1': 'ListPartitionRequest',
   '2': [
     {'1': 'query', '3': 1, '4': 1, '5': 9, '10': 'query'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'cursor',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
     {'1': 'start_date', '3': 4, '4': 1, '5': 9, '10': 'startDate'},
     {'1': 'end_date', '3': 5, '4': 1, '5': 9, '10': 'endDate'},
     {'1': 'properties', '3': 6, '4': 3, '5': 9, '10': 'properties'},
-    {'1': 'extras', '3': 7, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'extras'},
+    {
+      '1': 'extras',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'extras'
+    },
   ],
 };
 
@@ -401,7 +643,14 @@ final $typed_data.Uint8List listPartitionRequestDescriptor = $convert.base64Deco
 const ListPartitionResponse$json = {
   '1': 'ListPartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -418,7 +667,14 @@ const CreatePartitionRequest$json = {
     {'1': 'parent_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'parentId'},
     {'1': 'name', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 4, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'properties',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
     {'1': 'domain', '3': 6, '4': 1, '5': 9, '8': {}, '10': 'domain'},
   ],
 };
@@ -436,14 +692,22 @@ final $typed_data.Uint8List createPartitionRequestDescriptor = $convert.base64De
 const CreatePartitionResponse$json = {
   '1': 'CreatePartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `CreatePartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createPartitionResponseDescriptor = $convert.base64Decode(
-    'ChdDcmVhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
-    'J0aXRpb25PYmplY3RSBGRhdGE=');
+final $typed_data.Uint8List createPartitionResponseDescriptor =
+    $convert.base64Decode(
+        'ChdDcmVhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
+        'J0aXRpb25PYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use updatePartitionRequestDescriptor instead')
 const UpdatePartitionRequest$json = {
@@ -452,8 +716,22 @@ const UpdatePartitionRequest$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'description', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'description'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'properties',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
     {'1': 'domain', '3': 6, '4': 1, '5': 9, '8': {}, '10': 'domain'},
   ],
 };
@@ -471,14 +749,22 @@ final $typed_data.Uint8List updatePartitionRequestDescriptor = $convert.base64De
 const UpdatePartitionResponse$json = {
   '1': 'UpdatePartitionResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `UpdatePartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updatePartitionResponseDescriptor = $convert.base64Decode(
-    'ChdVcGRhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
-    'J0aXRpb25PYmplY3RSBGRhdGE=');
+final $typed_data.Uint8List updatePartitionResponseDescriptor =
+    $convert.base64Decode(
+        'ChdVcGRhdGVQYXJ0aXRpb25SZXNwb25zZRIvCgRkYXRhGAEgASgLMhsudGVuYW5jeS52MS5QYX'
+        'J0aXRpb25PYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use removePartitionRequestDescriptor instead')
 const RemovePartitionRequest$json = {
@@ -489,9 +775,10 @@ const RemovePartitionRequest$json = {
 };
 
 /// Descriptor for `RemovePartitionRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removePartitionRequestDescriptor = $convert.base64Decode(
-    'ChZSZW1vdmVQYXJ0aXRpb25SZXF1ZXN0EisKAmlkGAEgASgJQhu6SBhyFhADGCgyEFswLTlhLX'
-    'pfLV17Myw0MH1SAmlk');
+final $typed_data.Uint8List removePartitionRequestDescriptor =
+    $convert.base64Decode(
+        'ChZSZW1vdmVQYXJ0aXRpb25SZXF1ZXN0EisKAmlkGAEgASgJQhu6SBhyFhADGCgyEFswLTlhLX'
+        'pfLV17Myw0MH1SAmlk');
 
 @$core.Deprecated('Use removePartitionResponseDescriptor instead')
 const RemovePartitionResponse$json = {
@@ -502,9 +789,10 @@ const RemovePartitionResponse$json = {
 };
 
 /// Descriptor for `RemovePartitionResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removePartitionResponseDescriptor = $convert.base64Decode(
-    'ChdSZW1vdmVQYXJ0aXRpb25SZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA'
-    '==');
+final $typed_data.Uint8List removePartitionResponseDescriptor =
+    $convert.base64Decode(
+        'ChdSZW1vdmVQYXJ0aXRpb25SZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA'
+        '==');
 
 @$core.Deprecated('Use createPartitionRoleRequestDescriptor instead')
 const CreatePartitionRoleRequest$json = {
@@ -512,7 +800,14 @@ const CreatePartitionRoleRequest$json = {
   '2': [
     {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'properties', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'properties',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
   ],
 };
 
@@ -527,14 +822,22 @@ final $typed_data.Uint8List createPartitionRoleRequestDescriptor = $convert.base
 const CreatePartitionRoleResponse$json = {
   '1': 'CreatePartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionRoleObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `CreatePartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createPartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChtDcmVhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
-    'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
+final $typed_data.Uint8List createPartitionRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChtDcmVhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
+        'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use updatePartitionRoleRequestDescriptor instead')
 const UpdatePartitionRoleRequest$json = {
@@ -542,8 +845,22 @@ const UpdatePartitionRoleRequest$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
-    {'1': 'properties', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
+    {
+      '1': 'properties',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
   ],
 };
 
@@ -558,14 +875,22 @@ final $typed_data.Uint8List updatePartitionRoleRequestDescriptor = $convert.base
 const UpdatePartitionRoleResponse$json = {
   '1': 'UpdatePartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionRoleObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `UpdatePartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List updatePartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChtVcGRhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
-    'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
+final $typed_data.Uint8List updatePartitionRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChtVcGRhdGVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USMwoEZGF0YRgBIAEoCzIfLnRlbmFuY3kudj'
+        'EuUGFydGl0aW9uUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use removePartitionRoleRequestDescriptor instead')
 const RemovePartitionRoleRequest$json = {
@@ -576,9 +901,10 @@ const RemovePartitionRoleRequest$json = {
 };
 
 /// Descriptor for `RemovePartitionRoleRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removePartitionRoleRequestDescriptor = $convert.base64Decode(
-    'ChpSZW1vdmVQYXJ0aXRpb25Sb2xlUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC'
-    '05YS16Xy1dezMsNDB9UgJpZA==');
+final $typed_data.Uint8List removePartitionRoleRequestDescriptor =
+    $convert.base64Decode(
+        'ChpSZW1vdmVQYXJ0aXRpb25Sb2xlUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC'
+        '05YS16Xy1dezMsNDB9UgJpZA==');
 
 @$core.Deprecated('Use removePartitionRoleResponseDescriptor instead')
 const RemovePartitionRoleResponse$json = {
@@ -589,16 +915,24 @@ const RemovePartitionRoleResponse$json = {
 };
 
 /// Descriptor for `RemovePartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removePartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChtSZW1vdmVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZW'
-    'VkZWQ=');
+final $typed_data.Uint8List removePartitionRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChtSZW1vdmVQYXJ0aXRpb25Sb2xlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZW'
+        'VkZWQ=');
 
 @$core.Deprecated('Use listPartitionRoleRequestDescriptor instead')
 const ListPartitionRoleRequest$json = {
   '1': 'ListPartitionRoleRequest',
   '2': [
     {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'cursor',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
   ],
 };
 
@@ -612,14 +946,22 @@ final $typed_data.Uint8List listPartitionRoleRequestDescriptor = $convert.base64
 const ListPartitionRoleResponse$json = {
   '1': 'ListPartitionRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PartitionRoleObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.PartitionRoleObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListPartitionRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listPartitionRoleResponseDescriptor = $convert.base64Decode(
-    'ChlMaXN0UGFydGl0aW9uUm9sZVJlc3BvbnNlEjMKBGRhdGEYASADKAsyHy50ZW5hbmN5LnYxLl'
-    'BhcnRpdGlvblJvbGVPYmplY3RSBGRhdGE=');
+final $typed_data.Uint8List listPartitionRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChlMaXN0UGFydGl0aW9uUm9sZVJlc3BvbnNlEjMKBGRhdGEYASADKAsyHy50ZW5hbmN5LnYxLl'
+        'BhcnRpdGlvblJvbGVPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use createPageRequestDescriptor instead')
 const CreatePageRequest$json = {
@@ -628,7 +970,14 @@ const CreatePageRequest$json = {
     {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'html', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'html'},
-    {'1': 'properties', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'properties',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
   ],
 };
 
@@ -643,7 +992,14 @@ final $typed_data.Uint8List createPageRequestDescriptor = $convert.base64Decode(
 const CreatePageResponse$json = {
   '1': 'CreatePageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PageObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -673,7 +1029,14 @@ final $typed_data.Uint8List getPageRequestDescriptor = $convert.base64Decode(
 const GetPageResponse$json = {
   '1': 'GetPageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PageObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -689,8 +1052,22 @@ const UpdatePageRequest$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'name'},
     {'1': 'html', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'html'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.common.v1.STATE', '10': 'state'},
-    {'1': 'properties', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.common.v1.STATE',
+      '10': 'state'
+    },
+    {
+      '1': 'properties',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
   ],
 };
 
@@ -706,7 +1083,14 @@ final $typed_data.Uint8List updatePageRequestDescriptor = $convert.base64Decode(
 const UpdatePageResponse$json = {
   '1': 'UpdatePageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.PageObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -720,7 +1104,14 @@ const ListPageRequest$json = {
   '1': 'ListPageRequest',
   '2': [
     {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'partitionId'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'cursor',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
   ],
 };
 
@@ -734,7 +1125,14 @@ final $typed_data.Uint8List listPageRequestDescriptor = $convert.base64Decode(
 const ListPageResponse$json = {
   '1': 'ListPageResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.PageObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.PageObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -765,8 +1163,9 @@ const RemovePageResponse$json = {
 };
 
 /// Descriptor for `RemovePageResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removePageResponseDescriptor = $convert.base64Decode(
-    'ChJSZW1vdmVQYWdlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZWQ=');
+final $typed_data.Uint8List removePageResponseDescriptor =
+    $convert.base64Decode(
+        'ChJSZW1vdmVQYWdlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZWQ=');
 
 @$core.Deprecated('Use createAccessRequestDescriptor instead')
 const CreateAccessRequest$json = {
@@ -791,7 +1190,14 @@ final $typed_data.Uint8List createAccessRequestDescriptor = $convert.base64Decod
 const CreateAccessResponse$json = {
   '1': 'CreateAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.AccessObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -826,7 +1232,14 @@ final $typed_data.Uint8List getAccessRequestDescriptor = $convert.base64Decode(
 const GetAccessResponse$json = {
   '1': 'GetAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.AccessObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -839,9 +1252,32 @@ final $typed_data.Uint8List getAccessResponseDescriptor = $convert.base64Decode(
 const ListAccessRequest$json = {
   '1': 'ListAccessRequest',
   '2': [
-    {'1': 'partition_id', '3': 1, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'partitionId'},
-    {'1': 'profile_id', '3': 2, '4': 1, '5': 9, '8': {}, '9': 0, '10': 'profileId'},
-    {'1': 'cursor', '3': 3, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'partition_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '9': 0,
+      '10': 'partitionId'
+    },
+    {
+      '1': 'profile_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '9': 0,
+      '10': 'profileId'
+    },
+    {
+      '1': 'cursor',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
   ],
   '8': [
     {'1': 'scope', '2': {}},
@@ -859,7 +1295,14 @@ final $typed_data.Uint8List listAccessRequestDescriptor = $convert.base64Decode(
 const ListAccessResponse$json = {
   '1': 'ListAccessResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.AccessObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.AccessObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -898,7 +1341,14 @@ const CreateAccessRoleRequest$json = {
   '1': 'CreateAccessRoleRequest',
   '2': [
     {'1': 'access_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'accessId'},
-    {'1': 'partition_role_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'partitionRoleId'},
+    {
+      '1': 'partition_role_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'partitionRoleId'
+    },
   ],
 };
 
@@ -912,14 +1362,22 @@ final $typed_data.Uint8List createAccessRoleRequestDescriptor = $convert.base64D
 const CreateAccessRoleResponse$json = {
   '1': 'CreateAccessRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.tenancy.v1.AccessRoleObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.AccessRoleObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `CreateAccessRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createAccessRoleResponseDescriptor = $convert.base64Decode(
-    'ChhDcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2USMAoEZGF0YRgBIAEoCzIcLnRlbmFuY3kudjEuQW'
-    'NjZXNzUm9sZU9iamVjdFIEZGF0YQ==');
+final $typed_data.Uint8List createAccessRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChhDcmVhdGVBY2Nlc3NSb2xlUmVzcG9uc2USMAoEZGF0YRgBIAEoCzIcLnRlbmFuY3kudjEuQW'
+        'NjZXNzUm9sZU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use removeAccessRoleRequestDescriptor instead')
 const RemoveAccessRoleRequest$json = {
@@ -930,9 +1388,10 @@ const RemoveAccessRoleRequest$json = {
 };
 
 /// Descriptor for `RemoveAccessRoleRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeAccessRoleRequestDescriptor = $convert.base64Decode(
-    'ChdSZW1vdmVBY2Nlc3NSb2xlUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC05YS'
-    '16Xy1dezMsNDB9UgJpZA==');
+final $typed_data.Uint8List removeAccessRoleRequestDescriptor =
+    $convert.base64Decode(
+        'ChdSZW1vdmVBY2Nlc3NSb2xlUmVxdWVzdBIrCgJpZBgBIAEoCUIbukgYchYQAxgoMhBbMC05YS'
+        '16Xy1dezMsNDB9UgJpZA==');
 
 @$core.Deprecated('Use removeAccessRoleResponseDescriptor instead')
 const RemoveAccessRoleResponse$json = {
@@ -943,16 +1402,24 @@ const RemoveAccessRoleResponse$json = {
 };
 
 /// Descriptor for `RemoveAccessRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List removeAccessRoleResponseDescriptor = $convert.base64Decode(
-    'ChhSZW1vdmVBY2Nlc3NSb2xlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZW'
-    'Q=');
+final $typed_data.Uint8List removeAccessRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChhSZW1vdmVBY2Nlc3NSb2xlUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZW'
+        'Q=');
 
 @$core.Deprecated('Use listAccessRoleRequestDescriptor instead')
 const ListAccessRoleRequest$json = {
   '1': 'ListAccessRoleRequest',
   '2': [
     {'1': 'access_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'accessId'},
-    {'1': 'cursor', '3': 2, '4': 1, '5': 11, '6': '.common.v1.PageCursor', '10': 'cursor'},
+    {
+      '1': 'cursor',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.common.v1.PageCursor',
+      '10': 'cursor'
+    },
   ],
 };
 
@@ -966,14 +1433,22 @@ final $typed_data.Uint8List listAccessRoleRequestDescriptor = $convert.base64Dec
 const ListAccessRoleResponse$json = {
   '1': 'ListAccessRoleResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.AccessRoleObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.AccessRoleObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListAccessRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listAccessRoleResponseDescriptor = $convert.base64Decode(
-    'ChZMaXN0QWNjZXNzUm9sZVJlc3BvbnNlEjAKBGRhdGEYASADKAsyHC50ZW5hbmN5LnYxLkFjY2'
-    'Vzc1JvbGVPYmplY3RSBGRhdGE=');
+final $typed_data.Uint8List listAccessRoleResponseDescriptor =
+    $convert.base64Decode(
+        'ChZMaXN0QWNjZXNzUm9sZVJlc3BvbnNlEjAKBGRhdGEYASADKAsyHC50ZW5hbmN5LnYxLkFjY2'
+        'Vzc1JvbGVPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use serviceNamespaceObjectDescriptor instead')
 const ServiceNamespaceObject$json = {
@@ -981,8 +1456,22 @@ const ServiceNamespaceObject$json = {
   '2': [
     {'1': 'namespace', '3': 1, '4': 1, '5': 9, '10': 'namespace'},
     {'1': 'permissions', '3': 2, '4': 3, '5': 9, '10': 'permissions'},
-    {'1': 'role_bindings', '3': 3, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry', '10': 'roleBindings'},
-    {'1': 'registered_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'registeredAt'},
+    {
+      '1': 'role_bindings',
+      '3': 3,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry',
+      '10': 'roleBindings'
+    },
+    {
+      '1': 'registered_at',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'registeredAt'
+    },
   ],
   '3': [ServiceNamespaceObject_RoleBindingsEntry$json],
 };
@@ -992,7 +1481,14 @@ const ServiceNamespaceObject_RoleBindingsEntry$json = {
   '1': 'RoleBindingsEntry',
   '2': [
     {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
-    {'1': 'value', '3': 2, '4': 1, '5': 11, '6': '.tenancy.v1.RolePermissionList', '10': 'value'},
+    {
+      '1': 'value',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.tenancy.v1.RolePermissionList',
+      '10': 'value'
+    },
   ],
   '7': {'7': true},
 };
@@ -1025,21 +1521,29 @@ const ListServiceNamespacesRequest$json = {
 };
 
 /// Descriptor for `ListServiceNamespacesRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listServiceNamespacesRequestDescriptor = $convert.base64Decode(
-    'ChxMaXN0U2VydmljZU5hbWVzcGFjZXNSZXF1ZXN0');
+final $typed_data.Uint8List listServiceNamespacesRequestDescriptor =
+    $convert.base64Decode('ChxMaXN0U2VydmljZU5hbWVzcGFjZXNSZXF1ZXN0');
 
 @$core.Deprecated('Use listServiceNamespacesResponseDescriptor instead')
 const ListServiceNamespacesResponse$json = {
   '1': 'ListServiceNamespacesResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.tenancy.v1.ServiceNamespaceObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.tenancy.v1.ServiceNamespaceObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListServiceNamespacesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listServiceNamespacesResponseDescriptor = $convert.base64Decode(
-    'Ch1MaXN0U2VydmljZU5hbWVzcGFjZXNSZXNwb25zZRI2CgRkYXRhGAEgAygLMiIudGVuYW5jeS'
-    '52MS5TZXJ2aWNlTmFtZXNwYWNlT2JqZWN0UgRkYXRh');
+final $typed_data.Uint8List listServiceNamespacesResponseDescriptor =
+    $convert.base64Decode(
+        'Ch1MaXN0U2VydmljZU5hbWVzcGFjZXNSZXNwb25zZRI2CgRkYXRhGAEgAygLMiIudGVuYW5jeS'
+        '52MS5TZXJ2aWNlTmFtZXNwYWNlT2JqZWN0UgRkYXRh');
 
 @$core.Deprecated('Use grantPermissionRequestDescriptor instead')
 const GrantPermissionRequest$json = {
@@ -1067,9 +1571,10 @@ const GrantPermissionResponse$json = {
 };
 
 /// Descriptor for `GrantPermissionResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List grantPermissionResponseDescriptor = $convert.base64Decode(
-    'ChdHcmFudFBlcm1pc3Npb25SZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA'
-    '==');
+final $typed_data.Uint8List grantPermissionResponseDescriptor =
+    $convert.base64Decode(
+        'ChdHcmFudFBlcm1pc3Npb25SZXNwb25zZRIcCglzdWNjZWVkZWQYASABKAhSCXN1Y2NlZWRlZA'
+        '==');
 
 @$core.Deprecated('Use revokePermissionRequestDescriptor instead')
 const RevokePermissionRequest$json = {
@@ -1097,9 +1602,10 @@ const RevokePermissionResponse$json = {
 };
 
 /// Descriptor for `RevokePermissionResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List revokePermissionResponseDescriptor = $convert.base64Decode(
-    'ChhSZXZva2VQZXJtaXNzaW9uUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZW'
-    'Q=');
+final $typed_data.Uint8List revokePermissionResponseDescriptor =
+    $convert.base64Decode(
+        'ChhSZXZva2VQZXJtaXNzaW9uUmVzcG9uc2USHAoJc3VjY2VlZGVkGAEgASgIUglzdWNjZWVkZW'
+        'Q=');
 
 const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
   '1': 'TenancyService',
@@ -1117,9 +1623,24 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'CreateTenant', '2': '.tenancy.v1.CreateTenantRequest', '3': '.tenancy.v1.CreateTenantResponse', '4': {}},
-    {'1': 'UpdateTenant', '2': '.tenancy.v1.UpdateTenantRequest', '3': '.tenancy.v1.UpdateTenantResponse', '4': {}},
-    {'1': 'RemoveTenant', '2': '.tenancy.v1.RemoveTenantRequest', '3': '.tenancy.v1.RemoveTenantResponse', '4': {}},
+    {
+      '1': 'CreateTenant',
+      '2': '.tenancy.v1.CreateTenantRequest',
+      '3': '.tenancy.v1.CreateTenantResponse',
+      '4': {}
+    },
+    {
+      '1': 'UpdateTenant',
+      '2': '.tenancy.v1.UpdateTenantRequest',
+      '3': '.tenancy.v1.UpdateTenantResponse',
+      '4': {}
+    },
+    {
+      '1': 'RemoveTenant',
+      '2': '.tenancy.v1.RemoveTenantRequest',
+      '3': '.tenancy.v1.RemoveTenantResponse',
+      '4': {}
+    },
     {
       '1': 'ListPartition',
       '2': '.tenancy.v1.ListPartitionRequest',
@@ -1127,7 +1648,12 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'CreatePartition', '2': '.tenancy.v1.CreatePartitionRequest', '3': '.tenancy.v1.CreatePartitionResponse', '4': {}},
+    {
+      '1': 'CreatePartition',
+      '2': '.tenancy.v1.CreatePartitionRequest',
+      '3': '.tenancy.v1.CreatePartitionResponse',
+      '4': {}
+    },
     {
       '1': 'GetPartition',
       '2': '.tenancy.v1.GetPartitionRequest',
@@ -1140,9 +1666,24 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '3': '.tenancy.v1.GetPartitionParentsResponse',
       '4': {'34': 1},
     },
-    {'1': 'RemovePartition', '2': '.tenancy.v1.RemovePartitionRequest', '3': '.tenancy.v1.RemovePartitionResponse', '4': {}},
-    {'1': 'UpdatePartition', '2': '.tenancy.v1.UpdatePartitionRequest', '3': '.tenancy.v1.UpdatePartitionResponse', '4': {}},
-    {'1': 'CreatePartitionRole', '2': '.tenancy.v1.CreatePartitionRoleRequest', '3': '.tenancy.v1.CreatePartitionRoleResponse', '4': {}},
+    {
+      '1': 'RemovePartition',
+      '2': '.tenancy.v1.RemovePartitionRequest',
+      '3': '.tenancy.v1.RemovePartitionResponse',
+      '4': {}
+    },
+    {
+      '1': 'UpdatePartition',
+      '2': '.tenancy.v1.UpdatePartitionRequest',
+      '3': '.tenancy.v1.UpdatePartitionResponse',
+      '4': {}
+    },
+    {
+      '1': 'CreatePartitionRole',
+      '2': '.tenancy.v1.CreatePartitionRoleRequest',
+      '3': '.tenancy.v1.CreatePartitionRoleResponse',
+      '4': {}
+    },
     {
       '1': 'ListPartitionRole',
       '2': '.tenancy.v1.ListPartitionRoleRequest',
@@ -1150,9 +1691,24 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'UpdatePartitionRole', '2': '.tenancy.v1.UpdatePartitionRoleRequest', '3': '.tenancy.v1.UpdatePartitionRoleResponse', '4': {}},
-    {'1': 'RemovePartitionRole', '2': '.tenancy.v1.RemovePartitionRoleRequest', '3': '.tenancy.v1.RemovePartitionRoleResponse', '4': {}},
-    {'1': 'CreatePage', '2': '.tenancy.v1.CreatePageRequest', '3': '.tenancy.v1.CreatePageResponse', '4': {}},
+    {
+      '1': 'UpdatePartitionRole',
+      '2': '.tenancy.v1.UpdatePartitionRoleRequest',
+      '3': '.tenancy.v1.UpdatePartitionRoleResponse',
+      '4': {}
+    },
+    {
+      '1': 'RemovePartitionRole',
+      '2': '.tenancy.v1.RemovePartitionRoleRequest',
+      '3': '.tenancy.v1.RemovePartitionRoleResponse',
+      '4': {}
+    },
+    {
+      '1': 'CreatePage',
+      '2': '.tenancy.v1.CreatePageRequest',
+      '3': '.tenancy.v1.CreatePageResponse',
+      '4': {}
+    },
     {
       '1': 'ListPage',
       '2': '.tenancy.v1.ListPageRequest',
@@ -1166,9 +1722,24 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '3': '.tenancy.v1.GetPageResponse',
       '4': {'34': 1},
     },
-    {'1': 'UpdatePage', '2': '.tenancy.v1.UpdatePageRequest', '3': '.tenancy.v1.UpdatePageResponse', '4': {}},
-    {'1': 'RemovePage', '2': '.tenancy.v1.RemovePageRequest', '3': '.tenancy.v1.RemovePageResponse', '4': {}},
-    {'1': 'CreateAccess', '2': '.tenancy.v1.CreateAccessRequest', '3': '.tenancy.v1.CreateAccessResponse', '4': {}},
+    {
+      '1': 'UpdatePage',
+      '2': '.tenancy.v1.UpdatePageRequest',
+      '3': '.tenancy.v1.UpdatePageResponse',
+      '4': {}
+    },
+    {
+      '1': 'RemovePage',
+      '2': '.tenancy.v1.RemovePageRequest',
+      '3': '.tenancy.v1.RemovePageResponse',
+      '4': {}
+    },
+    {
+      '1': 'CreateAccess',
+      '2': '.tenancy.v1.CreateAccessRequest',
+      '3': '.tenancy.v1.CreateAccessResponse',
+      '4': {}
+    },
     {
       '1': 'GetAccess',
       '2': '.tenancy.v1.GetAccessRequest',
@@ -1182,8 +1753,18 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'RemoveAccess', '2': '.tenancy.v1.RemoveAccessRequest', '3': '.tenancy.v1.RemoveAccessResponse', '4': {}},
-    {'1': 'CreateAccessRole', '2': '.tenancy.v1.CreateAccessRoleRequest', '3': '.tenancy.v1.CreateAccessRoleResponse', '4': {}},
+    {
+      '1': 'RemoveAccess',
+      '2': '.tenancy.v1.RemoveAccessRequest',
+      '3': '.tenancy.v1.RemoveAccessResponse',
+      '4': {}
+    },
+    {
+      '1': 'CreateAccessRole',
+      '2': '.tenancy.v1.CreateAccessRoleRequest',
+      '3': '.tenancy.v1.CreateAccessRoleResponse',
+      '4': {}
+    },
     {
       '1': 'ListAccessRole',
       '2': '.tenancy.v1.ListAccessRoleRequest',
@@ -1191,31 +1772,47 @@ const $core.Map<$core.String, $core.dynamic> TenancyServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'RemoveAccessRole', '2': '.tenancy.v1.RemoveAccessRoleRequest', '3': '.tenancy.v1.RemoveAccessRoleResponse', '4': {}},
+    {
+      '1': 'RemoveAccessRole',
+      '2': '.tenancy.v1.RemoveAccessRoleRequest',
+      '3': '.tenancy.v1.RemoveAccessRoleResponse',
+      '4': {}
+    },
     {
       '1': 'ListServiceNamespaces',
       '2': '.tenancy.v1.ListServiceNamespacesRequest',
       '3': '.tenancy.v1.ListServiceNamespacesResponse',
       '4': {'34': 1},
     },
-    {'1': 'GrantPermission', '2': '.tenancy.v1.GrantPermissionRequest', '3': '.tenancy.v1.GrantPermissionResponse', '4': {}},
-    {'1': 'RevokePermission', '2': '.tenancy.v1.RevokePermissionRequest', '3': '.tenancy.v1.RevokePermissionResponse', '4': {}},
+    {
+      '1': 'GrantPermission',
+      '2': '.tenancy.v1.GrantPermissionRequest',
+      '3': '.tenancy.v1.GrantPermissionResponse',
+      '4': {}
+    },
+    {
+      '1': 'RevokePermission',
+      '2': '.tenancy.v1.RevokePermissionRequest',
+      '3': '.tenancy.v1.RevokePermissionResponse',
+      '4': {}
+    },
   ],
   '3': {},
 };
 
 @$core.Deprecated('Use tenancyServiceDescriptor instead')
-const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> TenancyServiceBase$messageJson = {
+const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
+    TenancyServiceBase$messageJson = {
   '.tenancy.v1.GetTenantRequest': GetTenantRequest$json,
   '.tenancy.v1.GetTenantResponse': GetTenantResponse$json,
   '.tenancy.v1.TenantObject': TenantObject$json,
-  '.google.protobuf.Struct': $6.Struct$json,
-  '.google.protobuf.Struct.FieldsEntry': $6.Struct_FieldsEntry$json,
-  '.google.protobuf.Value': $6.Value$json,
-  '.google.protobuf.ListValue': $6.ListValue$json,
-  '.google.protobuf.Timestamp': $2.Timestamp$json,
+  '.google.protobuf.Struct': $0.Struct$json,
+  '.google.protobuf.Struct.FieldsEntry': $0.Struct_FieldsEntry$json,
+  '.google.protobuf.Value': $0.Value$json,
+  '.google.protobuf.ListValue': $0.ListValue$json,
+  '.google.protobuf.Timestamp': $1.Timestamp$json,
   '.tenancy.v1.ListTenantRequest': ListTenantRequest$json,
-  '.common.v1.PageCursor': $7.PageCursor$json,
+  '.common.v1.PageCursor': $2.PageCursor$json,
   '.tenancy.v1.ListTenantResponse': ListTenantResponse$json,
   '.tenancy.v1.CreateTenantRequest': CreateTenantRequest$json,
   '.tenancy.v1.CreateTenantResponse': CreateTenantResponse$json,
@@ -1273,9 +1870,11 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> TenancySer
   '.tenancy.v1.RemoveAccessRoleRequest': RemoveAccessRoleRequest$json,
   '.tenancy.v1.RemoveAccessRoleResponse': RemoveAccessRoleResponse$json,
   '.tenancy.v1.ListServiceNamespacesRequest': ListServiceNamespacesRequest$json,
-  '.tenancy.v1.ListServiceNamespacesResponse': ListServiceNamespacesResponse$json,
+  '.tenancy.v1.ListServiceNamespacesResponse':
+      ListServiceNamespacesResponse$json,
   '.tenancy.v1.ServiceNamespaceObject': ServiceNamespaceObject$json,
-  '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry': ServiceNamespaceObject_RoleBindingsEntry$json,
+  '.tenancy.v1.ServiceNamespaceObject.RoleBindingsEntry':
+      ServiceNamespaceObject_RoleBindingsEntry$json,
   '.tenancy.v1.RolePermissionList': RolePermissionList$json,
   '.tenancy.v1.GrantPermissionRequest': GrantPermissionRequest$json,
   '.tenancy.v1.GrantPermissionResponse': GrantPermissionResponse$json,
@@ -1443,4 +2042,3 @@ final $typed_data.Uint8List tenancyServiceDescriptor = $convert.base64Decode(
     'BhZ2VfdmlldxILcGFnZV9tYW5hZ2USEHBlcm1pc3Npb25fZ3JhbnQSFHNlcnZpY2VfYWNjb3Vu'
     'dF92aWV3EhZzZXJ2aWNlX2FjY291bnRfbWFuYWdlEgtjbGllbnRfdmlldxINY2xpZW50X21hbm'
     'FnZQ==');
-

@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v3/config"
 	"github.com/pitabwire/util"
 )
 

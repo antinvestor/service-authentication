@@ -23,10 +23,9 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -123,9 +122,9 @@ func (h *AuthServer) VerificationEndpointSubmit(rw http.ResponseWriter, req *htt
 	// Step 5.1: Reject bot profiles from completing UI login (defence-in-depth).
 	profileReq := &profilev1.GetByIdRequest{}
 	profileReq.SetId(profileID)
-	profileResp, profileErr := h.profileCli.GetById(parent, connect.NewRequest(profileReq))
-	if profileErr == nil && profileResp.Msg.GetData() != nil &&
-		profileResp.Msg.GetData().GetType() == profilev1.ProfileType_BOT {
+	profileResp, profileErr := h.profileCli.GetById(parent, profileReq)
+	if profileErr == nil && profileResp.GetData() != nil &&
+		profileResp.GetData().GetType() == profilev1.ProfileType_BOT {
 		log.WithField("profile_id", profileID).Warn("bot profile attempted UI login via verification")
 		h.showVerificationPage(rw, req, loginEventID, profileName, contactType, "This account cannot log in through the web interface.")
 		return nil
@@ -205,16 +204,16 @@ func (h *AuthServer) updateProfileName(parent context.Context, profileID string,
 
 	props, _ := structpb.NewStruct(map[string]any{KeyProfileName: profileName})
 
-	response, err := h.profileCli.Update(parent, connect.NewRequest(&profilev1.UpdateRequest{
+	response, err := h.profileCli.Update(parent, &profilev1.UpdateRequest{
 		Id:         profileID,
 		Properties: props,
-	}))
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return response.Msg.GetData(), nil
+	return response.GetData(), nil
 
 }
 
@@ -255,10 +254,10 @@ func (h *AuthServer) verifyProfileLogin(parent context.Context, event *models.Lo
 		"partition_id":    event.PartitionID,
 	}).Debug("checking verification code with profile service")
 
-	resp, err := h.profileCli.CheckVerification(parent, connect.NewRequest(&profilev1.CheckVerificationRequest{
+	resp, err := h.profileCli.CheckVerification(parent, &profilev1.CheckVerificationRequest{
 		Id:   event.VerificationID,
 		Code: code,
-	}))
+	})
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{
 			"verification_id": event.VerificationID,
@@ -273,7 +272,7 @@ func (h *AuthServer) verifyProfileLogin(parent context.Context, event *models.Lo
 		maxAttempts = 3 // Default fallback
 	}
 
-	attempts := int(resp.Msg.GetCheckAttempts())
+	attempts := int(resp.GetCheckAttempts())
 	if attempts > maxAttempts {
 		log.WithFields(map[string]any{
 			"attempts":     attempts,
@@ -282,11 +281,11 @@ func (h *AuthServer) verifyProfileLogin(parent context.Context, event *models.Lo
 		return "", ErrVerificationAttemptsExceeded
 	}
 
-	if !resp.Msg.GetSuccess() {
+	if !resp.GetSuccess() {
 		log.WithFields(map[string]any{
 			"attempts":        attempts,
 			"verification_id": event.VerificationID,
-			"response_id":     resp.Msg.GetId(),
+			"response_id":     resp.GetId(),
 		}).Warn("verification code incorrect - check if verification ID matches")
 		return "", ErrVerificationCodeIncorrect
 	}
@@ -296,17 +295,17 @@ func (h *AuthServer) verifyProfileLogin(parent context.Context, event *models.Lo
 		log.Debug("creating profile for first-time login")
 		properties, _ := structpb.NewStruct(map[string]any{"src": "direct"})
 
-		results, createErr := h.profileCli.Create(parent, connect.NewRequest(&profilev1.CreateRequest{
+		results, createErr := h.profileCli.Create(parent, &profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    event.ContactID,
 			Properties: properties,
-		}))
+		})
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create profile")
 			return "", fmt.Errorf("failed to create profile: %w", createErr)
 		}
 
-		createdProfile := results.Msg.GetData()
+		createdProfile := results.GetData()
 		if createdProfile == nil || createdProfile.GetId() == "" {
 			log.Error("profile service returned invalid profile after creation")
 			return "", fmt.Errorf("profile creation returned invalid response")

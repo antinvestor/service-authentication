@@ -27,13 +27,12 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
 	"github.com/antinvestor/service-authentication/apps/default/tests"
 	"github.com/antinvestor/service-authentication/pkg/partitionpolicy"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/frametests/definition"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -98,28 +97,28 @@ func (suite *LoginVerificationTestSuite) CreateTestProfile(ctx context.Context, 
 
 	props, _ := structpb.NewStruct(map[string]any{handlers.KeyProfileName: name})
 
-	resp, err := profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+	resp, err := profileCli.Create(ctx, &profilev1.CreateRequest{
 		Type:       profilev1.ProfileType_PERSON,
 		Contact:    email,
 		Properties: props,
-	}))
+	})
 	if err != nil {
 		return nil, err
 	}
-	return resp.Msg.GetData(), nil
+	return resp.GetData(), nil
 }
 
 // CreateVerificationRecord creates a verification record and returns the verification code
 func (suite *LoginVerificationTestSuite) CreateVerificationRecord(ctx context.Context, authServer *handlers.AuthServer, contactID string) (*profilev1.CreateContactVerificationResponse, error) {
 	profileCli := authServer.ProfileCli()
-	resp, err := profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	resp, err := profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		ContactId:        contactID,
 		DurationToExpire: "15m",
-	}))
+	})
 	if err != nil {
 		return nil, err
 	}
-	return resp.Msg, nil
+	return resp, nil
 }
 
 func (suite *LoginVerificationTestSuite) CreateOAuth2ClientWithPartitionProperties(

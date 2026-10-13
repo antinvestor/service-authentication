@@ -20,19 +20,17 @@ import (
 
 	commonv1 "buf.build/gen/go/antinvestor/common/protocolbuffers/go/common/v1"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/antinvestor/service-authentication/pkg/tenantenv"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/frametests/definition"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/frametests/definition"
+	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type HandlerTestSuite struct {
@@ -88,12 +86,12 @@ func (s *HandlerTestSuite) TestGetTenant_Success() {
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.GetTenantRequest{Id: tenant.GetID()})
+			req := &tenancyv1.GetTenantRequest{Id: tenant.GetID()}
 			resp, err := deps.Server.GetTenant(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal(tenant.GetID(), resp.Msg.Data.Id)
-			s.Require().Equal("Test Tenant", resp.Msg.Data.Name)
+			s.Require().Equal(tenant.GetID(), resp.Data.Id)
+			s.Require().Equal("Test Tenant", resp.Data.Name)
 		})
 	})
 }
@@ -107,14 +105,12 @@ func (s *HandlerTestSuite) TestGetTenant_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetTenantRequest{Id: "nonexistent"})
+			req := &tenancyv1.GetTenantRequest{Id: "nonexistent"}
 			resp, err := deps.Server.GetTenant(ctx, req)
 
 			s.Require().Nil(resp)
 			s.Require().Error(err)
-			st, ok := status.FromError(err)
-			s.Require().True(ok)
-			s.Require().Equal(codes.NotFound, st.Code())
+			s.Require().Equal(connect.CodeNotFound, connect.CodeOf(err))
 		})
 	})
 }
@@ -128,7 +124,7 @@ func (s *HandlerTestSuite) TestGetTenant_NoAuthz() {
 			tenantID := util.IDString()
 			ctx = s.WithAuthClaims(ctx, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetTenantRequest{Id: tenantID})
+			req := &tenancyv1.GetTenantRequest{Id: tenantID}
 			resp, err := deps.Server.GetTenant(ctx, req)
 
 			s.Require().Nil(resp)
@@ -146,17 +142,17 @@ func (s *HandlerTestSuite) TestCreateTenant_Success() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.CreateTenantRequest{
+			req := &tenancyv1.CreateTenantRequest{
 				Name:        "New Tenant",
 				Description: "Created via test",
 				Environment: tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION,
-			})
+			}
 			resp, err := deps.Server.CreateTenant(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.Id)
-			s.Require().Equal("New Tenant", resp.Msg.Data.Name)
-			s.Require().Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.Msg.Data.GetEnvironment())
+			s.Require().NotEmpty(resp.Data.Id)
+			s.Require().Equal("New Tenant", resp.Data.Name)
+			s.Require().Equal(tenancyv1.TenantEnvironment_TENANT_ENVIRONMENT_PRODUCTION, resp.Data.GetEnvironment())
 		})
 	})
 }
@@ -168,7 +164,7 @@ func (s *HandlerTestSuite) TestCreateTenant_NoAuthz() {
 
 			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			req := connect.NewRequest(&tenancyv1.CreateTenantRequest{Name: "Denied"})
+			req := &tenancyv1.CreateTenantRequest{Name: "Denied"}
 			resp, err := deps.Server.CreateTenant(ctx, req)
 
 			s.Require().Nil(resp)
@@ -190,14 +186,14 @@ func (s *HandlerTestSuite) TestUpdateTenant_Success() {
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.UpdateTenantRequest{
+			req := &tenancyv1.UpdateTenantRequest{
 				Id:   tenant.GetID(),
 				Name: "Updated",
-			})
+			}
 			resp, err := deps.Server.UpdateTenant(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal("Updated", resp.Msg.Data.Name)
+			s.Require().Equal("Updated", resp.Data.Name)
 		})
 	})
 }
@@ -211,7 +207,7 @@ func (s *HandlerTestSuite) TestUpdateTenant_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.UpdateTenantRequest{Id: "nonexistent", Name: "Fail"})
+			req := &tenancyv1.UpdateTenantRequest{Id: "nonexistent", Name: "Fail"}
 			resp, err := deps.Server.UpdateTenant(ctx, req)
 
 			s.Require().Nil(resp)
@@ -259,16 +255,16 @@ func (s *HandlerTestSuite) TestCreatePartition_Success() {
 			err := deps.TenantRepo.Create(ctx, tenant)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.CreatePartitionRequest{
+			req := &tenancyv1.CreatePartitionRequest{
 				TenantId: tenant.GetID(),
 				Name:     "Test Partition",
-			})
+			}
 			resp, err := deps.Server.CreatePartition(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.Id)
-			s.Require().Equal("Test Partition", resp.Msg.Data.Name)
-			s.Require().Equal(tenant.GetID(), resp.Msg.Data.TenantId)
+			s.Require().NotEmpty(resp.Data.Id)
+			s.Require().Equal("Test Partition", resp.Data.Name)
+			s.Require().Equal(tenant.GetID(), resp.Data.TenantId)
 		})
 	})
 }
@@ -280,7 +276,7 @@ func (s *HandlerTestSuite) TestCreatePartition_NoAuthz() {
 
 			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			req := connect.NewRequest(&tenancyv1.CreatePartitionRequest{Name: "Denied"})
+			req := &tenancyv1.CreatePartitionRequest{Name: "Denied"}
 			resp, err := deps.Server.CreatePartition(ctx, req)
 
 			s.Require().Nil(resp)
@@ -300,12 +296,12 @@ func (s *HandlerTestSuite) TestGetPartition_Success() {
 			partition := s.createTestPartition(ctx, deps, tenantID, "My Partition")
 			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetPartitionRequest{Id: partition.GetID()})
+			req := &tenancyv1.GetPartitionRequest{Id: partition.GetID()}
 			resp, err := deps.Server.GetPartition(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal(partition.GetID(), resp.Msg.Data.Id)
-			s.Require().Equal("My Partition", resp.Msg.Data.Name)
+			s.Require().Equal(partition.GetID(), resp.Data.Id)
+			s.Require().Equal("My Partition", resp.Data.Name)
 		})
 	})
 }
@@ -319,14 +315,12 @@ func (s *HandlerTestSuite) TestGetPartition_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetPartitionRequest{Id: "nonexistent"})
+			req := &tenancyv1.GetPartitionRequest{Id: "nonexistent"}
 			resp, err := deps.Server.GetPartition(ctx, req)
 
 			s.Require().Nil(resp)
 			s.Require().Error(err)
-			st, ok := status.FromError(err)
-			s.Require().True(ok)
-			s.Require().Equal(codes.NotFound, st.Code())
+			s.Require().Equal(connect.CodeNotFound, connect.CodeOf(err))
 		})
 	})
 }
@@ -375,16 +369,16 @@ func (s *HandlerTestSuite) TestUpdatePartition_Success() {
 			partition := s.createTestPartition(ctx, deps, tenantID, "Original")
 			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
 
-			req := connect.NewRequest(&tenancyv1.UpdatePartitionRequest{
+			req := &tenancyv1.UpdatePartitionRequest{
 				Id:          partition.GetID(),
 				Name:        "Updated",
 				Description: "Updated desc",
-			})
+			}
 			resp, err := deps.Server.UpdatePartition(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal("Updated", resp.Msg.Data.Name)
-			s.Require().Equal("Updated desc", resp.Msg.Data.Description)
+			s.Require().Equal("Updated", resp.Data.Name)
+			s.Require().Equal("Updated desc", resp.Data.Description)
 		})
 	})
 }
@@ -414,11 +408,11 @@ func (s *HandlerTestSuite) TestGetPartitionParents_Success() {
 
 			ctx = s.seedOwner(ctx, svc, tenantID, parent.GetID(), profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetPartitionParentsRequest{Id: child.GetID()})
+			req := &tenancyv1.GetPartitionParentsRequest{Id: child.GetID()}
 			resp, err := deps.Server.GetPartitionParents(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().GreaterOrEqual(len(resp.Msg.Data), 1)
+			s.Require().GreaterOrEqual(len(resp.Data), 1)
 		})
 	})
 }
@@ -434,16 +428,16 @@ func (s *HandlerTestSuite) TestCreatePartitionRole_Success() {
 			partition := s.createTestPartition(ctx, deps, tenantID, "P")
 			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
 
-			req := connect.NewRequest(&tenancyv1.CreatePartitionRoleRequest{
+			req := &tenancyv1.CreatePartitionRoleRequest{
 				PartitionId: partition.GetID(),
 				Name:        "editor",
-			})
+			}
 			resp, err := deps.Server.CreatePartitionRole(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.GetId())
-			s.Require().Equal(partition.GetID(), resp.Msg.Data.GetPartitionId())
-			s.Require().Equal("editor", resp.Msg.Data.Name)
+			s.Require().NotEmpty(resp.Data.GetId())
+			s.Require().Equal(partition.GetID(), resp.Data.GetPartitionId())
+			s.Require().Equal("editor", resp.Data.Name)
 		})
 	})
 }
@@ -455,7 +449,7 @@ func (s *HandlerTestSuite) TestCreatePartitionRole_NoAuthz() {
 
 			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			req := connect.NewRequest(&tenancyv1.CreatePartitionRoleRequest{Name: "denied"})
+			req := &tenancyv1.CreatePartitionRoleRequest{Name: "denied"}
 			resp, err := deps.Server.CreatePartitionRole(ctx, req)
 
 			s.Require().Nil(resp)
@@ -508,11 +502,11 @@ func (s *HandlerTestSuite) TestRemovePartitionRole_Success() {
 			err := deps.PartitionRoleRepo.Create(ctx, role)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.RemovePartitionRoleRequest{Id: role.GetID()})
+			req := &tenancyv1.RemovePartitionRoleRequest{Id: role.GetID()}
 			resp, err := deps.Server.RemovePartitionRole(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().True(resp.Msg.Succeeded)
+			s.Require().True(resp.Succeeded)
 		})
 	})
 }
@@ -526,7 +520,7 @@ func (s *HandlerTestSuite) TestRemovePartitionRole_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.RemovePartitionRoleRequest{Id: "nonexistent"})
+			req := &tenancyv1.RemovePartitionRoleRequest{Id: "nonexistent"}
 			resp, err := deps.Server.RemovePartitionRole(ctx, req)
 
 			s.Require().Nil(resp)
@@ -555,11 +549,11 @@ func (s *HandlerTestSuite) TestCreateAccess_Success() {
 				ProfileId: newProfileID,
 			}
 			createAccessReq.SetPartitionId(partition.GetID())
-			resp, err := deps.Server.CreateAccess(ctx, connect.NewRequest(createAccessReq))
+			resp, err := deps.Server.CreateAccess(ctx, createAccessReq)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.Id)
-			s.Require().Equal(newProfileID, resp.Msg.Data.ProfileId)
+			s.Require().NotEmpty(resp.Data.Id)
+			s.Require().Equal(newProfileID, resp.Data.ProfileId)
 		})
 	})
 }
@@ -580,12 +574,12 @@ func (s *HandlerTestSuite) TestCreateAccess_Idempotent() {
 				ProfileId: newProfileID,
 			}
 			createReq.SetPartitionId(partition.GetID())
-			resp1, err := deps.Server.CreateAccess(ctx, connect.NewRequest(createReq))
+			resp1, err := deps.Server.CreateAccess(ctx, createReq)
 			s.Require().NoError(err)
 
-			resp2, err := deps.Server.CreateAccess(ctx, connect.NewRequest(createReq))
+			resp2, err := deps.Server.CreateAccess(ctx, createReq)
 			s.Require().NoError(err)
-			s.Require().Equal(resp1.Msg.Data.Id, resp2.Msg.Data.Id)
+			s.Require().Equal(resp1.Data.Id, resp2.Data.Id)
 		})
 	})
 }
@@ -597,7 +591,7 @@ func (s *HandlerTestSuite) TestCreateAccess_NoAuthz() {
 
 			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			req := connect.NewRequest(&tenancyv1.CreateAccessRequest{ProfileId: "p"})
+			req := &tenancyv1.CreateAccessRequest{ProfileId: "p"}
 			resp, err := deps.Server.CreateAccess(ctx, req)
 
 			s.Require().Nil(resp)
@@ -628,12 +622,12 @@ func (s *HandlerTestSuite) TestGetAccess_ByAccessId() {
 			err := deps.AccessRepo.Create(ctx, access)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.GetAccessRequest{AccessId: access.GetID()})
+			req := &tenancyv1.GetAccessRequest{AccessId: access.GetID()}
 			resp, err := deps.Server.GetAccess(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal(access.GetID(), resp.Msg.Data.Id)
-			s.Require().Equal(accessProfileID, resp.Msg.Data.ProfileId)
+			s.Require().Equal(access.GetID(), resp.Data.Id)
+			s.Require().Equal(accessProfileID, resp.Data.ProfileId)
 		})
 	})
 }
@@ -664,10 +658,10 @@ func (s *HandlerTestSuite) TestGetAccess_ByPartitionAndProfile() {
 				ProfileId: accessProfileID,
 			}
 			getReq.SetPartitionId(partition.GetID())
-			resp, err := deps.Server.GetAccess(ctx, connect.NewRequest(getReq))
+			resp, err := deps.Server.GetAccess(ctx, getReq)
 
 			s.Require().NoError(err)
-			s.Require().Equal(access.GetID(), resp.Msg.Data.Id)
+			s.Require().Equal(access.GetID(), resp.Data.Id)
 		})
 	})
 }
@@ -681,7 +675,7 @@ func (s *HandlerTestSuite) TestGetAccess_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetAccessRequest{AccessId: "nonexistent"})
+			req := &tenancyv1.GetAccessRequest{AccessId: "nonexistent"}
 			resp, err := deps.Server.GetAccess(ctx, req)
 
 			s.Require().Nil(resp)
@@ -705,11 +699,11 @@ func (s *HandlerTestSuite) TestRemoveAccess_Success() {
 			err := deps.AccessRepo.Create(ctx, access)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.RemoveAccessRequest{Id: access.GetID()})
+			req := &tenancyv1.RemoveAccessRequest{Id: access.GetID()}
 			resp, err := deps.Server.RemoveAccess(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().True(resp.Msg.Succeeded)
+			s.Require().True(resp.Succeeded)
 		})
 	})
 }
@@ -733,14 +727,14 @@ func (s *HandlerTestSuite) TestCreateAccessRole_Success() {
 			err = deps.AccessRepo.Create(ctx, access)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.CreateAccessRoleRequest{
+			req := &tenancyv1.CreateAccessRoleRequest{
 				AccessId:        access.GetID(),
 				PartitionRoleId: role.GetID(),
-			})
+			}
 			resp, err := deps.Server.CreateAccessRole(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().NotEmpty(resp.Msg.Data.Id)
+			s.Require().NotEmpty(resp.Data.Id)
 		})
 	})
 }
@@ -813,11 +807,11 @@ func (s *HandlerTestSuite) TestRemoveAccessRole_Success() {
 			err = deps.AccessRoleRepo.Create(ctx, accessRole)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.RemoveAccessRoleRequest{Id: accessRole.GetID()})
+			req := &tenancyv1.RemoveAccessRoleRequest{Id: accessRole.GetID()}
 			resp, err := deps.Server.RemoveAccessRole(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().True(resp.Msg.Succeeded)
+			s.Require().True(resp.Succeeded)
 		})
 	})
 }
@@ -831,7 +825,7 @@ func (s *HandlerTestSuite) TestRemoveAccessRole_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.RemoveAccessRoleRequest{Id: "nonexistent"})
+			req := &tenancyv1.RemoveAccessRoleRequest{Id: "nonexistent"}
 			resp, err := deps.Server.RemoveAccessRole(ctx, req)
 
 			s.Require().Nil(resp)
@@ -855,16 +849,16 @@ func (s *HandlerTestSuite) TestCreatePage_Success() {
 			partition := s.createTestPartition(ctx, deps, tenantID, "P")
 			ctx = s.seedOwner(ctx, svc, tenantID, partition.GetID(), profileID)
 
-			req := connect.NewRequest(&tenancyv1.CreatePageRequest{
+			req := &tenancyv1.CreatePageRequest{
 				PartitionId: partition.GetID(),
 				Name:        "login",
 				Html:        "<h1>Login</h1>",
-			})
+			}
 			resp, err := deps.Server.CreatePage(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal("login", resp.Msg.Data.Name)
-			s.Require().Equal("<h1>Login</h1>", resp.Msg.Data.Html)
+			s.Require().Equal("login", resp.Data.Name)
+			s.Require().Equal("<h1>Login</h1>", resp.Data.Html)
 		})
 	})
 }
@@ -876,7 +870,7 @@ func (s *HandlerTestSuite) TestCreatePage_NoAuthz() {
 
 			ctx = s.WithAuthClaims(ctx, util.IDString(), util.IDString(), util.IDString())
 
-			req := connect.NewRequest(&tenancyv1.CreatePageRequest{Name: "denied"})
+			req := &tenancyv1.CreatePageRequest{Name: "denied"}
 			resp, err := deps.Server.CreatePage(ctx, req)
 
 			s.Require().Nil(resp)
@@ -907,15 +901,15 @@ func (s *HandlerTestSuite) TestGetPage_Success() {
 			err := deps.PageRepo.Create(ctx, page)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.GetPageRequest{
+			req := &tenancyv1.GetPageRequest{
 				PartitionId: partition.GetID(),
 				Name:        "login",
-			})
+			}
 			resp, err := deps.Server.GetPage(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().Equal("login", resp.Msg.Data.Name)
-			s.Require().Equal("<h1>Login</h1>", resp.Msg.Data.Html)
+			s.Require().Equal("login", resp.Data.Name)
+			s.Require().Equal("<h1>Login</h1>", resp.Data.Html)
 		})
 	})
 }
@@ -929,10 +923,10 @@ func (s *HandlerTestSuite) TestGetPage_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.GetPageRequest{
+			req := &tenancyv1.GetPageRequest{
 				PartitionId: "nonexistent",
 				Name:        "nope",
-			})
+			}
 			resp, err := deps.Server.GetPage(ctx, req)
 
 			s.Require().Nil(resp)
@@ -959,11 +953,11 @@ func (s *HandlerTestSuite) TestRemovePage_Success() {
 			err := deps.PageRepo.Create(ctx, page)
 			s.Require().NoError(err)
 
-			req := connect.NewRequest(&tenancyv1.RemovePageRequest{Id: page.GetID()})
+			req := &tenancyv1.RemovePageRequest{Id: page.GetID()}
 			resp, err := deps.Server.RemovePage(ctx, req)
 
 			s.Require().NoError(err)
-			s.Require().True(resp.Msg.Succeeded)
+			s.Require().True(resp.Succeeded)
 		})
 	})
 }
@@ -977,7 +971,7 @@ func (s *HandlerTestSuite) TestRemovePage_NotFound() {
 			tenantID := util.IDString()
 			ctx = s.seedOwner(ctx, svc, tenantID, tenantID, profileID)
 
-			req := connect.NewRequest(&tenancyv1.RemovePageRequest{Id: "nonexistent"})
+			req := &tenancyv1.RemovePageRequest{Id: "nonexistent"}
 			resp, err := deps.Server.RemovePage(ctx, req)
 
 			s.Require().Nil(resp)

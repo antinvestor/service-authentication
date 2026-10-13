@@ -23,14 +23,13 @@ import (
 
 	devicev1 "buf.build/gen/go/antinvestor/device/protocolbuffers/go/device/v1"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	"github.com/antinvestor/service-authentication/apps/default/utils"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -562,17 +561,17 @@ func (h *AuthServer) processDeviceSession(parent context.Context, profileId stri
 	var deviceObj *devicev1.DeviceObject
 
 	if deviceID != "" {
-		resp, err := deviceCli.GetById(parent, connect.NewRequest(&devicev1.GetByIdRequest{Id: []string{deviceID}}))
-		if err == nil && len(resp.Msg.GetData()) > 0 {
-			deviceObj = resp.Msg.GetData()[0]
+		resp, err := deviceCli.GetById(parent, &devicev1.GetByIdRequest{Id: []string{deviceID}})
+		if err == nil && len(resp.GetData()) > 0 {
+			deviceObj = resp.GetData()[0]
 		}
 	}
 
 	if deviceObj == nil && deviceSessionID != "" {
 
-		session, err := deviceCli.GetBySessionId(parent, connect.NewRequest(&devicev1.GetBySessionIdRequest{Id: deviceSessionID}))
+		session, err := deviceCli.GetBySessionId(parent, &devicev1.GetBySessionIdRequest{Id: deviceSessionID})
 		if err == nil {
-			deviceObj = session.Msg.GetData()
+			deviceObj = session.GetData()
 		}
 
 	}
@@ -584,30 +583,30 @@ func (h *AuthServer) processDeviceSession(parent context.Context, profileId stri
 	})
 	if deviceObj == nil {
 
-		resp, err0 := deviceCli.Create(parent, connect.NewRequest(&devicev1.CreateRequest{
+		resp, err0 := deviceCli.Create(parent, &devicev1.CreateRequest{
 			Name:       deviceName,
 			Properties: props,
-		}))
+		})
 		if err0 != nil {
 			return nil, err0
 		}
-		deviceObj = resp.Msg.GetData()
+		deviceObj = resp.GetData()
 	}
 
 	if deviceObj.GetProfileId() == profileId {
 		return deviceObj, nil
 	}
 
-	resp, err := deviceCli.Link(parent, connect.NewRequest(&devicev1.LinkRequest{
+	resp, err := deviceCli.Link(parent, &devicev1.LinkRequest{
 		Id:         deviceObj.GetId(),
 		ProfileId:  profileId,
 		Properties: props,
-	}))
+	})
 	if err != nil {
 		return deviceObj, err
 	}
 
-	deviceObj = resp.Msg.GetData()
+	deviceObj = resp.GetData()
 
 	return deviceObj, nil
 

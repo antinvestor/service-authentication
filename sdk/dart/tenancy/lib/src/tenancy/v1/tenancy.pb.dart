@@ -1,24 +1,27 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: tenancy/v1/tenancy.proto
-//
-// @dart = 2.12
+// Generated from tenancy/v1/tenancy.proto.
+
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:async' as $async;
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pb.dart' as $0;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $1;
 
-import '../../common/v1/common.pb.dart' as $7;
-import '../../common/v1/common.pbenum.dart' as $7;
-import '../../google/protobuf/struct.pb.dart' as $6;
-import '../../google/protobuf/timestamp.pb.dart' as $2;
+import '../../common/v1/common.pb.dart' as $2;
 import 'tenancy.pbenum.dart';
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'tenancy.pbenum.dart';
 
@@ -28,137 +31,136 @@ class TenantObject extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.String? description,
-    $6.Struct? properties,
-    $2.Timestamp? createdAt,
-    $7.STATE? state,
+    $0.Struct? properties,
+    $1.Timestamp? createdAt,
+    $2.STATE? state,
     TenantEnvironment? environment,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (environment != null) {
-      $result.environment = environment;
-    }
-    return $result;
+    final result = TenantObject._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (properties != null) result.properties = properties;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (state != null) result.state = state;
+    if (environment != null) result.environment = environment;
+    return result;
   }
-  TenantObject._() : super();
-  factory TenantObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory TenantObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TenantObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  TenantObject._();
+
+  factory TenantObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TenantObject()..mergeFromBuffer(data, registry);
+  factory TenantObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TenantObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TenantObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: TenantObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
-    ..aOM<$6.Struct>(4, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..e<$7.STATE>(6, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..e<TenantEnvironment>(7, _omitFieldNames ? '' : 'environment', $pb.PbFieldType.OE, defaultOrMaker: TenantEnvironment.TENANT_ENVIRONMENT_UNSPECIFIED, valueOf: TenantEnvironment.valueOf, enumValues: TenantEnvironment.values)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(4, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aOM<$1.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..aE<$2.STATE>(6, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aE<TenantEnvironment>(7, _omitFieldNames ? '' : 'environment',
+        enumValues: TenantEnvironment.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  TenantObject clone() => TenantObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  TenantObject copyWith(void Function(TenantObject) updates) => super.copyWith((message) => updates(message as TenantObject)) as TenantObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TenantObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TenantObject copyWith(void Function(TenantObject) updates) =>
+      super.copyWith((message) => updates(message as TenantObject))
+          as TenantObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use TenantObject() / TenantObject.new instead')
   static TenantObject create() => TenantObject._();
-  TenantObject createEmptyInstance() => create();
-  static $pb.PbList<TenantObject> createRepeated() => $pb.PbList<TenantObject>();
+  static $pb.GeneratedMessage $_createMessage() => TenantObject._();
+  @$core.override
+  TenantObject createEmptyInstance() => TenantObject._();
   @$core.pragma('dart2js:noInline')
-  static TenantObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TenantObject>(create);
+  static TenantObject getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TenantObject>(
+          TenantObject.$_createMessage);
   static TenantObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get description => $_getSZ(2);
   @$pb.TagNumber(3)
-  set description($core.String v) { $_setString(2, v); }
+  set description($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasDescription() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDescription() => clearField(3);
+  void clearDescription() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $6.Struct get properties => $_getN(3);
+  $0.Struct get properties => $_getN(3);
   @$pb.TagNumber(4)
-  set properties($6.Struct v) { setField(4, v); }
+  set properties($0.Struct value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasProperties() => $_has(3);
   @$pb.TagNumber(4)
-  void clearProperties() => clearField(4);
+  void clearProperties() => $_clearField(4);
   @$pb.TagNumber(4)
-  $6.Struct ensureProperties() => $_ensure(3);
+  $0.Struct ensureProperties() => $_ensure(3);
 
   @$pb.TagNumber(5)
-  $2.Timestamp get createdAt => $_getN(4);
+  $1.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($2.Timestamp v) { setField(5, v); }
+  set createdAt($1.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearCreatedAt() => clearField(5);
+  void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $2.Timestamp ensureCreatedAt() => $_ensure(4);
+  $1.Timestamp ensureCreatedAt() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $7.STATE get state => $_getN(5);
+  $2.STATE get state => $_getN(5);
   @$pb.TagNumber(6)
-  set state($7.STATE v) { setField(6, v); }
+  set state($2.STATE value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasState() => $_has(5);
   @$pb.TagNumber(6)
-  void clearState() => clearField(6);
+  void clearState() => $_clearField(6);
 
   @$pb.TagNumber(7)
   TenantEnvironment get environment => $_getN(6);
   @$pb.TagNumber(7)
-  set environment(TenantEnvironment v) { setField(7, v); }
+  set environment(TenantEnvironment value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasEnvironment() => $_has(6);
   @$pb.TagNumber(7)
-  void clearEnvironment() => clearField(7);
+  void clearEnvironment() => $_clearField(7);
 }
 
 /// PartitionObject represents a data partition within a tenant.
@@ -169,163 +171,157 @@ class PartitionObject extends $pb.GeneratedMessage {
     $core.String? tenantId,
     $core.String? parentId,
     $core.String? description,
-    $7.STATE? state,
-    $6.Struct? properties,
-    $2.Timestamp? createdAt,
+    $2.STATE? state,
+    $0.Struct? properties,
+    $1.Timestamp? createdAt,
     $core.String? domain,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (tenantId != null) {
-      $result.tenantId = tenantId;
-    }
-    if (parentId != null) {
-      $result.parentId = parentId;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (domain != null) {
-      $result.domain = domain;
-    }
-    return $result;
+    final result = PartitionObject._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (tenantId != null) result.tenantId = tenantId;
+    if (parentId != null) result.parentId = parentId;
+    if (description != null) result.description = description;
+    if (state != null) result.state = state;
+    if (properties != null) result.properties = properties;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (domain != null) result.domain = domain;
+    return result;
   }
-  PartitionObject._() : super();
-  factory PartitionObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PartitionObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  PartitionObject._();
+
+  factory PartitionObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PartitionObject()..mergeFromBuffer(data, registry);
+  factory PartitionObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PartitionObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PartitionObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: PartitionObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'tenantId')
     ..aOS(4, _omitFieldNames ? '' : 'parentId')
     ..aOS(5, _omitFieldNames ? '' : 'description')
-    ..e<$7.STATE>(6, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$6.Struct>(7, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..aOM<$2.Timestamp>(8, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
+    ..aE<$2.STATE>(6, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$0.Struct>(7, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aOM<$1.Timestamp>(8, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
     ..aOS(9, _omitFieldNames ? '' : 'domain')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  PartitionObject clone() => PartitionObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  PartitionObject copyWith(void Function(PartitionObject) updates) => super.copyWith((message) => updates(message as PartitionObject)) as PartitionObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PartitionObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PartitionObject copyWith(void Function(PartitionObject) updates) =>
+      super.copyWith((message) => updates(message as PartitionObject))
+          as PartitionObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use PartitionObject() / PartitionObject.new instead')
   static PartitionObject create() => PartitionObject._();
-  PartitionObject createEmptyInstance() => create();
-  static $pb.PbList<PartitionObject> createRepeated() => $pb.PbList<PartitionObject>();
+  static $pb.GeneratedMessage $_createMessage() => PartitionObject._();
+  @$core.override
+  PartitionObject createEmptyInstance() => PartitionObject._();
   @$core.pragma('dart2js:noInline')
-  static PartitionObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PartitionObject>(create);
+  static PartitionObject getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PartitionObject>(
+          PartitionObject.$_createMessage);
   static PartitionObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get tenantId => $_getSZ(2);
   @$pb.TagNumber(3)
-  set tenantId($core.String v) { $_setString(2, v); }
+  set tenantId($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasTenantId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearTenantId() => clearField(3);
+  void clearTenantId() => $_clearField(3);
 
   @$pb.TagNumber(4)
   $core.String get parentId => $_getSZ(3);
   @$pb.TagNumber(4)
-  set parentId($core.String v) { $_setString(3, v); }
+  set parentId($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasParentId() => $_has(3);
   @$pb.TagNumber(4)
-  void clearParentId() => clearField(4);
+  void clearParentId() => $_clearField(4);
 
   @$pb.TagNumber(5)
   $core.String get description => $_getSZ(4);
   @$pb.TagNumber(5)
-  set description($core.String v) { $_setString(4, v); }
+  set description($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
   $core.bool hasDescription() => $_has(4);
   @$pb.TagNumber(5)
-  void clearDescription() => clearField(5);
+  void clearDescription() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $7.STATE get state => $_getN(5);
+  $2.STATE get state => $_getN(5);
   @$pb.TagNumber(6)
-  set state($7.STATE v) { setField(6, v); }
+  set state($2.STATE value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasState() => $_has(5);
   @$pb.TagNumber(6)
-  void clearState() => clearField(6);
+  void clearState() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $6.Struct get properties => $_getN(6);
+  $0.Struct get properties => $_getN(6);
   @$pb.TagNumber(7)
-  set properties($6.Struct v) { setField(7, v); }
+  set properties($0.Struct value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasProperties() => $_has(6);
   @$pb.TagNumber(7)
-  void clearProperties() => clearField(7);
+  void clearProperties() => $_clearField(7);
   @$pb.TagNumber(7)
-  $6.Struct ensureProperties() => $_ensure(6);
+  $0.Struct ensureProperties() => $_ensure(6);
 
   @$pb.TagNumber(8)
-  $2.Timestamp get createdAt => $_getN(7);
+  $1.Timestamp get createdAt => $_getN(7);
   @$pb.TagNumber(8)
-  set createdAt($2.Timestamp v) { setField(8, v); }
+  set createdAt($1.Timestamp value) => $_setField(8, value);
   @$pb.TagNumber(8)
   $core.bool hasCreatedAt() => $_has(7);
   @$pb.TagNumber(8)
-  void clearCreatedAt() => clearField(8);
+  void clearCreatedAt() => $_clearField(8);
   @$pb.TagNumber(8)
-  $2.Timestamp ensureCreatedAt() => $_ensure(7);
+  $1.Timestamp ensureCreatedAt() => $_ensure(7);
 
   @$pb.TagNumber(9)
   $core.String get domain => $_getSZ(8);
   @$pb.TagNumber(9)
-  set domain($core.String v) { $_setString(8, v); }
+  set domain($core.String value) => $_setString(8, value);
   @$pb.TagNumber(9)
   $core.bool hasDomain() => $_has(8);
   @$pb.TagNumber(9)
-  void clearDomain() => clearField(9);
+  void clearDomain() => $_clearField(9);
 }
 
 /// PartitionRoleObject represents a role within a partition.
@@ -334,123 +330,124 @@ class PartitionRoleObject extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? partitionId,
     $core.String? name,
-    $6.Struct? properties,
-    $2.Timestamp? createdAt,
-    $7.STATE? state,
+    $0.Struct? properties,
+    $1.Timestamp? createdAt,
+    $2.STATE? state,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    return $result;
+    final result = PartitionRoleObject._();
+    if (id != null) result.id = id;
+    if (partitionId != null) result.partitionId = partitionId;
+    if (name != null) result.name = name;
+    if (properties != null) result.properties = properties;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (state != null) result.state = state;
+    return result;
   }
-  PartitionRoleObject._() : super();
-  factory PartitionRoleObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PartitionRoleObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PartitionRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  PartitionRoleObject._();
+
+  factory PartitionRoleObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PartitionRoleObject()..mergeFromBuffer(data, registry);
+  factory PartitionRoleObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PartitionRoleObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PartitionRoleObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: PartitionRoleObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
-    ..aOM<$6.Struct>(4, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..e<$7.STATE>(6, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(4, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aOM<$1.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..aE<$2.STATE>(6, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  PartitionRoleObject clone() => PartitionRoleObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  PartitionRoleObject copyWith(void Function(PartitionRoleObject) updates) => super.copyWith((message) => updates(message as PartitionRoleObject)) as PartitionRoleObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PartitionRoleObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PartitionRoleObject copyWith(void Function(PartitionRoleObject) updates) =>
+      super.copyWith((message) => updates(message as PartitionRoleObject))
+          as PartitionRoleObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use PartitionRoleObject() / PartitionRoleObject.new instead')
   static PartitionRoleObject create() => PartitionRoleObject._();
-  PartitionRoleObject createEmptyInstance() => create();
-  static $pb.PbList<PartitionRoleObject> createRepeated() => $pb.PbList<PartitionRoleObject>();
+  static $pb.GeneratedMessage $_createMessage() => PartitionRoleObject._();
+  @$core.override
+  PartitionRoleObject createEmptyInstance() => PartitionRoleObject._();
   @$core.pragma('dart2js:noInline')
-  static PartitionRoleObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PartitionRoleObject>(create);
+  static PartitionRoleObject getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PartitionRoleObject>(
+          PartitionRoleObject.$_createMessage);
   static PartitionRoleObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get partitionId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set partitionId($core.String v) { $_setString(1, v); }
+  set partitionId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPartitionId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPartitionId() => clearField(2);
+  void clearPartitionId() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
-  set name($core.String v) { $_setString(2, v); }
+  set name($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearName() => clearField(3);
+  void clearName() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $6.Struct get properties => $_getN(3);
+  $0.Struct get properties => $_getN(3);
   @$pb.TagNumber(4)
-  set properties($6.Struct v) { setField(4, v); }
+  set properties($0.Struct value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasProperties() => $_has(3);
   @$pb.TagNumber(4)
-  void clearProperties() => clearField(4);
+  void clearProperties() => $_clearField(4);
   @$pb.TagNumber(4)
-  $6.Struct ensureProperties() => $_ensure(3);
+  $0.Struct ensureProperties() => $_ensure(3);
 
   @$pb.TagNumber(5)
-  $2.Timestamp get createdAt => $_getN(4);
+  $1.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($2.Timestamp v) { setField(5, v); }
+  set createdAt($1.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearCreatedAt() => clearField(5);
+  void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $2.Timestamp ensureCreatedAt() => $_ensure(4);
+  $1.Timestamp ensureCreatedAt() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $7.STATE get state => $_getN(5);
+  $2.STATE get state => $_getN(5);
   @$pb.TagNumber(6)
-  set state($7.STATE v) { setField(6, v); }
+  set state($2.STATE value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasState() => $_has(5);
   @$pb.TagNumber(6)
-  void clearState() => clearField(6);
+  void clearState() => $_clearField(6);
 }
 
 /// PageObject represents a custom UI page for a partition.
@@ -459,137 +456,133 @@ class PageObject extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.String? html,
-    $7.STATE? state,
-    $2.Timestamp? createdAt,
-    $6.Struct? properties,
+    $2.STATE? state,
+    $1.Timestamp? createdAt,
+    $0.Struct? properties,
     $core.String? partitionId,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (html != null) {
-      $result.html = html;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    return $result;
+    final result = PageObject._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (html != null) result.html = html;
+    if (state != null) result.state = state;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (properties != null) result.properties = properties;
+    if (partitionId != null) result.partitionId = partitionId;
+    return result;
   }
-  PageObject._() : super();
-  factory PageObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PageObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PageObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  PageObject._();
+
+  factory PageObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PageObject()..mergeFromBuffer(data, registry);
+  factory PageObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PageObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PageObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: PageObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$6.Struct>(6, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$1.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..aOM<$0.Struct>(6, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
     ..aOS(7, _omitFieldNames ? '' : 'partitionId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  PageObject clone() => PageObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  PageObject copyWith(void Function(PageObject) updates) => super.copyWith((message) => updates(message as PageObject)) as PageObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PageObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PageObject copyWith(void Function(PageObject) updates) =>
+      super.copyWith((message) => updates(message as PageObject)) as PageObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use PageObject() / PageObject.new instead')
   static PageObject create() => PageObject._();
-  PageObject createEmptyInstance() => create();
-  static $pb.PbList<PageObject> createRepeated() => $pb.PbList<PageObject>();
+  static $pb.GeneratedMessage $_createMessage() => PageObject._();
+  @$core.override
+  PageObject createEmptyInstance() => PageObject._();
   @$core.pragma('dart2js:noInline')
-  static PageObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PageObject>(create);
+  static PageObject getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PageObject>(PageObject.$_createMessage);
   static PageObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get html => $_getSZ(2);
   @$pb.TagNumber(3)
-  set html($core.String v) { $_setString(2, v); }
+  set html($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasHtml() => $_has(2);
   @$pb.TagNumber(3)
-  void clearHtml() => clearField(3);
+  void clearHtml() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $2.Timestamp get createdAt => $_getN(4);
+  $1.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($2.Timestamp v) { setField(5, v); }
+  set createdAt($1.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearCreatedAt() => clearField(5);
+  void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $2.Timestamp ensureCreatedAt() => $_ensure(4);
+  $1.Timestamp ensureCreatedAt() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $6.Struct get properties => $_getN(5);
+  $0.Struct get properties => $_getN(5);
   @$pb.TagNumber(6)
-  set properties($6.Struct v) { setField(6, v); }
+  set properties($0.Struct value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasProperties() => $_has(5);
   @$pb.TagNumber(6)
-  void clearProperties() => clearField(6);
+  void clearProperties() => $_clearField(6);
   @$pb.TagNumber(6)
-  $6.Struct ensureProperties() => $_ensure(5);
+  $0.Struct ensureProperties() => $_ensure(5);
 
   @$pb.TagNumber(7)
   $core.String get partitionId => $_getSZ(6);
   @$pb.TagNumber(7)
-  set partitionId($core.String v) { $_setString(6, v); }
+  set partitionId($core.String value) => $_setString(6, value);
   @$pb.TagNumber(7)
   $core.bool hasPartitionId() => $_has(6);
   @$pb.TagNumber(7)
-  void clearPartitionId() => clearField(7);
+  void clearPartitionId() => $_clearField(7);
 }
 
 /// AccessObject represents a profile's access to a partition.
@@ -598,109 +591,111 @@ class AccessObject extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? profileId,
     PartitionObject? partition,
-    $7.STATE? state,
-    $2.Timestamp? createdAt,
+    $2.STATE? state,
+    $1.Timestamp? createdAt,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    if (partition != null) {
-      $result.partition = partition;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    return $result;
+    final result = AccessObject._();
+    if (id != null) result.id = id;
+    if (profileId != null) result.profileId = profileId;
+    if (partition != null) result.partition = partition;
+    if (state != null) result.state = state;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
   }
-  AccessObject._() : super();
-  factory AccessObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory AccessObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  AccessObject._();
+
+  factory AccessObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessObject()..mergeFromBuffer(data, registry);
+  factory AccessObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AccessObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: AccessObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
-    ..aOM<PartitionObject>(3, _omitFieldNames ? '' : 'partition', subBuilder: PartitionObject.create)
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<PartitionObject>(3, _omitFieldNames ? '' : 'partition',
+        subBuilder: PartitionObject.$_createMessage)
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$1.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  AccessObject clone() => AccessObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  AccessObject copyWith(void Function(AccessObject) updates) => super.copyWith((message) => updates(message as AccessObject)) as AccessObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessObject copyWith(void Function(AccessObject) updates) =>
+      super.copyWith((message) => updates(message as AccessObject))
+          as AccessObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use AccessObject() / AccessObject.new instead')
   static AccessObject create() => AccessObject._();
-  AccessObject createEmptyInstance() => create();
-  static $pb.PbList<AccessObject> createRepeated() => $pb.PbList<AccessObject>();
+  static $pb.GeneratedMessage $_createMessage() => AccessObject._();
+  @$core.override
+  AccessObject createEmptyInstance() => AccessObject._();
   @$core.pragma('dart2js:noInline')
-  static AccessObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessObject>(create);
+  static AccessObject getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessObject>(
+          AccessObject.$_createMessage);
   static AccessObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get profileId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set profileId($core.String v) { $_setString(1, v); }
+  set profileId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasProfileId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearProfileId() => clearField(2);
+  void clearProfileId() => $_clearField(2);
 
   @$pb.TagNumber(3)
   PartitionObject get partition => $_getN(2);
   @$pb.TagNumber(3)
-  set partition(PartitionObject v) { setField(3, v); }
+  set partition(PartitionObject value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasPartition() => $_has(2);
   @$pb.TagNumber(3)
-  void clearPartition() => clearField(3);
+  void clearPartition() => $_clearField(3);
   @$pb.TagNumber(3)
   PartitionObject ensurePartition() => $_ensure(2);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $2.Timestamp get createdAt => $_getN(4);
+  $1.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($2.Timestamp v) { setField(5, v); }
+  set createdAt($1.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearCreatedAt() => clearField(5);
+  void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $2.Timestamp ensureCreatedAt() => $_ensure(4);
+  $1.Timestamp ensureCreatedAt() => $_ensure(4);
 }
 
 /// AccessRoleObject links an access grant to a partition role.
@@ -710,76 +705,80 @@ class AccessRoleObject extends $pb.GeneratedMessage {
     $core.String? accessId,
     PartitionRoleObject? role,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (accessId != null) {
-      $result.accessId = accessId;
-    }
-    if (role != null) {
-      $result.role = role;
-    }
-    return $result;
+    final result = AccessRoleObject._();
+    if (id != null) result.id = id;
+    if (accessId != null) result.accessId = accessId;
+    if (role != null) result.role = role;
+    return result;
   }
-  AccessRoleObject._() : super();
-  factory AccessRoleObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory AccessRoleObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessRoleObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  AccessRoleObject._();
+
+  factory AccessRoleObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessRoleObject()..mergeFromBuffer(data, registry);
+  factory AccessRoleObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessRoleObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AccessRoleObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: AccessRoleObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'accessId')
-    ..aOM<PartitionRoleObject>(3, _omitFieldNames ? '' : 'role', subBuilder: PartitionRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<PartitionRoleObject>(3, _omitFieldNames ? '' : 'role',
+        subBuilder: PartitionRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  AccessRoleObject clone() => AccessRoleObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  AccessRoleObject copyWith(void Function(AccessRoleObject) updates) => super.copyWith((message) => updates(message as AccessRoleObject)) as AccessRoleObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessRoleObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessRoleObject copyWith(void Function(AccessRoleObject) updates) =>
+      super.copyWith((message) => updates(message as AccessRoleObject))
+          as AccessRoleObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use AccessRoleObject() / AccessRoleObject.new instead')
   static AccessRoleObject create() => AccessRoleObject._();
-  AccessRoleObject createEmptyInstance() => create();
-  static $pb.PbList<AccessRoleObject> createRepeated() => $pb.PbList<AccessRoleObject>();
+  static $pb.GeneratedMessage $_createMessage() => AccessRoleObject._();
+  @$core.override
+  AccessRoleObject createEmptyInstance() => AccessRoleObject._();
   @$core.pragma('dart2js:noInline')
-  static AccessRoleObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessRoleObject>(create);
+  static AccessRoleObject getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessRoleObject>(
+          AccessRoleObject.$_createMessage);
   static AccessRoleObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get accessId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set accessId($core.String v) { $_setString(1, v); }
+  set accessId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasAccessId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAccessId() => clearField(2);
+  void clearAccessId() => $_clearField(2);
 
   @$pb.TagNumber(3)
   PartitionRoleObject get role => $_getN(2);
   @$pb.TagNumber(3)
-  set role(PartitionRoleObject v) { setField(3, v); }
+  set role(PartitionRoleObject value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasRole() => $_has(2);
   @$pb.TagNumber(3)
-  void clearRole() => clearField(3);
+  void clearRole() => $_clearField(3);
   @$pb.TagNumber(3)
   PartitionRoleObject ensureRole() => $_ensure(2);
 }
@@ -788,100 +787,115 @@ class GetTenantRequest extends $pb.GeneratedMessage {
   factory GetTenantRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = GetTenantRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  GetTenantRequest._() : super();
-  factory GetTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GetTenantRequest._();
+
+  factory GetTenantRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetTenantRequest()..mergeFromBuffer(data, registry);
+  factory GetTenantRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetTenantRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetTenantRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetTenantRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetTenantRequest clone() => GetTenantRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetTenantRequest copyWith(void Function(GetTenantRequest) updates) => super.copyWith((message) => updates(message as GetTenantRequest)) as GetTenantRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetTenantRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetTenantRequest copyWith(void Function(GetTenantRequest) updates) =>
+      super.copyWith((message) => updates(message as GetTenantRequest))
+          as GetTenantRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetTenantRequest() / GetTenantRequest.new instead')
   static GetTenantRequest create() => GetTenantRequest._();
-  GetTenantRequest createEmptyInstance() => create();
-  static $pb.PbList<GetTenantRequest> createRepeated() => $pb.PbList<GetTenantRequest>();
+  static $pb.GeneratedMessage $_createMessage() => GetTenantRequest._();
+  @$core.override
+  GetTenantRequest createEmptyInstance() => GetTenantRequest._();
   @$core.pragma('dart2js:noInline')
-  static GetTenantRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetTenantRequest>(create);
+  static GetTenantRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetTenantRequest>(
+          GetTenantRequest.$_createMessage);
   static GetTenantRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class GetTenantResponse extends $pb.GeneratedMessage {
   factory GetTenantResponse({
     TenantObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = GetTenantResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  GetTenantResponse._() : super();
-  factory GetTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
-    ..hasRequiredFields = false
-  ;
+  GetTenantResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetTenantResponse clone() => GetTenantResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetTenantResponse copyWith(void Function(GetTenantResponse) updates) => super.copyWith((message) => updates(message as GetTenantResponse)) as GetTenantResponse;
+  factory GetTenantResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetTenantResponse()..mergeFromBuffer(data, registry);
+  factory GetTenantResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetTenantResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetTenantResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetTenantResponse.$_createMessage)
+    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: TenantObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetTenantResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetTenantResponse copyWith(void Function(GetTenantResponse) updates) =>
+      super.copyWith((message) => updates(message as GetTenantResponse))
+          as GetTenantResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetTenantResponse() / GetTenantResponse.new instead')
   static GetTenantResponse create() => GetTenantResponse._();
-  GetTenantResponse createEmptyInstance() => create();
-  static $pb.PbList<GetTenantResponse> createRepeated() => $pb.PbList<GetTenantResponse>();
+  static $pb.GeneratedMessage $_createMessage() => GetTenantResponse._();
+  @$core.override
+  GetTenantResponse createEmptyInstance() => GetTenantResponse._();
   @$core.pragma('dart2js:noInline')
-  static GetTenantResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetTenantResponse>(create);
+  static GetTenantResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetTenantResponse>(
+          GetTenantResponse.$_createMessage);
   static GetTenantResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   TenantObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(TenantObject v) { setField(1, v); }
+  set data(TenantObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   TenantObject ensureData() => $_ensure(0);
 }
@@ -889,321 +903,340 @@ class GetTenantResponse extends $pb.GeneratedMessage {
 class ListTenantRequest extends $pb.GeneratedMessage {
   factory ListTenantRequest({
     $core.String? query,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
     $core.String? startDate,
     $core.String? endDate,
     $core.Iterable<$core.String>? properties,
-    $6.Struct? extras,
+    $0.Struct? extras,
     TenantEnvironment? environment,
   }) {
-    final $result = create();
-    if (query != null) {
-      $result.query = query;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    if (startDate != null) {
-      $result.startDate = startDate;
-    }
-    if (endDate != null) {
-      $result.endDate = endDate;
-    }
-    if (properties != null) {
-      $result.properties.addAll(properties);
-    }
-    if (extras != null) {
-      $result.extras = extras;
-    }
-    if (environment != null) {
-      $result.environment = environment;
-    }
-    return $result;
+    final result = ListTenantRequest._();
+    if (query != null) result.query = query;
+    if (cursor != null) result.cursor = cursor;
+    if (startDate != null) result.startDate = startDate;
+    if (endDate != null) result.endDate = endDate;
+    if (properties != null) result.properties.addAll(properties);
+    if (extras != null) result.extras = extras;
+    if (environment != null) result.environment = environment;
+    return result;
   }
-  ListTenantRequest._() : super();
-  factory ListTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ListTenantRequest._();
+
+  factory ListTenantRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListTenantRequest()..mergeFromBuffer(data, registry);
+  factory ListTenantRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListTenantRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListTenantRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListTenantRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'query')
-    ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
+    ..aOM<$2.PageCursor>(2, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
     ..aOS(4, _omitFieldNames ? '' : 'startDate')
     ..aOS(5, _omitFieldNames ? '' : 'endDate')
     ..pPS(6, _omitFieldNames ? '' : 'properties')
-    ..aOM<$6.Struct>(7, _omitFieldNames ? '' : 'extras', subBuilder: $6.Struct.create)
-    ..e<TenantEnvironment>(8, _omitFieldNames ? '' : 'environment', $pb.PbFieldType.OE, defaultOrMaker: TenantEnvironment.TENANT_ENVIRONMENT_UNSPECIFIED, valueOf: TenantEnvironment.valueOf, enumValues: TenantEnvironment.values)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(7, _omitFieldNames ? '' : 'extras',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aE<TenantEnvironment>(8, _omitFieldNames ? '' : 'environment',
+        enumValues: TenantEnvironment.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListTenantRequest clone() => ListTenantRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListTenantRequest copyWith(void Function(ListTenantRequest) updates) => super.copyWith((message) => updates(message as ListTenantRequest)) as ListTenantRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListTenantRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListTenantRequest copyWith(void Function(ListTenantRequest) updates) =>
+      super.copyWith((message) => updates(message as ListTenantRequest))
+          as ListTenantRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListTenantRequest() / ListTenantRequest.new instead')
   static ListTenantRequest create() => ListTenantRequest._();
-  ListTenantRequest createEmptyInstance() => create();
-  static $pb.PbList<ListTenantRequest> createRepeated() => $pb.PbList<ListTenantRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListTenantRequest._();
+  @$core.override
+  ListTenantRequest createEmptyInstance() => ListTenantRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListTenantRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListTenantRequest>(create);
+  static ListTenantRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListTenantRequest>(
+          ListTenantRequest.$_createMessage);
   static ListTenantRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get query => $_getSZ(0);
   @$pb.TagNumber(1)
-  set query($core.String v) { $_setString(0, v); }
+  set query($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasQuery() => $_has(0);
   @$pb.TagNumber(1)
-  void clearQuery() => clearField(1);
+  void clearQuery() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $7.PageCursor get cursor => $_getN(1);
+  $2.PageCursor get cursor => $_getN(1);
   @$pb.TagNumber(2)
-  set cursor($7.PageCursor v) { setField(2, v); }
+  set cursor($2.PageCursor value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasCursor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCursor() => clearField(2);
+  void clearCursor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.PageCursor ensureCursor() => $_ensure(1);
+  $2.PageCursor ensureCursor() => $_ensure(1);
 
   @$pb.TagNumber(4)
   $core.String get startDate => $_getSZ(2);
   @$pb.TagNumber(4)
-  set startDate($core.String v) { $_setString(2, v); }
+  set startDate($core.String value) => $_setString(2, value);
   @$pb.TagNumber(4)
   $core.bool hasStartDate() => $_has(2);
   @$pb.TagNumber(4)
-  void clearStartDate() => clearField(4);
+  void clearStartDate() => $_clearField(4);
 
   @$pb.TagNumber(5)
   $core.String get endDate => $_getSZ(3);
   @$pb.TagNumber(5)
-  set endDate($core.String v) { $_setString(3, v); }
+  set endDate($core.String value) => $_setString(3, value);
   @$pb.TagNumber(5)
   $core.bool hasEndDate() => $_has(3);
   @$pb.TagNumber(5)
-  void clearEndDate() => clearField(5);
+  void clearEndDate() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$core.String> get properties => $_getList(4);
+  $pb.PbList<$core.String> get properties => $_getList(4);
 
   @$pb.TagNumber(7)
-  $6.Struct get extras => $_getN(5);
+  $0.Struct get extras => $_getN(5);
   @$pb.TagNumber(7)
-  set extras($6.Struct v) { setField(7, v); }
+  set extras($0.Struct value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasExtras() => $_has(5);
   @$pb.TagNumber(7)
-  void clearExtras() => clearField(7);
+  void clearExtras() => $_clearField(7);
   @$pb.TagNumber(7)
-  $6.Struct ensureExtras() => $_ensure(5);
+  $0.Struct ensureExtras() => $_ensure(5);
 
   @$pb.TagNumber(8)
   TenantEnvironment get environment => $_getN(6);
   @$pb.TagNumber(8)
-  set environment(TenantEnvironment v) { setField(8, v); }
+  set environment(TenantEnvironment value) => $_setField(8, value);
   @$pb.TagNumber(8)
   $core.bool hasEnvironment() => $_has(6);
   @$pb.TagNumber(8)
-  void clearEnvironment() => clearField(8);
+  void clearEnvironment() => $_clearField(8);
 }
 
 class ListTenantResponse extends $pb.GeneratedMessage {
   factory ListTenantResponse({
     $core.Iterable<TenantObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListTenantResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListTenantResponse._() : super();
-  factory ListTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<TenantObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: TenantObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListTenantResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListTenantResponse clone() => ListTenantResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListTenantResponse copyWith(void Function(ListTenantResponse) updates) => super.copyWith((message) => updates(message as ListTenantResponse)) as ListTenantResponse;
+  factory ListTenantResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListTenantResponse()..mergeFromBuffer(data, registry);
+  factory ListTenantResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListTenantResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListTenantResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListTenantResponse.$_createMessage)
+    ..pPM<TenantObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: TenantObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListTenantResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListTenantResponse copyWith(void Function(ListTenantResponse) updates) =>
+      super.copyWith((message) => updates(message as ListTenantResponse))
+          as ListTenantResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListTenantResponse() / ListTenantResponse.new instead')
   static ListTenantResponse create() => ListTenantResponse._();
-  ListTenantResponse createEmptyInstance() => create();
-  static $pb.PbList<ListTenantResponse> createRepeated() => $pb.PbList<ListTenantResponse>();
+  static $pb.GeneratedMessage $_createMessage() => ListTenantResponse._();
+  @$core.override
+  ListTenantResponse createEmptyInstance() => ListTenantResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListTenantResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListTenantResponse>(create);
+  static ListTenantResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListTenantResponse>(
+          ListTenantResponse.$_createMessage);
   static ListTenantResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<TenantObject> get data => $_getList(0);
+  $pb.PbList<TenantObject> get data => $_getList(0);
 }
 
 class CreateTenantRequest extends $pb.GeneratedMessage {
   factory CreateTenantRequest({
     $core.String? name,
     $core.String? description,
-    $6.Struct? properties,
+    $0.Struct? properties,
     TenantEnvironment? environment,
   }) {
-    final $result = create();
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (environment != null) {
-      $result.environment = environment;
-    }
-    return $result;
+    final result = CreateTenantRequest._();
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (properties != null) result.properties = properties;
+    if (environment != null) result.environment = environment;
+    return result;
   }
-  CreateTenantRequest._() : super();
-  factory CreateTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreateTenantRequest._();
+
+  factory CreateTenantRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateTenantRequest()..mergeFromBuffer(data, registry);
+  factory CreateTenantRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateTenantRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateTenantRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateTenantRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'description')
-    ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..e<TenantEnvironment>(4, _omitFieldNames ? '' : 'environment', $pb.PbFieldType.OE, defaultOrMaker: TenantEnvironment.TENANT_ENVIRONMENT_UNSPECIFIED, valueOf: TenantEnvironment.valueOf, enumValues: TenantEnvironment.values)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(3, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aE<TenantEnvironment>(4, _omitFieldNames ? '' : 'environment',
+        enumValues: TenantEnvironment.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateTenantRequest clone() => CreateTenantRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateTenantRequest copyWith(void Function(CreateTenantRequest) updates) => super.copyWith((message) => updates(message as CreateTenantRequest)) as CreateTenantRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateTenantRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateTenantRequest copyWith(void Function(CreateTenantRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateTenantRequest))
+          as CreateTenantRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use CreateTenantRequest() / CreateTenantRequest.new instead')
   static CreateTenantRequest create() => CreateTenantRequest._();
-  CreateTenantRequest createEmptyInstance() => create();
-  static $pb.PbList<CreateTenantRequest> createRepeated() => $pb.PbList<CreateTenantRequest>();
+  static $pb.GeneratedMessage $_createMessage() => CreateTenantRequest._();
+  @$core.override
+  CreateTenantRequest createEmptyInstance() => CreateTenantRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreateTenantRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateTenantRequest>(create);
+  static CreateTenantRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateTenantRequest>(
+          CreateTenantRequest.$_createMessage);
   static CreateTenantRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get name => $_getSZ(0);
   @$pb.TagNumber(1)
-  set name($core.String v) { $_setString(0, v); }
+  set name($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasName() => $_has(0);
   @$pb.TagNumber(1)
-  void clearName() => clearField(1);
+  void clearName() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get description => $_getSZ(1);
   @$pb.TagNumber(2)
-  set description($core.String v) { $_setString(1, v); }
+  set description($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasDescription() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDescription() => clearField(2);
+  void clearDescription() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $6.Struct get properties => $_getN(2);
+  $0.Struct get properties => $_getN(2);
   @$pb.TagNumber(3)
-  set properties($6.Struct v) { setField(3, v); }
+  set properties($0.Struct value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasProperties() => $_has(2);
   @$pb.TagNumber(3)
-  void clearProperties() => clearField(3);
+  void clearProperties() => $_clearField(3);
   @$pb.TagNumber(3)
-  $6.Struct ensureProperties() => $_ensure(2);
+  $0.Struct ensureProperties() => $_ensure(2);
 
   @$pb.TagNumber(4)
   TenantEnvironment get environment => $_getN(3);
   @$pb.TagNumber(4)
-  set environment(TenantEnvironment v) { setField(4, v); }
+  set environment(TenantEnvironment value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasEnvironment() => $_has(3);
   @$pb.TagNumber(4)
-  void clearEnvironment() => clearField(4);
+  void clearEnvironment() => $_clearField(4);
 }
 
 class CreateTenantResponse extends $pb.GeneratedMessage {
   factory CreateTenantResponse({
     TenantObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreateTenantResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreateTenantResponse._() : super();
-  factory CreateTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreateTenantResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateTenantResponse clone() => CreateTenantResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateTenantResponse copyWith(void Function(CreateTenantResponse) updates) => super.copyWith((message) => updates(message as CreateTenantResponse)) as CreateTenantResponse;
+  factory CreateTenantResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateTenantResponse()..mergeFromBuffer(data, registry);
+  factory CreateTenantResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateTenantResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateTenantResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateTenantResponse.$_createMessage)
+    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: TenantObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateTenantResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateTenantResponse copyWith(void Function(CreateTenantResponse) updates) =>
+      super.copyWith((message) => updates(message as CreateTenantResponse))
+          as CreateTenantResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateTenantResponse() / CreateTenantResponse.new instead')
   static CreateTenantResponse create() => CreateTenantResponse._();
-  CreateTenantResponse createEmptyInstance() => create();
-  static $pb.PbList<CreateTenantResponse> createRepeated() => $pb.PbList<CreateTenantResponse>();
+  static $pb.GeneratedMessage $_createMessage() => CreateTenantResponse._();
+  @$core.override
+  CreateTenantResponse createEmptyInstance() => CreateTenantResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreateTenantResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateTenantResponse>(create);
+  static CreateTenantResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateTenantResponse>(
+          CreateTenantResponse.$_createMessage);
   static CreateTenantResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   TenantObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(TenantObject v) { setField(1, v); }
+  set data(TenantObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   TenantObject ensureData() => $_ensure(0);
 }
@@ -1213,171 +1246,181 @@ class UpdateTenantRequest extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.String? description,
-    $7.STATE? state,
-    $6.Struct? properties,
+    $2.STATE? state,
+    $0.Struct? properties,
     TenantEnvironment? environment,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (environment != null) {
-      $result.environment = environment;
-    }
-    return $result;
+    final result = UpdateTenantRequest._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (state != null) result.state = state;
+    if (properties != null) result.properties = properties;
+    if (environment != null) result.environment = environment;
+    return result;
   }
-  UpdateTenantRequest._() : super();
-  factory UpdateTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdateTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  UpdateTenantRequest._();
+
+  factory UpdateTenantRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateTenantRequest()..mergeFromBuffer(data, registry);
+  factory UpdateTenantRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateTenantRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateTenantRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdateTenantRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$6.Struct>(5, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..e<TenantEnvironment>(6, _omitFieldNames ? '' : 'environment', $pb.PbFieldType.OE, defaultOrMaker: TenantEnvironment.TENANT_ENVIRONMENT_UNSPECIFIED, valueOf: TenantEnvironment.valueOf, enumValues: TenantEnvironment.values)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$0.Struct>(5, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aE<TenantEnvironment>(6, _omitFieldNames ? '' : 'environment',
+        enumValues: TenantEnvironment.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdateTenantRequest clone() => UpdateTenantRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdateTenantRequest copyWith(void Function(UpdateTenantRequest) updates) => super.copyWith((message) => updates(message as UpdateTenantRequest)) as UpdateTenantRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateTenantRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateTenantRequest copyWith(void Function(UpdateTenantRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateTenantRequest))
+          as UpdateTenantRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use UpdateTenantRequest() / UpdateTenantRequest.new instead')
   static UpdateTenantRequest create() => UpdateTenantRequest._();
-  UpdateTenantRequest createEmptyInstance() => create();
-  static $pb.PbList<UpdateTenantRequest> createRepeated() => $pb.PbList<UpdateTenantRequest>();
+  static $pb.GeneratedMessage $_createMessage() => UpdateTenantRequest._();
+  @$core.override
+  UpdateTenantRequest createEmptyInstance() => UpdateTenantRequest._();
   @$core.pragma('dart2js:noInline')
-  static UpdateTenantRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdateTenantRequest>(create);
+  static UpdateTenantRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateTenantRequest>(
+          UpdateTenantRequest.$_createMessage);
   static UpdateTenantRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get description => $_getSZ(2);
   @$pb.TagNumber(3)
-  set description($core.String v) { $_setString(2, v); }
+  set description($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasDescription() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDescription() => clearField(3);
+  void clearDescription() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $6.Struct get properties => $_getN(4);
+  $0.Struct get properties => $_getN(4);
   @$pb.TagNumber(5)
-  set properties($6.Struct v) { setField(5, v); }
+  set properties($0.Struct value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasProperties() => $_has(4);
   @$pb.TagNumber(5)
-  void clearProperties() => clearField(5);
+  void clearProperties() => $_clearField(5);
   @$pb.TagNumber(5)
-  $6.Struct ensureProperties() => $_ensure(4);
+  $0.Struct ensureProperties() => $_ensure(4);
 
   @$pb.TagNumber(6)
   TenantEnvironment get environment => $_getN(5);
   @$pb.TagNumber(6)
-  set environment(TenantEnvironment v) { setField(6, v); }
+  set environment(TenantEnvironment value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasEnvironment() => $_has(5);
   @$pb.TagNumber(6)
-  void clearEnvironment() => clearField(6);
+  void clearEnvironment() => $_clearField(6);
 }
 
 class UpdateTenantResponse extends $pb.GeneratedMessage {
   factory UpdateTenantResponse({
     TenantObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = UpdateTenantResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  UpdateTenantResponse._() : super();
-  factory UpdateTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdateTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data', subBuilder: TenantObject.create)
-    ..hasRequiredFields = false
-  ;
+  UpdateTenantResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdateTenantResponse clone() => UpdateTenantResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdateTenantResponse copyWith(void Function(UpdateTenantResponse) updates) => super.copyWith((message) => updates(message as UpdateTenantResponse)) as UpdateTenantResponse;
+  factory UpdateTenantResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateTenantResponse()..mergeFromBuffer(data, registry);
+  factory UpdateTenantResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateTenantResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateTenantResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdateTenantResponse.$_createMessage)
+    ..aOM<TenantObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: TenantObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateTenantResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateTenantResponse copyWith(void Function(UpdateTenantResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdateTenantResponse))
+          as UpdateTenantResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateTenantResponse() / UpdateTenantResponse.new instead')
   static UpdateTenantResponse create() => UpdateTenantResponse._();
-  UpdateTenantResponse createEmptyInstance() => create();
-  static $pb.PbList<UpdateTenantResponse> createRepeated() => $pb.PbList<UpdateTenantResponse>();
+  static $pb.GeneratedMessage $_createMessage() => UpdateTenantResponse._();
+  @$core.override
+  UpdateTenantResponse createEmptyInstance() => UpdateTenantResponse._();
   @$core.pragma('dart2js:noInline')
-  static UpdateTenantResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdateTenantResponse>(create);
+  static UpdateTenantResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateTenantResponse>(
+          UpdateTenantResponse.$_createMessage);
   static UpdateTenantResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   TenantObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(TenantObject v) { setField(1, v); }
+  set data(TenantObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   TenantObject ensureData() => $_ensure(0);
 }
@@ -1386,100 +1429,116 @@ class RemoveTenantRequest extends $pb.GeneratedMessage {
   factory RemoveTenantRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemoveTenantRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemoveTenantRequest._() : super();
-  factory RemoveTenantRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveTenantRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveTenantRequest._();
+
+  factory RemoveTenantRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveTenantRequest()..mergeFromBuffer(data, registry);
+  factory RemoveTenantRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveTenantRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveTenantRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveTenantRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveTenantRequest clone() => RemoveTenantRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveTenantRequest copyWith(void Function(RemoveTenantRequest) updates) => super.copyWith((message) => updates(message as RemoveTenantRequest)) as RemoveTenantRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveTenantRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveTenantRequest copyWith(void Function(RemoveTenantRequest) updates) =>
+      super.copyWith((message) => updates(message as RemoveTenantRequest))
+          as RemoveTenantRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use RemoveTenantRequest() / RemoveTenantRequest.new instead')
   static RemoveTenantRequest create() => RemoveTenantRequest._();
-  RemoveTenantRequest createEmptyInstance() => create();
-  static $pb.PbList<RemoveTenantRequest> createRepeated() => $pb.PbList<RemoveTenantRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveTenantRequest._();
+  @$core.override
+  RemoveTenantRequest createEmptyInstance() => RemoveTenantRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemoveTenantRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveTenantRequest>(create);
+  static RemoveTenantRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveTenantRequest>(
+          RemoveTenantRequest.$_createMessage);
   static RemoveTenantRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemoveTenantResponse extends $pb.GeneratedMessage {
   factory RemoveTenantResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemoveTenantResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemoveTenantResponse._() : super();
-  factory RemoveTenantResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveTenantResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveTenantResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveTenantResponse._();
+
+  factory RemoveTenantResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveTenantResponse()..mergeFromBuffer(data, registry);
+  factory RemoveTenantResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveTenantResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveTenantResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveTenantResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveTenantResponse clone() => RemoveTenantResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveTenantResponse copyWith(void Function(RemoveTenantResponse) updates) => super.copyWith((message) => updates(message as RemoveTenantResponse)) as RemoveTenantResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveTenantResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveTenantResponse copyWith(void Function(RemoveTenantResponse) updates) =>
+      super.copyWith((message) => updates(message as RemoveTenantResponse))
+          as RemoveTenantResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveTenantResponse() / RemoveTenantResponse.new instead')
   static RemoveTenantResponse create() => RemoveTenantResponse._();
-  RemoveTenantResponse createEmptyInstance() => create();
-  static $pb.PbList<RemoveTenantResponse> createRepeated() => $pb.PbList<RemoveTenantResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveTenantResponse._();
+  @$core.override
+  RemoveTenantResponse createEmptyInstance() => RemoveTenantResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemoveTenantResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveTenantResponse>(create);
+  static RemoveTenantResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveTenantResponse>(
+          RemoveTenantResponse.$_createMessage);
   static RemoveTenantResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class GetPartitionRequest extends $pb.GeneratedMessage {
@@ -1487,113 +1546,128 @@ class GetPartitionRequest extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? domain,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (domain != null) {
-      $result.domain = domain;
-    }
-    return $result;
+    final result = GetPartitionRequest._();
+    if (id != null) result.id = id;
+    if (domain != null) result.domain = domain;
+    return result;
   }
-  GetPartitionRequest._() : super();
-  factory GetPartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GetPartitionRequest._();
+
+  factory GetPartitionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionRequest()..mergeFromBuffer(data, registry);
+  factory GetPartitionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPartitionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPartitionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'domain')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPartitionRequest clone() => GetPartitionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPartitionRequest copyWith(void Function(GetPartitionRequest) updates) => super.copyWith((message) => updates(message as GetPartitionRequest)) as GetPartitionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionRequest copyWith(void Function(GetPartitionRequest) updates) =>
+      super.copyWith((message) => updates(message as GetPartitionRequest))
+          as GetPartitionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use GetPartitionRequest() / GetPartitionRequest.new instead')
   static GetPartitionRequest create() => GetPartitionRequest._();
-  GetPartitionRequest createEmptyInstance() => create();
-  static $pb.PbList<GetPartitionRequest> createRepeated() => $pb.PbList<GetPartitionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => GetPartitionRequest._();
+  @$core.override
+  GetPartitionRequest createEmptyInstance() => GetPartitionRequest._();
   @$core.pragma('dart2js:noInline')
-  static GetPartitionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPartitionRequest>(create);
+  static GetPartitionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPartitionRequest>(
+          GetPartitionRequest.$_createMessage);
   static GetPartitionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get domain => $_getSZ(1);
   @$pb.TagNumber(2)
-  set domain($core.String v) { $_setString(1, v); }
+  set domain($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasDomain() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDomain() => clearField(2);
+  void clearDomain() => $_clearField(2);
 }
 
 class GetPartitionResponse extends $pb.GeneratedMessage {
   factory GetPartitionResponse({
     PartitionObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = GetPartitionResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  GetPartitionResponse._() : super();
-  factory GetPartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
-    ..hasRequiredFields = false
-  ;
+  GetPartitionResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPartitionResponse clone() => GetPartitionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPartitionResponse copyWith(void Function(GetPartitionResponse) updates) => super.copyWith((message) => updates(message as GetPartitionResponse)) as GetPartitionResponse;
+  factory GetPartitionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionResponse()..mergeFromBuffer(data, registry);
+  factory GetPartitionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPartitionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPartitionResponse.$_createMessage)
+    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionResponse copyWith(void Function(GetPartitionResponse) updates) =>
+      super.copyWith((message) => updates(message as GetPartitionResponse))
+          as GetPartitionResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetPartitionResponse() / GetPartitionResponse.new instead')
   static GetPartitionResponse create() => GetPartitionResponse._();
-  GetPartitionResponse createEmptyInstance() => create();
-  static $pb.PbList<GetPartitionResponse> createRepeated() => $pb.PbList<GetPartitionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => GetPartitionResponse._();
+  @$core.override
+  GetPartitionResponse createEmptyInstance() => GetPartitionResponse._();
   @$core.pragma('dart2js:noInline')
-  static GetPartitionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPartitionResponse>(create);
+  static GetPartitionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPartitionResponse>(
+          GetPartitionResponse.$_createMessage);
   static GetPartitionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PartitionObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PartitionObject v) { setField(1, v); }
+  set data(PartitionObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PartitionObject ensureData() => $_ensure(0);
 }
@@ -1602,256 +1676,292 @@ class GetPartitionParentsRequest extends $pb.GeneratedMessage {
   factory GetPartitionParentsRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = GetPartitionParentsRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  GetPartitionParentsRequest._() : super();
-  factory GetPartitionParentsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPartitionParentsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GetPartitionParentsRequest._();
+
+  factory GetPartitionParentsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionParentsRequest()..mergeFromBuffer(data, registry);
+  factory GetPartitionParentsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionParentsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPartitionParentsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPartitionParentsRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPartitionParentsRequest clone() => GetPartitionParentsRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPartitionParentsRequest copyWith(void Function(GetPartitionParentsRequest) updates) => super.copyWith((message) => updates(message as GetPartitionParentsRequest)) as GetPartitionParentsRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionParentsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionParentsRequest copyWith(
+          void Function(GetPartitionParentsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetPartitionParentsRequest))
+          as GetPartitionParentsRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetPartitionParentsRequest() / GetPartitionParentsRequest.new instead')
   static GetPartitionParentsRequest create() => GetPartitionParentsRequest._();
-  GetPartitionParentsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetPartitionParentsRequest> createRepeated() => $pb.PbList<GetPartitionParentsRequest>();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetPartitionParentsRequest._();
+  @$core.override
+  GetPartitionParentsRequest createEmptyInstance() =>
+      GetPartitionParentsRequest._();
   @$core.pragma('dart2js:noInline')
-  static GetPartitionParentsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPartitionParentsRequest>(create);
+  static GetPartitionParentsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPartitionParentsRequest>(
+          GetPartitionParentsRequest.$_createMessage);
   static GetPartitionParentsRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class GetPartitionParentsResponse extends $pb.GeneratedMessage {
   factory GetPartitionParentsResponse({
     $core.Iterable<PartitionObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = GetPartitionParentsResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  GetPartitionParentsResponse._() : super();
-  factory GetPartitionParentsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPartitionParentsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPartitionParentsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<PartitionObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionObject.create)
-    ..hasRequiredFields = false
-  ;
+  GetPartitionParentsResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPartitionParentsResponse clone() => GetPartitionParentsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPartitionParentsResponse copyWith(void Function(GetPartitionParentsResponse) updates) => super.copyWith((message) => updates(message as GetPartitionParentsResponse)) as GetPartitionParentsResponse;
+  factory GetPartitionParentsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionParentsResponse()..mergeFromBuffer(data, registry);
+  factory GetPartitionParentsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPartitionParentsResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPartitionParentsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPartitionParentsResponse.$_createMessage)
+    ..pPM<PartitionObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionParentsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPartitionParentsResponse copyWith(
+          void Function(GetPartitionParentsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetPartitionParentsResponse))
+          as GetPartitionParentsResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static GetPartitionParentsResponse create() => GetPartitionParentsResponse._();
-  GetPartitionParentsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetPartitionParentsResponse> createRepeated() => $pb.PbList<GetPartitionParentsResponse>();
+  @$core.Deprecated(
+      'Use GetPartitionParentsResponse() / GetPartitionParentsResponse.new instead')
+  static GetPartitionParentsResponse create() =>
+      GetPartitionParentsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetPartitionParentsResponse._();
+  @$core.override
+  GetPartitionParentsResponse createEmptyInstance() =>
+      GetPartitionParentsResponse._();
   @$core.pragma('dart2js:noInline')
-  static GetPartitionParentsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPartitionParentsResponse>(create);
+  static GetPartitionParentsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPartitionParentsResponse>(
+          GetPartitionParentsResponse.$_createMessage);
   static GetPartitionParentsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<PartitionObject> get data => $_getList(0);
+  $pb.PbList<PartitionObject> get data => $_getList(0);
 }
 
 class ListPartitionRequest extends $pb.GeneratedMessage {
   factory ListPartitionRequest({
     $core.String? query,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
     $core.String? startDate,
     $core.String? endDate,
     $core.Iterable<$core.String>? properties,
-    $6.Struct? extras,
+    $0.Struct? extras,
   }) {
-    final $result = create();
-    if (query != null) {
-      $result.query = query;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    if (startDate != null) {
-      $result.startDate = startDate;
-    }
-    if (endDate != null) {
-      $result.endDate = endDate;
-    }
-    if (properties != null) {
-      $result.properties.addAll(properties);
-    }
-    if (extras != null) {
-      $result.extras = extras;
-    }
-    return $result;
+    final result = ListPartitionRequest._();
+    if (query != null) result.query = query;
+    if (cursor != null) result.cursor = cursor;
+    if (startDate != null) result.startDate = startDate;
+    if (endDate != null) result.endDate = endDate;
+    if (properties != null) result.properties.addAll(properties);
+    if (extras != null) result.extras = extras;
+    return result;
   }
-  ListPartitionRequest._() : super();
-  factory ListPartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ListPartitionRequest._();
+
+  factory ListPartitionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRequest()..mergeFromBuffer(data, registry);
+  factory ListPartitionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPartitionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPartitionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'query')
-    ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
+    ..aOM<$2.PageCursor>(2, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
     ..aOS(4, _omitFieldNames ? '' : 'startDate')
     ..aOS(5, _omitFieldNames ? '' : 'endDate')
     ..pPS(6, _omitFieldNames ? '' : 'properties')
-    ..aOM<$6.Struct>(7, _omitFieldNames ? '' : 'extras', subBuilder: $6.Struct.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(7, _omitFieldNames ? '' : 'extras',
+        subBuilder: $0.Struct.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPartitionRequest clone() => ListPartitionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPartitionRequest copyWith(void Function(ListPartitionRequest) updates) => super.copyWith((message) => updates(message as ListPartitionRequest)) as ListPartitionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRequest copyWith(void Function(ListPartitionRequest) updates) =>
+      super.copyWith((message) => updates(message as ListPartitionRequest))
+          as ListPartitionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListPartitionRequest() / ListPartitionRequest.new instead')
   static ListPartitionRequest create() => ListPartitionRequest._();
-  ListPartitionRequest createEmptyInstance() => create();
-  static $pb.PbList<ListPartitionRequest> createRepeated() => $pb.PbList<ListPartitionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListPartitionRequest._();
+  @$core.override
+  ListPartitionRequest createEmptyInstance() => ListPartitionRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListPartitionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPartitionRequest>(create);
+  static ListPartitionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListPartitionRequest>(
+          ListPartitionRequest.$_createMessage);
   static ListPartitionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get query => $_getSZ(0);
   @$pb.TagNumber(1)
-  set query($core.String v) { $_setString(0, v); }
+  set query($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasQuery() => $_has(0);
   @$pb.TagNumber(1)
-  void clearQuery() => clearField(1);
+  void clearQuery() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $7.PageCursor get cursor => $_getN(1);
+  $2.PageCursor get cursor => $_getN(1);
   @$pb.TagNumber(2)
-  set cursor($7.PageCursor v) { setField(2, v); }
+  set cursor($2.PageCursor value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasCursor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCursor() => clearField(2);
+  void clearCursor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.PageCursor ensureCursor() => $_ensure(1);
+  $2.PageCursor ensureCursor() => $_ensure(1);
 
   @$pb.TagNumber(4)
   $core.String get startDate => $_getSZ(2);
   @$pb.TagNumber(4)
-  set startDate($core.String v) { $_setString(2, v); }
+  set startDate($core.String value) => $_setString(2, value);
   @$pb.TagNumber(4)
   $core.bool hasStartDate() => $_has(2);
   @$pb.TagNumber(4)
-  void clearStartDate() => clearField(4);
+  void clearStartDate() => $_clearField(4);
 
   @$pb.TagNumber(5)
   $core.String get endDate => $_getSZ(3);
   @$pb.TagNumber(5)
-  set endDate($core.String v) { $_setString(3, v); }
+  set endDate($core.String value) => $_setString(3, value);
   @$pb.TagNumber(5)
   $core.bool hasEndDate() => $_has(3);
   @$pb.TagNumber(5)
-  void clearEndDate() => clearField(5);
+  void clearEndDate() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$core.String> get properties => $_getList(4);
+  $pb.PbList<$core.String> get properties => $_getList(4);
 
   @$pb.TagNumber(7)
-  $6.Struct get extras => $_getN(5);
+  $0.Struct get extras => $_getN(5);
   @$pb.TagNumber(7)
-  set extras($6.Struct v) { setField(7, v); }
+  set extras($0.Struct value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasExtras() => $_has(5);
   @$pb.TagNumber(7)
-  void clearExtras() => clearField(7);
+  void clearExtras() => $_clearField(7);
   @$pb.TagNumber(7)
-  $6.Struct ensureExtras() => $_ensure(5);
+  $0.Struct ensureExtras() => $_ensure(5);
 }
 
 class ListPartitionResponse extends $pb.GeneratedMessage {
   factory ListPartitionResponse({
     $core.Iterable<PartitionObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListPartitionResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListPartitionResponse._() : super();
-  factory ListPartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<PartitionObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListPartitionResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPartitionResponse clone() => ListPartitionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPartitionResponse copyWith(void Function(ListPartitionResponse) updates) => super.copyWith((message) => updates(message as ListPartitionResponse)) as ListPartitionResponse;
+  factory ListPartitionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionResponse()..mergeFromBuffer(data, registry);
+  factory ListPartitionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPartitionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPartitionResponse.$_createMessage)
+    ..pPM<PartitionObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionResponse copyWith(
+          void Function(ListPartitionResponse) updates) =>
+      super.copyWith((message) => updates(message as ListPartitionResponse))
+          as ListPartitionResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListPartitionResponse() / ListPartitionResponse.new instead')
   static ListPartitionResponse create() => ListPartitionResponse._();
-  ListPartitionResponse createEmptyInstance() => create();
-  static $pb.PbList<ListPartitionResponse> createRepeated() => $pb.PbList<ListPartitionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => ListPartitionResponse._();
+  @$core.override
+  ListPartitionResponse createEmptyInstance() => ListPartitionResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListPartitionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPartitionResponse>(create);
+  static ListPartitionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListPartitionResponse>(
+          ListPartitionResponse.$_createMessage);
   static ListPartitionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<PartitionObject> get data => $_getList(0);
+  $pb.PbList<PartitionObject> get data => $_getList(0);
 }
 
 class CreatePartitionRequest extends $pb.GeneratedMessage {
@@ -1860,170 +1970,180 @@ class CreatePartitionRequest extends $pb.GeneratedMessage {
     $core.String? parentId,
     $core.String? name,
     $core.String? description,
-    $6.Struct? properties,
+    $0.Struct? properties,
     $core.String? domain,
   }) {
-    final $result = create();
-    if (tenantId != null) {
-      $result.tenantId = tenantId;
-    }
-    if (parentId != null) {
-      $result.parentId = parentId;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (domain != null) {
-      $result.domain = domain;
-    }
-    return $result;
+    final result = CreatePartitionRequest._();
+    if (tenantId != null) result.tenantId = tenantId;
+    if (parentId != null) result.parentId = parentId;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (properties != null) result.properties = properties;
+    if (domain != null) result.domain = domain;
+    return result;
   }
-  CreatePartitionRequest._() : super();
-  factory CreatePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreatePartitionRequest._();
+
+  factory CreatePartitionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRequest()..mergeFromBuffer(data, registry);
+  factory CreatePartitionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePartitionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePartitionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'tenantId')
     ..aOS(2, _omitFieldNames ? '' : 'parentId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aOS(4, _omitFieldNames ? '' : 'description')
-    ..aOM<$6.Struct>(5, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
+    ..aOM<$0.Struct>(5, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
     ..aOS(6, _omitFieldNames ? '' : 'domain')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRequest clone() => CreatePartitionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRequest copyWith(void Function(CreatePartitionRequest) updates) => super.copyWith((message) => updates(message as CreatePartitionRequest)) as CreatePartitionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRequest copyWith(
+          void Function(CreatePartitionRequest) updates) =>
+      super.copyWith((message) => updates(message as CreatePartitionRequest))
+          as CreatePartitionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreatePartitionRequest() / CreatePartitionRequest.new instead')
   static CreatePartitionRequest create() => CreatePartitionRequest._();
-  CreatePartitionRequest createEmptyInstance() => create();
-  static $pb.PbList<CreatePartitionRequest> createRepeated() => $pb.PbList<CreatePartitionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => CreatePartitionRequest._();
+  @$core.override
+  CreatePartitionRequest createEmptyInstance() => CreatePartitionRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreatePartitionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePartitionRequest>(create);
+  static CreatePartitionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreatePartitionRequest>(
+          CreatePartitionRequest.$_createMessage);
   static CreatePartitionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get tenantId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set tenantId($core.String v) { $_setString(0, v); }
+  set tenantId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasTenantId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearTenantId() => clearField(1);
+  void clearTenantId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get parentId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set parentId($core.String v) { $_setString(1, v); }
+  set parentId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasParentId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearParentId() => clearField(2);
+  void clearParentId() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
-  set name($core.String v) { $_setString(2, v); }
+  set name($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearName() => clearField(3);
+  void clearName() => $_clearField(3);
 
   @$pb.TagNumber(4)
   $core.String get description => $_getSZ(3);
   @$pb.TagNumber(4)
-  set description($core.String v) { $_setString(3, v); }
+  set description($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasDescription() => $_has(3);
   @$pb.TagNumber(4)
-  void clearDescription() => clearField(4);
+  void clearDescription() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $6.Struct get properties => $_getN(4);
+  $0.Struct get properties => $_getN(4);
   @$pb.TagNumber(5)
-  set properties($6.Struct v) { setField(5, v); }
+  set properties($0.Struct value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasProperties() => $_has(4);
   @$pb.TagNumber(5)
-  void clearProperties() => clearField(5);
+  void clearProperties() => $_clearField(5);
   @$pb.TagNumber(5)
-  $6.Struct ensureProperties() => $_ensure(4);
+  $0.Struct ensureProperties() => $_ensure(4);
 
   @$pb.TagNumber(6)
   $core.String get domain => $_getSZ(5);
   @$pb.TagNumber(6)
-  set domain($core.String v) { $_setString(5, v); }
+  set domain($core.String value) => $_setString(5, value);
   @$pb.TagNumber(6)
   $core.bool hasDomain() => $_has(5);
   @$pb.TagNumber(6)
-  void clearDomain() => clearField(6);
+  void clearDomain() => $_clearField(6);
 }
 
 class CreatePartitionResponse extends $pb.GeneratedMessage {
   factory CreatePartitionResponse({
     PartitionObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreatePartitionResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreatePartitionResponse._() : super();
-  factory CreatePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreatePartitionResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePartitionResponse clone() => CreatePartitionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePartitionResponse copyWith(void Function(CreatePartitionResponse) updates) => super.copyWith((message) => updates(message as CreatePartitionResponse)) as CreatePartitionResponse;
+  factory CreatePartitionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionResponse()..mergeFromBuffer(data, registry);
+  factory CreatePartitionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePartitionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePartitionResponse.$_createMessage)
+    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionResponse copyWith(
+          void Function(CreatePartitionResponse) updates) =>
+      super.copyWith((message) => updates(message as CreatePartitionResponse))
+          as CreatePartitionResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreatePartitionResponse() / CreatePartitionResponse.new instead')
   static CreatePartitionResponse create() => CreatePartitionResponse._();
-  CreatePartitionResponse createEmptyInstance() => create();
-  static $pb.PbList<CreatePartitionResponse> createRepeated() => $pb.PbList<CreatePartitionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => CreatePartitionResponse._();
+  @$core.override
+  CreatePartitionResponse createEmptyInstance() => CreatePartitionResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreatePartitionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePartitionResponse>(create);
+  static CreatePartitionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreatePartitionResponse>(
+          CreatePartitionResponse.$_createMessage);
   static CreatePartitionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PartitionObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PartitionObject v) { setField(1, v); }
+  set data(PartitionObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PartitionObject ensureData() => $_ensure(0);
 }
@@ -2033,171 +2153,182 @@ class UpdatePartitionRequest extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.String? description,
-    $7.STATE? state,
-    $6.Struct? properties,
+    $2.STATE? state,
+    $0.Struct? properties,
     $core.String? domain,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (domain != null) {
-      $result.domain = domain;
-    }
-    return $result;
+    final result = UpdatePartitionRequest._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (state != null) result.state = state;
+    if (properties != null) result.properties = properties;
+    if (domain != null) result.domain = domain;
+    return result;
   }
-  UpdatePartitionRequest._() : super();
-  factory UpdatePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  UpdatePartitionRequest._();
+
+  factory UpdatePartitionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRequest()..mergeFromBuffer(data, registry);
+  factory UpdatePartitionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePartitionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePartitionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'description')
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$6.Struct>(5, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$0.Struct>(5, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
     ..aOS(6, _omitFieldNames ? '' : 'domain')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRequest clone() => UpdatePartitionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRequest copyWith(void Function(UpdatePartitionRequest) updates) => super.copyWith((message) => updates(message as UpdatePartitionRequest)) as UpdatePartitionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRequest copyWith(
+          void Function(UpdatePartitionRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdatePartitionRequest))
+          as UpdatePartitionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdatePartitionRequest() / UpdatePartitionRequest.new instead')
   static UpdatePartitionRequest create() => UpdatePartitionRequest._();
-  UpdatePartitionRequest createEmptyInstance() => create();
-  static $pb.PbList<UpdatePartitionRequest> createRepeated() => $pb.PbList<UpdatePartitionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => UpdatePartitionRequest._();
+  @$core.override
+  UpdatePartitionRequest createEmptyInstance() => UpdatePartitionRequest._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePartitionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRequest>(create);
+  static UpdatePartitionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRequest>(
+          UpdatePartitionRequest.$_createMessage);
   static UpdatePartitionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get description => $_getSZ(2);
   @$pb.TagNumber(3)
-  set description($core.String v) { $_setString(2, v); }
+  set description($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasDescription() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDescription() => clearField(3);
+  void clearDescription() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $6.Struct get properties => $_getN(4);
+  $0.Struct get properties => $_getN(4);
   @$pb.TagNumber(5)
-  set properties($6.Struct v) { setField(5, v); }
+  set properties($0.Struct value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasProperties() => $_has(4);
   @$pb.TagNumber(5)
-  void clearProperties() => clearField(5);
+  void clearProperties() => $_clearField(5);
   @$pb.TagNumber(5)
-  $6.Struct ensureProperties() => $_ensure(4);
+  $0.Struct ensureProperties() => $_ensure(4);
 
   @$pb.TagNumber(6)
   $core.String get domain => $_getSZ(5);
   @$pb.TagNumber(6)
-  set domain($core.String v) { $_setString(5, v); }
+  set domain($core.String value) => $_setString(5, value);
   @$pb.TagNumber(6)
   $core.bool hasDomain() => $_has(5);
   @$pb.TagNumber(6)
-  void clearDomain() => clearField(6);
+  void clearDomain() => $_clearField(6);
 }
 
 class UpdatePartitionResponse extends $pb.GeneratedMessage {
   factory UpdatePartitionResponse({
     PartitionObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = UpdatePartitionResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  UpdatePartitionResponse._() : super();
-  factory UpdatePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionObject.create)
-    ..hasRequiredFields = false
-  ;
+  UpdatePartitionResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionResponse clone() => UpdatePartitionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionResponse copyWith(void Function(UpdatePartitionResponse) updates) => super.copyWith((message) => updates(message as UpdatePartitionResponse)) as UpdatePartitionResponse;
+  factory UpdatePartitionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionResponse()..mergeFromBuffer(data, registry);
+  factory UpdatePartitionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePartitionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePartitionResponse.$_createMessage)
+    ..aOM<PartitionObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionResponse copyWith(
+          void Function(UpdatePartitionResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdatePartitionResponse))
+          as UpdatePartitionResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdatePartitionResponse() / UpdatePartitionResponse.new instead')
   static UpdatePartitionResponse create() => UpdatePartitionResponse._();
-  UpdatePartitionResponse createEmptyInstance() => create();
-  static $pb.PbList<UpdatePartitionResponse> createRepeated() => $pb.PbList<UpdatePartitionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => UpdatePartitionResponse._();
+  @$core.override
+  UpdatePartitionResponse createEmptyInstance() => UpdatePartitionResponse._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePartitionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePartitionResponse>(create);
+  static UpdatePartitionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdatePartitionResponse>(
+          UpdatePartitionResponse.$_createMessage);
   static UpdatePartitionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PartitionObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PartitionObject v) { setField(1, v); }
+  set data(PartitionObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PartitionObject ensureData() => $_ensure(0);
 }
@@ -2206,230 +2337,271 @@ class RemovePartitionRequest extends $pb.GeneratedMessage {
   factory RemovePartitionRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemovePartitionRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemovePartitionRequest._() : super();
-  factory RemovePartitionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePartitionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePartitionRequest._();
+
+  factory RemovePartitionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRequest()..mergeFromBuffer(data, registry);
+  factory RemovePartitionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePartitionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePartitionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRequest clone() => RemovePartitionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRequest copyWith(void Function(RemovePartitionRequest) updates) => super.copyWith((message) => updates(message as RemovePartitionRequest)) as RemovePartitionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRequest copyWith(
+          void Function(RemovePartitionRequest) updates) =>
+      super.copyWith((message) => updates(message as RemovePartitionRequest))
+          as RemovePartitionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemovePartitionRequest() / RemovePartitionRequest.new instead')
   static RemovePartitionRequest create() => RemovePartitionRequest._();
-  RemovePartitionRequest createEmptyInstance() => create();
-  static $pb.PbList<RemovePartitionRequest> createRepeated() => $pb.PbList<RemovePartitionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RemovePartitionRequest._();
+  @$core.override
+  RemovePartitionRequest createEmptyInstance() => RemovePartitionRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemovePartitionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePartitionRequest>(create);
+  static RemovePartitionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemovePartitionRequest>(
+          RemovePartitionRequest.$_createMessage);
   static RemovePartitionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemovePartitionResponse extends $pb.GeneratedMessage {
   factory RemovePartitionResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemovePartitionResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemovePartitionResponse._() : super();
-  factory RemovePartitionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePartitionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePartitionResponse._();
+
+  factory RemovePartitionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionResponse()..mergeFromBuffer(data, registry);
+  factory RemovePartitionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePartitionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePartitionResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePartitionResponse clone() => RemovePartitionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePartitionResponse copyWith(void Function(RemovePartitionResponse) updates) => super.copyWith((message) => updates(message as RemovePartitionResponse)) as RemovePartitionResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionResponse copyWith(
+          void Function(RemovePartitionResponse) updates) =>
+      super.copyWith((message) => updates(message as RemovePartitionResponse))
+          as RemovePartitionResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemovePartitionResponse() / RemovePartitionResponse.new instead')
   static RemovePartitionResponse create() => RemovePartitionResponse._();
-  RemovePartitionResponse createEmptyInstance() => create();
-  static $pb.PbList<RemovePartitionResponse> createRepeated() => $pb.PbList<RemovePartitionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RemovePartitionResponse._();
+  @$core.override
+  RemovePartitionResponse createEmptyInstance() => RemovePartitionResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemovePartitionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePartitionResponse>(create);
+  static RemovePartitionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemovePartitionResponse>(
+          RemovePartitionResponse.$_createMessage);
   static RemovePartitionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class CreatePartitionRoleRequest extends $pb.GeneratedMessage {
   factory CreatePartitionRoleRequest({
     $core.String? partitionId,
     $core.String? name,
-    $6.Struct? properties,
+    $0.Struct? properties,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    return $result;
+    final result = CreatePartitionRoleRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (name != null) result.name = name;
+    if (properties != null) result.properties = properties;
+    return result;
   }
-  CreatePartitionRoleRequest._() : super();
-  factory CreatePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreatePartitionRoleRequest._();
+
+  factory CreatePartitionRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRoleRequest()..mergeFromBuffer(data, registry);
+  factory CreatePartitionRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePartitionRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePartitionRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'name')
-    ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(3, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRoleRequest clone() => CreatePartitionRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRoleRequest copyWith(void Function(CreatePartitionRoleRequest) updates) => super.copyWith((message) => updates(message as CreatePartitionRoleRequest)) as CreatePartitionRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRoleRequest copyWith(
+          void Function(CreatePartitionRoleRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreatePartitionRoleRequest))
+          as CreatePartitionRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreatePartitionRoleRequest() / CreatePartitionRoleRequest.new instead')
   static CreatePartitionRoleRequest create() => CreatePartitionRoleRequest._();
-  CreatePartitionRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<CreatePartitionRoleRequest> createRepeated() => $pb.PbList<CreatePartitionRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CreatePartitionRoleRequest._();
+  @$core.override
+  CreatePartitionRoleRequest createEmptyInstance() =>
+      CreatePartitionRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreatePartitionRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePartitionRoleRequest>(create);
+  static CreatePartitionRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreatePartitionRoleRequest>(
+          CreatePartitionRoleRequest.$_createMessage);
   static CreatePartitionRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $6.Struct get properties => $_getN(2);
+  $0.Struct get properties => $_getN(2);
   @$pb.TagNumber(3)
-  set properties($6.Struct v) { setField(3, v); }
+  set properties($0.Struct value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasProperties() => $_has(2);
   @$pb.TagNumber(3)
-  void clearProperties() => clearField(3);
+  void clearProperties() => $_clearField(3);
   @$pb.TagNumber(3)
-  $6.Struct ensureProperties() => $_ensure(2);
+  $0.Struct ensureProperties() => $_ensure(2);
 }
 
 class CreatePartitionRoleResponse extends $pb.GeneratedMessage {
   factory CreatePartitionRoleResponse({
     PartitionRoleObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreatePartitionRoleResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreatePartitionRoleResponse._() : super();
-  factory CreatePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreatePartitionRoleResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRoleResponse clone() => CreatePartitionRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePartitionRoleResponse copyWith(void Function(CreatePartitionRoleResponse) updates) => super.copyWith((message) => updates(message as CreatePartitionRoleResponse)) as CreatePartitionRoleResponse;
+  factory CreatePartitionRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRoleResponse()..mergeFromBuffer(data, registry);
+  factory CreatePartitionRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePartitionRoleResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePartitionRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePartitionRoleResponse.$_createMessage)
+    ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePartitionRoleResponse copyWith(
+          void Function(CreatePartitionRoleResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreatePartitionRoleResponse))
+          as CreatePartitionRoleResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static CreatePartitionRoleResponse create() => CreatePartitionRoleResponse._();
-  CreatePartitionRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<CreatePartitionRoleResponse> createRepeated() => $pb.PbList<CreatePartitionRoleResponse>();
+  @$core.Deprecated(
+      'Use CreatePartitionRoleResponse() / CreatePartitionRoleResponse.new instead')
+  static CreatePartitionRoleResponse create() =>
+      CreatePartitionRoleResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CreatePartitionRoleResponse._();
+  @$core.override
+  CreatePartitionRoleResponse createEmptyInstance() =>
+      CreatePartitionRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreatePartitionRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePartitionRoleResponse>(create);
+  static CreatePartitionRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreatePartitionRoleResponse>(
+          CreatePartitionRoleResponse.$_createMessage);
   static CreatePartitionRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PartitionRoleObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PartitionRoleObject v) { setField(1, v); }
+  set data(PartitionRoleObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PartitionRoleObject ensureData() => $_ensure(0);
 }
@@ -2438,144 +2610,166 @@ class UpdatePartitionRoleRequest extends $pb.GeneratedMessage {
   factory UpdatePartitionRoleRequest({
     $core.String? id,
     $core.String? name,
-    $6.Struct? properties,
-    $7.STATE? state,
+    $0.Struct? properties,
+    $2.STATE? state,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    return $result;
+    final result = UpdatePartitionRoleRequest._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (properties != null) result.properties = properties;
+    if (state != null) result.state = state;
+    return result;
   }
-  UpdatePartitionRoleRequest._() : super();
-  factory UpdatePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  UpdatePartitionRoleRequest._();
+
+  factory UpdatePartitionRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRoleRequest()..mergeFromBuffer(data, registry);
+  factory UpdatePartitionRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePartitionRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePartitionRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
-    ..aOM<$6.Struct>(3, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(3, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRoleRequest clone() => UpdatePartitionRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRoleRequest copyWith(void Function(UpdatePartitionRoleRequest) updates) => super.copyWith((message) => updates(message as UpdatePartitionRoleRequest)) as UpdatePartitionRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRoleRequest copyWith(
+          void Function(UpdatePartitionRoleRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdatePartitionRoleRequest))
+          as UpdatePartitionRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdatePartitionRoleRequest() / UpdatePartitionRoleRequest.new instead')
   static UpdatePartitionRoleRequest create() => UpdatePartitionRoleRequest._();
-  UpdatePartitionRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<UpdatePartitionRoleRequest> createRepeated() => $pb.PbList<UpdatePartitionRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdatePartitionRoleRequest._();
+  @$core.override
+  UpdatePartitionRoleRequest createEmptyInstance() =>
+      UpdatePartitionRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePartitionRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRoleRequest>(create);
+  static UpdatePartitionRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRoleRequest>(
+          UpdatePartitionRoleRequest.$_createMessage);
   static UpdatePartitionRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $6.Struct get properties => $_getN(2);
+  $0.Struct get properties => $_getN(2);
   @$pb.TagNumber(3)
-  set properties($6.Struct v) { setField(3, v); }
+  set properties($0.Struct value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasProperties() => $_has(2);
   @$pb.TagNumber(3)
-  void clearProperties() => clearField(3);
+  void clearProperties() => $_clearField(3);
   @$pb.TagNumber(3)
-  $6.Struct ensureProperties() => $_ensure(2);
+  $0.Struct ensureProperties() => $_ensure(2);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 }
 
 class UpdatePartitionRoleResponse extends $pb.GeneratedMessage {
   factory UpdatePartitionRoleResponse({
     PartitionRoleObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = UpdatePartitionRoleResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  UpdatePartitionRoleResponse._() : super();
-  factory UpdatePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PartitionRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+  UpdatePartitionRoleResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRoleResponse clone() => UpdatePartitionRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePartitionRoleResponse copyWith(void Function(UpdatePartitionRoleResponse) updates) => super.copyWith((message) => updates(message as UpdatePartitionRoleResponse)) as UpdatePartitionRoleResponse;
+  factory UpdatePartitionRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRoleResponse()..mergeFromBuffer(data, registry);
+  factory UpdatePartitionRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePartitionRoleResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePartitionRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePartitionRoleResponse.$_createMessage)
+    ..aOM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePartitionRoleResponse copyWith(
+          void Function(UpdatePartitionRoleResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdatePartitionRoleResponse))
+          as UpdatePartitionRoleResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static UpdatePartitionRoleResponse create() => UpdatePartitionRoleResponse._();
-  UpdatePartitionRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<UpdatePartitionRoleResponse> createRepeated() => $pb.PbList<UpdatePartitionRoleResponse>();
+  @$core.Deprecated(
+      'Use UpdatePartitionRoleResponse() / UpdatePartitionRoleResponse.new instead')
+  static UpdatePartitionRoleResponse create() =>
+      UpdatePartitionRoleResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdatePartitionRoleResponse._();
+  @$core.override
+  UpdatePartitionRoleResponse createEmptyInstance() =>
+      UpdatePartitionRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePartitionRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRoleResponse>(create);
+  static UpdatePartitionRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdatePartitionRoleResponse>(
+          UpdatePartitionRoleResponse.$_createMessage);
   static UpdatePartitionRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PartitionRoleObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PartitionRoleObject v) { setField(1, v); }
+  set data(PartitionRoleObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PartitionRoleObject ensureData() => $_ensure(0);
 }
@@ -2584,210 +2778,256 @@ class RemovePartitionRoleRequest extends $pb.GeneratedMessage {
   factory RemovePartitionRoleRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemovePartitionRoleRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemovePartitionRoleRequest._() : super();
-  factory RemovePartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePartitionRoleRequest._();
+
+  factory RemovePartitionRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRoleRequest()..mergeFromBuffer(data, registry);
+  factory RemovePartitionRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePartitionRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePartitionRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRoleRequest clone() => RemovePartitionRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRoleRequest copyWith(void Function(RemovePartitionRoleRequest) updates) => super.copyWith((message) => updates(message as RemovePartitionRoleRequest)) as RemovePartitionRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRoleRequest copyWith(
+          void Function(RemovePartitionRoleRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RemovePartitionRoleRequest))
+          as RemovePartitionRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemovePartitionRoleRequest() / RemovePartitionRoleRequest.new instead')
   static RemovePartitionRoleRequest create() => RemovePartitionRoleRequest._();
-  RemovePartitionRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<RemovePartitionRoleRequest> createRepeated() => $pb.PbList<RemovePartitionRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() =>
+      RemovePartitionRoleRequest._();
+  @$core.override
+  RemovePartitionRoleRequest createEmptyInstance() =>
+      RemovePartitionRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemovePartitionRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePartitionRoleRequest>(create);
+  static RemovePartitionRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemovePartitionRoleRequest>(
+          RemovePartitionRoleRequest.$_createMessage);
   static RemovePartitionRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemovePartitionRoleResponse extends $pb.GeneratedMessage {
   factory RemovePartitionRoleResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemovePartitionRoleResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemovePartitionRoleResponse._() : super();
-  factory RemovePartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePartitionRoleResponse._();
+
+  factory RemovePartitionRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRoleResponse()..mergeFromBuffer(data, registry);
+  factory RemovePartitionRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePartitionRoleResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePartitionRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePartitionRoleResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRoleResponse clone() => RemovePartitionRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePartitionRoleResponse copyWith(void Function(RemovePartitionRoleResponse) updates) => super.copyWith((message) => updates(message as RemovePartitionRoleResponse)) as RemovePartitionRoleResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePartitionRoleResponse copyWith(
+          void Function(RemovePartitionRoleResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as RemovePartitionRoleResponse))
+          as RemovePartitionRoleResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static RemovePartitionRoleResponse create() => RemovePartitionRoleResponse._();
-  RemovePartitionRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<RemovePartitionRoleResponse> createRepeated() => $pb.PbList<RemovePartitionRoleResponse>();
+  @$core.Deprecated(
+      'Use RemovePartitionRoleResponse() / RemovePartitionRoleResponse.new instead')
+  static RemovePartitionRoleResponse create() =>
+      RemovePartitionRoleResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      RemovePartitionRoleResponse._();
+  @$core.override
+  RemovePartitionRoleResponse createEmptyInstance() =>
+      RemovePartitionRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemovePartitionRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePartitionRoleResponse>(create);
+  static RemovePartitionRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemovePartitionRoleResponse>(
+          RemovePartitionRoleResponse.$_createMessage);
   static RemovePartitionRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class ListPartitionRoleRequest extends $pb.GeneratedMessage {
   factory ListPartitionRoleRequest({
     $core.String? partitionId,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    return $result;
+    final result = ListPartitionRoleRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (cursor != null) result.cursor = cursor;
+    return result;
   }
-  ListPartitionRoleRequest._() : super();
-  factory ListPartitionRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPartitionRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ListPartitionRoleRequest._();
+
+  factory ListPartitionRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRoleRequest()..mergeFromBuffer(data, registry);
+  factory ListPartitionRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPartitionRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPartitionRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
-    ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$2.PageCursor>(2, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPartitionRoleRequest clone() => ListPartitionRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPartitionRoleRequest copyWith(void Function(ListPartitionRoleRequest) updates) => super.copyWith((message) => updates(message as ListPartitionRoleRequest)) as ListPartitionRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRoleRequest copyWith(
+          void Function(ListPartitionRoleRequest) updates) =>
+      super.copyWith((message) => updates(message as ListPartitionRoleRequest))
+          as ListPartitionRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListPartitionRoleRequest() / ListPartitionRoleRequest.new instead')
   static ListPartitionRoleRequest create() => ListPartitionRoleRequest._();
-  ListPartitionRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<ListPartitionRoleRequest> createRepeated() => $pb.PbList<ListPartitionRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListPartitionRoleRequest._();
+  @$core.override
+  ListPartitionRoleRequest createEmptyInstance() =>
+      ListPartitionRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListPartitionRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPartitionRoleRequest>(create);
+  static ListPartitionRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListPartitionRoleRequest>(
+          ListPartitionRoleRequest.$_createMessage);
   static ListPartitionRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $7.PageCursor get cursor => $_getN(1);
+  $2.PageCursor get cursor => $_getN(1);
   @$pb.TagNumber(2)
-  set cursor($7.PageCursor v) { setField(2, v); }
+  set cursor($2.PageCursor value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasCursor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCursor() => clearField(2);
+  void clearCursor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.PageCursor ensureCursor() => $_ensure(1);
+  $2.PageCursor ensureCursor() => $_ensure(1);
 }
 
 class ListPartitionRoleResponse extends $pb.GeneratedMessage {
   factory ListPartitionRoleResponse({
     $core.Iterable<PartitionRoleObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListPartitionRoleResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListPartitionRoleResponse._() : super();
-  factory ListPartitionRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPartitionRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPartitionRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PartitionRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListPartitionRoleResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPartitionRoleResponse clone() => ListPartitionRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPartitionRoleResponse copyWith(void Function(ListPartitionRoleResponse) updates) => super.copyWith((message) => updates(message as ListPartitionRoleResponse)) as ListPartitionRoleResponse;
+  factory ListPartitionRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRoleResponse()..mergeFromBuffer(data, registry);
+  factory ListPartitionRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPartitionRoleResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPartitionRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPartitionRoleResponse.$_createMessage)
+    ..pPM<PartitionRoleObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PartitionRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPartitionRoleResponse copyWith(
+          void Function(ListPartitionRoleResponse) updates) =>
+      super.copyWith((message) => updates(message as ListPartitionRoleResponse))
+          as ListPartitionRoleResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListPartitionRoleResponse() / ListPartitionRoleResponse.new instead')
   static ListPartitionRoleResponse create() => ListPartitionRoleResponse._();
-  ListPartitionRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<ListPartitionRoleResponse> createRepeated() => $pb.PbList<ListPartitionRoleResponse>();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListPartitionRoleResponse._();
+  @$core.override
+  ListPartitionRoleResponse createEmptyInstance() =>
+      ListPartitionRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListPartitionRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPartitionRoleResponse>(create);
+  static ListPartitionRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListPartitionRoleResponse>(
+          ListPartitionRoleResponse.$_createMessage);
   static ListPartitionRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<PartitionRoleObject> get data => $_getList(0);
+  $pb.PbList<PartitionRoleObject> get data => $_getList(0);
 }
 
 class CreatePageRequest extends $pb.GeneratedMessage {
@@ -2795,143 +3035,153 @@ class CreatePageRequest extends $pb.GeneratedMessage {
     $core.String? partitionId,
     $core.String? name,
     $core.String? html,
-    $6.Struct? properties,
+    $0.Struct? properties,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (html != null) {
-      $result.html = html;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    return $result;
+    final result = CreatePageRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (name != null) result.name = name;
+    if (html != null) result.html = html;
+    if (properties != null) result.properties = properties;
+    return result;
   }
-  CreatePageRequest._() : super();
-  factory CreatePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreatePageRequest._();
+
+  factory CreatePageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePageRequest()..mergeFromBuffer(data, registry);
+  factory CreatePageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePageRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
-    ..aOM<$6.Struct>(4, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Struct>(4, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePageRequest clone() => CreatePageRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePageRequest copyWith(void Function(CreatePageRequest) updates) => super.copyWith((message) => updates(message as CreatePageRequest)) as CreatePageRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePageRequest copyWith(void Function(CreatePageRequest) updates) =>
+      super.copyWith((message) => updates(message as CreatePageRequest))
+          as CreatePageRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CreatePageRequest() / CreatePageRequest.new instead')
   static CreatePageRequest create() => CreatePageRequest._();
-  CreatePageRequest createEmptyInstance() => create();
-  static $pb.PbList<CreatePageRequest> createRepeated() => $pb.PbList<CreatePageRequest>();
+  static $pb.GeneratedMessage $_createMessage() => CreatePageRequest._();
+  @$core.override
+  CreatePageRequest createEmptyInstance() => CreatePageRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreatePageRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePageRequest>(create);
+  static CreatePageRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePageRequest>(
+          CreatePageRequest.$_createMessage);
   static CreatePageRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get html => $_getSZ(2);
   @$pb.TagNumber(3)
-  set html($core.String v) { $_setString(2, v); }
+  set html($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasHtml() => $_has(2);
   @$pb.TagNumber(3)
-  void clearHtml() => clearField(3);
+  void clearHtml() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $6.Struct get properties => $_getN(3);
+  $0.Struct get properties => $_getN(3);
   @$pb.TagNumber(4)
-  set properties($6.Struct v) { setField(4, v); }
+  set properties($0.Struct value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasProperties() => $_has(3);
   @$pb.TagNumber(4)
-  void clearProperties() => clearField(4);
+  void clearProperties() => $_clearField(4);
   @$pb.TagNumber(4)
-  $6.Struct ensureProperties() => $_ensure(3);
+  $0.Struct ensureProperties() => $_ensure(3);
 }
 
 class CreatePageResponse extends $pb.GeneratedMessage {
   factory CreatePageResponse({
     PageObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreatePageResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreatePageResponse._() : super();
-  factory CreatePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreatePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreatePageResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreatePageResponse clone() => CreatePageResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreatePageResponse copyWith(void Function(CreatePageResponse) updates) => super.copyWith((message) => updates(message as CreatePageResponse)) as CreatePageResponse;
+  factory CreatePageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePageResponse()..mergeFromBuffer(data, registry);
+  factory CreatePageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreatePageResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreatePageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreatePageResponse.$_createMessage)
+    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PageObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreatePageResponse copyWith(void Function(CreatePageResponse) updates) =>
+      super.copyWith((message) => updates(message as CreatePageResponse))
+          as CreatePageResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CreatePageResponse() / CreatePageResponse.new instead')
   static CreatePageResponse create() => CreatePageResponse._();
-  CreatePageResponse createEmptyInstance() => create();
-  static $pb.PbList<CreatePageResponse> createRepeated() => $pb.PbList<CreatePageResponse>();
+  static $pb.GeneratedMessage $_createMessage() => CreatePageResponse._();
+  @$core.override
+  CreatePageResponse createEmptyInstance() => CreatePageResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreatePageResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreatePageResponse>(create);
+  static CreatePageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreatePageResponse>(
+          CreatePageResponse.$_createMessage);
   static CreatePageResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PageObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PageObject v) { setField(1, v); }
+  set data(PageObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PageObject ensureData() => $_ensure(0);
 }
@@ -2942,126 +3192,137 @@ class GetPageRequest extends $pb.GeneratedMessage {
     $core.String? partitionId,
     $core.String? name,
   }) {
-    final $result = create();
-    if (pageId != null) {
-      $result.pageId = pageId;
-    }
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    return $result;
+    final result = GetPageRequest._();
+    if (pageId != null) result.pageId = pageId;
+    if (partitionId != null) result.partitionId = partitionId;
+    if (name != null) result.name = name;
+    return result;
   }
-  GetPageRequest._() : super();
-  factory GetPageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GetPageRequest._();
+
+  factory GetPageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPageRequest()..mergeFromBuffer(data, registry);
+  factory GetPageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPageRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'pageId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
     ..aOS(3, _omitFieldNames ? '' : 'name')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPageRequest clone() => GetPageRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPageRequest copyWith(void Function(GetPageRequest) updates) => super.copyWith((message) => updates(message as GetPageRequest)) as GetPageRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPageRequest copyWith(void Function(GetPageRequest) updates) =>
+      super.copyWith((message) => updates(message as GetPageRequest))
+          as GetPageRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetPageRequest() / GetPageRequest.new instead')
   static GetPageRequest create() => GetPageRequest._();
-  GetPageRequest createEmptyInstance() => create();
-  static $pb.PbList<GetPageRequest> createRepeated() => $pb.PbList<GetPageRequest>();
+  static $pb.GeneratedMessage $_createMessage() => GetPageRequest._();
+  @$core.override
+  GetPageRequest createEmptyInstance() => GetPageRequest._();
   @$core.pragma('dart2js:noInline')
-  static GetPageRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPageRequest>(create);
+  static GetPageRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPageRequest>(
+          GetPageRequest.$_createMessage);
   static GetPageRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get pageId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set pageId($core.String v) { $_setString(0, v); }
+  set pageId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPageId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPageId() => clearField(1);
+  void clearPageId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get partitionId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set partitionId($core.String v) { $_setString(1, v); }
+  set partitionId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPartitionId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPartitionId() => clearField(2);
+  void clearPartitionId() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
-  set name($core.String v) { $_setString(2, v); }
+  set name($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearName() => clearField(3);
+  void clearName() => $_clearField(3);
 }
 
 class GetPageResponse extends $pb.GeneratedMessage {
   factory GetPageResponse({
     PageObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = GetPageResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  GetPageResponse._() : super();
-  factory GetPageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetPageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
-    ..hasRequiredFields = false
-  ;
+  GetPageResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetPageResponse clone() => GetPageResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetPageResponse copyWith(void Function(GetPageResponse) updates) => super.copyWith((message) => updates(message as GetPageResponse)) as GetPageResponse;
+  factory GetPageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPageResponse()..mergeFromBuffer(data, registry);
+  factory GetPageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetPageResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetPageResponse.$_createMessage)
+    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PageObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetPageResponse copyWith(void Function(GetPageResponse) updates) =>
+      super.copyWith((message) => updates(message as GetPageResponse))
+          as GetPageResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetPageResponse() / GetPageResponse.new instead')
   static GetPageResponse create() => GetPageResponse._();
-  GetPageResponse createEmptyInstance() => create();
-  static $pb.PbList<GetPageResponse> createRepeated() => $pb.PbList<GetPageResponse>();
+  static $pb.GeneratedMessage $_createMessage() => GetPageResponse._();
+  @$core.override
+  GetPageResponse createEmptyInstance() => GetPageResponse._();
   @$core.pragma('dart2js:noInline')
-  static GetPageResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPageResponse>(create);
+  static GetPageResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPageResponse>(
+          GetPageResponse.$_createMessage);
   static GetPageResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PageObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PageObject v) { setField(1, v); }
+  set data(PageObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PageObject ensureData() => $_ensure(0);
 }
@@ -3071,157 +3332,166 @@ class UpdatePageRequest extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.String? html,
-    $7.STATE? state,
-    $6.Struct? properties,
+    $2.STATE? state,
+    $0.Struct? properties,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (html != null) {
-      $result.html = html;
-    }
-    if (state != null) {
-      $result.state = state;
-    }
-    if (properties != null) {
-      $result.properties = properties;
-    }
-    return $result;
+    final result = UpdatePageRequest._();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (html != null) result.html = html;
+    if (state != null) result.state = state;
+    if (properties != null) result.properties = properties;
+    return result;
   }
-  UpdatePageRequest._() : super();
-  factory UpdatePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  UpdatePageRequest._();
+
+  factory UpdatePageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePageRequest()..mergeFromBuffer(data, registry);
+  factory UpdatePageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePageRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'html')
-    ..e<$7.STATE>(4, _omitFieldNames ? '' : 'state', $pb.PbFieldType.OE, defaultOrMaker: $7.STATE.CREATED, valueOf: $7.STATE.valueOf, enumValues: $7.STATE.values)
-    ..aOM<$6.Struct>(5, _omitFieldNames ? '' : 'properties', subBuilder: $6.Struct.create)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$2.STATE>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $2.STATE.values)
+    ..aOM<$0.Struct>(5, _omitFieldNames ? '' : 'properties',
+        subBuilder: $0.Struct.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePageRequest clone() => UpdatePageRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePageRequest copyWith(void Function(UpdatePageRequest) updates) => super.copyWith((message) => updates(message as UpdatePageRequest)) as UpdatePageRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePageRequest copyWith(void Function(UpdatePageRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdatePageRequest))
+          as UpdatePageRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use UpdatePageRequest() / UpdatePageRequest.new instead')
   static UpdatePageRequest create() => UpdatePageRequest._();
-  UpdatePageRequest createEmptyInstance() => create();
-  static $pb.PbList<UpdatePageRequest> createRepeated() => $pb.PbList<UpdatePageRequest>();
+  static $pb.GeneratedMessage $_createMessage() => UpdatePageRequest._();
+  @$core.override
+  UpdatePageRequest createEmptyInstance() => UpdatePageRequest._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePageRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePageRequest>(create);
+  static UpdatePageRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePageRequest>(
+          UpdatePageRequest.$_createMessage);
   static UpdatePageRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get html => $_getSZ(2);
   @$pb.TagNumber(3)
-  set html($core.String v) { $_setString(2, v); }
+  set html($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasHtml() => $_has(2);
   @$pb.TagNumber(3)
-  void clearHtml() => clearField(3);
+  void clearHtml() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $7.STATE get state => $_getN(3);
+  $2.STATE get state => $_getN(3);
   @$pb.TagNumber(4)
-  set state($7.STATE v) { setField(4, v); }
+  set state($2.STATE value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasState() => $_has(3);
   @$pb.TagNumber(4)
-  void clearState() => clearField(4);
+  void clearState() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $6.Struct get properties => $_getN(4);
+  $0.Struct get properties => $_getN(4);
   @$pb.TagNumber(5)
-  set properties($6.Struct v) { setField(5, v); }
+  set properties($0.Struct value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasProperties() => $_has(4);
   @$pb.TagNumber(5)
-  void clearProperties() => clearField(5);
+  void clearProperties() => $_clearField(5);
   @$pb.TagNumber(5)
-  $6.Struct ensureProperties() => $_ensure(4);
+  $0.Struct ensureProperties() => $_ensure(4);
 }
 
 class UpdatePageResponse extends $pb.GeneratedMessage {
   factory UpdatePageResponse({
     PageObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = UpdatePageResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  UpdatePageResponse._() : super();
-  factory UpdatePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UpdatePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdatePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data', subBuilder: PageObject.create)
-    ..hasRequiredFields = false
-  ;
+  UpdatePageResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  UpdatePageResponse clone() => UpdatePageResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  UpdatePageResponse copyWith(void Function(UpdatePageResponse) updates) => super.copyWith((message) => updates(message as UpdatePageResponse)) as UpdatePageResponse;
+  factory UpdatePageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePageResponse()..mergeFromBuffer(data, registry);
+  factory UpdatePageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdatePageResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdatePageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: UpdatePageResponse.$_createMessage)
+    ..aOM<PageObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PageObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdatePageResponse copyWith(void Function(UpdatePageResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdatePageResponse))
+          as UpdatePageResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use UpdatePageResponse() / UpdatePageResponse.new instead')
   static UpdatePageResponse create() => UpdatePageResponse._();
-  UpdatePageResponse createEmptyInstance() => create();
-  static $pb.PbList<UpdatePageResponse> createRepeated() => $pb.PbList<UpdatePageResponse>();
+  static $pb.GeneratedMessage $_createMessage() => UpdatePageResponse._();
+  @$core.override
+  UpdatePageResponse createEmptyInstance() => UpdatePageResponse._();
   @$core.pragma('dart2js:noInline')
-  static UpdatePageResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdatePageResponse>(create);
+  static UpdatePageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdatePageResponse>(
+          UpdatePageResponse.$_createMessage);
   static UpdatePageResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   PageObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(PageObject v) { setField(1, v); }
+  set data(PageObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   PageObject ensureData() => $_ensure(0);
 }
@@ -3229,211 +3499,239 @@ class UpdatePageResponse extends $pb.GeneratedMessage {
 class ListPageRequest extends $pb.GeneratedMessage {
   factory ListPageRequest({
     $core.String? partitionId,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    return $result;
+    final result = ListPageRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (cursor != null) result.cursor = cursor;
+    return result;
   }
-  ListPageRequest._() : super();
-  factory ListPageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ListPageRequest._();
+
+  factory ListPageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPageRequest()..mergeFromBuffer(data, registry);
+  factory ListPageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPageRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
-    ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$2.PageCursor>(2, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPageRequest clone() => ListPageRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPageRequest copyWith(void Function(ListPageRequest) updates) => super.copyWith((message) => updates(message as ListPageRequest)) as ListPageRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPageRequest copyWith(void Function(ListPageRequest) updates) =>
+      super.copyWith((message) => updates(message as ListPageRequest))
+          as ListPageRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListPageRequest() / ListPageRequest.new instead')
   static ListPageRequest create() => ListPageRequest._();
-  ListPageRequest createEmptyInstance() => create();
-  static $pb.PbList<ListPageRequest> createRepeated() => $pb.PbList<ListPageRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListPageRequest._();
+  @$core.override
+  ListPageRequest createEmptyInstance() => ListPageRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListPageRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPageRequest>(create);
+  static ListPageRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPageRequest>(
+          ListPageRequest.$_createMessage);
   static ListPageRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $7.PageCursor get cursor => $_getN(1);
+  $2.PageCursor get cursor => $_getN(1);
   @$pb.TagNumber(2)
-  set cursor($7.PageCursor v) { setField(2, v); }
+  set cursor($2.PageCursor value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasCursor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCursor() => clearField(2);
+  void clearCursor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.PageCursor ensureCursor() => $_ensure(1);
+  $2.PageCursor ensureCursor() => $_ensure(1);
 }
 
 class ListPageResponse extends $pb.GeneratedMessage {
   factory ListPageResponse({
     $core.Iterable<PageObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListPageResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListPageResponse._() : super();
-  factory ListPageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListPageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListPageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<PageObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: PageObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListPageResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListPageResponse clone() => ListPageResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListPageResponse copyWith(void Function(ListPageResponse) updates) => super.copyWith((message) => updates(message as ListPageResponse)) as ListPageResponse;
+  factory ListPageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPageResponse()..mergeFromBuffer(data, registry);
+  factory ListPageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListPageResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListPageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListPageResponse.$_createMessage)
+    ..pPM<PageObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: PageObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListPageResponse copyWith(void Function(ListPageResponse) updates) =>
+      super.copyWith((message) => updates(message as ListPageResponse))
+          as ListPageResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListPageResponse() / ListPageResponse.new instead')
   static ListPageResponse create() => ListPageResponse._();
-  ListPageResponse createEmptyInstance() => create();
-  static $pb.PbList<ListPageResponse> createRepeated() => $pb.PbList<ListPageResponse>();
+  static $pb.GeneratedMessage $_createMessage() => ListPageResponse._();
+  @$core.override
+  ListPageResponse createEmptyInstance() => ListPageResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListPageResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPageResponse>(create);
+  static ListPageResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListPageResponse>(
+          ListPageResponse.$_createMessage);
   static ListPageResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<PageObject> get data => $_getList(0);
+  $pb.PbList<PageObject> get data => $_getList(0);
 }
 
 class RemovePageRequest extends $pb.GeneratedMessage {
   factory RemovePageRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemovePageRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemovePageRequest._() : super();
-  factory RemovePageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePageRequest._();
+
+  factory RemovePageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePageRequest()..mergeFromBuffer(data, registry);
+  factory RemovePageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePageRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePageRequest clone() => RemovePageRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePageRequest copyWith(void Function(RemovePageRequest) updates) => super.copyWith((message) => updates(message as RemovePageRequest)) as RemovePageRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePageRequest copyWith(void Function(RemovePageRequest) updates) =>
+      super.copyWith((message) => updates(message as RemovePageRequest))
+          as RemovePageRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RemovePageRequest() / RemovePageRequest.new instead')
   static RemovePageRequest create() => RemovePageRequest._();
-  RemovePageRequest createEmptyInstance() => create();
-  static $pb.PbList<RemovePageRequest> createRepeated() => $pb.PbList<RemovePageRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RemovePageRequest._();
+  @$core.override
+  RemovePageRequest createEmptyInstance() => RemovePageRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemovePageRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePageRequest>(create);
+  static RemovePageRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePageRequest>(
+          RemovePageRequest.$_createMessage);
   static RemovePageRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemovePageResponse extends $pb.GeneratedMessage {
   factory RemovePageResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemovePageResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemovePageResponse._() : super();
-  factory RemovePageResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemovePageResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemovePageResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemovePageResponse._();
+
+  factory RemovePageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePageResponse()..mergeFromBuffer(data, registry);
+  factory RemovePageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemovePageResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemovePageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemovePageResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemovePageResponse clone() => RemovePageResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemovePageResponse copyWith(void Function(RemovePageResponse) updates) => super.copyWith((message) => updates(message as RemovePageResponse)) as RemovePageResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemovePageResponse copyWith(void Function(RemovePageResponse) updates) =>
+      super.copyWith((message) => updates(message as RemovePageResponse))
+          as RemovePageResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RemovePageResponse() / RemovePageResponse.new instead')
   static RemovePageResponse create() => RemovePageResponse._();
-  RemovePageResponse createEmptyInstance() => create();
-  static $pb.PbList<RemovePageResponse> createRepeated() => $pb.PbList<RemovePageResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RemovePageResponse._();
+  @$core.override
+  RemovePageResponse createEmptyInstance() => RemovePageResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemovePageResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemovePageResponse>(create);
+  static RemovePageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemovePageResponse>(
+          RemovePageResponse.$_createMessage);
   static RemovePageResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class CreateAccessRequest extends $pb.GeneratedMessage {
@@ -3441,113 +3739,128 @@ class CreateAccessRequest extends $pb.GeneratedMessage {
     $core.String? partitionId,
     $core.String? profileId,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    return $result;
+    final result = CreateAccessRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (profileId != null) result.profileId = profileId;
+    return result;
   }
-  CreateAccessRequest._() : super();
-  factory CreateAccessRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateAccessRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreateAccessRequest._();
+
+  factory CreateAccessRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRequest()..mergeFromBuffer(data, registry);
+  factory CreateAccessRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateAccessRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateAccessRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateAccessRequest clone() => CreateAccessRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateAccessRequest copyWith(void Function(CreateAccessRequest) updates) => super.copyWith((message) => updates(message as CreateAccessRequest)) as CreateAccessRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRequest copyWith(void Function(CreateAccessRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateAccessRequest))
+          as CreateAccessRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use CreateAccessRequest() / CreateAccessRequest.new instead')
   static CreateAccessRequest create() => CreateAccessRequest._();
-  CreateAccessRequest createEmptyInstance() => create();
-  static $pb.PbList<CreateAccessRequest> createRepeated() => $pb.PbList<CreateAccessRequest>();
+  static $pb.GeneratedMessage $_createMessage() => CreateAccessRequest._();
+  @$core.override
+  CreateAccessRequest createEmptyInstance() => CreateAccessRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreateAccessRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateAccessRequest>(create);
+  static CreateAccessRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateAccessRequest>(
+          CreateAccessRequest.$_createMessage);
   static CreateAccessRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get profileId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set profileId($core.String v) { $_setString(1, v); }
+  set profileId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasProfileId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearProfileId() => clearField(2);
+  void clearProfileId() => $_clearField(2);
 }
 
 class CreateAccessResponse extends $pb.GeneratedMessage {
   factory CreateAccessResponse({
     AccessObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreateAccessResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreateAccessResponse._() : super();
-  factory CreateAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreateAccessResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateAccessResponse clone() => CreateAccessResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateAccessResponse copyWith(void Function(CreateAccessResponse) updates) => super.copyWith((message) => updates(message as CreateAccessResponse)) as CreateAccessResponse;
+  factory CreateAccessResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessResponse()..mergeFromBuffer(data, registry);
+  factory CreateAccessResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateAccessResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateAccessResponse.$_createMessage)
+    ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: AccessObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessResponse copyWith(void Function(CreateAccessResponse) updates) =>
+      super.copyWith((message) => updates(message as CreateAccessResponse))
+          as CreateAccessResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateAccessResponse() / CreateAccessResponse.new instead')
   static CreateAccessResponse create() => CreateAccessResponse._();
-  CreateAccessResponse createEmptyInstance() => create();
-  static $pb.PbList<CreateAccessResponse> createRepeated() => $pb.PbList<CreateAccessResponse>();
+  static $pb.GeneratedMessage $_createMessage() => CreateAccessResponse._();
+  @$core.override
+  CreateAccessResponse createEmptyInstance() => CreateAccessResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreateAccessResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateAccessResponse>(create);
+  static CreateAccessResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateAccessResponse>(
+          CreateAccessResponse.$_createMessage);
   static CreateAccessResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   AccessObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(AccessObject v) { setField(1, v); }
+  set data(AccessObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   AccessObject ensureData() => $_ensure(0);
 }
@@ -3558,369 +3871,410 @@ class GetAccessRequest extends $pb.GeneratedMessage {
     $core.String? partitionId,
     $core.String? profileId,
   }) {
-    final $result = create();
-    if (accessId != null) {
-      $result.accessId = accessId;
-    }
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    return $result;
+    final result = GetAccessRequest._();
+    if (accessId != null) result.accessId = accessId;
+    if (partitionId != null) result.partitionId = partitionId;
+    if (profileId != null) result.profileId = profileId;
+    return result;
   }
-  GetAccessRequest._() : super();
-  factory GetAccessRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetAccessRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GetAccessRequest._();
+
+  factory GetAccessRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessRequest()..mergeFromBuffer(data, registry);
+  factory GetAccessRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetAccessRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetAccessRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionId')
     ..aOS(4, _omitFieldNames ? '' : 'profileId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetAccessRequest clone() => GetAccessRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetAccessRequest copyWith(void Function(GetAccessRequest) updates) => super.copyWith((message) => updates(message as GetAccessRequest)) as GetAccessRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessRequest copyWith(void Function(GetAccessRequest) updates) =>
+      super.copyWith((message) => updates(message as GetAccessRequest))
+          as GetAccessRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetAccessRequest() / GetAccessRequest.new instead')
   static GetAccessRequest create() => GetAccessRequest._();
-  GetAccessRequest createEmptyInstance() => create();
-  static $pb.PbList<GetAccessRequest> createRepeated() => $pb.PbList<GetAccessRequest>();
+  static $pb.GeneratedMessage $_createMessage() => GetAccessRequest._();
+  @$core.override
+  GetAccessRequest createEmptyInstance() => GetAccessRequest._();
   @$core.pragma('dart2js:noInline')
-  static GetAccessRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetAccessRequest>(create);
+  static GetAccessRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetAccessRequest>(
+          GetAccessRequest.$_createMessage);
   static GetAccessRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get accessId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set accessId($core.String v) { $_setString(0, v); }
+  set accessId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasAccessId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAccessId() => clearField(1);
+  void clearAccessId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get partitionId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set partitionId($core.String v) { $_setString(1, v); }
+  set partitionId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPartitionId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPartitionId() => clearField(2);
+  void clearPartitionId() => $_clearField(2);
 
   @$pb.TagNumber(4)
   $core.String get profileId => $_getSZ(2);
   @$pb.TagNumber(4)
-  set profileId($core.String v) { $_setString(2, v); }
+  set profileId($core.String value) => $_setString(2, value);
   @$pb.TagNumber(4)
   $core.bool hasProfileId() => $_has(2);
   @$pb.TagNumber(4)
-  void clearProfileId() => clearField(4);
+  void clearProfileId() => $_clearField(4);
 }
 
 class GetAccessResponse extends $pb.GeneratedMessage {
   factory GetAccessResponse({
     AccessObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = GetAccessResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  GetAccessResponse._() : super();
-  factory GetAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessObject.create)
-    ..hasRequiredFields = false
-  ;
+  GetAccessResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetAccessResponse clone() => GetAccessResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetAccessResponse copyWith(void Function(GetAccessResponse) updates) => super.copyWith((message) => updates(message as GetAccessResponse)) as GetAccessResponse;
+  factory GetAccessResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessResponse()..mergeFromBuffer(data, registry);
+  factory GetAccessResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetAccessResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GetAccessResponse.$_createMessage)
+    ..aOM<AccessObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: AccessObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessResponse copyWith(void Function(GetAccessResponse) updates) =>
+      super.copyWith((message) => updates(message as GetAccessResponse))
+          as GetAccessResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetAccessResponse() / GetAccessResponse.new instead')
   static GetAccessResponse create() => GetAccessResponse._();
-  GetAccessResponse createEmptyInstance() => create();
-  static $pb.PbList<GetAccessResponse> createRepeated() => $pb.PbList<GetAccessResponse>();
+  static $pb.GeneratedMessage $_createMessage() => GetAccessResponse._();
+  @$core.override
+  GetAccessResponse createEmptyInstance() => GetAccessResponse._();
   @$core.pragma('dart2js:noInline')
-  static GetAccessResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetAccessResponse>(create);
+  static GetAccessResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetAccessResponse>(
+          GetAccessResponse.$_createMessage);
   static GetAccessResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   AccessObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(AccessObject v) { setField(1, v); }
+  set data(AccessObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   AccessObject ensureData() => $_ensure(0);
 }
 
-enum ListAccessRequest_Scope {
-  partitionId, 
-  profileId, 
-  notSet
-}
+enum ListAccessRequest_Scope { partitionId, profileId, notSet }
 
 class ListAccessRequest extends $pb.GeneratedMessage {
   factory ListAccessRequest({
     $core.String? partitionId,
     $core.String? profileId,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
   }) {
-    final $result = create();
-    if (partitionId != null) {
-      $result.partitionId = partitionId;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    return $result;
+    final result = ListAccessRequest._();
+    if (partitionId != null) result.partitionId = partitionId;
+    if (profileId != null) result.profileId = profileId;
+    if (cursor != null) result.cursor = cursor;
+    return result;
   }
-  ListAccessRequest._() : super();
-  factory ListAccessRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListAccessRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static const $core.Map<$core.int, ListAccessRequest_Scope> _ListAccessRequest_ScopeByTag = {
-    1 : ListAccessRequest_Scope.partitionId,
-    2 : ListAccessRequest_Scope.profileId,
-    0 : ListAccessRequest_Scope.notSet
+  ListAccessRequest._();
+
+  factory ListAccessRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRequest()..mergeFromBuffer(data, registry);
+  factory ListAccessRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRequest()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, ListAccessRequest_Scope>
+      _ListAccessRequest_ScopeByTag = {
+    1: ListAccessRequest_Scope.partitionId,
+    2: ListAccessRequest_Scope.profileId,
+    0: ListAccessRequest_Scope.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListAccessRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListAccessRequest.$_createMessage)
     ..oo(0, [1, 2])
     ..aOS(1, _omitFieldNames ? '' : 'partitionId')
     ..aOS(2, _omitFieldNames ? '' : 'profileId')
-    ..aOM<$7.PageCursor>(3, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$2.PageCursor>(3, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListAccessRequest clone() => ListAccessRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListAccessRequest copyWith(void Function(ListAccessRequest) updates) => super.copyWith((message) => updates(message as ListAccessRequest)) as ListAccessRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRequest copyWith(void Function(ListAccessRequest) updates) =>
+      super.copyWith((message) => updates(message as ListAccessRequest))
+          as ListAccessRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListAccessRequest() / ListAccessRequest.new instead')
   static ListAccessRequest create() => ListAccessRequest._();
-  ListAccessRequest createEmptyInstance() => create();
-  static $pb.PbList<ListAccessRequest> createRepeated() => $pb.PbList<ListAccessRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListAccessRequest._();
+  @$core.override
+  ListAccessRequest createEmptyInstance() => ListAccessRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListAccessRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListAccessRequest>(create);
+  static ListAccessRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListAccessRequest>(
+          ListAccessRequest.$_createMessage);
   static ListAccessRequest? _defaultInstance;
 
-  ListAccessRequest_Scope whichScope() => _ListAccessRequest_ScopeByTag[$_whichOneof(0)]!;
-  void clearScope() => clearField($_whichOneof(0));
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  ListAccessRequest_Scope whichScope() =>
+      _ListAccessRequest_ScopeByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearScope() => $_clearField($_whichOneof(0));
 
   /// List all access grants for a partition
   @$pb.TagNumber(1)
   $core.String get partitionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set partitionId($core.String v) { $_setString(0, v); }
+  set partitionId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPartitionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPartitionId() => clearField(1);
+  void clearPartitionId() => $_clearField(1);
 
   /// List all access grants for a profile
   @$pb.TagNumber(2)
   $core.String get profileId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set profileId($core.String v) { $_setString(1, v); }
+  set profileId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasProfileId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearProfileId() => clearField(2);
+  void clearProfileId() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $7.PageCursor get cursor => $_getN(2);
+  $2.PageCursor get cursor => $_getN(2);
   @$pb.TagNumber(3)
-  set cursor($7.PageCursor v) { setField(3, v); }
+  set cursor($2.PageCursor value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasCursor() => $_has(2);
   @$pb.TagNumber(3)
-  void clearCursor() => clearField(3);
+  void clearCursor() => $_clearField(3);
   @$pb.TagNumber(3)
-  $7.PageCursor ensureCursor() => $_ensure(2);
+  $2.PageCursor ensureCursor() => $_ensure(2);
 }
 
 class ListAccessResponse extends $pb.GeneratedMessage {
   factory ListAccessResponse({
     $core.Iterable<AccessObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListAccessResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListAccessResponse._() : super();
-  factory ListAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<AccessObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: AccessObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListAccessResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListAccessResponse clone() => ListAccessResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListAccessResponse copyWith(void Function(ListAccessResponse) updates) => super.copyWith((message) => updates(message as ListAccessResponse)) as ListAccessResponse;
+  factory ListAccessResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessResponse()..mergeFromBuffer(data, registry);
+  factory ListAccessResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListAccessResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListAccessResponse.$_createMessage)
+    ..pPM<AccessObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: AccessObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessResponse copyWith(void Function(ListAccessResponse) updates) =>
+      super.copyWith((message) => updates(message as ListAccessResponse))
+          as ListAccessResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListAccessResponse() / ListAccessResponse.new instead')
   static ListAccessResponse create() => ListAccessResponse._();
-  ListAccessResponse createEmptyInstance() => create();
-  static $pb.PbList<ListAccessResponse> createRepeated() => $pb.PbList<ListAccessResponse>();
+  static $pb.GeneratedMessage $_createMessage() => ListAccessResponse._();
+  @$core.override
+  ListAccessResponse createEmptyInstance() => ListAccessResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListAccessResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListAccessResponse>(create);
+  static ListAccessResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListAccessResponse>(
+          ListAccessResponse.$_createMessage);
   static ListAccessResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<AccessObject> get data => $_getList(0);
+  $pb.PbList<AccessObject> get data => $_getList(0);
 }
 
 class RemoveAccessRequest extends $pb.GeneratedMessage {
   factory RemoveAccessRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemoveAccessRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemoveAccessRequest._() : super();
-  factory RemoveAccessRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveAccessRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveAccessRequest._();
+
+  factory RemoveAccessRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRequest()..mergeFromBuffer(data, registry);
+  factory RemoveAccessRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveAccessRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveAccessRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRequest clone() => RemoveAccessRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRequest copyWith(void Function(RemoveAccessRequest) updates) => super.copyWith((message) => updates(message as RemoveAccessRequest)) as RemoveAccessRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRequest copyWith(void Function(RemoveAccessRequest) updates) =>
+      super.copyWith((message) => updates(message as RemoveAccessRequest))
+          as RemoveAccessRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use RemoveAccessRequest() / RemoveAccessRequest.new instead')
   static RemoveAccessRequest create() => RemoveAccessRequest._();
-  RemoveAccessRequest createEmptyInstance() => create();
-  static $pb.PbList<RemoveAccessRequest> createRepeated() => $pb.PbList<RemoveAccessRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveAccessRequest._();
+  @$core.override
+  RemoveAccessRequest createEmptyInstance() => RemoveAccessRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemoveAccessRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveAccessRequest>(create);
+  static RemoveAccessRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveAccessRequest>(
+          RemoveAccessRequest.$_createMessage);
   static RemoveAccessRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemoveAccessResponse extends $pb.GeneratedMessage {
   factory RemoveAccessResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemoveAccessResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemoveAccessResponse._() : super();
-  factory RemoveAccessResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveAccessResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveAccessResponse._();
+
+  factory RemoveAccessResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessResponse()..mergeFromBuffer(data, registry);
+  factory RemoveAccessResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveAccessResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveAccessResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveAccessResponse clone() => RemoveAccessResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveAccessResponse copyWith(void Function(RemoveAccessResponse) updates) => super.copyWith((message) => updates(message as RemoveAccessResponse)) as RemoveAccessResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessResponse copyWith(void Function(RemoveAccessResponse) updates) =>
+      super.copyWith((message) => updates(message as RemoveAccessResponse))
+          as RemoveAccessResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveAccessResponse() / RemoveAccessResponse.new instead')
   static RemoveAccessResponse create() => RemoveAccessResponse._();
-  RemoveAccessResponse createEmptyInstance() => create();
-  static $pb.PbList<RemoveAccessResponse> createRepeated() => $pb.PbList<RemoveAccessResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveAccessResponse._();
+  @$core.override
+  RemoveAccessResponse createEmptyInstance() => RemoveAccessResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemoveAccessResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveAccessResponse>(create);
+  static RemoveAccessResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveAccessResponse>(
+          RemoveAccessResponse.$_createMessage);
   static RemoveAccessResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class CreateAccessRoleRequest extends $pb.GeneratedMessage {
@@ -3928,113 +4282,131 @@ class CreateAccessRoleRequest extends $pb.GeneratedMessage {
     $core.String? accessId,
     $core.String? partitionRoleId,
   }) {
-    final $result = create();
-    if (accessId != null) {
-      $result.accessId = accessId;
-    }
-    if (partitionRoleId != null) {
-      $result.partitionRoleId = partitionRoleId;
-    }
-    return $result;
+    final result = CreateAccessRoleRequest._();
+    if (accessId != null) result.accessId = accessId;
+    if (partitionRoleId != null) result.partitionRoleId = partitionRoleId;
+    return result;
   }
-  CreateAccessRoleRequest._() : super();
-  factory CreateAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  CreateAccessRoleRequest._();
+
+  factory CreateAccessRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRoleRequest()..mergeFromBuffer(data, registry);
+  factory CreateAccessRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateAccessRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateAccessRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
     ..aOS(2, _omitFieldNames ? '' : 'partitionRoleId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateAccessRoleRequest clone() => CreateAccessRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateAccessRoleRequest copyWith(void Function(CreateAccessRoleRequest) updates) => super.copyWith((message) => updates(message as CreateAccessRoleRequest)) as CreateAccessRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRoleRequest copyWith(
+          void Function(CreateAccessRoleRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateAccessRoleRequest))
+          as CreateAccessRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateAccessRoleRequest() / CreateAccessRoleRequest.new instead')
   static CreateAccessRoleRequest create() => CreateAccessRoleRequest._();
-  CreateAccessRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<CreateAccessRoleRequest> createRepeated() => $pb.PbList<CreateAccessRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() => CreateAccessRoleRequest._();
+  @$core.override
+  CreateAccessRoleRequest createEmptyInstance() => CreateAccessRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static CreateAccessRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateAccessRoleRequest>(create);
+  static CreateAccessRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateAccessRoleRequest>(
+          CreateAccessRoleRequest.$_createMessage);
   static CreateAccessRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get accessId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set accessId($core.String v) { $_setString(0, v); }
+  set accessId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasAccessId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAccessId() => clearField(1);
+  void clearAccessId() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get partitionRoleId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set partitionRoleId($core.String v) { $_setString(1, v); }
+  set partitionRoleId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPartitionRoleId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPartitionRoleId() => clearField(2);
+  void clearPartitionRoleId() => $_clearField(2);
 }
 
 class CreateAccessRoleResponse extends $pb.GeneratedMessage {
   factory CreateAccessRoleResponse({
     AccessRoleObject? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data = data;
-    }
-    return $result;
+    final result = CreateAccessRoleResponse._();
+    if (data != null) result.data = data;
+    return result;
   }
-  CreateAccessRoleResponse._() : super();
-  factory CreateAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..aOM<AccessRoleObject>(1, _omitFieldNames ? '' : 'data', subBuilder: AccessRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+  CreateAccessRoleResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CreateAccessRoleResponse clone() => CreateAccessRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CreateAccessRoleResponse copyWith(void Function(CreateAccessRoleResponse) updates) => super.copyWith((message) => updates(message as CreateAccessRoleResponse)) as CreateAccessRoleResponse;
+  factory CreateAccessRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRoleResponse()..mergeFromBuffer(data, registry);
+  factory CreateAccessRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateAccessRoleResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateAccessRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: CreateAccessRoleResponse.$_createMessage)
+    ..aOM<AccessRoleObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: AccessRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateAccessRoleResponse copyWith(
+          void Function(CreateAccessRoleResponse) updates) =>
+      super.copyWith((message) => updates(message as CreateAccessRoleResponse))
+          as CreateAccessRoleResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateAccessRoleResponse() / CreateAccessRoleResponse.new instead')
   static CreateAccessRoleResponse create() => CreateAccessRoleResponse._();
-  CreateAccessRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<CreateAccessRoleResponse> createRepeated() => $pb.PbList<CreateAccessRoleResponse>();
+  static $pb.GeneratedMessage $_createMessage() => CreateAccessRoleResponse._();
+  @$core.override
+  CreateAccessRoleResponse createEmptyInstance() =>
+      CreateAccessRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static CreateAccessRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateAccessRoleResponse>(create);
+  static CreateAccessRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateAccessRoleResponse>(
+          CreateAccessRoleResponse.$_createMessage);
   static CreateAccessRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   AccessRoleObject get data => $_getN(0);
   @$pb.TagNumber(1)
-  set data(AccessRoleObject v) { setField(1, v); }
+  set data(AccessRoleObject value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
   @$pb.TagNumber(1)
   AccessRoleObject ensureData() => $_ensure(0);
 }
@@ -4043,210 +4415,247 @@ class RemoveAccessRoleRequest extends $pb.GeneratedMessage {
   factory RemoveAccessRoleRequest({
     $core.String? id,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    return $result;
+    final result = RemoveAccessRoleRequest._();
+    if (id != null) result.id = id;
+    return result;
   }
-  RemoveAccessRoleRequest._() : super();
-  factory RemoveAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveAccessRoleRequest._();
+
+  factory RemoveAccessRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRoleRequest()..mergeFromBuffer(data, registry);
+  factory RemoveAccessRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveAccessRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveAccessRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRoleRequest clone() => RemoveAccessRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRoleRequest copyWith(void Function(RemoveAccessRoleRequest) updates) => super.copyWith((message) => updates(message as RemoveAccessRoleRequest)) as RemoveAccessRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRoleRequest copyWith(
+          void Function(RemoveAccessRoleRequest) updates) =>
+      super.copyWith((message) => updates(message as RemoveAccessRoleRequest))
+          as RemoveAccessRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveAccessRoleRequest() / RemoveAccessRoleRequest.new instead')
   static RemoveAccessRoleRequest create() => RemoveAccessRoleRequest._();
-  RemoveAccessRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<RemoveAccessRoleRequest> createRepeated() => $pb.PbList<RemoveAccessRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveAccessRoleRequest._();
+  @$core.override
+  RemoveAccessRoleRequest createEmptyInstance() => RemoveAccessRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static RemoveAccessRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveAccessRoleRequest>(create);
+  static RemoveAccessRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveAccessRoleRequest>(
+          RemoveAccessRoleRequest.$_createMessage);
   static RemoveAccessRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 }
 
 class RemoveAccessRoleResponse extends $pb.GeneratedMessage {
   factory RemoveAccessRoleResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RemoveAccessRoleResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RemoveAccessRoleResponse._() : super();
-  factory RemoveAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RemoveAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RemoveAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RemoveAccessRoleResponse._();
+
+  factory RemoveAccessRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRoleResponse()..mergeFromBuffer(data, registry);
+  factory RemoveAccessRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveAccessRoleResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveAccessRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RemoveAccessRoleResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRoleResponse clone() => RemoveAccessRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RemoveAccessRoleResponse copyWith(void Function(RemoveAccessRoleResponse) updates) => super.copyWith((message) => updates(message as RemoveAccessRoleResponse)) as RemoveAccessRoleResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveAccessRoleResponse copyWith(
+          void Function(RemoveAccessRoleResponse) updates) =>
+      super.copyWith((message) => updates(message as RemoveAccessRoleResponse))
+          as RemoveAccessRoleResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveAccessRoleResponse() / RemoveAccessRoleResponse.new instead')
   static RemoveAccessRoleResponse create() => RemoveAccessRoleResponse._();
-  RemoveAccessRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<RemoveAccessRoleResponse> createRepeated() => $pb.PbList<RemoveAccessRoleResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RemoveAccessRoleResponse._();
+  @$core.override
+  RemoveAccessRoleResponse createEmptyInstance() =>
+      RemoveAccessRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static RemoveAccessRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RemoveAccessRoleResponse>(create);
+  static RemoveAccessRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveAccessRoleResponse>(
+          RemoveAccessRoleResponse.$_createMessage);
   static RemoveAccessRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class ListAccessRoleRequest extends $pb.GeneratedMessage {
   factory ListAccessRoleRequest({
     $core.String? accessId,
-    $7.PageCursor? cursor,
+    $2.PageCursor? cursor,
   }) {
-    final $result = create();
-    if (accessId != null) {
-      $result.accessId = accessId;
-    }
-    if (cursor != null) {
-      $result.cursor = cursor;
-    }
-    return $result;
+    final result = ListAccessRoleRequest._();
+    if (accessId != null) result.accessId = accessId;
+    if (cursor != null) result.cursor = cursor;
+    return result;
   }
-  ListAccessRoleRequest._() : super();
-  factory ListAccessRoleRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListAccessRoleRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ListAccessRoleRequest._();
+
+  factory ListAccessRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRoleRequest()..mergeFromBuffer(data, registry);
+  factory ListAccessRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListAccessRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListAccessRoleRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'accessId')
-    ..aOM<$7.PageCursor>(2, _omitFieldNames ? '' : 'cursor', subBuilder: $7.PageCursor.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$2.PageCursor>(2, _omitFieldNames ? '' : 'cursor',
+        subBuilder: $2.PageCursor.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListAccessRoleRequest clone() => ListAccessRoleRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListAccessRoleRequest copyWith(void Function(ListAccessRoleRequest) updates) => super.copyWith((message) => updates(message as ListAccessRoleRequest)) as ListAccessRoleRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRoleRequest copyWith(
+          void Function(ListAccessRoleRequest) updates) =>
+      super.copyWith((message) => updates(message as ListAccessRoleRequest))
+          as ListAccessRoleRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListAccessRoleRequest() / ListAccessRoleRequest.new instead')
   static ListAccessRoleRequest create() => ListAccessRoleRequest._();
-  ListAccessRoleRequest createEmptyInstance() => create();
-  static $pb.PbList<ListAccessRoleRequest> createRepeated() => $pb.PbList<ListAccessRoleRequest>();
+  static $pb.GeneratedMessage $_createMessage() => ListAccessRoleRequest._();
+  @$core.override
+  ListAccessRoleRequest createEmptyInstance() => ListAccessRoleRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListAccessRoleRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListAccessRoleRequest>(create);
+  static ListAccessRoleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListAccessRoleRequest>(
+          ListAccessRoleRequest.$_createMessage);
   static ListAccessRoleRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get accessId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set accessId($core.String v) { $_setString(0, v); }
+  set accessId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasAccessId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAccessId() => clearField(1);
+  void clearAccessId() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $7.PageCursor get cursor => $_getN(1);
+  $2.PageCursor get cursor => $_getN(1);
   @$pb.TagNumber(2)
-  set cursor($7.PageCursor v) { setField(2, v); }
+  set cursor($2.PageCursor value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasCursor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCursor() => clearField(2);
+  void clearCursor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.PageCursor ensureCursor() => $_ensure(1);
+  $2.PageCursor ensureCursor() => $_ensure(1);
 }
 
 class ListAccessRoleResponse extends $pb.GeneratedMessage {
   factory ListAccessRoleResponse({
     $core.Iterable<AccessRoleObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListAccessRoleResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListAccessRoleResponse._() : super();
-  factory ListAccessRoleResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListAccessRoleResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListAccessRoleResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<AccessRoleObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: AccessRoleObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListAccessRoleResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListAccessRoleResponse clone() => ListAccessRoleResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListAccessRoleResponse copyWith(void Function(ListAccessRoleResponse) updates) => super.copyWith((message) => updates(message as ListAccessRoleResponse)) as ListAccessRoleResponse;
+  factory ListAccessRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRoleResponse()..mergeFromBuffer(data, registry);
+  factory ListAccessRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAccessRoleResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListAccessRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListAccessRoleResponse.$_createMessage)
+    ..pPM<AccessRoleObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: AccessRoleObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAccessRoleResponse copyWith(
+          void Function(ListAccessRoleResponse) updates) =>
+      super.copyWith((message) => updates(message as ListAccessRoleResponse))
+          as ListAccessRoleResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListAccessRoleResponse() / ListAccessRoleResponse.new instead')
   static ListAccessRoleResponse create() => ListAccessRoleResponse._();
-  ListAccessRoleResponse createEmptyInstance() => create();
-  static $pb.PbList<ListAccessRoleResponse> createRepeated() => $pb.PbList<ListAccessRoleResponse>();
+  static $pb.GeneratedMessage $_createMessage() => ListAccessRoleResponse._();
+  @$core.override
+  ListAccessRoleResponse createEmptyInstance() => ListAccessRoleResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListAccessRoleResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListAccessRoleResponse>(create);
+  static ListAccessRoleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListAccessRoleResponse>(
+          ListAccessRoleResponse.$_createMessage);
   static ListAccessRoleResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<AccessRoleObject> get data => $_getList(0);
+  $pb.PbList<AccessRoleObject> get data => $_getList(0);
 }
 
 /// ServiceNamespaceObject represents a registered service's permission namespace.
@@ -4254,82 +4663,94 @@ class ServiceNamespaceObject extends $pb.GeneratedMessage {
   factory ServiceNamespaceObject({
     $core.String? namespace,
     $core.Iterable<$core.String>? permissions,
-    $core.Map<$core.String, RolePermissionList>? roleBindings,
-    $2.Timestamp? registeredAt,
+    $core.Iterable<$core.MapEntry<$core.String, RolePermissionList>>?
+        roleBindings,
+    $1.Timestamp? registeredAt,
   }) {
-    final $result = create();
-    if (namespace != null) {
-      $result.namespace = namespace;
-    }
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    if (roleBindings != null) {
-      $result.roleBindings.addAll(roleBindings);
-    }
-    if (registeredAt != null) {
-      $result.registeredAt = registeredAt;
-    }
-    return $result;
+    final result = ServiceNamespaceObject._();
+    if (namespace != null) result.namespace = namespace;
+    if (permissions != null) result.permissions.addAll(permissions);
+    if (roleBindings != null) result.roleBindings.addEntries(roleBindings);
+    if (registeredAt != null) result.registeredAt = registeredAt;
+    return result;
   }
-  ServiceNamespaceObject._() : super();
-  factory ServiceNamespaceObject.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ServiceNamespaceObject.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServiceNamespaceObject', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  ServiceNamespaceObject._();
+
+  factory ServiceNamespaceObject.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServiceNamespaceObject()..mergeFromBuffer(data, registry);
+  factory ServiceNamespaceObject.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServiceNamespaceObject()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServiceNamespaceObject',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ServiceNamespaceObject.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'namespace')
     ..pPS(2, _omitFieldNames ? '' : 'permissions')
-    ..m<$core.String, RolePermissionList>(3, _omitFieldNames ? '' : 'roleBindings', entryClassName: 'ServiceNamespaceObject.RoleBindingsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OM, valueCreator: RolePermissionList.create, valueDefaultOrMaker: RolePermissionList.getDefault, packageName: const $pb.PackageName('tenancy.v1'))
-    ..aOM<$2.Timestamp>(4, _omitFieldNames ? '' : 'registeredAt', subBuilder: $2.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..m<$core.String, RolePermissionList>(
+        3, _omitFieldNames ? '' : 'roleBindings',
+        entryClassName: 'ServiceNamespaceObject.RoleBindingsEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.OM,
+        valueCreator: RolePermissionList.$_createMessage,
+        valueDefaultOrMaker: RolePermissionList.getDefault,
+        packageName: const $pb.PackageName('tenancy.v1'))
+    ..aOM<$1.Timestamp>(4, _omitFieldNames ? '' : 'registeredAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ServiceNamespaceObject clone() => ServiceNamespaceObject()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ServiceNamespaceObject copyWith(void Function(ServiceNamespaceObject) updates) => super.copyWith((message) => updates(message as ServiceNamespaceObject)) as ServiceNamespaceObject;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServiceNamespaceObject clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServiceNamespaceObject copyWith(
+          void Function(ServiceNamespaceObject) updates) =>
+      super.copyWith((message) => updates(message as ServiceNamespaceObject))
+          as ServiceNamespaceObject;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ServiceNamespaceObject() / ServiceNamespaceObject.new instead')
   static ServiceNamespaceObject create() => ServiceNamespaceObject._();
-  ServiceNamespaceObject createEmptyInstance() => create();
-  static $pb.PbList<ServiceNamespaceObject> createRepeated() => $pb.PbList<ServiceNamespaceObject>();
+  static $pb.GeneratedMessage $_createMessage() => ServiceNamespaceObject._();
+  @$core.override
+  ServiceNamespaceObject createEmptyInstance() => ServiceNamespaceObject._();
   @$core.pragma('dart2js:noInline')
-  static ServiceNamespaceObject getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServiceNamespaceObject>(create);
+  static ServiceNamespaceObject getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServiceNamespaceObject>(
+          ServiceNamespaceObject.$_createMessage);
   static ServiceNamespaceObject? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get namespace => $_getSZ(0);
   @$pb.TagNumber(1)
-  set namespace($core.String v) { $_setString(0, v); }
+  set namespace($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasNamespace() => $_has(0);
   @$pb.TagNumber(1)
-  void clearNamespace() => clearField(1);
+  void clearNamespace() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.List<$core.String> get permissions => $_getList(1);
+  $pb.PbList<$core.String> get permissions => $_getList(1);
 
   @$pb.TagNumber(3)
-  $core.Map<$core.String, RolePermissionList> get roleBindings => $_getMap(2);
+  $pb.PbMap<$core.String, RolePermissionList> get roleBindings => $_getMap(2);
 
   @$pb.TagNumber(4)
-  $2.Timestamp get registeredAt => $_getN(3);
+  $1.Timestamp get registeredAt => $_getN(3);
   @$pb.TagNumber(4)
-  set registeredAt($2.Timestamp v) { setField(4, v); }
+  set registeredAt($1.Timestamp value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasRegisteredAt() => $_has(3);
   @$pb.TagNumber(4)
-  void clearRegisteredAt() => clearField(4);
+  void clearRegisteredAt() => $_clearField(4);
   @$pb.TagNumber(4)
-  $2.Timestamp ensureRegisteredAt() => $_ensure(3);
+  $1.Timestamp ensureRegisteredAt() => $_ensure(3);
 }
 
 /// RolePermissionList holds the permissions granted to a role.
@@ -4337,75 +4758,97 @@ class RolePermissionList extends $pb.GeneratedMessage {
   factory RolePermissionList({
     $core.Iterable<$core.String>? permissions,
   }) {
-    final $result = create();
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    return $result;
+    final result = RolePermissionList._();
+    if (permissions != null) result.permissions.addAll(permissions);
+    return result;
   }
-  RolePermissionList._() : super();
-  factory RolePermissionList.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RolePermissionList.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RolePermissionList', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RolePermissionList._();
+
+  factory RolePermissionList.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RolePermissionList()..mergeFromBuffer(data, registry);
+  factory RolePermissionList.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RolePermissionList()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RolePermissionList',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RolePermissionList.$_createMessage)
     ..pPS(1, _omitFieldNames ? '' : 'permissions')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RolePermissionList clone() => RolePermissionList()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RolePermissionList copyWith(void Function(RolePermissionList) updates) => super.copyWith((message) => updates(message as RolePermissionList)) as RolePermissionList;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RolePermissionList clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RolePermissionList copyWith(void Function(RolePermissionList) updates) =>
+      super.copyWith((message) => updates(message as RolePermissionList))
+          as RolePermissionList;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RolePermissionList() / RolePermissionList.new instead')
   static RolePermissionList create() => RolePermissionList._();
-  RolePermissionList createEmptyInstance() => create();
-  static $pb.PbList<RolePermissionList> createRepeated() => $pb.PbList<RolePermissionList>();
+  static $pb.GeneratedMessage $_createMessage() => RolePermissionList._();
+  @$core.override
+  RolePermissionList createEmptyInstance() => RolePermissionList._();
   @$core.pragma('dart2js:noInline')
-  static RolePermissionList getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RolePermissionList>(create);
+  static RolePermissionList getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RolePermissionList>(
+          RolePermissionList.$_createMessage);
   static RolePermissionList? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<$core.String> get permissions => $_getList(0);
+  $pb.PbList<$core.String> get permissions => $_getList(0);
 }
 
 class ListServiceNamespacesRequest extends $pb.GeneratedMessage {
-  factory ListServiceNamespacesRequest() => create();
-  ListServiceNamespacesRequest._() : super();
-  factory ListServiceNamespacesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListServiceNamespacesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  factory ListServiceNamespacesRequest() => ListServiceNamespacesRequest._();
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceNamespacesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..hasRequiredFields = false
-  ;
+  ListServiceNamespacesRequest._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListServiceNamespacesRequest clone() => ListServiceNamespacesRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListServiceNamespacesRequest copyWith(void Function(ListServiceNamespacesRequest) updates) => super.copyWith((message) => updates(message as ListServiceNamespacesRequest)) as ListServiceNamespacesRequest;
+  factory ListServiceNamespacesRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListServiceNamespacesRequest()..mergeFromBuffer(data, registry);
+  factory ListServiceNamespacesRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListServiceNamespacesRequest()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListServiceNamespacesRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListServiceNamespacesRequest.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListServiceNamespacesRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListServiceNamespacesRequest copyWith(
+          void Function(ListServiceNamespacesRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListServiceNamespacesRequest))
+          as ListServiceNamespacesRequest;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static ListServiceNamespacesRequest create() => ListServiceNamespacesRequest._();
-  ListServiceNamespacesRequest createEmptyInstance() => create();
-  static $pb.PbList<ListServiceNamespacesRequest> createRepeated() => $pb.PbList<ListServiceNamespacesRequest>();
+  @$core.Deprecated(
+      'Use ListServiceNamespacesRequest() / ListServiceNamespacesRequest.new instead')
+  static ListServiceNamespacesRequest create() =>
+      ListServiceNamespacesRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListServiceNamespacesRequest._();
+  @$core.override
+  ListServiceNamespacesRequest createEmptyInstance() =>
+      ListServiceNamespacesRequest._();
   @$core.pragma('dart2js:noInline')
-  static ListServiceNamespacesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesRequest>(create);
+  static ListServiceNamespacesRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesRequest>(
+          ListServiceNamespacesRequest.$_createMessage);
   static ListServiceNamespacesRequest? _defaultInstance;
 }
 
@@ -4413,44 +4856,58 @@ class ListServiceNamespacesResponse extends $pb.GeneratedMessage {
   factory ListServiceNamespacesResponse({
     $core.Iterable<ServiceNamespaceObject>? data,
   }) {
-    final $result = create();
-    if (data != null) {
-      $result.data.addAll(data);
-    }
-    return $result;
+    final result = ListServiceNamespacesResponse._();
+    if (data != null) result.data.addAll(data);
+    return result;
   }
-  ListServiceNamespacesResponse._() : super();
-  factory ListServiceNamespacesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ListServiceNamespacesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ListServiceNamespacesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
-    ..pc<ServiceNamespaceObject>(1, _omitFieldNames ? '' : 'data', $pb.PbFieldType.PM, subBuilder: ServiceNamespaceObject.create)
-    ..hasRequiredFields = false
-  ;
+  ListServiceNamespacesResponse._();
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  ListServiceNamespacesResponse clone() => ListServiceNamespacesResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  ListServiceNamespacesResponse copyWith(void Function(ListServiceNamespacesResponse) updates) => super.copyWith((message) => updates(message as ListServiceNamespacesResponse)) as ListServiceNamespacesResponse;
+  factory ListServiceNamespacesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListServiceNamespacesResponse()..mergeFromBuffer(data, registry);
+  factory ListServiceNamespacesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListServiceNamespacesResponse()..mergeFromJson(json, registry);
 
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListServiceNamespacesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: ListServiceNamespacesResponse.$_createMessage)
+    ..pPM<ServiceNamespaceObject>(1, _omitFieldNames ? '' : 'data',
+        subBuilder: ServiceNamespaceObject.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListServiceNamespacesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListServiceNamespacesResponse copyWith(
+          void Function(ListServiceNamespacesResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListServiceNamespacesResponse))
+          as ListServiceNamespacesResponse;
+
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static ListServiceNamespacesResponse create() => ListServiceNamespacesResponse._();
-  ListServiceNamespacesResponse createEmptyInstance() => create();
-  static $pb.PbList<ListServiceNamespacesResponse> createRepeated() => $pb.PbList<ListServiceNamespacesResponse>();
+  @$core.Deprecated(
+      'Use ListServiceNamespacesResponse() / ListServiceNamespacesResponse.new instead')
+  static ListServiceNamespacesResponse create() =>
+      ListServiceNamespacesResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListServiceNamespacesResponse._();
+  @$core.override
+  ListServiceNamespacesResponse createEmptyInstance() =>
+      ListServiceNamespacesResponse._();
   @$core.pragma('dart2js:noInline')
-  static ListServiceNamespacesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesResponse>(create);
+  static ListServiceNamespacesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListServiceNamespacesResponse>(
+          ListServiceNamespacesResponse.$_createMessage);
   static ListServiceNamespacesResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<ServiceNamespaceObject> get data => $_getList(0);
+  $pb.PbList<ServiceNamespaceObject> get data => $_getList(0);
 }
 
 class GrantPermissionRequest extends $pb.GeneratedMessage {
@@ -4459,126 +4916,140 @@ class GrantPermissionRequest extends $pb.GeneratedMessage {
     $core.String? permission,
     $core.String? profileId,
   }) {
-    final $result = create();
-    if (namespace != null) {
-      $result.namespace = namespace;
-    }
-    if (permission != null) {
-      $result.permission = permission;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    return $result;
+    final result = GrantPermissionRequest._();
+    if (namespace != null) result.namespace = namespace;
+    if (permission != null) result.permission = permission;
+    if (profileId != null) result.profileId = profileId;
+    return result;
   }
-  GrantPermissionRequest._() : super();
-  factory GrantPermissionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GrantPermissionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantPermissionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GrantPermissionRequest._();
+
+  factory GrantPermissionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GrantPermissionRequest()..mergeFromBuffer(data, registry);
+  factory GrantPermissionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GrantPermissionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GrantPermissionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GrantPermissionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'namespace')
     ..aOS(2, _omitFieldNames ? '' : 'permission')
     ..aOS(3, _omitFieldNames ? '' : 'profileId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GrantPermissionRequest clone() => GrantPermissionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GrantPermissionRequest copyWith(void Function(GrantPermissionRequest) updates) => super.copyWith((message) => updates(message as GrantPermissionRequest)) as GrantPermissionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GrantPermissionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GrantPermissionRequest copyWith(
+          void Function(GrantPermissionRequest) updates) =>
+      super.copyWith((message) => updates(message as GrantPermissionRequest))
+          as GrantPermissionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GrantPermissionRequest() / GrantPermissionRequest.new instead')
   static GrantPermissionRequest create() => GrantPermissionRequest._();
-  GrantPermissionRequest createEmptyInstance() => create();
-  static $pb.PbList<GrantPermissionRequest> createRepeated() => $pb.PbList<GrantPermissionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => GrantPermissionRequest._();
+  @$core.override
+  GrantPermissionRequest createEmptyInstance() => GrantPermissionRequest._();
   @$core.pragma('dart2js:noInline')
-  static GrantPermissionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GrantPermissionRequest>(create);
+  static GrantPermissionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GrantPermissionRequest>(
+          GrantPermissionRequest.$_createMessage);
   static GrantPermissionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get namespace => $_getSZ(0);
   @$pb.TagNumber(1)
-  set namespace($core.String v) { $_setString(0, v); }
+  set namespace($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasNamespace() => $_has(0);
   @$pb.TagNumber(1)
-  void clearNamespace() => clearField(1);
+  void clearNamespace() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get permission => $_getSZ(1);
   @$pb.TagNumber(2)
-  set permission($core.String v) { $_setString(1, v); }
+  set permission($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPermission() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPermission() => clearField(2);
+  void clearPermission() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get profileId => $_getSZ(2);
   @$pb.TagNumber(3)
-  set profileId($core.String v) { $_setString(2, v); }
+  set profileId($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasProfileId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearProfileId() => clearField(3);
+  void clearProfileId() => $_clearField(3);
 }
 
 class GrantPermissionResponse extends $pb.GeneratedMessage {
   factory GrantPermissionResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = GrantPermissionResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  GrantPermissionResponse._() : super();
-  factory GrantPermissionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GrantPermissionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantPermissionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  GrantPermissionResponse._();
+
+  factory GrantPermissionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GrantPermissionResponse()..mergeFromBuffer(data, registry);
+  factory GrantPermissionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GrantPermissionResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GrantPermissionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: GrantPermissionResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GrantPermissionResponse clone() => GrantPermissionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GrantPermissionResponse copyWith(void Function(GrantPermissionResponse) updates) => super.copyWith((message) => updates(message as GrantPermissionResponse)) as GrantPermissionResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GrantPermissionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GrantPermissionResponse copyWith(
+          void Function(GrantPermissionResponse) updates) =>
+      super.copyWith((message) => updates(message as GrantPermissionResponse))
+          as GrantPermissionResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GrantPermissionResponse() / GrantPermissionResponse.new instead')
   static GrantPermissionResponse create() => GrantPermissionResponse._();
-  GrantPermissionResponse createEmptyInstance() => create();
-  static $pb.PbList<GrantPermissionResponse> createRepeated() => $pb.PbList<GrantPermissionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => GrantPermissionResponse._();
+  @$core.override
+  GrantPermissionResponse createEmptyInstance() => GrantPermissionResponse._();
   @$core.pragma('dart2js:noInline')
-  static GrantPermissionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GrantPermissionResponse>(create);
+  static GrantPermissionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GrantPermissionResponse>(
+          GrantPermissionResponse.$_createMessage);
   static GrantPermissionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
 class RevokePermissionRequest extends $pb.GeneratedMessage {
@@ -4587,224 +5058,332 @@ class RevokePermissionRequest extends $pb.GeneratedMessage {
     $core.String? permission,
     $core.String? profileId,
   }) {
-    final $result = create();
-    if (namespace != null) {
-      $result.namespace = namespace;
-    }
-    if (permission != null) {
-      $result.permission = permission;
-    }
-    if (profileId != null) {
-      $result.profileId = profileId;
-    }
-    return $result;
+    final result = RevokePermissionRequest._();
+    if (namespace != null) result.namespace = namespace;
+    if (permission != null) result.permission = permission;
+    if (profileId != null) result.profileId = profileId;
+    return result;
   }
-  RevokePermissionRequest._() : super();
-  factory RevokePermissionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RevokePermissionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokePermissionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RevokePermissionRequest._();
+
+  factory RevokePermissionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RevokePermissionRequest()..mergeFromBuffer(data, registry);
+  factory RevokePermissionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RevokePermissionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RevokePermissionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RevokePermissionRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'namespace')
     ..aOS(2, _omitFieldNames ? '' : 'permission')
     ..aOS(3, _omitFieldNames ? '' : 'profileId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RevokePermissionRequest clone() => RevokePermissionRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RevokePermissionRequest copyWith(void Function(RevokePermissionRequest) updates) => super.copyWith((message) => updates(message as RevokePermissionRequest)) as RevokePermissionRequest;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokePermissionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokePermissionRequest copyWith(
+          void Function(RevokePermissionRequest) updates) =>
+      super.copyWith((message) => updates(message as RevokePermissionRequest))
+          as RevokePermissionRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RevokePermissionRequest() / RevokePermissionRequest.new instead')
   static RevokePermissionRequest create() => RevokePermissionRequest._();
-  RevokePermissionRequest createEmptyInstance() => create();
-  static $pb.PbList<RevokePermissionRequest> createRepeated() => $pb.PbList<RevokePermissionRequest>();
+  static $pb.GeneratedMessage $_createMessage() => RevokePermissionRequest._();
+  @$core.override
+  RevokePermissionRequest createEmptyInstance() => RevokePermissionRequest._();
   @$core.pragma('dart2js:noInline')
-  static RevokePermissionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RevokePermissionRequest>(create);
+  static RevokePermissionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RevokePermissionRequest>(
+          RevokePermissionRequest.$_createMessage);
   static RevokePermissionRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get namespace => $_getSZ(0);
   @$pb.TagNumber(1)
-  set namespace($core.String v) { $_setString(0, v); }
+  set namespace($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasNamespace() => $_has(0);
   @$pb.TagNumber(1)
-  void clearNamespace() => clearField(1);
+  void clearNamespace() => $_clearField(1);
 
   @$pb.TagNumber(2)
   $core.String get permission => $_getSZ(1);
   @$pb.TagNumber(2)
-  set permission($core.String v) { $_setString(1, v); }
+  set permission($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPermission() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPermission() => clearField(2);
+  void clearPermission() => $_clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get profileId => $_getSZ(2);
   @$pb.TagNumber(3)
-  set profileId($core.String v) { $_setString(2, v); }
+  set profileId($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasProfileId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearProfileId() => clearField(3);
+  void clearProfileId() => $_clearField(3);
 }
 
 class RevokePermissionResponse extends $pb.GeneratedMessage {
   factory RevokePermissionResponse({
     $core.bool? succeeded,
   }) {
-    final $result = create();
-    if (succeeded != null) {
-      $result.succeeded = succeeded;
-    }
-    return $result;
+    final result = RevokePermissionResponse._();
+    if (succeeded != null) result.succeeded = succeeded;
+    return result;
   }
-  RevokePermissionResponse._() : super();
-  factory RevokePermissionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RevokePermissionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokePermissionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'), createEmptyInstance: create)
+  RevokePermissionResponse._();
+
+  factory RevokePermissionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RevokePermissionResponse()..mergeFromBuffer(data, registry);
+  factory RevokePermissionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RevokePermissionResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RevokePermissionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'tenancy.v1'),
+      createEmptyInstance: RevokePermissionResponse.$_createMessage)
     ..aOB(1, _omitFieldNames ? '' : 'succeeded')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  RevokePermissionResponse clone() => RevokePermissionResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  RevokePermissionResponse copyWith(void Function(RevokePermissionResponse) updates) => super.copyWith((message) => updates(message as RevokePermissionResponse)) as RevokePermissionResponse;
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokePermissionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokePermissionResponse copyWith(
+          void Function(RevokePermissionResponse) updates) =>
+      super.copyWith((message) => updates(message as RevokePermissionResponse))
+          as RevokePermissionResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RevokePermissionResponse() / RevokePermissionResponse.new instead')
   static RevokePermissionResponse create() => RevokePermissionResponse._();
-  RevokePermissionResponse createEmptyInstance() => create();
-  static $pb.PbList<RevokePermissionResponse> createRepeated() => $pb.PbList<RevokePermissionResponse>();
+  static $pb.GeneratedMessage $_createMessage() => RevokePermissionResponse._();
+  @$core.override
+  RevokePermissionResponse createEmptyInstance() =>
+      RevokePermissionResponse._();
   @$core.pragma('dart2js:noInline')
-  static RevokePermissionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RevokePermissionResponse>(create);
+  static RevokePermissionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RevokePermissionResponse>(
+          RevokePermissionResponse.$_createMessage);
   static RevokePermissionResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.bool get succeeded => $_getBF(0);
   @$pb.TagNumber(1)
-  set succeeded($core.bool v) { $_setBool(0, v); }
+  set succeeded($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSucceeded() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSucceeded() => clearField(1);
+  void clearSucceeded() => $_clearField(1);
 }
 
+/// TenancyService provides multi-tenancy and data isolation.
+/// All RPCs require authentication via Bearer token.
 class TenancyServiceApi {
-  $pb.RpcClient _client;
+  final $pb.RpcClient _client;
+
   TenancyServiceApi(this._client);
 
-  $async.Future<GetTenantResponse> getTenant($pb.ClientContext? ctx, GetTenantRequest request) =>
-    _client.invoke<GetTenantResponse>(ctx, 'TenancyService', 'GetTenant', request, GetTenantResponse())
-  ;
-  $async.Future<ListTenantResponse> listTenant($pb.ClientContext? ctx, ListTenantRequest request) =>
-    _client.invoke<ListTenantResponse>(ctx, 'TenancyService', 'ListTenant', request, ListTenantResponse())
-  ;
-  $async.Future<CreateTenantResponse> createTenant($pb.ClientContext? ctx, CreateTenantRequest request) =>
-    _client.invoke<CreateTenantResponse>(ctx, 'TenancyService', 'CreateTenant', request, CreateTenantResponse())
-  ;
-  $async.Future<UpdateTenantResponse> updateTenant($pb.ClientContext? ctx, UpdateTenantRequest request) =>
-    _client.invoke<UpdateTenantResponse>(ctx, 'TenancyService', 'UpdateTenant', request, UpdateTenantResponse())
-  ;
-  $async.Future<RemoveTenantResponse> removeTenant($pb.ClientContext? ctx, RemoveTenantRequest request) =>
-    _client.invoke<RemoveTenantResponse>(ctx, 'TenancyService', 'RemoveTenant', request, RemoveTenantResponse())
-  ;
-  $async.Future<ListPartitionResponse> listPartition($pb.ClientContext? ctx, ListPartitionRequest request) =>
-    _client.invoke<ListPartitionResponse>(ctx, 'TenancyService', 'ListPartition', request, ListPartitionResponse())
-  ;
-  $async.Future<CreatePartitionResponse> createPartition($pb.ClientContext? ctx, CreatePartitionRequest request) =>
-    _client.invoke<CreatePartitionResponse>(ctx, 'TenancyService', 'CreatePartition', request, CreatePartitionResponse())
-  ;
-  $async.Future<GetPartitionResponse> getPartition($pb.ClientContext? ctx, GetPartitionRequest request) =>
-    _client.invoke<GetPartitionResponse>(ctx, 'TenancyService', 'GetPartition', request, GetPartitionResponse())
-  ;
-  $async.Future<GetPartitionParentsResponse> getPartitionParents($pb.ClientContext? ctx, GetPartitionParentsRequest request) =>
-    _client.invoke<GetPartitionParentsResponse>(ctx, 'TenancyService', 'GetPartitionParents', request, GetPartitionParentsResponse())
-  ;
-  $async.Future<RemovePartitionResponse> removePartition($pb.ClientContext? ctx, RemovePartitionRequest request) =>
-    _client.invoke<RemovePartitionResponse>(ctx, 'TenancyService', 'RemovePartition', request, RemovePartitionResponse())
-  ;
-  $async.Future<UpdatePartitionResponse> updatePartition($pb.ClientContext? ctx, UpdatePartitionRequest request) =>
-    _client.invoke<UpdatePartitionResponse>(ctx, 'TenancyService', 'UpdatePartition', request, UpdatePartitionResponse())
-  ;
-  $async.Future<CreatePartitionRoleResponse> createPartitionRole($pb.ClientContext? ctx, CreatePartitionRoleRequest request) =>
-    _client.invoke<CreatePartitionRoleResponse>(ctx, 'TenancyService', 'CreatePartitionRole', request, CreatePartitionRoleResponse())
-  ;
-  $async.Future<ListPartitionRoleResponse> listPartitionRole($pb.ClientContext? ctx, ListPartitionRoleRequest request) =>
-    _client.invoke<ListPartitionRoleResponse>(ctx, 'TenancyService', 'ListPartitionRole', request, ListPartitionRoleResponse())
-  ;
-  $async.Future<UpdatePartitionRoleResponse> updatePartitionRole($pb.ClientContext? ctx, UpdatePartitionRoleRequest request) =>
-    _client.invoke<UpdatePartitionRoleResponse>(ctx, 'TenancyService', 'UpdatePartitionRole', request, UpdatePartitionRoleResponse())
-  ;
-  $async.Future<RemovePartitionRoleResponse> removePartitionRole($pb.ClientContext? ctx, RemovePartitionRoleRequest request) =>
-    _client.invoke<RemovePartitionRoleResponse>(ctx, 'TenancyService', 'RemovePartitionRole', request, RemovePartitionRoleResponse())
-  ;
-  $async.Future<CreatePageResponse> createPage($pb.ClientContext? ctx, CreatePageRequest request) =>
-    _client.invoke<CreatePageResponse>(ctx, 'TenancyService', 'CreatePage', request, CreatePageResponse())
-  ;
-  $async.Future<ListPageResponse> listPage($pb.ClientContext? ctx, ListPageRequest request) =>
-    _client.invoke<ListPageResponse>(ctx, 'TenancyService', 'ListPage', request, ListPageResponse())
-  ;
-  $async.Future<GetPageResponse> getPage($pb.ClientContext? ctx, GetPageRequest request) =>
-    _client.invoke<GetPageResponse>(ctx, 'TenancyService', 'GetPage', request, GetPageResponse())
-  ;
-  $async.Future<UpdatePageResponse> updatePage($pb.ClientContext? ctx, UpdatePageRequest request) =>
-    _client.invoke<UpdatePageResponse>(ctx, 'TenancyService', 'UpdatePage', request, UpdatePageResponse())
-  ;
-  $async.Future<RemovePageResponse> removePage($pb.ClientContext? ctx, RemovePageRequest request) =>
-    _client.invoke<RemovePageResponse>(ctx, 'TenancyService', 'RemovePage', request, RemovePageResponse())
-  ;
-  $async.Future<CreateAccessResponse> createAccess($pb.ClientContext? ctx, CreateAccessRequest request) =>
-    _client.invoke<CreateAccessResponse>(ctx, 'TenancyService', 'CreateAccess', request, CreateAccessResponse())
-  ;
-  $async.Future<GetAccessResponse> getAccess($pb.ClientContext? ctx, GetAccessRequest request) =>
-    _client.invoke<GetAccessResponse>(ctx, 'TenancyService', 'GetAccess', request, GetAccessResponse())
-  ;
-  $async.Future<ListAccessResponse> listAccess($pb.ClientContext? ctx, ListAccessRequest request) =>
-    _client.invoke<ListAccessResponse>(ctx, 'TenancyService', 'ListAccess', request, ListAccessResponse())
-  ;
-  $async.Future<RemoveAccessResponse> removeAccess($pb.ClientContext? ctx, RemoveAccessRequest request) =>
-    _client.invoke<RemoveAccessResponse>(ctx, 'TenancyService', 'RemoveAccess', request, RemoveAccessResponse())
-  ;
-  $async.Future<CreateAccessRoleResponse> createAccessRole($pb.ClientContext? ctx, CreateAccessRoleRequest request) =>
-    _client.invoke<CreateAccessRoleResponse>(ctx, 'TenancyService', 'CreateAccessRole', request, CreateAccessRoleResponse())
-  ;
-  $async.Future<ListAccessRoleResponse> listAccessRole($pb.ClientContext? ctx, ListAccessRoleRequest request) =>
-    _client.invoke<ListAccessRoleResponse>(ctx, 'TenancyService', 'ListAccessRole', request, ListAccessRoleResponse())
-  ;
-  $async.Future<RemoveAccessRoleResponse> removeAccessRole($pb.ClientContext? ctx, RemoveAccessRoleRequest request) =>
-    _client.invoke<RemoveAccessRoleResponse>(ctx, 'TenancyService', 'RemoveAccessRole', request, RemoveAccessRoleResponse())
-  ;
-  $async.Future<ListServiceNamespacesResponse> listServiceNamespaces($pb.ClientContext? ctx, ListServiceNamespacesRequest request) =>
-    _client.invoke<ListServiceNamespacesResponse>(ctx, 'TenancyService', 'ListServiceNamespaces', request, ListServiceNamespacesResponse())
-  ;
-  $async.Future<GrantPermissionResponse> grantPermission($pb.ClientContext? ctx, GrantPermissionRequest request) =>
-    _client.invoke<GrantPermissionResponse>(ctx, 'TenancyService', 'GrantPermission', request, GrantPermissionResponse())
-  ;
-  $async.Future<RevokePermissionResponse> revokePermission($pb.ClientContext? ctx, RevokePermissionRequest request) =>
-    _client.invoke<RevokePermissionResponse>(ctx, 'TenancyService', 'RevokePermission', request, RevokePermissionResponse())
-  ;
+  /// GetTenant retrieves a tenant by ID.
+  $async.Future<GetTenantResponse> getTenant(
+          $pb.ClientContext? ctx, GetTenantRequest request) =>
+      _client.invoke<GetTenantResponse>(
+          ctx, 'TenancyService', 'GetTenant', request, GetTenantResponse());
+
+  /// ListTenant retrieves all tenants matching criteria.
+  $async.Future<ListTenantResponse> listTenant(
+          $pb.ClientContext? ctx, ListTenantRequest request) =>
+      _client.invoke<ListTenantResponse>(
+          ctx, 'TenancyService', 'ListTenant', request, ListTenantResponse());
+
+  /// CreateTenant creates a new tenant.
+  $async.Future<CreateTenantResponse> createTenant(
+          $pb.ClientContext? ctx, CreateTenantRequest request) =>
+      _client.invoke<CreateTenantResponse>(ctx, 'TenancyService',
+          'CreateTenant', request, CreateTenantResponse());
+
+  /// UpdateTenant updates an existing tenant.
+  $async.Future<UpdateTenantResponse> updateTenant(
+          $pb.ClientContext? ctx, UpdateTenantRequest request) =>
+      _client.invoke<UpdateTenantResponse>(ctx, 'TenancyService',
+          'UpdateTenant', request, UpdateTenantResponse());
+
+  /// RemoveTenant soft-deletes a tenant and all its partitions.
+  $async.Future<RemoveTenantResponse> removeTenant(
+          $pb.ClientContext? ctx, RemoveTenantRequest request) =>
+      _client.invoke<RemoveTenantResponse>(ctx, 'TenancyService',
+          'RemoveTenant', request, RemoveTenantResponse());
+
+  /// ListPartition retrieves all partitions matching criteria.
+  $async.Future<ListPartitionResponse> listPartition(
+          $pb.ClientContext? ctx, ListPartitionRequest request) =>
+      _client.invoke<ListPartitionResponse>(ctx, 'TenancyService',
+          'ListPartition', request, ListPartitionResponse());
+
+  /// CreatePartition creates a new partition.
+  $async.Future<CreatePartitionResponse> createPartition(
+          $pb.ClientContext? ctx, CreatePartitionRequest request) =>
+      _client.invoke<CreatePartitionResponse>(ctx, 'TenancyService',
+          'CreatePartition', request, CreatePartitionResponse());
+
+  /// GetPartition retrieves a partition by ID or domain.
+  $async.Future<GetPartitionResponse> getPartition(
+          $pb.ClientContext? ctx, GetPartitionRequest request) =>
+      _client.invoke<GetPartitionResponse>(ctx, 'TenancyService',
+          'GetPartition', request, GetPartitionResponse());
+
+  /// GetPartitionParents retrieves the parent hierarchy.
+  $async.Future<GetPartitionParentsResponse> getPartitionParents(
+          $pb.ClientContext? ctx, GetPartitionParentsRequest request) =>
+      _client.invoke<GetPartitionParentsResponse>(ctx, 'TenancyService',
+          'GetPartitionParents', request, GetPartitionParentsResponse());
+
+  /// RemovePartition soft-deletes a partition.
+  $async.Future<RemovePartitionResponse> removePartition(
+          $pb.ClientContext? ctx, RemovePartitionRequest request) =>
+      _client.invoke<RemovePartitionResponse>(ctx, 'TenancyService',
+          'RemovePartition', request, RemovePartitionResponse());
+
+  /// UpdatePartition updates an existing partition.
+  $async.Future<UpdatePartitionResponse> updatePartition(
+          $pb.ClientContext? ctx, UpdatePartitionRequest request) =>
+      _client.invoke<UpdatePartitionResponse>(ctx, 'TenancyService',
+          'UpdatePartition', request, UpdatePartitionResponse());
+
+  /// CreatePartitionRole creates a role within a partition.
+  $async.Future<CreatePartitionRoleResponse> createPartitionRole(
+          $pb.ClientContext? ctx, CreatePartitionRoleRequest request) =>
+      _client.invoke<CreatePartitionRoleResponse>(ctx, 'TenancyService',
+          'CreatePartitionRole', request, CreatePartitionRoleResponse());
+
+  /// ListPartitionRole retrieves all roles for a partition.
+  $async.Future<ListPartitionRoleResponse> listPartitionRole(
+          $pb.ClientContext? ctx, ListPartitionRoleRequest request) =>
+      _client.invoke<ListPartitionRoleResponse>(ctx, 'TenancyService',
+          'ListPartitionRole', request, ListPartitionRoleResponse());
+
+  /// UpdatePartitionRole updates an existing partition role.
+  $async.Future<UpdatePartitionRoleResponse> updatePartitionRole(
+          $pb.ClientContext? ctx, UpdatePartitionRoleRequest request) =>
+      _client.invoke<UpdatePartitionRoleResponse>(ctx, 'TenancyService',
+          'UpdatePartitionRole', request, UpdatePartitionRoleResponse());
+
+  /// RemovePartitionRole deletes a partition role.
+  $async.Future<RemovePartitionRoleResponse> removePartitionRole(
+          $pb.ClientContext? ctx, RemovePartitionRoleRequest request) =>
+      _client.invoke<RemovePartitionRoleResponse>(ctx, 'TenancyService',
+          'RemovePartitionRole', request, RemovePartitionRoleResponse());
+
+  /// CreatePage creates a custom UI page for a partition.
+  $async.Future<CreatePageResponse> createPage(
+          $pb.ClientContext? ctx, CreatePageRequest request) =>
+      _client.invoke<CreatePageResponse>(
+          ctx, 'TenancyService', 'CreatePage', request, CreatePageResponse());
+
+  /// ListPage retrieves all custom pages for a partition.
+  $async.Future<ListPageResponse> listPage(
+          $pb.ClientContext? ctx, ListPageRequest request) =>
+      _client.invoke<ListPageResponse>(
+          ctx, 'TenancyService', 'ListPage', request, ListPageResponse());
+
+  /// GetPage retrieves a custom page.
+  $async.Future<GetPageResponse> getPage(
+          $pb.ClientContext? ctx, GetPageRequest request) =>
+      _client.invoke<GetPageResponse>(
+          ctx, 'TenancyService', 'GetPage', request, GetPageResponse());
+
+  /// UpdatePage updates an existing custom page.
+  $async.Future<UpdatePageResponse> updatePage(
+          $pb.ClientContext? ctx, UpdatePageRequest request) =>
+      _client.invoke<UpdatePageResponse>(
+          ctx, 'TenancyService', 'UpdatePage', request, UpdatePageResponse());
+
+  /// RemovePage deletes a custom page.
+  $async.Future<RemovePageResponse> removePage(
+          $pb.ClientContext? ctx, RemovePageRequest request) =>
+      _client.invoke<RemovePageResponse>(
+          ctx, 'TenancyService', 'RemovePage', request, RemovePageResponse());
+
+  /// CreateAccess grants a profile access to a partition.
+  $async.Future<CreateAccessResponse> createAccess(
+          $pb.ClientContext? ctx, CreateAccessRequest request) =>
+      _client.invoke<CreateAccessResponse>(ctx, 'TenancyService',
+          'CreateAccess', request, CreateAccessResponse());
+
+  /// GetAccess retrieves an access grant.
+  $async.Future<GetAccessResponse> getAccess(
+          $pb.ClientContext? ctx, GetAccessRequest request) =>
+      _client.invoke<GetAccessResponse>(
+          ctx, 'TenancyService', 'GetAccess', request, GetAccessResponse());
+
+  /// ListAccess retrieves all access grants for a partition or profile.
+  $async.Future<ListAccessResponse> listAccess(
+          $pb.ClientContext? ctx, ListAccessRequest request) =>
+      _client.invoke<ListAccessResponse>(
+          ctx, 'TenancyService', 'ListAccess', request, ListAccessResponse());
+
+  /// RemoveAccess revokes a profile's access to a partition.
+  $async.Future<RemoveAccessResponse> removeAccess(
+          $pb.ClientContext? ctx, RemoveAccessRequest request) =>
+      _client.invoke<RemoveAccessResponse>(ctx, 'TenancyService',
+          'RemoveAccess', request, RemoveAccessResponse());
+
+  /// CreateAccessRole assigns a role to an access grant.
+  $async.Future<CreateAccessRoleResponse> createAccessRole(
+          $pb.ClientContext? ctx, CreateAccessRoleRequest request) =>
+      _client.invoke<CreateAccessRoleResponse>(ctx, 'TenancyService',
+          'CreateAccessRole', request, CreateAccessRoleResponse());
+
+  /// ListAccessRole retrieves all roles for an access grant.
+  $async.Future<ListAccessRoleResponse> listAccessRole(
+          $pb.ClientContext? ctx, ListAccessRoleRequest request) =>
+      _client.invoke<ListAccessRoleResponse>(ctx, 'TenancyService',
+          'ListAccessRole', request, ListAccessRoleResponse());
+
+  /// RemoveAccessRole removes a role from an access grant.
+  $async.Future<RemoveAccessRoleResponse> removeAccessRole(
+          $pb.ClientContext? ctx, RemoveAccessRoleRequest request) =>
+      _client.invoke<RemoveAccessRoleResponse>(ctx, 'TenancyService',
+          'RemoveAccessRole', request, RemoveAccessRoleResponse());
+
+  /// ListServiceNamespaces returns all registered service permission namespaces.
+  $async.Future<ListServiceNamespacesResponse> listServiceNamespaces(
+          $pb.ClientContext? ctx, ListServiceNamespacesRequest request) =>
+      _client.invoke<ListServiceNamespacesResponse>(ctx, 'TenancyService',
+          'ListServiceNamespaces', request, ListServiceNamespacesResponse());
+
+  /// GrantPermission grants a specific permission to a profile in a service namespace.
+  $async.Future<GrantPermissionResponse> grantPermission(
+          $pb.ClientContext? ctx, GrantPermissionRequest request) =>
+      _client.invoke<GrantPermissionResponse>(ctx, 'TenancyService',
+          'GrantPermission', request, GrantPermissionResponse());
+
+  /// RevokePermission revokes a specific permission from a profile in a service namespace.
+  $async.Future<RevokePermissionResponse> revokePermission(
+          $pb.ClientContext? ctx, RevokePermissionRequest request) =>
+      _client.invoke<RevokePermissionResponse>(ctx, 'TenancyService',
+          'RevokePermission', request, RevokePermissionResponse());
 }
 
-
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

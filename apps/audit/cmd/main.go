@@ -19,21 +19,22 @@ import (
 	"errors"
 	"net/http"
 
-	"buf.build/gen/go/antinvestor/audit/connectrpc/go/audit/v1/auditv1connect"
+	"buf.build/gen/go/antinvestor/audit/connectrpc/go/v2/audit/v1/auditv1connect"
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
-	"connectrpc.com/connect"
-	"github.com/antinvestor/common/v2/permissions"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
+	"github.com/antinvestor/common/v3/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/audit/config"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/config"
-	"github.com/pitabwire/frame/v2/datastore"
-	"github.com/pitabwire/frame/v2/security"
-	"github.com/pitabwire/frame/v2/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
-	"github.com/pitabwire/frame/v2/setup"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/config"
+	"github.com/pitabwire/frame/v3/datastore"
+	"github.com/pitabwire/frame/v3/security"
+	"github.com/pitabwire/frame/v3/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v3/security/interceptors/connect"
+	"github.com/pitabwire/frame/v3/setup"
 	"github.com/pitabwire/util"
 )
 
@@ -143,10 +144,11 @@ func setupConnectServer(ctx context.Context, sm security.Manager, deps *handlers
 	}
 
 	implementation := handlers.NewAuditServer(deps, functionChecker)
-	_, serverHandler := auditv1connect.NewAuditServiceHandler(implementation, connect.WithInterceptors(interceptors...))
+	server := connect.NewServer(interceptors...)
+	auditv1connect.RegisterAuditServiceHandler(server, implementation)
 
 	mux := http.NewServeMux()
 	mux.Handle(handlers.WellKnownKeysPath, handlers.WellKnownKeysHandler(deps.Keys, namespaceAudit))
-	mux.Handle("/", serverHandler)
+	connecthttp.Mount(mux, server)
 	return mux
 }

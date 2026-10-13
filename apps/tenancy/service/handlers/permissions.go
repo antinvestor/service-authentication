@@ -26,14 +26,14 @@ import (
 	"time"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -186,8 +186,8 @@ func stringClaim(m map[string]any, key string) string {
 // ListServiceNamespaces implements the Connect RPC to list all registered service namespaces.
 func (prtSrv *TenancyServer) ListServiceNamespaces(
 	ctx context.Context,
-	_ *connect.Request[tenancyv1.ListServiceNamespacesRequest],
-) (*connect.Response[tenancyv1.ListServiceNamespacesResponse], error) {
+	_ *tenancyv1.ListServiceNamespacesRequest,
+) (*tenancyv1.ListServiceNamespacesResponse, error) {
 	namespaces, err := prtSrv.ServiceNamespaceRepo.ListAll(ctx)
 	if err != nil {
 		return nil, prtSrv.toAPIError(err)
@@ -198,53 +198,53 @@ func (prtSrv *TenancyServer) ListServiceNamespaces(
 		result = append(result, toServiceNamespaceProto(ns))
 	}
 
-	return connect.NewResponse(&tenancyv1.ListServiceNamespacesResponse{Data: result}), nil
+	return &tenancyv1.ListServiceNamespacesResponse{Data: result}, nil
 }
 
 // GrantPermission implements the Connect RPC to grant a specific permission to a profile.
 func (prtSrv *TenancyServer) GrantPermission(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.GrantPermissionRequest],
-) (*connect.Response[tenancyv1.GrantPermissionResponse], error) {
-	if err := prtSrv.validatePermission(ctx, req.Msg.GetNamespace(), req.Msg.GetPermission()); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	req *tenancyv1.GrantPermissionRequest,
+) (*tenancyv1.GrantPermissionResponse, error) {
+	if err := prtSrv.validatePermission(ctx, req.GetNamespace(), req.GetPermission()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
 
 	claims := security.ClaimsFromContext(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", claims.GetTenantID(), claims.GetPartitionID())
 
-	tuple := authz.BuildPermissionTuple(req.Msg.GetNamespace(), tenancyPath, req.Msg.GetPermission(), req.Msg.GetProfileId())
+	tuple := authz.BuildPermissionTuple(req.GetNamespace(), tenancyPath, req.GetPermission(), req.GetProfileId())
 	payload := events.TuplesToPayload([]security.RelationTuple{tuple})
 
 	if err := prtSrv.eventsMan.Emit(ctx, events.EventKeyAuthzTupleWrite, payload); err != nil {
 		util.Log(ctx).WithError(err).Error("failed to emit permission grant tuple")
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to grant permission"))
+		return nil, connect.Errorf(connect.CodeInternal, "failed to grant permission")
 	}
 
-	return connect.NewResponse(&tenancyv1.GrantPermissionResponse{Succeeded: true}), nil
+	return &tenancyv1.GrantPermissionResponse{Succeeded: true}, nil
 }
 
 // RevokePermission implements the Connect RPC to revoke a specific permission from a profile.
 func (prtSrv *TenancyServer) RevokePermission(
 	ctx context.Context,
-	req *connect.Request[tenancyv1.RevokePermissionRequest],
-) (*connect.Response[tenancyv1.RevokePermissionResponse], error) {
-	if err := prtSrv.validatePermission(ctx, req.Msg.GetNamespace(), req.Msg.GetPermission()); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	req *tenancyv1.RevokePermissionRequest,
+) (*tenancyv1.RevokePermissionResponse, error) {
+	if err := prtSrv.validatePermission(ctx, req.GetNamespace(), req.GetPermission()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
 
 	claims := security.ClaimsFromContext(ctx)
 	tenancyPath := fmt.Sprintf("%s/%s", claims.GetTenantID(), claims.GetPartitionID())
 
-	tuple := authz.BuildPermissionTuple(req.Msg.GetNamespace(), tenancyPath, req.Msg.GetPermission(), req.Msg.GetProfileId())
+	tuple := authz.BuildPermissionTuple(req.GetNamespace(), tenancyPath, req.GetPermission(), req.GetProfileId())
 	payload := events.TuplesToPayload([]security.RelationTuple{tuple})
 
 	if err := prtSrv.eventsMan.Emit(ctx, events.EventKeyAuthzTupleDelete, payload); err != nil {
 		util.Log(ctx).WithError(err).Error("failed to emit permission revoke tuple")
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to revoke permission"))
+		return nil, connect.Errorf(connect.CodeInternal, "failed to revoke permission")
 	}
 
-	return connect.NewResponse(&tenancyv1.RevokePermissionResponse{Succeeded: true}), nil
+	return &tenancyv1.RevokePermissionResponse{Succeeded: true}, nil
 }
 
 // validatePermission checks that the namespace and permission exist in the registry.

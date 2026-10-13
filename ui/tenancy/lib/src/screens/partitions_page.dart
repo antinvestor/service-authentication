@@ -50,14 +50,15 @@ class PartitionsPage extends ConsumerWidget {
       ref.invalidate(partitionsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Partition created with default roles')),
+          const SnackBar(
+              content:
+                  Text('Partition created with default roles')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -73,19 +74,15 @@ class PartitionsPage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 48,
+                color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text(
-              'Failed to load partitions',
-              style: theme.textTheme.titleMedium,
-            ),
+            Text('Failed to load partitions',
+                style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            Text(error.toString(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () => ref.invalidate(partitionsProvider),

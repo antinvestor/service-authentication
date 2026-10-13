@@ -17,14 +17,20 @@ class AccessRolesPage extends ConsumerWidget {
       breadcrumbs: const ['Services', 'Tenancy Service', 'Access Roles'],
       searchHint: 'Search access roles...',
       addLabel: 'New Access Role',
-      exportRow: (ar) => [ar.id, ar.accessId, ar.hasRole() ? ar.role.name : ''],
+      exportRow: (ar) => [
+        ar.id,
+        ar.accessId,
+        ar.hasRole() ? ar.role.name : '',
+      ],
       columns: const [
         DataColumn(label: Text('ID')),
         DataColumn(label: Text('ACCESS ID')),
         DataColumn(label: Text('ROLE NAME')),
       ],
       rowBuilder: (accessRole, selected, onSelect) {
-        final roleName = accessRole.hasRole() ? accessRole.role.name : '';
+        final roleName = accessRole.hasRole()
+            ? accessRole.role.name
+            : '';
 
         return DataRow(
           selected: selected,
@@ -36,39 +42,27 @@ class AccessRolesPage extends ConsumerWidget {
             return null;
           }),
           cells: [
-            DataCell(
-              Text(
-                accessRole.id,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
-            DataCell(
-              Text(
-                accessRole.accessId,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    size: 16,
-                    color: theme.colorScheme.tertiary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    roleName,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
+            DataCell(Text(accessRole.id,
+                style:
+                    const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+            DataCell(Text(accessRole.accessId,
+                style:
+                    const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+            DataCell(Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.shield_outlined,
+                    size: 16, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 8),
+                Text(roleName,
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
+              ],
+            )),
           ],
         );
       },
-      detailBuilder: (accessRole) => _AccessRoleDetail(accessRole: accessRole),
+      detailBuilder: (accessRole) =>
+          _AccessRoleDetail(accessRole: accessRole),
       onRefresh: () => ref.invalidate(accessRolesProvider),
     );
   }
@@ -84,7 +78,9 @@ class _AccessRoleDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final roleName = accessRole.hasRole() ? accessRole.role.name : 'N/A';
+    final roleName = accessRole.hasRole()
+        ? accessRole.role.name
+        : 'N/A';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,30 +93,21 @@ class _AccessRoleDetail extends StatelessWidget {
                 color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                Icons.shield_outlined,
-                size: 24,
-                color: theme.colorScheme.tertiary,
-              ),
+              child: Icon(Icons.shield_outlined,
+                  size: 24, color: theme.colorScheme.tertiary),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Access Role Assignment',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    accessRole.id,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
+                  Text('Access Role Assignment',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(accessRole.id,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontFamily: 'monospace')),
                 ],
               ),
             ),
@@ -150,20 +137,14 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            child: Text(label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(value,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w500)),
           ),
         ],
       ),

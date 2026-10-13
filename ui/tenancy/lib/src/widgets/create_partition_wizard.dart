@@ -29,7 +29,8 @@ class CreatePartitionWizardResult {
   Struct? toPropertiesStruct() {
     final fields = <String, Value>{};
 
-    fields['allow_auto_access'] = Value(boolValue: allowAutoAccess);
+    fields['allow_auto_access'] =
+        Value(boolValue: allowAutoAccess);
 
     if (defaultRole.isNotEmpty) {
       fields['default_role'] = Value(stringValue: defaultRole);
@@ -92,11 +93,7 @@ class _CreatePartitionWizard extends StatefulWidget {
 
 class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
   int _currentStep = 0;
-  final _formKeys = [
-    GlobalKey<FormState>(),
-    GlobalKey<FormState>(),
-    GlobalKey<FormState>(),
-  ];
+  final _formKeys = [GlobalKey<FormState>(), GlobalKey<FormState>(), GlobalKey<FormState>()];
 
   // Step 1: Basic
   String? _selectedTenantId;
@@ -137,11 +134,11 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
   int get _totalSteps => 3;
 
   String get _stepTitle => switch (_currentStep) {
-    0 => 'Basic Information',
-    1 => 'Details',
-    2 => 'Properties & Metadata',
-    _ => '',
-  };
+        0 => 'Basic Information',
+        1 => 'Details',
+        2 => 'Properties & Metadata',
+        _ => '',
+      };
 
   void _next() {
     if (_formKeys[_currentStep].currentState?.validate() ?? false) {
@@ -188,15 +185,14 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
           Row(
             children: [
               for (int i = 0; i < _totalSteps; i++) ...[
-                if (i > 0)
-                  Expanded(
-                    child: Container(
-                      height: 2,
-                      color: i <= _currentStep
-                          ? theme.colorScheme.tertiary
-                          : theme.colorScheme.outlineVariant,
-                    ),
+                if (i > 0) Expanded(
+                  child: Container(
+                    height: 2,
+                    color: i <= _currentStep
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.outlineVariant,
                   ),
+                ),
                 Container(
                   width: 28,
                   height: 28,
@@ -209,28 +205,23 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
                   child: Center(
                     child: i < _currentStep
                         ? const Icon(Icons.check, size: 16, color: Colors.white)
-                        : Text(
-                            '${i + 1}',
+                        : Text('${i + 1}',
                             style: TextStyle(
                               color: i <= _currentStep
                                   ? Colors.white
                                   : theme.colorScheme.onSurfaceVariant,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                            )),
                   ),
                 ),
               ],
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            _stepTitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(_stepTitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
       content: SizedBox(
@@ -246,7 +237,10 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
           child: const Text('Cancel'),
         ),
         if (_currentStep > 0)
-          OutlinedButton(onPressed: _back, child: const Text('Back')),
+          OutlinedButton(
+            onPressed: _back,
+            child: const Text('Back'),
+          ),
         ElevatedButton(
           onPressed: _next,
           child: Text(_currentStep < _totalSteps - 1 ? 'Next' : 'Create'),
@@ -281,9 +275,10 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
                   hintText: 'Select a tenant...',
                 ),
                 items: widget.tenants
-                    .map(
-                      (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
-                    )
+                    .map((t) => DropdownMenuItem(
+                          value: t.id,
+                          child: Text(t.name),
+                        ))
                     .toList(),
                 onChanged: (v) => setState(() => _selectedTenantId = v),
                 validator: (v) =>
@@ -316,39 +311,39 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
                     return widget.existingPartitions;
                   }
                   final query = textEditingValue.text.toLowerCase();
-                  return widget.existingPartitions.where(
-                    (p) => p.name.toLowerCase().contains(query),
-                  );
+                  return widget.existingPartitions
+                      .where((p) => p.name.toLowerCase().contains(query));
                 },
                 displayStringForOption: (p) => p.name,
-                onSelected: (p) => setState(() => _selectedParentId = p.id),
+                onSelected: (p) =>
+                    setState(() => _selectedParentId = p.id),
                 fieldViewBuilder:
                     (context, textController, focusNode, onFieldSubmitted) {
-                      // Keep reference for clear button
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (_parentSearchController != textController &&
-                            mounted) {
-                          // Copy text controller reference
-                        }
-                      });
-                      return TextFormField(
-                        controller: textController,
-                        focusNode: focusNode,
-                        decoration: InputDecoration(
-                          labelText: 'Parent Partition (optional)',
-                          hintText: 'Type to search partitions...',
-                          suffixIcon: textController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    textController.clear();
-                                    setState(() => _selectedParentId = null);
-                                  },
-                                )
-                              : const Icon(Icons.search, size: 18),
-                        ),
-                      );
-                    },
+                  // Keep reference for clear button
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_parentSearchController != textController &&
+                        mounted) {
+                      // Copy text controller reference
+                    }
+                  });
+                  return TextFormField(
+                    controller: textController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      labelText: 'Parent Partition (optional)',
+                      hintText: 'Type to search partitions...',
+                      suffixIcon: textController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                textController.clear();
+                                setState(() => _selectedParentId = null);
+                              },
+                            )
+                          : const Icon(Icons.search, size: 18),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               if (_selectedParentId != null)
@@ -356,18 +351,12 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
                   padding: const EdgeInsets.only(left: 8),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.subdirectory_arrow_right,
-                        size: 14,
-                        color: theme.colorScheme.tertiary,
-                      ),
+                      Icon(Icons.subdirectory_arrow_right,
+                          size: 14, color: theme.colorScheme.tertiary),
                       const SizedBox(width: 4),
-                      Text(
-                        'Will be a child of this partition',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.tertiary,
-                        ),
-                      ),
+                      Text('Will be a child of this partition',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.colorScheme.tertiary)),
                     ],
                   ),
                 ),
@@ -395,8 +384,7 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
                 helperText: '10-500 characters',
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty)
-                  return 'Description is required';
+                if (v == null || v.trim().isEmpty) return 'Description is required';
                 if (v.trim().length < 10) return 'At least 10 characters';
                 return null;
               },
@@ -452,12 +440,11 @@ class _CreatePartitionWizardState extends State<_CreatePartitionWizard> {
             const SizedBox(height: 16),
 
             // Support contacts
-            Text(
-              'Support Contacts',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text('Support Contacts',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextFormField(
               controller: _supportEmailController,

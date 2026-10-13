@@ -1,22 +1,28 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: tenancy/v2/auth_contract.proto
-//
-// @dart = 2.12
+// Generated from tenancy/v2/auth_contract.proto.
+
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
-import '../../common/v1/common.pbjson.dart' as $7;
-import '../../google/protobuf/field_mask.pbjson.dart' as $1;
-import '../../google/protobuf/struct.pbjson.dart' as $6;
-import '../../google/protobuf/timestamp.pbjson.dart' as $2;
+import 'package:protobuf/well_known_types/google/protobuf/field_mask.pbjson.dart'
+    as $3;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pbjson.dart'
+    as $0;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pbjson.dart'
+    as $1;
+
+import '../../common/v1/common.pbjson.dart' as $2;
 
 @$core.Deprecated('Use authorizationScopeDescriptor instead')
 const AuthorizationScope$json = {
@@ -1010,20 +1016,20 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
     AuthContractServiceBase$messageJson = {
   '.tenancy.v2.CreateOAuthClientRequest': CreateOAuthClientRequest$json,
   '.tenancy.v2.OAuthClientConfiguration': OAuthClientConfiguration$json,
-  '.google.protobuf.Struct': $6.Struct$json,
-  '.google.protobuf.Struct.FieldsEntry': $6.Struct_FieldsEntry$json,
-  '.google.protobuf.Value': $6.Value$json,
-  '.google.protobuf.ListValue': $6.ListValue$json,
+  '.google.protobuf.Struct': $0.Struct$json,
+  '.google.protobuf.Struct.FieldsEntry': $0.Struct_FieldsEntry$json,
+  '.google.protobuf.Value': $0.Value$json,
+  '.google.protobuf.ListValue': $0.ListValue$json,
   '.tenancy.v2.CreateOAuthClientResponse': CreateOAuthClientResponse$json,
   '.tenancy.v2.OAuthClient': OAuthClient$json,
-  '.google.protobuf.Timestamp': $2.Timestamp$json,
+  '.google.protobuf.Timestamp': $1.Timestamp$json,
   '.tenancy.v2.GetOAuthClientRequest': GetOAuthClientRequest$json,
   '.tenancy.v2.GetOAuthClientResponse': GetOAuthClientResponse$json,
   '.tenancy.v2.ListOAuthClientsRequest': ListOAuthClientsRequest$json,
-  '.common.v1.PageCursor': $7.PageCursor$json,
+  '.common.v1.PageCursor': $2.PageCursor$json,
   '.tenancy.v2.ListOAuthClientsResponse': ListOAuthClientsResponse$json,
   '.tenancy.v2.UpdateOAuthClientRequest': UpdateOAuthClientRequest$json,
-  '.google.protobuf.FieldMask': $1.FieldMask$json,
+  '.google.protobuf.FieldMask': $3.FieldMask$json,
   '.tenancy.v2.UpdateOAuthClientResponse': UpdateOAuthClientResponse$json,
   '.tenancy.v2.RemoveOAuthClientRequest': RemoveOAuthClientRequest$json,
   '.tenancy.v2.RemoveOAuthClientResponse': RemoveOAuthClientResponse$json,

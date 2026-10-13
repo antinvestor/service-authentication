@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pitabwire/frame/v2/client"
+	"github.com/pitabwire/frame/v3/client"
 	"golang.org/x/oauth2"
 )
 

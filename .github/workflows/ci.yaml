@@ -21,9 +21,8 @@ jobs:
     permissions:
       contents: read
     uses: antinvestor/common/.github/workflows/flutter-ci.yml@main
-    # ui/tenancy cannot resolve without its committed pubspec_overrides.yaml
-    # (it needs antinvestor_api_tenancy ^2.0.0, unpublished; the override
-    # points at sdk/dart/tenancy), so its publish dry-run fails until 2.0.0
-    # is on pub.dev. The job stays red and visible; remove soft_fail then.
     with:
-      soft_fail: true
+      # ui/tenancy path-overrides sdk/dart/tenancy (protobuf 6) but still
+      # pins protobuf ^4.2 and antinvestor_ui_core ^0.5. It moves after
+      # antinvestor_ui_core 0.6.0; drop this exclude in that change.
+      exclude: "ui/tenancy"

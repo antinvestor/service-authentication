@@ -28,7 +28,7 @@ import (
 	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
 	hydraclientgo "github.com/ory/hydra-client-go/v25"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 )
 

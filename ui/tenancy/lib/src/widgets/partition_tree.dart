@@ -29,13 +29,11 @@ List<PartitionNode> buildPartitionTree(List<PartitionObject> partitions) {
   List<PartitionNode> buildChildren(String parentId, int depth) {
     final children = childrenMap[parentId] ?? [];
     return children
-        .map(
-          (p) => PartitionNode(
-            p,
-            children: buildChildren(p.id, depth + 1),
-            depth: depth,
-          ),
-        )
+        .map((p) => PartitionNode(
+              p,
+              children: buildChildren(p.id, depth + 1),
+              depth: depth,
+            ))
         .toList();
   }
 
@@ -51,12 +49,12 @@ List<PartitionNode> flattenTree(
   void walk(List<PartitionNode> nodes) {
     for (final node in nodes) {
       result.add(node);
-      if (expandedIds.contains(node.partition.id) && node.children.isNotEmpty) {
+      if (expandedIds.contains(node.partition.id) &&
+          node.children.isNotEmpty) {
         walk(node.children);
       }
     }
   }
-
   walk(roots);
   return result;
 }
@@ -69,7 +67,11 @@ List<PartitionNode> flattenTree(
 /// - Folder/subdirectory icons to indicate nesting level
 /// - Right-side detail panel on selection
 class PartitionTreeView extends StatefulWidget {
-  const PartitionTreeView({super.key, required this.partitions, this.onEdit});
+  const PartitionTreeView({
+    super.key,
+    required this.partitions,
+    this.onEdit,
+  });
 
   final List<PartitionObject> partitions;
   final void Function(PartitionObject)? onEdit;
@@ -144,10 +146,10 @@ class _PartitionTreeViewState extends State<PartitionTreeView> {
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     final style = theme.textTheme.labelSmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.05 * 14,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.05 * 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -220,8 +222,8 @@ class _PartitionTreeViewState extends State<PartitionTreeView> {
                     Icon(
                       node.depth == 0
                           ? (isExpanded
-                                ? Icons.folder_open_outlined
-                                : Icons.folder_outlined)
+                              ? Icons.folder_open_outlined
+                              : Icons.folder_outlined)
                           : Icons.subdirectory_arrow_right,
                       size: 18,
                       color: node.depth == 0
@@ -234,9 +236,8 @@ class _PartitionTreeViewState extends State<PartitionTreeView> {
                         p.name,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontWeight: node.depth == 0
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                          fontWeight:
+                              node.depth == 0 ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -249,7 +250,8 @@ class _PartitionTreeViewState extends State<PartitionTreeView> {
                 child: Text(
                   p.id,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  style: const TextStyle(
+                      fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
               // Parent
@@ -268,7 +270,10 @@ class _PartitionTreeViewState extends State<PartitionTreeView> {
                 ),
               ),
               // State
-              Expanded(flex: 1, child: TenancyStateBadge(p.state)),
+              Expanded(
+                flex: 1,
+                child: TenancyStateBadge(p.state),
+              ),
               // Actions
               SizedBox(
                 width: 48,
@@ -318,12 +323,9 @@ class _PartitionDetailPanel extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'Partition Details',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: Text('Partition Details',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
                 ),
                 if (onEdit != null)
                   IconButton(
@@ -355,18 +357,15 @@ class _PartitionDetailPanel extends StatelessWidget {
                 if (partition.hasCreatedAt())
                   _DetailField(
                     'Created',
-                    DateFormat.yMMMd().add_Hm().format(
-                      partition.createdAt.toDateTime(),
-                    ),
+                    DateFormat.yMMMd()
+                        .add_Hm()
+                        .format(partition.createdAt.toDateTime()),
                   ),
                 const SizedBox(height: 16),
                 // Quick actions
-                Text(
-                  'Quick Actions',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text('Quick Actions',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -409,20 +408,14 @@ class _DetailField extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            child: Text(label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(value,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w500)),
           ),
         ],
       ),

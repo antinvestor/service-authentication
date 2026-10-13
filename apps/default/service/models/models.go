@@ -17,8 +17,8 @@ package models
 import (
 	"time"
 
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/tenancy"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/tenancy"
 )
 
 type LoginSource string

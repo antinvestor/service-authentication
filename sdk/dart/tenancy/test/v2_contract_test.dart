@@ -30,6 +30,8 @@ void main() {
       'https://api.stawi.org/profile',
     ]);
     expect(
-        request.authorizationPolicy.grants.single.namespace, 'service_profile');
+      request.authorizationPolicy.grants.single.namespace,
+      'service_profile',
+    );
   });
 }
