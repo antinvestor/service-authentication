@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pitabwire/frame/v2/config"
+	"github.com/pitabwire/frame/v3/config"
 )
 
 // AuditConfig holds configuration for the audit service.

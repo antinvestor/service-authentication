@@ -20,8 +20,8 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/events"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/v2/data"
-	fevents "github.com/pitabwire/frame/v2/events"
+	"github.com/pitabwire/frame/v3/data"
+	fevents "github.com/pitabwire/frame/v3/events"
 	"github.com/pitabwire/util"
 	"gorm.io/gorm"
 )

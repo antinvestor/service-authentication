@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/v2/datastore"
+	"github.com/pitabwire/frame/v3/datastore"
 )
 
 type TenantRepository interface {

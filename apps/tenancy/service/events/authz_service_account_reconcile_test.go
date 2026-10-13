@@ -8,8 +8,8 @@ import (
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/queue/push"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/queue/push"
 	"github.com/stretchr/testify/require"
 )
 

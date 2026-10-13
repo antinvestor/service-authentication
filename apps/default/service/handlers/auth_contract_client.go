@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/pitabwire/util"
 )
 
@@ -34,14 +33,14 @@ func (h *AuthServer) getOAuthClient(ctx context.Context, clientID string) (*tena
 		return nil, errors.New("tenancy auth contract client is unavailable")
 	}
 
-	response, err := h.authContractCli.GetOAuthClient(ctx, connect.NewRequest(&tenancyv2.GetOAuthClientRequest{
+	response, err := h.authContractCli.GetOAuthClient(ctx, &tenancyv2.GetOAuthClientRequest{
 		Selector: &tenancyv2.GetOAuthClientRequest_ClientId{ClientId: clientID},
-	}))
+	})
 	if err == nil {
-		if response.Msg.GetData() == nil {
+		if response.GetData() == nil {
 			return nil, fmt.Errorf("get OAuth client %q: response data is missing", clientID)
 		}
-		return response.Msg.GetData(), nil
+		return response.GetData(), nil
 	}
 
 	// When tenancy ReBAC denies service-authentication (common after greenfield
@@ -135,14 +134,14 @@ func (h *AuthServer) getServiceAccount(ctx context.Context, serviceAccountID str
 		return nil, errors.New("tenancy auth contract client is unavailable")
 	}
 
-	response, err := h.authContractCli.GetServiceAccount(ctx, connect.NewRequest(&tenancyv2.GetServiceAccountRequest{
+	response, err := h.authContractCli.GetServiceAccount(ctx, &tenancyv2.GetServiceAccountRequest{
 		Selector: &tenancyv2.GetServiceAccountRequest_Id{Id: serviceAccountID},
-	}))
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get service account %q: %w", serviceAccountID, err)
 	}
-	if response.Msg.GetData() == nil {
+	if response.GetData() == nil {
 		return nil, fmt.Errorf("get service account %q: response data is missing", serviceAccountID)
 	}
-	return response.Msg.GetData(), nil
+	return response.GetData(), nil
 }

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
-	"github.com/pitabwire/frame/v2/tenancy"
+	"github.com/pitabwire/frame/v3/tenancy"
 	"github.com/pitabwire/util"
 )
 

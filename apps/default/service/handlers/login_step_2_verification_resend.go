@@ -22,8 +22,7 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/util"
 )
 
@@ -141,11 +140,11 @@ func (h *AuthServer) VerificationResendEndpoint(rw http.ResponseWriter, req *htt
 	ctx = serviceBotContext(ctx)
 	newVerificationID := util.IDString()
 
-	resp, err := h.profileCli.CreateContactVerification(ctx, connect.NewRequest(&profilev1.CreateContactVerificationRequest{
+	resp, err := h.profileCli.CreateContactVerification(ctx, &profilev1.CreateContactVerificationRequest{
 		Id:               newVerificationID,
 		ContactId:        loginEvent.ContactID,
 		DurationToExpire: "15m",
-	}))
+	})
 	if err != nil {
 		log.WithError(err).Error("failed to create new verification")
 		return h.writeResendResponse(rw, http.StatusInternalServerError, ResendVerificationResponse{
@@ -155,7 +154,7 @@ func (h *AuthServer) VerificationResendEndpoint(rw http.ResponseWriter, req *htt
 	}
 
 	// Step 5: Update login event with new verification ID and resend tracking
-	loginEvent.VerificationID = resp.Msg.GetId()
+	loginEvent.VerificationID = resp.GetId()
 	loginEvent.Properties = updateResendTracking(loginEvent.Properties, resendCount+1)
 
 	_, err = h.loginEventRepo.Update(ctx, loginEvent, "verification_id", "properties")

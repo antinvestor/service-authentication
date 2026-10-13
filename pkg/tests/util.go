@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pitabwire/frame/v2/frametests"
-	"github.com/pitabwire/frame/v2/frametests/definition"
+	"github.com/pitabwire/frame/v3/frametests"
+	"github.com/pitabwire/frame/v3/frametests/definition"
 )
 
 // serviceListeningLog is logged by Frame only after the HTTP listener is bound.

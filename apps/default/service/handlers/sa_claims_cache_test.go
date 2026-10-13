@@ -20,7 +20,7 @@ import (
 	"time"
 
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
-	"github.com/pitabwire/frame/v2/cache"
+	"github.com/pitabwire/frame/v3/cache"
 	"github.com/stretchr/testify/require"
 )
 

@@ -17,8 +17,8 @@ package events
 import (
 	"strings"
 
-	"github.com/antinvestor/common/v2"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/antinvestor/common/v3"
+	"github.com/pitabwire/frame/v3/data"
 )
 
 // DefaultHydraPublicJWKSURI is the internal JWKS endpoint for Hydra's public keys.

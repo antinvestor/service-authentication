@@ -22,11 +22,10 @@ import (
 	"time"
 
 	profilev1 "buf.build/gen/go/antinvestor/profile/protocolbuffers/go/profile/v1"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/providers"
 	"github.com/antinvestor/service-authentication/apps/default/service/hydra"
 	"github.com/antinvestor/service-authentication/apps/default/service/models"
-	"github.com/pitabwire/frame/v2"
+	"github.com/pitabwire/frame/v3"
 	"github.com/pitabwire/util"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -215,7 +214,7 @@ func (h *AuthServer) completeProviderLogin(
 	// Frame's 30s HTTP client timeout or hang until the gateway stream-closes).
 	log.Debug("looking up user profile by contact")
 
-	result, err := h.profileCli.GetByContact(ctx, connect.NewRequest(&profilev1.GetByContactRequest{Contact: contactDetail}))
+	result, err := h.profileCli.GetByContact(ctx, &profilev1.GetByContactRequest{Contact: contactDetail})
 	if err != nil {
 		if !frame.ErrorIsNotFound(err) {
 			log.WithError(err).WithField("duration_ms", time.Since(start).Milliseconds()).
@@ -227,7 +226,7 @@ func (h *AuthServer) completeProviderLogin(
 
 	var existingProfile *profilev1.ProfileObject
 	if result != nil {
-		existingProfile = result.Msg.GetData()
+		existingProfile = result.GetData()
 	}
 
 	if existingProfile != nil && existingProfile.GetType() == profilev1.ProfileType_BOT {
@@ -252,16 +251,16 @@ func (h *AuthServer) completeProviderLogin(
 			KeyProfileName: userName,
 		})
 
-		createResult, createErr := h.profileCli.Create(ctx, connect.NewRequest(&profilev1.CreateRequest{
+		createResult, createErr := h.profileCli.Create(ctx, &profilev1.CreateRequest{
 			Type:       profilev1.ProfileType_PERSON,
 			Contact:    contactDetail,
 			Properties: properties,
-		}))
+		})
 		if createErr != nil {
 			log.WithError(createErr).Error("failed to create new profile via profile service")
 			return "", fmt.Errorf("profile creation failed: %w", createErr)
 		}
-		existingProfile = createResult.Msg.GetData()
+		existingProfile = createResult.GetData()
 		if existingProfile == nil {
 			log.Error("profile service returned nil profile after creation")
 			return "", fmt.Errorf("profile creation returned invalid response")

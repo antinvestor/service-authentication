@@ -18,7 +18,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 )
 
 func generateClientSecret() (string, error) {

@@ -20,17 +20,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/antinvestor/common/v2/servicecatalog"
+	"github.com/antinvestor/common/v3/servicecatalog"
 
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
-	"github.com/antinvestor/common/v2"
-	"github.com/antinvestor/common/v2/connection"
-	"github.com/antinvestor/common/v2/permissions"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
+	"github.com/antinvestor/common/v3"
+	"github.com/antinvestor/common/v3/connection"
+	"github.com/antinvestor/common/v3/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
@@ -38,13 +39,13 @@ import (
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/antinvestor/service-authentication/pkg/hydraadmin"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/config"
-	"github.com/pitabwire/frame/v2/security"
-	"github.com/pitabwire/frame/v2/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
-	securityhttp "github.com/pitabwire/frame/v2/security/interceptors/httptor"
-	"github.com/pitabwire/frame/v2/setup"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/config"
+	"github.com/pitabwire/frame/v3/security"
+	"github.com/pitabwire/frame/v3/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v3/security/interceptors/connect"
+	securityhttp "github.com/pitabwire/frame/v3/security/interceptors/httptor"
+	"github.com/pitabwire/frame/v3/setup"
 	"github.com/pitabwire/util"
 )
 
@@ -230,8 +231,8 @@ func setupConnectServer(
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors")
 	}
 
-	_, serverHandler := tenancyv1connect.NewTenancyServiceHandler(
-		implementation, connect.WithInterceptors(defaultInterceptorList...))
+	server := connect.NewServer(defaultInterceptorList...)
+	tenancyv1connect.RegisterTenancyServiceHandler(server, implementation)
 
 	v2ServiceDescriptor := tenancyv2.File_tenancy_v2_auth_contract_proto.Services().ByName("AuthContractService")
 	v2ProcedureMap := permissions.BuildProcedureMap(v2ServiceDescriptor)
@@ -247,18 +248,16 @@ func setupConnectServer(
 	if err != nil {
 		util.Log(ctx).WithError(err).Fatal("failed to create tenancy v2 interceptors")
 	}
-	v2Path, v2Handler := tenancyv2connect.NewAuthContractServiceHandler(
-		authContractImplementation,
-		connect.WithInterceptors(v2Interceptors...),
-	)
+	v2Server := connect.NewServer(v2Interceptors...)
+	tenancyv2connect.RegisterAuthContractServiceHandler(v2Server, authContractImplementation)
 
 	publicRestHandler := securityhttp.AuthenticationMiddleware(
 		securityhttp.TenancyAccessMiddleware(implementation.NewSecureRouterV1(), tenancyAccessChecker),
 		authenticator)
 
 	mux := http.NewServeMux()
-	mux.Handle(v2Path, v2Handler)
-	mux.Handle("/", serverHandler)
+	connecthttp.Mount(mux, v2Server)
+	connecthttp.Mount(mux, server)
 	mux.Handle("/public/", http.StripPrefix("/public", publicRestHandler))
 
 	mux.Handle("/_internal/sync/clients", implementation.NewInternalSyncHandler())

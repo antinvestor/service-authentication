@@ -15,12 +15,13 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/pitabwire/frame/v2/data"
+	"github.com/pitabwire/frame/v3/data"
 	"gorm.io/gorm"
 )
 
@@ -30,8 +31,9 @@ const (
 	metaField  = "Audit-Reject-Field"
 )
 
-// toConnectError maps business and repository errors to Connect codes.
-func toConnectError(err error) error {
+// toConnectError maps business and repository errors to Connect codes. Rule
+// metadata goes out as response headers on the call in ctx.
+func toConnectError(ctx context.Context, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -45,27 +47,31 @@ func toConnectError(err error) error {
 		if verr.Reason == business.ReasonServiceBinding {
 			code = connect.CodePermissionDenied
 		}
-		out := connect.NewError(code, verr)
-		out.Meta().Set(metaReason, verr.Reason)
+		setResponseHeader(ctx, metaReason, verr.Reason)
 		if verr.Field != "" {
-			out.Meta().Set(metaField, verr.Field)
+			setResponseHeader(ctx, metaField, verr.Field)
 		}
-		return out
+		return connect.NewError(code, verr.Error()).WithCause(verr)
 	}
 	switch {
 	case errors.Is(err, business.ErrBacklogExceeded):
-		out := connect.NewError(connect.CodeResourceExhausted, err)
-		out.Meta().Set("Retry-After", "5")
-		return out
+		setResponseHeader(ctx, "Retry-After", "5")
+		return connect.NewError(connect.CodeResourceExhausted, err.Error()).WithCause(err)
 	case errors.Is(err, business.ErrManifestServiceMismatch):
-		return connect.NewError(connect.CodePermissionDenied, err)
+		return connect.NewError(connect.CodePermissionDenied, err.Error()).WithCause(err)
 	case errors.Is(err, business.ErrSearchWindowRequired):
-		return connect.NewError(connect.CodeInvalidArgument, err)
+		return connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	case errors.Is(err, repository.ErrAlreadyRetiredOrMissing), errors.Is(err, business.ErrKeyNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
+		return connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 	case errors.Is(err, gorm.ErrRecordNotFound), data.ErrorIsNoRows(err):
-		return connect.NewError(connect.CodeNotFound, err)
+		return connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 	default:
-		return connect.NewError(connect.CodeInternal, err)
+		return connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
+	}
+}
+
+func setResponseHeader(ctx context.Context, key, value string) {
+	if info, ok := connect.CallInfoForServerContext(ctx); ok {
+		info.ResponseHeader().Set(key, value)
 	}
 }

@@ -16,39 +16,39 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/antinvestor/common/v2/servicecatalog"
+	"github.com/antinvestor/common/v3/servicecatalog"
 
-	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/authentication/v1/authenticationv1connect"
+	"buf.build/gen/go/antinvestor/authentication/connectrpc/go/v2/authentication/v1/authenticationv1connect"
 	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
-	"buf.build/gen/go/antinvestor/device/connectrpc/go/device/v1/devicev1connect"
-	"buf.build/gen/go/antinvestor/files/connectrpc/go/files/v1/filesv1connect"
-	"buf.build/gen/go/antinvestor/notification/connectrpc/go/notification/v1/notificationv1connect"
-	"buf.build/gen/go/antinvestor/profile/connectrpc/go/profile/v1/profilev1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v1/tenancyv1connect"
-	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
-	"connectrpc.com/connect"
-	"github.com/antinvestor/common/v2"
-	"github.com/antinvestor/common/v2/connection"
-	"github.com/antinvestor/common/v2/permissions"
+	"buf.build/gen/go/antinvestor/device/connectrpc/go/v2/device/v1/devicev1connect"
+	"buf.build/gen/go/antinvestor/files/connectrpc/go/v2/files/v1/filesv1connect"
+	"buf.build/gen/go/antinvestor/notification/connectrpc/go/v2/notification/v1/notificationv1connect"
+	"buf.build/gen/go/antinvestor/profile/connectrpc/go/v2/profile/v1/profilev1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
+	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
+	"github.com/antinvestor/common/v3"
+	"github.com/antinvestor/common/v3/connection"
+	"github.com/antinvestor/common/v3/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/default/config"
 	"github.com/antinvestor/service-authentication/apps/default/service/events"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers/loginhistory"
 	"github.com/antinvestor/service-authentication/apps/default/service/repository"
-	"github.com/pitabwire/frame/v2"
-	"github.com/pitabwire/frame/v2/cache"
-	"github.com/pitabwire/frame/v2/cache/jetstreamkv"
-	"github.com/pitabwire/frame/v2/cache/valkey"
-	"github.com/pitabwire/frame/v2/config"
-	"github.com/pitabwire/frame/v2/data"
-	"github.com/pitabwire/frame/v2/datastore"
-	"github.com/pitabwire/frame/v2/security"
-	"github.com/pitabwire/frame/v2/security/authorizer"
-	connectInterceptors "github.com/pitabwire/frame/v2/security/interceptors/connect"
+	"github.com/pitabwire/frame/v3"
+	"github.com/pitabwire/frame/v3/cache"
+	"github.com/pitabwire/frame/v3/cache/jetstreamkv"
+	"github.com/pitabwire/frame/v3/cache/valkey"
+	"github.com/pitabwire/frame/v3/config"
+	"github.com/pitabwire/frame/v3/data"
+	"github.com/pitabwire/frame/v3/datastore"
+	"github.com/pitabwire/frame/v3/security"
+	"github.com/pitabwire/frame/v3/security/authorizer"
+	connectInterceptors "github.com/pitabwire/frame/v3/security/interceptors/connect"
 	"github.com/pitabwire/util"
 )
 
@@ -158,13 +158,13 @@ func main() {
 
 	// Setup Connect RPC handler for login history API
 	loginHistorySrv := loginhistory.NewLoginHistoryServer(loginEventRepo, loginRepo).WithGenesisProofs(srv)
-	connectPath, connectHandler := setupConnectServer(ctx, sm, loginHistorySrv)
+	connectServer := setupConnectServer(ctx, sm, loginHistorySrv)
 
 	// Combine auth routes and Connect RPC into a single handler.
 	// Frame's WithHTTPHandler uses plain assignment (not append), so only
 	// the last call wins — both must share one mux.
 	authMux := srv.SetupRouterV1(ctx)
-	authMux.Handle(connectPath, connectHandler)
+	connecthttp.Mount(authMux, connectServer)
 
 	defaultServer := frame.WithHTTPHandler(authMux)
 	serviceOptions = append(serviceOptions, defaultServer)
@@ -345,13 +345,12 @@ const namespaceTenancyAccess = "tenancy_access"
 
 // setupConnectServer creates the Connect RPC handler for login history
 // with the full interceptor chain: Auth -> TenancyAccess -> FunctionAccess -> TenancyTx.
-// Returns the path prefix and handler so they can be registered on the
-// shared auth routes mux.
+// The caller mounts the returned server on the shared auth routes mux.
 func setupConnectServer(
 	ctx context.Context,
 	sm security.Manager,
 	implementation *loginhistory.LoginHistoryServer,
-) (string, http.Handler) {
+) *connect.Server {
 	authenticator := sm.GetAuthenticator(ctx)
 	auth := sm.GetAuthorizer(ctx)
 
@@ -372,6 +371,7 @@ func setupConnectServer(
 		util.Log(ctx).WithError(err).Fatal("failed to create default interceptors for login history")
 	}
 
-	return authenticationv1connect.NewAuthenticationServiceHandler(
-		implementation, connect.WithInterceptors(defaultInterceptorList...))
+	server := connect.NewServer(defaultInterceptorList...)
+	authenticationv1connect.RegisterAuthenticationServiceHandler(server, implementation)
+	return server
 }

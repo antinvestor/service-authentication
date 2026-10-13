@@ -17,9 +17,8 @@ package handlers
 import (
 	"context"
 
-	tenancyv2connect "buf.build/gen/go/antinvestor/tenancy/connectrpc/go/tenancy/v2/tenancyv2connect"
+	tenancyv2connect "buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v2/tenancyv2connect"
 	tenancyv2 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v2"
-	"connectrpc.com/connect"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 )
 
@@ -49,119 +48,119 @@ func NewAuthContractServer(parent *TenancyServer, audienceBaseURL string) (*Auth
 
 func (s *AuthContractServer) CreateOAuthClient(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.CreateOAuthClientRequest],
-) (*connect.Response[tenancyv2.CreateOAuthClientResponse], error) {
-	response, err := s.business.CreateOAuthClient(ctx, request.Msg)
+	request *tenancyv2.CreateOAuthClientRequest,
+) (*tenancyv2.CreateOAuthClientResponse, error) {
+	response, err := s.business.CreateOAuthClient(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(response), nil
+	return response, nil
 }
 
 func (s *AuthContractServer) GetOAuthClient(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.GetOAuthClientRequest],
-) (*connect.Response[tenancyv2.GetOAuthClientResponse], error) {
-	client, err := s.business.GetOAuthClient(ctx, request.Msg)
+	request *tenancyv2.GetOAuthClientRequest,
+) (*tenancyv2.GetOAuthClientResponse, error) {
+	client, err := s.business.GetOAuthClient(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.GetOAuthClientResponse{Data: client}), nil
+	return &tenancyv2.GetOAuthClientResponse{Data: client}, nil
 }
 
 func (s *AuthContractServer) ListOAuthClients(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.ListOAuthClientsRequest],
-) (*connect.Response[tenancyv2.ListOAuthClientsResponse], error) {
-	clients, err := s.business.ListOAuthClients(ctx, request.Msg)
+	request *tenancyv2.ListOAuthClientsRequest,
+) (*tenancyv2.ListOAuthClientsResponse, error) {
+	clients, err := s.business.ListOAuthClients(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.ListOAuthClientsResponse{Data: clients}), nil
+	return &tenancyv2.ListOAuthClientsResponse{Data: clients}, nil
 }
 
 func (s *AuthContractServer) UpdateOAuthClient(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.UpdateOAuthClientRequest],
-) (*connect.Response[tenancyv2.UpdateOAuthClientResponse], error) {
-	client, err := s.business.UpdateOAuthClient(ctx, request.Msg)
+	request *tenancyv2.UpdateOAuthClientRequest,
+) (*tenancyv2.UpdateOAuthClientResponse, error) {
+	client, err := s.business.UpdateOAuthClient(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.UpdateOAuthClientResponse{Data: client}), nil
+	return &tenancyv2.UpdateOAuthClientResponse{Data: client}, nil
 }
 
 func (s *AuthContractServer) RemoveOAuthClient(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.RemoveOAuthClientRequest],
-) (*connect.Response[tenancyv2.RemoveOAuthClientResponse], error) {
-	if err := s.business.RemoveOAuthClient(ctx, request.Msg.GetId()); err != nil {
+	request *tenancyv2.RemoveOAuthClientRequest,
+) (*tenancyv2.RemoveOAuthClientResponse, error) {
+	if err := s.business.RemoveOAuthClient(ctx, request.GetId()); err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.RemoveOAuthClientResponse{Succeeded: true}), nil
+	return &tenancyv2.RemoveOAuthClientResponse{Succeeded: true}, nil
 }
 
 func (s *AuthContractServer) CreateServiceAccount(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.CreateServiceAccountRequest],
-) (*connect.Response[tenancyv2.CreateServiceAccountResponse], error) {
-	response, err := s.business.CreateServiceAccount(ctx, request.Msg)
+	request *tenancyv2.CreateServiceAccountRequest,
+) (*tenancyv2.CreateServiceAccountResponse, error) {
+	response, err := s.business.CreateServiceAccount(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(response), nil
+	return response, nil
 }
 
 func (s *AuthContractServer) GetServiceAccount(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.GetServiceAccountRequest],
-) (*connect.Response[tenancyv2.GetServiceAccountResponse], error) {
-	serviceAccount, err := s.business.GetServiceAccount(ctx, request.Msg)
+	request *tenancyv2.GetServiceAccountRequest,
+) (*tenancyv2.GetServiceAccountResponse, error) {
+	serviceAccount, err := s.business.GetServiceAccount(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.GetServiceAccountResponse{Data: serviceAccount}), nil
+	return &tenancyv2.GetServiceAccountResponse{Data: serviceAccount}, nil
 }
 
 func (s *AuthContractServer) ListServiceAccounts(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.ListServiceAccountsRequest],
-) (*connect.Response[tenancyv2.ListServiceAccountsResponse], error) {
-	serviceAccounts, err := s.business.ListServiceAccounts(ctx, request.Msg)
+	request *tenancyv2.ListServiceAccountsRequest,
+) (*tenancyv2.ListServiceAccountsResponse, error) {
+	serviceAccounts, err := s.business.ListServiceAccounts(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.ListServiceAccountsResponse{Data: serviceAccounts}), nil
+	return &tenancyv2.ListServiceAccountsResponse{Data: serviceAccounts}, nil
 }
 
 func (s *AuthContractServer) UpdateServiceAccount(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.UpdateServiceAccountRequest],
-) (*connect.Response[tenancyv2.UpdateServiceAccountResponse], error) {
-	serviceAccount, err := s.business.UpdateServiceAccount(ctx, request.Msg)
+	request *tenancyv2.UpdateServiceAccountRequest,
+) (*tenancyv2.UpdateServiceAccountResponse, error) {
+	serviceAccount, err := s.business.UpdateServiceAccount(ctx, request)
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.UpdateServiceAccountResponse{Data: serviceAccount}), nil
+	return &tenancyv2.UpdateServiceAccountResponse{Data: serviceAccount}, nil
 }
 
 func (s *AuthContractServer) RemoveServiceAccount(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.RemoveServiceAccountRequest],
-) (*connect.Response[tenancyv2.RemoveServiceAccountResponse], error) {
-	if err := s.business.RemoveServiceAccount(ctx, request.Msg.GetId()); err != nil {
+	request *tenancyv2.RemoveServiceAccountRequest,
+) (*tenancyv2.RemoveServiceAccountResponse, error) {
+	if err := s.business.RemoveServiceAccount(ctx, request.GetId()); err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.RemoveServiceAccountResponse{Succeeded: true}), nil
+	return &tenancyv2.RemoveServiceAccountResponse{Succeeded: true}, nil
 }
 
 func (s *AuthContractServer) ReconcileServiceAccountAuthorization(
 	ctx context.Context,
-	request *connect.Request[tenancyv2.ReconcileServiceAccountAuthorizationRequest],
-) (*connect.Response[tenancyv2.ReconcileServiceAccountAuthorizationResponse], error) {
-	generation, err := s.business.ReconcileServiceAccountAuthorization(ctx, request.Msg.GetId())
+	request *tenancyv2.ReconcileServiceAccountAuthorizationRequest,
+) (*tenancyv2.ReconcileServiceAccountAuthorizationResponse, error) {
+	generation, err := s.business.ReconcileServiceAccountAuthorization(ctx, request.GetId())
 	if err != nil {
 		return nil, s.parent.toAPIError(err)
 	}
-	return connect.NewResponse(&tenancyv2.ReconcileServiceAccountAuthorizationResponse{Generation: generation}), nil
+	return &tenancyv2.ReconcileServiceAccountAuthorizationResponse{Generation: generation}, nil
 }

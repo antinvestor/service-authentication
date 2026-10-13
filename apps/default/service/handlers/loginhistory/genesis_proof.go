@@ -20,7 +20,7 @@ import (
 	"net/http"
 
 	authv1 "buf.build/gen/go/antinvestor/authentication/protocolbuffers/go/authentication/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/antinvestor/service-authentication/apps/default/service/handlers"
 	"github.com/antinvestor/service-authentication/apps/default/service/sessionproof"
 )
@@ -42,20 +42,20 @@ func (s *LoginHistoryServer) WithGenesisProofs(proofs GenesisProofs) *LoginHisto
 // IssueGenesisSessionProof mints a proof bound to the caller's live session.
 func (s *LoginHistoryServer) IssueGenesisSessionProof(
 	ctx context.Context,
-	req *connect.Request[authv1.IssueGenesisSessionProofRequest],
-) (*connect.Response[authv1.IssueGenesisSessionProofResponse], error) {
+	req *authv1.IssueGenesisSessionProofRequest,
+) (*authv1.IssueGenesisSessionProofResponse, error) {
 	if s.genesisProofs == nil {
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("genesis session proofs are not configured"))
+		return nil, connect.NewError(connect.CodeUnavailable, "genesis session proofs are not configured")
 	}
 	issued, err := s.genesisProofs.IssueGenesisSessionProof(ctx, handlers.GenesisProofIssueInput{
-		PubkeyHash:  req.Msg.GetPubkeyHash(),
-		DeviceKeyID: req.Msg.GetDeviceKeyId(),
-		DeviceID:    req.Msg.GetDeviceId(),
+		PubkeyHash:  req.GetPubkeyHash(),
+		DeviceKeyID: req.GetDeviceKeyId(),
+		DeviceID:    req.GetDeviceId(),
 	})
 	if err != nil {
 		return nil, genesisProofError(err)
 	}
-	return connect.NewResponse(&authv1.IssueGenesisSessionProofResponse{
+	return &authv1.IssueGenesisSessionProofResponse{
 		Token:       issued.Token,
 		KeyId:       issued.Claims.KeyID,
 		Algorithm:   issued.Claims.Algorithm,
@@ -64,25 +64,25 @@ func (s *LoginHistoryServer) IssueGenesisSessionProof(
 		ExpiresAt:   issued.Claims.ExpiresAt,
 		BindingHash: issued.BindingHash,
 		Audience:    issued.Claims.Audience,
-	}), nil
+	}, nil
 }
 
 // VerifyGenesisSessionProof checks a proof and optionally spends its nonce.
 // An invalid proof is answered with valid=false and a reason, not an error.
 func (s *LoginHistoryServer) VerifyGenesisSessionProof(
 	ctx context.Context,
-	req *connect.Request[authv1.VerifyGenesisSessionProofRequest],
-) (*connect.Response[authv1.VerifyGenesisSessionProofResponse], error) {
+	req *authv1.VerifyGenesisSessionProofRequest,
+) (*authv1.VerifyGenesisSessionProofResponse, error) {
 	if s.genesisProofs == nil {
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("genesis session proofs are not configured"))
+		return nil, connect.NewError(connect.CodeUnavailable, "genesis session proofs are not configured")
 	}
 	verdict, err := s.genesisProofs.VerifyGenesisSessionProof(ctx, handlers.GenesisProofVerifyInput{
-		Token:       req.Msg.GetToken(),
-		ProfileID:   req.Msg.GetProfileId(),
-		DeviceID:    req.Msg.GetDeviceId(),
-		PubkeyHash:  req.Msg.GetPubkeyHash(),
-		DeviceKeyID: req.Msg.GetDeviceKeyId(),
-		Consume:     req.Msg.GetConsume(),
+		Token:       req.GetToken(),
+		ProfileID:   req.GetProfileId(),
+		DeviceID:    req.GetDeviceId(),
+		PubkeyHash:  req.GetPubkeyHash(),
+		DeviceKeyID: req.GetDeviceKeyId(),
+		Consume:     req.GetConsume(),
 	})
 	if err != nil {
 		return nil, genesisProofError(err)
@@ -101,14 +101,14 @@ func (s *LoginHistoryServer) VerifyGenesisSessionProof(
 			PartitionId: c.PartitionID, Audience: c.Audience,
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }
 
 // genesisProofError maps a refusal's HTTP status to the matching Connect code.
 func genesisProofError(err error) error {
 	var refusal *handlers.GenesisProofError
 	if !errors.As(err, &refusal) {
-		return connect.NewError(connect.CodeInternal, errors.New("genesis session proof failed"))
+		return connect.NewError(connect.CodeInternal, "genesis session proof failed")
 	}
 	code := connect.CodeInternal
 	switch refusal.Status {
@@ -121,5 +121,5 @@ func genesisProofError(err error) error {
 	case http.StatusServiceUnavailable:
 		code = connect.CodeUnavailable
 	}
-	return connect.NewError(code, errors.New(refusal.Reason))
+	return connect.NewError(code, refusal.Reason)
 }

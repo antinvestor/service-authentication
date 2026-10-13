@@ -20,7 +20,7 @@ import (
 	"slices"
 
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
-	"github.com/pitabwire/frame/v2/security"
+	"github.com/pitabwire/frame/v3/security"
 )
 
 // SortRelationTuples gives reconciliation and audit output a stable order.

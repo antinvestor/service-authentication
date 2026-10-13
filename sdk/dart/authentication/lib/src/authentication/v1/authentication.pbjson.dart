@@ -1,20 +1,24 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: authentication/v1/authentication.proto
-//
-// @dart = 2.12
+// Generated from authentication/v1/authentication.proto.
+
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
-import '../../google/protobuf/struct.pbjson.dart' as $6;
-import '../../google/protobuf/timestamp.pbjson.dart' as $2;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pbjson.dart'
+    as $0;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pbjson.dart'
+    as $1;
 
 @$core.Deprecated('Use loginSourceDescriptor instead')
 const LoginSource$json = {
@@ -51,8 +55,22 @@ const LoginEventObject$json = {
     {'1': 'ip_address', '3': 9, '4': 1, '5': 9, '10': 'ipAddress'},
     {'1': 'user_agent', '3': 10, '4': 1, '5': 9, '10': 'userAgent'},
     {'1': 'status', '3': 11, '4': 1, '5': 5, '10': 'status'},
-    {'1': 'properties', '3': 12, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'properties'},
-    {'1': 'created_at', '3': 13, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'properties',
+      '3': 12,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'properties'
+    },
+    {
+      '1': 'created_at',
+      '3': 13,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
   ],
 };
 
@@ -76,14 +94,22 @@ const GetLoginEventRequest$json = {
 };
 
 /// Descriptor for `GetLoginEventRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getLoginEventRequestDescriptor = $convert.base64Decode(
-    'ChRHZXRMb2dpbkV2ZW50UmVxdWVzdBIXCgJpZBgBIAEoCUIHukgEcgIQAVICaWQ=');
+final $typed_data.Uint8List getLoginEventRequestDescriptor =
+    $convert.base64Decode(
+        'ChRHZXRMb2dpbkV2ZW50UmVxdWVzdBIXCgJpZBgBIAEoCUIHukgEcgIQAVICaWQ=');
 
 @$core.Deprecated('Use getLoginEventResponseDescriptor instead')
 const GetLoginEventResponse$json = {
   '1': 'GetLoginEventResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.authentication.v1.LoginEventObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.authentication.v1.LoginEventObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -100,8 +126,22 @@ const ListLoginEventsRequest$json = {
     {'1': 'client_id', '3': 2, '4': 1, '5': 9, '10': 'clientId'},
     {'1': 'source', '3': 3, '4': 1, '5': 9, '10': 'source'},
     {'1': 'device_id', '3': 4, '4': 1, '5': 9, '10': 'deviceId'},
-    {'1': 'start_date', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startDate'},
-    {'1': 'end_date', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endDate'},
+    {
+      '1': 'start_date',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startDate'
+    },
+    {
+      '1': 'end_date',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'endDate'
+    },
     {'1': 'count', '3': 7, '4': 1, '5': 5, '10': 'count'},
     {'1': 'page', '3': 8, '4': 1, '5': 9, '10': 'page'},
   ],
@@ -120,14 +160,22 @@ final $typed_data.Uint8List listLoginEventsRequestDescriptor = $convert.base64De
 const ListLoginEventsResponse$json = {
   '1': 'ListLoginEventsResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.authentication.v1.LoginEventObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.authentication.v1.LoginEventObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListLoginEventsResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listLoginEventsResponseDescriptor = $convert.base64Decode(
-    'ChdMaXN0TG9naW5FdmVudHNSZXNwb25zZRI3CgRkYXRhGAEgAygLMiMuYXV0aGVudGljYXRpb2'
-    '4udjEuTG9naW5FdmVudE9iamVjdFIEZGF0YQ==');
+final $typed_data.Uint8List listLoginEventsResponseDescriptor =
+    $convert.base64Decode(
+        'ChdMaXN0TG9naW5FdmVudHNSZXNwb25zZRI3CgRkYXRhGAEgAygLMiMuYXV0aGVudGljYXRpb2'
+        '4udjEuTG9naW5FdmVudE9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use genesisSessionProofClaimsDescriptor instead')
 const GenesisSessionProofClaims$json = {
@@ -166,17 +214,25 @@ const IssueGenesisSessionProofRequest$json = {
   '1': 'IssueGenesisSessionProofRequest',
   '2': [
     {'1': 'pubkey_hash', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'pubkeyHash'},
-    {'1': 'device_key_id', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'deviceKeyId'},
+    {
+      '1': 'device_key_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'deviceKeyId'
+    },
     {'1': 'device_id', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'deviceId'},
   ],
 };
 
 /// Descriptor for `IssueGenesisSessionProofRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List issueGenesisSessionProofRequestDescriptor = $convert.base64Decode(
-    'Ch9Jc3N1ZUdlbmVzaXNTZXNzaW9uUHJvb2ZSZXF1ZXN0EjkKC3B1YmtleV9oYXNoGAEgASgJQh'
-    'i6SBVyEzIRXlswLTlhLWZBLUZdezY0fSRSCnB1YmtleUhhc2gSLAoNZGV2aWNlX2tleV9pZBgC'
-    'IAEoCUIIukgFcgMY/wFSC2RldmljZUtleUlkEiUKCWRldmljZV9pZBgDIAEoCUIIukgFcgMY/w'
-    'FSCGRldmljZUlk');
+final $typed_data.Uint8List issueGenesisSessionProofRequestDescriptor =
+    $convert.base64Decode(
+        'Ch9Jc3N1ZUdlbmVzaXNTZXNzaW9uUHJvb2ZSZXF1ZXN0EjkKC3B1YmtleV9oYXNoGAEgASgJQh'
+        'i6SBVyEzIRXlswLTlhLWZBLUZdezY0fSRSCnB1YmtleUhhc2gSLAoNZGV2aWNlX2tleV9pZBgC'
+        'IAEoCUIIukgFcgMY/wFSC2RldmljZUtleUlkEiUKCWRldmljZV9pZBgDIAEoCUIIukgFcgMY/w'
+        'FSCGRldmljZUlk');
 
 @$core.Deprecated('Use issueGenesisSessionProofResponseDescriptor instead')
 const IssueGenesisSessionProofResponse$json = {
@@ -227,17 +283,25 @@ const VerifyGenesisSessionProofResponse$json = {
   '2': [
     {'1': 'valid', '3': 1, '4': 1, '5': 8, '10': 'valid'},
     {'1': 'reason', '3': 2, '4': 1, '5': 9, '10': 'reason'},
-    {'1': 'claims', '3': 3, '4': 1, '5': 11, '6': '.authentication.v1.GenesisSessionProofClaims', '10': 'claims'},
+    {
+      '1': 'claims',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.authentication.v1.GenesisSessionProofClaims',
+      '10': 'claims'
+    },
     {'1': 'binding_hash', '3': 4, '4': 1, '5': 9, '10': 'bindingHash'},
   ],
 };
 
 /// Descriptor for `VerifyGenesisSessionProofResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List verifyGenesisSessionProofResponseDescriptor = $convert.base64Decode(
-    'CiFWZXJpZnlHZW5lc2lzU2Vzc2lvblByb29mUmVzcG9uc2USFAoFdmFsaWQYASABKAhSBXZhbG'
-    'lkEhYKBnJlYXNvbhgCIAEoCVIGcmVhc29uEkQKBmNsYWltcxgDIAEoCzIsLmF1dGhlbnRpY2F0'
-    'aW9uLnYxLkdlbmVzaXNTZXNzaW9uUHJvb2ZDbGFpbXNSBmNsYWltcxIhCgxiaW5kaW5nX2hhc2'
-    'gYBCABKAlSC2JpbmRpbmdIYXNo');
+final $typed_data.Uint8List verifyGenesisSessionProofResponseDescriptor =
+    $convert.base64Decode(
+        'CiFWZXJpZnlHZW5lc2lzU2Vzc2lvblByb29mUmVzcG9uc2USFAoFdmFsaWQYASABKAhSBXZhbG'
+        'lkEhYKBnJlYXNvbhgCIAEoCVIGcmVhc29uEkQKBmNsYWltcxgDIAEoCzIsLmF1dGhlbnRpY2F0'
+        'aW9uLnYxLkdlbmVzaXNTZXNzaW9uUHJvb2ZDbGFpbXNSBmNsYWltcxIhCgxiaW5kaW5nX2hhc2'
+        'gYBCABKAlSC2JpbmRpbmdIYXNo');
 
 const $core.Map<$core.String, $core.dynamic> AuthenticationServiceBase$json = {
   '1': 'AuthenticationService',
@@ -255,29 +319,45 @@ const $core.Map<$core.String, $core.dynamic> AuthenticationServiceBase$json = {
       '4': {'34': 1},
       '6': true,
     },
-    {'1': 'IssueGenesisSessionProof', '2': '.authentication.v1.IssueGenesisSessionProofRequest', '3': '.authentication.v1.IssueGenesisSessionProofResponse', '4': {}},
-    {'1': 'VerifyGenesisSessionProof', '2': '.authentication.v1.VerifyGenesisSessionProofRequest', '3': '.authentication.v1.VerifyGenesisSessionProofResponse', '4': {}},
+    {
+      '1': 'IssueGenesisSessionProof',
+      '2': '.authentication.v1.IssueGenesisSessionProofRequest',
+      '3': '.authentication.v1.IssueGenesisSessionProofResponse',
+      '4': {}
+    },
+    {
+      '1': 'VerifyGenesisSessionProof',
+      '2': '.authentication.v1.VerifyGenesisSessionProofRequest',
+      '3': '.authentication.v1.VerifyGenesisSessionProofResponse',
+      '4': {}
+    },
   ],
   '3': {},
 };
 
 @$core.Deprecated('Use authenticationServiceDescriptor instead')
-const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> AuthenticationServiceBase$messageJson = {
+const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
+    AuthenticationServiceBase$messageJson = {
   '.authentication.v1.GetLoginEventRequest': GetLoginEventRequest$json,
   '.authentication.v1.GetLoginEventResponse': GetLoginEventResponse$json,
   '.authentication.v1.LoginEventObject': LoginEventObject$json,
-  '.google.protobuf.Struct': $6.Struct$json,
-  '.google.protobuf.Struct.FieldsEntry': $6.Struct_FieldsEntry$json,
-  '.google.protobuf.Value': $6.Value$json,
-  '.google.protobuf.ListValue': $6.ListValue$json,
-  '.google.protobuf.Timestamp': $2.Timestamp$json,
+  '.google.protobuf.Struct': $0.Struct$json,
+  '.google.protobuf.Struct.FieldsEntry': $0.Struct_FieldsEntry$json,
+  '.google.protobuf.Value': $0.Value$json,
+  '.google.protobuf.ListValue': $0.ListValue$json,
+  '.google.protobuf.Timestamp': $1.Timestamp$json,
   '.authentication.v1.ListLoginEventsRequest': ListLoginEventsRequest$json,
   '.authentication.v1.ListLoginEventsResponse': ListLoginEventsResponse$json,
-  '.authentication.v1.IssueGenesisSessionProofRequest': IssueGenesisSessionProofRequest$json,
-  '.authentication.v1.IssueGenesisSessionProofResponse': IssueGenesisSessionProofResponse$json,
-  '.authentication.v1.VerifyGenesisSessionProofRequest': VerifyGenesisSessionProofRequest$json,
-  '.authentication.v1.VerifyGenesisSessionProofResponse': VerifyGenesisSessionProofResponse$json,
-  '.authentication.v1.GenesisSessionProofClaims': GenesisSessionProofClaims$json,
+  '.authentication.v1.IssueGenesisSessionProofRequest':
+      IssueGenesisSessionProofRequest$json,
+  '.authentication.v1.IssueGenesisSessionProofResponse':
+      IssueGenesisSessionProofResponse$json,
+  '.authentication.v1.VerifyGenesisSessionProofRequest':
+      VerifyGenesisSessionProofRequest$json,
+  '.authentication.v1.VerifyGenesisSessionProofResponse':
+      VerifyGenesisSessionProofResponse$json,
+  '.authentication.v1.GenesisSessionProofClaims':
+      GenesisSessionProofClaims$json,
 };
 
 /// Descriptor for `AuthenticationService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -312,4 +392,3 @@ final $typed_data.Uint8List authenticationServiceDescriptor = $convert.base64Dec
     '1hdXRoX3ZpZXdfb3duEg1hdXRoX3ZpZXdfYWxsGhEIAxINYXV0aF92aWV3X293bhoRCAQSDWF1'
     'dGhfdmlld19vd24aEQgFEg1hdXRoX3ZpZXdfb3duGiAIBhINYXV0aF92aWV3X293bhINYXV0aF'
     '92aWV3X2FsbA==');
-

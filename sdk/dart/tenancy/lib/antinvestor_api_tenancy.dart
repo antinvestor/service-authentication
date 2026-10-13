@@ -46,5 +46,5 @@ export 'src/tenancy/v2/auth_contract.connect.spec.dart';
 // Export common types used in tenancy API
 export 'src/common/v1/common.pb.dart';
 export 'src/common/v1/common.pbenum.dart';
-export 'src/google/protobuf/struct.pb.dart';
-export 'src/google/protobuf/timestamp.pb.dart';
+export 'package:protobuf/well_known_types/google/protobuf/struct.pb.dart';
+export 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';

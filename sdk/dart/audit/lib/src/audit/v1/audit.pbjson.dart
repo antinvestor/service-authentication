@@ -1,20 +1,24 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: audit/v1/audit.proto
-//
-// @dart = 2.12
+// Generated from audit/v1/audit.proto.
+
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
-import '../../google/protobuf/struct.pbjson.dart' as $6;
-import '../../google/protobuf/timestamp.pbjson.dart' as $2;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pbjson.dart'
+    as $0;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pbjson.dart'
+    as $1;
 
 @$core.Deprecated('Use auditPhaseDescriptor instead')
 const AuditPhase$json = {
@@ -62,13 +66,33 @@ const AuditEntryObject$json = {
     {'1': 'resource_type', '3': 6, '4': 1, '5': 9, '10': 'resourceType'},
     {'1': 'resource_id', '3': 7, '4': 1, '5': 9, '10': 'resourceId'},
     {'1': 'service', '3': 8, '4': 1, '5': 9, '10': 'service'},
-    {'1': 'details', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'details'},
+    {
+      '1': 'details',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'details'
+    },
     {'1': 'ip_address', '3': 10, '4': 1, '5': 9, '10': 'ipAddress'},
     {'1': 'user_agent', '3': 11, '4': 1, '5': 9, '10': 'userAgent'},
     {'1': 'device_id', '3': 12, '4': 1, '5': 9, '10': 'deviceId'},
-    {'1': 'target_profile_id', '3': 13, '4': 1, '5': 9, '10': 'targetProfileId'},
+    {
+      '1': 'target_profile_id',
+      '3': 13,
+      '4': 1,
+      '5': 9,
+      '10': 'targetProfileId'
+    },
     {'1': 'trace_id', '3': 14, '4': 1, '5': 9, '10': 'traceId'},
-    {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'created_at',
+      '3': 15,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
     {'1': 'previous_hash', '3': 16, '4': 1, '5': 9, '10': 'previousHash'},
     {'1': 'entry_hash', '3': 17, '4': 1, '5': 9, '10': 'entryHash'},
     {'1': 'signature', '3': 18, '4': 1, '5': 9, '10': 'signature'},
@@ -76,29 +100,88 @@ const AuditEntryObject$json = {
     {'1': 'key_id', '3': 20, '4': 1, '5': 9, '10': 'keyId'},
     {'1': 'canon_version', '3': 21, '4': 1, '5': 5, '10': 'canonVersion'},
     {'1': 'entry_id', '3': 22, '4': 1, '5': 9, '10': 'entryId'},
-    {'1': 'actor_service_account_id', '3': 23, '4': 1, '5': 9, '10': 'actorServiceAccountId'},
+    {
+      '1': 'actor_service_account_id',
+      '3': 23,
+      '4': 1,
+      '5': 9,
+      '10': 'actorServiceAccountId'
+    },
     {'1': 'on_behalf_of', '3': 24, '4': 1, '5': 9, '10': 'onBehalfOf'},
-    {'1': 'occurred_at', '3': 25, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'occurredAt'},
-    {'1': 'received_at', '3': 26, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'receivedAt'},
+    {
+      '1': 'occurred_at',
+      '3': 25,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'occurredAt'
+    },
+    {
+      '1': 'received_at',
+      '3': 26,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'receivedAt'
+    },
     {'1': 'correlation_id', '3': 27, '4': 1, '5': 9, '10': 'correlationId'},
     {'1': 'event_id', '3': 28, '4': 1, '5': 9, '10': 'eventId'},
     {'1': 'intent_id', '3': 29, '4': 1, '5': 9, '10': 'intentId'},
     {'1': 'instance_id', '3': 30, '4': 1, '5': 9, '10': 'instanceId'},
     {'1': 'payload_hash', '3': 31, '4': 1, '5': 9, '10': 'payloadHash'},
-    {'1': 'authorization_hash', '3': 32, '4': 1, '5': 9, '10': 'authorizationHash'},
+    {
+      '1': 'authorization_hash',
+      '3': 32,
+      '4': 1,
+      '5': 9,
+      '10': 'authorizationHash'
+    },
     {'1': 'policy_hash', '3': 33, '4': 1, '5': 9, '10': 'policyHash'},
     {'1': 'device_key_id', '3': 34, '4': 1, '5': 9, '10': 'deviceKeyId'},
     {'1': 'state_from', '3': 35, '4': 1, '5': 9, '10': 'stateFrom'},
     {'1': 'state_to', '3': 36, '4': 1, '5': 9, '10': 'stateTo'},
     {'1': 'resource_version', '3': 37, '4': 1, '5': 3, '10': 'resourceVersion'},
-    {'1': 'relations', '3': 38, '4': 3, '5': 11, '6': '.audit.v1.AuditRelation', '10': 'relations'},
+    {
+      '1': 'relations',
+      '3': 38,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.AuditRelation',
+      '10': 'relations'
+    },
     {'1': 'manifest_version', '3': 39, '4': 1, '5': 5, '10': 'manifestVersion'},
     {'1': 'unmanifested', '3': 40, '4': 1, '5': 8, '10': 'unmanifested'},
-    {'1': 'state', '3': 41, '4': 1, '5': 14, '6': '.audit.v1.IntakeState', '10': 'state'},
-    {'1': 'phase', '3': 42, '4': 1, '5': 14, '6': '.audit.v1.AuditPhase', '10': 'phase'},
-    {'1': 'outcome_of_entry_id', '3': 43, '4': 1, '5': 9, '10': 'outcomeOfEntryId'},
+    {
+      '1': 'state',
+      '3': 41,
+      '4': 1,
+      '5': 14,
+      '6': '.audit.v1.IntakeState',
+      '10': 'state'
+    },
+    {
+      '1': 'phase',
+      '3': 42,
+      '4': 1,
+      '5': 14,
+      '6': '.audit.v1.AuditPhase',
+      '10': 'phase'
+    },
+    {
+      '1': 'outcome_of_entry_id',
+      '3': 43,
+      '4': 1,
+      '5': 9,
+      '10': 'outcomeOfEntryId'
+    },
     {'1': 'audit_class', '3': 44, '4': 1, '5': 9, '10': 'auditClass'},
-    {'1': 'written_during_degradation', '3': 45, '4': 1, '5': 8, '10': 'writtenDuringDegradation'},
+    {
+      '1': 'written_during_degradation',
+      '3': 45,
+      '4': 1,
+      '5': 8,
+      '10': 'writtenDuringDegradation'
+    },
   ],
 };
 
@@ -160,34 +243,117 @@ const CreateAuditEntryRequest$json = {
   '2': [
     {'1': 'profile_id', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'profileId'},
     {'1': 'action', '3': 2, '4': 1, '5': 9, '8': {}, '10': 'action'},
-    {'1': 'resource_type', '3': 3, '4': 1, '5': 9, '8': {}, '10': 'resourceType'},
+    {
+      '1': 'resource_type',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'resourceType'
+    },
     {'1': 'resource_id', '3': 4, '4': 1, '5': 9, '10': 'resourceId'},
     {'1': 'service', '3': 5, '4': 1, '5': 9, '8': {}, '10': 'service'},
-    {'1': 'details', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Struct', '10': 'details'},
+    {
+      '1': 'details',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'details'
+    },
     {'1': 'ip_address', '3': 7, '4': 1, '5': 9, '10': 'ipAddress'},
     {'1': 'user_agent', '3': 8, '4': 1, '5': 9, '10': 'userAgent'},
     {'1': 'device_id', '3': 9, '4': 1, '5': 9, '10': 'deviceId'},
-    {'1': 'target_profile_id', '3': 10, '4': 1, '5': 9, '10': 'targetProfileId'},
+    {
+      '1': 'target_profile_id',
+      '3': 10,
+      '4': 1,
+      '5': 9,
+      '10': 'targetProfileId'
+    },
     {'1': 'trace_id', '3': 11, '4': 1, '5': 9, '10': 'traceId'},
     {'1': 'entry_id', '3': 12, '4': 1, '5': 9, '8': {}, '10': 'entryId'},
     {'1': 'on_behalf_of', '3': 13, '4': 1, '5': 9, '8': {}, '10': 'onBehalfOf'},
-    {'1': 'occurred_at', '3': 14, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'occurredAt'},
-    {'1': 'correlation_id', '3': 15, '4': 1, '5': 9, '8': {}, '10': 'correlationId'},
+    {
+      '1': 'occurred_at',
+      '3': 14,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'occurredAt'
+    },
+    {
+      '1': 'correlation_id',
+      '3': 15,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'correlationId'
+    },
     {'1': 'event_id', '3': 16, '4': 1, '5': 9, '8': {}, '10': 'eventId'},
     {'1': 'intent_id', '3': 17, '4': 1, '5': 9, '8': {}, '10': 'intentId'},
     {'1': 'instance_id', '3': 18, '4': 1, '5': 9, '8': {}, '10': 'instanceId'},
-    {'1': 'payload_hash', '3': 19, '4': 1, '5': 9, '8': {}, '10': 'payloadHash'},
-    {'1': 'authorization_hash', '3': 20, '4': 1, '5': 9, '8': {}, '10': 'authorizationHash'},
+    {
+      '1': 'payload_hash',
+      '3': 19,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'payloadHash'
+    },
+    {
+      '1': 'authorization_hash',
+      '3': 20,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'authorizationHash'
+    },
     {'1': 'policy_hash', '3': 21, '4': 1, '5': 9, '8': {}, '10': 'policyHash'},
-    {'1': 'device_key_id', '3': 22, '4': 1, '5': 9, '8': {}, '10': 'deviceKeyId'},
+    {
+      '1': 'device_key_id',
+      '3': 22,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'deviceKeyId'
+    },
     {'1': 'state_from', '3': 23, '4': 1, '5': 9, '8': {}, '10': 'stateFrom'},
     {'1': 'state_to', '3': 24, '4': 1, '5': 9, '8': {}, '10': 'stateTo'},
     {'1': 'resource_version', '3': 25, '4': 1, '5': 3, '10': 'resourceVersion'},
-    {'1': 'relations', '3': 26, '4': 3, '5': 11, '6': '.audit.v1.AuditRelation', '8': {}, '10': 'relations'},
-    {'1': 'phase', '3': 27, '4': 1, '5': 14, '6': '.audit.v1.AuditPhase', '10': 'phase'},
-    {'1': 'outcome_of_entry_id', '3': 28, '4': 1, '5': 9, '8': {}, '10': 'outcomeOfEntryId'},
+    {
+      '1': 'relations',
+      '3': 26,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.AuditRelation',
+      '8': {},
+      '10': 'relations'
+    },
+    {
+      '1': 'phase',
+      '3': 27,
+      '4': 1,
+      '5': 14,
+      '6': '.audit.v1.AuditPhase',
+      '10': 'phase'
+    },
+    {
+      '1': 'outcome_of_entry_id',
+      '3': 28,
+      '4': 1,
+      '5': 9,
+      '8': {},
+      '10': 'outcomeOfEntryId'
+    },
     {'1': 'audit_class', '3': 29, '4': 1, '5': 9, '8': {}, '10': 'auditClass'},
-    {'1': 'written_during_degradation', '3': 30, '4': 1, '5': 8, '10': 'writtenDuringDegradation'},
+    {
+      '1': 'written_during_degradation',
+      '3': 30,
+      '4': 1,
+      '5': 8,
+      '10': 'writtenDuringDegradation'
+    },
   ],
 };
 
@@ -234,7 +400,14 @@ const CreateAuditEntryResponse$json = {
     },
     {'1': 'intake_id', '3': 2, '4': 1, '5': 9, '10': 'intakeId'},
     {'1': 'entry_id', '3': 3, '4': 1, '5': 9, '10': 'entryId'},
-    {'1': 'state', '3': 4, '4': 1, '5': 14, '6': '.audit.v1.IntakeState', '10': 'state'},
+    {
+      '1': 'state',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.audit.v1.IntakeState',
+      '10': 'state'
+    },
   ],
 };
 
@@ -249,14 +422,23 @@ final $typed_data.Uint8List createAuditEntryResponseDescriptor = $convert.base64
 const BatchCreateAuditEntriesRequest$json = {
   '1': 'BatchCreateAuditEntriesRequest',
   '2': [
-    {'1': 'entries', '3': 1, '4': 3, '5': 11, '6': '.audit.v1.CreateAuditEntryRequest', '8': {}, '10': 'entries'},
+    {
+      '1': 'entries',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.CreateAuditEntryRequest',
+      '8': {},
+      '10': 'entries'
+    },
   ],
 };
 
 /// Descriptor for `BatchCreateAuditEntriesRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List batchCreateAuditEntriesRequestDescriptor = $convert.base64Decode(
-    'Ch5CYXRjaENyZWF0ZUF1ZGl0RW50cmllc1JlcXVlc3QSRwoHZW50cmllcxgBIAMoCzIhLmF1ZG'
-    'l0LnYxLkNyZWF0ZUF1ZGl0RW50cnlSZXF1ZXN0Qgq6SAeSAQQIARBkUgdlbnRyaWVz');
+final $typed_data.Uint8List batchCreateAuditEntriesRequestDescriptor =
+    $convert.base64Decode(
+        'Ch5CYXRjaENyZWF0ZUF1ZGl0RW50cmllc1JlcXVlc3QSRwoHZW50cmllcxgBIAMoCzIhLmF1ZG'
+        'l0LnYxLkNyZWF0ZUF1ZGl0RW50cnlSZXF1ZXN0Qgq6SAeSAQQIARBkUgdlbnRyaWVz');
 
 @$core.Deprecated('Use batchCreateAuditEntriesResponseDescriptor instead')
 const BatchCreateAuditEntriesResponse$json = {
@@ -271,15 +453,23 @@ const BatchCreateAuditEntriesResponse$json = {
       '8': {'3': true},
       '10': 'data',
     },
-    {'1': 'receipts', '3': 2, '4': 3, '5': 11, '6': '.audit.v1.CreateAuditEntryResponse', '10': 'receipts'},
+    {
+      '1': 'receipts',
+      '3': 2,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.CreateAuditEntryResponse',
+      '10': 'receipts'
+    },
   ],
 };
 
 /// Descriptor for `BatchCreateAuditEntriesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List batchCreateAuditEntriesResponseDescriptor = $convert.base64Decode(
-    'Ch9CYXRjaENyZWF0ZUF1ZGl0RW50cmllc1Jlc3BvbnNlEjIKBGRhdGEYASADKAsyGi5hdWRpdC'
-    '52MS5BdWRpdEVudHJ5T2JqZWN0QgIYAVIEZGF0YRI+CghyZWNlaXB0cxgCIAMoCzIiLmF1ZGl0'
-    'LnYxLkNyZWF0ZUF1ZGl0RW50cnlSZXNwb25zZVIIcmVjZWlwdHM=');
+final $typed_data.Uint8List batchCreateAuditEntriesResponseDescriptor =
+    $convert.base64Decode(
+        'Ch9CYXRjaENyZWF0ZUF1ZGl0RW50cmllc1Jlc3BvbnNlEjIKBGRhdGEYASADKAsyGi5hdWRpdC'
+        '52MS5BdWRpdEVudHJ5T2JqZWN0QgIYAVIEZGF0YRI+CghyZWNlaXB0cxgCIAMoCzIiLmF1ZGl0'
+        'LnYxLkNyZWF0ZUF1ZGl0RW50cnlSZXNwb25zZVIIcmVjZWlwdHM=');
 
 @$core.Deprecated('Use getAuditEntryRequestDescriptor instead')
 const GetAuditEntryRequest$json = {
@@ -290,14 +480,22 @@ const GetAuditEntryRequest$json = {
 };
 
 /// Descriptor for `GetAuditEntryRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getAuditEntryRequestDescriptor = $convert.base64Decode(
-    'ChRHZXRBdWRpdEVudHJ5UmVxdWVzdBIXCgJpZBgBIAEoCUIHukgEcgIQAVICaWQ=');
+final $typed_data.Uint8List getAuditEntryRequestDescriptor =
+    $convert.base64Decode(
+        'ChRHZXRBdWRpdEVudHJ5UmVxdWVzdBIXCgJpZBgBIAEoCUIHukgEcgIQAVICaWQ=');
 
 @$core.Deprecated('Use getAuditEntryResponseDescriptor instead')
 const GetAuditEntryResponse$json = {
   '1': 'GetAuditEntryResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 1, '5': 11, '6': '.audit.v1.AuditEntryObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditEntryObject',
+      '10': 'data'
+    },
   ],
 };
 
@@ -317,8 +515,22 @@ const ListAuditEntriesRequest$json = {
     {'1': 'service', '3': 5, '4': 1, '5': 9, '10': 'service'},
     {'1': 'target_profile_id', '3': 6, '4': 1, '5': 9, '10': 'targetProfileId'},
     {'1': 'device_id', '3': 7, '4': 1, '5': 9, '10': 'deviceId'},
-    {'1': 'start_date', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startDate'},
-    {'1': 'end_date', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endDate'},
+    {
+      '1': 'start_date',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startDate'
+    },
+    {
+      '1': 'end_date',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'endDate'
+    },
     {'1': 'count', '3': 10, '4': 1, '5': 5, '10': 'count'},
     {'1': 'page', '3': 11, '4': 1, '5': 9, '10': 'page'},
     {'1': 'intent_id', '3': 12, '4': 1, '5': 9, '10': 'intentId'},
@@ -327,9 +539,22 @@ const ListAuditEntriesRequest$json = {
     {'1': 'on_behalf_of', '3': 15, '4': 1, '5': 9, '10': 'onBehalfOf'},
     {'1': 'seq_from', '3': 16, '4': 1, '5': 3, '10': 'seqFrom'},
     {'1': 'seq_to', '3': 17, '4': 1, '5': 3, '10': 'seqTo'},
-    {'1': 'phase', '3': 18, '4': 1, '5': 14, '6': '.audit.v1.AuditPhase', '10': 'phase'},
+    {
+      '1': 'phase',
+      '3': 18,
+      '4': 1,
+      '5': 14,
+      '6': '.audit.v1.AuditPhase',
+      '10': 'phase'
+    },
     {'1': 'without_outcome', '3': 19, '4': 1, '5': 8, '10': 'withoutOutcome'},
-    {'1': 'written_during_degradation_only', '3': 20, '4': 1, '5': 8, '10': 'writtenDuringDegradationOnly'},
+    {
+      '1': 'written_during_degradation_only',
+      '3': 20,
+      '4': 1,
+      '5': 8,
+      '10': 'writtenDuringDegradationOnly'
+    },
   ],
 };
 
@@ -354,22 +579,44 @@ final $typed_data.Uint8List listAuditEntriesRequestDescriptor = $convert.base64D
 const ListAuditEntriesResponse$json = {
   '1': 'ListAuditEntriesResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.audit.v1.AuditEntryObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.AuditEntryObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListAuditEntriesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listAuditEntriesResponseDescriptor = $convert.base64Decode(
-    'ChhMaXN0QXVkaXRFbnRyaWVzUmVzcG9uc2USLgoEZGF0YRgBIAMoCzIaLmF1ZGl0LnYxLkF1ZG'
-    'l0RW50cnlPYmplY3RSBGRhdGE=');
+final $typed_data.Uint8List listAuditEntriesResponseDescriptor =
+    $convert.base64Decode(
+        'ChhMaXN0QXVkaXRFbnRyaWVzUmVzcG9uc2USLgoEZGF0YRgBIAMoCzIaLmF1ZGl0LnYxLkF1ZG'
+        'l0RW50cnlPYmplY3RSBGRhdGE=');
 
 @$core.Deprecated('Use searchAuditEntriesRequestDescriptor instead')
 const SearchAuditEntriesRequest$json = {
   '1': 'SearchAuditEntriesRequest',
   '2': [
     {'1': 'query', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'query'},
-    {'1': 'start_date', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startDate'},
-    {'1': 'end_date', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endDate'},
+    {
+      '1': 'start_date',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startDate'
+    },
+    {
+      '1': 'end_date',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'endDate'
+    },
     {'1': 'count', '3': 4, '4': 1, '5': 5, '10': 'count'},
     {'1': 'page', '3': 5, '4': 1, '5': 9, '10': 'page'},
   ],
@@ -386,21 +633,43 @@ final $typed_data.Uint8List searchAuditEntriesRequestDescriptor = $convert.base6
 const SearchAuditEntriesResponse$json = {
   '1': 'SearchAuditEntriesResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.audit.v1.AuditEntryObject', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.AuditEntryObject',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `SearchAuditEntriesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List searchAuditEntriesResponseDescriptor = $convert.base64Decode(
-    'ChpTZWFyY2hBdWRpdEVudHJpZXNSZXNwb25zZRIuCgRkYXRhGAEgAygLMhouYXVkaXQudjEuQX'
-    'VkaXRFbnRyeU9iamVjdFIEZGF0YQ==');
+final $typed_data.Uint8List searchAuditEntriesResponseDescriptor =
+    $convert.base64Decode(
+        'ChpTZWFyY2hBdWRpdEVudHJpZXNSZXNwb25zZRIuCgRkYXRhGAEgAygLMhouYXVkaXQudjEuQX'
+        'VkaXRFbnRyeU9iamVjdFIEZGF0YQ==');
 
 @$core.Deprecated('Use verifyIntegrityRequestDescriptor instead')
 const VerifyIntegrityRequest$json = {
   '1': 'VerifyIntegrityRequest',
   '2': [
-    {'1': 'start_date', '3': 1, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startDate'},
-    {'1': 'end_date', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endDate'},
+    {
+      '1': 'start_date',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startDate'
+    },
+    {
+      '1': 'end_date',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'endDate'
+    },
     {'1': 'start_seq', '3': 3, '4': 1, '5': 3, '10': 'startSeq'},
     {'1': 'end_seq', '3': 4, '4': 1, '5': 3, '10': 'endSeq'},
   ],
@@ -419,14 +688,32 @@ const VerifyIntegrityResponse$json = {
   '2': [
     {'1': 'valid', '3': 1, '4': 1, '5': 8, '10': 'valid'},
     {'1': 'entries_verified', '3': 2, '4': 1, '5': 3, '10': 'entriesVerified'},
-    {'1': 'first_invalid_entry_id', '3': 3, '4': 1, '5': 9, '10': 'firstInvalidEntryId'},
+    {
+      '1': 'first_invalid_entry_id',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '10': 'firstInvalidEntryId'
+    },
     {'1': 'message', '3': 4, '4': 1, '5': 9, '10': 'message'},
-    {'1': 'start_checkpoint_seq', '3': 5, '4': 1, '5': 3, '10': 'startCheckpointSeq'},
+    {
+      '1': 'start_checkpoint_seq',
+      '3': 5,
+      '4': 1,
+      '5': 3,
+      '10': 'startCheckpointSeq'
+    },
     {'1': 'end_seq', '3': 6, '4': 1, '5': 3, '10': 'endSeq'},
     {'1': 'end_hash', '3': 7, '4': 1, '5': 9, '10': 'endHash'},
     {'1': 'key_ids_used', '3': 8, '4': 3, '5': 9, '10': 'keyIdsUsed'},
     {'1': 'partial', '3': 9, '4': 1, '5': 8, '10': 'partial'},
-    {'1': 'first_invalid_seq', '3': 10, '4': 1, '5': 3, '10': 'firstInvalidSeq'},
+    {
+      '1': 'first_invalid_seq',
+      '3': 10,
+      '4': 1,
+      '5': 3,
+      '10': 'firstInvalidSeq'
+    },
   ],
 };
 
@@ -449,7 +736,14 @@ const AuditCheckpoint$json = {
     {'1': 'entry_hash', '3': 3, '4': 1, '5': 9, '10': 'entryHash'},
     {'1': 'key_id', '3': 4, '4': 1, '5': 9, '10': 'keyId'},
     {'1': 'signature', '3': 5, '4': 1, '5': 9, '10': 'signature'},
-    {'1': 'created_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'created_at',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
   ],
 };
 
@@ -467,8 +761,22 @@ const SigningKey$json = {
     {'1': 'key_id', '3': 1, '4': 1, '5': 9, '10': 'keyId'},
     {'1': 'algorithm', '3': 2, '4': 1, '5': 9, '10': 'algorithm'},
     {'1': 'public_key', '3': 3, '4': 1, '5': 9, '10': 'publicKey'},
-    {'1': 'valid_from', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'validFrom'},
-    {'1': 'retired_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'retiredAt'},
+    {
+      '1': 'valid_from',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'validFrom'
+    },
+    {
+      '1': 'retired_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'retiredAt'
+    },
   ],
 };
 
@@ -490,22 +798,31 @@ const ListCheckpointsRequest$json = {
 };
 
 /// Descriptor for `ListCheckpointsRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listCheckpointsRequestDescriptor = $convert.base64Decode(
-    'ChZMaXN0Q2hlY2twb2ludHNSZXF1ZXN0EhkKCHNlcV9mcm9tGAEgASgDUgdzZXFGcm9tEhUKBn'
-    'NlcV90bxgCIAEoA1IFc2VxVG8SFAoFY291bnQYAyABKAVSBWNvdW50');
+final $typed_data.Uint8List listCheckpointsRequestDescriptor =
+    $convert.base64Decode(
+        'ChZMaXN0Q2hlY2twb2ludHNSZXF1ZXN0EhkKCHNlcV9mcm9tGAEgASgDUgdzZXFGcm9tEhUKBn'
+        'NlcV90bxgCIAEoA1IFc2VxVG8SFAoFY291bnQYAyABKAVSBWNvdW50');
 
 @$core.Deprecated('Use listCheckpointsResponseDescriptor instead')
 const ListCheckpointsResponse$json = {
   '1': 'ListCheckpointsResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.audit.v1.AuditCheckpoint', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.AuditCheckpoint',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `ListCheckpointsResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listCheckpointsResponseDescriptor = $convert.base64Decode(
-    'ChdMaXN0Q2hlY2twb2ludHNSZXNwb25zZRItCgRkYXRhGAEgAygLMhkuYXVkaXQudjEuQXVkaX'
-    'RDaGVja3BvaW50UgRkYXRh');
+final $typed_data.Uint8List listCheckpointsResponseDescriptor =
+    $convert.base64Decode(
+        'ChdMaXN0Q2hlY2twb2ludHNSZXNwb25zZRItCgRkYXRhGAEgAygLMhkuYXVkaXQudjEuQXVkaX'
+        'RDaGVja3BvaW50UgRkYXRh');
 
 @$core.Deprecated('Use getSigningKeysRequestDescriptor instead')
 const GetSigningKeysRequest$json = {
@@ -513,21 +830,29 @@ const GetSigningKeysRequest$json = {
 };
 
 /// Descriptor for `GetSigningKeysRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getSigningKeysRequestDescriptor = $convert.base64Decode(
-    'ChVHZXRTaWduaW5nS2V5c1JlcXVlc3Q=');
+final $typed_data.Uint8List getSigningKeysRequestDescriptor =
+    $convert.base64Decode('ChVHZXRTaWduaW5nS2V5c1JlcXVlc3Q=');
 
 @$core.Deprecated('Use getSigningKeysResponseDescriptor instead')
 const GetSigningKeysResponse$json = {
   '1': 'GetSigningKeysResponse',
   '2': [
-    {'1': 'data', '3': 1, '4': 3, '5': 11, '6': '.audit.v1.SigningKey', '10': 'data'},
+    {
+      '1': 'data',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.SigningKey',
+      '10': 'data'
+    },
   ],
 };
 
 /// Descriptor for `GetSigningKeysResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getSigningKeysResponseDescriptor = $convert.base64Decode(
-    'ChZHZXRTaWduaW5nS2V5c1Jlc3BvbnNlEigKBGRhdGEYASADKAsyFC5hdWRpdC52MS5TaWduaW'
-    '5nS2V5UgRkYXRh');
+final $typed_data.Uint8List getSigningKeysResponseDescriptor =
+    $convert.base64Decode(
+        'ChZHZXRTaWduaW5nS2V5c1Jlc3BvbnNlEigKBGRhdGEYASADKAsyFC5hdWRpdC52MS5TaWduaW'
+        '5nS2V5UgRkYXRh');
 
 @$core.Deprecated('Use exportAuditEntriesRequestDescriptor instead')
 const ExportAuditEntriesRequest$json = {
@@ -539,16 +864,33 @@ const ExportAuditEntriesRequest$json = {
 };
 
 /// Descriptor for `ExportAuditEntriesRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List exportAuditEntriesRequestDescriptor = $convert.base64Decode(
-    'ChlFeHBvcnRBdWRpdEVudHJpZXNSZXF1ZXN0EiQKCXN0YXJ0X3NlcRgBIAEoA0IHukgEIgIoAF'
-    'IIc3RhcnRTZXESIAoHZW5kX3NlcRgCIAEoA0IHukgEIgIoAFIGZW5kU2Vx');
+final $typed_data.Uint8List exportAuditEntriesRequestDescriptor =
+    $convert.base64Decode(
+        'ChlFeHBvcnRBdWRpdEVudHJpZXNSZXF1ZXN0EiQKCXN0YXJ0X3NlcRgBIAEoA0IHukgEIgIoAF'
+        'IIc3RhcnRTZXESIAoHZW5kX3NlcRgCIAEoA0IHukgEIgIoAFIGZW5kU2Vx');
 
 @$core.Deprecated('Use exportAuditEntriesResponseDescriptor instead')
 const ExportAuditEntriesResponse$json = {
   '1': 'ExportAuditEntriesResponse',
   '2': [
-    {'1': 'header', '3': 1, '4': 1, '5': 11, '6': '.audit.v1.ExportAuditEntriesResponse.Header', '9': 0, '10': 'header'},
-    {'1': 'entry', '3': 2, '4': 1, '5': 11, '6': '.audit.v1.AuditEntryObject', '9': 0, '10': 'entry'},
+    {
+      '1': 'header',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.ExportAuditEntriesResponse.Header',
+      '9': 0,
+      '10': 'header'
+    },
+    {
+      '1': 'entry',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditEntryObject',
+      '9': 0,
+      '10': 'entry'
+    },
   ],
   '3': [ExportAuditEntriesResponse_Header$json],
   '8': [
@@ -563,9 +905,30 @@ const ExportAuditEntriesResponse_Header$json = {
     {'1': 'tenant_id', '3': 1, '4': 1, '5': 9, '10': 'tenantId'},
     {'1': 'start_seq', '3': 2, '4': 1, '5': 3, '10': 'startSeq'},
     {'1': 'end_seq', '3': 3, '4': 1, '5': 3, '10': 'endSeq'},
-    {'1': 'start_checkpoint', '3': 4, '4': 1, '5': 11, '6': '.audit.v1.AuditCheckpoint', '10': 'startCheckpoint'},
-    {'1': 'end_checkpoint', '3': 5, '4': 1, '5': 11, '6': '.audit.v1.AuditCheckpoint', '10': 'endCheckpoint'},
-    {'1': 'keys', '3': 6, '4': 3, '5': 11, '6': '.audit.v1.SigningKey', '10': 'keys'},
+    {
+      '1': 'start_checkpoint',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditCheckpoint',
+      '10': 'startCheckpoint'
+    },
+    {
+      '1': 'end_checkpoint',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditCheckpoint',
+      '10': 'endCheckpoint'
+    },
+    {
+      '1': 'keys',
+      '3': 6,
+      '4': 3,
+      '5': 11,
+      '6': '.audit.v1.SigningKey',
+      '10': 'keys'
+    },
   ],
 };
 
@@ -586,10 +949,24 @@ const AuditManifest$json = {
   '2': [
     {'1': 'service', '3': 1, '4': 1, '5': 9, '8': {}, '10': 'service'},
     {'1': 'actions', '3': 2, '4': 3, '5': 9, '8': {}, '10': 'actions'},
-    {'1': 'resource_types', '3': 3, '4': 3, '5': 9, '8': {}, '10': 'resourceTypes'},
+    {
+      '1': 'resource_types',
+      '3': 3,
+      '4': 3,
+      '5': 9,
+      '8': {},
+      '10': 'resourceTypes'
+    },
     {'1': 'open_vocabulary', '3': 4, '4': 1, '5': 8, '10': 'openVocabulary'},
     {'1': 'allow_backdating', '3': 5, '4': 1, '5': 8, '10': 'allowBackdating'},
-    {'1': 'extra_forbidden_keys', '3': 6, '4': 3, '5': 9, '8': {}, '10': 'extraForbiddenKeys'},
+    {
+      '1': 'extra_forbidden_keys',
+      '3': 6,
+      '4': 3,
+      '5': 9,
+      '8': {},
+      '10': 'extraForbiddenKeys'
+    },
   ],
 };
 
@@ -606,14 +983,23 @@ final $typed_data.Uint8List auditManifestDescriptor = $convert.base64Decode(
 const RegisterAuditManifestRequest$json = {
   '1': 'RegisterAuditManifestRequest',
   '2': [
-    {'1': 'manifest', '3': 1, '4': 1, '5': 11, '6': '.audit.v1.AuditManifest', '8': {}, '10': 'manifest'},
+    {
+      '1': 'manifest',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditManifest',
+      '8': {},
+      '10': 'manifest'
+    },
   ],
 };
 
 /// Descriptor for `RegisterAuditManifestRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List registerAuditManifestRequestDescriptor = $convert.base64Decode(
-    'ChxSZWdpc3RlckF1ZGl0TWFuaWZlc3RSZXF1ZXN0EjsKCG1hbmlmZXN0GAEgASgLMhcuYXVkaX'
-    'QudjEuQXVkaXRNYW5pZmVzdEIGukgDyAEBUghtYW5pZmVzdA==');
+final $typed_data.Uint8List registerAuditManifestRequestDescriptor =
+    $convert.base64Decode(
+        'ChxSZWdpc3RlckF1ZGl0TWFuaWZlc3RSZXF1ZXN0EjsKCG1hbmlmZXN0GAEgASgLMhcuYXVkaX'
+        'QudjEuQXVkaXRNYW5pZmVzdEIGukgDyAEBUghtYW5pZmVzdA==');
 
 @$core.Deprecated('Use registerAuditManifestResponseDescriptor instead')
 const RegisterAuditManifestResponse$json = {
@@ -626,10 +1012,11 @@ const RegisterAuditManifestResponse$json = {
 };
 
 /// Descriptor for `RegisterAuditManifestResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List registerAuditManifestResponseDescriptor = $convert.base64Decode(
-    'Ch1SZWdpc3RlckF1ZGl0TWFuaWZlc3RSZXNwb25zZRIYCgdzZXJ2aWNlGAEgASgJUgdzZXJ2aW'
-    'NlEhgKB3ZlcnNpb24YAiABKAVSB3ZlcnNpb24SHAoJdW5jaGFuZ2VkGAMgASgIUgl1bmNoYW5n'
-    'ZWQ=');
+final $typed_data.Uint8List registerAuditManifestResponseDescriptor =
+    $convert.base64Decode(
+        'Ch1SZWdpc3RlckF1ZGl0TWFuaWZlc3RSZXNwb25zZRIYCgdzZXJ2aWNlGAEgASgJUgdzZXJ2aW'
+        'NlEhgKB3ZlcnNpb24YAiABKAVSB3ZlcnNpb24SHAoJdW5jaGFuZ2VkGAMgASgIUgl1bmNoYW5n'
+        'ZWQ=');
 
 @$core.Deprecated('Use getAuditManifestRequestDescriptor instead')
 const GetAuditManifestRequest$json = {
@@ -640,17 +1027,32 @@ const GetAuditManifestRequest$json = {
 };
 
 /// Descriptor for `GetAuditManifestRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getAuditManifestRequestDescriptor = $convert.base64Decode(
-    'ChdHZXRBdWRpdE1hbmlmZXN0UmVxdWVzdBIhCgdzZXJ2aWNlGAEgASgJQge6SARyAhABUgdzZX'
-    'J2aWNl');
+final $typed_data.Uint8List getAuditManifestRequestDescriptor =
+    $convert.base64Decode(
+        'ChdHZXRBdWRpdE1hbmlmZXN0UmVxdWVzdBIhCgdzZXJ2aWNlGAEgASgJQge6SARyAhABUgdzZX'
+        'J2aWNl');
 
 @$core.Deprecated('Use getAuditManifestResponseDescriptor instead')
 const GetAuditManifestResponse$json = {
   '1': 'GetAuditManifestResponse',
   '2': [
-    {'1': 'manifest', '3': 1, '4': 1, '5': 11, '6': '.audit.v1.AuditManifest', '10': 'manifest'},
+    {
+      '1': 'manifest',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.AuditManifest',
+      '10': 'manifest'
+    },
     {'1': 'version', '3': 2, '4': 1, '5': 5, '10': 'version'},
-    {'1': 'created_at', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {
+      '1': 'created_at',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
   ],
 };
 
@@ -682,8 +1084,9 @@ const RequeueIntakeResponse$json = {
 };
 
 /// Descriptor for `RequeueIntakeResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List requeueIntakeResponseDescriptor = $convert.base64Decode(
-    'ChVSZXF1ZXVlSW50YWtlUmVzcG9uc2USGgoIcmVxdWV1ZWQYASABKANSCHJlcXVldWVk');
+final $typed_data.Uint8List requeueIntakeResponseDescriptor =
+    $convert.base64Decode(
+        'ChVSZXF1ZXVlSW50YWtlUmVzcG9uc2USGgoIcmVxdWV1ZWQYASABKANSCHJlcXVldWVk');
 
 @$core.Deprecated('Use retireSigningKeyRequestDescriptor instead')
 const RetireSigningKeyRequest$json = {
@@ -694,28 +1097,47 @@ const RetireSigningKeyRequest$json = {
 };
 
 /// Descriptor for `RetireSigningKeyRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List retireSigningKeyRequestDescriptor = $convert.base64Decode(
-    'ChdSZXRpcmVTaWduaW5nS2V5UmVxdWVzdBIeCgZrZXlfaWQYASABKAlCB7pIBHICEAFSBWtleU'
-    'lk');
+final $typed_data.Uint8List retireSigningKeyRequestDescriptor =
+    $convert.base64Decode(
+        'ChdSZXRpcmVTaWduaW5nS2V5UmVxdWVzdBIeCgZrZXlfaWQYASABKAlCB7pIBHICEAFSBWtleU'
+        'lk');
 
 @$core.Deprecated('Use retireSigningKeyResponseDescriptor instead')
 const RetireSigningKeyResponse$json = {
   '1': 'RetireSigningKeyResponse',
   '2': [
-    {'1': 'key', '3': 1, '4': 1, '5': 11, '6': '.audit.v1.SigningKey', '10': 'key'},
+    {
+      '1': 'key',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.audit.v1.SigningKey',
+      '10': 'key'
+    },
   ],
 };
 
 /// Descriptor for `RetireSigningKeyResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List retireSigningKeyResponseDescriptor = $convert.base64Decode(
-    'ChhSZXRpcmVTaWduaW5nS2V5UmVzcG9uc2USJgoDa2V5GAEgASgLMhQuYXVkaXQudjEuU2lnbm'
-    'luZ0tleVIDa2V5');
+final $typed_data.Uint8List retireSigningKeyResponseDescriptor =
+    $convert.base64Decode(
+        'ChhSZXRpcmVTaWduaW5nS2V5UmVzcG9uc2USJgoDa2V5GAEgASgLMhQuYXVkaXQudjEuU2lnbm'
+        'luZ0tleVIDa2V5');
 
 const $core.Map<$core.String, $core.dynamic> AuditServiceBase$json = {
   '1': 'AuditService',
   '2': [
-    {'1': 'CreateAuditEntry', '2': '.audit.v1.CreateAuditEntryRequest', '3': '.audit.v1.CreateAuditEntryResponse', '4': {}},
-    {'1': 'BatchCreateAuditEntries', '2': '.audit.v1.BatchCreateAuditEntriesRequest', '3': '.audit.v1.BatchCreateAuditEntriesResponse', '4': {}},
+    {
+      '1': 'CreateAuditEntry',
+      '2': '.audit.v1.CreateAuditEntryRequest',
+      '3': '.audit.v1.CreateAuditEntryResponse',
+      '4': {}
+    },
+    {
+      '1': 'BatchCreateAuditEntries',
+      '2': '.audit.v1.BatchCreateAuditEntriesRequest',
+      '3': '.audit.v1.BatchCreateAuditEntriesResponse',
+      '4': {}
+    },
     {
       '1': 'GetAuditEntry',
       '2': '.audit.v1.GetAuditEntryRequest',
@@ -761,32 +1183,50 @@ const $core.Map<$core.String, $core.dynamic> AuditServiceBase$json = {
       '3': '.audit.v1.GetSigningKeysResponse',
       '4': {'34': 1},
     },
-    {'1': 'RegisterAuditManifest', '2': '.audit.v1.RegisterAuditManifestRequest', '3': '.audit.v1.RegisterAuditManifestResponse', '4': {}},
+    {
+      '1': 'RegisterAuditManifest',
+      '2': '.audit.v1.RegisterAuditManifestRequest',
+      '3': '.audit.v1.RegisterAuditManifestResponse',
+      '4': {}
+    },
     {
       '1': 'GetAuditManifest',
       '2': '.audit.v1.GetAuditManifestRequest',
       '3': '.audit.v1.GetAuditManifestResponse',
       '4': {'34': 1},
     },
-    {'1': 'RequeueIntake', '2': '.audit.v1.RequeueIntakeRequest', '3': '.audit.v1.RequeueIntakeResponse', '4': {}},
-    {'1': 'RetireSigningKey', '2': '.audit.v1.RetireSigningKeyRequest', '3': '.audit.v1.RetireSigningKeyResponse', '4': {}},
+    {
+      '1': 'RequeueIntake',
+      '2': '.audit.v1.RequeueIntakeRequest',
+      '3': '.audit.v1.RequeueIntakeResponse',
+      '4': {}
+    },
+    {
+      '1': 'RetireSigningKey',
+      '2': '.audit.v1.RetireSigningKeyRequest',
+      '3': '.audit.v1.RetireSigningKeyResponse',
+      '4': {}
+    },
   ],
   '3': {},
 };
 
 @$core.Deprecated('Use auditServiceDescriptor instead')
-const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> AuditServiceBase$messageJson = {
+const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
+    AuditServiceBase$messageJson = {
   '.audit.v1.CreateAuditEntryRequest': CreateAuditEntryRequest$json,
-  '.google.protobuf.Struct': $6.Struct$json,
-  '.google.protobuf.Struct.FieldsEntry': $6.Struct_FieldsEntry$json,
-  '.google.protobuf.Value': $6.Value$json,
-  '.google.protobuf.ListValue': $6.ListValue$json,
-  '.google.protobuf.Timestamp': $2.Timestamp$json,
+  '.google.protobuf.Struct': $0.Struct$json,
+  '.google.protobuf.Struct.FieldsEntry': $0.Struct_FieldsEntry$json,
+  '.google.protobuf.Value': $0.Value$json,
+  '.google.protobuf.ListValue': $0.ListValue$json,
+  '.google.protobuf.Timestamp': $1.Timestamp$json,
   '.audit.v1.AuditRelation': AuditRelation$json,
   '.audit.v1.CreateAuditEntryResponse': CreateAuditEntryResponse$json,
   '.audit.v1.AuditEntryObject': AuditEntryObject$json,
-  '.audit.v1.BatchCreateAuditEntriesRequest': BatchCreateAuditEntriesRequest$json,
-  '.audit.v1.BatchCreateAuditEntriesResponse': BatchCreateAuditEntriesResponse$json,
+  '.audit.v1.BatchCreateAuditEntriesRequest':
+      BatchCreateAuditEntriesRequest$json,
+  '.audit.v1.BatchCreateAuditEntriesResponse':
+      BatchCreateAuditEntriesResponse$json,
   '.audit.v1.GetAuditEntryRequest': GetAuditEntryRequest$json,
   '.audit.v1.GetAuditEntryResponse': GetAuditEntryResponse$json,
   '.audit.v1.ListAuditEntriesRequest': ListAuditEntriesRequest$json,
@@ -797,7 +1237,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>> AuditServi
   '.audit.v1.VerifyIntegrityResponse': VerifyIntegrityResponse$json,
   '.audit.v1.ExportAuditEntriesRequest': ExportAuditEntriesRequest$json,
   '.audit.v1.ExportAuditEntriesResponse': ExportAuditEntriesResponse$json,
-  '.audit.v1.ExportAuditEntriesResponse.Header': ExportAuditEntriesResponse_Header$json,
+  '.audit.v1.ExportAuditEntriesResponse.Header':
+      ExportAuditEntriesResponse_Header$json,
   '.audit.v1.AuditCheckpoint': AuditCheckpoint$json,
   '.audit.v1.SigningKey': SigningKey$json,
   '.audit.v1.ListCheckpointsRequest': ListCheckpointsRequest$json,
@@ -886,4 +1327,3 @@ final $typed_data.Uint8List auditServiceDescriptor = $convert.base64Decode(
     'EgphdWRpdF92aWV3EgxhdWRpdF92ZXJpZnkSDGF1ZGl0X2V4cG9ydBoOCAMSCmF1ZGl0X3ZpZX'
     'caDggEEgphdWRpdF92aWV3Gg4IBRIKYXVkaXRfdmlldxpBCAYSCmF1ZGl0X3ZpZXcSDGF1ZGl0'
     'X2NyZWF0ZRIMYXVkaXRfdmVyaWZ5EhVhdWRpdF9tYW5pZmVzdF9tYW5hZ2U=');
-

@@ -12,5 +12,5 @@ export 'src/authentication/v1/authentication.connect.client.dart';
 export 'src/authentication/v1/authentication.connect.spec.dart';
 
 // Export common types used in authentication API
-export 'src/google/protobuf/struct.pb.dart';
-export 'src/google/protobuf/timestamp.pb.dart';
+export 'package:protobuf/well_known_types/google/protobuf/struct.pb.dart';
+export 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';

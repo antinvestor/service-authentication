@@ -20,14 +20,14 @@ import (
 	"encoding/json"
 	"time"
 
-	"buf.build/gen/go/antinvestor/audit/connectrpc/go/audit/v1/auditv1connect"
+	"buf.build/gen/go/antinvestor/audit/connectrpc/go/v2/audit/v1/auditv1connect"
 	auditv1 "buf.build/gen/go/antinvestor/audit/protocolbuffers/go/audit/v1"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	aconfig "github.com/antinvestor/service-authentication/apps/audit/config"
 	"github.com/antinvestor/service-authentication/apps/audit/service/business"
 	"github.com/antinvestor/service-authentication/apps/audit/service/models"
 	"github.com/antinvestor/service-authentication/apps/audit/service/repository"
-	"github.com/pitabwire/frame/v2/datastore/pool"
+	"github.com/pitabwire/frame/v3/datastore/pool"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -99,19 +99,19 @@ func (as *AuditServer) caller(ctx context.Context) business.Caller {
 }
 
 // CreateAuditEntry validates and durably accepts one entry.
-func (as *AuditServer) CreateAuditEntry(ctx context.Context, req *connect.Request[auditv1.CreateAuditEntryRequest]) (*connect.Response[auditv1.CreateAuditEntryResponse], error) {
-	receipt, err := as.deps.Ingest.Create(ctx, as.caller(ctx), req.Msg)
+func (as *AuditServer) CreateAuditEntry(ctx context.Context, req *auditv1.CreateAuditEntryRequest) (*auditv1.CreateAuditEntryResponse, error) {
+	receipt, err := as.deps.Ingest.Create(ctx, as.caller(ctx), req)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
-	return connect.NewResponse(receiptToProto(receipt)), nil
+	return receiptToProto(receipt), nil
 }
 
 // BatchCreateAuditEntries validates and accepts a batch as a whole.
-func (as *AuditServer) BatchCreateAuditEntries(ctx context.Context, req *connect.Request[auditv1.BatchCreateAuditEntriesRequest]) (*connect.Response[auditv1.BatchCreateAuditEntriesResponse], error) {
-	receipts, err := as.deps.Ingest.CreateBatch(ctx, as.caller(ctx), req.Msg.GetEntries())
+func (as *AuditServer) BatchCreateAuditEntries(ctx context.Context, req *auditv1.BatchCreateAuditEntriesRequest) (*auditv1.BatchCreateAuditEntriesResponse, error) {
+	receipts, err := as.deps.Ingest.CreateBatch(ctx, as.caller(ctx), req.GetEntries())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	out := make([]*auditv1.CreateAuditEntryResponse, 0, len(receipts))
 	for _, r := range receipts {
@@ -119,43 +119,43 @@ func (as *AuditServer) BatchCreateAuditEntries(ctx context.Context, req *connect
 	}
 	resp := &auditv1.BatchCreateAuditEntriesResponse{}
 	resp.SetReceipts(out)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // GetAuditEntry retrieves a chained entry by ID.
-func (as *AuditServer) GetAuditEntry(ctx context.Context, req *connect.Request[auditv1.GetAuditEntryRequest]) (*connect.Response[auditv1.GetAuditEntryResponse], error) {
-	entry, err := as.deps.Read.GetEntry(ctx, req.Msg.GetId())
+func (as *AuditServer) GetAuditEntry(ctx context.Context, req *auditv1.GetAuditEntryRequest) (*auditv1.GetAuditEntryResponse, error) {
+	entry, err := as.deps.Read.GetEntry(ctx, req.GetId())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	resp := &auditv1.GetAuditEntryResponse{}
 	resp.SetData(entryToProto(entry))
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // ListAuditEntries streams pages of entries until count is met.
-func (as *AuditServer) ListAuditEntries(ctx context.Context, req *connect.Request[auditv1.ListAuditEntriesRequest], stream *connect.ServerStream[auditv1.ListAuditEntriesResponse]) error {
+func (as *AuditServer) ListAuditEntries(ctx context.Context, req *auditv1.ListAuditEntriesRequest, stream auditv1connect.AuditServiceListAuditEntriesServerStream) error {
 	filter := &repository.AuditFilter{
-		ProfileID: req.Msg.GetProfileId(), Action: req.Msg.GetAction(), ResourceType: req.Msg.GetResourceType(),
-		ResourceID: req.Msg.GetResourceId(), Service: req.Msg.GetService(), TargetProfileID: req.Msg.GetTargetProfileId(),
-		DeviceID: req.Msg.GetDeviceId(), IntentID: req.Msg.GetIntentId(), EventID: req.Msg.GetEventId(),
-		CorrelationID: req.Msg.GetCorrelationId(), OnBehalfOf: req.Msg.GetOnBehalfOf(),
-		SeqFrom: req.Msg.GetSeqFrom(), SeqTo: req.Msg.GetSeqTo(),
-		Phase: phaseFromProto(req.Msg.GetPhase()), WithoutOutcome: req.Msg.GetWithoutOutcome(),
-		DegradedOnly: req.Msg.GetWrittenDuringDegradationOnly(),
-		Limit:        int(req.Msg.GetCount()), Cursor: req.Msg.GetPage(),
+		ProfileID: req.GetProfileId(), Action: req.GetAction(), ResourceType: req.GetResourceType(),
+		ResourceID: req.GetResourceId(), Service: req.GetService(), TargetProfileID: req.GetTargetProfileId(),
+		DeviceID: req.GetDeviceId(), IntentID: req.GetIntentId(), EventID: req.GetEventId(),
+		CorrelationID: req.GetCorrelationId(), OnBehalfOf: req.GetOnBehalfOf(),
+		SeqFrom: req.GetSeqFrom(), SeqTo: req.GetSeqTo(),
+		Phase: phaseFromProto(req.GetPhase()), WithoutOutcome: req.GetWithoutOutcome(),
+		DegradedOnly: req.GetWrittenDuringDegradationOnly(),
+		Limit:        int(req.GetCount()), Cursor: req.GetPage(),
 	}
-	if req.Msg.GetStartDate() != nil {
-		t := req.Msg.GetStartDate().AsTime()
+	if req.GetStartDate() != nil {
+		t := req.GetStartDate().AsTime()
 		filter.StartDate = &t
 	}
-	if req.Msg.GetEndDate() != nil {
-		t := req.Msg.GetEndDate().AsTime()
+	if req.GetEndDate() != nil {
+		t := req.GetEndDate().AsTime()
 		filter.EndDate = &t
 	}
 	entries, err := as.deps.Read.ListEntries(ctx, filter)
 	if err != nil {
-		return toConnectError(err)
+		return toConnectError(ctx, err)
 	}
 	return sendEntryPages(entries, func(page []*auditv1.AuditEntryObject) error {
 		resp := &auditv1.ListAuditEntriesResponse{}
@@ -165,19 +165,19 @@ func (as *AuditServer) ListAuditEntries(ctx context.Context, req *connect.Reques
 }
 
 // SearchAuditEntries performs a bounded prefix search.
-func (as *AuditServer) SearchAuditEntries(ctx context.Context, req *connect.Request[auditv1.SearchAuditEntriesRequest], stream *connect.ServerStream[auditv1.SearchAuditEntriesResponse]) error {
+func (as *AuditServer) SearchAuditEntries(ctx context.Context, req *auditv1.SearchAuditEntriesRequest, stream auditv1connect.AuditServiceSearchAuditEntriesServerStream) error {
 	var start, end *time.Time
-	if req.Msg.GetStartDate() != nil {
-		t := req.Msg.GetStartDate().AsTime()
+	if req.GetStartDate() != nil {
+		t := req.GetStartDate().AsTime()
 		start = &t
 	}
-	if req.Msg.GetEndDate() != nil {
-		t := req.Msg.GetEndDate().AsTime()
+	if req.GetEndDate() != nil {
+		t := req.GetEndDate().AsTime()
 		end = &t
 	}
-	entries, err := as.deps.Read.SearchEntries(ctx, req.Msg.GetQuery(), start, end, int(req.Msg.GetCount()), req.Msg.GetPage())
+	entries, err := as.deps.Read.SearchEntries(ctx, req.GetQuery(), start, end, int(req.GetCount()), req.GetPage())
 	if err != nil {
-		return toConnectError(err)
+		return toConnectError(ctx, err)
 	}
 	return sendEntryPages(entries, func(page []*auditv1.AuditEntryObject) error {
 		resp := &auditv1.SearchAuditEntriesResponse{}
@@ -187,24 +187,24 @@ func (as *AuditServer) SearchAuditEntries(ctx context.Context, req *connect.Requ
 }
 
 // VerifyIntegrity verifies a sequence range from the nearest checkpoint.
-func (as *AuditServer) VerifyIntegrity(ctx context.Context, req *connect.Request[auditv1.VerifyIntegrityRequest]) (*connect.Response[auditv1.VerifyIntegrityResponse], error) {
+func (as *AuditServer) VerifyIntegrity(ctx context.Context, req *auditv1.VerifyIntegrityRequest) (*auditv1.VerifyIntegrityResponse, error) {
 	caller := business.CallerFromClaims(ctx)
 	var start, end *time.Time
-	if req.Msg.GetStartDate() != nil {
-		t := req.Msg.GetStartDate().AsTime()
+	if req.GetStartDate() != nil {
+		t := req.GetStartDate().AsTime()
 		start = &t
 	}
-	if req.Msg.GetEndDate() != nil {
-		t := req.Msg.GetEndDate().AsTime()
+	if req.GetEndDate() != nil {
+		t := req.GetEndDate().AsTime()
 		end = &t
 	}
-	startSeq, endSeq, err := as.deps.Verify.ResolveRange(ctx, caller.TenantID, req.Msg.GetStartSeq(), req.Msg.GetEndSeq(), start, end)
+	startSeq, endSeq, err := as.deps.Verify.ResolveRange(ctx, caller.TenantID, req.GetStartSeq(), req.GetEndSeq(), start, end)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	res, err := as.deps.Verify.VerifyIntegrity(ctx, caller.TenantID, startSeq, endSeq)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	resp := &auditv1.VerifyIntegrityResponse{}
 	resp.SetValid(res.Valid)
@@ -217,29 +217,29 @@ func (as *AuditServer) VerifyIntegrity(ctx context.Context, req *connect.Request
 	resp.SetEndHash(res.EndHash)
 	resp.SetKeyIdsUsed(res.KeyIDsUsed)
 	resp.SetPartial(res.Partial)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // ExportAuditEntries streams a verifiable bundle.
-func (as *AuditServer) ExportAuditEntries(ctx context.Context, req *connect.Request[auditv1.ExportAuditEntriesRequest], stream *connect.ServerStream[auditv1.ExportAuditEntriesResponse]) error {
+func (as *AuditServer) ExportAuditEntries(ctx context.Context, req *auditv1.ExportAuditEntriesRequest, stream auditv1connect.AuditServiceExportAuditEntriesServerStream) error {
 	caller := business.CallerFromClaims(ctx)
-	startSeq, endSeq, err := as.deps.Verify.ResolveRange(ctx, caller.TenantID, req.Msg.GetStartSeq(), req.Msg.GetEndSeq(), nil, nil)
+	startSeq, endSeq, err := as.deps.Verify.ResolveRange(ctx, caller.TenantID, req.GetStartSeq(), req.GetEndSeq(), nil, nil)
 	if err != nil {
-		return toConnectError(err)
+		return toConnectError(ctx, err)
 	}
 	sink := &exportStream{stream: stream}
 	if err = as.deps.Verify.Export(ctx, caller.TenantID, startSeq, endSeq, sink); err != nil {
-		return toConnectError(err)
+		return toConnectError(ctx, err)
 	}
 	return sink.flush()
 }
 
 // ListCheckpoints lists signed checkpoints for the caller's tenant.
-func (as *AuditServer) ListCheckpoints(ctx context.Context, req *connect.Request[auditv1.ListCheckpointsRequest]) (*connect.Response[auditv1.ListCheckpointsResponse], error) {
+func (as *AuditServer) ListCheckpoints(ctx context.Context, req *auditv1.ListCheckpointsRequest) (*auditv1.ListCheckpointsResponse, error) {
 	caller := business.CallerFromClaims(ctx)
-	cps, err := as.deps.Read.ListCheckpoints(ctx, caller.TenantID, req.Msg.GetSeqFrom(), req.Msg.GetSeqTo(), int(req.Msg.GetCount()))
+	cps, err := as.deps.Read.ListCheckpoints(ctx, caller.TenantID, req.GetSeqFrom(), req.GetSeqTo(), int(req.GetCount()))
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	out := make([]*auditv1.AuditCheckpoint, 0, len(cps))
 	for _, c := range cps {
@@ -247,14 +247,14 @@ func (as *AuditServer) ListCheckpoints(ctx context.Context, req *connect.Request
 	}
 	resp := &auditv1.ListCheckpointsResponse{}
 	resp.SetData(out)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // GetSigningKeys returns all public keys.
-func (as *AuditServer) GetSigningKeys(ctx context.Context, _ *connect.Request[auditv1.GetSigningKeysRequest]) (*connect.Response[auditv1.GetSigningKeysResponse], error) {
+func (as *AuditServer) GetSigningKeys(ctx context.Context, _ *auditv1.GetSigningKeysRequest) (*auditv1.GetSigningKeysResponse, error) {
 	keys, err := as.deps.Keys.List(ctx)
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	out := make([]*auditv1.SigningKey, 0, len(keys))
 	for _, k := range keys {
@@ -262,60 +262,60 @@ func (as *AuditServer) GetSigningKeys(ctx context.Context, _ *connect.Request[au
 	}
 	resp := &auditv1.GetSigningKeysResponse{}
 	resp.SetData(out)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // RegisterAuditManifest registers the calling service's vocabulary.
-func (as *AuditServer) RegisterAuditManifest(ctx context.Context, req *connect.Request[auditv1.RegisterAuditManifestRequest]) (*connect.Response[auditv1.RegisterAuditManifestResponse], error) {
-	res, err := as.deps.Manifests.Register(ctx, as.caller(ctx), req.Msg.GetManifest())
+func (as *AuditServer) RegisterAuditManifest(ctx context.Context, req *auditv1.RegisterAuditManifestRequest) (*auditv1.RegisterAuditManifestResponse, error) {
+	res, err := as.deps.Manifests.Register(ctx, as.caller(ctx), req.GetManifest())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	resp := &auditv1.RegisterAuditManifestResponse{}
 	resp.SetService(res.Service)
 	resp.SetVersion(res.Version)
 	resp.SetUnchanged(res.Unchanged)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // GetAuditManifest returns the latest manifest for a service.
-func (as *AuditServer) GetAuditManifest(ctx context.Context, req *connect.Request[auditv1.GetAuditManifestRequest]) (*connect.Response[auditv1.GetAuditManifestResponse], error) {
-	row, err := as.deps.Manifests.Get(ctx, req.Msg.GetService())
+func (as *AuditServer) GetAuditManifest(ctx context.Context, req *auditv1.GetAuditManifestRequest) (*auditv1.GetAuditManifestResponse, error) {
+	row, err := as.deps.Manifests.Get(ctx, req.GetService())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	if row == nil {
-		return nil, connect.NewError(connect.CodeNotFound, business.ErrKeyNotFound)
+		return nil, connect.NewError(connect.CodeNotFound, business.ErrKeyNotFound.Error()).WithCause(business.ErrKeyNotFound)
 	}
 	resp := &auditv1.GetAuditManifestResponse{}
 	resp.SetManifest(business.ManifestToProto(row))
 	resp.SetVersion(row.ManifestVer)
 	resp.SetCreatedAt(timestamppb.New(row.CreatedAt))
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // RequeueIntake returns FAILED rows to ACCEPTED and audits the operation.
-func (as *AuditServer) RequeueIntake(ctx context.Context, req *connect.Request[auditv1.RequeueIntakeRequest]) (*connect.Response[auditv1.RequeueIntakeResponse], error) {
-	n, err := as.deps.Ingest.Requeue(ctx, req.Msg.GetIntakeIds())
+func (as *AuditServer) RequeueIntake(ctx context.Context, req *auditv1.RequeueIntakeRequest) (*auditv1.RequeueIntakeResponse, error) {
+	n, err := as.deps.Ingest.Requeue(ctx, req.GetIntakeIds())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	as.selfAudit(ctx, "requeue_intake", "audit_intake", "", map[string]any{"requeued": float64(n)})
 	resp := &auditv1.RequeueIntakeResponse{}
 	resp.SetRequeued(n)
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // RetireSigningKey retires a key and audits the operation.
-func (as *AuditServer) RetireSigningKey(ctx context.Context, req *connect.Request[auditv1.RetireSigningKeyRequest]) (*connect.Response[auditv1.RetireSigningKeyResponse], error) {
-	key, err := as.deps.Keys.Retire(ctx, req.Msg.GetKeyId())
+func (as *AuditServer) RetireSigningKey(ctx context.Context, req *auditv1.RetireSigningKeyRequest) (*auditv1.RetireSigningKeyResponse, error) {
+	key, err := as.deps.Keys.Retire(ctx, req.GetKeyId())
 	if err != nil {
-		return nil, toConnectError(err)
+		return nil, toConnectError(ctx, err)
 	}
 	as.selfAudit(ctx, "retire_signing_key", "audit_signing_key", key.KeyID, nil)
 	resp := &auditv1.RetireSigningKeyResponse{}
 	resp.SetKey(signingKeyToProto(key))
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
 // selfAudit records an operator action under the audit service's own name.
@@ -552,7 +552,7 @@ func signingKeyToProto(k *models.AuditSigningKey) *auditv1.SigningKey {
 
 // exportStream adapts the Connect server stream to business.ExportSink.
 type exportStream struct {
-	stream *connect.ServerStream[auditv1.ExportAuditEntriesResponse]
+	stream auditv1connect.AuditServiceExportAuditEntriesServerStream
 }
 
 func (s *exportStream) Header(h *business.ExportHeader) error {
