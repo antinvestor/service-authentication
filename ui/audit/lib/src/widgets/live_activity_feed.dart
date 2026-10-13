@@ -50,10 +50,8 @@ class LiveActivityFeed extends ConsumerStatefulWidget {
 class _LiveActivityFeedState extends ConsumerState<LiveActivityFeed> {
   Timer? _refreshTimer;
 
-  AuditListParams get _params => AuditListParams(
-        service: widget.service,
-        count: widget.maxItems,
-      );
+  AuditListParams get _params =>
+      AuditListParams(service: widget.service, count: widget.maxItems);
 
   @override
   void initState() {
@@ -93,13 +91,13 @@ class _LiveActivityFeedState extends ConsumerState<LiveActivityFeed> {
               padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
               child: Row(
                 children: [
-                  Icon(Icons.bolt,
-                      size: 18, color: theme.colorScheme.primary),
+                  Icon(Icons.bolt, size: 18, color: theme.colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     widget.title,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -123,13 +121,17 @@ class _LiveActivityFeedState extends ConsumerState<LiveActivityFeed> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 32, color: theme.colorScheme.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 32,
+                    color: theme.colorScheme.error,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Could not load activity',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.error),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
                   ),
                 ],
               ),
@@ -142,14 +144,17 @@ class _LiveActivityFeedState extends ConsumerState<LiveActivityFeed> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inbox_outlined,
-                            size: 32,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 32,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'No recent activity',
                           style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant),
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -164,8 +169,7 @@ class _LiveActivityFeedState extends ConsumerState<LiveActivityFeed> {
                     AuditEntryTile(
                       entry: entry,
                       dense: true,
-                      onTap: () =>
-                          context.go('/services/audit/${entry.id}'),
+                      onTap: () => context.go('/services/audit/${entry.id}'),
                     ),
                 ],
               );

@@ -159,12 +159,14 @@ class MockIdp {
       dpop = _parseDpopProof(dpopHeader);
     }
 
-    tokenRequests.add(RecordedTokenRequest(
-      grantType: form['grant_type'] ?? '',
-      form: form,
-      dpopHeader: dpopHeader,
-      dpopClaims: dpop,
-    ));
+    tokenRequests.add(
+      RecordedTokenRequest(
+        grantType: form['grant_type'] ?? '',
+        form: form,
+        dpopHeader: dpopHeader,
+        dpopClaims: dpop,
+      ),
+    );
 
     // Nonce challenge: first call without nonce claim in proof → 401 +
     // DPoP-Nonce header. Arm-once semantics: once consumed, the challenge
@@ -242,7 +244,9 @@ class MockIdp {
         return Response(
           400,
           headers: <String, String>{'Content-Type': 'application/json'},
-          body: json.encode(<String, String>{'error': 'unsupported_grant_type'}),
+          body: json.encode(<String, String>{
+            'error': 'unsupported_grant_type',
+          }),
         );
     }
   }
@@ -259,10 +263,7 @@ class MockIdp {
       'sub': sub,
       'aud': aud,
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'exp': DateTime.now()
-              .add(tokenLifetime)
-              .millisecondsSinceEpoch ~/
-          1000,
+      'exp': DateTime.now().add(tokenLifetime).millisecondsSinceEpoch ~/ 1000,
       'roles': <String>['user', 'admin'],
       'jti': 'at-$n',
     });
@@ -271,10 +272,7 @@ class MockIdp {
       'sub': sub,
       'aud': aud,
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'exp': DateTime.now()
-              .add(tokenLifetime)
-              .millisecondsSinceEpoch ~/
-          1000,
+      'exp': DateTime.now().add(tokenLifetime).millisecondsSinceEpoch ~/ 1000,
       'email': 'user@example.com',
       'name': 'Test User',
       'picture': 'https://example.com/avatar.png',
@@ -311,8 +309,7 @@ class MockIdp {
         headers: <String, String>{'Content-Type': 'application/json'},
         body: json.encode(<String, String>{
           'error': 'invalid_request',
-          'error_description':
-              'subject_token_type must be $expectedTokenType',
+          'error_description': 'subject_token_type must be $expectedTokenType',
         }),
       );
     }
@@ -346,9 +343,7 @@ class MockIdp {
     final parts = subjectToken.split('.');
     if (parts.length >= 2) {
       try {
-        final decoded = json.decode(
-          utf8.decode(_b64urlDecode(parts[1])),
-        );
+        final decoded = json.decode(utf8.decode(_b64urlDecode(parts[1])));
         if (decoded is Map<String, dynamic>) claims = decoded;
       } catch (_) {
         claims = null;
@@ -390,8 +385,7 @@ class MockIdp {
   }
 
   Future<Response> _endSession(Request req) async {
-    final body =
-        req.method == 'POST' ? await req.readAsString() : '';
+    final body = req.method == 'POST' ? await req.readAsString() : '';
     endSessionRequests.add(RecordedRequest(body: body, headers: req.headers));
     return Response(204);
   }

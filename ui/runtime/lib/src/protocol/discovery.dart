@@ -44,8 +44,9 @@ class OidcDiscovery {
       revocationEndpoint: _asString(json['revocation_endpoint']),
       userinfoEndpoint: _asString(json['userinfo_endpoint']),
       jwksUri: _asString(json['jwks_uri']),
-      dpopSigningAlgValuesSupported:
-          dpop is List ? dpop.whereType<String>().toList() : null,
+      dpopSigningAlgValuesSupported: dpop is List
+          ? dpop.whereType<String>().toList()
+          : null,
     );
   }
 
@@ -92,11 +93,12 @@ Future<OidcDiscovery> getDiscovery(
 
   final future = _doFetch(key, timeout, client ?? http.Client())
       .then<OidcDiscovery>((doc) {
-    _cache[key] = doc;
-    return doc;
-  }).whenComplete(() {
-    _inflight.remove(key);
-  });
+        _cache[key] = doc;
+        return doc;
+      })
+      .whenComplete(() {
+        _inflight.remove(key);
+      });
   _inflight[key] = future;
   return future;
 }

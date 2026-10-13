@@ -19,7 +19,7 @@ abstract class KeyValueStore {
 /// (iOS Keychain, Android Keystore, macOS Keychain, Linux libsecret).
 class SecureStorageKeyValueStore implements KeyValueStore {
   SecureStorageKeyValueStore({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -60,7 +60,7 @@ class InMemoryKeyValueStore implements KeyValueStore {
 /// keychain partition.
 class SecureTokenStore implements TokenStore {
   SecureTokenStore({KeyValueStore? kv})
-      : _kv = kv ?? SecureStorageKeyValueStore();
+    : _kv = kv ?? SecureStorageKeyValueStore();
 
   final KeyValueStore _kv;
 

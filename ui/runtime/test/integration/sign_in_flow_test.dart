@@ -10,36 +10,38 @@ void main() {
     await h.dispose();
   });
 
-  test('ensureAuthenticated drives full OAuth + token exchange against mock IdP',
-      () async {
-    h = await buildHarness();
-    final states = <AuthState>[];
-    h.runtime.authStateStream.listen(states.add);
+  test(
+    'ensureAuthenticated drives full OAuth + token exchange against mock IdP',
+    () async {
+      h = await buildHarness();
+      final states = <AuthState>[];
+      h.runtime.authStateStream.listen(states.add);
 
-    expect(h.runtime.state, AuthState.unauthenticated);
+      expect(h.runtime.state, AuthState.unauthenticated);
 
-    await h.runtime.ensureAuthenticated();
-    // Give the broadcast stream time to flush.
-    await Future<void>.delayed(Duration.zero);
+      await h.runtime.ensureAuthenticated();
+      // Give the broadcast stream time to flush.
+      await Future<void>.delayed(Duration.zero);
 
-    expect(h.runtime.state, AuthState.authenticated);
-    // We go unauthenticated → initializing → authenticated during sign-in.
-    expect(states, contains(AuthState.authenticated));
-    expect(h.fakeOAuth.calls, 1);
+      expect(h.runtime.state, AuthState.authenticated);
+      // We go unauthenticated → initializing → authenticated during sign-in.
+      expect(states, contains(AuthState.authenticated));
+      expect(h.fakeOAuth.calls, 1);
 
-    // Exactly one authorization_code grant hit the mock.
-    expect(
-      h.mock.tokenRequests.where((r) => r.grantType == 'authorization_code'),
-      hasLength(1),
-    );
-    // The request carried a well-formed DPoP proof with the right htm/htu.
-    final authzCall = h.mock.tokenRequests.firstWhere(
-      (r) => r.grantType == 'authorization_code',
-    );
-    expect(authzCall.dpopClaims, isNotNull);
-    expect(authzCall.dpopClaims!.htm, 'POST');
-    expect(authzCall.dpopClaims!.htu, h.mock.tokenEndpoint);
-  });
+      // Exactly one authorization_code grant hit the mock.
+      expect(
+        h.mock.tokenRequests.where((r) => r.grantType == 'authorization_code'),
+        hasLength(1),
+      );
+      // The request carried a well-formed DPoP proof with the right htm/htu.
+      final authzCall = h.mock.tokenRequests.firstWhere(
+        (r) => r.grantType == 'authorization_code',
+      );
+      expect(authzCall.dpopClaims, isNotNull);
+      expect(authzCall.dpopClaims!.htm, 'POST');
+      expect(authzCall.dpopClaims!.htu, h.mock.tokenEndpoint);
+    },
+  );
 
   test('getClaims returns decoded ID token payload', () async {
     h = await buildHarness();

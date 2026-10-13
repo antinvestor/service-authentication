@@ -6,9 +6,9 @@ enum TokenType {
   dpop;
 
   String get headerValue => switch (this) {
-        TokenType.bearer => 'Bearer',
-        TokenType.dpop => 'DPoP',
-      };
+    TokenType.bearer => 'Bearer',
+    TokenType.dpop => 'DPoP',
+  };
 
   /// Parses a `token_type` response field; defaults to [TokenType.bearer]
   /// on null/unknown values to match the JS runtime behaviour.
@@ -41,6 +41,11 @@ class TokenSet extends Equatable {
       !now.isBefore(expiresAt); // `now >= expiresAt`
 
   @override
-  List<Object?> get props =>
-      [accessToken, refreshToken, expiresAt, tokenType, idToken];
+  List<Object?> get props => [
+    accessToken,
+    refreshToken,
+    expiresAt,
+    tokenType,
+    idToken,
+  ];
 }

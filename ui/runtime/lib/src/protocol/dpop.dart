@@ -14,10 +14,7 @@ import 'package:pointycastle/export.dart' as pc;
 /// PointyCastle; callers should treat this as opaque — private material
 /// never leaves the runtime.
 class DpopKeyPair {
-  DpopKeyPair({
-    required this.privateKey,
-    required this.publicKey,
-  });
+  DpopKeyPair({required this.privateKey, required this.publicKey});
 
   final pc.ECPrivateKey privateKey;
   final pc.ECPublicKey publicKey;
@@ -37,15 +34,14 @@ class DpopKeyPair {
 DpopKeyPair generateDpopKeyPair() {
   final keyGen = pc.ECKeyGenerator();
   final random = _secureRandom();
-  keyGen.init(pc.ParametersWithRandom(
-    pc.ECKeyGeneratorParameters(pc.ECCurve_secp256r1()),
-    random,
-  ));
-  final pair = keyGen.generateKeyPair();
-  return DpopKeyPair(
-    privateKey: pair.privateKey,
-    publicKey: pair.publicKey,
+  keyGen.init(
+    pc.ParametersWithRandom(
+      pc.ECKeyGeneratorParameters(pc.ECCurve_secp256r1()),
+      random,
+    ),
   );
+  final pair = keyGen.generateKeyPair();
+  return DpopKeyPair(privateKey: pair.privateKey, publicKey: pair.publicKey);
 }
 
 /// DPoP signing context held for the lifetime of an authenticated session.
@@ -136,16 +132,13 @@ void rememberNonce(
 
 /// Adjusts [DpopContext.clockOffsetMs] based on the HTTP `Date` response
 /// header. Malformed/absent headers are ignored.
-void rememberClockOffset(
-  DpopContext ctx,
-  Map<String, String> headers,
-) {
+void rememberClockOffset(DpopContext ctx, Map<String, String> headers) {
   final dateHeader = _headerIgnoreCase(headers, 'date');
   if (dateHeader == null) return;
   final parsed = _tryParseHttpDate(dateHeader);
   if (parsed == null) return;
-  ctx.clockOffsetMs = parsed.millisecondsSinceEpoch -
-      DateTime.now().millisecondsSinceEpoch;
+  ctx.clockOffsetMs =
+      parsed.millisecondsSinceEpoch - DateTime.now().millisecondsSinceEpoch;
 }
 
 /// Builds a DPoP proof JWT for the given request.
@@ -173,8 +166,9 @@ Future<String> buildProof(
     'jti': _b64urlNoPad(randomBytes(16)),
   };
   if (accessToken != null) {
-    payload['ath'] =
-        _b64urlNoPad(crypto.sha256.convert(utf8.encode(accessToken)).bytes);
+    payload['ath'] = _b64urlNoPad(
+      crypto.sha256.convert(utf8.encode(accessToken)).bytes,
+    );
   }
   final nonce = ctx.nonceByOrigin[_originOf(htu)];
   if (nonce != null) {
@@ -204,10 +198,7 @@ Uint8List _signEcdsa(pc.ECPrivateKey priv, Uint8List message) {
   final signer = pc.ECDSASigner(
     pc.SHA256Digest(),
     pc.HMac.withDigest(pc.SHA256Digest()),
-  )..init(
-      true,
-      pc.PrivateKeyParameter<pc.ECPrivateKey>(priv),
-    );
+  )..init(true, pc.PrivateKeyParameter<pc.ECPrivateKey>(priv));
   final sig = signer.generateSignature(message) as pc.ECSignature;
   // JWS ES256 format: 32-byte r || 32-byte s, left-padded.
   return Uint8List.fromList([

@@ -67,17 +67,16 @@ class StoredSession {
 
   /// JSON-encodable representation. Binary fields are base64-encoded.
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'v': 2,
-        'wrapKey': _blobToJson(wrapKeyCiphertext),
-        'dpopKey': _blobToJson(dpopPrivateKeyCiphertext),
-        'refreshToken': _blobToJson(refreshTokenCiphertext),
-        'accessToken': accessToken,
-        'accessExpiresAt':
-            accessTokenExpiresAt.toUtc().toIso8601String(),
-        'tokenType': tokenType,
-        'idToken': idToken,
-        'updatedAt': updatedAt.toUtc().toIso8601String(),
-      };
+    'v': 2,
+    'wrapKey': _blobToJson(wrapKeyCiphertext),
+    'dpopKey': _blobToJson(dpopPrivateKeyCiphertext),
+    'refreshToken': _blobToJson(refreshTokenCiphertext),
+    'accessToken': accessToken,
+    'accessExpiresAt': accessTokenExpiresAt.toUtc().toIso8601String(),
+    'tokenType': tokenType,
+    'idToken': idToken,
+    'updatedAt': updatedAt.toUtc().toIso8601String(),
+  };
 
   /// Parses a map produced by [toJson]. Returns null on any schema/shape
   /// error — callers treat null as "no session stored".
@@ -134,9 +133,9 @@ abstract class TokenStore {
 }
 
 Map<String, String> _blobToJson(WrappedBlob blob) => <String, String>{
-      'iv': base64.encode(blob.iv),
-      'ct': base64.encode(blob.ciphertext),
-    };
+  'iv': base64.encode(blob.iv),
+  'ct': base64.encode(blob.ciphertext),
+};
 
 WrappedBlob? _blobFromJson(Object? raw) {
   if (raw is! Map) return null;

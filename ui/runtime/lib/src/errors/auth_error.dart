@@ -71,12 +71,7 @@ const Set<AuthErrorCode> _nonRetryable = {
 /// `retryable` is derived from [code] so callers can implement uniform
 /// backoff/wipe policy without switching on every variant.
 class AuthError extends Error {
-  AuthError(
-    this.code,
-    this.message, {
-    this.cause,
-    this.traceId,
-  });
+  AuthError(this.code, this.message, {this.cause, this.traceId});
 
   final AuthErrorCode code;
   final String message;

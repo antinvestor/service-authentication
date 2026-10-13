@@ -34,8 +34,7 @@ class LoginHistoryWidget extends ConsumerStatefulWidget {
   final String title;
 
   @override
-  ConsumerState<LoginHistoryWidget> createState() =>
-      _LoginHistoryWidgetState();
+  ConsumerState<LoginHistoryWidget> createState() => _LoginHistoryWidgetState();
 }
 
 class _LoginHistoryWidgetState extends ConsumerState<LoginHistoryWidget> {
@@ -43,9 +42,9 @@ class _LoginHistoryWidgetState extends ConsumerState<LoginHistoryWidget> {
   static const _collapsedCount = 5;
 
   LoginEventListParams get _params => LoginEventListParams(
-        profileId: widget.profileId,
-        count: widget.maxEntries,
-      );
+    profileId: widget.profileId,
+    count: widget.maxEntries,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -73,15 +72,15 @@ class _LoginHistoryWidgetState extends ConsumerState<LoginHistoryWidget> {
                 const SizedBox(width: 8),
                 Text(
                   widget.title,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
                   tooltip: 'Refresh',
-                  onPressed: () =>
-                      ref.invalidate(loginEventsProvider(_params)),
+                  onPressed: () => ref.invalidate(loginEventsProvider(_params)),
                 ),
               ],
             ),
@@ -108,7 +107,8 @@ class _LoginHistoryWidgetState extends ConsumerState<LoginHistoryWidget> {
                     child: Text(
                       'No sign-in activity recorded',
                       style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
@@ -126,23 +126,21 @@ class _LoginHistoryWidgetState extends ConsumerState<LoginHistoryWidget> {
                     LoginEventTile(
                       event: event,
                       dense: true,
-                      onTap: () =>
-                          context.go('/services/auth/${event.id}'),
+                      onTap: () => context.go('/services/auth/${event.id}'),
                     ),
                   if (hasMore)
                     InkWell(
-                      onTap: () =>
-                          setState(() => _expanded = !_expanded),
+                      onTap: () => setState(() => _expanded = !_expanded),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 16),
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _expanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
+                              _expanded ? Icons.expand_less : Icons.expand_more,
                               size: 18,
                               color: theme.colorScheme.primary,
                             ),

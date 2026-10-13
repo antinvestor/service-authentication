@@ -12,10 +12,7 @@ import 'package:http_parser/http_parser.dart' show MediaType;
 
 /// Snapshot returned by [TokenProvider.ensureFresh].
 class TokenSnapshot {
-  const TokenSnapshot({
-    required this.accessToken,
-    required this.tokenType,
-  });
+  const TokenSnapshot({required this.accessToken, required this.tokenType});
 
   final String accessToken;
   final TokenType tokenType;
@@ -64,7 +61,8 @@ class ApiProxy {
 
     Future<http.Response> doCall(TokenSnapshot snapshot) async {
       final h = <String, String>{...?headers};
-      h['Authorization'] = '${snapshot.tokenType.headerValue} '
+      h['Authorization'] =
+          '${snapshot.tokenType.headerValue} '
           '${snapshot.accessToken}';
       h.putIfAbsent('Accept', () => 'application/json');
       if (snapshot.tokenType == TokenType.dpop) {
@@ -151,7 +149,8 @@ class ApiProxy {
     Future<http.StreamedResponse> doCall(TokenSnapshot snapshot) async {
       final req = http.MultipartRequest('POST', uri);
       req.headers.addAll(headers ?? const {});
-      req.headers['Authorization'] = '${snapshot.tokenType.headerValue} '
+      req.headers['Authorization'] =
+          '${snapshot.tokenType.headerValue} '
           '${snapshot.accessToken}';
       if (snapshot.tokenType == TokenType.dpop) {
         req.headers['DPoP'] = await buildProof(
@@ -161,12 +160,14 @@ class ApiProxy {
           accessToken: snapshot.accessToken,
         );
       }
-      req.files.add(http.MultipartFile.fromBytes(
-        fieldName,
-        buffered,
-        filename: filename,
-        contentType: _parseMediaType(contentType),
-      ));
+      req.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          buffered,
+          filename: filename,
+          contentType: _parseMediaType(contentType),
+        ),
+      );
       return _client.send(req).timeout(effectiveTimeout);
     }
 
@@ -209,7 +210,9 @@ class ApiProxy {
       case 'GET':
         return _client.get(uri, headers: headers).timeout(timeout);
       case 'DELETE':
-        return _client.delete(uri, headers: headers, body: body).timeout(timeout);
+        return _client
+            .delete(uri, headers: headers, body: body)
+            .timeout(timeout);
       case 'HEAD':
         return _client.head(uri, headers: headers).timeout(timeout);
       case 'POST':
@@ -233,11 +236,7 @@ class ApiProxy {
 
   ApiResponse _mapResponse(http.Response res) {
     if (res.statusCode == 204) {
-      return ApiResponse(
-        status: 204,
-        headers: res.headers,
-        body: Uint8List(0),
-      );
+      return ApiResponse(status: 204, headers: res.headers, body: Uint8List(0));
     }
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return ApiResponse(

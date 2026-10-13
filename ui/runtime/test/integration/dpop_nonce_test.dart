@@ -12,25 +12,26 @@ void main() {
   });
 
   test(
-      'nonce-challenge first 401 triggers retry with DPoP-Nonce claim embedded',
-      () async {
-    final mock = MockIdp()..enableNonceChallenge(nonce: 'srv-nonce-42');
-    h = await buildHarness(mock: mock);
+    'nonce-challenge first 401 triggers retry with DPoP-Nonce claim embedded',
+    () async {
+      final mock = MockIdp()..enableNonceChallenge(nonce: 'srv-nonce-42');
+      h = await buildHarness(mock: mock);
 
-    await h.runtime.ensureAuthenticated();
-    expect(h.runtime.state, AuthState.authenticated);
+      await h.runtime.ensureAuthenticated();
+      expect(h.runtime.state, AuthState.authenticated);
 
-    // Exactly two /token hits: first one challenged, second carried the
-    // server-issued nonce.
-    final hits = h.mock.tokenRequests
-        .where((r) => r.grantType == 'authorization_code')
-        .toList();
-    expect(hits, hasLength(2));
+      // Exactly two /token hits: first one challenged, second carried the
+      // server-issued nonce.
+      final hits = h.mock.tokenRequests
+          .where((r) => r.grantType == 'authorization_code')
+          .toList();
+      expect(hits, hasLength(2));
 
-    expect(hits[0].dpopClaims, isNotNull);
-    expect(hits[0].dpopClaims!.nonce, isNull);
+      expect(hits[0].dpopClaims, isNotNull);
+      expect(hits[0].dpopClaims!.nonce, isNull);
 
-    expect(hits[1].dpopClaims, isNotNull);
-    expect(hits[1].dpopClaims!.nonce, 'srv-nonce-42');
-  });
+      expect(hits[1].dpopClaims, isNotNull);
+      expect(hits[1].dpopClaims!.nonce, 'srv-nonce-42');
+    },
+  );
 }

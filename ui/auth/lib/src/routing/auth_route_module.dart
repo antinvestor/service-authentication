@@ -23,51 +23,50 @@ class AuthRouteModule extends RouteModule {
 
   @override
   List<RouteBase> buildRoutes() => [
+    GoRoute(
+      path: '/services/auth',
+      builder: (context, state) => const LoginHistoryScreen(),
+      routes: [
         GoRoute(
-          path: '/services/auth',
-          builder: (context, state) => const LoginHistoryScreen(),
-          routes: [
-            GoRoute(
-              path: ':eventId',
-              builder: (context, state) => LoginEventDetailScreen(
-                eventId: state.pathParameters['eventId']!,
-              ),
-            ),
-          ],
+          path: ':eventId',
+          builder: (context, state) =>
+              LoginEventDetailScreen(eventId: state.pathParameters['eventId']!),
         ),
-      ];
+      ],
+    ),
+  ];
 
   @override
   List<NavItem> buildNavItems() => [
-        const NavItem(
-          id: 'auth',
-          label: 'Sign-in Activity',
-          icon: Icons.login_outlined,
-          activeIcon: Icons.login,
-          route: '/services/auth',
-          requiredPermissions: {'auth_view_own'},
-        ),
-      ];
+    const NavItem(
+      id: 'auth',
+      label: 'Sign-in Activity',
+      icon: Icons.login_outlined,
+      activeIcon: Icons.login,
+      route: '/services/auth',
+      requiredPermissions: {'auth_view_own'},
+    ),
+  ];
 
   @override
   Map<String, Set<String>> get routePermissions => {
-        '/services/auth': {'auth_view_own'},
-      };
+    '/services/auth': {'auth_view_own'},
+  };
 
   @override
   PermissionManifest get permissionManifest => const PermissionManifest(
-        namespace: 'service_authentication',
-        permissions: [
-          PermissionEntry(
-            key: 'auth_view_own',
-            label: 'View Own Login History',
-            scope: PermissionScope.service,
-          ),
-          PermissionEntry(
-            key: 'auth_view_all',
-            label: 'View All Login History',
-            scope: PermissionScope.service,
-          ),
-        ],
-      );
+    namespace: 'service_authentication',
+    permissions: [
+      PermissionEntry(
+        key: 'auth_view_own',
+        label: 'View Own Login History',
+        scope: PermissionScope.service,
+      ),
+      PermissionEntry(
+        key: 'auth_view_all',
+        label: 'View All Login History',
+        scope: PermissionScope.service,
+      ),
+    ],
+  );
 }

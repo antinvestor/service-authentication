@@ -30,8 +30,7 @@ abstract class GoogleSignInAdapter {
   const GoogleSignInAdapter();
 
   /// Default adapter backed by `GoogleSignIn.instance`.
-  const factory GoogleSignInAdapter.defaultAdapter() =
-      _RealGoogleSignInAdapter;
+  const factory GoogleSignInAdapter.defaultAdapter() = _RealGoogleSignInAdapter;
 
   Future<void> initialize({
     required String serverClientId,
@@ -56,15 +55,13 @@ class _RealGoogleSignInAdapter extends GoogleSignInAdapter {
   Future<void> initialize({
     required String serverClientId,
     required String nonce,
-  }) =>
-      GoogleSignIn.instance.initialize(
-        serverClientId: serverClientId,
-        nonce: nonce,
-      );
+  }) => GoogleSignIn.instance.initialize(
+    serverClientId: serverClientId,
+    nonce: nonce,
+  );
 
   @override
-  Future<GoogleSignInAccountView?>
-      attemptLightweightAuthentication() async {
+  Future<GoogleSignInAccountView?> attemptLightweightAuthentication() async {
     final future = GoogleSignIn.instance.attemptLightweightAuthentication();
     if (future == null) {
       // The SDK returns null synchronously on platforms (e.g. FedCM on
@@ -99,8 +96,8 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
   GoogleCredentialProvider({
     required String serverClientId,
     GoogleSignInAdapter? adapter,
-  })  : _serverClientId = serverClientId,
-        _adapter = adapter ?? const GoogleSignInAdapter.defaultAdapter();
+  }) : _serverClientId = serverClientId,
+       _adapter = adapter ?? const GoogleSignInAdapter.defaultAdapter();
 
   final String _serverClientId;
   final GoogleSignInAdapter _adapter;
@@ -112,14 +109,9 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
   Future<bool> isAvailable() async => true;
 
   @override
-  Future<NativeCredentialOutcome> attemptSilent({
-    required String nonce,
-  }) async {
+  Future<NativeCredentialOutcome> attemptSilent({required String nonce}) async {
     try {
-      await _adapter.initialize(
-        serverClientId: _serverClientId,
-        nonce: nonce,
-      );
+      await _adapter.initialize(serverClientId: _serverClientId, nonce: nonce);
       final account = await _adapter.attemptLightweightAuthentication();
       if (account == null) {
         return const NativeCredentialOutcome.noSession();
@@ -143,12 +135,10 @@ class GoogleCredentialProvider implements NativeCredentialProvider {
     required String nonce,
   }) async {
     try {
-      await _adapter.initialize(
-        serverClientId: _serverClientId,
-        nonce: nonce,
+      await _adapter.initialize(serverClientId: _serverClientId, nonce: nonce);
+      final account = await _adapter.authenticate(
+        scopeHint: const <String>['openid'],
       );
-      final account =
-          await _adapter.authenticate(scopeHint: const <String>['openid']);
       return _buildOk(account, nonce: nonce, autoSelected: false);
     } on GoogleSignInException catch (e) {
       return _mapGoogleException(e, interactive: true);

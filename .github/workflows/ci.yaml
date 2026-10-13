@@ -21,3 +21,8 @@ jobs:
     permissions:
       contents: read
     uses: antinvestor/common/.github/workflows/flutter-ci.yml@main
+    with:
+      # ui/tenancy path-overrides sdk/dart/tenancy (protobuf 6) but still
+      # pins protobuf ^4.2 and antinvestor_ui_core ^0.5. It moves after
+      # antinvestor_ui_core 0.6.0; drop this exclude in that change.
+      exclude: "ui/tenancy"

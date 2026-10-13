@@ -26,11 +26,9 @@ import 'package:antinvestor_auth_runtime/src/worker/token_isolate.dart';
 /// entry point only emits a [ReadyEvent] at start-up — but the transport
 /// is ready to carry real state changes once a richer worker ships.
 class IsolatedAuthRuntime implements AuthRuntime {
-  IsolatedAuthRuntime({
-    required this.config,
-    required this.proxy,
-  })  : _stateController = StreamController<AuthState>.broadcast(),
-        _securityController = StreamController<SecurityEvent>.broadcast() {
+  IsolatedAuthRuntime({required this.config, required this.proxy})
+    : _stateController = StreamController<AuthState>.broadcast(),
+      _securityController = StreamController<SecurityEvent>.broadcast() {
     _eventSubscription = proxy.events.listen(_onEvent);
   }
 
@@ -85,9 +83,7 @@ class IsolatedAuthRuntime implements AuthRuntime {
     Duration? timeout,
   }) async {
     _ensureAlive();
-    throw UnimplementedError(
-      'fetch via isolate is scheduled for F-J',
-    );
+    throw UnimplementedError('fetch via isolate is scheduled for F-J');
   }
 
   @override
@@ -102,9 +98,7 @@ class IsolatedAuthRuntime implements AuthRuntime {
     Duration? timeout,
   }) async {
     _ensureAlive();
-    throw UnimplementedError(
-      'upload via isolate is scheduled for F-J',
-    );
+    throw UnimplementedError('upload via isolate is scheduled for F-J');
   }
 
   @override
@@ -128,17 +122,14 @@ class IsolatedAuthRuntime implements AuthRuntime {
   @override
   Future<void> logout() async {
     _ensureAlive();
-    throw UnimplementedError(
-      'logout via isolate is scheduled for F-J',
-    );
+    throw UnimplementedError('logout via isolate is scheduled for F-J');
   }
 
   @override
   Stream<AuthState> get authStateStream => _stateController.stream;
 
   @override
-  Stream<SecurityEvent> get securityEventStream =>
-      _securityController.stream;
+  Stream<SecurityEvent> get securityEventStream => _securityController.stream;
 
   @override
   AuthState get state => _state;
@@ -195,9 +186,7 @@ Future<IsolatedAuthRuntime> spawnIsolatedAuthRuntime(
 }) async {
   final handle = await TokenIsolateHandle.spawn(
     readyTimeout: readyTimeout,
-    entryPoint: entryPoint == null
-        ? null
-        : (send) => entryPoint(send),
+    entryPoint: entryPoint == null ? null : (send) => entryPoint(send),
   );
   final proxy = IsolatedTokenWorkerProxy(handle);
   // Propagate isolate-side errors as AuthError for caller ergonomics.

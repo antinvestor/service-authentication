@@ -28,10 +28,7 @@ class ProfileAvatar extends ConsumerWidget {
     final fg = foregroundColor ?? theme.colorScheme.onPrimaryContainer;
     final async = ref.watch(userClaimsProvider);
     return async.when(
-      loading: () => CircleAvatar(
-        radius: radius,
-        backgroundColor: bg,
-      ),
+      loading: () => CircleAvatar(radius: radius, backgroundColor: bg),
       error: (_, _) => CircleAvatar(
         radius: radius,
         backgroundColor: bg,
@@ -63,8 +60,7 @@ class ProfileAvatar extends ConsumerWidget {
 
 /// Visible for testing — derives initials using the same priority chain
 /// as [ProfileAvatar].
-String initialsFromClaims(Map<String, dynamic> claims) =>
-    _initialsFrom(claims);
+String initialsFromClaims(Map<String, dynamic> claims) => _initialsFrom(claims);
 
 String _initialsFrom(Map<String, dynamic> claims) {
   final name = claims['name'];

@@ -33,8 +33,7 @@ void main() {
       expect(await provider.isAvailable(), isTrue);
     });
 
-    test('attemptSilent returns noSession when adapter returns null',
-        () async {
+    test('attemptSilent returns noSession when adapter returns null', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.initialize(
@@ -42,8 +41,9 @@ void main() {
           nonce: any(named: 'nonce'),
         ),
       ).thenAnswer((_) async {});
-      when(adapter.attemptLightweightAuthentication)
-          .thenAnswer((_) async => null);
+      when(
+        adapter.attemptLightweightAuthentication,
+      ).thenAnswer((_) async => null);
 
       final provider = GoogleCredentialProvider(
         serverClientId: 'sc',
@@ -57,56 +57,61 @@ void main() {
       ).called(1);
     });
 
-    test('attemptSilent returns unavailable when account has no idToken',
-        () async {
-      final adapter = _MockAdapter();
-      when(
-        () => adapter.initialize(
-          serverClientId: any(named: 'serverClientId'),
-          nonce: any(named: 'nonce'),
-        ),
-      ).thenAnswer((_) async {});
-      when(adapter.attemptLightweightAuthentication)
-          .thenAnswer((_) async => _FakeGoogleAccount(idToken: null));
+    test(
+      'attemptSilent returns unavailable when account has no idToken',
+      () async {
+        final adapter = _MockAdapter();
+        when(
+          () => adapter.initialize(
+            serverClientId: any(named: 'serverClientId'),
+            nonce: any(named: 'nonce'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          adapter.attemptLightweightAuthentication,
+        ).thenAnswer((_) async => _FakeGoogleAccount(idToken: null));
 
-      final provider = GoogleCredentialProvider(
-        serverClientId: 'sc',
-        adapter: adapter,
-      );
-      final outcome = await provider.attemptSilent(nonce: 'n1');
+        final provider = GoogleCredentialProvider(
+          serverClientId: 'sc',
+          adapter: adapter,
+        );
+        final outcome = await provider.attemptSilent(nonce: 'n1');
 
-      expect(outcome, isA<ErrorOutcome>());
-      final e = outcome as ErrorOutcome;
-      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
-    });
+        expect(outcome, isA<ErrorOutcome>());
+        final e = outcome as ErrorOutcome;
+        expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
+      },
+    );
 
-    test('attemptSilent returns ok with autoSelected=true on account',
-        () async {
-      final adapter = _MockAdapter();
-      when(
-        () => adapter.initialize(
-          serverClientId: any(named: 'serverClientId'),
-          nonce: any(named: 'nonce'),
-        ),
-      ).thenAnswer((_) async {});
-      when(adapter.attemptLightweightAuthentication).thenAnswer(
-        (_) async => _FakeGoogleAccount(idToken: 'id.silent'),
-      );
+    test(
+      'attemptSilent returns ok with autoSelected=true on account',
+      () async {
+        final adapter = _MockAdapter();
+        when(
+          () => adapter.initialize(
+            serverClientId: any(named: 'serverClientId'),
+            nonce: any(named: 'nonce'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          adapter.attemptLightweightAuthentication,
+        ).thenAnswer((_) async => _FakeGoogleAccount(idToken: 'id.silent'));
 
-      final provider = GoogleCredentialProvider(
-        serverClientId: 'sc',
-        adapter: adapter,
-      );
-      final outcome = await provider.attemptSilent(nonce: 'n1');
+        final provider = GoogleCredentialProvider(
+          serverClientId: 'sc',
+          adapter: adapter,
+        );
+        final outcome = await provider.attemptSilent(nonce: 'n1');
 
-      expect(outcome, isA<Ok>());
-      final ok = outcome as Ok;
-      expect(ok.result.idToken, 'id.silent');
-      expect(ok.result.provider, NativeCredentialProviderKind.google);
-      expect(ok.result.nonce, 'n1');
-      expect(ok.result.autoSelected, isTrue);
-      expect(ok.result.authorizationCode, isNull);
-    });
+        expect(outcome, isA<Ok>());
+        final ok = outcome as Ok;
+        expect(ok.result.idToken, 'id.silent');
+        expect(ok.result.provider, NativeCredentialProviderKind.google);
+        expect(ok.result.nonce, 'n1');
+        expect(ok.result.autoSelected, isTrue);
+        expect(ok.result.authorizationCode, isNull);
+      },
+    );
 
     test('attemptInteractive returns ok with autoSelected=false', () async {
       final adapter = _MockAdapter();
@@ -118,9 +123,7 @@ void main() {
       ).thenAnswer((_) async {});
       when(
         () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
-      ).thenAnswer(
-        (_) async => _FakeGoogleAccount(idToken: 'id.interactive'),
-      );
+      ).thenAnswer((_) async => _FakeGoogleAccount(idToken: 'id.interactive'));
 
       final provider = GoogleCredentialProvider(
         serverClientId: 'sc',
@@ -133,8 +136,9 @@ void main() {
       expect(ok.result.idToken, 'id.interactive');
       expect(ok.result.autoSelected, isFalse);
       expect(ok.result.nonce, 'n2');
-      verify(() => adapter.initialize(serverClientId: 'sc', nonce: 'n2'))
-          .called(1);
+      verify(
+        () => adapter.initialize(serverClientId: 'sc', nonce: 'n2'),
+      ).called(1);
     });
 
     test('attemptInteractive maps canceled → cancelled()', () async {
@@ -162,8 +166,7 @@ void main() {
       expect(outcome, isA<Cancelled>());
     });
 
-    test('attemptInteractive maps other exceptions → exchangeFailed',
-        () async {
+    test('attemptInteractive maps other exceptions → exchangeFailed', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.initialize(
@@ -186,63 +189,65 @@ void main() {
     });
 
     test(
-        'attemptInteractive maps clientConfigurationError → unavailable',
-        () async {
-      final adapter = _MockAdapter();
-      when(
-        () => adapter.initialize(
-          serverClientId: any(named: 'serverClientId'),
-          nonce: any(named: 'nonce'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
-      ).thenThrow(
-        const GoogleSignInException(
-          code: GoogleSignInExceptionCode.clientConfigurationError,
-          description: 'bad client id',
-        ),
-      );
+      'attemptInteractive maps clientConfigurationError → unavailable',
+      () async {
+        final adapter = _MockAdapter();
+        when(
+          () => adapter.initialize(
+            serverClientId: any(named: 'serverClientId'),
+            nonce: any(named: 'nonce'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+        ).thenThrow(
+          const GoogleSignInException(
+            code: GoogleSignInExceptionCode.clientConfigurationError,
+            description: 'bad client id',
+          ),
+        );
 
-      final provider = GoogleCredentialProvider(
-        serverClientId: 'sc',
-        adapter: adapter,
-      );
-      final outcome = await provider.attemptInteractive(nonce: 'n');
-      expect(outcome, isA<ErrorOutcome>());
-      final e = outcome as ErrorOutcome;
-      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
-      expect(e.error.message, contains('clientConfigurationError'));
-    });
+        final provider = GoogleCredentialProvider(
+          serverClientId: 'sc',
+          adapter: adapter,
+        );
+        final outcome = await provider.attemptInteractive(nonce: 'n');
+        expect(outcome, isA<ErrorOutcome>());
+        final e = outcome as ErrorOutcome;
+        expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
+        expect(e.error.message, contains('clientConfigurationError'));
+      },
+    );
 
     test(
-        'attemptInteractive maps providerConfigurationError → unavailable',
-        () async {
-      final adapter = _MockAdapter();
-      when(
-        () => adapter.initialize(
-          serverClientId: any(named: 'serverClientId'),
-          nonce: any(named: 'nonce'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
-      ).thenThrow(
-        const GoogleSignInException(
-          code: GoogleSignInExceptionCode.providerConfigurationError,
-          description: 'sdk misconfigured',
-        ),
-      );
+      'attemptInteractive maps providerConfigurationError → unavailable',
+      () async {
+        final adapter = _MockAdapter();
+        when(
+          () => adapter.initialize(
+            serverClientId: any(named: 'serverClientId'),
+            nonce: any(named: 'nonce'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => adapter.authenticate(scopeHint: any(named: 'scopeHint')),
+        ).thenThrow(
+          const GoogleSignInException(
+            code: GoogleSignInExceptionCode.providerConfigurationError,
+            description: 'sdk misconfigured',
+          ),
+        );
 
-      final provider = GoogleCredentialProvider(
-        serverClientId: 'sc',
-        adapter: adapter,
-      );
-      final outcome = await provider.attemptInteractive(nonce: 'n');
-      expect(outcome, isA<ErrorOutcome>());
-      final e = outcome as ErrorOutcome;
-      expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
-    });
+        final provider = GoogleCredentialProvider(
+          serverClientId: 'sc',
+          adapter: adapter,
+        );
+        final outcome = await provider.attemptInteractive(nonce: 'n');
+        expect(outcome, isA<ErrorOutcome>());
+        final e = outcome as ErrorOutcome;
+        expect(e.error.code, AuthErrorCode.nativeCredentialUnavailable);
+      },
+    );
 
     test('attemptInteractive maps uiUnavailable → noSession', () async {
       final adapter = _MockAdapter();
@@ -323,8 +328,7 @@ void main() {
       expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
     });
 
-    test('attemptSilent maps canceled → noSession (not cancelled)',
-        () async {
+    test('attemptSilent maps canceled → noSession (not cancelled)', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.initialize(
@@ -347,9 +351,7 @@ void main() {
       expect(outcome, isA<NoSession>());
     });
 
-    test(
-        'attemptSilent maps clientConfigurationError → unavailable',
-        () async {
+    test('attemptSilent maps clientConfigurationError → unavailable', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.initialize(

@@ -11,21 +11,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-ResolvedConfig _cfg() => resolveConfig(const AuthConfig(
-      clientId: 'c',
-      idpBaseUrl: 'https://idp.example.com',
-      apiBaseUrl: 'https://api.example.com',
-      redirectScheme: 'com.example.app',
-    ));
+ResolvedConfig _cfg() => resolveConfig(
+  const AuthConfig(
+    clientId: 'c',
+    idpBaseUrl: 'https://idp.example.com',
+    apiBaseUrl: 'https://api.example.com',
+    redirectScheme: 'com.example.app',
+  ),
+);
 
 class _TestTokenProvider implements TokenProvider {
   _TestTokenProvider({
     String initialAccess = 'at-1',
     TokenType type = TokenType.bearer,
     String refreshedAccess = 'at-2',
-  })  : _access = initialAccess,
-        _type = type,
-        _refreshed = refreshedAccess;
+  }) : _access = initialAccess,
+       _type = type,
+       _refreshed = refreshedAccess;
 
   String _access;
   final TokenType _type;
@@ -57,8 +59,11 @@ void main() {
       late http.Request captured;
       final client = MockClient((req) async {
         captured = req;
-        return http.Response('{"ok":true}', 200,
-            headers: {'content-type': 'application/json'});
+        return http.Response(
+          '{"ok":true}',
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       });
       final kp = generateDpopKeyPair();
       final ctx = makeDpopContext(kp);
@@ -117,13 +122,7 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       final tp = _TestTokenProvider();
-      final res = await proxy.fetch(
-        cfg,
-        ctx,
-        tp,
-        path: '/v1/x',
-        method: 'GET',
-      );
+      final res = await proxy.fetch(cfg, ctx, tp, path: '/v1/x', method: 'GET');
       expect(res.status, 200);
       expect(calls, 2);
       expect(tp.forcedRefreshCount, 1);
@@ -136,8 +135,7 @@ void main() {
       final client = MockClient((req) async {
         calls++;
         if (calls == 1) {
-          return http.Response('{}', 401,
-              headers: {'dpop-nonce': 'n-new'});
+          return http.Response('{}', 401, headers: {'dpop-nonce': 'n-new'});
         }
         return http.Response('{"ok":true}', 200);
       });
@@ -145,13 +143,7 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       final tp = _TestTokenProvider(type: TokenType.dpop);
-      final res = await proxy.fetch(
-        cfg,
-        ctx,
-        tp,
-        path: '/v1/x',
-        method: 'GET',
-      );
+      final res = await proxy.fetch(cfg, ctx, tp, path: '/v1/x', method: 'GET');
       expect(res.status, 200);
       expect(tp.forcedRefreshCount, 0);
       expect(ctx.nonceByOrigin['https://api.example.com'], 'n-new');
@@ -181,10 +173,20 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       await expectLater(
-        proxy.fetch(cfg, ctx, _TestTokenProvider(),
-            path: '/v1/x', method: 'GET'),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.apiForbidden)),
+        proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: '/v1/x',
+          method: 'GET',
+        ),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.apiForbidden,
+          ),
+        ),
       );
     });
 
@@ -195,23 +197,40 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       await expectLater(
-        proxy.fetch(cfg, ctx, _TestTokenProvider(),
-            path: '/v1/x', method: 'GET'),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.apiNotFound)),
+        proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: '/v1/x',
+          method: 'GET',
+        ),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.apiNotFound,
+          ),
+        ),
       );
     });
 
     test('500 maps to apiServerError with trace id', () async {
       final cfg = _cfg();
-      final client = MockClient((req) async => http.Response('boom', 500,
-          headers: {'x-trace-id': 'trace-xyz'}));
+      final client = MockClient(
+        (req) async =>
+            http.Response('boom', 500, headers: {'x-trace-id': 'trace-xyz'}),
+      );
       final kp = generateDpopKeyPair();
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       try {
-        await proxy.fetch(cfg, ctx, _TestTokenProvider(),
-            path: '/v1/x', method: 'GET');
+        await proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: '/v1/x',
+          method: 'GET',
+        );
         fail('expected throw');
       } on AuthError catch (e) {
         expect(e.code, AuthErrorCode.apiServerError);
@@ -226,10 +245,20 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       await expectLater(
-        proxy.fetch(cfg, ctx, _TestTokenProvider(),
-            path: '/v1/x', method: 'GET'),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.apiUnauthorized)),
+        proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: '/v1/x',
+          method: 'GET',
+        ),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.apiUnauthorized,
+          ),
+        ),
       );
     });
 
@@ -243,12 +272,21 @@ void main() {
       final ctx = makeDpopContext(kp);
       final proxy = ApiProxy(client: client);
       await expectLater(
-        proxy.fetch(cfg, ctx, _TestTokenProvider(),
-            path: '/v1/x',
-            method: 'GET',
-            timeout: const Duration(milliseconds: 20)),
-        throwsA(isA<AuthError>()
-            .having((e) => e.code, 'code', AuthErrorCode.networkTimeout)),
+        proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: '/v1/x',
+          method: 'GET',
+          timeout: const Duration(milliseconds: 20),
+        ),
+        throwsA(
+          isA<AuthError>().having(
+            (e) => e.code,
+            'code',
+            AuthErrorCode.networkTimeout,
+          ),
+        ),
       );
     });
   });
@@ -286,28 +324,30 @@ void main() {
   });
 
   group('absolute URLs', () {
-    test('fetch with https:// URL hits it exactly and skips apiBaseUrl',
-        () async {
-      final cfg = _cfg();
-      late http.Request captured;
-      final client = MockClient((req) async {
-        captured = req;
-        return http.Response('{"ok":true}', 200);
-      });
-      final kp = generateDpopKeyPair();
-      final ctx = makeDpopContext(kp);
-      final proxy = ApiProxy(client: client);
-      await proxy.fetch(
-        cfg,
-        ctx,
-        _TestTokenProvider(),
-        path: 'https://other.example.com/api/foo',
-        method: 'GET',
-      );
-      expect(captured.url.toString(), 'https://other.example.com/api/foo');
-      // apiBaseUrl must not be prepended.
-      expect(captured.url.toString(), isNot(contains('api.example.com')));
-    });
+    test(
+      'fetch with https:// URL hits it exactly and skips apiBaseUrl',
+      () async {
+        final cfg = _cfg();
+        late http.Request captured;
+        final client = MockClient((req) async {
+          captured = req;
+          return http.Response('{"ok":true}', 200);
+        });
+        final kp = generateDpopKeyPair();
+        final ctx = makeDpopContext(kp);
+        final proxy = ApiProxy(client: client);
+        await proxy.fetch(
+          cfg,
+          ctx,
+          _TestTokenProvider(),
+          path: 'https://other.example.com/api/foo',
+          method: 'GET',
+        );
+        expect(captured.url.toString(), 'https://other.example.com/api/foo');
+        // apiBaseUrl must not be prepended.
+        expect(captured.url.toString(), isNot(contains('api.example.com')));
+      },
+    );
 
     test('fetch with http:// URL is used directly', () async {
       final cfg = _cfg();
@@ -354,10 +394,7 @@ void main() {
       late http.BaseRequest captured;
       final client = MockClient.streaming((req, body) async {
         captured = req;
-        return http.StreamedResponse(
-          Stream.value(utf8.encode('{}')),
-          200,
-        );
+        return http.StreamedResponse(Stream.value(utf8.encode('{}')), 200);
       });
       final kp = generateDpopKeyPair();
       final ctx = makeDpopContext(kp);

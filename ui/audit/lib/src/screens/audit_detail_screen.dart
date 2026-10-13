@@ -36,14 +36,16 @@ class AuditDetailScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: Theme.of(context).colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text('Failed to load entry: $error'),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () =>
-                  ref.invalidate(auditEntryByIdProvider(entryId)),
+              onPressed: () => ref.invalidate(auditEntryByIdProvider(entryId)),
               child: const Text('Retry'),
             ),
           ],
@@ -54,7 +56,10 @@ class AuditDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(
-      BuildContext context, WidgetRef ref, AuditEntryObject entry) {
+    BuildContext context,
+    WidgetRef ref,
+    AuditEntryObject entry,
+  ) {
     final theme = Theme.of(context);
     final surfaceColor = theme.colorScheme.surface;
     final borderColor = theme.colorScheme.outlineVariant;
@@ -88,30 +93,36 @@ class AuditDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Entry Information',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Entry Information',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 MetadataRow(label: 'ID', value: entry.id, copiable: true),
                 MetadataRow(
-                    label: 'Tenant ID',
-                    value: entry.tenantId,
-                    copiable: true),
+                  label: 'Tenant ID',
+                  value: entry.tenantId,
+                  copiable: true,
+                ),
                 MetadataRow(
-                    label: 'Partition ID',
-                    value: entry.partitionId,
-                    copiable: true),
+                  label: 'Partition ID',
+                  value: entry.partitionId,
+                  copiable: true,
+                ),
                 MetadataRow(label: 'Action', value: entry.action),
+                MetadataRow(label: 'Resource Type', value: entry.resourceType),
                 MetadataRow(
-                    label: 'Resource Type', value: entry.resourceType),
-                MetadataRow(
-                    label: 'Resource ID',
-                    value: entry.resourceId,
-                    copiable: true),
+                  label: 'Resource ID',
+                  value: entry.resourceId,
+                  copiable: true,
+                ),
                 MetadataRow(label: 'Service', value: entry.service),
                 MetadataRow(
-                    label: 'Timestamp',
-                    value: _formatTimestamp(entry.createdAt)),
+                  label: 'Timestamp',
+                  value: _formatTimestamp(entry.createdAt),
+                ),
               ],
             ),
           ),
@@ -128,9 +139,12 @@ class AuditDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Actor & Context',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Actor & Context',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 MetadataRow(
                   label: 'Actor Profile',
@@ -138,14 +152,16 @@ class AuditDetailScreen extends ConsumerWidget {
                   copiable: true,
                 ),
                 MetadataRow(
-                    label: 'IP Address',
-                    value: entry.ipAddress,
-                    copiable: true),
+                  label: 'IP Address',
+                  value: entry.ipAddress,
+                  copiable: true,
+                ),
                 MetadataRow(label: 'User Agent', value: entry.userAgent),
                 MetadataRow(
-                    label: 'Device ID',
-                    value: entry.deviceId,
-                    copiable: true),
+                  label: 'Device ID',
+                  value: entry.deviceId,
+                  copiable: true,
+                ),
                 if (entry.targetProfileId.isNotEmpty)
                   MetadataRow(
                     label: 'Target Profile',
@@ -175,9 +191,12 @@ class AuditDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Details',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Details',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ...entry.details.fields.entries.map((e) {
                     final value = _formatStructValue(e.value);
@@ -202,24 +221,29 @@ class AuditDetailScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.link, size: 20, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.link,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Hash Chain Integrity',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Hash Chain Integrity',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _HashField(
-                    label: 'Previous Hash', value: entry.previousHash),
+                _HashField(label: 'Previous Hash', value: entry.previousHash),
                 const SizedBox(height: 8),
                 _HashField(label: 'Entry Hash', value: entry.entryHash),
                 const SizedBox(height: 8),
                 _HashField(label: 'Signature', value: entry.signature),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
-                  onPressed: () =>
-                      context.go('/services/audit/integrity'),
+                  onPressed: () => context.go('/services/audit/integrity'),
                   icon: const Icon(Icons.verified_outlined, size: 18),
                   label: const Text('Verify Chain Integrity'),
                 ),
@@ -237,10 +261,7 @@ class AuditDetailScreen extends ConsumerWidget {
     if (value.hasBoolValue()) return value.boolValue.toString();
     if (value.hasNullValue()) return 'null';
     if (value.hasListValue()) {
-      return value.listValue.values
-          .map(_formatStructValue)
-          .toList()
-          .toString();
+      return value.listValue.values.map(_formatStructValue).toList().toString();
     }
     if (value.hasStructValue()) {
       return value.structValue.fields.entries
@@ -265,8 +286,9 @@ class _HashField extends StatelessWidget {
       return MetadataRow(label: label, value: '-');
     }
 
-    final truncated =
-        value.length > 16 ? '${value.substring(0, 16)}...' : value;
+    final truncated = value.length > 16
+        ? '${value.substring(0, 16)}...'
+        : value;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

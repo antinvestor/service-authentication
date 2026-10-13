@@ -14,9 +14,9 @@ class FakeAuthRuntime implements AuthRuntime {
     AuthState initialState = AuthState.unauthenticated,
     Map<String, dynamic>? claims,
     List<String>? roles,
-  })  : _state = initialState,
-        _claims = claims ?? const <String, dynamic>{},
-        _roles = roles ?? const <String>[];
+  }) : _state = initialState,
+       _claims = claims ?? const <String, dynamic>{},
+       _roles = roles ?? const <String>[];
 
   final StreamController<AuthState> _stateCtl =
       StreamController<AuthState>.broadcast();

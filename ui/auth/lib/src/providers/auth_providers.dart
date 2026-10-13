@@ -47,15 +47,15 @@ class LoginEventListParams {
 
   @override
   int get hashCode => Object.hash(
-        profileId,
-        clientId,
-        source,
-        deviceId,
-        startDate,
-        endDate,
-        count,
-        page,
-      );
+    profileId,
+    clientId,
+    source,
+    deviceId,
+    startDate,
+    endDate,
+    count,
+    page,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -73,8 +73,10 @@ Timestamp _toTimestamp(DateTime dt) {
 // ---------------------------------------------------------------------------
 
 /// Fetch a single login event by ID.
-final loginEventByIdProvider =
-    FutureProvider.family<LoginEventObject, String>((ref, id) async {
+final loginEventByIdProvider = FutureProvider.family<LoginEventObject, String>((
+  ref,
+  id,
+) async {
   final client = ref.watch(authServiceClientProvider);
   final response = await client.getLoginEvent(GetLoginEventRequest(id: id));
   return response.data;
@@ -82,26 +84,28 @@ final loginEventByIdProvider =
 
 /// List login events with filters. Collects the server stream into a list.
 final loginEventsProvider =
-    FutureProvider.family<List<LoginEventObject>, LoginEventListParams>(
-        (ref, params) async {
-  final client = ref.watch(authServiceClientProvider);
+    FutureProvider.family<List<LoginEventObject>, LoginEventListParams>((
+      ref,
+      params,
+    ) async {
+      final client = ref.watch(authServiceClientProvider);
 
-  final request = ListLoginEventsRequest(count: params.count);
-  if (params.profileId.isNotEmpty) request.profileId = params.profileId;
-  if (params.clientId.isNotEmpty) request.clientId = params.clientId;
-  if (params.source.isNotEmpty) request.source = params.source;
-  if (params.deviceId.isNotEmpty) request.deviceId = params.deviceId;
-  if (params.startDate != null) {
-    request.startDate = _toTimestamp(params.startDate!);
-  }
-  if (params.endDate != null) {
-    request.endDate = _toTimestamp(params.endDate!);
-  }
-  if (params.page.isNotEmpty) request.page = params.page;
+      final request = ListLoginEventsRequest(count: params.count);
+      if (params.profileId.isNotEmpty) request.profileId = params.profileId;
+      if (params.clientId.isNotEmpty) request.clientId = params.clientId;
+      if (params.source.isNotEmpty) request.source = params.source;
+      if (params.deviceId.isNotEmpty) request.deviceId = params.deviceId;
+      if (params.startDate != null) {
+        request.startDate = _toTimestamp(params.startDate!);
+      }
+      if (params.endDate != null) {
+        request.endDate = _toTimestamp(params.endDate!);
+      }
+      if (params.page.isNotEmpty) request.page = params.page;
 
-  final stream = client.listLoginEvents(request);
-  return collectStream<ListLoginEventsResponse, LoginEventObject>(
-    stream,
-    extract: (r) => r.data,
-  );
-});
+      final stream = client.listLoginEvents(request);
+      return collectStream<ListLoginEventsResponse, LoginEventObject>(
+        stream,
+        extract: (r) => r.data,
+      );
+    });

@@ -56,18 +56,18 @@ class AuditListParams {
 
   @override
   int get hashCode => Object.hash(
-        profileId,
-        action,
-        resourceType,
-        resourceId,
-        service,
-        targetProfileId,
-        deviceId,
-        startDate,
-        endDate,
-        count,
-        page,
-      );
+    profileId,
+    action,
+    resourceType,
+    resourceId,
+    service,
+    targetProfileId,
+    deviceId,
+    startDate,
+    endDate,
+    count,
+    page,
+  );
 }
 
 /// Parameters for free-text search across audit entries.
@@ -134,8 +134,10 @@ Timestamp _toTimestamp(DateTime dt) {
 // ---------------------------------------------------------------------------
 
 /// Fetch a single audit entry by ID.
-final auditEntryByIdProvider =
-    FutureProvider.family<AuditEntryObject, String>((ref, id) async {
+final auditEntryByIdProvider = FutureProvider.family<AuditEntryObject, String>((
+  ref,
+  id,
+) async {
   final client = ref.watch(auditServiceClientProvider);
   final response = await client.getAuditEntry(GetAuditEntryRequest(id: id));
   return response.data;
@@ -143,73 +145,79 @@ final auditEntryByIdProvider =
 
 /// List audit entries with filters. Collects the server stream into a list.
 final auditEntriesProvider =
-    FutureProvider.family<List<AuditEntryObject>, AuditListParams>(
-        (ref, params) async {
-  final client = ref.watch(auditServiceClientProvider);
+    FutureProvider.family<List<AuditEntryObject>, AuditListParams>((
+      ref,
+      params,
+    ) async {
+      final client = ref.watch(auditServiceClientProvider);
 
-  final request = ListAuditEntriesRequest(count: params.count);
-  if (params.profileId.isNotEmpty) request.profileId = params.profileId;
-  if (params.action.isNotEmpty) request.action = params.action;
-  if (params.resourceType.isNotEmpty) {
-    request.resourceType = params.resourceType;
-  }
-  if (params.resourceId.isNotEmpty) request.resourceId = params.resourceId;
-  if (params.service.isNotEmpty) request.service = params.service;
-  if (params.targetProfileId.isNotEmpty) {
-    request.targetProfileId = params.targetProfileId;
-  }
-  if (params.deviceId.isNotEmpty) request.deviceId = params.deviceId;
-  if (params.startDate != null) {
-    request.startDate = _toTimestamp(params.startDate!);
-  }
-  if (params.endDate != null) {
-    request.endDate = _toTimestamp(params.endDate!);
-  }
-  if (params.page.isNotEmpty) request.page = params.page;
+      final request = ListAuditEntriesRequest(count: params.count);
+      if (params.profileId.isNotEmpty) request.profileId = params.profileId;
+      if (params.action.isNotEmpty) request.action = params.action;
+      if (params.resourceType.isNotEmpty) {
+        request.resourceType = params.resourceType;
+      }
+      if (params.resourceId.isNotEmpty) request.resourceId = params.resourceId;
+      if (params.service.isNotEmpty) request.service = params.service;
+      if (params.targetProfileId.isNotEmpty) {
+        request.targetProfileId = params.targetProfileId;
+      }
+      if (params.deviceId.isNotEmpty) request.deviceId = params.deviceId;
+      if (params.startDate != null) {
+        request.startDate = _toTimestamp(params.startDate!);
+      }
+      if (params.endDate != null) {
+        request.endDate = _toTimestamp(params.endDate!);
+      }
+      if (params.page.isNotEmpty) request.page = params.page;
 
-  final stream = client.listAuditEntries(request);
-  return collectStream<ListAuditEntriesResponse, AuditEntryObject>(
-    stream,
-    extract: (r) => r.data,
-  );
-});
+      final stream = client.listAuditEntries(request);
+      return collectStream<ListAuditEntriesResponse, AuditEntryObject>(
+        stream,
+        extract: (r) => r.data,
+      );
+    });
 
 /// Search audit entries with free-text query. Collects server stream.
 final auditSearchProvider =
-    FutureProvider.family<List<AuditEntryObject>, AuditSearchParams>(
-        (ref, params) async {
-  final client = ref.watch(auditServiceClientProvider);
+    FutureProvider.family<List<AuditEntryObject>, AuditSearchParams>((
+      ref,
+      params,
+    ) async {
+      final client = ref.watch(auditServiceClientProvider);
 
-  final request = SearchAuditEntriesRequest(
-    query: params.query,
-    count: params.count,
-  );
-  if (params.startDate != null) {
-    request.startDate = _toTimestamp(params.startDate!);
-  }
-  if (params.endDate != null) {
-    request.endDate = _toTimestamp(params.endDate!);
-  }
-  if (params.page.isNotEmpty) request.page = params.page;
+      final request = SearchAuditEntriesRequest(
+        query: params.query,
+        count: params.count,
+      );
+      if (params.startDate != null) {
+        request.startDate = _toTimestamp(params.startDate!);
+      }
+      if (params.endDate != null) {
+        request.endDate = _toTimestamp(params.endDate!);
+      }
+      if (params.page.isNotEmpty) request.page = params.page;
 
-  final stream = client.searchAuditEntries(request);
-  return collectStream<SearchAuditEntriesResponse, AuditEntryObject>(
-    stream,
-    extract: (r) => r.data,
-  );
-});
+      final stream = client.searchAuditEntries(request);
+      return collectStream<SearchAuditEntriesResponse, AuditEntryObject>(
+        stream,
+        extract: (r) => r.data,
+      );
+    });
 
 /// Verify hash chain integrity over a date range.
 final verifyIntegrityProvider =
-    FutureProvider.family<VerifyIntegrityResponse, DateRange>(
-        (ref, range) async {
-  final client = ref.watch(auditServiceClientProvider);
-  final request = VerifyIntegrityRequest(
-    startDate: _toTimestamp(range.start),
-    endDate: _toTimestamp(range.end),
-  );
-  return client.verifyIntegrity(request);
-});
+    FutureProvider.family<VerifyIntegrityResponse, DateRange>((
+      ref,
+      range,
+    ) async {
+      final client = ref.watch(auditServiceClientProvider);
+      final request = VerifyIntegrityRequest(
+        startDate: _toTimestamp(range.start),
+        endDate: _toTimestamp(range.end),
+      );
+      return client.verifyIntegrity(request);
+    });
 
 // ---------------------------------------------------------------------------
 // AuditNotifier — create / batch-create mutations
@@ -255,5 +263,6 @@ class AuditNotifier extends Notifier<void> {
   }
 }
 
-final auditNotifierProvider =
-    NotifierProvider<AuditNotifier, void>(AuditNotifier.new);
+final auditNotifierProvider = NotifierProvider<AuditNotifier, void>(
+  AuditNotifier.new,
+);

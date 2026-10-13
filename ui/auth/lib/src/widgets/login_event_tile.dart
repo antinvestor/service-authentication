@@ -21,13 +21,13 @@ class LoginEventTile extends StatelessWidget {
   final bool showDevice;
 
   static IconData iconForSource(String source) => switch (source) {
-        'direct' => Icons.email_outlined,
-        'google' => Icons.g_mobiledata,
-        'facebook' => Icons.facebook_outlined,
-        'service_account' => Icons.smart_toy_outlined,
-        'session_refresh' => Icons.refresh,
-        _ => Icons.login,
-      };
+    'direct' => Icons.email_outlined,
+    'google' => Icons.g_mobiledata,
+    'facebook' => Icons.facebook_outlined,
+    'service_account' => Icons.smart_toy_outlined,
+    'session_refresh' => Icons.refresh,
+    _ => Icons.login,
+  };
 
   static Color colorForSource(String source, ThemeData theme) =>
       switch (source) {
@@ -40,13 +40,13 @@ class LoginEventTile extends StatelessWidget {
       };
 
   static String labelForSource(String source) => switch (source) {
-        'direct' => 'Email/Phone',
-        'google' => 'Google',
-        'facebook' => 'Facebook',
-        'service_account' => 'Service Account',
-        'session_refresh' => 'Token Refresh',
-        _ => 'Sign In',
-      };
+    'direct' => 'Email/Phone',
+    'google' => 'Google',
+    'facebook' => 'Facebook',
+    'service_account' => 'Service Account',
+    'session_refresh' => 'Token Refresh',
+    _ => 'Sign In',
+  };
 
   String _formatRelativeTime(Timestamp ts) {
     if (!ts.hasSeconds()) return '-';
@@ -100,10 +100,11 @@ class LoginEventTile extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: (dense
-                                ? theme.textTheme.bodySmall
-                                : theme.textTheme.bodyMedium)
-                            ?.copyWith(fontWeight: FontWeight.w500),
+                        style:
+                            (dense
+                                    ? theme.textTheme.bodySmall
+                                    : theme.textTheme.bodyMedium)
+                                ?.copyWith(fontWeight: FontWeight.w500),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -111,7 +112,9 @@ class LoginEventTile extends StatelessWidget {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 1),
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.errorContainer,
                             borderRadius: BorderRadius.circular(4),
@@ -130,8 +133,9 @@ class LoginEventTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '$ipLabel \u00b7 ${_formatRelativeTime(event.createdAt)}',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: mutedColor),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: mutedColor,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -141,15 +145,16 @@ class LoginEventTile extends StatelessWidget {
             if (showDevice && event.deviceId.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   event.deviceId.substring(
-                      0, event.deviceId.length.clamp(0, 8)),
+                    0,
+                    event.deviceId.length.clamp(0, 8),
+                  ),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSecondaryContainer,
                     fontSize: 10,

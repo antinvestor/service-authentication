@@ -35,8 +35,9 @@ void main() {
       // 404 from the mock is fine; the refresh ran *before* the API call.
     }
 
-    final refreshCalls =
-        h.mock.tokenRequests.where((r) => r.grantType == 'refresh_token');
+    final refreshCalls = h.mock.tokenRequests.where(
+      (r) => r.grantType == 'refresh_token',
+    );
     expect(refreshCalls, hasLength(1));
     // The presented RT is the original rt-1; the mock has consumed it and
     // issued rt-2.
@@ -52,7 +53,9 @@ void main() {
     for (var i = 0; i < 2; i++) {
       try {
         await h.runtime.fetch('/ping');
-      } catch (_) {/* 404 ok */}
+      } catch (_) {
+        /* 404 ok */
+      }
     }
 
     final refreshCalls = h.mock.tokenRequests

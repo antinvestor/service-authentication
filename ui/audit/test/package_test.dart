@@ -24,10 +24,7 @@ void main() {
   test('AuditRouteModule has route permissions', () {
     final module = AuditRouteModule();
     expect(module.routePermissions, isNotEmpty);
-    expect(
-      module.routePermissions['/services/audit'],
-      contains('audit_view'),
-    );
+    expect(module.routePermissions['/services/audit'], contains('audit_view'));
     expect(
       module.routePermissions['/services/audit/integrity'],
       contains('audit_verify'),

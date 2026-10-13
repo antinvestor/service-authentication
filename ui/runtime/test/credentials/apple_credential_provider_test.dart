@@ -68,53 +68,54 @@ void main() {
       );
     });
 
-    test('attemptInteractive passes SHA-256 hex of nonce and wraps result',
-        () async {
-      const nonce = 'raw-nonce-xyz';
-      final expectedHash = sha256.convert(utf8.encode(nonce)).toString();
+    test(
+      'attemptInteractive passes SHA-256 hex of nonce and wraps result',
+      () async {
+        const nonce = 'raw-nonce-xyz';
+        final expectedHash = sha256.convert(utf8.encode(nonce)).toString();
 
-      final adapter = _MockAdapter();
-      when(
-        () => adapter.getAppleIDCredential(
-          scopes: any(named: 'scopes'),
-          nonce: any(named: 'nonce'),
-        ),
-      ).thenAnswer(
-        (_) async => _FakeCredential(
-          identityToken: 'id.token',
-          authorizationCode: 'code-abc',
-        ),
-      );
+        final adapter = _MockAdapter();
+        when(
+          () => adapter.getAppleIDCredential(
+            scopes: any(named: 'scopes'),
+            nonce: any(named: 'nonce'),
+          ),
+        ).thenAnswer(
+          (_) async => _FakeCredential(
+            identityToken: 'id.token',
+            authorizationCode: 'code-abc',
+          ),
+        );
 
-      final provider = AppleCredentialProvider(adapter: adapter);
-      final outcome = await provider.attemptInteractive(nonce: nonce);
+        final provider = AppleCredentialProvider(adapter: adapter);
+        final outcome = await provider.attemptInteractive(nonce: nonce);
 
-      expect(outcome, isA<Ok>());
-      final ok = outcome as Ok;
-      expect(ok.result.provider, NativeCredentialProviderKind.apple);
-      expect(ok.result.idToken, 'id.token');
-      expect(ok.result.authorizationCode, 'code-abc');
-      expect(ok.result.nonce, nonce);
-      expect(ok.result.autoSelected, isFalse);
+        expect(outcome, isA<Ok>());
+        final ok = outcome as Ok;
+        expect(ok.result.provider, NativeCredentialProviderKind.apple);
+        expect(ok.result.idToken, 'id.token');
+        expect(ok.result.authorizationCode, 'code-abc');
+        expect(ok.result.nonce, nonce);
+        expect(ok.result.autoSelected, isFalse);
 
-      final captured = verify(
-        () => adapter.getAppleIDCredential(
-          scopes: captureAny(named: 'scopes'),
-          nonce: captureAny(named: 'nonce'),
-        ),
-      ).captured;
-      final capturedScopes =
-          captured[0] as List<AppleIDAuthorizationScopes>;
-      final capturedNonce = captured[1] as String?;
-      expect(
-        capturedScopes,
-        containsAll(<AppleIDAuthorizationScopes>[
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ]),
-      );
-      expect(capturedNonce, expectedHash);
-    });
+        final captured = verify(
+          () => adapter.getAppleIDCredential(
+            scopes: captureAny(named: 'scopes'),
+            nonce: captureAny(named: 'nonce'),
+          ),
+        ).captured;
+        final capturedScopes = captured[0] as List<AppleIDAuthorizationScopes>;
+        final capturedNonce = captured[1] as String?;
+        expect(
+          capturedScopes,
+          containsAll(<AppleIDAuthorizationScopes>[
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ]),
+        );
+        expect(capturedNonce, expectedHash);
+      },
+    );
 
     test('attemptInteractive with null identityToken returns error', () async {
       final adapter = _MockAdapter();
@@ -124,10 +125,8 @@ void main() {
           nonce: any(named: 'nonce'),
         ),
       ).thenAnswer(
-        (_) async => _FakeCredential(
-          identityToken: null,
-          authorizationCode: 'code-abc',
-        ),
+        (_) async =>
+            _FakeCredential(identityToken: null, authorizationCode: 'code-abc'),
       );
 
       final provider = AppleCredentialProvider(adapter: adapter);
@@ -222,8 +221,7 @@ void main() {
       expect(e.error.message, contains('failed'));
     });
 
-    test('attemptInteractive maps invalidResponse → exchangeFailed',
-        () async {
+    test('attemptInteractive maps invalidResponse → exchangeFailed', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.getAppleIDCredential(
@@ -244,8 +242,7 @@ void main() {
       expect(e.error.code, AuthErrorCode.nativeCredentialExchangeFailed);
     });
 
-    test('attemptInteractive maps other exceptions → exchangeFailed',
-        () async {
+    test('attemptInteractive maps other exceptions → exchangeFailed', () async {
       final adapter = _MockAdapter();
       when(
         () => adapter.getAppleIDCredential(
