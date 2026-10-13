@@ -1,10 +1,14 @@
 name: Publish UI Flutter package to pub.dev
 
 # ui/<package>/v<version> publishes ui/<package> through the shared
-# antinvestor/common flutter-publish workflow (setup-dart OIDC token plus
-# the Flutter SDK). auto-tag-packages.yaml dispatches this workflow on the
-# tag it pushed, because a tag pushed with GITHUB_TOKEN does not trigger
-# the push event.
+# antinvestor/common flutter-publish workflow, pinned to a commit SHA
+# because it runs with this repository's pub.dev OIDC token.
+#
+# workflow_dispatch exists only for auto-tag-packages.yaml, which runs
+# 'gh workflow run ui-publish.yaml --ref <tag>' (a tag pushed with
+# GITHUB_TOKEN does not trigger the push event). flutter-publish refuses
+# any ref that is not a ui/*/v* tag on a commit that is on main, so a
+# dispatch on a branch cannot publish.
 
 on:
   push:
@@ -12,9 +16,12 @@ on:
       - 'ui/*/v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     permissions:
       contents: read
       id-token: write
-    uses: antinvestor/common/.github/workflows/flutter-publish.yml@main
+    uses: antinvestor/common/.github/workflows/flutter-publish.yml@d79a96209852078748f0e94ab877f7e012493896 # antinvestor/common#45
