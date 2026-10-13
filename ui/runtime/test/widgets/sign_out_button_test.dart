@@ -8,7 +8,9 @@ import '../support/fake_auth_runtime.dart';
 Widget _wrap(FakeAuthRuntime fake, {required Widget child}) {
   return ProviderScope(
     overrides: [authRuntimeProvider.overrideWithValue(fake)],
-    child: MaterialApp(home: Scaffold(body: Center(child: child))),
+    child: MaterialApp(
+      home: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 
@@ -24,10 +26,9 @@ void main() {
     final fake = FakeAuthRuntime(initialState: AuthState.authenticated);
     addTearDown(fake.dispose);
     var done = 0;
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: SignOutButton(onSignedOut: () => done++),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: SignOutButton(onSignedOut: () => done++)),
+    );
     await tester.tap(find.byType(TextButton));
     await tester.pumpAndSettle();
     expect(fake.logoutCalls, 1);
@@ -37,10 +38,9 @@ void main() {
   testWidgets('custom label is honoured', (tester) async {
     final fake = FakeAuthRuntime();
     addTearDown(fake.dispose);
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: const SignOutButton(label: 'Log out'),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: const SignOutButton(label: 'Log out')),
+    );
     expect(find.text('Log out'), findsOneWidget);
   });
 }

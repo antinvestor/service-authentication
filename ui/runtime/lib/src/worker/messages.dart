@@ -31,8 +31,9 @@ sealed class WorkerRequest {
       'init' => InitRequest._fromMap(map),
       'prepareAuth' => PrepareAuthRequest._fromMap(map),
       'completeAuth' => CompleteAuthRequest._fromMap(map),
-      'completeNativeCredential' =>
-        CompleteNativeCredentialRequest._fromMap(map),
+      'completeNativeCredential' => CompleteNativeCredentialRequest._fromMap(
+        map,
+      ),
       'fetch' => FetchRequest._fromMap(map),
       'upload' => UploadRequest._fromMap(map),
       'getRoles' => GetRolesRequest._fromMap(map),
@@ -58,8 +59,10 @@ final class PrepareAuthRequest extends WorkerRequest {
   const PrepareAuthRequest({required super.correlationId});
 
   @override
-  Map<String, Object?> toMap() =>
-      {_kind: 'prepareAuth', _corrId: correlationId};
+  Map<String, Object?> toMap() => {
+    _kind: 'prepareAuth',
+    _corrId: correlationId,
+  };
 
   factory PrepareAuthRequest._fromMap(Map<String, Object?> map) =>
       PrepareAuthRequest(correlationId: map[_corrId] as String);
@@ -81,13 +84,13 @@ final class CompleteAuthRequest extends WorkerRequest {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'completeAuth',
-        _corrId: correlationId,
-        'code': code,
-        'verifier': verifier,
-        'state': state,
-        'nonce': nonce,
-      };
+    _kind: 'completeAuth',
+    _corrId: correlationId,
+    'code': code,
+    'verifier': verifier,
+    'state': state,
+    'nonce': nonce,
+  };
 
   factory CompleteAuthRequest._fromMap(Map<String, Object?> map) =>
       CompleteAuthRequest(
@@ -118,24 +121,24 @@ final class CompleteNativeCredentialRequest extends WorkerRequest {
   final String expectedNonce;
 
   NativeCredentialResult toResult() => NativeCredentialResult(
-        provider: provider,
-        idToken: idToken,
-        autoSelected: autoSelected,
-        authorizationCode: authorizationCode,
-        nonce: nonce,
-      );
+    provider: provider,
+    idToken: idToken,
+    autoSelected: autoSelected,
+    authorizationCode: authorizationCode,
+    nonce: nonce,
+  );
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'completeNativeCredential',
-        _corrId: correlationId,
-        'provider': provider.name,
-        'idToken': idToken,
-        'autoSelected': autoSelected,
-        'expectedNonce': expectedNonce,
-        if (authorizationCode != null) 'authorizationCode': authorizationCode,
-        if (nonce != null) 'nonce': nonce,
-      };
+    _kind: 'completeNativeCredential',
+    _corrId: correlationId,
+    'provider': provider.name,
+    'idToken': idToken,
+    'autoSelected': autoSelected,
+    'expectedNonce': expectedNonce,
+    if (authorizationCode != null) 'authorizationCode': authorizationCode,
+    if (nonce != null) 'nonce': nonce,
+  };
 
   factory CompleteNativeCredentialRequest._fromMap(Map<String, Object?> map) {
     final name = map['provider'] as String;
@@ -175,23 +178,23 @@ final class FetchRequest extends WorkerRequest {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'fetch',
-        _corrId: correlationId,
-        'path': path,
-        'method': method,
-        if (headers != null) 'headers': headers,
-        if (body != null) 'body': body,
-        if (timeoutMs != null) 'timeoutMs': timeoutMs,
-      };
+    _kind: 'fetch',
+    _corrId: correlationId,
+    'path': path,
+    'method': method,
+    if (headers != null) 'headers': headers,
+    if (body != null) 'body': body,
+    if (timeoutMs != null) 'timeoutMs': timeoutMs,
+  };
 
   factory FetchRequest._fromMap(Map<String, Object?> map) => FetchRequest(
-        correlationId: map[_corrId] as String,
-        path: map['path'] as String,
-        method: map['method'] as String,
-        headers: _mapOfString(map['headers']),
-        body: map['body'] as String?,
-        timeoutMs: map['timeoutMs'] as int?,
-      );
+    correlationId: map[_corrId] as String,
+    path: map['path'] as String,
+    method: map['method'] as String,
+    headers: _mapOfString(map['headers']),
+    body: map['body'] as String?,
+    timeoutMs: map['timeoutMs'] as int?,
+  );
 }
 
 final class UploadRequest extends WorkerRequest {
@@ -219,35 +222,34 @@ final class UploadRequest extends WorkerRequest {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'upload',
-        _corrId: correlationId,
-        'path': path,
-        'fieldName': fieldName,
-        'filename': filename,
-        'contentType': contentType,
-        'bytes': bytes,
-        if (headers != null) 'headers': headers,
-        if (timeoutMs != null) 'timeoutMs': timeoutMs,
-      };
+    _kind: 'upload',
+    _corrId: correlationId,
+    'path': path,
+    'fieldName': fieldName,
+    'filename': filename,
+    'contentType': contentType,
+    'bytes': bytes,
+    if (headers != null) 'headers': headers,
+    if (timeoutMs != null) 'timeoutMs': timeoutMs,
+  };
 
   factory UploadRequest._fromMap(Map<String, Object?> map) => UploadRequest(
-        correlationId: map[_corrId] as String,
-        path: map['path'] as String,
-        fieldName: map['fieldName'] as String,
-        filename: map['filename'] as String,
-        contentType: map['contentType'] as String,
-        bytes: _asBytes(map['bytes']),
-        headers: _mapOfString(map['headers']),
-        timeoutMs: map['timeoutMs'] as int?,
-      );
+    correlationId: map[_corrId] as String,
+    path: map['path'] as String,
+    fieldName: map['fieldName'] as String,
+    filename: map['filename'] as String,
+    contentType: map['contentType'] as String,
+    bytes: _asBytes(map['bytes']),
+    headers: _mapOfString(map['headers']),
+    timeoutMs: map['timeoutMs'] as int?,
+  );
 }
 
 final class GetRolesRequest extends WorkerRequest {
   const GetRolesRequest({required super.correlationId});
 
   @override
-  Map<String, Object?> toMap() =>
-      {_kind: 'getRoles', _corrId: correlationId};
+  Map<String, Object?> toMap() => {_kind: 'getRoles', _corrId: correlationId};
 
   factory GetRolesRequest._fromMap(Map<String, Object?> map) =>
       GetRolesRequest(correlationId: map[_corrId] as String);
@@ -257,8 +259,7 @@ final class GetClaimsRequest extends WorkerRequest {
   const GetClaimsRequest({required super.correlationId});
 
   @override
-  Map<String, Object?> toMap() =>
-      {_kind: 'getClaims', _corrId: correlationId};
+  Map<String, Object?> toMap() => {_kind: 'getClaims', _corrId: correlationId};
 
   factory GetClaimsRequest._fromMap(Map<String, Object?> map) =>
       GetClaimsRequest(correlationId: map[_corrId] as String);
@@ -278,8 +279,7 @@ final class DestroyRequest extends WorkerRequest {
   const DestroyRequest({required super.correlationId});
 
   @override
-  Map<String, Object?> toMap() =>
-      {_kind: 'destroy', _corrId: correlationId};
+  Map<String, Object?> toMap() => {_kind: 'destroy', _corrId: correlationId};
 
   factory DestroyRequest._fromMap(Map<String, Object?> map) =>
       DestroyRequest(correlationId: map[_corrId] as String);
@@ -304,8 +304,9 @@ sealed class WorkerEvent {
       'response' => ResponseEvent._fromMap(map),
       'error' => ErrorEvent._fromMap(map),
       'ok' => OkEvent._fromMap(map),
-      'completeNativeCredentialOk' =>
-        CompleteNativeCredentialOkEvent._fromMap(map),
+      'completeNativeCredentialOk' => CompleteNativeCredentialOkEvent._fromMap(
+        map,
+      ),
       'roles' => RolesEvent._fromMap(map),
       'claims' => ClaimsEvent._fromMap(map),
       'securityEvent' => SecurityEventWire._fromMap(map),
@@ -331,15 +332,15 @@ final class StateEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'state',
-        _corrId: correlationId,
-        'state': state.name,
-      };
+    _kind: 'state',
+    _corrId: correlationId,
+    'state': state.name,
+  };
 
   factory StateEvent._fromMap(Map<String, Object?> map) => StateEvent(
-        state: AuthState.values.firstWhere((s) => s.name == map['state']),
-        correlationId: map[_corrId] as String?,
-      );
+    state: AuthState.values.firstWhere((s) => s.name == map['state']),
+    correlationId: map[_corrId] as String?,
+  );
 }
 
 final class AuthUrlEvent extends WorkerEvent {
@@ -358,21 +359,21 @@ final class AuthUrlEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'authUrl',
-        _corrId: correlationId,
-        'url': url,
-        'verifier': verifier,
-        'state': state,
-        'nonce': nonce,
-      };
+    _kind: 'authUrl',
+    _corrId: correlationId,
+    'url': url,
+    'verifier': verifier,
+    'state': state,
+    'nonce': nonce,
+  };
 
   factory AuthUrlEvent._fromMap(Map<String, Object?> map) => AuthUrlEvent(
-        correlationId: map[_corrId] as String?,
-        url: map['url'] as String,
-        verifier: map['verifier'] as String,
-        state: map['state'] as String,
-        nonce: map['nonce'] as String,
-      );
+    correlationId: map[_corrId] as String?,
+    url: map['url'] as String,
+    verifier: map['verifier'] as String,
+    state: map['state'] as String,
+    nonce: map['nonce'] as String,
+  );
 }
 
 final class ResponseEvent extends WorkerEvent {
@@ -382,21 +383,21 @@ final class ResponseEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'response',
-        _corrId: correlationId,
-        'status': response.status,
-        'headers': response.headers,
-        'body': response.body,
-      };
+    _kind: 'response',
+    _corrId: correlationId,
+    'status': response.status,
+    'headers': response.headers,
+    'body': response.body,
+  };
 
   factory ResponseEvent._fromMap(Map<String, Object?> map) => ResponseEvent(
-        correlationId: map[_corrId] as String?,
-        response: ApiResponse(
-          status: map['status'] as int,
-          headers: _mapOfString(map['headers']) ?? const {},
-          body: _asBytes(map['body']),
-        ),
-      );
+    correlationId: map[_corrId] as String?,
+    response: ApiResponse(
+      status: map['status'] as int,
+      headers: _mapOfString(map['headers']) ?? const {},
+      body: _asBytes(map['body']),
+    ),
+  );
 }
 
 final class ErrorEvent extends WorkerEvent {
@@ -413,24 +414,23 @@ final class ErrorEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'error',
-        _corrId: correlationId,
-        'code': code.name,
-        'message': message,
-        if (traceId != null) 'traceId': traceId,
-      };
+    _kind: 'error',
+    _corrId: correlationId,
+    'code': code.name,
+    'message': message,
+    if (traceId != null) 'traceId': traceId,
+  };
 
   factory ErrorEvent._fromMap(Map<String, Object?> map) => ErrorEvent(
-        correlationId: map[_corrId] as String?,
-        code: AuthErrorCode.values.firstWhere((c) => c.name == map['code']),
-        message: map['message'] as String,
-        traceId: map['traceId'] as String?,
-      );
+    correlationId: map[_corrId] as String?,
+    code: AuthErrorCode.values.firstWhere((c) => c.name == map['code']),
+    message: map['message'] as String,
+    traceId: map['traceId'] as String?,
+  );
 
   /// Converts back into a throwable [AuthError]. Useful on the caller side
   /// when translating isolate errors into ordinary exceptions.
-  AuthError toAuthError() =>
-      AuthError(code, message, traceId: traceId);
+  AuthError toAuthError() => AuthError(code, message, traceId: traceId);
 }
 
 final class OkEvent extends WorkerEvent {
@@ -457,10 +457,10 @@ final class CompleteNativeCredentialOkEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'completeNativeCredentialOk',
-        _corrId: correlationId,
-        'provider': provider.name,
-      };
+    _kind: 'completeNativeCredentialOk',
+    _corrId: correlationId,
+    'provider': provider.name,
+  };
 
   factory CompleteNativeCredentialOkEvent._fromMap(Map<String, Object?> map) {
     final name = map['provider'] as String;
@@ -481,15 +481,15 @@ final class RolesEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'roles',
-        _corrId: correlationId,
-        'roles': roles,
-      };
+    _kind: 'roles',
+    _corrId: correlationId,
+    'roles': roles,
+  };
 
   factory RolesEvent._fromMap(Map<String, Object?> map) => RolesEvent(
-        correlationId: map[_corrId] as String?,
-        roles: (map['roles'] as List).cast<String>(),
-      );
+    correlationId: map[_corrId] as String?,
+    roles: (map['roles'] as List).cast<String>(),
+  );
 }
 
 final class ClaimsEvent extends WorkerEvent {
@@ -499,19 +499,18 @@ final class ClaimsEvent extends WorkerEvent {
 
   @override
   Map<String, Object?> toMap() => {
-        _kind: 'claims',
-        _corrId: correlationId,
-        // Stringify to guarantee the map survives SendPort on every
-        // platform; some contents (e.g. nested DateTime) aren't
-        // transferable otherwise.
-        'claimsJson': json.encode(claims),
-      };
+    _kind: 'claims',
+    _corrId: correlationId,
+    // Stringify to guarantee the map survives SendPort on every
+    // platform; some contents (e.g. nested DateTime) aren't
+    // transferable otherwise.
+    'claimsJson': json.encode(claims),
+  };
 
   factory ClaimsEvent._fromMap(Map<String, Object?> map) => ClaimsEvent(
-        correlationId: map[_corrId] as String?,
-        claims:
-            (json.decode(map['claimsJson'] as String) as Map<String, dynamic>),
-      );
+    correlationId: map[_corrId] as String?,
+    claims: (json.decode(map['claimsJson'] as String) as Map<String, dynamic>),
+  );
 }
 
 /// Wire mirror of [SecurityEvent]. We carry a kind discriminator plus an
@@ -519,10 +518,7 @@ final class ClaimsEvent extends WorkerEvent {
 /// receipt. Kept separate from the domain class to avoid coupling
 /// serialisation to public model invariants.
 final class SecurityEventWire extends WorkerEvent {
-  const SecurityEventWire({
-    required this.event,
-    super.correlationId,
-  });
+  const SecurityEventWire({required this.event, super.correlationId});
 
   final SecurityEvent event;
 
@@ -552,10 +548,7 @@ final class SecurityEventWire extends WorkerEvent {
       'loggedOutElsewhere' => SecurityEvent.loggedOutElsewhere(at),
       _ => throw FormatException('unknown security event kind: $eventKind'),
     };
-    return SecurityEventWire(
-      event: ev,
-      correlationId: map[_corrId] as String?,
-    );
+    return SecurityEventWire(event: ev, correlationId: map[_corrId] as String?);
   }
 }
 

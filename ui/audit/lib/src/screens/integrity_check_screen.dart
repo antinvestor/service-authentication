@@ -27,11 +27,9 @@ class _IntegrityCheckScreenState extends ConsumerState<IntegrityCheckScreen> {
       context: context,
       firstDate: now.subtract(const Duration(days: 365)),
       lastDate: now,
-      initialDateRange: _dateRange ??
-          DateTimeRange(
-            start: now.subtract(const Duration(days: 7)),
-            end: now,
-          ),
+      initialDateRange:
+          _dateRange ??
+          DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
     );
     if (picked != null) {
       setState(() {
@@ -82,16 +80,20 @@ class _IntegrityCheckScreenState extends ConsumerState<IntegrityCheckScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Hash Chain Verification',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Hash Chain Verification',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Verify the integrity of audit entries by checking the hash chain '
                   'over a selected date range. Each entry references the hash of the '
                   'previous entry, forming a tamper-proof chain.',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -169,8 +171,7 @@ class _VerificationResults extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 12),
             Text('Verification failed: $error'),
             const SizedBox(height: 12),
@@ -187,12 +188,16 @@ class _VerificationResults extends ConsumerWidget {
   }
 
   Widget _buildResultCard(
-      BuildContext context, VerifyIntegrityResponse result) {
+    BuildContext context,
+    VerifyIntegrityResponse result,
+  ) {
     final theme = Theme.of(context);
     final surfaceColor = theme.colorScheme.surface;
     final borderColor = theme.colorScheme.outlineVariant;
     final isValid = result.valid;
-    final statusColor = isValid ? Colors.green.shade600 : theme.colorScheme.error;
+    final statusColor = isValid
+        ? Colors.green.shade600
+        : theme.colorScheme.error;
     final statusIcon = isValid ? Icons.check_circle : Icons.cancel;
     final statusLabel = isValid ? 'Chain Verified' : 'Integrity Issue Detected';
 
@@ -244,10 +249,9 @@ class _VerificationResults extends ConsumerWidget {
           if (result.firstInvalidEntryId.isNotEmpty) ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () => context
-                  .go('/services/audit/${result.firstInvalidEntryId}'),
-              icon:
-                  Icon(Icons.arrow_forward, size: 18, color: statusColor),
+              onPressed: () =>
+                  context.go('/services/audit/${result.firstInvalidEntryId}'),
+              icon: Icon(Icons.arrow_forward, size: 18, color: statusColor),
               label: Text(
                 'View Invalid Entry: ${result.firstInvalidEntryId}',
                 style: TextStyle(color: statusColor),
@@ -292,8 +296,10 @@ class _ResultRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w500, color: color),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
           ),
         ),
       ],

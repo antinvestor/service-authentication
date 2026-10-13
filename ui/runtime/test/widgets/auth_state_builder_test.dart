@@ -13,8 +13,9 @@ Widget _wrap(FakeAuthRuntime fake, {required Widget child}) {
 }
 
 void main() {
-  testWidgets('builder receives initializing while stream is loading',
-      (tester) async {
+  testWidgets('builder receives initializing while stream is loading', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
 
@@ -36,8 +37,9 @@ void main() {
     expect(observed, AuthState.initializing);
   });
 
-  testWidgets('builder rebuilds when the runtime emits a transition',
-      (tester) async {
+  testWidgets('builder rebuilds when the runtime emits a transition', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
 

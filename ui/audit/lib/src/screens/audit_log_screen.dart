@@ -59,14 +59,14 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
   final _dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
 
   AuditListParams get _params => AuditListParams(
-        profileId: _filterProfileId,
-        action: _filterAction,
-        resourceType: _filterResourceType,
-        service: _filterService,
-        startDate: _dateRange?.start,
-        endDate: _dateRange?.end,
-        count: 100,
-      );
+    profileId: _filterProfileId,
+    action: _filterAction,
+    resourceType: _filterResourceType,
+    service: _filterService,
+    startDate: _dateRange?.start,
+    endDate: _dateRange?.end,
+    count: 100,
+  );
 
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
@@ -105,9 +105,11 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   const SizedBox(height: 16),
                   Text('Failed to load audit entries: $error'),
                   const SizedBox(height: 12),
@@ -163,10 +165,12 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                 isDense: true,
               ),
               items: _actionOptions
-                  .map((a) => DropdownMenuItem(
-                        value: a,
-                        child: Text(a.isEmpty ? 'All actions' : a),
-                      ))
+                  .map(
+                    (a) => DropdownMenuItem(
+                      value: a,
+                      child: Text(a.isEmpty ? 'All actions' : a),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _filterAction = v ?? ''),
             ),
@@ -182,10 +186,12 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                 isDense: true,
               ),
               items: _resourceTypeOptions
-                  .map((r) => DropdownMenuItem(
-                        value: r,
-                        child: Text(r.isEmpty ? 'All types' : r),
-                      ))
+                  .map(
+                    (r) => DropdownMenuItem(
+                      value: r,
+                      child: Text(r.isEmpty ? 'All types' : r),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _filterResourceType = v ?? ''),
             ),
@@ -201,10 +207,12 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                 isDense: true,
               ),
               items: _serviceOptions
-                  .map((s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(s.isEmpty ? 'All services' : s),
-                      ))
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s.isEmpty ? 'All services' : s),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _filterService = v ?? ''),
             ),
@@ -247,23 +255,29 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
         selected: selected,
         onSelectChanged: (_) => onSelect(),
         cells: [
-          DataCell(Text(
-            _formatTimestamp(entry.createdAt),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          )),
-          DataCell(Text(
-            entry.profileId.isNotEmpty
-                ? '${entry.profileId.substring(0, entry.profileId.length.clamp(0, 8))}...'
-                : '-',
-          )),
+          DataCell(
+            Text(
+              _formatTimestamp(entry.createdAt),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+          DataCell(
+            Text(
+              entry.profileId.isNotEmpty
+                  ? '${entry.profileId.substring(0, entry.profileId.length.clamp(0, 8))}...'
+                  : '-',
+            ),
+          ),
           DataCell(_ActionChip(action: entry.action)),
           DataCell(Text(entry.resourceType)),
-          DataCell(Text(
-            entry.resourceId.isNotEmpty
-                ? '${entry.resourceId.substring(0, entry.resourceId.length.clamp(0, 8))}...'
-                : '-',
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          )),
+          DataCell(
+            Text(
+              entry.resourceId.isNotEmpty
+                  ? '${entry.resourceId.substring(0, entry.resourceId.length.clamp(0, 8))}...'
+                  : '-',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
           DataCell(_ServiceBadge(service: entry.service)),
           DataCell(Text(entry.ipAddress.isNotEmpty ? entry.ipAddress : '-')),
         ],

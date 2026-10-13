@@ -21,14 +21,14 @@ class AuditEntryTile extends StatelessWidget {
   final bool dense;
 
   static IconData iconForAction(String action) => switch (action) {
-        'create' => Icons.add_circle_outline,
-        'update' => Icons.edit_outlined,
-        'delete' => Icons.delete_outline,
-        'login' => Icons.login,
-        'export' => Icons.download_outlined,
-        'grant_permission' => Icons.security_outlined,
-        _ => Icons.circle_outlined,
-      };
+    'create' => Icons.add_circle_outline,
+    'update' => Icons.edit_outlined,
+    'delete' => Icons.delete_outline,
+    'login' => Icons.login,
+    'export' => Icons.download_outlined,
+    'grant_permission' => Icons.security_outlined,
+    _ => Icons.circle_outlined,
+  };
 
   static Color colorForAction(String action, ThemeData theme) =>
       switch (action) {
@@ -67,8 +67,7 @@ class AuditEntryTile extends StatelessWidget {
     final title =
         '${_capitalize(entry.action)} ${entry.resourceType.replaceAll('_', ' ')}';
     final actorLabel = entry.profileId.isNotEmpty
-        ? entry.profileId.substring(
-            0, entry.profileId.length.clamp(0, 8))
+        ? entry.profileId.substring(0, entry.profileId.length.clamp(0, 8))
         : 'system';
 
     return InkWell(
@@ -96,18 +95,20 @@ class AuditEntryTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: (dense
-                            ? theme.textTheme.bodySmall
-                            : theme.textTheme.bodyMedium)
-                        ?.copyWith(fontWeight: FontWeight.w500),
+                    style:
+                        (dense
+                                ? theme.textTheme.bodySmall
+                                : theme.textTheme.bodyMedium)
+                            ?.copyWith(fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '$actorLabel \u00b7 ${_formatRelativeTime(entry.createdAt)}',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: mutedColor),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: mutedColor,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -117,8 +118,7 @@ class AuditEntryTile extends StatelessWidget {
             if (showService && entry.service.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(4),

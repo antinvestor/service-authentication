@@ -33,8 +33,10 @@ void main() {
     });
 
     test('throws on malformed JWT', () {
-      expect(() => decodeJwtPayload('not.a.jwt.with.extra.parts'),
-          throwsFormatException);
+      expect(
+        () => decodeJwtPayload('not.a.jwt.with.extra.parts'),
+        throwsFormatException,
+      );
       expect(() => decodeJwtPayload('only-one-part'), throwsFormatException);
     });
   });

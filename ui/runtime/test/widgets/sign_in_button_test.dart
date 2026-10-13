@@ -10,7 +10,9 @@ import '../support/fake_auth_runtime.dart';
 Widget _wrap(FakeAuthRuntime fake, {required Widget child}) {
   return ProviderScope(
     overrides: [authRuntimeProvider.overrideWithValue(fake)],
-    child: MaterialApp(home: Scaffold(body: Center(child: child))),
+    child: MaterialApp(
+      home: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 
@@ -33,23 +35,24 @@ void main() {
     expect(find.text('Log in'), findsOneWidget);
   });
 
-  testWidgets('tap triggers ensureAuthenticated and onAuthenticated callback',
-      (tester) async {
+  testWidgets('tap triggers ensureAuthenticated and onAuthenticated callback', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime();
     addTearDown(fake.dispose);
     var done = 0;
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: SignInButton(onAuthenticated: () => done++),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: SignInButton(onAuthenticated: () => done++)),
+    );
     await tester.tap(find.byType(ElevatedButton));
     await tester.pumpAndSettle();
     expect(fake.ensureAuthenticatedCalls, 1);
     expect(done, 1);
   });
 
-  testWidgets('button disables itself while ensureAuthenticated is pending',
-      (tester) async {
+  testWidgets('button disables itself while ensureAuthenticated is pending', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime();
     addTearDown(fake.dispose);
     final completer = FakeSlowFuture();
@@ -62,8 +65,7 @@ void main() {
     await tester.tap(find.byType(ElevatedButton));
     await tester.pump();
     // Now pending: button should be disabled and show a progress spinner.
-    final pressed =
-        tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+    final pressed = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
     expect(pressed.onPressed, isNull);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     completer.complete();
@@ -78,10 +80,9 @@ void main() {
       'nope',
     );
     AuthError? caught;
-    await tester.pumpWidget(_wrap(
-      fake,
-      child: SignInButton(onError: (err) => caught = err),
-    ));
+    await tester.pumpWidget(
+      _wrap(fake, child: SignInButton(onError: (err) => caught = err)),
+    );
     await tester.tap(find.byType(ElevatedButton));
     await tester.pumpAndSettle();
     expect(caught, isNotNull);

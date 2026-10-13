@@ -7,13 +7,15 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
-ResolvedConfig _cfg({String? redirectUri}) => resolveConfig(AuthConfig(
-      clientId: 'c',
-      idpBaseUrl: 'https://idp.example.com',
-      apiBaseUrl: 'https://api.example.com',
-      redirectScheme: 'com.example.app',
-      redirectUri: redirectUri,
-    ));
+ResolvedConfig _cfg({String? redirectUri}) => resolveConfig(
+  AuthConfig(
+    clientId: 'c',
+    idpBaseUrl: 'https://idp.example.com',
+    apiBaseUrl: 'https://api.example.com',
+    redirectScheme: 'com.example.app',
+    redirectUri: redirectUri,
+  ),
+);
 
 AuthorizeRequest _prepared({
   String url = 'https://idp.example.com/oauth2/auth?response_type=code',
@@ -55,15 +57,16 @@ void main() {
 
     expect(result.code, 'CODE-1');
     expect(result.state, 'STATE-123');
-    expect(rec.seenUrl,
-        'https://idp.example.com/oauth2/auth?response_type=code');
+    expect(
+      rec.seenUrl,
+      'https://idp.example.com/oauth2/auth?response_type=code',
+    );
     expect(rec.seenScheme, 'com.example.app');
   });
 
   test('https redirectUri sets httpsHost + httpsPath', () async {
     final rec = _Recorder()
-      ..returnCallback =
-          'https://app.example.com/auth?code=C&state=STATE-123';
+      ..returnCallback = 'https://app.example.com/auth?code=C&state=STATE-123';
     final flow = OAuthFlow(webAuth: rec.call);
 
     await flow.authorize(
@@ -77,32 +80,34 @@ void main() {
   });
 
   test('PlatformException CANCELED maps to oauthUserCanceled', () async {
-    final rec = _Recorder()
-      ..throwError = PlatformException(code: 'CANCELED');
+    final rec = _Recorder()..throwError = PlatformException(code: 'CANCELED');
     final flow = OAuthFlow(webAuth: rec.call);
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthUserCanceled,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthUserCanceled,
+        ),
+      ),
     );
   });
 
   test('PlatformException with non-cancel code maps to oauthFailed', () async {
-    final rec = _Recorder()
-      ..throwError = PlatformException(code: 'IO_ERROR');
+    final rec = _Recorder()..throwError = PlatformException(code: 'IO_ERROR');
     final flow = OAuthFlow(webAuth: rec.call);
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
   });
 
@@ -112,27 +117,32 @@ void main() {
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
   });
 
   test('callback with error=access_denied → oauthUserCanceled', () async {
     final rec = _Recorder()
-      ..returnCallback = 'com.example.app://callback?error=access_denied'
+      ..returnCallback =
+          'com.example.app://callback?error=access_denied'
           '&error_description=user%20said%20no';
     final flow = OAuthFlow(webAuth: rec.call);
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthUserCanceled,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthUserCanceled,
+        ),
+      ),
     );
   });
 
@@ -144,11 +154,13 @@ void main() {
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
   });
 
@@ -159,11 +171,13 @@ void main() {
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
   });
 
@@ -174,11 +188,13 @@ void main() {
 
     await expectLater(
       flow.authorize(_cfg(), _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.oauthFailed,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.oauthFailed,
+        ),
+      ),
     );
   });
 
@@ -204,11 +220,13 @@ void main() {
 
     await expectLater(
       flow.authorize(cfg, _prepared()),
-      throwsA(isA<AuthError>().having(
-        (e) => e.code,
-        'code',
-        AuthErrorCode.invalidConfig,
-      )),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.invalidConfig,
+        ),
+      ),
     );
   });
 }

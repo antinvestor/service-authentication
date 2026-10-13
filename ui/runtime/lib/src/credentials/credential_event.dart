@@ -26,9 +26,8 @@ sealed class CredentialEvent {
     NativeCredentialOutcome outcome,
   ) = CredentialOutcomeEvent;
 
-  const factory CredentialEvent.signOut(
-    NativeCredentialProviderKind kind,
-  ) = CredentialSignOutEvent;
+  const factory CredentialEvent.signOut(NativeCredentialProviderKind kind) =
+      CredentialSignOutEvent;
 
   /// Which provider this event concerns.
   NativeCredentialProviderKind get kind;

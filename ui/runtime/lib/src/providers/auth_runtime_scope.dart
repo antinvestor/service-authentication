@@ -22,8 +22,8 @@ class AuthRuntimeScope extends InheritedWidget {
   /// Retrieves the nearest [AuthRuntime] ancestor. Throws if missing so
   /// usage bugs surface at call-site rather than later as a null deref.
   static AuthRuntime of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<AuthRuntimeScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<AuthRuntimeScope>();
     if (scope == null) {
       throw FlutterError(
         'AuthRuntimeScope.of(context) called without an ancestor '
@@ -36,8 +36,8 @@ class AuthRuntimeScope extends InheritedWidget {
 
   /// Non-throwing lookup. Returns `null` when no ancestor scope exists.
   static AuthRuntime? maybeOf(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<AuthRuntimeScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<AuthRuntimeScope>();
     return scope?.runtime;
   }
 

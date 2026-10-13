@@ -45,13 +45,8 @@ class NativeCredentialResult {
           autoSelected == other.autoSelected;
 
   @override
-  int get hashCode => Object.hash(
-        provider,
-        idToken,
-        authorizationCode,
-        nonce,
-        autoSelected,
-      );
+  int get hashCode =>
+      Object.hash(provider, idToken, authorizationCode, nonce, autoSelected);
 }
 
 /// Outcome of a native credential attempt.

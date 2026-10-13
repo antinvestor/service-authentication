@@ -117,7 +117,7 @@ ResolvedConfig resolveConfig(AuthConfig cfg) {
 
 String _stripTrailingSlash(String s) {
   var end = s.length;
-  while (end > 0 && s.codeUnitAt(end - 1) == 0x2F /* '/' */) {
+  while (end > 0 && s.codeUnitAt(end - 1) == 0x2F /* '/' */ ) {
     end--;
   }
   return s.substring(0, end);

@@ -26,32 +26,33 @@ void main() {
     // robust against future Riverpod re-wraps.
     expect(
       () => bare.read(authRuntimeProvider),
-      throwsA(predicate<Object>(
-        (e) => e.toString().contains('Override authRuntimeProvider'),
-      )),
+      throwsA(
+        predicate<Object>(
+          (e) => e.toString().contains('Override authRuntimeProvider'),
+        ),
+      ),
     );
   });
 
   test('authStateProvider mirrors the runtime stream', () async {
     // Attach a subscription so Riverpod starts the stream.
     final received = <AuthState>[];
-    container.listen<AsyncValue<AuthState>>(
-      authStateProvider,
-      (_, next) {
-        next.whenData(received.add);
-      },
-      fireImmediately: true,
-    );
+    container.listen<AsyncValue<AuthState>>(authStateProvider, (_, next) {
+      next.whenData(received.add);
+    }, fireImmediately: true);
 
     fake.emitState(AuthState.initializing);
     fake.emitState(AuthState.authenticated);
     await Future<void>.microtask(() {});
     await Future<void>.delayed(Duration.zero);
 
-    expect(received, containsAllInOrder(<AuthState>[
-      AuthState.initializing,
-      AuthState.authenticated,
-    ]));
+    expect(
+      received,
+      containsAllInOrder(<AuthState>[
+        AuthState.initializing,
+        AuthState.authenticated,
+      ]),
+    );
   });
 
   test('isAuthenticatedProvider reflects current AuthState', () async {
@@ -74,18 +75,20 @@ void main() {
     expect(claims, isEmpty);
   });
 
-  test('userClaimsProvider returns runtime claims once authenticated',
-      () async {
-    fake.claims = {'sub': 'u-1', 'email': 'a@b.c'};
-    container.listen(authStateProvider, (_, _) {});
-    fake.emitState(AuthState.authenticated);
-    // Invalidate so it re-reads now that the state has flipped.
-    await Future<void>.delayed(Duration.zero);
-    container.invalidate(userClaimsProvider);
-    final claims = await container.read(userClaimsProvider.future);
-    expect(claims['sub'], 'u-1');
-    expect(claims['email'], 'a@b.c');
-  });
+  test(
+    'userClaimsProvider returns runtime claims once authenticated',
+    () async {
+      fake.claims = {'sub': 'u-1', 'email': 'a@b.c'};
+      container.listen(authStateProvider, (_, _) {});
+      fake.emitState(AuthState.authenticated);
+      // Invalidate so it re-reads now that the state has flipped.
+      await Future<void>.delayed(Duration.zero);
+      container.invalidate(userClaimsProvider);
+      final claims = await container.read(userClaimsProvider.future);
+      expect(claims['sub'], 'u-1');
+      expect(claims['email'], 'a@b.c');
+    },
+  );
 
   test('rolesProvider returns [] while unauthenticated', () async {
     container.listen(authStateProvider, (_, _) {});
@@ -105,12 +108,12 @@ void main() {
 
   test('securityEventsProvider streams runtime events', () async {
     final events = <SecurityEvent>[];
-    container.listen<AsyncValue<SecurityEvent>>(
-      securityEventsProvider,
-      (_, next) {
-        next.whenData(events.add);
-      },
-    );
+    container.listen<AsyncValue<SecurityEvent>>(securityEventsProvider, (
+      _,
+      next,
+    ) {
+      next.whenData(events.add);
+    });
     final at = DateTime.utc(2026, 4, 19, 12, 0, 0);
     fake.emitSecurityEvent(SecurityEvent.refreshReuseDetected(at));
     fake.emitSecurityEvent(SecurityEvent.storageCorruption(at));
@@ -120,8 +123,9 @@ void main() {
     expect(events[1], isA<StorageCorruption>());
   });
 
-  testWidgets('AuthRuntimeScope.of returns the runtime from context',
-      (tester) async {
+  testWidgets('AuthRuntimeScope.of returns the runtime from context', (
+    tester,
+  ) async {
     AuthRuntime? seen;
     await tester.pumpWidget(
       AuthRuntimeScope(
@@ -137,8 +141,9 @@ void main() {
     expect(identical(seen, fake), isTrue);
   });
 
-  testWidgets('AuthRuntimeScope.of throws when no ancestor is present',
-      (tester) async {
+  testWidgets('AuthRuntimeScope.of throws when no ancestor is present', (
+    tester,
+  ) async {
     FlutterError? caught;
     await tester.pumpWidget(
       Builder(
@@ -155,8 +160,9 @@ void main() {
     expect(caught, isNotNull);
   });
 
-  testWidgets('AuthRuntimeScope.maybeOf returns null without ancestor',
-      (tester) async {
+  testWidgets('AuthRuntimeScope.maybeOf returns null without ancestor', (
+    tester,
+  ) async {
     AuthRuntime? seen = fake;
     await tester.pumpWidget(
       Builder(
@@ -180,8 +186,9 @@ void main() {
       final stub = _StubNativeProvider(NativeCredentialProviderKind.google);
       final scoped = ProviderContainer(
         overrides: [
-          authNativeProvidersProvider
-              .overrideWithValue(<NativeCredentialProvider>[stub]),
+          authNativeProvidersProvider.overrideWithValue(
+            <NativeCredentialProvider>[stub],
+          ),
         ],
       );
       addTearDown(scoped.dispose);
@@ -196,9 +203,7 @@ void main() {
       addTearDown(bare.dispose);
       final list = bare.read(authNativeProvidersProvider);
       expect(
-        () => list.add(_StubNativeProvider(
-          NativeCredentialProviderKind.apple,
-        )),
+        () => list.add(_StubNativeProvider(NativeCredentialProviderKind.apple)),
         throwsUnsupportedError,
       );
     });
@@ -217,14 +222,12 @@ class _StubNativeProvider implements NativeCredentialProvider {
   @override
   Future<NativeCredentialOutcome> attemptSilent({
     required String nonce,
-  }) async =>
-      const NativeCredentialOutcome.noSession();
+  }) async => const NativeCredentialOutcome.noSession();
 
   @override
   Future<NativeCredentialOutcome> attemptInteractive({
     required String nonce,
-  }) async =>
-      const NativeCredentialOutcome.cancelled();
+  }) async => const NativeCredentialOutcome.cancelled();
 
   @override
   Future<void> signOut() async {}

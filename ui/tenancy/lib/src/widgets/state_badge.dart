@@ -29,9 +29,9 @@ class TenancyStateBadge extends StatelessWidget {
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -49,8 +49,8 @@ class EnvironmentBadge extends StatelessWidget {
     final color = label.contains('PRODUCTION')
         ? theme.colorScheme.tertiary
         : label.contains('STAGING')
-            ? Colors.orange
-            : theme.colorScheme.onSurfaceVariant;
+        ? Colors.orange
+        : theme.colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -61,9 +61,9 @@ class EnvironmentBadge extends StatelessWidget {
       child: Text(
         label.replaceAll('TENANT_ENVIRONMENT_', ''),
         style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -87,9 +87,9 @@ class ColorBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

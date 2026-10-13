@@ -30,10 +30,7 @@ typedef Clock = DateTime Function();
 /// Wraps [getDiscovery] behind an interface so tests can stub the
 /// discovery document without exercising the module-level cache.
 abstract class DiscoveryClient {
-  Future<OidcDiscovery> getDiscovery(
-    String idpBaseUrl,
-    Duration timeout,
-  );
+  Future<OidcDiscovery> getDiscovery(String idpBaseUrl, Duration timeout);
 }
 
 /// Production [DiscoveryClient] that delegates to the real
@@ -63,8 +60,7 @@ Future<OidcDiscovery> getDiscoveryCompat(
   String idpBaseUrl,
   Duration timeout, {
   http.Client? client,
-}) =>
-    getDiscovery(idpBaseUrl, timeout, client: client);
+}) => getDiscovery(idpBaseUrl, timeout, client: client);
 
 /// Pure, testable core of the token worker.
 ///
@@ -84,9 +80,8 @@ class TokenWorker implements TokenProvider {
     required this.refreshLock,
     this.clock = _defaultClock,
     this.accessTokenRefreshBuffer = const Duration(seconds: 60),
-  })  : _stateController = StreamController<AuthState>.broadcast(),
-        _securityController =
-            StreamController<SecurityEvent>.broadcast();
+  }) : _stateController = StreamController<AuthState>.broadcast(),
+       _securityController = StreamController<SecurityEvent>.broadcast();
 
   final ResolvedConfig config;
   final KeyManager keyManager;
@@ -160,8 +155,10 @@ class TokenWorker implements TokenProvider {
     final rootKeyAsWrap = await keyManager.importWrapKey(rootKey);
     Uint8List wrapKeyBytes;
     try {
-      wrapKeyBytes =
-          await keyManager.unwrap(rootKeyAsWrap, stored.wrapKeyCiphertext);
+      wrapKeyBytes = await keyManager.unwrap(
+        rootKeyAsWrap,
+        stored.wrapKeyCiphertext,
+      );
     } catch (_) {
       return null;
     }
@@ -171,10 +168,14 @@ class TokenWorker implements TokenProvider {
     final Uint8List dScalar;
     final Uint8List refreshBytes;
     try {
-      dScalar =
-          await keyManager.unwrap(wrapKey, stored.dpopPrivateKeyCiphertext);
-      refreshBytes =
-          await keyManager.unwrap(wrapKey, stored.refreshTokenCiphertext);
+      dScalar = await keyManager.unwrap(
+        wrapKey,
+        stored.dpopPrivateKeyCiphertext,
+      );
+      refreshBytes = await keyManager.unwrap(
+        wrapKey,
+        stored.refreshTokenCiphertext,
+      );
     } catch (_) {
       return null;
     }
@@ -204,7 +205,9 @@ class TokenWorker implements TokenProvider {
   Future<void> _wipeCorruptSession() async {
     try {
       await tokenStore.clear(config.namespace);
-    } catch (_) {/* best-effort */}
+    } catch (_) {
+      /* best-effort */
+    }
     _tokens = null;
     _dpop = null;
     _wrapKey = null;
@@ -237,8 +240,10 @@ class TokenWorker implements TokenProvider {
     };
     final sep = discovery.authorizationEndpoint.contains('?') ? '&' : '?';
     final parts = params.entries
-        .map((e) =>
-            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+        )
         .toList();
     for (final aud in config.audiences) {
       parts.add('audience=${Uri.encodeQueryComponent(aud)}');
@@ -267,10 +272,7 @@ class TokenWorker implements TokenProvider {
   }) async {
     _ensureAlive();
     if (state != expectedState) {
-      throw AuthError(
-        AuthErrorCode.oauthFailed,
-        'OAuth state mismatch',
-      );
+      throw AuthError(AuthErrorCode.oauthFailed, 'OAuth state mismatch');
     }
 
     // Build (or reuse) the DPoP context used for the exchange.
@@ -293,8 +295,11 @@ class TokenWorker implements TokenProvider {
     } catch (err) {
       final ae = err is AuthError
           ? err
-          : AuthError(AuthErrorCode.tokenExchangeFailed, 'sign-in failed',
-              cause: err);
+          : AuthError(
+              AuthErrorCode.tokenExchangeFailed,
+              'sign-in failed',
+              cause: err,
+            );
       _transition(StateInput.signInFail(ae));
       rethrow;
     }
@@ -393,7 +398,8 @@ class TokenWorker implements TokenProvider {
     }
     final now = clock();
     final needs =
-        force || !now.isBefore(current.expiresAt.subtract(accessTokenRefreshBuffer));
+        force ||
+        !now.isBefore(current.expiresAt.subtract(accessTokenRefreshBuffer));
     if (!needs) {
       return TokenSnapshot(
         accessToken: current.accessToken,
@@ -712,8 +718,10 @@ String _b64urlNoPad(List<int> bytes) =>
     base64Url.encode(bytes).replaceAll('=', '');
 
 String _encodeForm(Map<String, String> form) => form.entries
-    .map((e) =>
-        '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+    .map(
+      (e) =>
+          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+    )
     .join('&');
 
 String _expectedIssuer(NativeCredentialProviderKind kind) {

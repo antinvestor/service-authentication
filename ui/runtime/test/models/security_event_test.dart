@@ -22,11 +22,11 @@ void main() {
 
   test('SecurityEvent pattern-matches exhaustively', () {
     String label(SecurityEvent e) => switch (e) {
-          RefreshReuseDetected() => 'reuse',
-          StorageCorruption() => 'storage',
-          BindingInvalidated() => 'binding',
-          LoggedOutElsewhere() => 'logout-elsewhere',
-        };
+      RefreshReuseDetected() => 'reuse',
+      StorageCorruption() => 'storage',
+      BindingInvalidated() => 'binding',
+      LoggedOutElsewhere() => 'logout-elsewhere',
+    };
     expect(label(SecurityEvent.refreshReuseDetected(at)), 'reuse');
     expect(label(SecurityEvent.storageCorruption(at)), 'storage');
     expect(label(SecurityEvent.bindingInvalidated(at)), 'binding');

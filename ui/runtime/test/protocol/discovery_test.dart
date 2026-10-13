@@ -30,11 +30,15 @@ void main() {
     final client = MockClient((req) async {
       calls++;
       expect(req.method, 'GET');
-      expect(req.url.toString(),
-          'https://idp.example.com/.well-known/openid-configuration');
-      return http.Response(jsonEncode(_doc(issuer: 'https://idp.example.com')),
-          200,
-          headers: {'content-type': 'application/json'});
+      expect(
+        req.url.toString(),
+        'https://idp.example.com/.well-known/openid-configuration',
+      );
+      return http.Response(
+        jsonEncode(_doc(issuer: 'https://idp.example.com')),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     final d1 = await getDiscovery(
@@ -59,8 +63,11 @@ void main() {
     var calls = 0;
     final client = MockClient((req) async {
       calls++;
-      return http.Response(jsonEncode(_doc()), 200,
-          headers: {'content-type': 'application/json'});
+      return http.Response(
+        jsonEncode(_doc()),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
     });
     await getDiscovery('https://i', _timeout, client: client);
     await getDiscovery('https://i/', _timeout, client: client);
@@ -75,8 +82,13 @@ void main() {
     });
     await expectLater(
       getDiscovery('https://i', _timeout, client: client),
-      throwsA(isA<AuthError>()
-          .having((e) => e.code, 'code', AuthErrorCode.discoveryFailed)),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.discoveryFailed,
+        ),
+      ),
     );
     // Second call should retry (failure not cached).
     await expectLater(
@@ -87,22 +99,35 @@ void main() {
   });
 
   test('non-JSON body raises AuthError(discoveryFailed)', () async {
-    final client = MockClient((req) async => http.Response('<html/>', 200,
-        headers: {'content-type': 'text/html'}));
+    final client = MockClient(
+      (req) async =>
+          http.Response('<html/>', 200, headers: {'content-type': 'text/html'}),
+    );
     await expectLater(
       getDiscovery('https://i', _timeout, client: client),
-      throwsA(isA<AuthError>()
-          .having((e) => e.code, 'code', AuthErrorCode.discoveryFailed)),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.discoveryFailed,
+        ),
+      ),
     );
   });
 
   test('missing required fields raises AuthError(discoveryFailed)', () async {
-    final client = MockClient((req) async =>
-        http.Response(jsonEncode({'issuer': 'https://i'}), 200));
+    final client = MockClient(
+      (req) async => http.Response(jsonEncode({'issuer': 'https://i'}), 200),
+    );
     await expectLater(
       getDiscovery('https://i', _timeout, client: client),
-      throwsA(isA<AuthError>()
-          .having((e) => e.code, 'code', AuthErrorCode.discoveryFailed)),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.discoveryFailed,
+        ),
+      ),
     );
   });
 
@@ -112,16 +137,23 @@ void main() {
       return http.Response(jsonEncode(_doc()), 200);
     });
     await expectLater(
-      getDiscovery('https://i', const Duration(milliseconds: 50),
-          client: client),
-      throwsA(isA<AuthError>()
-          .having((e) => e.code, 'code', AuthErrorCode.networkTimeout)),
+      getDiscovery(
+        'https://i',
+        const Duration(milliseconds: 50),
+        client: client,
+      ),
+      throwsA(
+        isA<AuthError>().having(
+          (e) => e.code,
+          'code',
+          AuthErrorCode.networkTimeout,
+        ),
+      ),
     );
   });
 
   test('supportsDpop detects ES256 advertisement', () {
-    final withDpop = OidcDiscovery.fromJson(
-        _doc(dpopAlgs: ['ES256', 'RS256']));
+    final withDpop = OidcDiscovery.fromJson(_doc(dpopAlgs: ['ES256', 'RS256']));
     final withoutDpop = OidcDiscovery.fromJson(_doc());
     expect(supportsDpop(withDpop), isTrue);
     expect(supportsDpop(withoutDpop), isFalse);

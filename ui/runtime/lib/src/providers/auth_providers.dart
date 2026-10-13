@@ -40,38 +40,32 @@ final authStateProvider = StreamProvider<AuthState>(
 /// While the stream is loading (pre-first-event) we conservatively
 /// report `false`: widgets built on this provider should assume the user
 /// is not signed in until the stream emits.
-final isAuthenticatedProvider = Provider<bool>(
-  (ref) {
-    final snap = ref.watch(authStateProvider);
-    return snap.value == AuthState.authenticated;
-  },
-);
+final isAuthenticatedProvider = Provider<bool>((ref) {
+  final snap = ref.watch(authStateProvider);
+  return snap.value == AuthState.authenticated;
+});
 
 /// Decoded ID-token claims. Returns `{}` while unauthenticated so
 /// widgets don't have to special-case the pre-sign-in state.
-final userClaimsProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) async {
-    final rt = ref.watch(authRuntimeProvider);
-    final snap = ref.watch(authStateProvider);
-    if (snap.value != AuthState.authenticated) {
-      return const <String, dynamic>{};
-    }
-    return rt.getClaims();
-  },
-);
+final userClaimsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final rt = ref.watch(authRuntimeProvider);
+  final snap = ref.watch(authStateProvider);
+  if (snap.value != AuthState.authenticated) {
+    return const <String, dynamic>{};
+  }
+  return rt.getClaims();
+});
 
 /// Roles extracted from the access token. Returns `[]` while
 /// unauthenticated.
-final rolesProvider = FutureProvider<List<String>>(
-  (ref) async {
-    final rt = ref.watch(authRuntimeProvider);
-    final snap = ref.watch(authStateProvider);
-    if (snap.value != AuthState.authenticated) {
-      return const <String>[];
-    }
-    return rt.getRoles();
-  },
-);
+final rolesProvider = FutureProvider<List<String>>((ref) async {
+  final rt = ref.watch(authRuntimeProvider);
+  final snap = ref.watch(authStateProvider);
+  if (snap.value != AuthState.authenticated) {
+    return const <String>[];
+  }
+  return rt.getRoles();
+});
 
 /// Security events (refresh reuse, storage corruption, …). Typically
 /// piped into `AuthEventListener` to surface SnackBars / Dialogs.
@@ -107,5 +101,6 @@ final securityEventsProvider = StreamProvider<SecurityEvent>(
 /// wires them: this provider is a declarative hook (widgets can `watch`
 /// it to render platform-aware sign-in buttons) rather than a back
 /// channel into the runtime.
-final authNativeProvidersProvider =
-    Provider<List<NativeCredentialProvider>>((ref) => const []);
+final authNativeProvidersProvider = Provider<List<NativeCredentialProvider>>(
+  (ref) => const [],
+);

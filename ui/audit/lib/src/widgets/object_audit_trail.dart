@@ -51,24 +51,26 @@ class _ObjectAuditTrailState extends ConsumerState<ObjectAuditTrail> {
   static const _collapsedCount = 10;
 
   AuditListParams get _params => AuditListParams(
-        resourceType: widget.resourceType,
-        resourceId: widget.resourceId,
-        count: widget.maxEntries,
-      );
+    resourceType: widget.resourceType,
+    resourceId: widget.resourceId,
+    count: widget.maxEntries,
+  );
 
   void _exportCsv(List<AuditEntryObject> entries) {
     // Create CSV content
     final buffer = StringBuffer();
     buffer.writeln(
-        'Timestamp,Action,Actor,Service,IP Address,Device ID,Trace ID');
+      'Timestamp,Action,Actor,Service,IP Address,Device ID,Trace ID',
+    );
     for (final entry in entries) {
       final ts = entry.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
-                  entry.createdAt.seconds.toInt() * 1000)
-              .toIso8601String()
+              entry.createdAt.seconds.toInt() * 1000,
+            ).toIso8601String()
           : '';
       buffer.writeln(
-          '$ts,${entry.action},${entry.profileId},${entry.service},${entry.ipAddress},${entry.deviceId},${entry.traceId}');
+        '$ts,${entry.action},${entry.profileId},${entry.service},${entry.ipAddress},${entry.deviceId},${entry.traceId}',
+      );
     }
 
     // Log the export as an audit entry itself.
@@ -83,7 +85,8 @@ class _ObjectAuditTrailState extends ConsumerState<ObjectAuditTrail> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              'Exported ${entries.length} entries for ${widget.resourceType}'),
+            'Exported ${entries.length} entries for ${widget.resourceType}',
+          ),
         ),
       );
     }
@@ -111,21 +114,23 @@ class _ObjectAuditTrailState extends ConsumerState<ObjectAuditTrail> {
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
             child: Row(
               children: [
-                Icon(Icons.history,
-                    size: 18, color: theme.colorScheme.primary),
+                Icon(Icons.history, size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Activity History',
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 if (widget.showExportButton)
                   asyncEntries.whenOrNull(
                         data: (entries) => entries.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.download_outlined,
-                                    size: 18),
+                                icon: const Icon(
+                                  Icons.download_outlined,
+                                  size: 18,
+                                ),
                                 tooltip: 'Export CSV',
                                 onPressed: () => _exportCsv(entries),
                               )
@@ -157,7 +162,8 @@ class _ObjectAuditTrailState extends ConsumerState<ObjectAuditTrail> {
                     child: Text(
                       'No activity recorded',
                       style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 );
@@ -176,24 +182,22 @@ class _ObjectAuditTrailState extends ConsumerState<ObjectAuditTrail> {
                     AuditEntryTile(
                       entry: entry,
                       dense: true,
-                      onTap: () =>
-                          context.go('/services/audit/${entry.id}'),
+                      onTap: () => context.go('/services/audit/${entry.id}'),
                     ),
                   // Show more/less toggle
                   if (hasMore)
                     InkWell(
-                      onTap: () =>
-                          setState(() => _expanded = !_expanded),
+                      onTap: () => setState(() => _expanded = !_expanded),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 16),
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _expanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
+                              _expanded ? Icons.expand_less : Icons.expand_more,
                               size: 18,
                               color: theme.colorScheme.primary,
                             ),

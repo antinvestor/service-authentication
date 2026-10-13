@@ -35,8 +35,8 @@ abstract class RootKeyStore {
 /// a [KeyValueStore] (production: `flutter_secure_storage`).
 class DefaultRootKeyStore implements RootKeyStore {
   DefaultRootKeyStore({required KeyValueStore kv, Random? random})
-      : _kv = kv,
-        _random = random ?? Random.secure();
+    : _kv = kv,
+      _random = random ?? Random.secure();
 
   final KeyValueStore _kv;
   final Random _random;

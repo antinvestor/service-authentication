@@ -10,7 +10,9 @@ import '../support/fake_auth_runtime.dart';
 Widget _wrap(FakeAuthRuntime fake, {required Widget child}) {
   return ProviderScope(
     overrides: [authRuntimeProvider.overrideWithValue(fake)],
-    child: MaterialApp(home: Scaffold(body: Center(child: child))),
+    child: MaterialApp(
+      home: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 
@@ -38,22 +40,24 @@ void main() {
   });
 
   testWidgets(
-      'renders initials when claims include a name and no picture URL',
-      (tester) async {
-    final fake = FakeAuthRuntime(
-      initialState: AuthState.authenticated,
-      claims: {'name': 'Alice Example'},
-    );
-    addTearDown(fake.dispose);
-    await tester.pumpWidget(_wrap(fake, child: const ProfileAvatar()));
-    fake.emitState(AuthState.authenticated);
-    await tester.pump();
-    await tester.pump();
-    expect(find.text('AE'), findsOneWidget);
-  });
+    'renders initials when claims include a name and no picture URL',
+    (tester) async {
+      final fake = FakeAuthRuntime(
+        initialState: AuthState.authenticated,
+        claims: {'name': 'Alice Example'},
+      );
+      addTearDown(fake.dispose);
+      await tester.pumpWidget(_wrap(fake, child: const ProfileAvatar()));
+      fake.emitState(AuthState.authenticated);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('AE'), findsOneWidget);
+    },
+  );
 
-  testWidgets('renders initials from email when no name is set',
-      (tester) async {
+  testWidgets('renders initials from email when no name is set', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(
       initialState: AuthState.authenticated,
       claims: {'email': 'bob@example.com'},
@@ -66,8 +70,9 @@ void main() {
     expect(find.text('B'), findsOneWidget);
   });
 
-  testWidgets('falls back to a placeholder icon with no usable claims',
-      (tester) async {
+  testWidgets('falls back to a placeholder icon with no usable claims', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(
       initialState: AuthState.authenticated,
       claims: {},
@@ -80,8 +85,9 @@ void main() {
     expect(find.byIcon(Icons.person_outline), findsOneWidget);
   });
 
-  testWidgets('while claims resolve, shows an empty placeholder circle',
-      (tester) async {
+  testWidgets('while claims resolve, shows an empty placeholder circle', (
+    tester,
+  ) async {
     final fake = FakeAuthRuntime(initialState: AuthState.unauthenticated);
     addTearDown(fake.dispose);
     await tester.pumpWidget(_wrap(fake, child: const ProfileAvatar()));

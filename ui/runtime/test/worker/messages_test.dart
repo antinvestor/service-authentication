@@ -27,7 +27,8 @@ void main() {
 
     test('prepareAuth round-trips', () {
       final r = _roundTripRequest(
-          const PrepareAuthRequest(correlationId: 'c-2'));
+        const PrepareAuthRequest(correlationId: 'c-2'),
+      );
       expect(r.correlationId, 'c-2');
     });
 
@@ -100,14 +101,30 @@ void main() {
     });
 
     test('getRoles, getClaims, logout, destroy round-trip', () {
-      expect(_roundTripRequest(
-          const GetRolesRequest(correlationId: 'a')).correlationId, 'a');
-      expect(_roundTripRequest(
-          const GetClaimsRequest(correlationId: 'b')).correlationId, 'b');
-      expect(_roundTripRequest(
-          const LogoutRequest(correlationId: 'c')).correlationId, 'c');
-      expect(_roundTripRequest(
-          const DestroyRequest(correlationId: 'd')).correlationId, 'd');
+      expect(
+        _roundTripRequest(
+          const GetRolesRequest(correlationId: 'a'),
+        ).correlationId,
+        'a',
+      );
+      expect(
+        _roundTripRequest(
+          const GetClaimsRequest(correlationId: 'b'),
+        ).correlationId,
+        'b',
+      );
+      expect(
+        _roundTripRequest(
+          const LogoutRequest(correlationId: 'c'),
+        ).correlationId,
+        'c',
+      );
+      expect(
+        _roundTripRequest(
+          const DestroyRequest(correlationId: 'd'),
+        ).correlationId,
+        'd',
+      );
     });
 
     test('unknown kind throws FormatException', () {
@@ -134,13 +151,15 @@ void main() {
     });
 
     test('authUrl round-trips', () {
-      final r = _roundTripEvent(const AuthUrlEvent(
-        correlationId: 'c-3',
-        url: 'https://idp/auth?...',
-        verifier: 'v',
-        state: 's',
-        nonce: 'n',
-      ));
+      final r = _roundTripEvent(
+        const AuthUrlEvent(
+          correlationId: 'c-3',
+          url: 'https://idp/auth?...',
+          verifier: 'v',
+          state: 's',
+          nonce: 'n',
+        ),
+      );
       expect(r.url, 'https://idp/auth?...');
       expect(r.verifier, 'v');
       expect(r.state, 's');
@@ -149,26 +168,30 @@ void main() {
 
     test('response round-trips body + headers', () {
       final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
-      final r = _roundTripEvent(ResponseEvent(
-        correlationId: 'c-4',
-        response: ApiResponse(
-          status: 200,
-          headers: const {'content-type': 'application/json'},
-          body: bytes,
+      final r = _roundTripEvent(
+        ResponseEvent(
+          correlationId: 'c-4',
+          response: ApiResponse(
+            status: 200,
+            headers: const {'content-type': 'application/json'},
+            body: bytes,
+          ),
         ),
-      ));
+      );
       expect(r.response.status, 200);
       expect(r.response.headers['content-type'], 'application/json');
       expect(r.response.body, bytes);
     });
 
     test('error round-trips code, message, traceId', () {
-      final r = _roundTripEvent(const ErrorEvent(
-        correlationId: 'c-5',
-        code: AuthErrorCode.apiUnauthorized,
-        message: 'boom',
-        traceId: 'trace-xyz',
-      ));
+      final r = _roundTripEvent(
+        const ErrorEvent(
+          correlationId: 'c-5',
+          code: AuthErrorCode.apiUnauthorized,
+          message: 'boom',
+          traceId: 'trace-xyz',
+        ),
+      );
       expect(r.code, AuthErrorCode.apiUnauthorized);
       expect(r.message, 'boom');
       expect(r.traceId, 'trace-xyz');
@@ -179,29 +202,32 @@ void main() {
     });
 
     test('completeNativeCredentialOk round-trips provider', () {
-      final r = _roundTripEvent(const CompleteNativeCredentialOkEvent(
-        correlationId: 'c-nc-ok',
-        provider: NativeCredentialProviderKind.apple,
-      ));
+      final r = _roundTripEvent(
+        const CompleteNativeCredentialOkEvent(
+          correlationId: 'c-nc-ok',
+          provider: NativeCredentialProviderKind.apple,
+        ),
+      );
       expect(r.provider, NativeCredentialProviderKind.apple);
       expect(r.correlationId, 'c-nc-ok');
     });
 
     test('roles + claims round-trip', () {
-      final roles = _roundTripEvent(const RolesEvent(
-        correlationId: 'c-6',
-        roles: ['admin', 'user'],
-      ));
+      final roles = _roundTripEvent(
+        const RolesEvent(correlationId: 'c-6', roles: ['admin', 'user']),
+      );
       expect(roles.roles, ['admin', 'user']);
 
-      final claims = _roundTripEvent(const ClaimsEvent(
-        correlationId: 'c-7',
-        claims: {
-          'sub': 'u-1',
-          'email': 'a@b.c',
-          'roles': ['admin'],
-        },
-      ));
+      final claims = _roundTripEvent(
+        const ClaimsEvent(
+          correlationId: 'c-7',
+          claims: {
+            'sub': 'u-1',
+            'email': 'a@b.c',
+            'roles': ['admin'],
+          },
+        ),
+      );
       expect(claims.claims['sub'], 'u-1');
       expect(claims.claims['roles'], ['admin']);
     });

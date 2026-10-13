@@ -32,14 +32,14 @@ class TokenIsolateHandle {
     required StreamSubscription<dynamic> errorSubscription,
     required StreamSubscription<dynamic> exitSubscription,
     required StreamController<WorkerEvent> controller,
-  })  : _responsePort = responsePort,
-        _errorPort = errorPort,
-        _exitPort = exitPort,
-        _eventStream = eventStream,
-        _responseSubscription = responseSubscription,
-        _errorSubscription = errorSubscription,
-        _exitSubscription = exitSubscription,
-        _controller = controller;
+  }) : _responsePort = responsePort,
+       _errorPort = errorPort,
+       _exitPort = exitPort,
+       _eventStream = eventStream,
+       _responseSubscription = responseSubscription,
+       _errorSubscription = errorSubscription,
+       _exitSubscription = exitSubscription,
+       _controller = controller;
 
   final Isolate isolate;
   final SendPort sendPort;
@@ -170,10 +170,13 @@ class TokenIsolateHandle {
       },
     );
     send(request);
-    return completer.future.timeout(timeout, onTimeout: () {
-      sub.cancel();
-      throw TimeoutException('isolate request timed out', timeout);
-    });
+    return completer.future.timeout(
+      timeout,
+      onTimeout: () {
+        sub.cancel();
+        throw TimeoutException('isolate request timed out', timeout);
+      },
+    );
   }
 
   /// Kills the isolate, drains ports, cancels subscriptions. Idempotent.
@@ -285,7 +288,8 @@ void defaultTokenIsolateEntryPoint(SendPort main) {
         main.send(
           ErrorEvent(
             code: AuthErrorCode.cryptoUnsupported,
-            message: 'scaffolding entry point does not implement '
+            message:
+                'scaffolding entry point does not implement '
                 '${req.runtimeType}; see F-J integration pass',
             correlationId: req.correlationId,
           ).toMap(),

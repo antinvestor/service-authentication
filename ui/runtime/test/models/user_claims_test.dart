@@ -20,7 +20,9 @@ void main() {
   test('UserClaims pulls roles from realm_access fallback', () {
     const c = UserClaims({
       'sub': 's',
-      'realm_access': {'roles': <dynamic>['ops']},
+      'realm_access': {
+        'roles': <dynamic>['ops'],
+      },
     });
     expect(c.roles, ['ops']);
   });
@@ -89,13 +91,16 @@ void main() {
         'custom_flag': true,
       });
       final custom = c.customClaims;
-      expect(custom.keys, containsAll(<String>[
-        'contact_id',
-        'tenant_id',
-        'partition_id',
-        'roles',
-        'custom_flag',
-      ]));
+      expect(
+        custom.keys,
+        containsAll(<String>[
+          'contact_id',
+          'tenant_id',
+          'partition_id',
+          'roles',
+          'custom_flag',
+        ]),
+      );
       // Standard keys are filtered out.
       expect(custom.containsKey('iss'), isFalse);
       expect(custom.containsKey('sub'), isFalse);
@@ -107,10 +112,7 @@ void main() {
     });
 
     test('customClaims is empty when only standard claims are present', () {
-      const c = UserClaims({
-        'sub': 'u-1',
-        'email': 'a@b.c',
-      });
+      const c = UserClaims({'sub': 'u-1', 'email': 'a@b.c'});
       expect(c.customClaims, isEmpty);
     });
   });
