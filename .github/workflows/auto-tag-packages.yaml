@@ -3,8 +3,15 @@ name: Auto-tag package versions
 # When a commit on main bumps a package's `version:` in its pubspec.yaml,
 # create and push the matching git tag. The tag pattern (`dart/{pkg}/v{ver}`
 # for SDKs in `sdk/dart/`, `ui/{pkg}/v{ver}` for libraries in `ui/`) is
-# what the publish workflows fire on, so once a tag lands the package
-# auto-publishes to pub.dev.
+# what the publish workflows fire on.
+#
+# A tag pushed with GITHUB_TOKEN does not trigger other workflows, so the
+# tag push alone never published anything. After pushing each tag this job
+# dispatches the matching publish workflow (dart-publish.yaml or
+# ui-publish.yaml) on the tag ref with `gh workflow run`; workflow_dispatch
+# is the event GITHUB_TOKEN is allowed to start. pub.dev must have
+# "Enable publishing from workflow_dispatch events" ticked for each package.
+# A tag pushed by a human still triggers the publish workflow directly.
 #
 # The workflow is idempotent (existing tags are skipped) and quiet for
 # dependency-only edits (no `version:` change → no tag). It also queries
@@ -24,6 +31,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # gh workflow run (dispatch the publish workflow)
 
 concurrency:
   group: auto-tag-packages
@@ -42,6 +50,7 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -97,10 +106,12 @@ jobs:
             case "$pubspec" in
               sdk/dart/*/pubspec.yaml)
                 kind=dart
+                workflow=dart-publish.yaml
                 pkg=$(basename "$(dirname "$pubspec")")
                 ;;
               ui/*/pubspec.yaml)
                 kind=ui
+                workflow=ui-publish.yaml
                 pkg=$(basename "$(dirname "$pubspec")")
                 ;;
               *)
@@ -140,6 +151,8 @@ jobs:
             echo "Tagging $tag at $AFTER"
             git tag -a "$tag" -m "Release $kind/$pkg $version" "$AFTER"
             git push origin "refs/tags/$tag"
+            echo "Dispatching $workflow on $tag"
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$tag"
             tagged=$((tagged + 1))
           done
 
