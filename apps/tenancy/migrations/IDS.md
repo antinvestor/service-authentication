@@ -718,3 +718,17 @@ configuration.
 | db5iu14pf2t15n40lj2g | service_settlement client (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
 | db5itnspf2tft2pp30f0 | service_finance SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
 | db5iu14pf2t15n40lj3g | service_settlement SA authorization policy (reference) | apps/tenancy/migrations/0001/20261011_03_chat_namespace_stawi_grants.sql |
+
+## Stawi loan book grants: finance → chat rooms, finance/chat → settlement (2026-10-15)
+| xid | purpose | file |
+|-----|---------|------|
+| db8ag34pf2t6oeanubb0 | service_finance SA permission service_chat stawi_room_resolve | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db8ag34pf2t6oeanubbg | service_finance SA permission service_chat room_create | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db8ag34pf2t6oeanubc0 | service_finance SA permission service_chat room_view | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db8ag34pf2t6oeanubcg | service_finance SA permission service_chat subscription_view | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db8ag34pf2t6oeanubd0 | service_finance SA permission service_settlement room_view | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db8ag34pf2t6oeanubdg | service_chat SA permission service_settlement profile_account_view | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db5luv4pf2t0o1dkvss0 | service_finance SA grant service_chat (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db5iu0spf2t14odh5bg0 | service_finance SA grant service_settlement (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| db5iu7cpf2t21sa27qhg | service_chat SA grant service_settlement (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| d94lkmcpf2t39vdkp050 | service_chat SA authorization policy (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
