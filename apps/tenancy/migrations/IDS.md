@@ -732,3 +732,14 @@ configuration.
 | db5iu0spf2t14odh5bg0 | service_finance SA grant service_settlement (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
 | db5iu7cpf2t21sa27qhg | service_chat SA grant service_settlement (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
 | d94lkmcpf2t39vdkp050 | service_chat SA authorization policy (reference) | apps/tenancy/migrations/0001/20261015_01_stawi_loan_book_grants.sql |
+| dau0j24pf2t3vfe1ohpg | service_commerce client audience https://api.stawi.org/settings | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohq0 | service_commerce client audience https://api.stawi.org/devices | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohqg | service_commerce SA grant service_setting partition_tree | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohr0 | service_commerce SA grant service_device partition_tree | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohrg | service_commerce SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohs0 | service_commerce SA permission service_setting.setting_view | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1ohsg | service_commerce SA permission service_device.device_view | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dau0j24pf2t3vfe1oht0 | service_commerce SA permission service_profile.profile_view | apps/tenancy/migrations/0001/20261019_02_service_commerce_currency_sources.sql |
+| dbas5dcpf2t4oekfdkgg | service_procurement client audience https://api.stawi.org/manufacturing | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
+| dbas5dcpf2t4oekfdkh0 | service_procurement SA grant service_manufacturing partition_tree | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
+| dbas5dcpf2t4oekfdkhg | service_procurement SA permission service_manufacturing.plan_view | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
