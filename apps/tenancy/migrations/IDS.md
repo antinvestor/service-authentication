@@ -743,3 +743,4 @@ configuration.
 | dbas5dcpf2t4oekfdkgg | service_procurement client audience https://api.stawi.org/manufacturing | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
 | dbas5dcpf2t4oekfdkh0 | service_procurement SA grant service_manufacturing partition_tree | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
 | dbas5dcpf2t4oekfdkhg | service_procurement SA permission service_manufacturing.plan_view | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
+| dbb85ocpf2tf4p35bhqg | service_commerce SA permission service_profile.profile_create | apps/tenancy/migrations/0001/20261019_03_service_commerce_guest_buyers.sql |
