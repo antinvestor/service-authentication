@@ -799,3 +799,7 @@ configuration.
 | d94lkmcpf2t39vdkp5f0 | service_funding SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
 | d94lkmcpf2t39vdkpa4g | service_seed SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
 | d94lkmcpf2t39vdkpbk0 | service_stawi SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbeaj5cpf2t36jctmpqg | service_operations SA permission service_loans loan_view | apps/tenancy/migrations/0001/20261024_02_fintech_operations_loan_view.sql |
+| dbef8dspf2te3pa5p98g | service_loans SA recipient https://api.stawi.org/seed | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
+| dbef8dspf2te3pa5p990 | service_loans SA grant service_seed partition_tree | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
+| dbef8dspf2te3pa5p99g | service_loans SA permission service_seed seed_loan_paid_off_notify | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
