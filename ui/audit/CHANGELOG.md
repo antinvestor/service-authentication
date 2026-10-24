@@ -1,3 +1,10 @@
+## 0.4.0
+
+- **Breaking:** moves to connect-dart 2 and the protobuf 6 runtime
+  (`antinvestor_ui_core ^0.6.0`, 2.x/0.2+ `antinvestor_api_*` SDKs,
+  `connectrpc ^2.0.0`, `protobuf ^6.1.0`).
+- `AuditNotifier.createEntry` returns the intake receipt (`CreateAuditEntryResponse`) and `batchCreate` returns the per-entry receipts, as audit v2 does; the deprecated `data` field is no longer read.
+
 ## 0.3.2
 
 - Fix: audit log filter dropdowns (Action, Resource Type, Service) set

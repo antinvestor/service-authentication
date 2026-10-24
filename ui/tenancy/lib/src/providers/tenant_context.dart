@@ -37,10 +37,7 @@ class TenantContext {
   /// partitions within their tenant.
   bool get canSwitchContext => isInternal || isOwner;
 
-  TenantContext copyWith({
-    String? tenantId,
-    String? partitionId,
-  }) =>
+  TenantContext copyWith({String? tenantId, String? partitionId}) =>
       TenantContext(
         tenantId: tenantId ?? this.tenantId,
         partitionId: partitionId ?? this.partitionId,
@@ -64,8 +61,7 @@ class TenantContext {
 ///   child: MyApp(),
 /// )
 /// ```
-final jwtTenantContextProvider =
-    FutureProvider<TenantContext>((ref) async {
+final jwtTenantContextProvider = FutureProvider<TenantContext>((ref) async {
   // Default implementation returns empty context.
   // Host app must override this provider.
   return const TenantContext(tenantId: '', partitionId: '');
@@ -86,8 +82,8 @@ class ActiveTenantNotifier extends Notifier<TenantContext?> {
 
 final activeTenantProvider =
     NotifierProvider<ActiveTenantNotifier, TenantContext?>(
-  ActiveTenantNotifier.new,
-);
+      ActiveTenantNotifier.new,
+    );
 
 /// The effective tenant context - either the user's override or the JWT default.
 final effectiveTenantProvider = Provider<TenantContext>((ref) {

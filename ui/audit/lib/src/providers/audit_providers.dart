@@ -228,8 +228,9 @@ class AuditNotifier extends Notifier<void> {
   @override
   void build() {}
 
-  /// Create a single audit entry.
-  Future<AuditEntryObject> createEntry({
+  /// Create a single audit entry. Returns the intake receipt (intake and
+  /// entry ids); the chained entry is fetched with GetAuditEntry.
+  Future<CreateAuditEntryResponse> createEntry({
     required String action,
     required String resourceType,
     String resourceId = '',
@@ -248,18 +249,18 @@ class AuditNotifier extends Notifier<void> {
     if (targetProfileId.isNotEmpty) {
       request.targetProfileId = targetProfileId;
     }
-    final response = await client.createAuditEntry(request);
-    return response.data;
+    return client.createAuditEntry(request);
   }
 
-  /// Create multiple audit entries atomically.
-  Future<List<AuditEntryObject>> batchCreate(
+  /// Create multiple audit entries atomically. Returns one receipt per
+  /// entry, in request order.
+  Future<List<CreateAuditEntryResponse>> batchCreate(
     List<CreateAuditEntryRequest> entries,
   ) async {
     final client = ref.read(auditServiceClientProvider);
     final request = BatchCreateAuditEntriesRequest(entries: entries);
     final response = await client.batchCreateAuditEntries(request);
-    return response.data;
+    return response.receipts;
   }
 }
 
