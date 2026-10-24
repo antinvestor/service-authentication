@@ -799,3 +799,4 @@ configuration.
 | d94lkmcpf2t39vdkp5f0 | service_funding SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
 | d94lkmcpf2t39vdkpa4g | service_seed SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
 | d94lkmcpf2t39vdkpbk0 | service_stawi SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbeaj5cpf2t36jctmpqg | service_operations SA permission service_loans loan_view | apps/tenancy/migrations/0001/20261024_02_fintech_operations_loan_view.sql |
