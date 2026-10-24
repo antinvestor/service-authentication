@@ -874,11 +874,11 @@ class _EditPartitionResult {
     }
     if (contactFields.isNotEmpty) {
       fields['support_contacts'] = Value(
-        structValue: Struct(fields: contactFields),
+        structValue: Struct(fields: contactFields.entries),
       );
     }
     if (fields.isEmpty) return null;
-    return Struct(fields: fields);
+    return Struct(fields: fields.entries);
   }
 }
 

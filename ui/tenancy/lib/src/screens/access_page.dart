@@ -48,10 +48,15 @@ class AccessPage extends ConsumerWidget {
             return null;
           }),
           cells: [
-            DataCell(Text(access.id,
-                style:
-                    const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-            DataCell(ProfileBadge(profileId: access.profileId, name: access.profileId)),
+            DataCell(
+              Text(
+                access.id,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            DataCell(
+              ProfileBadge(profileId: access.profileId, name: access.profileId),
+            ),
             DataCell(Text(partitionName)),
             DataCell(TenancyStateBadge(access.state)),
           ],
@@ -106,9 +111,7 @@ class _AccessDetail extends StatelessWidget {
         ? DateFormat.yMd().format(access.createdAt.toDateTime())
         : 'N/A';
 
-    final partitionName = access.hasPartition()
-        ? access.partition.name
-        : 'N/A';
+    final partitionName = access.hasPartition() ? access.partition.name : 'N/A';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,21 +124,30 @@ class _AccessDetail extends StatelessWidget {
                 color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.vpn_key_outlined,
-                  size: 24, color: theme.colorScheme.tertiary),
+              child: Icon(
+                Icons.vpn_key_outlined,
+                size: 24,
+                color: theme.colorScheme.tertiary,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Access Grant',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  Text(access.id,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontFamily: 'monospace')),
+                  Text(
+                    'Access Grant',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    access.id,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -169,14 +181,20 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(fontWeight: FontWeight.w500)),
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),

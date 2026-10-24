@@ -44,15 +44,19 @@ class PermissionsTab extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 36,
-                color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 36, color: theme.colorScheme.error),
             const SizedBox(height: 12),
-            Text('Failed to load permissions',
-                style: theme.textTheme.bodyMedium),
+            Text(
+              'Failed to load permissions',
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 8),
-            Text(error.toString(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              error.toString(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => ref.invalidate(serviceNamespacesProvider),
@@ -81,7 +85,8 @@ class PermissionsTab extends ConsumerWidget {
                   Text(
                     '${visibleNamespaces.length} service namespace${visibleNamespaces.length == 1 ? '' : 's'} registered',
                     style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant),
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   Row(
                     children: [
@@ -116,14 +121,18 @@ class PermissionsTab extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.admin_panel_settings_outlined,
-                          size: 48, color: Colors.grey),
+                      Icon(
+                        Icons.admin_panel_settings_outlined,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
                       SizedBox(height: 12),
                       Text('No service namespaces registered'),
                       SizedBox(height: 8),
                       Text(
-                          'Namespaces appear when services start and register '
-                          'their permissions.'),
+                        'Namespaces appear when services start and register '
+                        'their permissions.',
+                      ),
                     ],
                   ),
                 ),
@@ -156,28 +165,28 @@ class PermissionsTab extends ConsumerWidget {
     List<String> userRoles,
   ) {
     final jwt = ref.read(jwtTenantContextProvider);
-    final jwtCtx = jwt.whenOrNull(data: (c) => c) ??
+    final jwtCtx =
+        jwt.whenOrNull(data: (c) => c) ??
         const TenantContext(tenantId: '', partitionId: '');
     if (jwtCtx.canSwitchContext && jwtCtx.partitionId != partitionId) {
-      ref.read(activeTenantProvider.notifier).set(
-        jwtCtx.copyWith(
-          tenantId: tenantId,
-          partitionId: partitionId,
-        ),
-      );
+      ref
+          .read(activeTenantProvider.notifier)
+          .set(jwtCtx.copyWith(tenantId: tenantId, partitionId: partitionId));
     }
 
-    Navigator.of(context).push(MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => _PermissionManagerPage(
-        namespaces: namespaces,
-        ref: ref,
-        partitionId: partitionId,
-        tenantId: tenantId,
-        isSuperUser: isSuperUser,
-        userRoles: userRoles,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _PermissionManagerPage(
+          namespaces: namespaces,
+          ref: ref,
+          partitionId: partitionId,
+          tenantId: tenantId,
+          isSuperUser: isSuperUser,
+          userRoles: userRoles,
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -189,12 +198,14 @@ List<ServiceNamespaceObject> _filterNamespacesByRoles(
   for (final ns in namespaces) {
     final allowedPerms = _permissionsForRoles(ns, userRoles);
     if (allowedPerms.isNotEmpty) {
-      result.add(ServiceNamespaceObject(
-        namespace: ns.namespace,
-        permissions: allowedPerms,
-        roleBindings: ns.roleBindings,
-        registeredAt: ns.hasRegisteredAt() ? ns.registeredAt : null,
-      ));
+      result.add(
+        ServiceNamespaceObject(
+          namespace: ns.namespace,
+          permissions: allowedPerms,
+          roleBindings: ns.roleBindings.entries,
+          registeredAt: ns.hasRegisteredAt() ? ns.registeredAt : null,
+        ),
+      );
     }
   }
   return result;
@@ -238,16 +249,22 @@ class _NamespaceCard extends StatelessWidget {
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: ExpansionTile(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
-        leading: Icon(Icons.extension_outlined,
-            size: 20, color: theme.colorScheme.tertiary),
-        title: Text(_displayName,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        leading: Icon(
+          Icons.extension_outlined,
+          size: 20,
+          color: theme.colorScheme.tertiary,
+        ),
+        title: Text(
+          _displayName,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           '${namespace.permissions.length} permissions',
-          style: TextStyle(fontSize: 12,
-              color: theme.colorScheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         children: [
           Padding(
@@ -261,18 +278,21 @@ class _NamespaceCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: namespace.permissions
-                      .map((p) => Chip(
-                            label:
-                                Text(p, style: const TextStyle(fontSize: 12)),
-                            backgroundColor:
-                                theme.colorScheme.tertiary.withValues(alpha: 0.08),
-                            side: BorderSide(
-                                color: theme.colorScheme.tertiary
-                                    .withValues(alpha: 0.2)),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ))
+                      .map(
+                        (p) => Chip(
+                          label: Text(p, style: const TextStyle(fontSize: 12)),
+                          backgroundColor: theme.colorScheme.tertiary
+                              .withValues(alpha: 0.08),
+                          side: BorderSide(
+                            color: theme.colorScheme.tertiary.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
                       .toList(),
                 ),
                 if (namespace.roleBindings.isNotEmpty) ...[
@@ -287,18 +307,24 @@ class _NamespaceCard extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                  color: Colors.green.withValues(alpha: 0.3)),
+                                color: Colors.green.withValues(alpha: 0.3),
+                              ),
                             ),
-                            child: Text(entry.key,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.green)),
+                            child: Text(
+                              entry.key,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -306,11 +332,16 @@ class _NamespaceCard extends StatelessWidget {
                               spacing: 6,
                               runSpacing: 4,
                               children: entry.value.permissions
-                                  .map((p) => Text(p,
+                                  .map(
+                                    (p) => Text(
+                                      p,
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
-                                              fontFamily: 'monospace',
-                                              fontSize: 11)))
+                                            fontFamily: 'monospace',
+                                            fontSize: 11,
+                                          ),
+                                    ),
+                                  )
                                   .toList(),
                             ),
                           ),
@@ -334,10 +365,13 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Text(text,
-        style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurfaceVariant));
+    return Text(
+      text,
+      style: theme.textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
   }
 }
 
@@ -361,8 +395,7 @@ class _PermissionManagerPage extends StatefulWidget {
   final List<String> userRoles;
 
   @override
-  State<_PermissionManagerPage> createState() =>
-      _PermissionManagerPageState();
+  State<_PermissionManagerPage> createState() => _PermissionManagerPageState();
 }
 
 class _PermissionManagerPageState extends State<_PermissionManagerPage> {
@@ -406,17 +439,17 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
     });
 
     try {
-      final profileClient =
-          widget.ref.read(profileServiceClientProvider);
+      final profileClient = widget.ref.read(profileServiceClientProvider);
       final response = await profileClient.getByContact(
-          GetByContactRequest(contact: contact));
+        GetByContactRequest(contact: contact),
+      );
       final profile = response.data;
       final nameField = profile.properties.fields['au_name'];
       final name = (nameField != null && nameField.hasStringValue())
           ? nameField.stringValue
           : profile.contacts.isNotEmpty
-              ? profile.contacts.first.detail
-              : profile.id;
+          ? profile.contacts.first.detail
+          : profile.id;
       setState(() {
         _profileIdCtl.text = profile.id;
         _profileName = name;
@@ -493,15 +526,16 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content:
-                  Text('Granted $_totalSelected permissions to $profileId')),
+            content: Text('Granted $_totalSelected permissions to $profileId'),
+          ),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
         setState(() => _saving = false);
       }
     }
@@ -531,15 +565,18 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Revoked $_totalSelected permissions from $profileId')),
+            content: Text(
+              'Revoked $_totalSelected permissions from $profileId',
+            ),
+          ),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
         setState(() => _saving = false);
       }
     }
@@ -555,10 +592,15 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
           if (_totalSelected > 0 && _profileResolved) ...[
             TextButton.icon(
               onPressed: _saving ? null : _revokeSelected,
-              icon: Icon(Icons.remove_circle_outline,
-                  size: 18, color: theme.colorScheme.error),
-              label: Text('Revoke ($_totalSelected)',
-                  style: TextStyle(color: theme.colorScheme.error)),
+              icon: Icon(
+                Icons.remove_circle_outline,
+                size: 18,
+                color: theme.colorScheme.error,
+              ),
+              label: Text(
+                'Revoke ($_totalSelected)',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
@@ -598,18 +640,22 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
           Icon(
             widget.isSuperUser ? Icons.shield_outlined : Icons.info_outline,
             size: 16,
-            color: widget.isSuperUser ? Colors.green : theme.colorScheme.tertiary,
+            color: widget.isSuperUser
+                ? Colors.green
+                : theme.colorScheme.tertiary,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               widget.isSuperUser
                   ? 'Root partition owner -- all permissions across all '
-                      'namespaces are available for assignment.'
+                        'namespaces are available for assignment.'
                   : 'You can only assign permissions granted by your '
-                      'current roles.',
-              style: TextStyle(fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant),
+                        'current roles.',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -625,9 +671,12 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Select Profile',
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Select Profile',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -649,7 +698,8 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
                     ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Search'),
               ),
               const SizedBox(width: 16),
@@ -675,8 +725,10 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
           ),
           if (_searchError != null) ...[
             const SizedBox(height: 8),
-            Text(_searchError!,
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
+            Text(
+              _searchError!,
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+            ),
           ],
           if (_profileName != null) ...[
             const SizedBox(height: 8),
@@ -684,25 +736,33 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
               children: [
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor:
-                      theme.colorScheme.tertiary.withValues(alpha: 0.15),
+                  backgroundColor: theme.colorScheme.tertiary.withValues(
+                    alpha: 0.15,
+                  ),
                   child: Text(
                     _profileName!.isNotEmpty
                         ? _profileName![0].toUpperCase()
                         : '?',
                     style: TextStyle(
-                        color: theme.colorScheme.tertiary, fontSize: 12),
+                      color: theme.colorScheme.tertiary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(_profileName!,
-                    style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text(
+                  _profileName!,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
                 const SizedBox(width: 8),
-                Text(_profileIdCtl.text,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant)),
+                Text(
+                  _profileIdCtl.text,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ],
@@ -722,8 +782,10 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
             SizedBox(height: 12),
             Text('No assignable permissions'),
             SizedBox(height: 8),
-            Text('Your current roles do not grant any permissions '
-                'that can be assigned to others.'),
+            Text(
+              'Your current roles do not grant any permissions '
+              'that can be assigned to others.',
+            ),
           ],
         ),
       );
@@ -740,8 +802,8 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
             ? '${displayName[0].toUpperCase()}${displayName.substring(1)}'
             : nsName;
         final selectedCount = _selected[nsName]?.length ?? 0;
-        final allSelected = selectedCount == ns.permissions.length &&
-            ns.permissions.isNotEmpty;
+        final allSelected =
+            selectedCount == ns.permissions.length && ns.permissions.isNotEmpty;
 
         return Card(
           elevation: 0,
@@ -757,34 +819,45 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.extension_outlined,
-                        size: 18, color: theme.colorScheme.tertiary),
+                    Icon(
+                      Icons.extension_outlined,
+                      size: 18,
+                      color: theme.colorScheme.tertiary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 15)),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
                     TextButton(
                       onPressed: () => allSelected
                           ? _deselectAll(nsName)
                           : _selectAll(nsName, ns.permissions.toList()),
-                      child:
-                          Text(allSelected ? 'Deselect All' : 'Select All'),
+                      child: Text(allSelected ? 'Deselect All' : 'Select All'),
                     ),
                     if (selectedCount > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.tertiary,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text('$selectedCount',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600)),
+                        child: Text(
+                          '$selectedCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -795,11 +868,13 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
                   children: ns.permissions.map((perm) {
                     final selected = _isSelected(nsName, perm);
                     return FilterChip(
-                      label: Text(perm,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: selected ? Colors.white : null,
-                          )),
+                      label: Text(
+                        perm,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: selected ? Colors.white : null,
+                        ),
+                      ),
                       selected: selected,
                       onSelected: (_) => _toggle(nsName, perm),
                       selectedColor: theme.colorScheme.tertiary,
@@ -809,8 +884,7 @@ class _PermissionManagerPageState extends State<_PermissionManagerPage> {
                             ? theme.colorScheme.tertiary
                             : theme.colorScheme.outlineVariant,
                       ),
-                      materialTapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.compact,
                     );
                   }).toList(),

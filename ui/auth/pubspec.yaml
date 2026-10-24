@@ -2,7 +2,7 @@ name: antinvestor_ui_auth
 description: >
   Authentication UI library for Antinvestor. Browse login history, view session
   details, and monitor sign-in activity with embeddable widgets for profile screens.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/antinvestor/service-authentication
 homepage: https://github.com/antinvestor/service-authentication/tree/main/ui/auth
 issue_tracker: https://github.com/antinvestor/service-authentication/issues
@@ -19,14 +19,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  antinvestor_ui_core: ^0.1.0
-  antinvestor_api_authentication: ^0.1.0
-  antinvestor_api_common: ^1.52.0
-  connectrpc: ^1.0.0
-  fixnum: ^1.1.0
+  antinvestor_ui_core: ^0.6.0
+  antinvestor_api_authentication: ^0.3.0
+  antinvestor_api_common: ^2.0.0
+  connectrpc: ^2.0.0
+  fixnum: ^1.1.1
   flutter_riverpod: ^3.3.1
   go_router: ^17.2.0
-  protobuf: ^4.2.0
+  protobuf: ^6.1.0
   intl: ^0.20.2
 
 dev_dependencies:
