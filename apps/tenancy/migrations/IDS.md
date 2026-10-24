@@ -743,3 +743,59 @@ configuration.
 | dbas5dcpf2t4oekfdkgg | service_procurement client audience https://api.stawi.org/manufacturing | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
 | dbas5dcpf2t4oekfdkh0 | service_procurement SA grant service_manufacturing partition_tree | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
 | dbas5dcpf2t4oekfdkhg | service_procurement SA permission service_manufacturing.plan_view | apps/tenancy/migrations/0001/20261019_01_service_procurement_manufacturing.sql |
+
+## Fintech peer audiences + grants for service-fintech v1.96.3x (2026-10-24)
+| xid | purpose | file |
+|-----|---------|------|
+| dbe6k5g1j4o4jru4et6g | service_loans SA recipient https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et70 | service_loans SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et7g | service_loans SA permission service_limits limits_use | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et80 | service_limits SA recipient https://api.stawi.org/audit | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et8g | service_limits SA recipient https://api.stawi.org/identity | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et90 | service_limits SA grant service_field partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4et9g | service_limits SA permission service_field client_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4eta0 | service_limits SA grant service_identity partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etag | service_limits SA permission service_identity investor_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etb0 | service_limits SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etbg | service_limits SA permission service_audit audit_create | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etc0 | service_limits SA permission service_audit audit_verify | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etcg | service_limits SA permission service_audit audit_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etd0 | service_operations SA recipient https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etdg | service_operations SA recipient https://api.stawi.org/loans | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4ete0 | service_operations SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4eteg | service_operations SA permission service_limits limits_use | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etf0 | service_operations SA grant service_loans partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etfg | service_operations SA permission service_loans repayment_manage | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etg0 | service_savings SA recipient https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etgg | service_savings SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4eth0 | service_savings SA permission service_limits limits_use | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4ethg | service_funding SA recipient https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4eti0 | service_funding SA recipient https://api.stawi.org/savings | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etig | service_funding SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etj0 | service_funding SA permission service_limits limits_use | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etjg | service_funding SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etk0 | service_funding SA permission service_savings savings_account_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etkg | service_funding SA permission service_savings savings_balance_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etl0 | service_seed SA recipient https://api.stawi.org/profile | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etlg | service_seed SA recipient https://api.stawi.org/audit | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etm0 | service_seed SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etmg | service_seed SA permission service_audit audit_create | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etn0 | service_seed SA permission service_audit audit_verify | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etng | service_seed SA permission service_audit audit_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4eto0 | service_seed SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etog | service_seed SA permission service_profile profile_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etp0 | service_stawi SA recipient https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etpg | service_stawi SA recipient https://api.stawi.org/audit | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etq0 | service_stawi SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etqg | service_stawi SA permission service_limits limits_use | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etr0 | service_stawi SA grant service_audit partition_tree | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etrg | service_stawi SA permission service_audit audit_create | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4ets0 | service_stawi SA permission service_audit audit_verify | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| dbe6k5g1j4o4jru4etsg | service_stawi SA permission service_audit audit_view | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkp420 | service_loans SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmkpf2t39vdkpmb0 | service_limits SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkp8i0 | service_operations SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkp7f0 | service_savings SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkp5f0 | service_funding SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkpa4g | service_seed SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
+| d94lkmcpf2t39vdkpbk0 | service_stawi SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261024_01_fintech_peer_audiences_grants.sql |
