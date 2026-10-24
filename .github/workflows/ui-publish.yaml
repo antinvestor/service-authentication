@@ -24,4 +24,4 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: antinvestor/common/.github/workflows/flutter-publish.yml@d79a96209852078748f0e94ab877f7e012493896 # antinvestor/common#45
+    uses: antinvestor/common/.github/workflows/flutter-publish.yml@2187bd378641cd1521dd700324df48571657b78f # antinvestor/common#45
