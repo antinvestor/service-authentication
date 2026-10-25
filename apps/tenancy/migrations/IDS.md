@@ -803,3 +803,10 @@ configuration.
 | dbef8dspf2te3pa5p98g | service_loans SA recipient https://api.stawi.org/seed | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
 | dbef8dspf2te3pa5p990 | service_loans SA grant service_seed partition_tree | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
 | dbef8dspf2te3pa5p99g | service_loans SA permission service_seed seed_loan_paid_off_notify | apps/tenancy/migrations/0001/20261024_03_fintech_loans_seed_paid_off.sql |
+| dbev6g4pf2t62071u7eg | service_loans SA recipient https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7f0 | service_loans SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7fg | service_loans SA permission service_trustage workflow_manage | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7g0 | service_loans SA permission service_trustage workflow_view | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7gg | trustage SA recipient https://api.stawi.org/loans | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7h0 | trustage SA grant service_loans partition_tree | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+| dbev6g4pf2t62071u7hg | trustage SA permission service_loans loan_job_run | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
