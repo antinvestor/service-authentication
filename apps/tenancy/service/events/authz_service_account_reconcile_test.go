@@ -126,3 +126,35 @@ func TestBuildPartitionTreeUsesStructuralAncestryAcrossTenantBoundaries(t *testi
 	require.Equal(t, []string{"environment", "platform", "product"}, []string{tree[0].ID, tree[1].ID, tree[2].ID})
 	require.NotContains(t, tree, unrelated)
 }
+
+// A grant whose namespace is not registered yet must neither block the
+// account's other grants nor revoke what it already applied.
+func TestUnresolvedGrantKeepsItsAppliedTuplesAndOnlyThose(t *testing.T) {
+	t.Parallel()
+
+	applied := []*models.ServiceAccountAppliedTuple{
+		{Namespace: "service_finance", Object: "t/p", Relation: "granted_workflow_execute",
+			SubjectNamespace: "profile_user", SubjectObject: "bot"},
+		{Namespace: "service_loans", Object: "t/p", Relation: "granted_loan_view",
+			SubjectNamespace: "profile_user", SubjectObject: "bot"},
+	}
+	unresolved := map[string]error{"service_finance": errors.New(`authorization namespace "service_finance" is not registered`)}
+
+	kept := keptTuples(applied, unresolved)
+	require.Len(t, kept, 1)
+	require.Equal(t, "service_finance", kept[0].Namespace)
+	require.Empty(t, kept[0].GetID(), "kept tuples are fresh rows for the new applied state")
+
+	desired := append([]*models.ServiceAccountAppliedTuple{
+		{Namespace: "service_loans", Object: "t/p", Relation: "granted_loan_job_run",
+			SubjectNamespace: "profile_user", SubjectObject: "bot"},
+	}, kept...)
+	deletes, writes := diffAuthorizationTuples(applied, desired)
+	require.Len(t, deletes, 1, "only the dropped loans permission is revoked")
+	require.Equal(t, "granted_loan_view", deletes[0].Relation)
+	require.Len(t, writes, 1)
+	require.Equal(t, "granted_loan_job_run", writes[0].Relation)
+
+	require.Nil(t, keptTuples(applied, nil))
+	require.ErrorContains(t, unresolvedGrantsError(unresolved), "service_finance")
+}

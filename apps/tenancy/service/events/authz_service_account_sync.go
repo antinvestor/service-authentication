@@ -108,13 +108,13 @@ func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) err
 			failures = append(failures, fmt.Errorf("load service account %s policy: %w", policy.ServiceAccountID, stateErr))
 			continue
 		}
-		missing := missingPolicyNamespaces(state.Grants, registered)
-		if len(missing) > 0 {
+		// Grants in namespaces not registered yet are left as they are; the
+		// rest of the policy is applied now.
+		if missing := missingPolicyNamespaces(state.Grants, registered); len(missing) > 0 {
 			util.Log(ctx).WithFields(map[string]any{
 				"service_account_id": policy.ServiceAccountID,
 				"namespaces":         missing,
-			}).Info("authorization policy remains pending until service manifests register")
-			continue
+			}).Info("authorization grants remain pending until service manifests register")
 		}
 		payload := map[string]any{
 			"id":         policy.ServiceAccountID,
@@ -122,6 +122,9 @@ func (e *AuthzServiceAccountSyncEvent) ReconcilePending(ctx context.Context) err
 			"reason":     "startup_reconciliation",
 		}
 		if err = e.Execute(ctx, &payload); err != nil {
+			if errors.Is(err, errUnresolvedGrants) {
+				continue
+			}
 			if isAuthorizationSchemaNotReady(err) {
 				util.Log(ctx).WithError(err).WithFields(map[string]any{
 					"service_account_id": policy.ServiceAccountID,
@@ -249,7 +252,7 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 		)
 	}
 
-	desired, err := e.desiredTuples(ctx, sa, policyState.Grants)
+	desired, unresolved, err := e.desiredTuples(ctx, sa, policyState.Grants)
 	if err != nil {
 		return e.handleFailure(ctx, policyState.Policy, reason, err)
 	}
@@ -262,6 +265,11 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 			fmt.Errorf("load applied authorization tuples: %w", err),
 		)
 	}
+	// A grant that cannot be resolved yet (its namespace or permission is not
+	// registered) must not hold back the account's other grants, nor take
+	// away what it already applied: its tuples stay exactly as they are until
+	// the owning service registers and the policy is re-queued.
+	desired = append(desired, keptTuples(applied, unresolved)...)
 
 	deletes, writes := diffAuthorizationTuples(applied, desired)
 	if len(deletes) > 0 {
@@ -282,6 +290,11 @@ func (e *AuthzServiceAccountSyncEvent) Execute(ictx context.Context, payload any
 			reason,
 			fmt.Errorf("persist applied authorization state: %w", err),
 		)
+	}
+	if len(unresolved) > 0 {
+		// Applied as far as it can be; the unresolved grants stay visible on
+		// the policy and are retried.
+		return e.handleFailure(ctx, policyState.Policy, reason, unresolvedGrantsError(unresolved))
 	}
 	if sa.State == int32(commonv1.STATE_DELETED) {
 		clientID, finalizeErr := e.authContractRepo.FinalizeServiceAccountRemoval(ctx, sa.ID)
@@ -387,22 +400,22 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	ctx context.Context,
 	sa *models.ServiceAccount,
 	grants []repository.AuthorizationGrant,
-) ([]*models.ServiceAccountAppliedTuple, error) {
+) ([]*models.ServiceAccountAppliedTuple, map[string]error, error) {
 	if sa.State == int32(commonv1.STATE_DELETED) {
-		return nil, nil
+		return nil, nil, nil
 	}
 	namespaces, err := e.serviceNamespaceRepo.ListAll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load registered permission namespaces: %w", err)
+		return nil, nil, fmt.Errorf("load registered permission namespaces: %w", err)
 	}
 	basePartition, err := e.partitionRepo.GetByID(ctx, sa.PartitionID)
 	if err != nil {
-		return nil, fmt.Errorf("load service account partition %s: %w", sa.PartitionID, err)
+		return nil, nil, fmt.Errorf("load service account partition %s: %w", sa.PartitionID, err)
 	}
 
 	tree, err := e.partitionTree(ctx, basePartition)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	partitionsByID := make(map[string]*models.Partition, len(tree))
 	partitionsByID[basePartition.ID] = basePartition
@@ -412,17 +425,19 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	// See docs/IDENTITY_AND_AUTHORIZATION.md.
 	profileID := strings.TrimSpace(sa.ProfileID)
 	if profileID == "" {
-		return nil, fmt.Errorf("service account %s has empty profile_id", sa.ID)
+		return nil, nil, fmt.Errorf("service account %s has empty profile_id", sa.ID)
 	}
 
 	desiredRelations := make([]security.RelationTuple, 0)
+	unresolved := map[string]error{}
 	for _, grant := range grants {
 		resolved, resolveErr := authz.ResolveServiceGrants(
 			map[string][]string{grant.Namespace: grant.Permissions},
 			namespaces,
 		)
 		if resolveErr != nil {
-			return nil, fmt.Errorf("invalid authorization policy grant: %w", resolveErr)
+			unresolved[grant.Namespace] = resolveErr
+			continue
 		}
 
 		targets := []*models.Partition{basePartition}
@@ -431,7 +446,7 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 		case models.AuthorizationScopePartitionTree:
 			targets = tree
 		default:
-			return nil, fmt.Errorf("unsupported authorization scope %q", grant.Scope)
+			return nil, nil, fmt.Errorf("unsupported authorization scope %q", grant.Scope)
 		}
 
 		for _, partition := range targets {
@@ -456,8 +471,58 @@ func (e *AuthzServiceAccountSyncEvent) desiredTuples(
 	for _, relation := range desiredRelations {
 		desired = append(desired, appliedTupleModel(sa, relation))
 	}
-	return desired, nil
+	return desired, unresolved, nil
 }
+
+// keptTuples returns fresh copies of the applied tuples in the namespaces of
+// unresolved grants, so the reconciliation neither deletes them nor drops
+// them from the recorded state.
+func keptTuples(
+	applied []*models.ServiceAccountAppliedTuple,
+	unresolved map[string]error,
+) []*models.ServiceAccountAppliedTuple {
+	if len(unresolved) == 0 {
+		return nil
+	}
+	kept := make([]*models.ServiceAccountAppliedTuple, 0)
+	for _, tuple := range applied {
+		if _, ok := unresolved[tuple.Namespace]; !ok {
+			continue
+		}
+		kept = append(kept, &models.ServiceAccountAppliedTuple{
+			Namespace:        tuple.Namespace,
+			Object:           tuple.Object,
+			Relation:         tuple.Relation,
+			SubjectNamespace: tuple.SubjectNamespace,
+			SubjectObject:    tuple.SubjectObject,
+			SubjectRelation:  tuple.SubjectRelation,
+			BaseModel: data.BaseModel{
+				TenantID:    tuple.TenantID,
+				PartitionID: tuple.PartitionID,
+			},
+		})
+	}
+	return kept
+}
+
+// unresolvedGrantsError names every grant that could not be applied yet, in a
+// stable order.
+func unresolvedGrantsError(unresolved map[string]error) error {
+	namespaces := make([]string, 0, len(unresolved))
+	for namespace := range unresolved {
+		namespaces = append(namespaces, namespace)
+	}
+	slices.Sort(namespaces)
+	errs := make([]error, 0, len(namespaces))
+	for _, namespace := range namespaces {
+		errs = append(errs, unresolved[namespace])
+	}
+	return fmt.Errorf("%w (other grants applied): %w", errUnresolvedGrants, errors.Join(errs...))
+}
+
+// errUnresolvedGrants marks a policy applied except for grants whose
+// namespace or permission is not registered yet.
+var errUnresolvedGrants = errors.New("invalid authorization policy grant")
 
 func (e *AuthzServiceAccountSyncEvent) partitionTree(
 	ctx context.Context,
