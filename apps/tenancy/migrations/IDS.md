@@ -831,3 +831,11 @@ configuration.
 | dbfctccpf2t3vvghmsb0 | service_notification_ussd SA audience https://api.stawi.org/seed | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfctccpf2t3vvghmsbg | service_notification_ussd SA grant service_seed partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfctccpf2t3vvghmsc0 | service_notification_ussd SA permit seed_ussd_state | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+
+## service_operations savings deposits (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbff1gcpf2tat6q49fqg | service_operations SA audience https://api.stawi.org/savings | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gcpf2tatgbhhqv0 | service_operations SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gcpf2tatpv26bug | service_operations SA permit savings_account_view | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gkpf2tau33alsr0 | service_operations SA permit deposit_manage | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
