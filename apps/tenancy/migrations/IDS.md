@@ -53,6 +53,7 @@ configuration.
 ## Clients (OAuth2)
 | xid | client_id (xid) | partition | file |
 |-----|-----------------|-----------|------|
+| dbfc76cpf2t8llgjlgp0 | service-notification-ussd | (SA: service_notification_ussd) | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | db5iu14pf2t15n40lj2g | settlement | (SA: service_settlement) | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5itnspf2tft2pp30e0 | finance | (SA: service_finance) | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
 | datmso4pf2t98sc6rov0 | service-payment-flutterwave | (SA: service_payment_flutterwave) | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
@@ -107,6 +108,7 @@ configuration.
 ## Service accounts
 | xid | profile_id (placeholder) | client | file |
 |-----|--------------------------|--------|------|
+| dbfc76cpf2t8llgjlgq0 | dbfc74kpf2t8jtt127bg | dbfc76cpf2t8llgjlgp0 | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | db5iu14pf2t15n40lj30 | db5iu14pf2t15n40lj40 | db5iu14pf2t15n40lj2g | apps/tenancy/migrations/0001/20261010_02_service_settlement.sql |
 | db5itnspf2tft2pp30eg | db5itnspf2tft2pp30fg | db5itnspf2tft2pp30e0 | apps/tenancy/migrations/0001/20261010_01_service_finance.sql |
 | datmso4pf2t98sc6rovg | d9flwbotprof00000001 | datmso4pf2t98sc6rov0 | apps/tenancy/migrations/0001/20260929_01_service_payment_flutterwave.sql |
@@ -810,3 +812,16 @@ configuration.
 | dbev6g4pf2t62071u7gg | trustage SA recipient https://api.stawi.org/loans | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
 | dbev6g4pf2t62071u7h0 | trustage SA grant service_loans partition_tree | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
 | dbev6g4pf2t62071u7hg | trustage SA permission service_loans loan_job_run | apps/tenancy/migrations/0001/20261025_01_fintech_loans_trustage_jobs.sql |
+
+## service_notification_ussd SA and seed USSD grants (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfc76kpf2t8meirgt70 | service_notification_ussd SA audience https://api.stawi.org/notification | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76kpf2t8meirgt7g | service_notification_ussd SA audience https://api.stawi.org/profile | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76cpf2t8llgjlgqg | service_notification_ussd SA authorization policy | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76kpf2t8meirgt80 | service_notification_ussd SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76kpf2t8meirgt8g | service_notification_ussd SA permit notification_send | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76kpf2t8meirgt90 | service_notification_ussd SA grant service_profile partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc76kpf2t8meirgt9g | service_notification_ussd SA permit profile_view | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc91cpf2tb4t2sfa1g | service_seed SA audience https://api.stawi.org/ussd | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfc91cpf2tb4t2sfa20 | service_seed SA permit contact_manage on service_profile | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
