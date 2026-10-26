@@ -63,6 +63,11 @@ WHERE p.grant_id = g.id
   AND g.namespace = 'service_loans'
   AND p.permission = 'repayment_manage';
 
+-- Seed texts borrowers the outcome of what they asked for on USSD.
+INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, resource_audience) VALUES ('dbfcjespf2tf7ot651n0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'c2f4j7au6s7f91uqnq9g', 'https://api.stawi.org/notification') ON CONFLICT (client_ref, resource_audience) DO NOTHING;
+INSERT INTO service_account_authorization_grants (id, tenant_id, partition_id, policy_id, namespace, scope) VALUES ('dbfcjespf2tf7ot651ng', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'd94lkmcpf2t39vdkpa4g', 'service_notification', 'partition_tree') ON CONFLICT (id) DO NOTHING;
+INSERT INTO service_account_authorization_permissions (id, tenant_id, partition_id, grant_id, permission) VALUES ('dbfcjespf2tf7ot651o0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfcjespf2tf7ot651ng', 'notification_send') ON CONFLICT (id) DO NOTHING;
+
 -- New desired state → bump the policies' generation so the reconciler re-applies them.
 UPDATE service_account_authorization_policies
 SET generation = generation + 1,
