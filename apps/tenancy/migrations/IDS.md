@@ -857,3 +857,14 @@ configuration.
 | dbffmjspf2tcuu2nqo30 | service_loans SA audience https://api.stawi.org/payment | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
 | dbffmjspf2tcv7bpnj00 | service_loans SA grant service_payment partition_tree | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
 | dbffmjspf2tcvh5g31gg | service_loans SA permit prompt_initiate | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+
+## service_limits expiry schedules (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfg9uspf2t1birgm9kg | service_limits SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1bsekodb0 | service_limits SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1c5njths0 | service_limits SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1cfbbhpr0 | service_limits SA permit workflow_view | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1coq6il30 | trustage SA audience https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1d26tdqr0 | trustage SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1db0bke8g | trustage SA permit limits_job_run | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
