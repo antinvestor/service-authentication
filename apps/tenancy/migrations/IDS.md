@@ -876,3 +876,12 @@ configuration.
 | dbfhisspf2t783h0vc00 | service_operations SA grant service_funding partition_tree | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
 | dbfhisspf2t78d60q9g0 | service_operations SA permit investor_account_view | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
 | dbfhisspf2t78mc48e00 | service_operations SA permit investor_account_manage | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+
+## service_identity KYC documents (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfldecpf2t9sfi4kpmg | service_identity SA audience https://api.stawi.org/files | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbfldecpf2t9st1hd6tg | service_identity SA grant service_file partition_tree | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbfldecpf2t9t68kf1ng | service_identity SA permit content_upload | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbflddkpf2t9riqen5rg | service_identity SA permit content_view | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| d94lkmcpf2t39vdkp3eg | service_identity SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
