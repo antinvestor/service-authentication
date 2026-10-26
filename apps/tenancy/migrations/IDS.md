@@ -868,3 +868,11 @@ configuration.
 | dbfg9uspf2t1coq6il30 | trustage SA audience https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
 | dbfg9uspf2t1d26tdqr0 | trustage SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
 | dbfg9uspf2t1db0bke8g | trustage SA permit limits_job_run | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+
+## service_operations investor deposits (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfhisspf2t77qnlnff0 | service_operations SA audience https://api.stawi.org/funding | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t783h0vc00 | service_operations SA grant service_funding partition_tree | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t78d60q9g0 | service_operations SA permit investor_account_view | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t78mc48e00 | service_operations SA permit investor_account_manage | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
