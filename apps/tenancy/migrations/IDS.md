@@ -839,3 +839,21 @@ configuration.
 | dbff1gcpf2tatgbhhqv0 | service_operations SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
 | dbff1gcpf2tatpv26bug | service_operations SA permit savings_account_view | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
 | dbff1gkpf2tau33alsr0 | service_operations SA permit deposit_manage | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+
+## service_operations settle schedule (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbffi8kpf2t5nupkb8m0 | service_operations SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8kpf2t5o80eflug | service_operations SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5oh3oceng | service_operations SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5oq8rfprg | service_operations SA permit workflow_view | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5p3hqo4jg | trustage SA audience https://api.stawi.org/operations | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5pceoscp0 | trustage SA grant service_operations partition_tree | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5pra4ner0 | trustage SA permit operations_job_run | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+
+## service_loans collection prompts (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbffmjspf2tcuu2nqo30 | service_loans SA audience https://api.stawi.org/payment | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+| dbffmjspf2tcv7bpnj00 | service_loans SA grant service_payment partition_tree | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+| dbffmjspf2tcvh5g31gg | service_loans SA permit prompt_initiate | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
