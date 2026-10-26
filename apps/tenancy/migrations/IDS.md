@@ -885,3 +885,17 @@ configuration.
 | dbfldecpf2t9t68kf1ng | service_identity SA permit content_upload | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
 | dbflddkpf2t9riqen5rg | service_identity SA permit content_view | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
 | d94lkmcpf2t39vdkp3eg | service_identity SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+
+## fintech payout outcomes and savings jobs (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfmdg4pf2t0lej3em80 | service_operations SA permit payout_outcome_apply (service_loans) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdg4pf2t0lntssre0 | service_operations SA permit payout_outcome_apply (service_savings) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdg4pf2t0m1d5ojs0 | service_operations SA permit payout_outcome_apply (service_funding) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mat1o3e0 | service_savings SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mkdd3nt0 | service_savings SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mthrbsug | service_savings SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0n6qlfu3g | service_savings SA permit workflow_view | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0ngaff920 | trustage SA audience https://api.stawi.org/savings | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0npt78r6g | trustage SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0o32c1eqg | trustage SA permit savings_job_run | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
