@@ -48,6 +48,12 @@ INSERT INTO service_account_authorization_permissions (id, tenant_id, partition_
 INSERT INTO service_account_authorization_grants (id, tenant_id, partition_id, policy_id, namespace, scope) VALUES ('dbfc76kpf2t8meirgt90', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfc76cpf2t8llgjlgqg', 'service_profile', 'partition_tree') ON CONFLICT (id) DO NOTHING;
 INSERT INTO service_account_authorization_permissions (id, tenant_id, partition_id, grant_id, permission) VALUES ('dbfc76kpf2t8meirgt9g', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfc76kpf2t8meirgt90', 'profile_view') ON CONFLICT (id) DO NOTHING;
 
+-- When a borrower opens Seed's menu the engine asks Seed for their current
+-- state (seed_ussd_state on service_seed) before the first screen.
+INSERT INTO oauth_client_recipients (id, tenant_id, partition_id, client_ref, resource_audience) VALUES ('dbfctccpf2t3vvghmsb0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfc76cpf2t8llgjlgp0', 'https://api.stawi.org/seed') ON CONFLICT (client_ref, resource_audience) DO NOTHING;
+INSERT INTO service_account_authorization_grants (id, tenant_id, partition_id, policy_id, namespace, scope) VALUES ('dbfctccpf2t3vvghmsbg', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfc76cpf2t8llgjlgqg', 'service_seed', 'partition_tree') ON CONFLICT (id) DO NOTHING;
+INSERT INTO service_account_authorization_permissions (id, tenant_id, partition_id, grant_id, permission) VALUES ('dbfctccpf2t3vvghmsc0', 'c2f4j7au6s7f91uqnojg', 'c2f4j7au6s7f91uqnokg', 'dbfctccpf2t3vvghmsbg', 'seed_ussd_state') ON CONFLICT (id) DO NOTHING;
+
 -- service_seed: Seed runs the borrower USSD menu. It registers its menu tree
 -- and pushes each borrower's state through the USSD management API, and it
 -- sends the one-time code that guards a borrower setting their USSD PIN

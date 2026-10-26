@@ -828,3 +828,6 @@ configuration.
 | dbfcjespf2tf7ot651n0 | service_seed SA audience https://api.stawi.org/notification | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfcjespf2tf7ot651ng | service_seed SA grant service_notification partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfcjespf2tf7ot651o0 | service_seed SA permit notification_send | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfctccpf2t3vvghmsb0 | service_notification_ussd SA audience https://api.stawi.org/seed | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfctccpf2t3vvghmsbg | service_notification_ussd SA grant service_seed partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+| dbfctccpf2t3vvghmsc0 | service_notification_ussd SA permit seed_ussd_state | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
