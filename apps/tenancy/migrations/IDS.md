@@ -831,3 +831,84 @@ configuration.
 | dbfctccpf2t3vvghmsb0 | service_notification_ussd SA audience https://api.stawi.org/seed | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfctccpf2t3vvghmsbg | service_notification_ussd SA grant service_seed partition_tree | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
 | dbfctccpf2t3vvghmsc0 | service_notification_ussd SA permit seed_ussd_state | apps/tenancy/migrations/0001/20261026_service_notification_ussd.sql |
+
+## service_operations savings deposits (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbff1gcpf2tat6q49fqg | service_operations SA audience https://api.stawi.org/savings | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gcpf2tatgbhhqv0 | service_operations SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gcpf2tatpv26bug | service_operations SA permit savings_account_view | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+| dbff1gkpf2tau33alsr0 | service_operations SA permit deposit_manage | apps/tenancy/migrations/0001/20261026_02_fintech_operations_savings_deposits.sql |
+
+## service_operations settle schedule (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbffi8kpf2t5nupkb8m0 | service_operations SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8kpf2t5o80eflug | service_operations SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5oh3oceng | service_operations SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5oq8rfprg | service_operations SA permit workflow_view | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5p3hqo4jg | trustage SA audience https://api.stawi.org/operations | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5pceoscp0 | trustage SA grant service_operations partition_tree | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+| dbffi8spf2t5pra4ner0 | trustage SA permit operations_job_run | apps/tenancy/migrations/0001/20261026_03_fintech_operations_trustage_jobs.sql |
+
+## service_loans collection prompts (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbffmjspf2tcuu2nqo30 | service_loans SA audience https://api.stawi.org/payment | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+| dbffmjspf2tcv7bpnj00 | service_loans SA grant service_payment partition_tree | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+| dbffmjspf2tcvh5g31gg | service_loans SA permit prompt_initiate | apps/tenancy/migrations/0001/20261026_04_fintech_loans_collection_prompts.sql |
+
+## service_limits expiry schedules (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfg9uspf2t1birgm9kg | service_limits SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1bsekodb0 | service_limits SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1c5njths0 | service_limits SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1cfbbhpr0 | service_limits SA permit workflow_view | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1coq6il30 | trustage SA audience https://api.stawi.org/limits | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1d26tdqr0 | trustage SA grant service_limits partition_tree | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+| dbfg9uspf2t1db0bke8g | trustage SA permit limits_job_run | apps/tenancy/migrations/0001/20261026_05_fintech_limits_trustage_jobs.sql |
+
+## service_operations investor deposits (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfhisspf2t77qnlnff0 | service_operations SA audience https://api.stawi.org/funding | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t783h0vc00 | service_operations SA grant service_funding partition_tree | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t78d60q9g0 | service_operations SA permit investor_account_view | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+| dbfhisspf2t78mc48e00 | service_operations SA permit investor_account_manage | apps/tenancy/migrations/0001/20261026_06_fintech_operations_investor_deposits.sql |
+
+## service_identity KYC documents (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfldecpf2t9sfi4kpmg | service_identity SA audience https://api.stawi.org/files | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbfldecpf2t9st1hd6tg | service_identity SA grant service_file partition_tree | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbfldecpf2t9t68kf1ng | service_identity SA permit content_upload | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| dbflddkpf2t9riqen5rg | service_identity SA permit content_view | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+| d94lkmcpf2t39vdkp3eg | service_identity SA authorization policy (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261026_07_fintech_identity_kyc_documents.sql |
+
+## fintech payout outcomes and savings jobs (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfmdg4pf2t0lej3em80 | service_operations SA permit payout_outcome_apply (service_loans) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdg4pf2t0lntssre0 | service_operations SA permit payout_outcome_apply (service_savings) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdg4pf2t0m1d5ojs0 | service_operations SA permit payout_outcome_apply (service_funding) | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mat1o3e0 | service_savings SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mkdd3nt0 | service_savings SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0mthrbsug | service_savings SA permit workflow_manage | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0n6qlfu3g | service_savings SA permit workflow_view | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0ngaff920 | trustage SA audience https://api.stawi.org/savings | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0npt78r6g | trustage SA grant service_savings partition_tree | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+| dbfmdgcpf2t0o32c1eqg | trustage SA permit savings_job_run | apps/tenancy/migrations/0001/20261026_08_fintech_payout_outcomes_savings_jobs.sql |
+
+## fintech stawi group obligations (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfqh0kpf2t117mdcoe0 | service_stawi SA permit group_obligation_manage (service_operations) | apps/tenancy/migrations/0001/20261026_10_fintech_stawi_group_obligations.sql |
+| d94lkmcpf2t39vdkpd10 | service_stawi SA grant service_operations (auth contract seed) (reference) | apps/tenancy/migrations/0001/20261026_10_fintech_stawi_group_obligations.sql |
+
+## fintech stawi jobs (2026-10-26)
+| xid | purpose | file |
+|-----|---------|------|
+| dbfriuspf2t6d9r5297g | trustage SA audience https://api.stawi.org/stawi | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
+| dbfriuspf2t6djgk4mkg | trustage SA grant service_stawi partition_tree | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
+| dbfriuspf2t6dsi4tcu0 | trustage SA permit stawi_job_run | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
