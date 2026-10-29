@@ -912,3 +912,24 @@ configuration.
 | dbfriuspf2t6d9r5297g | trustage SA audience https://api.stawi.org/stawi | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
 | dbfriuspf2t6djgk4mkg | trustage SA grant service_stawi partition_tree | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
 | dbfriuspf2t6dsi4tcu0 | trustage SA permit stawi_job_run | apps/tenancy/migrations/0001/20261026_11_fintech_stawi_jobs.sql |
+
+## commerce and procurement peers (2026-10-29)
+| xid | purpose | file |
+|-----|---------|------|
+| dbhph2cpf2t1iig5ksf0 | service_commerce SA audience https://api.stawi.org/payment | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksfg | service_commerce SA grant service_payment partition_tree | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksg0 | service_commerce SA permit payment_send | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksgg | service_commerce SA permit payment_status_view | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksh0 | service_commerce SA permit payment_search | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5kshg | service_commerce SA permit profile_create (service_profile) | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksi0 | service_procurement SA audience https://api.stawi.org/commerce | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksig | service_procurement SA audience https://api.stawi.org/trustage | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksj0 | service_procurement SA grant service_commerce partition_tree | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksjg | service_procurement SA grant service_trustage partition_tree | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksk0 | service_procurement SA permit stock_receive | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5kskg | service_procurement SA permit workflow_manage | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksl0 | service_procurement SA permit workflow_view | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5kslg | service_procurement SA permit inventory_manage (service_manufacturing) | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksm0 | trustage SA audience https://api.stawi.org/procurement | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksmg | trustage SA grant service_procurement partition_tree | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dbhph2cpf2t1iig5ksn0 | trustage SA permit goods_receipt_deliver | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
