@@ -151,6 +151,16 @@ After registration, pending SA policies for that namespace catch up through
 the event pipeline. Plane-1 `#service` for bot profiles is maintained by
 migration bootstrap and SA create/sync events.
 
+### Tenancy's own namespace (`service_tenancy`)
+
+Tenancy is the registration target, so it does not publish to itself over
+HTTP. Its setup Job's `bootstrap` step (`business.RunSetupBootstrap`) registers
+the merged `TenancyService` + `AuthContractService` manifest in-process, owned
+by the seeded `service_tenancy` root SA, then writes root super-user tuples and
+reconciles pending SA policies in the same run. Re-running the tenancy setup
+Job is also the repair path for root super-user tuples: it rewrites them for
+every registered namespace.
+
 ## Debugging permission_denied (e.g. ShowConsent / device_manage)
 
 Error shape:
@@ -189,6 +199,7 @@ registration and SA policy config; the event pipeline is the framework.
 | Hydra auto tenancy whitelist | `apps/tenancy/.../events/sync_client.go` `ensureTenancyAudience` |
 | Endpoint | `apps/tenancy/.../handlers/permissions.go` |
 | Business rules | `apps/tenancy/.../business/permission_registry.go` |
+| Tenancy self-registration | `apps/tenancy/.../business/setup_bootstrap.go` |
 | SA claims | `apps/default/.../handlers/webhook.go` |
 | SA Keto sync | `apps/tenancy/.../events/authz_service_account_sync.go` |
 | Bulk repair | `POST /_internal/sync/clients` (cron `synchronize-partitions`) |
