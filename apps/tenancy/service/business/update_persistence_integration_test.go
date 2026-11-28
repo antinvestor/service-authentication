@@ -206,3 +206,27 @@ func (s *BusinessTestSuite) TestUpdateCallSites_ZeroRowsReturnConflict() {
 		})
 	}
 }
+
+func (s *BusinessTestSuite) TestMigrations_FormstoreMayOnlyUploadToFiles() {
+	conn := s.adminConn()
+
+	var audiences int64
+	err := conn.QueryRow(s.SuiteCtx, `
+		SELECT count(*) FROM oauth_client_recipients r
+		JOIN clients c ON c.id = r.client_ref
+		WHERE c.client_id = 'operations-formstore' AND r.resource_audience = 'https://api.stawi.org/files'`,
+	).Scan(&audiences)
+	s.Require().NoError(err)
+	s.Equal(int64(1), audiences, "formstore needs the files audience to call UploadContent")
+
+	rows, err := conn.Query(s.SuiteCtx, `
+		SELECT p.permission FROM service_account_authorization_permissions p
+		JOIN service_account_authorization_grants g ON g.id = p.grant_id
+		JOIN service_account_authorization_policies pol ON pol.id = g.policy_id
+		JOIN service_accounts sa ON sa.id = pol.service_account_id
+		WHERE sa.client_id = 'operations-formstore' AND g.namespace = 'service_file'`)
+	s.Require().NoError(err)
+	permissions, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	s.Require().NoError(err)
+	s.Equal([]string{"content_upload"}, permissions, "formstore only uploads; it must not view, manage or delete files")
+}
