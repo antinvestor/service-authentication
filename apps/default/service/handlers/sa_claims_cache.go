@@ -42,6 +42,7 @@ type saClaimsCachePayload struct {
 	ProfileID        string `json:"profile_id,omitempty"`
 	Type             string `json:"type,omitempty"`
 	AccessID         string `json:"access_id,omitempty"`
+	ServiceName      string `json:"service_name,omitempty"`
 }
 
 func (h *AuthServer) saClaimsCache() cache.Cache[string, saClaimsCachePayload] {
@@ -78,6 +79,7 @@ func (h *AuthServer) getCachedServiceAccount(ctx context.Context, clientID strin
 		ProfileID:        p.ProfileID,
 		Type:             p.Type,
 		AccessID:         p.AccessID,
+		ServiceName:      p.ServiceName,
 	}, false, true
 }
 
@@ -94,6 +96,7 @@ func (h *AuthServer) setCachedServiceAccount(ctx context.Context, clientID strin
 		ProfileID:        sa.ProfileID,
 		Type:             sa.Type,
 		AccessID:         sa.AccessID,
+		ServiceName:      sa.ServiceName,
 	}
 	if err := c.Set(ctx, clientID, p, ttl); err != nil {
 		util.Log(ctx).WithError(err).WithField("client_id", clientID).Debug("sa claims cache set failed")

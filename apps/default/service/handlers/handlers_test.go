@@ -398,6 +398,9 @@ func (suite *HandlersTestSuite) TestTokenEnrichmentClientCredentialsCreatesLogin
 		require.Equal(t, clientID, accessToken["profile_id"])
 		require.Equal(t, "c2f4j7au6s7f91uqnojg", accessToken["tenant_id"])
 		require.Equal(t, "c2f4j7au6s7f91uqnokg", accessToken["partition_id"])
+		// service_name comes from the Hydra client metadata written by tenancy
+		// client sync; audit binds the producer's entries to it.
+		require.Equal(t, "authentication_tests", accessToken["service_name"])
 
 		// Synthetic ids are not persisted as login_events rows.
 		loginEvent, err := authServer.LoginEventRepo().GetByID(opCtx, loginEventID)

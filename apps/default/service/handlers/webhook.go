@@ -40,6 +40,10 @@ type serviceAccountAuthContext struct {
 	ProfileID        string
 	Type             string
 	AccessID         string
+	// ServiceName is the service account's name (Hydra client metadata
+	// "service_name", written by tenancy client sync). Emitted as the
+	// service_name claim that Frame's GetServiceName reads.
+	ServiceName string
 }
 
 // extractGrantedScopes extracts and normalises granted_scopes to []string
@@ -435,6 +439,11 @@ func buildServiceAccountClaims(
 	}
 	if accessID != "" {
 		claims["access_id"] = accessID
+	}
+	// Producers (e.g. audit) bind a service account to this claim; omit it
+	// rather than emit an empty name.
+	if serviceName := strings.TrimSpace(sa.ServiceName); serviceName != "" {
+		claims["service_name"] = serviceName
 	}
 	return claims, nil
 }
@@ -905,6 +914,7 @@ func serviceAccountFromHydraClient(
 	clientType, _ := metadata["type"].(string)
 	accessID, _ := metadata["access_id"].(string)
 	serviceAccountID, _ := metadata["service_account_id"].(string)
+	serviceName, _ := metadata["service_name"].(string)
 	if profileID == "" {
 		profileID = clientID
 	}
@@ -929,6 +939,7 @@ func serviceAccountFromHydraClient(
 		ProfileID:        profileID,
 		Type:             clientType,
 		AccessID:         accessID,
+		ServiceName:      serviceName,
 	}, nil
 }
 

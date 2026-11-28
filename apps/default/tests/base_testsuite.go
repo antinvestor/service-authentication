@@ -436,6 +436,9 @@ func ensureHydraServiceClients(ctx context.Context, adminURL string) error {
 			"partition_id": "c2f4j7au6s7f91uqnokg",
 			"profile_id":   seed.ProfileID,
 			"type":         "internal",
+			// Tenancy client sync writes the service account name here; seeds
+			// follow its convention of client name "sa-" + service account name.
+			"service_name": strings.TrimPrefix(seed.ClientName, "sa-"),
 		})
 
 		_, _, err := apiClient.OAuth2API.
