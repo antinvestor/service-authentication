@@ -514,14 +514,14 @@ func syncSeededRecordsToHydra(ctx context.Context, cfg *aconfig.TenancyConfig, p
 			break
 		}
 		for _, cl := range result.Item() {
-			profileID := ""
+			profileID, serviceName := "", ""
 			if cl.Type == "internal" || cl.Type == "external" {
 				sa, saErr := partSrv.ServiceAccountRepo.GetByClientRef(syncCtx, cl.GetID())
 				if saErr == nil && sa != nil {
-					profileID = sa.ProfileID
+					profileID, serviceName = sa.ProfileID, sa.Name
 				}
 			}
-			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, partSrv.OAuthRecipientRepo, cl, profileID); syncErr != nil {
+			if syncErr := events.SyncClientOnHydra(syncCtx, cfg, plainCli, partSrv.ClientRepo, partSrv.OAuthRecipientRepo, cl, profileID, serviceName); syncErr != nil {
 				log.WithError(syncErr).WithField("client_id", cl.ClientID).Error("failed to sync client to Hydra")
 			} else {
 				clientsSynced++

@@ -47,6 +47,7 @@ func TestSAClaimsCache_SharedRawCacheRoundTrip(t *testing.T) {
 		ProfileID:        "prof-1",
 		Type:             "internal",
 		AccessID:         "a1",
+		ServiceName:      "service_identity",
 	}
 
 	h.setCachedServiceAccount(ctx, "svc-1", sa, time.Minute)
@@ -55,6 +56,7 @@ func TestSAClaimsCache_SharedRawCacheRoundTrip(t *testing.T) {
 	require.False(t, neg)
 	require.Equal(t, "prof-1", got.ProfileID)
 	require.Equal(t, "internal", got.Type)
+	require.Equal(t, "service_identity", got.ServiceName)
 
 	h.setCachedServiceAccountNegative(ctx, "missing", time.Minute)
 	_, neg, ok = h.getCachedServiceAccount(ctx, "missing")
