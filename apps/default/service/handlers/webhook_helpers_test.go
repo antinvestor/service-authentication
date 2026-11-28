@@ -377,6 +377,47 @@ func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaimsIncludesStableIde
 	s.Equal("partition-1", claims["partition_id"])
 }
 
+// Audit binds a producer's entries to the service_name claim (Frame
+// AuthenticationClaims.GetServiceName), so service tokens must carry it.
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_EmitsServiceName() {
+	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		ServiceName:      "service_identity",
+		Type:             SATypeInternal,
+		TenantID:         "tenant-1",
+		PartitionID:      "partition-1",
+		ProfileID:        "profile-1",
+	}, "access-1", []string{"internal"})
+	s.Require().NoError(err)
+	s.Equal("service_identity", claims["service_name"])
+}
+
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_ExternalAccountCarriesNoServiceName() {
+	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		ServiceName:      "service_loans",
+		Type:             SATypeExternal,
+		TenantID:         "tenant-1",
+		PartitionID:      "partition-1",
+		ProfileID:        "profile-1",
+	}, "access-1", []string{"external"})
+	s.Require().NoError(err)
+	_, has := claims["service_name"]
+	s.False(has, "a partner account must not present itself as a platform service")
+}
+
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_OmitsUnknownServiceName() {
+	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		TenantID:         "tenant-1",
+		PartitionID:      "partition-1",
+		ProfileID:        "profile-1",
+	}, "access-1", []string{"internal"})
+	s.Require().NoError(err)
+	_, has := claims["service_name"]
+	s.False(has, "an empty service_name claim would bind the caller to the empty service")
+}
+
 func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_RejectsIncompleteTenancyPair() {
 	_, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
 		ServiceAccountID: "service-account-1",
@@ -432,10 +473,12 @@ func (s *WebhookHelpersTestSuite) TestServiceAccountFromHydraClient() {
 		"service_account_id": "service-account-1",
 		"type":               "internal",
 		"access_id":          "access-1",
+		"service_name":       "service_identity",
 	})
 
 	sa, err := serviceAccountFromHydraClient(client, "client-1")
 	s.Require().NoError(err)
+	s.Equal("service_identity", sa.ServiceName)
 	s.Equal("client-1", sa.ClientID)
 	s.Equal("tenant-1", sa.TenantID)
 	s.Equal("partition-1", sa.PartitionID)

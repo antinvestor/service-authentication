@@ -107,15 +107,27 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 		return fmt.Errorf("failed to get client %s: %w", clientDBID, err)
 	}
 
-	// For client_credentials clients, look up the SA to get the subject (profile_id)
-	if (cl.Type == "internal" || cl.Type == "external") && profileID == "" {
+	// For client_credentials clients, look up the SA for the subject
+	// (profile_id) and the service name the token hook emits as the
+	// service_name claim. The name is needed even when the payload already
+	// carries profile_id.
+	var serviceName string
+	if cl.Type == "internal" || cl.Type == "external" {
 		sa, saErr := e.serviceAccountRepo.GetByClientRef(ctx, cl.GetID())
+		// A transient lookup failure must not push metadata without the
+		// service name (it would overwrite the current value); retry.
+		if saErr != nil && !isPermanentError(saErr) {
+			return fmt.Errorf("look up service account for client %s: %w", cl.GetID(), saErr)
+		}
 		if saErr == nil && sa != nil {
-			profileID = sa.ProfileID
+			if profileID == "" {
+				profileID = sa.ProfileID
+			}
+			serviceName = sa.Name
 		}
 	}
 
-	err = SyncClientOnHydra(ctx, e.cfg, e.cli, e.clientRepository, e.recipientRepository, cl, profileID)
+	err = SyncClientOnHydra(ctx, e.cfg, e.cli, e.clientRepository, e.recipientRepository, cl, profileID, serviceName)
 	if err != nil {
 		if isPermanentError(err) {
 			logger.WithError(err).Warn("permanent error syncing client to Hydra — skipping")
@@ -137,6 +149,7 @@ func SyncClientOnHydra(
 	recipientRepo repository.OAuthClientRecipientRepository,
 	cl *models.Client,
 	profileID string,
+	serviceName string,
 ) error {
 	hydraBaseURL := cfg.GetOauth2ServiceAdminURI()
 	hydraURL := fmt.Sprintf("%s/admin/clients", hydraBaseURL)
@@ -194,7 +207,7 @@ func SyncClientOnHydra(
 	}
 
 	// Build payload
-	payload := buildClientHydraPayload(cl, profileID, audiences)
+	payload := buildClientHydraPayload(cl, profileID, serviceName, audiences)
 
 	resp, err = cli.Invoke(ctx, httpMethod, hydraURL, payload, nil)
 	if err != nil {
@@ -225,7 +238,10 @@ func SyncClientOnHydra(
 	return updateClientWithResponse(ctx, clientRepo, cl, result)
 }
 
-func buildClientHydraPayload(cl *models.Client, profileID string, audiences []string) map[string]any {
+// buildClientHydraPayload builds the Hydra admin client payload. serviceName
+// is the owning service account's name; it is stored in metadata for the
+// token hook and is empty for clients without a service account.
+func buildClientHydraPayload(cl *models.Client, profileID, serviceName string, audiences []string) map[string]any {
 	grantTypes := getStringSlice(cl.GrantTypes, "types")
 	if len(grantTypes) == 0 {
 		grantTypes = []string{"authorization_code", "refresh_token"}
@@ -281,6 +297,9 @@ func buildClientHydraPayload(cl *models.Client, profileID string, audiences []st
 	}
 	if cl.ServiceAccountID != "" {
 		metadata["service_account_id"] = cl.ServiceAccountID
+	}
+	if name := strings.TrimSpace(serviceName); name != "" {
+		metadata["service_name"] = name
 	}
 	if accessID := cl.Properties.GetString("access_id"); accessID != "" {
 		metadata["access_id"] = accessID
