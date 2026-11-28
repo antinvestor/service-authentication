@@ -23,8 +23,12 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
+	notificationv1 "buf.build/gen/go/antinvestor/notification/protocolbuffers/go/notification/v1"
+	"github.com/antinvestor/common/v3/permissions"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/models"
 	"github.com/antinvestor/service-authentication/apps/tenancy/tests"
 	"github.com/pitabwire/frame/v3/data"
@@ -235,4 +239,114 @@ func invokePermissionRegistration(
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
+}
+
+// TestLateRegisteredNamespaceGetsRootAdminTuple reproduces a namespace
+// (service_notification) registered via /_internal/register/permissions after
+// tenancy's setup bootstrap already provisioned the root admin.
+func (s *PermissionRegistryTestSuite) TestLateRegisteredNamespaceGetsRootAdminTuple() {
+	s.WithTestDependancies(s.T(), func(t *testing.T, depOpts *definition.DependencyOption) {
+		ctx, svc, deps := s.CreateService(t, depOpts)
+		auth := authz.SerialisedAuthorizer(ctx, svc)
+
+		adminProfileID := s.createRootAccess(ctx, deps, rootAdminRoleID)
+		s.Require().NoError(business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
+			AccessRepo: deps.AccessRepo, AccessRoleRepo: deps.AccessRoleRepo, PartitionRoleRepo: deps.PartitionRoleRepo,
+			ServiceNamespaceRepo: deps.ServiceNamespaceRepo, Authorizer: auth,
+		}))
+
+		owner := s.rootServiceAccount(ctx, deps, "service_notification")
+		manifest := permissions.BuildManifest(
+			notificationv1.File_notification_v1_notification_proto.Services().ByName("NotificationService"))
+		response := invokePermissionRegistration(serviceAccountContext(ctx, owner.GetID()),
+			deps.Server.NewPermissionRegistrationHandler(), map[string]any{
+				"namespace": manifest.Namespace, "permissions": manifest.Permissions, "role_bindings": manifest.RoleBindings,
+			})
+		s.Require().Equal(http.StatusOK, response.Code, response.Body.String())
+
+		s.True(hasTuple(ctx, t, auth, security.RelationTuple{
+			Object:   security.ObjectRef{Namespace: "service_notification", ID: authz.RootTenantID + "/" + authz.RootPartitionID},
+			Relation: authz.RoleAdmin,
+			Subject:  security.SubjectRef{Namespace: authz.NamespaceProfile, ID: adminProfileID},
+		}), "late-registered namespace must carry the root admin tuple")
+
+		// Pending SA policies granting the new namespace are re-queued at
+		// registration time and materialised by the runtime consumer.
+		policies, err := deps.AuthorizationPolicyRepo.ListByNamespace(ctx, "service_notification")
+		s.Require().NoError(err)
+		s.Require().NotEmpty(policies, "seed must hold policies granting service_notification")
+		check := s.firstGrantCheck(ctx, deps, policies[0].ServiceAccountID, "service_notification")
+		s.Require().Eventually(func() bool {
+			result, checkErr := auth.Check(ctx, check)
+			return checkErr == nil && result.Allowed
+		}, 30*time.Second, 200*time.Millisecond, "pending service_notification grant must materialise after registration")
+	})
+}
+
+// firstGrantCheck builds a Keto check for the first permission the service
+// account's policy grants in namespace, on the account's own partition.
+func (s *PermissionRegistryTestSuite) firstGrantCheck(
+	ctx context.Context,
+	deps *tests.DepsBuilder,
+	serviceAccountID string,
+	namespace string,
+) security.CheckRequest {
+	account, err := deps.ServiceAccountRepo.GetByIDPrimary(ctx, serviceAccountID)
+	s.Require().NoError(err)
+	state, err := deps.AuthorizationPolicyRepo.GetByServiceAccountID(ctx, serviceAccountID)
+	s.Require().NoError(err)
+	for _, grant := range state.Grants {
+		if grant.Namespace == namespace && len(grant.Permissions) > 0 {
+			return security.CheckRequest{
+				Object:     security.ObjectRef{Namespace: namespace, ID: account.TenantID + "/" + account.PartitionID},
+				Permission: grant.Permissions[0],
+				Subject:    security.SubjectRef{Namespace: authz.NamespaceProfile, ID: account.ProfileID},
+			}
+		}
+	}
+	s.FailNow("policy has no grant in namespace", namespace)
+	return security.CheckRequest{}
+}
+
+// rootAdminRoleID is the seeded "admin" partition role on the root partition.
+const rootAdminRoleID = "d7j42dspf2tfev9jfgt0"
+
+func (s *PermissionRegistryTestSuite) createRootAccess(ctx context.Context, deps *tests.DepsBuilder, roleID string) string {
+	profileID := util.IDString()
+	access := &models.Access{
+		ProfileID: profileID,
+		BaseModel: data.BaseModel{TenantID: authz.RootTenantID, PartitionID: authz.RootPartitionID},
+	}
+	s.Require().NoError(deps.AccessRepo.Create(ctx, access))
+	s.Require().NoError(deps.AccessRoleRepo.Create(ctx, &models.AccessRole{
+		AccessID:        access.GetID(),
+		PartitionRoleID: roleID,
+		BaseModel:       data.BaseModel{TenantID: authz.RootTenantID, PartitionID: authz.RootPartitionID},
+	}))
+	return profileID
+}
+
+func (s *PermissionRegistryTestSuite) rootServiceAccount(
+	ctx context.Context,
+	deps *tests.DepsBuilder,
+	name string,
+) *models.ServiceAccount {
+	accounts, err := deps.ServiceAccountRepo.ListByPartition(ctx, authz.RootPartitionID)
+	s.Require().NoError(err)
+	for _, account := range accounts {
+		if account.Name == name {
+			return account
+		}
+	}
+	s.FailNow("seeded root service account not found", name)
+	return nil
+}
+
+func hasTuple(ctx context.Context, t *testing.T, auth security.Authorizer, want security.RelationTuple) bool {
+	t.Helper()
+	stored, err := auth.ListRelations(ctx, want.Object)
+	if err != nil {
+		t.Fatalf("list relations for %s:%s: %v", want.Object.Namespace, want.Object.ID, err)
+	}
+	return slices.Contains(stored, want)
 }

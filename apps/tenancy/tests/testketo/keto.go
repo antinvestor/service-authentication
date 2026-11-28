@@ -114,6 +114,10 @@ func renderOPLNamespaces() string {
 
 func testPermissionCatalog() map[string][]string {
 	return map[string][]string{
+		"service_notification": {
+			"notification_release", "notification_search", "notification_send", "notification_status_update",
+			"notification_status_view", "template_manage", "template_view",
+		},
 		"service_profile": {"profile_update", "profile_view"},
 		"service_tenancy": {
 			"access_manage", "access_view", "client_manage", "client_view", "page_manage", "page_view",

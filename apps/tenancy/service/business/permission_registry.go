@@ -65,6 +65,11 @@ type PermissionRegistryDeps struct {
 	PartitionRoleRepo    repository.PartitionRoleRepository
 	EventsManager        fevents.Manager
 	Authorizer           security.Authorizer
+	// DeferPolicyReconciliation skips re-queueing the namespace's SA policies
+	// as events. The tenancy setup Job sets it: its queue publishers are never
+	// initialised (Run is not called) and it reconciles every pending policy
+	// synchronously right after registering. EventsManager may then be nil.
+	DeferPolicyReconciliation bool
 }
 
 func RegisterPermissionManifest(
@@ -78,7 +83,7 @@ func RegisterPermissionManifest(
 	}
 	if deps.ServiceNamespaceRepo == nil || deps.ServiceAccountRepo == nil || deps.PolicyRepo == nil ||
 		deps.AccessRepo == nil || deps.AccessRoleRepo == nil || deps.PartitionRoleRepo == nil ||
-		deps.EventsManager == nil || deps.Authorizer == nil {
+		(deps.EventsManager == nil && !deps.DeferPolicyReconciliation) || deps.Authorizer == nil {
 		return nil, errors.New("permission registry dependencies are incomplete")
 	}
 
@@ -113,17 +118,9 @@ func RegisterPermissionManifest(
 	// saturates the DB/event queue and blocks other services from registering.
 	// Partition inheritance and bulk repair belong on the periodic
 	// /_internal/sync/clients job, not on every service startup.
-	policies, err := deps.PolicyRepo.ListByNamespace(ctx, normalised.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	for _, policy := range policies {
-		if err = deps.EventsManager.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{
-			"id":         policy.ServiceAccountID,
-			"generation": policy.Generation,
-			"reason":     "permission_manifest_registered",
-		}); err != nil {
-			return nil, fmt.Errorf("requeue service-account policy for namespace %s: %w", normalised.Namespace, err)
+	if !deps.DeferPolicyReconciliation {
+		if err = requeueNamespacePolicies(ctx, deps, normalised.Namespace); err != nil {
+			return nil, err
 		}
 	}
 
@@ -151,6 +148,23 @@ func RegisterPermissionManifest(
 	registration.NeedsReconciliation = false
 	registration.Namespace.ReconciledGeneration = registration.Namespace.Generation
 	return registration, nil
+}
+
+func requeueNamespacePolicies(ctx context.Context, deps PermissionRegistryDeps, namespace string) error {
+	policies, err := deps.PolicyRepo.ListByNamespace(ctx, namespace)
+	if err != nil {
+		return err
+	}
+	for _, policy := range policies {
+		if err = deps.EventsManager.Emit(ctx, events.EventKeyAuthzServiceAccountSync, data.JSONMap{
+			"id":         policy.ServiceAccountID,
+			"generation": policy.Generation,
+			"reason":     "permission_manifest_registered",
+		}); err != nil {
+			return fmt.Errorf("requeue service-account policy for namespace %s: %w", namespace, err)
+		}
+	}
+	return nil
 }
 
 func validatePermissionManifestOwner(
