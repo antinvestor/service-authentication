@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/antinvestor/common/v3/servicecatalog"
@@ -79,46 +78,31 @@ func main() {
 		return repository.Migrate(ctx, svc.DatastoreManager(), cfg.GetDatabaseMigrationPath())
 	})
 	// Setup Job only (migrate → bootstrap → …). Never on runtime cold start.
-	// Bootstrap: root tuples, service-bot Plane-1 access, then materialise any
-	// SA authorization policies whose namespaces are already registered.
+	// Bootstrap: register tenancy's own service_tenancy manifest locally (it is
+	// the registration target, so it never publishes to itself), root tuples,
+	// service-bot Plane-1 access, then materialise pending SA policies.
 	svc.Setup().RegisterFunc(setup.NameBootstrap, func(ctx context.Context) error {
-		if bootstrapErr := business.EnsureRootAuthorization(ctx, business.RootAuthorizationDeps{
-			AccessRepo:           setupPartSrv.AccessRepo,
-			AccessRoleRepo:       setupPartSrv.AccessRoleRepo,
-			PartitionRoleRepo:    setupPartSrv.PartitionRoleRepo,
-			ServiceNamespaceRepo: setupPartSrv.ServiceNamespaceRepo,
-			Authorizer:           auth,
-		}); bootstrapErr != nil {
-			return bootstrapErr
-		}
-		if botErr := business.EnsureServiceBotTenancyAccess(ctx, business.ServiceBotTenancyDeps{
-			ServiceAccountRepo: setupPartSrv.ServiceAccountRepo,
-			PartitionRepo:      setupPartSrv.PartitionRepo,
-			Authorizer:         auth,
-		}); botErr != nil {
-			return botErr
-		}
-		// Materialise pending SA policies (Plane-2 granted_*) for namespaces that
-		// are already registered. Policies whose namespaces are still missing stay
-		// pending until files/profile/etc. setup Jobs re-register and requeue them.
-		reconciler := events.NewAuthzServiceAccountSyncEventHandler(
-			setupPartSrv.ServiceAccountRepo,
-			setupPartSrv.PartitionRepo,
-			setupPartSrv.AuthorizationPolicyRepo,
-			setupPartSrv.ServiceNamespaceRepo,
-			setupPartSrv.AuthContractRepo,
-			svc.EventsManager(),
-			auth,
-		)
-		if recErr := reconciler.ReconcilePending(ctx); recErr != nil {
-			return fmt.Errorf("setup bootstrap: reconcile pending SA policies: %w", recErr)
-		}
-		return nil
+		return business.RunSetupBootstrap(ctx, business.SetupBootstrapDeps{
+			Registry: business.PermissionRegistryDeps{
+				ServiceNamespaceRepo: setupPartSrv.ServiceNamespaceRepo,
+				ServiceAccountRepo:   setupPartSrv.ServiceAccountRepo,
+				PolicyRepo:           setupPartSrv.AuthorizationPolicyRepo,
+				PartitionRepo:        setupPartSrv.PartitionRepo,
+				AccessRepo:           setupPartSrv.AccessRepo,
+				AccessRoleRepo:       setupPartSrv.AccessRoleRepo,
+				PartitionRoleRepo:    setupPartSrv.PartitionRoleRepo,
+				EventsManager:        svc.EventsManager(),
+				Authorizer:           auth,
+			},
+			AuthContractRepo:      setupPartSrv.AuthContractRepo,
+			PermissionDescriptors: business.TenancyPermissionDescriptors(),
+		})
 	})
 
 	if frame.ShouldRunSetup(&cfg) {
-		// Tenancy is the permission registration *target* — skip self-registration
-		// unless PERMISSIONS_REGISTRATION_URL is explicitly set to another host.
+		// Tenancy is the permission registration target: its own manifest is
+		// registered in-process by the bootstrap step, not via
+		// frame.WithPermissionRegistration (an HTTP call to itself).
 		svc.Init(ctx)
 		if setupErr := svc.RunSetupForProcess(ctx, &cfg); setupErr != nil {
 			util.Log(ctx).WithError(setupErr).Fatal("setup plan failed")

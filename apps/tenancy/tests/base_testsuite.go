@@ -16,11 +16,13 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/antinvestor/common/v3/permissions"
 	aconfig "github.com/antinvestor/service-authentication/apps/tenancy/config"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/authz"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/business"
@@ -124,6 +126,10 @@ type BaseTestSuite struct {
 
 	ketoReadURI  string
 	ketoWriteURI string
+
+	// UnregisteredTenancyNamespace leaves service_tenancy unregistered, as on a
+	// fresh database before the tenancy setup bootstrap runs.
+	UnregisteredTenancyNamespace bool
 
 	// Suite-level service (set by CreateSuiteService, used to share one service across all tests).
 	SuiteCtx  context.Context
@@ -356,19 +362,15 @@ func (bs *BaseTestSuite) createServiceInternal(
 			RoleBindings: data.JSONMap{"owner": []string{"profile_update", "profile_view"}},
 			RegisteredAt: &now,
 		},
-		{
-			Namespace: "service_tenancy",
-			Permissions: data.JSONMap{"values": []string{
-				"access_manage", "access_view", "client_manage", "client_view", "page_manage", "page_view",
-				"partition_manage", "partition_view", "permission_grant", "role_manage", "service_account_manage",
-				"service_account_view", "tenant_manage", "tenant_view",
-			}},
-			RoleBindings: data.JSONMap{"owner": []string{"tenant_manage", "tenant_view"}},
-			RegisteredAt: &now,
-		},
 	} {
 		_, registerErr := implementation.ServiceNamespaceRepo.RegisterOwned(ctx, namespace, "test-service-account")
 		require.NoError(t, registerErr)
+	}
+	// service_tenancy is registered the way the setup Job does it, owned by
+	// the seeded tenancy service account, unless the suite exercises a fresh
+	// database where the setup bootstrap has not run yet.
+	if !bs.UnregisteredTenancyNamespace {
+		registerTenancyNamespace(ctx, t, SetupRegistryDeps(svc, implementation, auth))
 	}
 
 	// Migration ran as superuser; grant the restricted role access to the
@@ -387,6 +389,47 @@ func (bs *BaseTestSuite) createServiceInternal(
 	deps := BuildDeps(ctx, svc, implementation)
 
 	return ctx, svc, deps
+}
+
+// registerTenancyNamespace registers service_tenancy through the setup Job's
+// code path. Suites whose relative migration path resolves to no seed files
+// (package tests) have no seeded tenancy SA; they get a test-owned record.
+func registerTenancyNamespace(ctx context.Context, t *testing.T, deps business.PermissionRegistryDeps) {
+	err := business.RegisterTenancyPermissionManifest(ctx, deps, business.TenancyPermissionDescriptors()...)
+	if !errors.Is(err, business.ErrPermissionManifestOwner) {
+		require.NoError(t, err)
+		return
+	}
+	now := time.Now().UTC()
+	manifest := permissions.BuildManifest(business.TenancyPermissionDescriptors()[0])
+	bindings := make(data.JSONMap, len(manifest.RoleBindings))
+	for role, perms := range manifest.RoleBindings {
+		bindings[role] = perms
+	}
+	_, err = deps.ServiceNamespaceRepo.RegisterOwned(ctx, &models.ServiceNamespace{
+		Namespace:    manifest.Namespace,
+		Permissions:  data.JSONMap{"values": manifest.Permissions},
+		RoleBindings: bindings,
+		RegisteredAt: &now,
+	}, "test-service-account")
+	require.NoError(t, err)
+}
+
+// SetupRegistryDeps mirrors the permission registry wiring of the tenancy
+// setup Job (no queue publishers, synchronous policy reconciliation).
+func SetupRegistryDeps(svc *frame.Service, server *handlers.TenancyServer, auth security.Authorizer) business.PermissionRegistryDeps {
+	return business.PermissionRegistryDeps{
+		ServiceNamespaceRepo:      server.ServiceNamespaceRepo,
+		ServiceAccountRepo:        server.ServiceAccountRepo,
+		PolicyRepo:                server.AuthorizationPolicyRepo,
+		PartitionRepo:             server.PartitionRepo,
+		AccessRepo:                server.AccessRepo,
+		AccessRoleRepo:            server.AccessRoleRepo,
+		PartitionRoleRepo:         server.PartitionRoleRepo,
+		EventsManager:             svc.EventsManager(),
+		Authorizer:                auth,
+		DeferPolicyReconciliation: true,
+	}
 }
 
 func (bs *BaseTestSuite) WithAuthClaims(ctx context.Context, tenantID, partitionID, profileID string) context.Context {
