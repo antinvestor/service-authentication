@@ -446,6 +446,5 @@ func updateClientWithResponse(
 	cl.Properties = props
 	now := time.Now()
 	cl.SyncedAt = &now
-	_, err := clientRepo.Update(ctx, cl, "properties", "synced_at")
-	return err
+	return repository.UpdateVersioned(ctx, clientRepo, cl, "properties", "synced_at")
 }

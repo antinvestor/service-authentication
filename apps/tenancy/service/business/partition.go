@@ -309,7 +309,7 @@ func (pb *partitionBusiness) UpdatePartition(
 	}
 	partition.Properties = jsonMap
 
-	_, err = pb.partitionRepo.Update(ctx, partition, "name", "description", "domain", "allow_auto_access", "properties")
+	err = repository.UpdateVersioned(ctx, pb.partitionRepo, partition, "name", "description", "domain", "allow_auto_access", "properties")
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (pb *partitionBusiness) UpdatePartitionRole(
 		maps.Copy(role.Properties, reqProps)
 	}
 
-	_, err = pb.partitionRoleRepo.Update(ctx, role, "name", "is_default", "properties")
+	err = repository.UpdateVersioned(ctx, pb.partitionRoleRepo, role, "name", "is_default", "properties")
 	if err != nil {
 		return nil, err
 	}

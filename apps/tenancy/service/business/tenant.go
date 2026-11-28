@@ -136,7 +136,7 @@ func (t *tenantBusiness) UpdateTenant(ctx context.Context, request *tenancyv1.Up
 
 	tenant.Properties = jsonMap
 
-	_, err = t.tenantRepo.Update(ctx, tenant, "name", "description", "environment", "properties")
+	err = repository.UpdateVersioned(ctx, t.tenantRepo, tenant, "name", "description", "environment", "properties")
 	if err != nil {
 		return nil, err
 	}

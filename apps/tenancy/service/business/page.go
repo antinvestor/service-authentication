@@ -94,7 +94,7 @@ func (ab *pageBusiness) UpdatePage(ctx context.Context, request *tenancyv1.Updat
 		page.Properties = request.GetProperties().AsMap()
 	}
 
-	_, err = ab.pageRepo.Update(ctx, page, "name", "html", "state", "properties")
+	err = repository.UpdateVersioned(ctx, ab.pageRepo, page, "name", "html", "state", "properties")
 	if err != nil {
 		return nil, err
 	}

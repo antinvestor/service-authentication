@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v3/security"
 	"github.com/pitabwire/util"
 )
@@ -93,7 +94,7 @@ func (prtSrv *TenancyServer) resolveBotProfiles(ctx context.Context) botProfileR
 		}
 
 		sa.ProfileID = staticID
-		if _, updateErr := prtSrv.ServiceAccountRepo.Update(ctx, sa, "profile_id"); updateErr != nil {
+		if updateErr := repository.UpdateVersioned(ctx, prtSrv.ServiceAccountRepo, sa, "profile_id"); updateErr != nil {
 			log.WithFields(map[string]any{
 				"sa_id":      sa.GetID(),
 				"profile_id": staticID,
