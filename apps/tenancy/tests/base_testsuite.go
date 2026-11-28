@@ -68,6 +68,10 @@ type DepsBuilder struct {
 	AuthContractBusiness business.AuthContractBusiness
 
 	Server *handlers.TenancyServer
+
+	// AdminDSN connects as the database owner, bypassing RLS, for tests that
+	// must inspect or plant rows across every tenant.
+	AdminDSN string
 }
 
 func BuildDeps(ctx context.Context, svc *frame.Service, server *handlers.TenancyServer) *DepsBuilder {
@@ -387,6 +391,7 @@ func (bs *BaseTestSuite) createServiceInternal(
 	syncSeededRecordsToHydra(ctx, &cfg, implementation)
 
 	deps := BuildDeps(ctx, svc, implementation)
+	deps.AdminDSN = testDS.String()
 
 	return ctx, svc, deps
 }

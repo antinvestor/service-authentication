@@ -21,6 +21,7 @@ import (
 	"buf.build/gen/go/antinvestor/tenancy/connectrpc/go/v2/tenancy/v1/tenancyv1connect"
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"connectrpc.com/connect/v2"
+	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
 	"github.com/pitabwire/frame/v3/data"
 	"github.com/pitabwire/frame/v3/security/authorizer"
 	"google.golang.org/grpc/codes"
@@ -43,6 +44,9 @@ func (prtSrv *TenancyServer) toAPIError(err error) error {
 	}
 	if data.ErrorIsNoRows(err) {
 		return connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
+	}
+	if errors.Is(err, repository.ErrUpdateConflict) {
+		return connect.NewError(connect.CodeAborted, err.Error()).WithCause(err)
 	}
 	// Downstream gRPC failures (Keto, for one) keep their code; gRPC and
 	// Connect share the numbering.

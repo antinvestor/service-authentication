@@ -933,3 +933,8 @@ configuration.
 | dbhph2cpf2t1iig5ksm0 | trustage SA audience https://api.stawi.org/procurement | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
 | dbhph2cpf2t1iig5ksmg | trustage SA grant service_procurement partition_tree | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
 | dbhph2cpf2t1iig5ksn0 | trustage SA permit goods_receipt_deliver | apps/tenancy/migrations/0001/20261029_01_commerce_procurement_peers.sql |
+| dc1ekqjfukklf995qpe0 | Stawi Opportunities Web (prod) audience https://api.stawi.org/opportunities | apps/tenancy/migrations/0001/20261122_01_opportunities_spa_api_audience.sql |
+| dc1ekqjfukklf995qpeg | Stawi Opportunities Development audience https://api.stawi.org/opportunities | apps/tenancy/migrations/0001/20261122_01_opportunities_spa_api_audience.sql |
+| dc5cf8bfukkv1p615240 | operations_formstore SA /files audience | apps/tenancy/migrations/0001/20261128_02_formstore_files_upload.sql |
+| dc5cf8bfukkv1p61524g | operations_formstore SA grant service_file partition_tree | apps/tenancy/migrations/0001/20261128_02_formstore_files_upload.sql |
+| dc5cf8bfukkv1p615250 | operations_formstore SA permit content_upload | apps/tenancy/migrations/0001/20261128_02_formstore_files_upload.sql |
