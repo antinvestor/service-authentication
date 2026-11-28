@@ -30,11 +30,11 @@ import (
 // success.
 var ErrUpdateConflict = errors.New("update conflict: record was modified or removed concurrently")
 
-// versionedColumns are written on every update so the optimistic lock
-// actually advances. BaseRepository.Update filters on the loaded version and
-// BaseModel.BeforeUpdate bumps it in memory, but a column list without these
-// leaves the stored version unchanged and a stale writer would still match.
-var versionedColumns = []string{"version", "modified_at"}
+// versionedColumns are the audit columns BaseModel.BeforeUpdate sets in
+// memory; they are written on every update so the stored row reflects them.
+// Without "version" the optimistic lock never advances: BaseRepository.Update
+// filters on the loaded version, so a stale writer would still match.
+var versionedColumns = []string{"version", "modified_at", "modified_by"}
 
 // UpdateVersioned writes the given columns of entity under its optimistic
 // lock and fails with ErrUpdateConflict when no row matched, which

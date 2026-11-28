@@ -17,6 +17,7 @@ package business_test
 import (
 	"context"
 	"fmt"
+	"os"
 
 	tenancyv1 "buf.build/gen/go/antinvestor/tenancy/protocolbuffers/go/tenancy/v1"
 	"github.com/antinvestor/service-authentication/apps/tenancy/service/repository"
@@ -70,7 +71,8 @@ func (s *BusinessTestSuite) TestMigrations_LeaveNoBaseModelRowWithNullVersion() 
 
 func (s *BusinessTestSuite) TestUpdatePartition_SeededPartitionPersistsSupportEmail() {
 	deps := s.SuiteDeps
-	ctx := s.WithAuthClaims(s.SuiteCtx, seededOpportunitiesTenantID, seededOpportunitiesPartitionID, util.IDString())
+	actorID := util.IDString()
+	ctx := s.WithAuthClaims(s.SuiteCtx, seededOpportunitiesTenantID, seededOpportunitiesPartitionID, actorID)
 
 	before, err := deps.PartitionRepo.GetByID(ctx, seededOpportunitiesPartitionID)
 	s.Require().NoError(err)
@@ -101,6 +103,7 @@ func (s *BusinessTestSuite) TestUpdatePartition_SeededPartitionPersistsSupportEm
 	s.Equal("hello@stawi.org", contacts["email"], "the update must be persisted, not only echoed back")
 	s.Equal("Stawi Opportunities", stored.Name, "untouched columns keep their seeded value")
 	s.Greater(stored.Version, before.Version, "a successful update advances the stored version")
+	s.Equal(actorID, stored.ModifiedBy, "modified_by records the acting profile")
 }
 
 func (s *BusinessTestSuite) TestUpdateTenant_SeededTenantPersistsDescription() {
@@ -229,4 +232,79 @@ func (s *BusinessTestSuite) TestMigrations_FormstoreMayOnlyUploadToFiles() {
 	permissions, err := pgx.CollectRows(rows, pgx.RowTo[string])
 	s.Require().NoError(err)
 	s.Equal([]string{"content_upload"}, permissions, "formstore only uploads; it must not view, manage or delete files")
+}
+
+// TestFormstoreFilesMigration_ReusesExistingGrantAndRequeuesPolicy replays
+// 20261128_02 against a state where the service_file grant already exists
+// under another id: the replay must not abort on the (policy, namespace,
+// scope) unique, must attach content_upload to the existing grant, and must
+// requeue the policy and the Hydra client sync.
+func (s *BusinessTestSuite) TestFormstoreFilesMigration_ReusesExistingGrantAndRequeuesPolicy() {
+	ctx := s.SuiteCtx
+	sqlFile, err := os.ReadFile("../../migrations/0001/20261128_02_formstore_files_upload.sql")
+	s.Require().NoError(err)
+
+	conn := s.adminConn()
+	tx, err := conn.Begin(ctx)
+	s.Require().NoError(err)
+	// Rolled back: the replay is checked inside one transaction so the
+	// reconciler cannot move the policy on before the assertions run.
+	defer func() { _ = tx.Rollback(context.Background()) }()
+
+	var policyID string
+	var generation int64
+	s.Require().NoError(tx.QueryRow(ctx, `
+		SELECT pol.id, pol.generation FROM service_account_authorization_policies pol
+		JOIN service_accounts sa ON sa.id = pol.service_account_id
+		WHERE sa.client_id = 'operations-formstore'`).Scan(&policyID, &generation))
+
+	existingGrantID := util.IDString()
+	for _, stmt := range []string{
+		`DELETE FROM service_account_authorization_permissions WHERE grant_id IN (
+			SELECT id FROM service_account_authorization_grants WHERE policy_id = $1 AND namespace = 'service_file')`,
+		`DELETE FROM service_account_authorization_grants WHERE policy_id = $1 AND namespace = 'service_file'`,
+		`UPDATE service_account_authorization_policies
+			SET status = 'failed', retry_count = 3, last_error_code = 'keto_unavailable', last_error = 'boom'
+			WHERE id = $1`,
+	} {
+		_, err = tx.Exec(ctx, stmt, policyID)
+		s.Require().NoError(err)
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO service_account_authorization_grants
+		(id, created_at, modified_at, version, tenant_id, partition_id, policy_id, namespace, scope)
+		SELECT $1, NOW(), NOW(), 1, tenant_id, partition_id, id, 'service_file', 'partition_tree'
+		FROM service_account_authorization_policies WHERE id = $2`, existingGrantID, policyID)
+	s.Require().NoError(err)
+	_, err = tx.Exec(ctx, `UPDATE clients SET synced_at = NOW() WHERE client_id = 'operations-formstore'`)
+	s.Require().NoError(err)
+
+	_, err = tx.Exec(ctx, string(sqlFile))
+	s.Require().NoError(err, "the migration must not abort when the grant already exists under another id")
+
+	var status, lastErrorCode string
+	var newGeneration, retryCount int64
+	s.Require().NoError(tx.QueryRow(ctx, `SELECT generation, status, retry_count, COALESCE(last_error_code, '')
+		FROM service_account_authorization_policies WHERE id = $1`, policyID).
+		Scan(&newGeneration, &status, &retryCount, &lastErrorCode))
+	s.Equal(generation+1, newGeneration, "the policy generation is bumped so the reconciler re-applies it")
+	s.Equal("pending", status)
+	s.Equal(int64(0), retryCount)
+	s.Empty(lastErrorCode)
+
+	var syncedAtCleared bool
+	s.Require().NoError(tx.QueryRow(ctx,
+		`SELECT synced_at IS NULL FROM clients WHERE client_id = 'operations-formstore'`).Scan(&syncedAtCleared))
+	s.True(syncedAtCleared, "the Hydra client is re-synced to pick up the files audience")
+
+	rows, err := tx.Query(ctx, `SELECT g.id, p.permission FROM service_account_authorization_grants g
+		JOIN service_account_authorization_permissions p ON p.grant_id = g.id
+		WHERE g.policy_id = $1 AND g.namespace = 'service_file'`, policyID)
+	s.Require().NoError(err)
+	type grantPermission struct {
+		GrantID    string
+		Permission string
+	}
+	got, err := pgx.CollectRows(rows, pgx.RowToStructByPos[grantPermission])
+	s.Require().NoError(err)
+	s.Equal([]grantPermission{{GrantID: existingGrantID, Permission: "content_upload"}}, got)
 }
