@@ -114,6 +114,11 @@ func (e *ClientSyncEvent) Execute(ictx context.Context, payload any) error {
 	var serviceName string
 	if cl.Type == "internal" || cl.Type == "external" {
 		sa, saErr := e.serviceAccountRepo.GetByClientRef(ctx, cl.GetID())
+		// A transient lookup failure must not push metadata without the
+		// service name (it would overwrite the current value); retry.
+		if saErr != nil && !isPermanentError(saErr) {
+			return fmt.Errorf("look up service account for client %s: %w", cl.GetID(), saErr)
+		}
 		if saErr == nil && sa != nil {
 			if profileID == "" {
 				profileID = sa.ProfileID

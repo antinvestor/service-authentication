@@ -383,12 +383,27 @@ func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_EmitsServiceName
 	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
 		ServiceAccountID: "service-account-1",
 		ServiceName:      "service_identity",
+		Type:             SATypeInternal,
 		TenantID:         "tenant-1",
 		PartitionID:      "partition-1",
 		ProfileID:        "profile-1",
 	}, "access-1", []string{"internal"})
 	s.Require().NoError(err)
 	s.Equal("service_identity", claims["service_name"])
+}
+
+func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_ExternalAccountCarriesNoServiceName() {
+	claims, err := buildServiceAccountClaims("event-1", &serviceAccountAuthContext{
+		ServiceAccountID: "service-account-1",
+		ServiceName:      "service_loans",
+		Type:             SATypeExternal,
+		TenantID:         "tenant-1",
+		PartitionID:      "partition-1",
+		ProfileID:        "profile-1",
+	}, "access-1", []string{"external"})
+	s.Require().NoError(err)
+	_, has := claims["service_name"]
+	s.False(has, "a partner account must not present itself as a platform service")
 }
 
 func (s *WebhookHelpersTestSuite) TestBuildServiceAccountClaims_OmitsUnknownServiceName() {

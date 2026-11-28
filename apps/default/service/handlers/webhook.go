@@ -441,8 +441,10 @@ func buildServiceAccountClaims(
 		claims["access_id"] = accessID
 	}
 	// Producers (e.g. audit) bind a service account to this claim; omit it
-	// rather than emit an empty name.
-	if serviceName := strings.TrimSpace(sa.ServiceName); serviceName != "" {
+	// rather than emit an empty name. Only internal service bots name a
+	// platform service; external (partner) accounts never carry it, so a
+	// partner account cannot present itself as a platform service.
+	if serviceName := strings.TrimSpace(sa.ServiceName); serviceName != "" && sa.Type == SATypeInternal {
 		claims["service_name"] = serviceName
 	}
 	return claims, nil
